@@ -24,3 +24,7 @@ end
     @test eltype(s2 * rand(Float32, 3)) === Float32
     @test eltype(s * rand(Float32, 3)) === Float64
 end
+
+@testset "Simplex LMOs projections" begin
+
+end
