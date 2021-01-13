@@ -7,7 +7,7 @@ function backtrackingLS(f,grad,x,y;stepSize=true,lsTol=1e-10,stepLim=20,lsTau = 
     gamma = 1
     d = y - x
     i = 0
-    gradDirection = dot(grad(x),d)
+    gradDirection = LinearAlgebra.dot(grad(x),d)
     
     if gradDirection === 0
         return i, 0
@@ -41,7 +41,7 @@ function segmentSearch(f,grad,x,y;stepSize=true,lsTol=1e-10)
     left, right = copy(x), copy(y)
 
     # if the minimum is at an endpoint
-    if dot(d, grad(x)) * dot(d, grad(y)) >= 0
+    if LinearAlgebra.dot(d, grad(x)) * LinearAlgebra.dot(d, grad(y)) >= 0
         if f(y) <= f(x)
             return y, 1
         else
@@ -61,7 +61,7 @@ function segmentSearch(f,grad,x,y;stepSize=true,lsTol=1e-10)
         else
             left, right = left, probe
         end
-        improv = norm(f(right) - f(old_right)) + norm(f(left)-f(old_left))
+        improv = LinearAlgebra.norm(f(right) - f(old_right)) + LinearAlgebra.norm(f(left)-f(old_left))
     end
     
     x_min = (left + right) / 2.0

@@ -14,8 +14,8 @@ include("utils.jl")
 # - should support "performance mode" with minimal computation and printing of intermediate information
 
 
-function fw(f, grad, lmo, x0::Vector{Float64}; stepSize = "agnostic", 
-        epsilon=1e-7, maxIt=10000, printIt=1000, trajectory=false, silent=false)
+function fw(f, grad, lmo, x0::Vector{T}; stepSize = "agnostic", 
+        epsilon=1e-7, maxIt=10000, printIt=1000, trajectory=false, silent=false) where T
     t = 0
     dualGap = Inf
     primal = Inf
