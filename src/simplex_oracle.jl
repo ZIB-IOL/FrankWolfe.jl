@@ -11,7 +11,7 @@ struct UnitSimplexOracle{T} <: LinearMinimizationOracle
     right_side::T
 end
 
-UnitSimplexOracle{T}() = UnitSimplexOracle{T}(one(T))
+UnitSimplexOracle{T}() where {T} = UnitSimplexOracle{T}(one(T))
 
 """
 LMO for scaled unit simplex.
@@ -48,7 +48,7 @@ struct ProbabilitySimplexOracle{T} <: LinearMinimizationOracle
     right_side::T
 end
 
-ProbabilitySimplexOracle{T}() = ProbabilitySimplexOracle{T}(one(T))
+ProbabilitySimplexOracle{T}() where {T} = ProbabilitySimplexOracle{T}(one(T))
 
 """
 LMO for scaled probability simplex.
