@@ -26,5 +26,37 @@ end
 end
 
 @testset "Simplex LMOs projections" begin
-
+    n = 6
+    direction = zeros(6)
+    rhs = 10 * rand()
+    lmo_prob = FrankWolfe.ProbabilitySimplexOracle(rhs)
+    lmo_unit = FrankWolfe.UnitSimplexOracle(rhs)
+    @testset "Choosing improving direction" for idx in 1:n
+        direction .= 0
+        direction[idx] = -1
+        res_point_prob = FrankWolfe.compute_extreme_point(lmo_prob, direction)
+        res_point_unit = FrankWolfe.compute_extreme_point(lmo_unit, direction)
+        for j in eachindex(res_point_prob)
+            if j == idx
+                @test res_point_prob[j] == res_point_unit[j] == rhs
+            else
+                @test res_point_prob[j] == res_point_unit[j] == 0
+            end
+        end
+    end
+    @testset "Choosing least-degrading direction" for idx in 1:n
+        # all directions worsening, must pick idx
+        direction .= 2
+        direction[idx] = 1
+        res_point_prob = FrankWolfe.compute_extreme_point(lmo_prob, direction)
+        res_point_unit = FrankWolfe.compute_extreme_point(lmo_unit, direction)
+        for j in eachindex(res_point_unit)
+            @test res_point_unit[j] == 0
+            if j == idx
+                @test res_point_prob[j] == rhs
+            else
+                @test res_point_prob[j] == 0
+            end
+        end
+    end
 end
