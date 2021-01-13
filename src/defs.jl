@@ -1,0 +1,1 @@
+@enum LSMethod agnostic=1 backtracking=2 goldenratio=3

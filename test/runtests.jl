@@ -4,10 +4,6 @@ using LinearAlgebra
 
 import FrankWolfe: SimplexMatrix
 
-@testset "FrankWolfe.jl" begin
-    # Write your tests here.
-end
-
 @testset "Simplex matrix type" begin
     s = SimplexMatrix{Float64}(3)
     sm = collect(s)
@@ -68,5 +64,15 @@ end
     grad(x) = 2x 
     f(x) = norm(x)^2 
     @test FrankWolfe.backtrackingLS(f,grad,a,b) == (1, 0.5)
-    @test (FrankWolfe.segmentSearch(f,grad,a,b)[2] - 0.5) < 0.0001
+    @test abs(FrankWolfe.segmentSearch(f,grad,a,b)[2] - 0.5) < 0.0001
+end
+
+@testset "FrankWolfe.jl" begin
+    @testset "Testing vanilla Frank-Wolfe" begin
+        f(x) = LinearAlgebra.norm(x)^2
+        grad(x) = 2x;
+        lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
+        x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(5))
+        @test abs(FrankWolfe.fw(f,grad,lmo_prob,x0,maxIt=1000)[3] - 0.2) < 0.00001 
+    end
 end
