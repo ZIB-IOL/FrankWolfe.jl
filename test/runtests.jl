@@ -1,5 +1,6 @@
 using FrankWolfe
 using Test
+using LinearAlgebra
 
 import FrankWolfe: SimplexMatrix
 
@@ -59,4 +60,13 @@ end
             end
         end
     end
+end
+
+@testset "Line Search methods" begin
+    a = [-1.0,-1.0,-1.0]
+    b = [1.0,1.0,1.0] 
+    grad(x) = 2x 
+    f(x) = norm(x)^2 
+    @test FrankWolfe.backtrackingLS(f,grad,a,b) == (1, 0.5)
+    @test (FrankWolfe.segmentSearch(f,grad,a,b)[2] - 0.5) < 0.0001
 end
