@@ -1,6 +1,6 @@
 name = "FrankWolfe"
 uuid = "f55ce6ea-fdc5-4628-88c5-0087fe54bd30"
-authors = ["Mathieu Besançon <mathieu.besancon@gmail.com> and contributors"]
+authors = ["ZIB-IOL"]
 version = "0.1.0"
 
 [compat]
