@@ -1,6 +1,6 @@
 module FrankWolfe
 
-import LinearAlgebra
+using LinearAlgebra
 
 include("defs.jl")
 include("simplex_matrix.jl")
