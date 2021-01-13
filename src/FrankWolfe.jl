@@ -4,7 +4,6 @@ using LinearAlgebra
 using Printf
 using Base.Ryu
 using ProgressMeter
-# using BenchmarkTools
 using TimerOutputs
 
 include("defs.jl")
@@ -90,11 +89,7 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic,
     timeEl = time_ns()
 
     if verbose
-        if emph === blas
-            println("\n EMPHASIS: blas")
-        elseif emph === memory
-            println("\n EMPHASIS: memory")
-        end
+        println("\n EMPHASIS: $emph STEPSIZE: $stepSize EPSILON: $epsilon MAXIT: $maxIt")
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap","Time"]
         headerPrint(headers)
     end
