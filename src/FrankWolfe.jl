@@ -36,7 +36,7 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic,
         primal = f(x)
         gradient = grad(x)
         v = compute_extreme_point(lmo, gradient)
-        dualGap = Inf # LinearAlgebra.dot(gradient,x) - dot(gradient,v)
+        dualGap = dot(x, gradient) - dot(v, gradient)
         
         if trajectory === true
             append!(trajData, [t, primal, primal-dualGap, dualGap])
