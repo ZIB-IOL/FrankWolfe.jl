@@ -73,9 +73,9 @@ end
         grad(x) = 2x;
         lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
         x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(5))
-        @test abs(FrankWolfe.fw(f,grad,lmo_prob,x0,maxIt=1000,stepSize=FrankWolfe.agnostic)[3] - 0.2) < 1.0e-5
-        @test abs(FrankWolfe.fw(f,grad,lmo_prob,x0,maxIt=1000,stepSize=FrankWolfe.goldenratio)[3] - 0.2) < 1.0e-5
-        @test abs(FrankWolfe.fw(f,grad,lmo_prob,x0,maxIt=1000,stepSize=FrankWolfe.backtracking)[3] - 0.2) < 1.0e-5
+        @test abs(FrankWolfe.fw(f,grad,lmo_prob,x0,maxIt=1000,stepSize=FrankWolfe.agnostic,verbose=true)[3] - 0.2) < 1.0e-5
+        @test abs(FrankWolfe.fw(f,grad,lmo_prob,x0,maxIt=1000,stepSize=FrankWolfe.goldenratio,verbose=true)[3] - 0.2) < 1.0e-5
+        @test abs(FrankWolfe.fw(f,grad,lmo_prob,x0,maxIt=1000,stepSize=FrankWolfe.backtracking,verbose=true)[3] - 0.2) < 1.0e-5
     end
     @testset "Testing emphasis blas vs memory" begin
         n = Int(1e5);
