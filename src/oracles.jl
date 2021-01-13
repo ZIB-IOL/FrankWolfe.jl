@@ -1,27 +1,17 @@
 
-# simple unitSimplexLMO
-# TODO:
-# - not optimized
+"""
+Supertype for linear minimization oracles.
 
-function unitSimplexLMO(grad;r=1)
-    n = length(grad)
-    v = zeros(n)
-    aux = argmin(grad)
-    if grad[aux] < 0.0
-        v[aux] = 1.0
-    end
-    return v*r
+All LMOs must implement `compute_extreme_point(direction)`
+and return a vector `v` of the appropriate type.
+"""
+abstract type LinearMinimizationOracle
 end
 
-# simple probabilitySimplexLMO
-# TODO:
-# - not optimized
+"""
+    compute_extreme_point(lmo::LinearMinimizationOracle, direction; kwargs...)
 
-function probabilitySimplexLMO(grad;r=1)
-    n = length(grad)
-    v = zeros(n)
-    aux = argmin(grad)
-    v[aux] = 1.0
-    return v*r
-end
-
+Computes the point `argmin_{v ∈ C} v ⋅ direction`
+with `C` the set represented by the LMO.
+"""
+function compute_extreme_point end

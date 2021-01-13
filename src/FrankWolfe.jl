@@ -1,7 +1,10 @@
 module FrankWolfe
 
-# Write your package code here.
+import LinearAlgebra
+
 include("simplex_matrix.jl")
+include("oracles.jl")
+include("simplex_oracle.jl")
 include("utils.jl")
 
 # very simple FW Variant
