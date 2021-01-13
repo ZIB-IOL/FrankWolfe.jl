@@ -16,7 +16,7 @@ include("utils.jl")
 
 
 function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, 
-        epsilon=1e-7, maxIt=10000, printIt=1000, trajectory=false, verbose=false) where T
+        epsilon=1e-7, maxIt=10000, printIt=1000, trajectory=false, verbose=false,lsTol=1e-7) where T
     t = 0
     dualGap = Inf
     primal = Inf
@@ -45,9 +45,9 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic,
         if stepSize === agnostic
             gamma = 2/(2+t)
         elseif stepSize === goldenratio
-           nothing, gamma = segmentSearch(f,grad,x,v,lsTol=min(max(eps(),dualGap ^ 2,epsilon ^ 2),epsilon ^ (1/2))) 
+           nothing, gamma = segmentSearch(f,grad,x,v,lsTol=lsTol)
         elseif stepSize === backtracking
-           nothing, gamma = backtrackingLS(f,grad,x,v,lsTol=min(max(eps(),dualGap ^ 2,epsilon ^ 2),epsilon ^ (1/2))) 
+           nothing, gamma = backtrackingLS(f,grad,x,v,lsTol=lsTol) 
         end
         
         # that's the expensive version in terms of memory but fast
@@ -71,8 +71,6 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic,
     end
     return x, v, primal, dualGap, trajData
 end
-
-
 
 
 
