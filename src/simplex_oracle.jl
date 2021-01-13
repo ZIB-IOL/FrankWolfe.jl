@@ -86,7 +86,7 @@ end
 
 Base.size(v::MaybeHotVector) = (v.len, )
 
-@inline function Base.getindex(v::MaybeHotVector{T}, idx) where {T}
+@inline function Base.getindex(v::MaybeHotVector{T}, idx::Integer) where {T}
     @boundscheck if !( 1 ≤ idx ≤ length(v))
         throw(BoundsError(v, idx))
     end
