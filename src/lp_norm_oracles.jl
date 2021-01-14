@@ -28,10 +28,20 @@ function compute_extreme_point(lmo::LpNormLMO{T, 1}, direction) where {T}
             idx = i
         end
     end
-    
+
     return MaybeHotVector(
         -lmo.right_hand_side * sign(direction[idx]),
         idx,
         length(direction)
     )
+end
+
+function compute_extreme_point(lmo::LpNormLMO{T, p}, direction) where {T, p}
+    if p == Inf # covers the case where the Inf is of another type
+        return compute_extreme_point(LpNormLMO{T, Inf}(lmo.right_hand_side), direction)
+    end
+    q = p / (p - 1)
+    pow_ratio = q / p
+    q_norm = norm(direction, q)^(pow_ratio)
+    return @. -lmo.right_hand_side * sign(direction) * abs(direction)^(pow_ratio) / q_norm
 end
