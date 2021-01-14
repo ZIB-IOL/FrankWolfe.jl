@@ -49,7 +49,7 @@ function benchmarkOracles(f,grad,lmo,n;k=100,T=Float64)
         gradient = grad(x)
         v = compute_extreme_point(lmo, gradient)
         gamma = 1/2
-        @timeit to "update (blas)" x = (1-gamma) * x + gamma * v
+        @timeit to "update (blas)" @emphasis(blas, x = (1-gamma) * x + gamma * v)
     end
     @showprogress 1 "Testing update... (emph: memory)" for i in 1:k    
         x = rand(n)
@@ -57,7 +57,7 @@ function benchmarkOracles(f,grad,lmo,n;k=100,T=Float64)
         v = compute_extreme_point(lmo, gradient)
         gamma = 1/2
         # TODO: to be updated to broadcast version once data structure MaybeHotVector allows for it
-        @timeit to "update (memory)" x = (1-gamma) * x + gamma * v
+        @timeit to "update (memory)" @emphasis(memory, x = (1-gamma) * x + gamma * v)
     end
     @showprogress 1 "Testing caching 100 points... " for i in 1:k    
         @timeit to "caching 100 points" begin
