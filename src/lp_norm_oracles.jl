@@ -45,3 +45,26 @@ function compute_extreme_point(lmo::LpNormLMO{T, p}, direction) where {T, p}
     q_norm = norm(direction, q)^(pow_ratio)
     return @. -lmo.right_hand_side * sign(direction) * abs(direction)^(pow_ratio) / q_norm
 end
+
+
+# temporary oracle for l_1 ball to 
+
+struct L1ballDense{T} <: LinearMinimizationOracle
+    right_hand_side::T
+end
+
+
+function compute_extreme_point(lmo::L1ballDense{T}, direction) where {T}
+    idx = 0
+    v = -1.0
+    for i in eachindex(direction)
+        if abs(direction[i]) > v
+            v = abs(direction[i])
+            idx = i
+        end
+    end
+
+    aux = zeros(T, length(direction))
+    aux[idx] = T(-lmo.right_hand_side * sign(direction[idx]))
+    return aux
+end
