@@ -8,9 +8,11 @@ using TimerOutputs
 
 include("defs.jl")
 include("simplex_matrix.jl")
+
 include("oracles.jl")
 include("simplex_oracles.jl")
 include("lp_norm_oracles.jl")
+
 include("utils.jl")
 
 ##############################################################
@@ -47,7 +49,7 @@ function benchmarkOracles(f,grad,lmo,n;k=100,T=Float64)
         gradient = grad(x)
         v = compute_extreme_point(lmo, gradient)
         gamma = 1/2
-        @timeit to "update (blas)" x = (1-gamma) * x + gamma * v
+        @timeit to "update (blas)" @emphasis(blas, x = (1-gamma) * x + gamma * v)
     end
     @showprogress 1 "Testing update... (emph: memory)" for i in 1:k    
         x = rand(n)
@@ -55,7 +57,7 @@ function benchmarkOracles(f,grad,lmo,n;k=100,T=Float64)
         v = compute_extreme_point(lmo, gradient)
         gamma = 1/2
         # TODO: to be updated to broadcast version once data structure MaybeHotVector allows for it
-        @timeit to "update (memory)" x = (1-gamma) * x + gamma * v
+        @timeit to "update (memory)" @emphasis(memory, x = (1-gamma) * x + gamma * v)
     end
     @showprogress 1 "Testing caching 100 points... " for i in 1:k    
         @timeit to "caching 100 points" begin
@@ -81,9 +83,8 @@ end
 # Vanilla FW
 ##############################################################
 
-function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf,
+function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, stepLim=20,
         epsilon=1e-7, maxIt=10000, printIt=1000, trajectory=false, verbose=false,lsTol=1e-7,emph::Emph = blas)
-    
     function headerPrint(data)
         @printf("\n───────────────────────────────────────────────────────────────────────────────────\n")
         @printf("%6s %13s %14s %14s %14s %14s\n", data[1], data[2], data[3], data[4], data[5], data[6])
@@ -125,28 +126,30 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf,
         primal = f(x)
         gradient = grad(x)
         v = compute_extreme_point(lmo, gradient)
-        dualGap = dot(x, gradient) - dot(v, gradient) # TODO: also needs to have a broadcast version as can be expensive
+        
+        dualGap = dot(x, gradient) - dot(v, gradient)
+
         if trajectory === true
             append!(trajData, [t, primal, primal-dualGap, dualGap])
         end
-        
+ 
+        if trajectory === true
+            append!(trajData, [t, primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9])
+        end
+    
         if stepSize === agnostic
             gamma = 2/(2+t)
         elseif stepSize === goldenratio
            nothing, gamma = segmentSearch(f,grad,x,v,lsTol=lsTol)
         elseif stepSize === backtracking
-           nothing, gamma = backtrackingLS(f,grad,x,v,lsTol=lsTol) 
+           nothing, gamma = backtrackingLS(f,grad,x,v,lsTol=lsTol,stepLim=stepLim) 
         elseif stepSize === nonconvex
             gamma = 1 / sqrt(t+1)
         elseif stepSize === shortstep
             gamma = dualGap / (L * norm(x-v)^2 )
         end
 
-        if emph === blas
-            x = (1-gamma) * x + gamma * v
-        elseif emph === memory
-            @. x = (1-gamma) * x + gamma * v
-        end
+        @emphasis(emph, x = (1-gamma) * x + gamma * v)
 
         if mod(t,printIt) == 0 && verbose
             tt = "FW"
@@ -161,7 +164,7 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf,
     end
     if verbose
         tt = "Last"
-        rep = [tt, string(t), primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9]
+        rep = [tt, "", primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9]
         itPrint(rep)
         footerPrint()
         flush(stdout)
@@ -223,27 +226,32 @@ while t <= maxIt && dualGap >= max(epsilon,eps())
     gradient = grad(x)
 
     if !isempty(cache)
-        test = (x -> dot(x, gradient)).(cache) # TODO: also needs to have a broadcast version as can be expensive
-        v = cache[argmin(test)]
         tt = "L"
-        if dot(x, gradient) - dot(v, gradient) < phi
+        # let us be optimistic first:
+        if dot(x,gradient) - dot(v,gradient) < phi  # only look up new point if old one is not good enough
+            test = (x -> dot(x, gradient)).(cache) # TODO: also needs to have a broadcast version as can be expensive
+            v = cache[argmin(test)]
+        end
+        if dot(x,gradient) - dot(v,gradient) < phi # still not good enough, then solve the LP
             tt = "FW"
             v = compute_extreme_point(lmo, gradient)
-            dualGap = dot(x, gradient) - dot(v, gradient) # TODO: also needs to have a broadcast version as can be expensive
-            phi = dualGap / 2
-            if !(v in cache)
+            dualGap = dot(x,gradient) - dot(v,gradient)
+            if dualGap < phi # still not good enough, then we have a proof of halving
+                phi = dualGap / 2
+            end
+            if !(v in cache) 
                 push!(cache,v)
             end
         end
     else    
         v = compute_extreme_point(lmo, gradient)
-        dualGap = dot(x,gradient) - dot(v,gradient) # TODO: also needs to have a broadcast version as can be expensive
+        dualGap = dot(x,gradient) - dot(v,gradient)
         phi = dualGap / 2
         push!(cache,v)
     end
     
     if trajectory === true
-        append!(trajData, [t, primal, primal-dualGap, dualGap])
+        append!(trajData, [t, primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9, length(cache)])
     end
     
     if stepSize === agnostic
@@ -258,11 +266,7 @@ while t <= maxIt && dualGap >= max(epsilon,eps())
         gamma = dualGap / (L * norm(x-v)^2 )
     end
 
-    if emph === blas
-        x = (1-gamma) * x + gamma * v
-    elseif emph === memory
-        @. x = (1-gamma) * x + gamma * v 
-    end
+    @emphasis(emph, x = (1.0 -gamma) * x + gamma * v)
 
     if mod(t,printIt) == 0 && verbose
         tt = "FW"
@@ -287,4 +291,3 @@ end
 
 
 end
-
