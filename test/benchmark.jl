@@ -1,3 +1,7 @@
+import FrankWolfe
+import LinearAlgebra
+
+
 n = Int(1e5);
 
 xpi = rand(n);
