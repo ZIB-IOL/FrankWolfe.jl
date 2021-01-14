@@ -58,9 +58,7 @@ function benchmarkOracles(f,grad,lmo,n;k=100,T=Float64)
 end
 
 # very simple FW Variant
-# TODO:
-# - should support "performance mode" with minimal computation and printing of intermediate information
-
+# TODO: add doc string
 
 function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, 
         epsilon=1e-7, maxIt=10000, printIt=1000, trajectory=false, verbose=false,lsTol=1e-7,emph::Emph = blas) where T
@@ -99,7 +97,6 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic,
         gradient = grad(x)
         v = compute_extreme_point(lmo, gradient)
         dualGap = dot(x, gradient) - dot(v, gradient)
-        
         if trajectory === true
             append!(trajData, [t, primal, primal-dualGap, dualGap])
         end
@@ -110,8 +107,10 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic,
            nothing, gamma = segmentSearch(f,grad,x,v,lsTol=lsTol)
         elseif stepSize === backtracking
            nothing, gamma = backtrackingLS(f,grad,x,v,lsTol=lsTol) 
+        elseif stepSize === nonconvex
+            gamma = 1 / sqrt(t+1)
         end
-        
+
         if emph === blas
             x = (1-gamma) * x + gamma * v
         elseif emph === memory
