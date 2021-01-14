@@ -37,10 +37,10 @@ function benchmarkOracles(f,grad,lmo,n;k=100,T=Float64)
         @timeit to "lmo" temp = compute_extreme_point(lmo, x)
     end
     @showprogress 1 "Testing dual gap... " for i in 1:k    
-        @timeit to "dual gap" begin
-            x = rand(n)
-            gradient = grad(x)
-            v = compute_extreme_point(lmo, gradient)
+        x = rand(n)
+        gradient = grad(x)
+        v = compute_extreme_point(lmo, gradient)
+        @timeit to "dual gap" begin    
             dualGap = dot(x, gradient) - dot(v, gradient)
         end
     end
