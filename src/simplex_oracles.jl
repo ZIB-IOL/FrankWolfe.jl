@@ -28,7 +28,7 @@ end
 
 """
 Dual costs for a given primal solution to form a primal dual pair
-for scaled probability simplex.
+for scaled unit simplex.
 Returns two vectors. The first one is the dual costs associated with the constraints 
 and the second is the reduced costs for the variables.
 """
