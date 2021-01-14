@@ -121,7 +121,7 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf,
         primal = f(x)
         gradient = grad(x)
         v = compute_extreme_point(lmo, gradient)
-        dualGap = dot(x, gradient) - dot(v, gradient)
+        dualGap = dot(x, gradient) - dot(v, gradient) # TODO: also needs to have a broadcast version as can be expensive
         if trajectory === true
             append!(trajData, [t, primal, primal-dualGap, dualGap])
         end
@@ -219,13 +219,13 @@ while t <= maxIt && dualGap >= max(epsilon,eps())
     gradient = grad(x)
 
     if !isempty(cache)
-        test = (x -> dot(x, gradient)).(cache) 
+        test = (x -> dot(x, gradient)).(cache) # TODO: also needs to have a broadcast version as can be expensive
         v = cache[argmin(test)]
         tt = "L"
         if dot(x, gradient) - dot(v, gradient) < phi
             tt = "FW"
             v = compute_extreme_point(lmo, gradient)
-            dualGap = dot(x, gradient) - dot(v, gradient)
+            dualGap = dot(x, gradient) - dot(v, gradient) # TODO: also needs to have a broadcast version as can be expensive
             phi = dualGap / 2
             if !(v in cache)
                 push!(cache,v)
@@ -233,7 +233,7 @@ while t <= maxIt && dualGap >= max(epsilon,eps())
         end
     else    
         v = compute_extreme_point(lmo, gradient)
-        dualGap = dot(x,gradient) - dot(v,gradient)
+        dualGap = dot(x,gradient) - dot(v,gradient) # TODO: also needs to have a broadcast version as can be expensive
         phi = dualGap / 2
         push!(cache,v)
     end
