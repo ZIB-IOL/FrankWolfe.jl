@@ -80,3 +80,47 @@ function segmentSearch(f,grad,x,y;stepSize=true,lsTol=1e-10)
     return x_min, gamma
 end
 
+"""
+    MaybeHotVector{T}
+
+Represents a vector of at most one value different from 0.
+"""
+struct MaybeHotVector{T} <: AbstractVector{T}
+    active_val::T
+    val_idx::Int
+    len::Int
+end
+
+Base.size(v::MaybeHotVector) = (v.len, )
+
+@inline function Base.getindex(v::MaybeHotVector{T}, idx::Integer) where {T}
+    @boundscheck if !( 1 ≤ idx ≤ length(v))
+        throw(BoundsError(v, idx))
+    end
+    if v.val_idx != idx
+        return zero(T)
+    end
+    return v.active_val
+end
+
+Base.sum(v::MaybeHotVector) = v.active_val
+
+function LinearAlgebra.dot(v1::MaybeHotVector, v2::AbstractVector)
+    return v1.active_val * v2[v1.val_idx]
+end
+
+LinearAlgebra.dot(v1::AbstractVector, v2::MaybeHotVector) = LinearAlgebra.dot(v2, v1)
+
+# warning, no bound check
+function LinearAlgebra.dot(v1::MaybeHotVector, v2::MaybeHotVector)
+    if length(v1) != length(v2)
+        throw(DimensionMismatch("v1 and v2 do not have matching sizes"))
+    end
+    return v1.active_val * v2.active_val * (v1.val_idx == v2.val_idx)
+end
+
+function Base.:*(v::MaybeHotVector, x::Number)
+    MaybeHotVector(v.active_val * x, v.val_idx, v.len)
+end
+
+Base.:*(x::Number, v::MaybeHotVector) = v * x
