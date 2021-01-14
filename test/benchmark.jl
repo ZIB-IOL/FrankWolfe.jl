@@ -2,7 +2,7 @@ import FrankWolfe
 import LinearAlgebra
 
 
-n = Int(1e5);
+n = Int(1e7);
 
 xpi = rand(n);
 total = sum(xpi);
