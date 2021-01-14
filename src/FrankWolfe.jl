@@ -60,7 +60,7 @@ end
 # very simple FW Variant
 # TODO: add doc string
 
-function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, 
+function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf,
         epsilon=1e-7, maxIt=10000, printIt=1000, trajectory=false, verbose=false,lsTol=1e-7,emph::Emph = blas) where T
     
     function headerPrint(data)
@@ -92,6 +92,10 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic,
         headerPrint(headers)
     end
     
+    if stepSize === shortstep && L == Inf
+        println("WARNING: Lipschitz constant not set. Prepare to blow up spectacularly.")
+    end
+
     while t <= maxIt && dualGap >= max(epsilon,eps())
         primal = f(x)
         gradient = grad(x)
@@ -109,6 +113,8 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic,
            nothing, gamma = backtrackingLS(f,grad,x,v,lsTol=lsTol) 
         elseif stepSize === nonconvex
             gamma = 1 / sqrt(t+1)
+        elseif stepSize === shortstep
+            gamma = dualGap / (L * norm(x-v)^2 )
         end
 
         if emph === blas
@@ -131,6 +137,7 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic,
     if verbose
         tt = "Last"
         rep = [tt, string(t), primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9]
+        itPrint(rep)
         footerPrint()
         flush(stdout)
     end

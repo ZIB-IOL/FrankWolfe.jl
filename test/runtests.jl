@@ -68,7 +68,7 @@ end
 end
 
 @testset "FrankWolfe.jl" begin
-    @testset "Testing vanilla Frank-Wolfe" begin
+    @testset "Testing vanilla Frank-Wolfe with various step size strategies" begin
         f(x) = LinearAlgebra.norm(x)^2
         grad(x) = 2x;
         lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
@@ -77,6 +77,7 @@ end
         @test abs(FrankWolfe.fw(f,grad,lmo_prob,x0,maxIt=1000,stepSize=FrankWolfe.goldenratio,verbose=true)[3] - 0.2) < 1.0e-5
         @test abs(FrankWolfe.fw(f,grad,lmo_prob,x0,maxIt=1000,stepSize=FrankWolfe.backtracking,verbose=true)[3] - 0.2) < 1.0e-5
         @test abs(FrankWolfe.fw(f,grad,lmo_prob,x0,maxIt=1000,stepSize=FrankWolfe.nonconvex,verbose=true)[3] - 0.2) < 1.0e-2
+        @test FrankWolfe.fw(f,grad,lmo_prob,x0,maxIt=1000,stepSize=FrankWolfe.shortstep,L=2,verbose=true)[3] ≈ 0.2 
     end
     @testset "Testing emphasis blas vs memory" begin
         n = Int(1e5);
