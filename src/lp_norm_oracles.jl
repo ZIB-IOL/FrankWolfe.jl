@@ -21,7 +21,7 @@ end
 
 function compute_extreme_point(lmo::LpNormLMO{T, 1}, direction) where {T}
     idx = 0
-    v = -1.0
+    v = -one(eltype(direction))
     for i in eachindex(direction)
         if abs(direction[i]) > v
             v = abs(direction[i])
@@ -37,8 +37,11 @@ function compute_extreme_point(lmo::LpNormLMO{T, 1}, direction) where {T}
 end
 
 function compute_extreme_point(lmo::LpNormLMO{T, p}, direction) where {T, p}
-    if p == Inf # covers the case where the Inf is of another type
+    # covers the case where the Inf or 1 is of another type
+    if p == Inf
         return compute_extreme_point(LpNormLMO{T, Inf}(lmo.right_hand_side), direction)
+    elseif p == 1
+        return compute_extreme_point(LpNormLMO{T, 1}(lmo.right_hand_side), direction)
     end
     q = p / (p - 1)
     pow_ratio = q / p
