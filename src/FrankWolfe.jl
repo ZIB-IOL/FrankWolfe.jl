@@ -125,7 +125,11 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf,
         if trajectory === true
             append!(trajData, [t, primal, primal-dualGap, dualGap])
         end
-        
+ 
+        if trajectory === true
+            append!(trajData, [t, primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9])
+        end
+    
         if stepSize === agnostic
             gamma = 2/(2+t)
         elseif stepSize === goldenratio
@@ -239,7 +243,7 @@ while t <= maxIt && dualGap >= max(epsilon,eps())
     end
     
     if trajectory === true
-        append!(trajData, [t, primal, primal-dualGap, dualGap])
+        append!(trajData, [t, primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9, length(cache)])
     end
     
     if stepSize === agnostic
