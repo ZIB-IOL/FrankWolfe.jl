@@ -9,7 +9,8 @@ using TimerOutputs
 include("defs.jl")
 include("simplex_matrix.jl")
 include("oracles.jl")
-include("simplex_oracle.jl")
+include("simplex_oracles.jl")
+include("lp_norm_oracles.jl")
 include("utils.jl")
 
 ##############################################################
@@ -81,7 +82,7 @@ end
 ##############################################################
 
 function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf,
-        epsilon=1e-7, maxIt=10000, printIt=1000, trajectory=false, verbose=false,lsTol=1e-7,emph::Emph = blas) where T
+        epsilon=1e-7, maxIt=10000, printIt=1000, trajectory=false, verbose=false,lsTol=1e-7,emph::Emph = blas)
     
     function headerPrint(data)
         @printf("\n───────────────────────────────────────────────────────────────────────────────────\n")
@@ -116,6 +117,9 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf,
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap","Time"]
         headerPrint(headers)
     end
+    if emph === memory && !isa(x, Array)
+        x = convert(Vector{promote_type(eltype(x), Float64)}, x)
+    end
 
     while t <= maxIt && dualGap >= max(epsilon,eps())
         primal = f(x)
@@ -141,7 +145,7 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf,
         if emph === blas
             x = (1-gamma) * x + gamma * v
         elseif emph === memory
-            @. x = (1-gamma) * x + gamma * v 
+            @. x = (1-gamma) * x + gamma * v
         end
 
         if mod(t,printIt) == 0 && verbose
