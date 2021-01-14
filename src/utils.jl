@@ -124,3 +124,27 @@ function Base.:*(v::MaybeHotVector, x::Number)
 end
 
 Base.:*(x::Number, v::MaybeHotVector) = v * x
+
+##############################
+### emphasis macro
+##############################
+
+macro Oldemphasis(t,ex)
+    return quote esc(
+        if emph === blas
+            $ex
+        elseif emph === memory
+            @. $ex
+        end
+        ) end
+end
+
+macro emphasis(emph, ex)
+    esc(quote
+        if $emph === memory
+            @. $ex
+        else
+            $ex
+        end
+    end)
+    end

@@ -111,5 +111,18 @@ end
         
         @test x !== nothing
 
+        lmo_prob = FrankWolfe.L1ballDense{Float64}(1);
+        x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n));
+
+        x, v, primal, dualGap, trajectory = FrankWolfe.fw(f,grad,lmo_prob,x0,maxIt=k,
+            stepSize=FrankWolfe.backtracking,printIt=k/10,verbose=true,emph=FrankWolfe.blas);
+        
+        @test x !== nothing 
+
+        x, v, primal, dualGap, trajectory = FrankWolfe.fw(f,grad,lmo_prob,x0,maxIt=k,
+            stepSize=FrankWolfe.backtracking,printIt=k/10,verbose=true,emph=FrankWolfe.memory);
+        
+        @test x !== nothing
+
     end
 end
