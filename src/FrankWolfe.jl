@@ -10,7 +10,7 @@ include("defs.jl")
 include("simplex_matrix.jl")
 
 include("oracles.jl")
-include("simplex_oracle.jl")
+include("simplex_oracles.jl")
 include("lp_norm_oracles.jl")
 
 include("utils.jl")
@@ -83,10 +83,8 @@ end
 # Vanilla FW
 ##############################################################
 
-function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf,
-        stepLim=20,
-        epsilon=1e-7, maxIt=10000, printIt=1000, trajectory=false, verbose=false,lsTol=1e-7,emph::Emph = blas) where T
-    
+function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, stepLim=20,
+        epsilon=1e-7, maxIt=10000, printIt=1000, trajectory=false, verbose=false,lsTol=1e-7,emph::Emph = blas)
     function headerPrint(data)
         @printf("\n───────────────────────────────────────────────────────────────────────────────────\n")
         @printf("%6s %13s %14s %14s %14s %14s\n", data[1], data[2], data[3], data[4], data[5], data[6])
@@ -119,6 +117,9 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf,
         println("EMPHASIS: $emph STEPSIZE: $stepSize EPSILON: $epsilon MAXIT: $maxIt")
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap","Time"]
         headerPrint(headers)
+    end
+    if emph === memory && !isa(x, Array)
+        x = convert(Vector{promote_type(eltype(x), Float64)}, x)
     end
 
     while t <= maxIt && dualGap >= max(epsilon,eps())
@@ -163,7 +164,7 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf,
     end
     if verbose
         tt = "Last"
-        rep = [tt, "" , primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9]
+        rep = [tt, "", primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9]
         itPrint(rep)
         footerPrint()
         flush(stdout)
