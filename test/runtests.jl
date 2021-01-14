@@ -45,32 +45,33 @@ end
         xp = xpi ./ total;        
         f(x) = LinearAlgebra.norm(x-xp)^2
         grad(x) = 2 * (x-xp)
+        @testset "Using sparse structure" begin
+            lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1.0);
+            x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n));
 
-        lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1.0);
-        x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n));
+            x, v, primal, dualGap, trajectory = FrankWolfe.fw(f,grad,lmo_prob,x0,maxIt=k,
+                stepSize=FrankWolfe.backtracking,printIt=k/10,verbose=true,emph=FrankWolfe.blas);
+            
+            @test x !== nothing 
 
-        x, v, primal, dualGap, trajectory = FrankWolfe.fw(f,grad,lmo_prob,x0,maxIt=k,
-            stepSize=FrankWolfe.backtracking,printIt=k/10,verbose=true,emph=FrankWolfe.blas);
-        
-        @test x !== nothing 
+            x, v, primal, dualGap, trajectory = FrankWolfe.fw(f,grad,lmo_prob,x0,maxIt=k,
+                stepSize=FrankWolfe.backtracking,printIt=k/10,verbose=true,emph=FrankWolfe.memory);
+            
+            @test x !== nothing
+        end
+        @testset "Using dense structure" begin        
+            lmo_prob = FrankWolfe.L1ballDense{Float64}(1);
+            x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n));
 
-        x, v, primal, dualGap, trajectory = FrankWolfe.fw(f,grad,lmo_prob,x0,maxIt=k,
-            stepSize=FrankWolfe.backtracking,printIt=k/10,verbose=true,emph=FrankWolfe.memory);
-        
-        @test x !== nothing
+            x, v, primal, dualGap, trajectory = FrankWolfe.fw(f,grad,lmo_prob,x0,maxIt=k,
+                stepSize=FrankWolfe.backtracking,printIt=k/10,verbose=true,emph=FrankWolfe.blas);
+            
+            @test x !== nothing 
 
-        lmo_prob = FrankWolfe.L1ballDense{Float64}(1);
-        x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n));
-
-        x, v, primal, dualGap, trajectory = FrankWolfe.fw(f,grad,lmo_prob,x0,maxIt=k,
-            stepSize=FrankWolfe.backtracking,printIt=k/10,verbose=true,emph=FrankWolfe.blas);
-        
-        @test x !== nothing 
-
-        x, v, primal, dualGap, trajectory = FrankWolfe.fw(f,grad,lmo_prob,x0,maxIt=k,
-            stepSize=FrankWolfe.backtracking,printIt=k/10,verbose=true,emph=FrankWolfe.memory);
-        
-        @test x !== nothing
-
+            x, v, primal, dualGap, trajectory = FrankWolfe.fw(f,grad,lmo_prob,x0,maxIt=k,
+                stepSize=FrankWolfe.backtracking,printIt=k/10,verbose=true,emph=FrankWolfe.memory);
+            
+            @test x !== nothing
+        end
     end
 end
