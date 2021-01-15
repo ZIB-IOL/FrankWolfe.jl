@@ -129,7 +129,6 @@ function compute_extreme_point(lmo::MultiCacheLMO{N}, direction; threshold=-Inf,
     # no interesting point found, computing new
     v = compute_extreme_point(lmo.inner, direction, kwargs...)
     if store_cache
-        @info "storing in cache"
         tup = Base.setindex(lmo.vertices, v, lmo.oldest_idx)
         lmo.vertices = tup
         # if oldest_idx was last, we get back to 1, otherwise we increment oldest index
