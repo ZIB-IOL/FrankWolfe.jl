@@ -187,9 +187,15 @@ end
 # Lazified Vanilla FW
 ##############################################################
 
-function lcg(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf,
-    phiFactor=2,
+function lcg(f, grad, lmoBase, x0; stepSize::LSMethod = agnostic, L = Inf,
+    phiFactor=2, cacheSize = Inf, greedyLazy = false,
     epsilon=1e-7, maxIt=10000, printIt=1000, trajectory=false, verbose=false,lsTol=1e-7,emph::Emph = blas) where T
+
+    if isfinite(cacheSize)
+        lmo = MultiCacheLMO{cacheSize}(lmoBase)
+    else
+        lmo = VectorCacheLMO(lmoBase)
+    end
 
     function headerPrint(data)
         @printf("\n─────────────────────────────────────────────────────────────────────────────────────────────────\n")
@@ -202,7 +208,7 @@ function lcg(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf,
     end
 
     function itPrint(data)
-        @printf("%6s %13s %14e %14e %14e %14e %14s\n", data[1], data[2], data[3], data[4], data[5], data[6], data[7])
+        @printf("%6s %13s %14e %14e %14e %14e %14s\n", st[Symbol(data[1])], data[2], data[3], data[4], data[5], data[6], data[7])
     end
 
     t = 0
@@ -211,8 +217,8 @@ function lcg(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf,
     v = []
     x = x0
     phi = Inf
-    cache = []
     trajData = []
+    tt::StepType = regular
     dx = similar(x0) # Array{eltype(x0)}(undef, length(x0))
     timeEl = time_ns()
 
@@ -228,8 +234,13 @@ function lcg(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf,
         println("\nLazified Conditional Gradients (Frank-Wolfe + Lazification).")
         numType = eltype(x0)
         println("EMPHASIS: $emph STEPSIZE: $stepSize EPSILON: $epsilon MAXIT: $maxIt PHIFACTOR: $phiFactor TYPE: $numType")
+        println("CACHESIZE $cacheSize GREEDYCACHE: $greedyLazy")
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap","Time", "Cache Size"]
         headerPrint(headers)
+    end
+
+    if emph === memory && !isa(x, Array)
+        x = convert(Vector{promote_type(eltype(x), Float64)}, x)
     end
 
     while t <= maxIt && dualGap >= max(epsilon,eps())
@@ -237,42 +248,26 @@ function lcg(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf,
         primal = f(x)
         gradient = grad(x)
 
-        if !isempty(cache)
-            tt = "L"
-            # let us be optimistic first:
-            if dot(x,gradient) - dot(v,gradient) < phi  # only look up new point if old one is not good enough
-                test = (x -> dot(x, gradient)).(cache) # TODO: also needs to have a broadcast version as can be expensive
-                v = cache[argmin(test)]
-            end
-            if dot(x,gradient) - dot(v,gradient) < phi # still not good enough, then solve the LP
-                tt = "FW"
-                v = compute_extreme_point(lmo, gradient)
-                dualGap = dot(x,gradient) - dot(v,gradient)
-                if dualGap < phi # still not good enough, then we have a proof of halving
-                    phi = dualGap / 2
-                end
-                if !(v in cache) 
-                    push!(cache,v)
-                end
-            end
-        else    
-            v = compute_extreme_point(lmo, gradient)
+        threshold = dot(x,gradient) - phi
+
+        v = compute_extreme_point(lmo, gradient, threshold=threshold, greedy=greedyLazy)
+        tt = lazy
+        if dot(v,gradient) > threshold
+            tt = dualstep
             dualGap = dot(x,gradient) - dot(v,gradient)
             phi = dualGap / 2
-            push!(cache,v)
         end
-        ########## the phi = dualGap / 2 management must be handled outside of the new lmo
-        
+
         if trajectory === true
-            append!(trajData, [t, primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9, length(cache)])
+            append!(trajData, [t, primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9, 0])
         end
         
         if stepSize === agnostic
             gamma = 2/(2+t)
         elseif stepSize === goldenratio
-        nothing, gamma = segmentSearch(f,grad,x,v,lsTol=lsTol)
+            nothing, gamma = segmentSearch(f,grad,x,v,lsTol=lsTol)
         elseif stepSize === backtracking
-        nothing, gamma = backtrackingLS(f,grad,x,v,lsTol=lsTol) 
+            nothing, gamma = backtrackingLS(f,grad,x,v,lsTol=lsTol) 
         elseif stepSize === nonconvex
             gamma = 1 / sqrt(t+1)
         elseif stepSize === shortstep
@@ -281,20 +276,19 @@ function lcg(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf,
 
         @emphasis(emph, x = (1 - gamma) * x + gamma * v)
 
-        if mod(t,printIt) == 0 && verbose
-            tt = "FW"
+        if (mod(t,printIt) == 0 || tt == dualstep) && verbose 
             if t === 0
-                tt = "I"
+                tt = initial
             end
-            rep = [tt, string(t), primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9, length(cache)]
+            rep = [tt, string(t), primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9, 0]
             itPrint(rep)
             flush(stdout)
         end
         t = t + 1
     end
     if verbose
-        tt = "Last"
-        rep = [tt, "", primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9, length(cache)]
+        tt = last
+        rep = [tt, "", primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9, 0]
         itPrint(rep)
         footerPrint()
         flush(stdout)
