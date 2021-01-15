@@ -262,6 +262,7 @@ function lcg(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf,
             phi = dualGap / 2
             push!(cache,v)
         end
+        ########## the phi = dualGap / 2 management must be handled outside of the new lmo
         
         if trajectory === true
             append!(trajData, [t, primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9, length(cache)])
