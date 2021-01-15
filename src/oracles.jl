@@ -25,8 +25,9 @@ lazified lmos
 """
 
 function lazy_compute_extreme_point_threshold(lmo::LinearMinimizationOracle, direction, threshold)
+    tt::StepType
     if !isempty(lmo.cache)
-        tt::StepType = lazylazy ## optimistically lazy -> reused last point
+        tt = lazylazy ## optimistically lazy -> reused last point
         v = lmo.v
         if dot(v, direction) > threshold # be optimistic: true last returned point first
             tt = lazy ## just lazy -> used point from cache
@@ -34,13 +35,14 @@ function lazy_compute_extreme_point_threshold(lmo::LinearMinimizationOracle, dir
             v = lmo.cache[argmin(test)]
         end
         if dot(v, direction) > threshold  # still not good enough, then solve the LP
-            tt = fw ## no cache point -> used the expensive LP
+            tt = regular ## no cache point -> used the expensive LP
             v = compute_extreme_point(lmo, direction)
             if !(v in lmo.cache) 
                 push!(lmo.cache,v)
             end
         end
     else    
+        tt = regular
         v = compute_extreme_point(lmo, direction)
         push!(lmo.cache,v)
     end
