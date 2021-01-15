@@ -81,6 +81,18 @@ end
                 @test norm(v, p) ≈ τ
             end
         end
+        @testset "K-Norm ball $K" for K in 1:n
+            lmo_ball = FrankWolfe.KNormBallLMO(K, τ)
+            for _ in 1:20
+                c = 5 * randn(n)
+                v = FrankWolfe.compute_extreme_point(lmo_ball, c)
+                v1 = FrankWolfe.compute_extreme_point(FrankWolfe.LpNormLMO{1}(τ), c)
+                v_inf = FrankWolfe.compute_extreme_point(FrankWolfe.LpNormLMO{Inf}(τ * K), c)
+                for idx in eachindex(v)
+                    @test v[idx] ≈ min(v1[idx], v_inf[idx])
+                end
+            end
+        end
     end
 end
 
