@@ -100,7 +100,7 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0
     end
     
     function itPrint(data)
-        @printf("%6s %13s %14e %14e %14e %14e\n", data[1], data[2], data[3], data[4], data[5], data[6])
+        @printf("%6s %13s %14e %14e %14e %14e\n", st[Symbol(data[1])], data[2], data[3], data[4], data[5], data[6])
     end
 
     t = 0
@@ -108,6 +108,7 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0
     primal = Inf
     v = []
     x = x0
+    tt:StepType = regular
     trajData = []
     dx = similar(x0) # Array{eltype(x0)}(undef, length(x0))
     timeEl = time_ns()
@@ -163,9 +164,9 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0
         @emphasis(emph, x = (1 - gamma) * x + gamma * v)
 
         if mod(t,printIt) == 0 && verbose
-            tt = "FW"
+            tt = regular
             if t === 0
-                tt = "I"
+                tt = initial
             end
             rep = [tt, string(t), primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9]
             itPrint(rep)
@@ -174,7 +175,7 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0
         t = t + 1
     end
     if verbose
-        tt = "Last"
+        tt = last
         rep = [tt, "", primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9]
         itPrint(rep)
         footerPrint()
@@ -191,114 +192,114 @@ function lcg(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf,
     phiFactor=2,
     epsilon=1e-7, maxIt=10000, printIt=1000, trajectory=false, verbose=false,lsTol=1e-7,emph::Emph = blas) where T
 
-function headerPrint(data)
-    @printf("\n─────────────────────────────────────────────────────────────────────────────────────────────────\n")
-    @printf("%6s %13s %14s %14s %14s %14s %14s\n", data[1], data[2], data[3], data[4], data[5], data[6], data[7])
-    @printf("─────────────────────────────────────────────────────────────────────────────────────────────────\n")
-end
+    function headerPrint(data)
+        @printf("\n─────────────────────────────────────────────────────────────────────────────────────────────────\n")
+        @printf("%6s %13s %14s %14s %14s %14s %14s\n", data[1], data[2], data[3], data[4], data[5], data[6], data[7])
+        @printf("─────────────────────────────────────────────────────────────────────────────────────────────────\n")
+    end
 
-function footerPrint()
-    @printf("─────────────────────────────────────────────────────────────────────────────────────────────────\n\n")
-end
+    function footerPrint()
+        @printf("─────────────────────────────────────────────────────────────────────────────────────────────────\n\n")
+    end
 
-function itPrint(data)
-    @printf("%6s %13s %14e %14e %14e %14e %14s\n", data[1], data[2], data[3], data[4], data[5], data[6], data[7])
-end
+    function itPrint(data)
+        @printf("%6s %13s %14e %14e %14e %14e %14s\n", data[1], data[2], data[3], data[4], data[5], data[6], data[7])
+    end
 
-t = 0
-dualGap = Inf
-primal = Inf
-v = []
-x = x0
-phi = Inf
-cache = []
-trajData = []
-dx = similar(x0) # Array{eltype(x0)}(undef, length(x0))
-timeEl = time_ns()
+    t = 0
+    dualGap = Inf
+    primal = Inf
+    v = []
+    x = x0
+    phi = Inf
+    cache = []
+    trajData = []
+    dx = similar(x0) # Array{eltype(x0)}(undef, length(x0))
+    timeEl = time_ns()
 
-if stepSize === shortstep && L == Inf
-    println("WARNING: Lipschitz constant not set. Prepare to blow up spectacularly.")
-end
+    if stepSize === shortstep && L == Inf
+        println("WARNING: Lipschitz constant not set. Prepare to blow up spectacularly.")
+    end
 
-if stepSize === agnostic || stepSize === nonconvex
-    println("WARNING: Lazification is not known to converge with open-loop step size strategies.")
-end
+    if stepSize === agnostic || stepSize === nonconvex
+        println("WARNING: Lazification is not known to converge with open-loop step size strategies.")
+    end
 
-if verbose
-    println("\nLazified Conditional Gradients (Frank-Wolfe + Lazification).")
-    numType = eltype(x0)
-    println("EMPHASIS: $emph STEPSIZE: $stepSize EPSILON: $epsilon MAXIT: $maxIt PHIFACTOR: $phiFactor TYPE: $numType")
-    headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap","Time", "Cache Size"]
-    headerPrint(headers)
-end
+    if verbose
+        println("\nLazified Conditional Gradients (Frank-Wolfe + Lazification).")
+        numType = eltype(x0)
+        println("EMPHASIS: $emph STEPSIZE: $stepSize EPSILON: $epsilon MAXIT: $maxIt PHIFACTOR: $phiFactor TYPE: $numType")
+        headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap","Time", "Cache Size"]
+        headerPrint(headers)
+    end
 
-while t <= maxIt && dualGap >= max(epsilon,eps())
+    while t <= maxIt && dualGap >= max(epsilon,eps())
 
-    primal = f(x)
-    gradient = grad(x)
+        primal = f(x)
+        gradient = grad(x)
 
-    if !isempty(cache)
-        tt = "L"
-        # let us be optimistic first:
-        if dot(x,gradient) - dot(v,gradient) < phi  # only look up new point if old one is not good enough
-            test = (x -> dot(x, gradient)).(cache) # TODO: also needs to have a broadcast version as can be expensive
-            v = cache[argmin(test)]
-        end
-        if dot(x,gradient) - dot(v,gradient) < phi # still not good enough, then solve the LP
-            tt = "FW"
+        if !isempty(cache)
+            tt = "L"
+            # let us be optimistic first:
+            if dot(x,gradient) - dot(v,gradient) < phi  # only look up new point if old one is not good enough
+                test = (x -> dot(x, gradient)).(cache) # TODO: also needs to have a broadcast version as can be expensive
+                v = cache[argmin(test)]
+            end
+            if dot(x,gradient) - dot(v,gradient) < phi # still not good enough, then solve the LP
+                tt = "FW"
+                v = compute_extreme_point(lmo, gradient)
+                dualGap = dot(x,gradient) - dot(v,gradient)
+                if dualGap < phi # still not good enough, then we have a proof of halving
+                    phi = dualGap / 2
+                end
+                if !(v in cache) 
+                    push!(cache,v)
+                end
+            end
+        else    
             v = compute_extreme_point(lmo, gradient)
             dualGap = dot(x,gradient) - dot(v,gradient)
-            if dualGap < phi # still not good enough, then we have a proof of halving
-                phi = dualGap / 2
-            end
-            if !(v in cache) 
-                push!(cache,v)
-            end
+            phi = dualGap / 2
+            push!(cache,v)
         end
-    else    
-        v = compute_extreme_point(lmo, gradient)
-        dualGap = dot(x,gradient) - dot(v,gradient)
-        phi = dualGap / 2
-        push!(cache,v)
-    end
-    
-    if trajectory === true
-        append!(trajData, [t, primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9, length(cache)])
-    end
-    
-    if stepSize === agnostic
-        gamma = 2/(2+t)
-    elseif stepSize === goldenratio
-       nothing, gamma = segmentSearch(f,grad,x,v,lsTol=lsTol)
-    elseif stepSize === backtracking
-       nothing, gamma = backtrackingLS(f,grad,x,v,lsTol=lsTol) 
-    elseif stepSize === nonconvex
-        gamma = 1 / sqrt(t+1)
-    elseif stepSize === shortstep
-        gamma = dualGap / (L * norm(x-v)^2 )
-    end
-
-    @emphasis(emph, x = (1 - gamma) * x + gamma * v)
-
-    if mod(t,printIt) == 0 && verbose
-        tt = "FW"
-        if t === 0
-            tt = "I"
+        
+        if trajectory === true
+            append!(trajData, [t, primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9, length(cache)])
         end
-        rep = [tt, string(t), primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9, length(cache)]
+        
+        if stepSize === agnostic
+            gamma = 2/(2+t)
+        elseif stepSize === goldenratio
+        nothing, gamma = segmentSearch(f,grad,x,v,lsTol=lsTol)
+        elseif stepSize === backtracking
+        nothing, gamma = backtrackingLS(f,grad,x,v,lsTol=lsTol) 
+        elseif stepSize === nonconvex
+            gamma = 1 / sqrt(t+1)
+        elseif stepSize === shortstep
+            gamma = dualGap / (L * norm(x-v)^2 )
+        end
+
+        @emphasis(emph, x = (1 - gamma) * x + gamma * v)
+
+        if mod(t,printIt) == 0 && verbose
+            tt = "FW"
+            if t === 0
+                tt = "I"
+            end
+            rep = [tt, string(t), primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9, length(cache)]
+            itPrint(rep)
+            flush(stdout)
+        end
+        t = t + 1
+    end
+    if verbose
+        tt = "Last"
+        rep = [tt, "", primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9, length(cache)]
         itPrint(rep)
+        footerPrint()
         flush(stdout)
     end
-    t = t + 1
-end
-if verbose
-    tt = "Last"
-    rep = [tt, "", primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9, length(cache)]
-    itPrint(rep)
-    footerPrint()
-    flush(stdout)
-end
-return x, v, primal, dualGap, trajData
+    return x, v, primal, dualGap, trajData
 end
 
 
