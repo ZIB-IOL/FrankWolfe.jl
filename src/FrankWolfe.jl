@@ -2,7 +2,6 @@ module FrankWolfe
 
 using LinearAlgebra
 using Printf
-using Base.Ryu
 using ProgressMeter
 using TimerOutputs
 using SparseArrays: spzeros
