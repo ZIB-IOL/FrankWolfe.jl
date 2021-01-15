@@ -40,7 +40,7 @@ mutable struct SingleLastCachedLMO{LMO, VT <: AbstractVector} <: CachedLinearMin
 end
 
 # initializes with no cache by default
-SingleLastCachedLMO(lmo::LMO) where {LMO <: LinearMinimizationOracle} = SingleLastCachedLMO(nothing, lmo)
+SingleLastCachedLMO(lmo::LMO) where {LMO <: LinearMinimizationOracle} = SingleLastCachedLMO{LMO, AbstractVector}(nothing, lmo)
 
 function compute_extreme_point(lmo::SingleLastCachedLMO, direction; threshold=-Inf, store_cache=true, kwargs...)
     if lmo.last_vertex !== nothing && isfinite(threshold)
@@ -129,4 +129,36 @@ function compute_extreme_point(lmo::MultiCacheLMO{N}, direction; threshold=-Inf,
         lmo.oldest_idx = lmo.oldest_idx < N ? lmo.oldest_idx + 1 : 1
     end
     return v
+end
+
+"""
+lazified lmos
+# TODO
+
+"""
+
+function lazy_compute_extreme_point_threshold(lmo::LinearMinimizationOracle, direction, threshold)
+    tt::StepType
+    if !isempty(lmo.cache)
+        tt = lazylazy ## optimistically lazy -> reused last point
+        v = lmo.v
+        if dot(v, direction) > threshold # be optimistic: true last returned point first
+            tt = lazy ## just lazy -> used point from cache
+            test = (x -> dot(x, direction)).(lmo.cache) 
+            v = lmo.cache[argmin(test)]
+        end
+        if dot(v, direction) > threshold  # still not good enough, then solve the LP
+            tt = regular ## no cache point -> used the expensive LP
+            v = compute_extreme_point(lmo, direction)
+            if !(v in lmo.cache) 
+                push!(lmo.cache,v)
+            end
+        end
+    else    
+        tt = regular
+        v = compute_extreme_point(lmo, direction)
+        push!(lmo.cache,v)
+    end
+    lmo.v = v
+    return v, dot(v,direction), tt
 end
