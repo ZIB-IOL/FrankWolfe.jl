@@ -85,7 +85,7 @@ end
 # Vanilla FW
 ##############################################################
 
-function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, stepLim=20,
+function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0, stepLim=20,
         epsilon=1e-7, maxIt=10000, printIt=1000, trajectory=false, verbose=false,lsTol=1e-7,emph::Emph = blas)
     function headerPrint(data)
         @printf("\n───────────────────────────────────────────────────────────────────────────────────\n")
@@ -114,9 +114,14 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, stepLim=20
         println("WARNING: Lipschitz constant not set. Prepare to blow up spectacularly.")
     end
 
+    if stepSize === fixed && gamma0 == 0
+        println("WARNING: gamma0 not set. We are not going to move a single bit.")
+    end
+
     if verbose
         println("\nVanilla Frank-Wolfe Algorithm.")
-        println("EMPHASIS: $emph STEPSIZE: $stepSize EPSILON: $epsilon MAXIT: $maxIt")
+        numType = eltype(x0)
+        println("EMPHASIS: $emph STEPSIZE: $stepSize EPSILON: $epsilon MAXIT: $maxIt TYPE: $numType")
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap","Time"]
         headerPrint(headers)
     end
@@ -140,7 +145,7 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, stepLim=20
         end
     
         if stepSize === agnostic
-            gamma = 2/(2+t)
+            gamma = 2 // (2+t)
         elseif stepSize === goldenratio
            nothing, gamma = segmentSearch(f,grad,x,v,lsTol=lsTol)
         elseif stepSize === backtracking
@@ -149,9 +154,11 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, stepLim=20
             gamma = 1 / sqrt(t+1)
         elseif stepSize === shortstep
             gamma = dualGap / (L * norm(x-v)^2 )
+        elseif stepSize === fixed
+            gamma = gamma0
         end
 
-        @emphasis(emph, x = (1-gamma) * x + gamma * v)
+        @emphasis(emph, x = (1 - gamma) * x + gamma * v)
 
         if mod(t,printIt) == 0 && verbose
             tt = "FW"
@@ -217,7 +224,8 @@ end
 
 if verbose
     println("\nLazified Conditional Gradients (Frank-Wolfe + Lazification).")
-    println("EMPHASIS: $emph STEPSIZE: $stepSize EPSILON: $epsilon MAXIT: $maxIt PHIFACTOR: $phiFactor")
+    numType = eltype(x0)
+    println("EMPHASIS: $emph STEPSIZE: $stepSize EPSILON: $epsilon MAXIT: $maxIt PHIFACTOR: $phiFactor TYPE: $numType")
     headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap","Time", "Cache Size"]
     headerPrint(headers)
 end
@@ -268,7 +276,7 @@ while t <= maxIt && dualGap >= max(epsilon,eps())
         gamma = dualGap / (L * norm(x-v)^2 )
     end
 
-    @emphasis(emph, x = (1.0 -gamma) * x + gamma * v)
+    @emphasis(emph, x = (1 - gamma) * x + gamma * v)
 
     if mod(t,printIt) == 0 && verbose
         tt = "FW"
