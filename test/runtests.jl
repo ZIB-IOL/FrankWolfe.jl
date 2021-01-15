@@ -74,4 +74,64 @@ end
             @test x !== nothing
         end
     end
+    @testset "Testing rational variant" begin
+        rhs = 1
+        n = 100
+        k = 1000
+        
+        xpi = rand(n);
+        total = sum(xpi);
+        xp = xpi ./ total;
+        
+        f(x) = LinearAlgebra.norm(x-xp)^2
+        grad(x) = 2* (x-xp);
+        
+        lmo = FrankWolfe.ProbabilitySimplexOracle{Rational{BigInt}}(rhs);        
+        direction = rand(n)
+        x0 = FrankWolfe.compute_extreme_point(lmo, direction);
+                
+        @time x, v, primal, dualGap, trajectory = FrankWolfe.fw(f,grad,lmo,x0,maxIt=k,
+            stepSize=FrankWolfe.agnostic,printIt=k/10,emph=FrankWolfe.blas,verbose=true);
+        
+        @test eltype(x0) == Rational{BigInt}
+
+        @time x, v, primal, dualGap, trajectory = FrankWolfe.fw(f,grad,lmo,x0,maxIt=k,
+            stepSize=FrankWolfe.agnostic,printIt=k/10,emph=FrankWolfe.memory,verbose=true);
+        @test eltype(x0) == Rational{BigInt}
+    
+    end
+    @testset "Multi-precision tests" begin
+        rhs = 1
+        n = 100
+        k = 1000
+
+        xp = zeros(n)
+        
+        L = 2
+        bound = 2 * L * 2 / (k + 2)
+
+        f(x) = LinearAlgebra.norm(x-xp)^2
+        grad(x) = 2* (x-xp);
+        testTypes = [Float16, Float32, Float64, BigFloat, Rational{BigInt}]
+
+        @testset "Multi-precision test for $T" for T in testTypes
+            println("\nTesting precision for type: ", T)
+            lmo = FrankWolfe.ProbabilitySimplexOracle{T}(rhs);        
+            direction = rand(n)
+            x0 = FrankWolfe.compute_extreme_point(lmo, direction);
+                
+            @time x, v, primal, dualGap, trajectory = FrankWolfe.fw(f,grad,lmo,x0,maxIt=k,
+                stepSize=FrankWolfe.agnostic,printIt=k/10,emph=FrankWolfe.blas,verbose=true);
+            
+            @test eltype(x0) == T
+            @test primal - 1//n <= bound
+
+            @time x, v, primal, dualGap, trajectory = FrankWolfe.fw(f,grad,lmo,x0,maxIt=k,
+                stepSize=FrankWolfe.agnostic,printIt=k/10,emph=FrankWolfe.memory,verbose=true);
+
+            @test eltype(x0) == T
+            @test primal - 1//n <= bound
+        end
+    end
+
 end
