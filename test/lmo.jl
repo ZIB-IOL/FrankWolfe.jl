@@ -2,7 +2,8 @@ using Test
 using FrankWolfe
 using LinearAlgebra
 
-import FrankWolfe: compute_extreme_point, LpNormLMO
+import FrankWolfe: compute_extreme_point, LpNormLMO, KSparseLMO 
+import FrankWolfe: SimplexMatrix
 
 @testset "Simplex matrix type" begin
     s = SimplexMatrix{Float64}(3)
@@ -79,6 +80,28 @@ end
                 v = FrankWolfe.compute_extreme_point(lmo, c)
                 @test norm(v, p) ≈ τ
             end
+        end
+    end
+end
+
+@testset "K-sparse polytope LMO" begin
+    @testset "$n-dimension" for n in (1, 2, 10)
+        τ = 5 + 3 * rand()
+        for K in 1:n
+            lmo = KSparseLMO(K, τ)
+            x = 10 * randn(n) # dense vector
+            v = compute_extreme_point(lmo, x)
+            # K-sparsity
+            @test count(!iszero, v) == K
+            @test sum(abs.(v)) ≈ K * τ
+            xsort = sort!(10 * rand(n))
+            v = compute_extreme_point(lmo, xsort)
+            @test all(iszero, v[1:n-K])
+            @test all(abs(vi) ≈ abs(τ * sign(vi)) for vi in v[K:end])
+            reverse!(xsort)
+            v = compute_extreme_point(lmo, xsort)
+            @test all(iszero, v[K+1:end])
+            @test all(abs(vi) ≈ abs(τ * sign(vi)) for vi in v[1:K])
         end
     end
 end
