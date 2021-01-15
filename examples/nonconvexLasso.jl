@@ -13,7 +13,7 @@ const f(x) = 2 * LinearAlgebra.norm(x-xp)^3 - LinearAlgebra.norm(x)^2
 const grad = x -> ReverseDiff.gradient(f, x) # this is just for the example -> better explicitly define your gradient
 
 # pick feasible region
-lmo = FrankWolfe.ProbabilitySimplexOracle(1.0); #radius need float
+lmo = FrankWolfe.ProbabilitySimplexOracle(1.0); #radius needs to be float
 
 # compute some initial vertex
 x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
