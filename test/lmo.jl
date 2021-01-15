@@ -40,6 +40,11 @@ end
                 @test res_point_prob[j] == res_point_unit[j] == 0
             end
         end
+        # computing dual solutions and testing complementarity
+        dual, redC = FrankWolfe.compute_dual_solution(lmo_prob, direction, res_point_prob)
+        @test sum((redC .* res_point_prob )) + (dual[1] * (rhs - sum(res_point_prob))) == 0
+        dual, redC = FrankWolfe.compute_dual_solution(lmo_unit, direction, res_point_unit)
+        @test sum((redC .* res_point_unit )) + (dual[1] * (rhs - sum(res_point_unit))) == 0
     end
     @testset "Choosing least-degrading direction" for idx in 1:n
         # all directions worsening, must pick idx
@@ -55,6 +60,11 @@ end
                 @test res_point_prob[j] == 0
             end
         end
+        # computing dual solutions and testing complementarity
+        dual, redC = FrankWolfe.compute_dual_solution(lmo_prob, direction, res_point_prob)
+        @test sum((redC .* res_point_prob )) + (dual[1] * (rhs - sum(res_point_prob))) == 0
+        dual, redC = FrankWolfe.compute_dual_solution(lmo_unit, direction, res_point_unit)
+        @test sum((redC .* res_point_unit )) + (dual[1] * (rhs - sum(res_point_unit))) == 0
     end
 end
 

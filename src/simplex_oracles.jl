@@ -26,15 +26,21 @@ function compute_extreme_point(lmo::UnitSimplexOracle{T}, direction) where {T}
     return MaybeHotVector(zero(T), idx, length(direction))
 end
 
-function unitSimplexLMO(grad;r=1)
-    n = length(grad)
-    v = zeros(n)
-    aux = argmin(grad)
-    if grad[aux] < 0.0
-        v[aux] = 1.0
-    end
-    return v*r
+"""
+Dual costs for a given primal solution to form a primal dual pair
+for scaled unit simplex.
+Returns two vectors. The first one is the dual costs associated with the constraints 
+and the second is the reduced costs for the variables.
+"""
+function compute_dual_solution(lmo::UnitSimplexOracle{T}, direction, primalSolution) where {T}
+    idx = argmax(primalSolution)
+    critical = min(direction[idx],0)
+    lambda = [ critical ]
+    mu = direction .- lambda
+    return lambda, mu
 end
+
+
 
 """
     ProbabilitySimplexOracle(right_side)
@@ -60,15 +66,15 @@ function compute_extreme_point(lmo::ProbabilitySimplexOracle{T}, direction) wher
     return MaybeHotVector(lmo.right_side, idx, length(direction))
 end
 
-
-# simple probabilitySimplexLMO
-# TODO:
-# - not optimized
-
-function probabilitySimplexLMO(grad;r=1)
-    n = length(grad)
-    v = zeros(n)
-    aux = argmin(grad)
-    v[aux] = 1.0
-    return v*r
+"""
+Dual costs for a given primal solution to form a primal dual pair
+for scaled probability simplex.
+Returns two vectors. The first one is the dual costs associated with the constraints 
+and the second is the reduced costs for the variables.
+"""
+function compute_dual_solution(lmo::ProbabilitySimplexOracle{T}, direction, primalSolution) where {T}
+    idx = argmax(primalSolution)
+    lambda = [ direction[idx] ]
+    mu = direction .- lambda
+    return lambda, mu
 end
