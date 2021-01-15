@@ -29,12 +29,13 @@ abstract type CachedLinearMinimizationOracle{LMO <: LinearMinimizationOracle} <:
 end
 
 """
-    SingleLastCachedLMO{LMO}
+    SingleLastCachedLMO{LMO, VT}
 
 Caches only the last result from an LMO and stores it in `last_vertex`.
+Vertices of `LMO` have to be of type `VT` if provided.
 """
-mutable struct SingleLastCachedLMO{LMO} <: CachedLinearMinimizationOracle{LMO}
-    last_vertex::Union{Nothing, AbstractVector}
+mutable struct SingleLastCachedLMO{LMO, VT <: AbstractVector} <: CachedLinearMinimizationOracle{LMO}
+    last_vertex::Union{Nothing, VT}
     inner::LMO
 end
 
