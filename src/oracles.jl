@@ -57,19 +57,20 @@ function compute_extreme_point(lmo::SingleLastCachedLMO, direction; threshold=-I
 end
 
 """
-    MultiCacheLMO{N, LMO}
+    MultiCacheLMO{N, LMO, VT}
 
 Cache for a LMO storing up to `N` vertices in the cache, removed in FIFO style.
 `oldest_idx` keeps track of the oldest index in the tuple, i.e. to replace next.
+`VT`, if provided, must be the type of vertices returned by `LMO`
 """
-mutable struct MultiCacheLMO{N, LMO} <: CachedLinearMinimizationOracle{LMO}
-    vertices::NTuple{N, Union{AbstractArray, Nothing}}
+mutable struct MultiCacheLMO{N, LMO, VT <: AbstractVector} <: CachedLinearMinimizationOracle{LMO}
+    vertices::NTuple{N, Union{VT, Nothing}}
     inner::LMO
     oldest_idx::Int
 end
 
 function MultiCacheLMO{N}(lmo::LMO) where {N, LMO <: LinearMinimizationOracle}
-    return MultiCacheLMO{N, LMO}(
+    return MultiCacheLMO{N, LMO, AbstractVector}(
         ntuple(_->nothing, Val{N}()),
         lmo,
         1,
@@ -97,7 +98,13 @@ function compute_extreme_point(lmo::MultiCacheLMO{N}, direction; threshold=-Inf,
         best_idx = -1
         best_val = Inf
         best_v = nothing
-        for idx in 1:N
+        # create an iteration order to visit most recent vertices first
+        iter_order = if lmo.oldest_idx > 1
+            Iterators.flatten((lmo.oldest_idx-1:-1:1, N:-1:lmo.oldest_idx))
+        else
+            N:-1:1
+        end
+        for idx in iter_order 
             if lmo.vertices[idx] !== nothing
                 v = lmo.vertices[idx]
                 new_val = dot(v, direction)
@@ -161,4 +168,63 @@ function lazy_compute_extreme_point_threshold(lmo::LinearMinimizationOracle, dir
     end
     lmo.v = v
     return v, dot(v,direction), tt
+end
+
+"""
+    VectorCacheLMO{N, LMO, VT}
+
+Cache for a LMO storing an unbounded number of vertices of type `VT` in the cache.
+`VT`, if provided, must be the type of vertices returned by `LMO`
+"""
+mutable struct VectorCacheLMO{LMO, VT <: AbstractVector} <: CachedLinearMinimizationOracle{LMO}
+    vertices::Vector{VT}
+    inner::LMO
+end
+
+function VectorCacheLMO{VT}(lmo::LMO) where {VT, LMO <: LinearMinimizationOracle}
+    return VectorCacheLMO{LMO, VT}(VT[], lmo)
+end
+
+function VectorCacheLMO(lmo::LMO) where {LMO <: LinearMinimizationOracle}
+    return VectorCacheLMO{LMO, AbstractVector}(AbstractVector[], lmo)
+end
+
+function compute_extreme_point(lmo::VectorCacheLMO, direction; threshold=-Inf, store_cache=true, greedy=false, kwargs...)
+    if isempty(lmo.vertices)
+        v = compute_extreme_point(lmo.inner, direction)
+        if store_cache
+            push!(lmo.vertices, v)
+        end
+        return v
+    end
+    best_idx = -1
+    best_val = Inf
+    best_v = nothing
+    for idx in reverse(eachindex(lmo.vertices))
+        @inbounds v = lmo.vertices[idx]
+        new_val = dot(v, direction)
+        if new_val ≤ threshold
+            # stop, store and return
+            if greedy
+                if store_cache
+                    push!(lmo.vertices, v)
+                end
+                return v
+            end
+            # otherwise, compare to incumbent
+            if new_val < best_val
+                best_v = v
+                best_val = new_val
+                best_idx = idx
+            end
+        end
+    end
+    # no good point found -> compute new vertex
+    if best_idx < 0
+        v = compute_extreme_point(lmo.inner, direction)
+    end
+    if store_cache
+        push!(lmo.vertices, v)
+    end
+    return v
 end
