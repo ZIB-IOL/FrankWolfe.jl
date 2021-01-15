@@ -105,3 +105,34 @@ end
         end
     end
 end
+
+@testset "Caching on simplex LMOs" begin
+    n = 6
+    direction = zeros(6)
+    rhs = 10 * rand()
+    lmo_unit = FrankWolfe.UnitSimplexOracle(rhs)
+    lmo_never_cached = FrankWolfe.SingleLastCachedLMO(lmo_unit)
+    lmo_cached = FrankWolfe.SingleLastCachedLMO(lmo_unit)
+    lmo_multicached = FrankWolfe.MultiCacheLMO{3}(lmo_unit)
+    lmo_veccached = FrankWolfe.VectorCacheLMO(lmo_unit)
+    @testset "Forcing no cache remains nothing" for idx in 1:n
+        direction .= 0
+        direction[idx] = -1
+        res_point_unit = FrankWolfe.compute_extreme_point(lmo_unit, direction)
+        res_point_cached = FrankWolfe.compute_extreme_point(lmo_cached, direction, threshold=0)
+        res_point_cached_multi = FrankWolfe.compute_extreme_point(lmo_multicached, direction, threshold=-1000)
+        res_point_cached_vec = FrankWolfe.compute_extreme_point(lmo_veccached, direction, threshold=-1000)
+        res_point_never_cached = FrankWolfe.compute_extreme_point(lmo_cached, direction, store_cache=false)
+        @test res_point_never_cached == res_point_unit
+        @test lmo_never_cached.last_vertex === nothing
+        @test lmo_cached.last_vertex !== nothing
+        @test count(!isnothing, lmo_multicached.vertices) == min(3, idx)
+        @test length(lmo_veccached.vertices) == idx
+        # we set the cache at least at the first iteration
+        if idx == 1
+            @test lmo_cached.last_vertex == res_point_unit
+        end
+        # whatever the iteration, last vertex is always the one returned
+        @test lmo_cached.last_vertex == res_point_cached
+    end
+end
