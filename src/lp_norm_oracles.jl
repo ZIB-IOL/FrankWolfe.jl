@@ -11,6 +11,8 @@ struct LpNormLMO{T, p} <: LinearMinimizationOracle
     right_hand_side::T
 end
 
+LpNormLMO{p}(right_hand_side::T) where {T, p} = LpNormLMO{T, p}(right_hand_side)
+
 function compute_extreme_point(lmo::LpNormLMO{T, 2}, direction) where {T}
     -lmo.right_hand_side * direction / norm(direction, 2)
 end
@@ -70,4 +72,28 @@ function compute_extreme_point(lmo::L1ballDense{T}, direction) where {T}
     aux = zeros(T, length(direction))
     aux[idx] = T(-lmo.right_hand_side * sign(direction[idx]))
     return aux
+end
+
+"""
+    KNormBallLMO{T}(K::Int, right_hand_side::T)
+
+LMO for the K-norm ball, intersection of L_1-ball (τK) and L_∞-ball (τ/K)
+```
+C = B_1(τK) ∩ B_∞(τ)
+```
+with `τ` the `right_hand_side` parameter.
+"""
+struct KNormBallLMO{T} <: LinearMinimizationOracle
+    K::Int
+    right_hand_side::T
+end
+
+function compute_extreme_point(lmo::KNormBallLMO{T}, direction) where {T}
+    K = max(
+        min(lmo.K, length(direction)),
+        1,
+    )
+    v1 = compute_extreme_point(LpNormLMO{T, 1}(lmo.right_hand_side) , direction)
+    v∞ = compute_extreme_point(LpNormLMO{T, Inf}(K * lmo.right_hand_side) , direction)
+    return min.(v1, v∞)
 end
