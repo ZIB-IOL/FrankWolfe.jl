@@ -50,7 +50,7 @@ function compute_extreme_point(lmo::LpNormLMO{T, p}, direction) where {T, p}
 end
 
 
-# temporary oracle for l_1 ball to 
+# temporary oracle for l_1 ball to
 
 struct L1ballDense{T} <: LinearMinimizationOracle
     right_hand_side::T
