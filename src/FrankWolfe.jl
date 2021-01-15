@@ -20,6 +20,8 @@ include("utils.jl")
 # critical components
 ##############################################################
 
+# TODO: add actual use of T for the rand(n)
+
 function benchmarkOracles(f,grad,lmo,n;k=100,T=Float64)
     sv = n*sizeof(T)/1024/1024
     println("\nSize of single vector ($T): $sv MB\n")
