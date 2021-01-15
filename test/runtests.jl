@@ -2,8 +2,6 @@ using FrankWolfe
 using Test
 using LinearAlgebra
 
-import FrankWolfe: SimplexMatrix
-
 include("lmo.jl")
 
 @testset "Line Search methods" begin
@@ -133,5 +131,4 @@ end
             @test primal - 1//n <= bound
         end
     end
-
 end
