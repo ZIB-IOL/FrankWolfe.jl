@@ -129,6 +129,7 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap","Time"]
         headerPrint(headers)
     end
+
     if emph === memory && !isa(x, Array)
         x = convert(Vector{promote_type(eltype(x), Float64)}, x)
     end
@@ -281,7 +282,7 @@ function lcg(f, grad, lmoBase, x0; stepSize::LSMethod = agnostic, L = Inf,
         elseif stepSize === nonconvex
             gamma = 1 / sqrt(t+1)
         elseif stepSize === shortstep
-            gamma = dualGap // (L * dot(x-v,x-v) )
+            gamma = dualGap / (L * dot(x-v,x-v) )
         end
 
         @emphasis(emph, x = (1 - gamma) * x + gamma * v)
