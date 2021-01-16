@@ -264,7 +264,7 @@ function lcg(f, grad, lmoBase, x0; stepSize::LSMethod = agnostic, L = Inf,
         end
 
         if trajectory === true
-            append!(trajData, [t, primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9, 0])
+            append!(trajData, [t, primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9, length(lmo)])
         end
         
         if stepSize === agnostic
@@ -285,7 +285,7 @@ function lcg(f, grad, lmoBase, x0; stepSize::LSMethod = agnostic, L = Inf,
             if t === 0
                 tt = initial
             end
-            rep = [tt, string(t), primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9, 0]
+            rep = [tt, string(t), primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9, length(lmo)]
             itPrint(rep)
             flush(stdout)
         end
@@ -293,7 +293,7 @@ function lcg(f, grad, lmoBase, x0; stepSize::LSMethod = agnostic, L = Inf,
     end
     if verbose
         tt = last
-        rep = [tt, "", primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9, 0]
+        rep = [tt, "", primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9, length(lmo)]
         itPrint(rep)
         footerPrint()
         flush(stdout)
