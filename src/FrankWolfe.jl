@@ -151,7 +151,7 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0
 
         v = compute_extreme_point(lmo, gradient)
         
-        # go easy on the memory - only comppute if really needed
+        # go easy on the memory - only compute if really needed
         if (mod(t,printIt) == 0 && verbose) || trajectory || !(stepSize == agnostic 
             || stepSize == nonconvex || stepSize == fixed)
             primal = f(x)
