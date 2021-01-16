@@ -22,6 +22,8 @@ over the set LMO represents.
 
 ## Implemented Methods
 
+*** mention survey once done as general reference ***
+
 ### Conditional Gradient algorithms
 
 - Basic Frank-Wolfe Algorithm (see <http://proceedings.mlr.press/v28/jaggi13.html> for an overview)
@@ -57,18 +59,29 @@ All algorithms can run in various precisions modes: `Float16, Float32, Float64, 
 
 #### Line Search Strategies
 
+Most common strategies and some more particular ones:
+
+- Agnostic: 2/(2+t) rule for FW 
+- Nonconvex: 1/sqrt rule for nonconvex function and vanilla FW
+- Fixed: fixed stepsize of a given value. Useful for nonconvex and stochastic or more generally when we know the total number of iterations
+- Short-step rule: basically minimizing the smoothness inequality -> requires knowledge of (an estimate of) L
+- Golden ratio linesearch
+- Backtracking line search
+- Rational Short-step rule: some as short-step rule but all computations are kept rational if inputs are rational. useful for the rational variants
+- (to come:) adaptive FW: starts with an estimate for L and then refine it dynamically (see <https://arxiv.org/pdf/1806.05123.pdf> and also the survey *** to be added *** )
+
 #### Other 
 
 - Emphasis: All solvers support `emphasis` to either exploit vectorized linear algebra or be memory efficient, e.g., for extreme large-scale instances
-
+- Various caching strategies for the lazy implementations. Unbounded cache sizes (can get slow), bounded cache sizes as well as early returns once any sufficient vertex is found in the cache.
 
 ## Cool Examples
 
 ### Approximate Carathéodory with rational arithmetic
 
-We can solve the approximate Carathéodory problem with rational arithmetic to obtain rational approximations; see <https://arxiv.org/abs/1911.04415> for some background about approximate Carathéodory and Conditioanl Gradients. 
+Example: `examples/approximateCaratheodory.jl`
 
-See full example: `examples/approximateCaratheodory.jl`
+We can solve the approximate Carathéodory problem with rational arithmetic to obtain rational approximations; see <https://arxiv.org/abs/1911.04415> for some background about approximate Carathéodory and Conditioanl Gradients. 
 
 <p class="aligncenter">
 <img src="https://render.githubusercontent.com/render/math?math=\min_{x \in \Delta(n)} \|x\|^2">
@@ -100,13 +113,17 @@ EMPHASIS: blas STEPSIZE: rationalshortstep EPSILON: 1.0e-7 MAXIT: 100 TYPE: Rati
   
 Output type of solution: Rational{BigInt}
 ````
-The solution returned it rational as we can see up there and:
+The solution returned is rational as we can see and in fact the exactly optimal solution:
 
 ```
 x = Rational{BigInt}[1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100]
 ```
 
+### Large-Scale problems
 
+Example: `examples/largeScale.jl`
+
+xxx
 
 
 
