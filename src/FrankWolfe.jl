@@ -88,8 +88,8 @@ end
 # Vanilla FW
 ##############################################################
 
-function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0, stepLim=20,
-        epsilon=1e-7, maxIt=10000, printIt=1000, trajectory=false, verbose=false,lsTol=1e-7,emph::Emph = blas)
+function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0, stepLim=20, momentum=nothing,
+        epsilon=1e-7, maxIt=10000, printIt=1000, trajectory=false, verbose=false, lsTol=1e-7, emph::Emph = blas)
     function headerPrint(data)
         @printf("\n───────────────────────────────────────────────────────────────────────────────────\n")
         @printf("%6s %13s %14s %14s %14s %14s\n", data[1], data[2], data[3], data[4], data[5], data[6])
@@ -132,10 +132,21 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0
     if emph === memory && !isa(x, Array)
         x = convert(Vector{promote_type(eltype(x), Float64)}, x)
     end
+    niter = 0
 
     while t <= maxIt && dualGap >= max(epsilon,eps())
         primal = f(x)
         gradient = grad(x)
+
+        # m = if isnothing(momentum) || niter == 0
+        #     gradient
+        # else
+        #     # reaching this branch after first iteration, so m defined
+        #     @. m = momentum * m + (1 - momentum) * gradient
+        # end
+
+        # v = compute_extreme_point(lmo, m)
+
         v = compute_extreme_point(lmo, gradient)
         
         dualGap = dot(x, gradient) - dot(v, gradient)
