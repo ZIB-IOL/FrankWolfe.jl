@@ -87,10 +87,20 @@ end
                 c = 5 * randn(n)
                 v = FrankWolfe.compute_extreme_point(lmo_ball, c)
                 v1 = FrankWolfe.compute_extreme_point(FrankWolfe.LpNormLMO{1}(τ), c)
-                v_inf = FrankWolfe.compute_extreme_point(FrankWolfe.LpNormLMO{Inf}(τ * K), c)
-                for idx in eachindex(v)
-                    @test v[idx] ≈ min(v1[idx], v_inf[idx])
+                v_inf = FrankWolfe.compute_extreme_point(FrankWolfe.LpNormLMO{Inf}(τ / K), c)
+                # K-norm is convex hull of union of the two norm epigraphs
+                # => cannot do better than the best of them
+                @test dot(v, c) ≈ min(
+                    dot(v1, c),
+                    dot(v_inf, c),
+                )
+                # test according to original norm definition
+                # norm constraint must be tight
+                K_sum = 0.0
+                for vi in sort!(abs.(v), rev=true)[1:K]
+                    K_sum += vi
                 end
+                @test K_sum ≈ τ
             end
         end
     end
