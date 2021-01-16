@@ -134,16 +134,16 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0
     end
 
     while t <= maxIt && dualGap >= max(epsilon,eps())
-        primal = f(x)
         gradient = grad(x)
         v = compute_extreme_point(lmo, gradient)
         
-        dualGap = dot(x, gradient) - dot(v, gradient)
-
-        if trajectory === true
-            append!(trajData, [t, primal, primal-dualGap, dualGap])
+        # go easy on the memory - only comppute if really needed
+        if (mod(t,printIt) == 0 && verbose) || trajectory || !(stepSize == agnostic 
+            || stepSize == nonconvex || stepSize == fixed)
+            primal = f(x)
+            dualGap = dot(x, gradient) - dot(v, gradient)
         end
- 
+
         if trajectory === true
             append!(trajData, [t, primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9])
         end
@@ -180,6 +180,11 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0
     end
     if verbose
         tt = last
+        # recompute everything once a final verfication
+        gradient = grad(x)
+        v = compute_extreme_point(lmo, gradient)
+        primal = f(x)
+        dualGap = dot(x, gradient) - dot(v, gradient)
         rep = [tt, "", primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9]
         itPrint(rep)
         footerPrint()
