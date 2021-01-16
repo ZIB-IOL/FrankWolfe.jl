@@ -180,7 +180,7 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0
     end
     if verbose
         tt = last
-        # recompute everything once a final verfication
+        # recompute everything once for final verfication
         gradient = grad(x)
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
