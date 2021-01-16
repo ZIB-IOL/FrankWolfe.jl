@@ -72,8 +72,9 @@ Most common strategies and some more particular ones:
 
 #### Other 
 
-- Emphasis: All solvers support `emphasis` to either exploit vectorized linear algebra or be memory efficient, e.g., for extreme large-scale instances
+- Emphasis: All solvers support emphasis (parameter `emph`) to either exploit vectorized linear algebra or be memory efficient, e.g., for extreme large-scale instances
 - Various caching strategies for the lazy implementations. Unbounded cache sizes (can get slow), bounded cache sizes as well as early returns once any sufficient vertex is found in the cache.
+- (to come:) when the LMO can compute dual prices then the Frank-Wolfe algorithms return dual prices for the (approximately) optimal solutions (see <https://arxiv.org/abs/2101.02087>)
 
 ## Cool Examples
 
