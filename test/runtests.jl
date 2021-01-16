@@ -35,6 +35,37 @@ end
         @test abs(FrankWolfe.lcg(f,grad,lmo_prob,x0,maxIt=1000,stepSize=FrankWolfe.backtracking,verbose=true)[3] - 0.2) < 1.0e-5
         @test abs(FrankWolfe.lcg(f,grad,lmo_prob,x0,maxIt=1000,stepSize=FrankWolfe.shortstep,L=2,verbose=true)[3] - 0.2) < 1.0e-5
     end
+
+    @testset "Testing Lazified Conditional Gradients with cache strategies" begin
+        n = Int(1e5)
+        L = 2
+        k = 1000
+        bound = 16 * L * 2 / (k + 2)
+
+        f(x) = LinearAlgebra.norm(x)^2
+        grad(x) = 2x;
+        lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
+        x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n))
+        
+        @time x, v, primal, dualGap, trajectory = FrankWolfe.lcg(f,grad,lmo_prob,x0,
+            maxIt=k,stepSize=FrankWolfe.shortstep,L=2, 
+            verbose=true)
+        
+        @test primal - 1//n <= bound
+
+        @time x, v, primal, dualGap, trajectory = FrankWolfe.lcg(f,grad,lmo_prob,x0,
+            maxIt=k,stepSize=FrankWolfe.shortstep,L=2, cacheSize=100,
+            verbose=true)
+
+        @test primal - 1//n <= bound
+
+        @time x, v, primal, dualGap, trajectory = FrankWolfe.lcg(f,grad,lmo_prob,x0,
+            maxIt=k,stepSize=FrankWolfe.shortstep,L=2, cacheSize=100, greedyLazy=true,
+            verbose=true)
+
+        @test primal - 1//n <= bound
+    end
+
     @testset "Testing emphasis blas vs memory" begin
         n = Int(1e5);
         k = 100
