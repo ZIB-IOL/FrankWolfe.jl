@@ -24,9 +24,14 @@ Subtypes of `CachedLinearMinimizationOracle` contain a cache of
 previous solutions.
 
 By convention, the inner oracle is named `inner`.
+Cached optimizers are expected to implement `Base.empty!` and `Base.length`.
 """
 abstract type CachedLinearMinimizationOracle{LMO <: LinearMinimizationOracle} <: LinearMinimizationOracle
 end
+
+# by default do nothing and return the LMO itself
+Base.empty!(lmo::CachedLinearMinimizationOracle) = lmo
+Base.length(::CachedLinearMinimizationOracle) = 0
 
 """
     SingleLastCachedLMO{LMO, VT}
@@ -55,6 +60,13 @@ function compute_extreme_point(lmo::SingleLastCachedLMO, direction; threshold=-I
     end
     return v
 end
+
+function Base.empty!(lmo::SingleLastCachedLMO)
+    lmo.last_vertex = nothing
+    return lmo
+end
+
+Base.length(lmo::SingleLastCachedLMO) = Int(lmo.last_vertex !== nothing)
 
 """
     MultiCacheLMO{N, LMO, VT}
@@ -86,6 +98,14 @@ end
 function MultiCacheLMO(n::Integer, lmo::LMO) where {LMO <: LinearMinimizationOracle}
     return MultiCacheLMO{n}(lmo)
 end
+
+function Base.empty!(lmo::MultiCacheLMO{N}) where {N}
+    lmo.vertices = ntuple(_->nothing, Val{N}())
+    lmo.oldest_idx = 1
+    return lmo
+end
+
+Base.length(lmo::MultiCacheLMO) = count(!isnothing, lmo.vertices)
 
 """
 Compute the extreme point with a multi-vertex cache.
@@ -159,6 +179,13 @@ end
 function VectorCacheLMO(lmo::LMO) where {LMO <: LinearMinimizationOracle}
     return VectorCacheLMO{LMO, AbstractVector}(AbstractVector[], lmo)
 end
+
+function Base.empty!(lmo::VectorCacheLMO)
+    empty!(lmo.vertices)
+    return lmo
+end
+
+Base.length(lmo::VectorCacheLMO) = length(lmo.vertices)
 
 function compute_extreme_point(lmo::VectorCacheLMO, direction; threshold=-Inf, store_cache=true, greedy=false, kwargs...)
     if isempty(lmo.vertices)
