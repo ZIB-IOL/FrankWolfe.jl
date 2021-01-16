@@ -111,6 +111,7 @@ function compute_extreme_point(lmo::MultiCacheLMO{N}, direction; threshold=-Inf,
                 if new_val ≤ threshold # cache is a sufficiently-decreasing direction
                     # if greedy, stop and return point
                     if greedy
+                        # println("greedy cache sol")
                         return v
                     end
                     # otherwise, keep the index only if better than incumbent
@@ -122,11 +123,13 @@ function compute_extreme_point(lmo::MultiCacheLMO{N}, direction; threshold=-Inf,
                 end
             end
         end
-        if best_idx > 0
-            return v
+        if best_idx > 0 # && dot(best_v, direction) ≤ threshold 
+            # println("cache sol")
+            return best_v
         end
     end
     # no interesting point found, computing new
+    # println("LP sol")
     v = compute_extreme_point(lmo.inner, direction, kwargs...)
     if store_cache
         tup = Base.setindex(lmo.vertices, v, lmo.oldest_idx)
@@ -137,37 +140,6 @@ function compute_extreme_point(lmo::MultiCacheLMO{N}, direction; threshold=-Inf,
     return v
 end
 
-"""
-lazified lmos
-# TODO
-
-"""
-
-function lazy_compute_extreme_point_threshold(lmo::LinearMinimizationOracle, direction, threshold)
-    tt::StepType
-    if !isempty(lmo.cache)
-        tt = lazylazy ## optimistically lazy -> reused last point
-        v = lmo.v
-        if dot(v, direction) > threshold # be optimistic: true last returned point first
-            tt = lazy ## just lazy -> used point from cache
-            test = (x -> dot(x, direction)).(lmo.cache) 
-            v = lmo.cache[argmin(test)]
-        end
-        if dot(v, direction) > threshold  # still not good enough, then solve the LP
-            tt = regular ## no cache point -> used the expensive LP
-            v = compute_extreme_point(lmo, direction)
-            if !(v in lmo.cache) 
-                push!(lmo.cache,v)
-            end
-        end
-    else    
-        tt = regular
-        v = compute_extreme_point(lmo, direction)
-        push!(lmo.cache,v)
-    end
-    lmo.v = v
-    return v, dot(v,direction), tt
-end
 
 """
     VectorCacheLMO{N, LMO, VT}
@@ -218,7 +190,7 @@ function compute_extreme_point(lmo::VectorCacheLMO, direction; threshold=-Inf, s
             end
         end
     end
-    # no good point found -> compute new vertex
+    v = best_v
     if best_idx < 0
         v = compute_extreme_point(lmo.inner, direction)
     end
