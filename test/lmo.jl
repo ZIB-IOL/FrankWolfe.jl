@@ -87,10 +87,20 @@ end
                 c = 5 * randn(n)
                 v = FrankWolfe.compute_extreme_point(lmo_ball, c)
                 v1 = FrankWolfe.compute_extreme_point(FrankWolfe.LpNormLMO{1}(τ), c)
-                v_inf = FrankWolfe.compute_extreme_point(FrankWolfe.LpNormLMO{Inf}(τ * K), c)
-                for idx in eachindex(v)
-                    @test v[idx] ≈ min(v1[idx], v_inf[idx])
+                v_inf = FrankWolfe.compute_extreme_point(FrankWolfe.LpNormLMO{Inf}(τ / K), c)
+                # K-norm is convex hull of union of the two norm epigraphs
+                # => cannot do better than the best of them
+                @test dot(v, c) ≈ min(
+                    dot(v1, c),
+                    dot(v_inf, c),
+                )
+                # test according to original norm definition
+                # norm constraint must be tight
+                K_sum = 0.0
+                for vi in sort!(abs.(v), rev=true)[1:K]
+                    K_sum += vi
                 end
+                @test K_sum ≈ τ
             end
         end
     end
@@ -137,9 +147,12 @@ end
         res_point_never_cached = FrankWolfe.compute_extreme_point(lmo_cached, direction, store_cache=false)
         @test res_point_never_cached == res_point_unit
         @test lmo_never_cached.last_vertex === nothing
+        @test length(lmo_never_cached) == 0
+        empty!(lmo_never_cached)
         @test lmo_cached.last_vertex !== nothing
-        @test count(!isnothing, lmo_multicached.vertices) == min(3, idx)
-        @test length(lmo_veccached.vertices) == idx
+        @test length(lmo_cached) == 1
+        @test count(!isnothing, lmo_multicached.vertices) == min(3, idx) == length(lmo_multicached)
+        @test length(lmo_veccached.vertices) == idx == length(lmo_veccached)
         # we set the cache at least at the first iteration
         if idx == 1
             @test lmo_cached.last_vertex == res_point_unit
@@ -147,4 +160,8 @@ end
         # whatever the iteration, last vertex is always the one returned
         @test lmo_cached.last_vertex == res_point_cached
     end
+    empty!(lmo_multicached)
+    @test length(lmo_multicached) == 0
+    empty!(lmo_veccached)
+    @test length(lmo_veccached) == 0
 end
