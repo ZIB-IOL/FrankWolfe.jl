@@ -137,9 +137,12 @@ end
         res_point_never_cached = FrankWolfe.compute_extreme_point(lmo_cached, direction, store_cache=false)
         @test res_point_never_cached == res_point_unit
         @test lmo_never_cached.last_vertex === nothing
+        @test length(lmo_never_cached) == 0
+        empty!(lmo_never_cached)
         @test lmo_cached.last_vertex !== nothing
-        @test count(!isnothing, lmo_multicached.vertices) == min(3, idx)
-        @test length(lmo_veccached.vertices) == idx
+        @test length(lmo_cached) == 1
+        @test count(!isnothing, lmo_multicached.vertices) == min(3, idx) == length(lmo_multicached)
+        @test length(lmo_veccached.vertices) == idx == length(lmo_veccached)
         # we set the cache at least at the first iteration
         if idx == 1
             @test lmo_cached.last_vertex == res_point_unit
@@ -147,4 +150,8 @@ end
         # whatever the iteration, last vertex is always the one returned
         @test lmo_cached.last_vertex == res_point_cached
     end
+    empty!(lmo_multicached)
+    @test length(lmo_multicached) == 0
+    empty!(lmo_veccached)
+    @test length(lmo_veccached) == 0
 end
