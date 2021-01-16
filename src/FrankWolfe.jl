@@ -23,7 +23,7 @@ include("utils.jl")
 
 # TODO: add actual use of T for the rand(n)
 
-function benchmarkOracles(f,grad,lmo,n;k=100,T=Float64)
+function benchmarkOracles(f,grad,lmo,n;k=100,nocache=true,T=Float64)
     sv = n*sizeof(T)/1024/1024
     println("\nSize of single vector ($T): $sv MB\n")
     to = TimerOutput()
@@ -62,20 +62,22 @@ function benchmarkOracles(f,grad,lmo,n;k=100,T=Float64)
         # TODO: to be updated to broadcast version once data structure MaybeHotVector allows for it
         @timeit to "update (memory)" @emphasis(memory, x = (1-gamma) * x + gamma * v)
     end
-    @showprogress 1 "Testing caching 100 points... " for i in 1:k    
-        @timeit to "caching 100 points" begin
-            cache = []
-            for j in 1:100
+    if !nocache
+        @showprogress 1 "Testing caching 100 points... " for i in 1:k    
+            @timeit to "caching 100 points" begin
+                cache = []
+                for j in 1:100
+                    x = rand(n)
+                    push!(cache,x)
+                end
                 x = rand(n)
-                push!(cache,x)
+                gradient = grad(x)
+                v = compute_extreme_point(lmo, gradient)
+                gamma = 1/2    
+                test = (x -> dot(x, gradient)).(cache) 
+                v = cache[argmin(test)]
+                val = v in cache
             end
-            x = rand(n)
-            gradient = grad(x)
-            v = compute_extreme_point(lmo, gradient)
-            gamma = 1/2    
-            test = (x -> dot(x, gradient)).(cache) 
-            v = cache[argmin(test)]
-            val = v in cache
         end
     end
 
@@ -99,7 +101,7 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0
     end
     
     function itPrint(data)
-        @printf("%6s %13s %14e %14e %14e %14e\n", st[Symbol(data[1])], data[2], data[3], data[4], data[5], data[6])
+        @printf("%6s %13s %14e %14e %14e %14e\n", st[Symbol(data[1])], data[2], Float64(data[3]), Float64(data[4]), Float64(data[5]), data[6])
     end
 
     t = 0
@@ -156,6 +158,9 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0
             gamma = 1 / sqrt(t+1)
         elseif stepSize === shortstep
             gamma = dualGap / (L * norm(x-v)^2 )
+        elseif stepSize === rationalshortstep
+            ratDualGap = sum( (x - v) .* gradient )
+            gamma = ratDualGap // (L * sum( (x - v).^2 ) )
         elseif stepSize === fixed
             gamma = gamma0
         end
@@ -271,7 +276,7 @@ function lcg(f, grad, lmoBase, x0; stepSize::LSMethod = agnostic, L = Inf,
         elseif stepSize === nonconvex
             gamma = 1 / sqrt(t+1)
         elseif stepSize === shortstep
-            gamma = dualGap / (L * norm(x-v)^2 )
+            gamma = dualGap // (L * dot(x-v,x-v) )
         end
 
         @emphasis(emph, x = (1 - gamma) * x + gamma * v)
