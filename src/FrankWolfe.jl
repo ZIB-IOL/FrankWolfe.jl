@@ -136,8 +136,7 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0
     first_iter = true
     gradient = 0
     while t <= maxIt && dualGap >= max(epsilon,eps())
-        gradient = grad(x)
-        
+
         if isnothing(momentum) || first_iter
             gradient = grad(x)
         else
