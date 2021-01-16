@@ -132,20 +132,21 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0
     if emph === memory && !isa(x, Array)
         x = convert(Vector{promote_type(eltype(x), Float64)}, x)
     end
-    niter = 0
-
+    first_iter = true
+    gradient = 0
     while t <= maxIt && dualGap >= max(epsilon,eps())
         primal = f(x)
-        gradient = grad(x)
-
-        # m = if isnothing(momentum) || niter == 0
-        #     gradient
-        # else
-        #     # reaching this branch after first iteration, so m defined
-        #     @. m = momentum * m + (1 - momentum) * gradient
-        # end
-
-        # v = compute_extreme_point(lmo, m)
+        
+        if isnothing(momentum) || first_iter
+            gradient = grad(x)
+        else
+            if emph === memory
+                @. gradient = (momentum * gradient) .+ (1 - momentum) .* grad(x)
+            else
+                gradient = (momentum * gradient) .+ (1 - momentum) * grad(x)
+            end
+        end
+        first_iter = false
 
         v = compute_extreme_point(lmo, gradient)
         
@@ -287,7 +288,7 @@ function lcg(f, grad, lmoBase, x0; stepSize::LSMethod = agnostic, L = Inf,
         elseif stepSize === nonconvex
             gamma = 1 / sqrt(t+1)
         elseif stepSize === shortstep
-            gamma = dualGap // (L * dot(x-v,x-v) )
+            gamma = dualGap / (L * dot(x-v,x-v) )
         end
 
         @emphasis(emph, x = (1 - gamma) * x + gamma * v)
