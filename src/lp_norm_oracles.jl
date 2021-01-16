@@ -79,7 +79,7 @@ end
 
 LMO for the K-norm ball, intersection of L_1-ball (τK) and L_∞-ball (τ/K)
 ```
-C = B_1(τK) ∩ B_∞(τ)
+C_{K,τ} = conv { B_1(τ) ∪ B_∞(τ / K) }
 ```
 with `τ` the `right_hand_side` parameter.
 """
@@ -94,6 +94,8 @@ function compute_extreme_point(lmo::KNormBallLMO{T}, direction) where {T}
         1,
     )
     v1 = compute_extreme_point(LpNormLMO{T, 1}(lmo.right_hand_side) , direction)
-    v∞ = compute_extreme_point(LpNormLMO{T, Inf}(K * lmo.right_hand_side) , direction)
-    return min.(v1, v∞)
+    vinf = compute_extreme_point(LpNormLMO{T, Inf}(lmo.right_hand_side / K) , direction)
+    o1 = dot(v1, direction)
+    oinf = dot(vinf, direction)
+    return o1 ≤ oinf ? v1 : vinf
 end
