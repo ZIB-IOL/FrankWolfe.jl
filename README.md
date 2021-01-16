@@ -75,7 +75,7 @@ Most common strategies and some more particular ones:
 - Emphasis: All solvers support emphasis (parameter `emph`) to either exploit vectorized linear algebra or be memory efficient, e.g., for extreme large-scale instances
 - Various caching strategies for the lazy implementations. Unbounded cache sizes (can get slow), bounded cache sizes as well as early returns once any sufficient vertex is found in the cache.
 - (to come:) when the LMO can compute dual prices then the Frank-Wolfe algorithms return dual prices for the (approximately) optimal solutions (see <https://arxiv.org/abs/2101.02087>)
-- (to come:) optionally all algorithms can be endowed with gradient momentum. This might help convergence especially in the stochastic context.
+- optionally all algorithms can be endowed with gradient momentum. This might help convergence especially in the stochastic context.
 
 ## Cool Examples
 
