@@ -24,7 +24,30 @@ over the set LMO represents.
 
 ### Conditional Gradient algorithms
 
+- Basic Frank-Wolfe Algorithm (see <http://proceedings.mlr.press/v28/jaggi13.html> for an overview)
+  - works both for convex and non-convex function (use step size rule `FrankWolfe.nonconvex`)
+- (to come:) Stochastic Frank-Wolfe 
+- (to come:) Away-Step Frank-Wolfe and Pairwise Conditional Gradients (see <https://arxiv.org/abs/1511.05932> for an overview)
+- (to come:) Blended Conditional Gradients (see <https://arxiv.org/abs/1805.07311>)
+
+- all algorithms also have a lazified version (see <https://arxiv.org/abs/1610.05120>)
+
 ### LMOs
+
+Several common LMOs are available out-of-the-box
+- Probability simplex
+- Unit simplex
+- K-sparse polytope
+- K-norm ball
+- (to come:) Permutahedron
+- (to come:) Birkhoff polytope
+- (to come:) Flow Polytope
+
+See <https://arxiv.org/pdf/2010.07243.pdf> and *** add LP complexity paper *** for details
+
+Moreover: 
+- you can simply define your own LMOs directly 
+- (to come:) via an LP solver (e.g., `glop`, `scip`, `soplex`)
 
 ### General Features
 
@@ -33,6 +56,10 @@ over the set LMO represents.
 All algorithms can run in various precisions modes: `Float16, Float32, Float64, BigFloat` and also for rationals based on various integer types `Int32, Int64, BigInt` (see e.g., the approximate Carathéodory example)
 
 #### Line Search Strategies
+
+#### Other 
+
+- Emphasis: All solvers support `emphasis` to either exploit vectorized linear algebra or be memory efficient, e.g., for extreme large-scale instances
 
 
 ## Cool Examples
@@ -43,7 +70,9 @@ We can solve the approximate Carathéodory problem with rational arithmetic to o
 
 See full example: `examples/approximateCaratheodory.jl`
 
-<img src="https://render.githubusercontent.com/render/math?math=\min_{n in \Delta(n)} \|x\|^2">
+<p class="aligncenter">
+<img src="https://render.githubusercontent.com/render/math?math=\min_{x \in \Delta(n)} \|x\|^2">
+</p>
 
 with n = 100 here.
 
