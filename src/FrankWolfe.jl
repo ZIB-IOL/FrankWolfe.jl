@@ -192,13 +192,15 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0
         end
         t = t + 1
     end
+    # recompute everything once for final verfication / do not record to trajectory though for now! 
+    # this is important as some variants do not recompute f(x) and the dualGap regularly but only when reporting
+    # hence the final computation.
+    gradient = grad(x)
+    v = compute_extreme_point(lmo, gradient)
+    primal = f(x)
+    dualGap = dot(x, gradient) - dot(v, gradient)
     if verbose
         tt = last
-        # recompute everything once for final verfication
-        gradient = grad(x)
-        v = compute_extreme_point(lmo, gradient)
-        primal = f(x)
-        dualGap = dot(x, gradient) - dot(v, gradient)
         rep = [tt, "", primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9]
         itPrint(rep)
         footerPrint()
