@@ -43,9 +43,9 @@ We can solve the approximate Carathéodory problem with rational arithmetic to o
 
 See full example: `examples/approximateCaratheodory.jl`
 
-$$minimizing_{n in \Delta(n)} ||x||^2$$
+<img src="https://render.githubusercontent.com/render/math?math=\min_{n in \Delta(n)} \|x\|^2">
 
-<img src="https://render.githubusercontent.com/render/math?math=e^{i \pi} = -1">
+with n = 100 here.
 
 ````
 Vanilla Frank-Wolfe Algorithm.
@@ -70,7 +70,12 @@ EMPHASIS: blas STEPSIZE: rationalshortstep EPSILON: 1.0e-7 MAXIT: 100 TYPE: Rati
   0.600608 seconds (3.83 M allocations: 111.274 MiB, 12.97% gc time)
   
 Output type of solution: Rational{BigInt}
+````
+The solution returned it rational as we can see up there and:
 
+```
+x = Rational{BigInt}[1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100]
+```
 
 
 
