@@ -13,6 +13,8 @@ end
 
 UnitSimplexOracle{T}() where {T} = UnitSimplexOracle{T}(one(T))
 
+UnitSimplexOracle(rhs::Integer) = UnitSimplexOracle{Rational{BigInt}}(rhs)
+
 """
 LMO for scaled unit simplex.
 Returns either vector of zeros or vector with one active value equal to RHS if
@@ -55,6 +57,8 @@ struct ProbabilitySimplexOracle{T} <: LinearMinimizationOracle
 end
 
 ProbabilitySimplexOracle{T}() where {T} = ProbabilitySimplexOracle{T}(one(T))
+
+ProbabilitySimplexOracle(rhs::Integer) = ProbabilitySimplexOracle{Float64}(rhs)
 
 """
 LMO for scaled probability simplex.
