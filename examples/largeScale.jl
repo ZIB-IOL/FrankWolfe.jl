@@ -3,7 +3,7 @@ import LinearAlgebra
 
 
 n = Int(1e9)
-k = 10000
+k = 1000
 
 xpi = rand(n);
 total = sum(xpi);

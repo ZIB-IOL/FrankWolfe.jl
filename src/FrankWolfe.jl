@@ -129,13 +129,14 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap","Time"]
         headerPrint(headers)
     end
+
     if emph === memory && !isa(x, Array)
         x = convert(Vector{promote_type(eltype(x), Float64)}, x)
     end
     first_iter = true
     gradient = 0
     while t <= maxIt && dualGap >= max(epsilon,eps())
-        primal = f(x)
+        gradient = grad(x)
         
         if isnothing(momentum) || first_iter
             gradient = grad(x)
@@ -150,12 +151,13 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0
 
         v = compute_extreme_point(lmo, gradient)
         
-        dualGap = dot(x, gradient) - dot(v, gradient)
-
-        if trajectory === true
-            append!(trajData, [t, primal, primal-dualGap, dualGap])
+        # go easy on the memory - only compute if really needed
+        if (mod(t,printIt) == 0 && verbose) || trajectory || !(stepSize == agnostic 
+            || stepSize == nonconvex || stepSize == fixed)
+            primal = f(x)
+            dualGap = dot(x, gradient) - dot(v, gradient)
         end
- 
+
         if trajectory === true
             append!(trajData, [t, primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9])
         end
@@ -190,6 +192,13 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0
         end
         t = t + 1
     end
+    # recompute everything once for final verfication / do not record to trajectory though for now! 
+    # this is important as some variants do not recompute f(x) and the dualGap regularly but only when reporting
+    # hence the final computation.
+    gradient = grad(x)
+    v = compute_extreme_point(lmo, gradient)
+    primal = f(x)
+    dualGap = dot(x, gradient) - dot(v, gradient)
     if verbose
         tt = last
         rep = [tt, "", primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9]
