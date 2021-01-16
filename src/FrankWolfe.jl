@@ -88,8 +88,8 @@ end
 # Vanilla FW
 ##############################################################
 
-function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0, stepLim=20,
-        epsilon=1e-7, maxIt=10000, printIt=1000, trajectory=false, verbose=false,lsTol=1e-7,emph::Emph = blas)
+function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0, stepLim=20, momentum=nothing,
+        epsilon=1e-7, maxIt=10000, printIt=1000, trajectory=false, verbose=false, lsTol=1e-7, emph::Emph = blas)
     function headerPrint(data)
         @printf("\n───────────────────────────────────────────────────────────────────────────────────\n")
         @printf("%6s %13s %14s %14s %14s %14s\n", data[1], data[2], data[3], data[4], data[5], data[6])
@@ -133,9 +133,22 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0
     if emph === memory && !isa(x, Array)
         x = convert(Vector{promote_type(eltype(x), Float64)}, x)
     end
-
+    first_iter = true
+    gradient = 0
     while t <= maxIt && dualGap >= max(epsilon,eps())
         gradient = grad(x)
+        
+        if isnothing(momentum) || first_iter
+            gradient = grad(x)
+        else
+            if emph === memory
+                @. gradient = (momentum * gradient) .+ (1 - momentum) .* grad(x)
+            else
+                gradient = (momentum * gradient) .+ (1 - momentum) * grad(x)
+            end
+        end
+        first_iter = false
+
         v = compute_extreme_point(lmo, gradient)
         
         # go easy on the memory - only comppute if really needed
@@ -270,7 +283,7 @@ function lcg(f, grad, lmoBase, x0; stepSize::LSMethod = agnostic, L = Inf,
         end
 
         if trajectory === true
-            append!(trajData, [t, primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9, 0])
+            append!(trajData, [t, primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9, length(lmo)])
         end
         
         if stepSize === agnostic
@@ -291,7 +304,7 @@ function lcg(f, grad, lmoBase, x0; stepSize::LSMethod = agnostic, L = Inf,
             if t === 0
                 tt = initial
             end
-            rep = [tt, string(t), primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9, 0]
+            rep = [tt, string(t), primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9, length(lmo)]
             itPrint(rep)
             flush(stdout)
         end
@@ -299,7 +312,7 @@ function lcg(f, grad, lmoBase, x0; stepSize::LSMethod = agnostic, L = Inf,
     end
     if verbose
         tt = last
-        rep = [tt, "", primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9, 0]
+        rep = [tt, "", primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9, length(lmo)]
         itPrint(rep)
         footerPrint()
         flush(stdout)
