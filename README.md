@@ -129,7 +129,7 @@ The package is build to scale well, for those conditional gradients variants tha
 
 The package is build to support extreme sizes with a special memory efficient emphasis `emph=FrankWolfe.memory`, which minimizes very expensive allocation memory and performs as many operations as possible in-place. 
 
-Here is an example of a run with 1e9 variables (that is one billion variables). Each gradient is around 7.6 GB in size. Here is the output of the run broken down into pieces:
+Here is an example of a run with 1e9 variables (that is one billion variables). Each gradient is around 7.5 GB in size. Here is the output of the run broken down into pieces:
 
 ````
 Size of single vector (Float64): 7629.39453125 MB                                                                                                                                    
@@ -153,3 +153,7 @@ Testing update... (emph: memory) 100%|██████████████
  update (memory)       10    5.00s  5.72%   500ms     0.00B  0.00%    0.00B
  dual gap              10    2.40s  2.75%   240ms     0.00B  0.00%    0.00B
  ──────────────────────────────────────────────────────────────────────────
+````
+
+The above is the optional benchmarking of the oracles that we provide to understand how fast crucial parts of the algorithms are, mostly notably oracle evaluations, the update of the iterate and the computation of the dual gap. As you can see if you compare `update (blas)` vs. `update (memory)`, the normal update when we use BLAS requires an additional 14.9GB of memory on top of the gradient etc whereas the `update (memory)` (the memory emphasis mode) does not consume any extra memory. This is also reflected in the times: the BLAS version requires 3.61 seconds on average to update the iterate, while the memory emphasis version requires only 500ms. In fact none of the crucial components in the algorithm consume any memory when run in memory efficient mode. Now let us look at the actual footprint of the whole algorithm:
+
