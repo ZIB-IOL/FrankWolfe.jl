@@ -125,9 +125,31 @@ x = Rational{BigInt}[1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//
 
 Example: `examples/largeScale.jl`
 
-xxx
+The package is build to scale well, for those conditional gradients variants that can scale well. For exampple, Away-Step Frank-Wolfe and Pairwise Conditional Gradients do in most cases *not scale well* because they need to maintain active sets and maintaining them can be very expensive. Similarly, line search methods might become prohibitive at large sizes. However if we consider scale-friendly variants, e.g., the vanilla Frank-Wolfe algorithm with the agnostic step size rule or short step rule, then these algorithms can scale well to extreme sizes esentially only limited by the amount of memory that you have available. However even for these methods that tend to scale well, allocation of memory itself can be very slow when you need to allocate gigabytes of memory for a single gradient computation. 
 
+The package is build to support extreme sizes with a special memory efficient emphasis `emph=FrankWolfe.memory`, which minimizes very expensive allocation memory and performs as many operations as possible in-place. 
 
+Here is an example of a run with 1e9 variables (that is one billion variables). Each gradient is around 7.6 GB in size. Here is the output of the run broken down into pieces:
 
+````
+Size of single vector (Float64): 7629.39453125 MB                                                                                                                                    
+Testing f... 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████| Time: 0:00:23
+Testing grad... 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████| Time: 0:00:23
+Testing lmo... 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████| Time: 0:00:29
+Testing dual gap... 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████| Time: 0:00:46
+Testing update... (emph: blas) 100%|███████████████████████████████████████████████████████████████████████████████████████████████| Time: 0:01:35
+Testing update... (emph: memory) 100%|█████████████████████████████████████████████████████████████████████████████████████████████| Time: 0:00:58
+ ──────────────────────────────────────────────────────────────────────────
+                                   Time                   Allocations      
+                           ──────────────────────   ───────────────────────
+     Tot / % measured:           278s / 31.4%            969GiB / 30.8%    
 
-
+ Section           ncalls     time   %tot     avg     alloc   %tot      avg
+ ──────────────────────────────────────────────────────────────────────────
+ update (blas)         10    36.1s  41.3%   3.61s    149GiB  50.0%  14.9GiB
+ lmo                   10    18.4s  21.1%   1.84s     0.00B  0.00%    0.00B
+ grad                  10    12.8s  14.6%   1.28s   74.5GiB  25.0%  7.45GiB
+ f                     10    12.7s  14.5%   1.27s   74.5GiB  25.0%  7.45GiB
+ update (memory)       10    5.00s  5.72%   500ms     0.00B  0.00%    0.00B
+ dual gap              10    2.40s  2.75%   240ms     0.00B  0.00%    0.00B
+ ──────────────────────────────────────────────────────────────────────────
