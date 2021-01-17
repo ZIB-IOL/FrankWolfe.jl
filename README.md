@@ -83,13 +83,13 @@ Most common strategies and some more particular ones:
 
 Example: `examples/approximateCaratheodory.jl`
 
-We can solve the approximate Carathéodory problem with rational arithmetic to obtain rational approximations; see <https://arxiv.org/abs/1911.04415> for some background about approximate Carathéodory and Conditioanl Gradients. 
+We can solve the approximate Carathéodory problem with rational arithmetic to obtain rational approximations; see <https://arxiv.org/abs/1911.04415> for some background about approximate Carathéodory and Conditioanl Gradients. We consider the simple instance of approximating the `0` over the probability simplex here:
 
 <p class="aligncenter">
 <img src="https://render.githubusercontent.com/render/math?math=\min_{x \in \Delta(n)} \|x\|^2">
 </p>
 
-with n = 100 here.
+with n = 100.
 
 ````
 Vanilla Frank-Wolfe Algorithm.
