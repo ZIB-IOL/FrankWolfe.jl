@@ -129,7 +129,7 @@ The package is build to scale well, for those conditional gradients variants tha
 
 The package is build to support extreme sizes with a special memory efficient emphasis `emph=FrankWolfe.memory`, which minimizes very expensive allocation memory and performs as many operations as possible in-place. 
 
-Here is an example of a run with 1e9 variables (that is one billion variables). Each gradient is around 7.5 GB in size. Here is the output of the run broken down into pieces:
+Here is an example of a run with 1e9 variables (that is *one billion* variables). Each gradient is around 7.5 GB in size. Here is the output of the run broken down into pieces:
 
 ````
 Size of single vector (Float64): 7629.39453125 MB                                                                                                                                    
@@ -156,4 +156,30 @@ Testing update... (emph: memory) 100%|██████████████
 ````
 
 The above is the optional benchmarking of the oracles that we provide to understand how fast crucial parts of the algorithms are, mostly notably oracle evaluations, the update of the iterate and the computation of the dual gap. As you can see if you compare `update (blas)` vs. `update (memory)`, the normal update when we use BLAS requires an additional 14.9GB of memory on top of the gradient etc whereas the `update (memory)` (the memory emphasis mode) does not consume any extra memory. This is also reflected in the times: the BLAS version requires 3.61 seconds on average to update the iterate, while the memory emphasis version requires only 500ms. In fact none of the crucial components in the algorithm consume any memory when run in memory efficient mode. Now let us look at the actual footprint of the whole algorithm:
+
+````
+Vanilla Frank-Wolfe Algorithm.
+EMPHASIS: memory STEPSIZE: agnostic EPSILON: 1.0e-7 MAXIT: 1000 TYPE: Float64
+
+───────────────────────────────────────────────────────────────────────────────────
+  Type     Iteration         Primal           Dual       Dual Gap           Time
+───────────────────────────────────────────────────────────────────────────────────
+     I             0   1.000000e+00  -1.000000e+00   2.000000e+00   1.065668e+01
+    FW           100   1.326732e-02  -1.326733e-02   2.653465e-02   4.943181e+02
+    FW           200   6.650080e-03  -6.650086e-03   1.330017e-02   9.776392e+02
+    FW           300   4.437059e-03  -4.437064e-03   8.874123e-03   1.460490e+03
+    FW           400   3.329174e-03  -3.329180e-03   6.658354e-03   1.943530e+03
+    FW           500   2.664003e-03  -2.664008e-03   5.328011e-03   2.426762e+03
+    FW           600   2.220371e-03  -2.220376e-03   4.440747e-03   2.910154e+03
+    FW           700   1.903401e-03  -1.903406e-03   3.806807e-03   3.394155e+03
+    FW           800   1.665624e-03  -1.665629e-03   3.331253e-03   3.879587e+03
+    FW           900   1.480657e-03  -1.480662e-03   2.961319e-03   4.362325e+03
+    FW          1000   1.332665e-03  -1.332670e-03   2.665335e-03   4.845915e+03
+  Last                 1.331334e-03  -1.331339e-03   2.662673e-03   4.852188e+03
+───────────────────────────────────────────────────────────────────────────────────
+
+4853.033417 seconds (4.75 M allocations: 14.683 TiB, 0.50% gc time)
+````
+
+As you can see the algorithm ran for about 4900 secs allocating 14.683TiB of memory throughout. So how does this average out to the cost per single iteration: `14.683 * 1024 / 7.45 / 1000 = 2.0181734228` so about 2 times the size of our gradient per iteration; the little extra is due to the logging (that requires compuation of f(x) which costs another 7.45 GB every 100 iterations) and overhead from other minor allocations. This factor 2 is essentially as good as it gets: you need one 7.45 GB to hold the gradient and another 7.45GB to hold the iterate.
 
