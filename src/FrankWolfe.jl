@@ -16,6 +16,9 @@ include("polytope_oracles.jl")
 
 include("utils.jl")
 
+# move advanced variants etc to there own files to prevent excessive clutter
+include("afw.jl")
+
 ##############################################################
 # simple benchmark of elementary costs of oracles and 
 # critical components
