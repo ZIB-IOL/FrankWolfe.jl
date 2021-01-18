@@ -86,6 +86,7 @@ function benchmark_oracles(f,grad,lmo,n;k=100,nocache=true,T=Float64)
         end
     end
     print_timer(to)
+    return nothing
 end
 
 ##############################################################
@@ -214,7 +215,7 @@ end
 
 function lcg(f, grad, lmoBase, x0; stepSize::LSMethod = agnostic, L = Inf,
     phiFactor=2, cacheSize = Inf, greedyLazy = false,
-    epsilon=1e-7, maxIt=10000, printIt=1000, trajectory=false, verbose=false,lsTol=1e-7,emph::Emph = blas) where T
+    epsilon=1e-7, maxIt=10000, printIt=1000, trajectory=false, verbose=false,lsTol=1e-7,emph::Emph = blas)
 
     if isfinite(cacheSize)
         lmo = MultiCacheLMO{cacheSize}(lmoBase)
