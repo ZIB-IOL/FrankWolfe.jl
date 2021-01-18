@@ -3,6 +3,7 @@ using Test
 using LinearAlgebra
 
 include("lmo.jl")
+include("function_gradient.jl")
 
 @testset "Line Search methods" begin
     a = [-1.0,-1.0,-1.0]

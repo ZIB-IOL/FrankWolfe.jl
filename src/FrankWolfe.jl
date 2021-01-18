@@ -5,6 +5,7 @@ using Printf
 using ProgressMeter
 using TimerOutputs
 using SparseArrays: spzeros
+import Random
 
 include("defs.jl")
 include("simplex_matrix.jl")
@@ -15,6 +16,7 @@ include("lp_norm_oracles.jl")
 include("polytope_oracles.jl")
 
 include("utils.jl")
+include("function_gradient.jl")
 
 ##############################################################
 # simple benchmark of elementary costs of oracles and 
@@ -65,7 +67,7 @@ function benchmarkOracles(f,grad,lmo,n;k=100,nocache=true,T=Float64)
     if !nocache
         @showprogress 1 "Testing caching 100 points... " for i in 1:k    
             @timeit to "caching 100 points" begin
-                cache = []
+                cache = Float64[]
                 for j in 1:100
                     x = rand(n)
                     push!(cache,x)
@@ -74,14 +76,13 @@ function benchmarkOracles(f,grad,lmo,n;k=100,nocache=true,T=Float64)
                 gradient = grad(x)
                 v = compute_extreme_point(lmo, gradient)
                 gamma = 1/2    
-                test = (x -> dot(x, gradient)).(cache) 
+                test = (x -> dot(x, gradient)).(cache)
                 v = cache[argmin(test)]
                 val = v in cache
             end
         end
     end
-
-    print_timer(to::TimerOutput)
+    print_timer(to)
 end
 
 ##############################################################
@@ -137,14 +138,10 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0
     gradient = 0
     while t <= maxIt && dualGap >= max(epsilon,eps())
 
-        if isnothing(momentum) || first_iter
+        if momentum === nothing || first_iter
             gradient = grad(x)
         else
-            if emph === memory
-                @. gradient = (momentum * gradient) .+ (1 - momentum) .* grad(x)
-            else
-                gradient = (momentum * gradient) .+ (1 - momentum) * grad(x)
-            end
+            @emphasis(emph, gradient = (momentum * gradient) .+ (1 - momentum) .* grad(x))
         end
         first_iter = false
 
@@ -164,9 +161,9 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0
         if stepSize === agnostic
             gamma = 2 // (2+t)
         elseif stepSize === goldenratio
-           nothing, gamma = segmentSearch(f,grad,x,v,lsTol=lsTol)
+           _, gamma = segmentSearch(f,grad,x,v,lsTol=lsTol)
         elseif stepSize === backtracking
-           nothing, gamma = backtrackingLS(f,grad,x,v,lsTol=lsTol,stepLim=stepLim) 
+           _, gamma = backtrackingLS(f,grad,x,v,lsTol=lsTol,stepLim=stepLim) 
         elseif stepSize === nonconvex
             gamma = 1 / sqrt(t+1)
         elseif stepSize === shortstep
@@ -290,9 +287,9 @@ function lcg(f, grad, lmoBase, x0; stepSize::LSMethod = agnostic, L = Inf,
         if stepSize === agnostic
             gamma = 2/(2+t)
         elseif stepSize === goldenratio
-            nothing, gamma = segmentSearch(f,grad,x,v,lsTol=lsTol)
+            _, gamma = segmentSearch(f,grad,x,v,lsTol=lsTol)
         elseif stepSize === backtracking
-            nothing, gamma = backtrackingLS(f,grad,x,v,lsTol=lsTol) 
+            _, gamma = backtrackingLS(f,grad,x,v,lsTol=lsTol) 
         elseif stepSize === nonconvex
             gamma = 1 / sqrt(t+1)
         elseif stepSize === shortstep
