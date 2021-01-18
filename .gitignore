@@ -1,3 +1,6 @@
 Manifest.toml
 codeServ.sh
 src/temp.jl
+.vscode/settings.json
+fw-julia.code-workspace
+src/temp.txt
