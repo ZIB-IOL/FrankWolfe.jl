@@ -15,6 +15,7 @@ include("lp_norm_oracles.jl")
 include("polytope_oracles.jl")
 
 include("utils.jl")
+include("function_gradient.jl")
 
 ##############################################################
 # simple benchmark of elementary costs of oracles and 
