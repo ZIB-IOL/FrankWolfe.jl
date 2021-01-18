@@ -34,7 +34,7 @@ function stochastic_frank_wolfe(f::StochasticObjective, lmo; x0stepSize::LSMetho
     end
 
     if verbose
-        println("\nVanilla Frank-Wolfe Algorithm.")
+        println("\Stochastic Frank-Wolfe Algorithm.")
         numType = eltype(x0)
         println("EMPHASIS: $emph STEPSIZE: $stepSize EPSILON: $epsilon MAXIT: $maxIt TYPE: $numType")
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap","Time"]
