@@ -1,6 +1,8 @@
-using FrankWolfe
+
+include(joinpath(@__DIR__, "activate.jl"))
+
 using LinearAlgebra
-using ReverseDiff;
+
 
 n = Int(1e3);
 k = 1000
