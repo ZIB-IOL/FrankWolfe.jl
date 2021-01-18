@@ -140,11 +140,7 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0
         if isnothing(momentum) || first_iter
             gradient = grad(x)
         else
-            if emph === memory
-                @. gradient = (momentum * gradient) .+ (1 - momentum) .* grad(x)
-            else
-                gradient = (momentum * gradient) .+ (1 - momentum) * grad(x)
-            end
+            @emphasis(emph, gradient = (momentum * gradient) .+ (1 - momentum) * grad(x))
         end
         first_iter = false
 
