@@ -196,7 +196,7 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0
     dualGap = dot(x, gradient) - dot(v, gradient)
     if verbose
         tt = last
-        rep = [tt, "", primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9]
+        rep = [tt, string(t-1), primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9]
         itPrint(rep)
         footerPrint()
         flush(stdout)
@@ -309,7 +309,7 @@ function lcg(f, grad, lmoBase, x0; stepSize::LSMethod = agnostic, L = Inf,
     end
     if verbose
         tt = last
-        rep = [tt, "", primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9, length(lmo)]
+        rep = [tt, string(t-1), primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9, length(lmo)]
         itPrint(rep)
         footerPrint()
         flush(stdout)
