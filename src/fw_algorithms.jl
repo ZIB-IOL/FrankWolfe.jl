@@ -37,6 +37,7 @@ function stochastic_frank_wolfe(f::StochasticObjective, lmo; x0stepSize::LSMetho
         println("\Stochastic Frank-Wolfe Algorithm.")
         numType = eltype(x0)
         println("EMPHASIS: $emph STEPSIZE: $stepSize EPSILON: $epsilon MAXIT: $maxIt TYPE: $numType")
+        println("BATCHSIZE: $batch_size")
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap","Time"]
         headerPrint(headers)
     end
