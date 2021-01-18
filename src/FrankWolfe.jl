@@ -28,7 +28,7 @@ include("afw.jl")
 
 # TODO: add actual use of T for the rand(n)
 
-function benchmarkOracles(f,grad,lmo,n;k=100,nocache=true,T=Float64)
+function benchmark_oracles(f,grad,lmo,n;k=100,nocache=true,T=Float64)
     sv = n*sizeof(T)/1024/1024
     println("\nSize of single vector ($T): $sv MB\n")
     to = TimerOutput()
