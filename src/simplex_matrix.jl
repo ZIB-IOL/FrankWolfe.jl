@@ -15,13 +15,13 @@ end
 Base.size(s::SimplexMatrix) = (1, s.dim)
 
 @inline function Base.getindex(s::SimplexMatrix{T}, i::Integer, j::Integer) where {T}
-    @boundscheck if i != 1 || !( 1 ≤ j ≤ s.dim )
+    @boundscheck if i != 1 || !(1 ≤ j ≤ s.dim)
         throw(BoundsError(s, (i, j)))
     end
     return one(T)
 end
 
-Base.getindex(s::SimplexMatrix, idx::Integer) = s[1,idx]
+Base.getindex(s::SimplexMatrix, idx::Integer) = s[1, idx]
 
 """
     *(S::SimplexMatrix{T1}, v::AbstractVector{T2})
@@ -29,7 +29,7 @@ Base.getindex(s::SimplexMatrix, idx::Integer) = s[1,idx]
 Product of the simplex matrix with a vector.
 Returns a 1-element vector `[sum(v)]` of appropriate type.
 """
-function Base.:*(S::SimplexMatrix{T1}, v::AbstractVector{T2}) where {T1, T2}
+function Base.:*(S::SimplexMatrix{T1}, v::AbstractVector{T2}) where {T1,T2}
     if length(v) != size(S, 2)
         throw(DimensionMismatch("Vector length $(length(v)), simplex matrix dimension $(size(S))"))
     end
@@ -37,7 +37,7 @@ function Base.:*(S::SimplexMatrix{T1}, v::AbstractVector{T2}) where {T1, T2}
     return T[sum(v)]
 end
 
-function Base.:*(S::SimplexMatrix{T1}, M::AbstractMatrix{T2}) where {T1, T2}
+function Base.:*(S::SimplexMatrix{T1}, M::AbstractMatrix{T2}) where {T1,T2}
     if size(M, 1) != size(S, 2)
         throw(DimensionMismatch("$(size(S)), $(size(M))"))
     end
@@ -49,7 +49,7 @@ function Base.:*(S::SimplexMatrix{T1}, M::AbstractMatrix{T2}) where {T1, T2}
     return res
 end
 
-function Base.:*(M::AbstractMatrix{T2}, S::SimplexMatrix{T1}) where {T1, T2}
+function Base.:*(M::AbstractMatrix{T2}, S::SimplexMatrix{T1}) where {T1,T2}
     if size(M, 2) != 1
         throw(DimensionMismatch("$(size(M)), $(size(S))"))
     end
@@ -64,5 +64,5 @@ function Base.:*(M::AbstractMatrix{T2}, S::SimplexMatrix{T1}) where {T1, T2}
 end
 
 function Base.convert(::Type{SimplexMatrix{T}}, s::SimplexMatrix) where {T}
-    SimplexMatrix{T}(s.dim)
+    return SimplexMatrix{T}(s.dim)
 end
