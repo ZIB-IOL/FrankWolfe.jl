@@ -7,6 +7,9 @@ using TimerOutputs
 using SparseArrays: spzeros
 import Random
 
+# for plotting -> keep here or move somewhere else?
+using Plots    
+
 include("defs.jl")
 include("simplex_matrix.jl")
 
@@ -115,7 +118,7 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0
     dualGap = Inf
     primal = Inf
     v = []
-    x = x0
+    x = copy(x0)
     tt:StepType = regular
     trajData = []
     dx = similar(x0) # Array{eltype(x0)}(undef, length(x0))
@@ -161,7 +164,7 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0
         end
 
         if trajectory === true
-            append!(trajData, [t, primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9])
+            push!(trajData, [t, primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9])
         end
     
         if stepSize === agnostic

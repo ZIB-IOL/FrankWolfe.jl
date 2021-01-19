@@ -157,3 +157,67 @@ macro emphasis(emph, ex)
         end
     end)
     end
+
+######## Visualization etc
+
+function plot_trajectories(data, label)
+    theme(:dark)
+    # theme(:vibrant)
+    gr() 
+
+    x = []
+    y = []
+    pit = nothing
+    pti = nothing
+    dit = nothing
+    dti = nothing
+    offset = 2
+    for i = 1:length(data)
+        trajectory =  data[i]
+        x = [trajectory[j][1] for j=offset:length(trajectory)]    
+        y = [trajectory[j][2] for j=offset:length(trajectory)]    
+        if i == 1
+            pit = plot(x, y, label=label[i], xaxis=:log, yaxis=:log, 
+                ylabel="Primal", legend=:bottomleft, yguidefontsize=8, xguidefontsize=8, legendfontsize=8)
+        else
+            plot!(x, y, label=label[i])
+        end
+    end
+    for i = 1:length(data)
+        trajectory =  data[i]
+        x = [trajectory[j][5] for j=offset:length(trajectory)]    
+        y = [trajectory[j][2] for j=offset:length(trajectory)]    
+        if i == 1
+            pti = plot(x, y, label=label[i], legend = false, xaxis=:log, yaxis=:log, 
+                yguidefontsize=8, xguidefontsize=8)
+        else
+            plot!(x, y, label=label[i])
+        end
+    end
+    for i = 1:length(data)
+        trajectory =  data[i]
+        x = [trajectory[j][1] for j=offset:length(trajectory)]    
+        y = [trajectory[j][4] for j=offset:length(trajectory)]    
+        if i == 1
+            dit = plot(x, y, label=label[i], legend = false, xaxis=:log, yaxis=:log, ylabel="Dual Gap", xlabel="Iterations", 
+                yguidefontsize=8, xguidefontsize=8)
+        else
+            plot!(x, y, label=label[i])
+        end
+    end
+    for i = 1:length(data)
+        trajectory =  data[i]
+        x = [trajectory[j][5] for j=offset:length(trajectory)]    
+        y = [trajectory[j][4] for j=offset:length(trajectory)]    
+        if i == 1
+            dti = plot(x, y, label=label[i], legend = false, xaxis=:log, yaxis=:log, xlabel="Time", 
+                yguidefontsize=8, xguidefontsize=8)
+        else
+            plot!(x, y, label=label[i])
+        end
+    end
+    fp = plot(pit,pti,dit,dti, layout = (2,2)) # layout = @layout([A{0.01h}; [B C; D E]]))
+    plot!(size=(600,400))
+    savefig(fp,  "convergence.pdf") 
+    return fp
+end
