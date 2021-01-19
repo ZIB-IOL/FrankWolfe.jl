@@ -3,7 +3,7 @@
 using BenchmarkTools
 using FrankWolfe
 
-for n = (10, 100, 1000)
+for n in (10, 100, 1000)
     @info "n = $n"
     direction = zeros(n)
     rhs = 10 * rand()
@@ -13,7 +13,8 @@ for n = (10, 100, 1000)
         for idx in 1:$n
             $direction .= 0
             $direction[idx] = -1
-            res_point_cached_vec = FrankWolfe.compute_extreme_point($lmo_veccached, $direction, threshold=0)
+            res_point_cached_vec =
+                FrankWolfe.compute_extreme_point($lmo_veccached, $direction, threshold=0)
             _ = length($lmo_veccached)
         end
         empty!($lmo_veccached)
@@ -24,7 +25,8 @@ for n = (10, 100, 1000)
             for idx in 1:$n
                 $direction .= 0
                 $direction[idx] = -1
-                res_point_cached_vec = FrankWolfe.compute_extreme_point($lmo_multicached, $direction, threshold=0)
+                res_point_cached_vec =
+                    FrankWolfe.compute_extreme_point($lmo_multicached, $direction, threshold=0)
                 _ = length($lmo_multicached)
             end
             empty!($lmo_multicached)
