@@ -2,7 +2,7 @@ using Test
 using FrankWolfe
 using LinearAlgebra
 
-import FrankWolfe: compute_extreme_point, LpNormLMO, KSparseLMO 
+import FrankWolfe: compute_extreme_point, LpNormLMO, KSparseLMO
 import FrankWolfe: SimplexMatrix
 
 @testset "Simplex matrix type" begin
@@ -43,9 +43,9 @@ end
         end
         # computing dual solutions and testing complementarity
         dual, redC = FrankWolfe.compute_dual_solution(lmo_prob, direction, res_point_prob)
-        @test sum((redC .* res_point_prob )) + (dual[1] * (rhs - sum(res_point_prob))) == 0
+        @test sum((redC .* res_point_prob)) + (dual[1] * (rhs - sum(res_point_prob))) == 0
         dual, redC = FrankWolfe.compute_dual_solution(lmo_unit, direction, res_point_unit)
-        @test sum((redC .* res_point_unit )) + (dual[1] * (rhs - sum(res_point_unit))) == 0
+        @test sum((redC .* res_point_unit)) + (dual[1] * (rhs - sum(res_point_unit))) == 0
     end
     @testset "Choosing least-degrading direction" for idx in 1:n
         # all directions worsening, must pick idx
@@ -63,9 +63,9 @@ end
         end
         # computing dual solutions and testing complementarity
         dual, redC = FrankWolfe.compute_dual_solution(lmo_prob, direction, res_point_prob)
-        @test sum((redC .* res_point_prob )) + (dual[1] * (rhs - sum(res_point_prob))) == 0
+        @test sum((redC .* res_point_prob)) + (dual[1] * (rhs - sum(res_point_prob))) == 0
         dual, redC = FrankWolfe.compute_dual_solution(lmo_unit, direction, res_point_unit)
-        @test sum((redC .* res_point_unit )) + (dual[1] * (rhs - sum(res_point_unit))) == 0
+        @test sum((redC .* res_point_unit)) + (dual[1] * (rhs - sum(res_point_unit))) == 0
     end
 end
 
@@ -76,7 +76,7 @@ end
         @testset "$p-norm" for p in (1, 1.0, 1.5, 2, 2.0, Inf, Inf32)
             for _ in 1:100
                 c = 5 * randn(n)
-                lmo = LpNormLMO{Float64, p}(τ)
+                lmo = LpNormLMO{Float64,p}(τ)
                 v = FrankWolfe.compute_extreme_point(lmo, c)
                 @test norm(v, p) ≈ τ
             end
@@ -90,10 +90,7 @@ end
                 v_inf = FrankWolfe.compute_extreme_point(FrankWolfe.LpNormLMO{Inf}(τ / K), c)
                 # K-norm is convex hull of union of the two norm epigraphs
                 # => cannot do better than the best of them
-                @test dot(v, c) ≈ min(
-                    dot(v1, c),
-                    dot(v_inf, c),
-                )
+                @test dot(v, c) ≈ min(dot(v1, c), dot(v_inf, c))
                 # test according to original norm definition
                 # norm constraint must be tight
                 K_sum = 0.0
@@ -106,7 +103,7 @@ end
     end
     # testing issue on zero direction
     for n in (1, 5)
-        lmo = FrankWolfe.LpNormLMO{Float64, 2}(1.0)
+        lmo = FrankWolfe.LpNormLMO{Float64,2}(1.0)
         x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
         @test all(!isnan, x0)
     end
@@ -148,9 +145,12 @@ end
         direction[idx] = -1
         res_point_unit = FrankWolfe.compute_extreme_point(lmo_unit, direction)
         res_point_cached = FrankWolfe.compute_extreme_point(lmo_cached, direction, threshold=0)
-        res_point_cached_multi = FrankWolfe.compute_extreme_point(lmo_multicached, direction, threshold=-1000)
-        res_point_cached_vec = FrankWolfe.compute_extreme_point(lmo_veccached, direction, threshold=-1000)
-        res_point_never_cached = FrankWolfe.compute_extreme_point(lmo_cached, direction, store_cache=false)
+        res_point_cached_multi =
+            FrankWolfe.compute_extreme_point(lmo_multicached, direction, threshold=-1000)
+        res_point_cached_vec =
+            FrankWolfe.compute_extreme_point(lmo_veccached, direction, threshold=-1000)
+        res_point_never_cached =
+            FrankWolfe.compute_extreme_point(lmo_cached, direction, store_cache=false)
         @test res_point_never_cached == res_point_unit
         @test lmo_never_cached.last_vertex === nothing
         @test length(lmo_never_cached) == 0

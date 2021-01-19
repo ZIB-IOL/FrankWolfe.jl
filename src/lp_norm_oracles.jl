@@ -7,13 +7,13 @@ LMO with feasible set being a bound on the L-p norm:
 C = {x ∈ R^n, norm(x, p) ≤ right_side}
 ```
 """
-struct LpNormLMO{T, p} <: LinearMinimizationOracle
+struct LpNormLMO{T,p} <: LinearMinimizationOracle
     right_hand_side::T
 end
 
-LpNormLMO{p}(right_hand_side::T) where {T, p} = LpNormLMO{T, p}(right_hand_side)
+LpNormLMO{p}(right_hand_side::T) where {T,p} = LpNormLMO{T,p}(right_hand_side)
 
-function compute_extreme_point(lmo::LpNormLMO{T, 2}, direction) where {T}
+function compute_extreme_point(lmo::LpNormLMO{T,2}, direction) where {T}
     dir_norm = norm(direction, 2)
     res = similar(direction)
     n = length(direction)
@@ -26,11 +26,11 @@ function compute_extreme_point(lmo::LpNormLMO{T, 2}, direction) where {T}
     return res
 end
 
-function compute_extreme_point(lmo::LpNormLMO{T, Inf}, direction) where {T}
-    -lmo.right_hand_side * sign.(direction)
+function compute_extreme_point(lmo::LpNormLMO{T,Inf}, direction) where {T}
+    return -lmo.right_hand_side * sign.(direction)
 end
 
-function compute_extreme_point(lmo::LpNormLMO{T, 1}, direction) where {T}
+function compute_extreme_point(lmo::LpNormLMO{T,1}, direction) where {T}
     idx = 0
     v = -one(eltype(direction))
     for i in eachindex(direction)
@@ -40,19 +40,15 @@ function compute_extreme_point(lmo::LpNormLMO{T, 1}, direction) where {T}
         end
     end
 
-    return MaybeHotVector(
-        -lmo.right_hand_side * sign(direction[idx]),
-        idx,
-        length(direction)
-    )
+    return MaybeHotVector(-lmo.right_hand_side * sign(direction[idx]), idx, length(direction))
 end
 
-function compute_extreme_point(lmo::LpNormLMO{T, p}, direction) where {T, p}
+function compute_extreme_point(lmo::LpNormLMO{T,p}, direction) where {T,p}
     # covers the case where the Inf or 1 is of another type
     if p == Inf
-        return compute_extreme_point(LpNormLMO{T, Inf}(lmo.right_hand_side), direction)
+        return compute_extreme_point(LpNormLMO{T,Inf}(lmo.right_hand_side), direction)
     elseif p == 1
-        return compute_extreme_point(LpNormLMO{T, 1}(lmo.right_hand_side), direction)
+        return compute_extreme_point(LpNormLMO{T,1}(lmo.right_hand_side), direction)
     end
     q = p / (p - 1)
     pow_ratio = q / p
@@ -98,12 +94,9 @@ struct KNormBallLMO{T} <: LinearMinimizationOracle
 end
 
 function compute_extreme_point(lmo::KNormBallLMO{T}, direction) where {T}
-    K = max(
-        min(lmo.K, length(direction)),
-        1,
-    )
-    v1 = compute_extreme_point(LpNormLMO{T, 1}(lmo.right_hand_side) , direction)
-    vinf = compute_extreme_point(LpNormLMO{T, Inf}(lmo.right_hand_side / K) , direction)
+    K = max(min(lmo.K, length(direction)), 1)
+    v1 = compute_extreme_point(LpNormLMO{T,1}(lmo.right_hand_side), direction)
+    vinf = compute_extreme_point(LpNormLMO{T,Inf}(lmo.right_hand_side / K), direction)
     o1 = dot(v1, direction)
     oinf = dot(vinf, direction)
     return o1 ≤ oinf ? v1 : vinf
