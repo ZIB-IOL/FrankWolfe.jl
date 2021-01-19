@@ -103,7 +103,7 @@ end
     end
     # testing issue on zero direction
     for n in (1, 5)
-        lmo = FrankWolfe.LpNormLMO{Float64, 2}(1.0)
+        lmo = FrankWolfe.LpNormLMO{Float64,2}(1.0)
         x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
         @test all(!isnan, x0)
     end

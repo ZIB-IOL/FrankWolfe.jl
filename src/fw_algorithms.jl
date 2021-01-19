@@ -170,7 +170,7 @@ function stochastic_frank_wolfe(
     dualGap = dot(x, gradient) - dot(v, gradient)
     if verbose
         tt = last
-        rep = [tt, string(t - 1), primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9]
+        rep = [tt, string(t - 1), primal, primal - dualGap, dualGap, (time_ns() - timeEl) / 1.0e9]
         itPrint(rep)
         footerPrint()
         flush(stdout)
