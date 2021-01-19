@@ -29,7 +29,7 @@ end
     rhs = 10 * rand()
     lmo_prob = FrankWolfe.ProbabilitySimplexOracle(rhs)
     lmo_unit = FrankWolfe.UnitSimplexOracle(rhs)
-    @testset "Choosing improving direction" for idx = 1:n
+    @testset "Choosing improving direction" for idx in 1:n
         direction .= 0
         direction[idx] = -1
         res_point_prob = FrankWolfe.compute_extreme_point(lmo_prob, direction)
@@ -47,7 +47,7 @@ end
         dual, redC = FrankWolfe.compute_dual_solution(lmo_unit, direction, res_point_unit)
         @test sum((redC .* res_point_unit)) + (dual[1] * (rhs - sum(res_point_unit))) == 0
     end
-    @testset "Choosing least-degrading direction" for idx = 1:n
+    @testset "Choosing least-degrading direction" for idx in 1:n
         # all directions worsening, must pick idx
         direction .= 2
         direction[idx] = 1
@@ -74,16 +74,16 @@ end
         τ = 5 + 3 * rand()
         # tests that the "special" p behaves like the "any" p, i.e. 2.0 and 2
         @testset "$p-norm" for p in (1, 1.0, 1.5, 2, 2.0, Inf, Inf32)
-            for _ = 1:100
+            for _ in 1:100
                 c = 5 * randn(n)
                 lmo = LpNormLMO{Float64,p}(τ)
                 v = FrankWolfe.compute_extreme_point(lmo, c)
                 @test norm(v, p) ≈ τ
             end
         end
-        @testset "K-Norm ball $K" for K = 1:n
+        @testset "K-Norm ball $K" for K in 1:n
             lmo_ball = FrankWolfe.KNormBallLMO(K, τ)
-            for _ = 1:20
+            for _ in 1:20
                 c = 5 * randn(n)
                 v = FrankWolfe.compute_extreme_point(lmo_ball, c)
                 v1 = FrankWolfe.compute_extreme_point(FrankWolfe.LpNormLMO{1}(τ), c)
@@ -112,7 +112,7 @@ end
 @testset "K-sparse polytope LMO" begin
     @testset "$n-dimension" for n in (1, 2, 10)
         τ = 5 + 3 * rand()
-        for K = 1:n
+        for K in 1:n
             lmo = KSparseLMO(K, τ)
             x = 10 * randn(n) # dense vector
             v = compute_extreme_point(lmo, x)
@@ -140,7 +140,7 @@ end
     lmo_cached = FrankWolfe.SingleLastCachedLMO(lmo_unit)
     lmo_multicached = FrankWolfe.MultiCacheLMO{3}(lmo_unit)
     lmo_veccached = FrankWolfe.VectorCacheLMO(lmo_unit)
-    @testset "Forcing no cache remains nothing" for idx = 1:n
+    @testset "Forcing no cache remains nothing" for idx in 1:n
         direction .= 0
         direction[idx] = -1
         res_point_unit = FrankWolfe.compute_extreme_point(lmo_unit, direction)

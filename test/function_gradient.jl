@@ -17,7 +17,7 @@ Random.seed!(123)
             simple_quad(x) = A * x ⋅ x / 2 + b ⋅ x + c
             ∇simple_quad(x) = A * x + b
             f_simple = FrankWolfe.SimpleFunctionObjective(simple_quad, ∇simple_quad)
-            for _ = 1:5
+            for _ in 1:5
                 x = randn(n)
                 @test FrankWolfe.compute_gradient(f_simple, x) == ∇simple_quad(x)
                 @test FrankWolfe.compute_value(f_simple, x) == simple_quad(x)
@@ -42,7 +42,7 @@ Random.seed!(123)
                 grad = push!(grad_a, a ⋅ xi + b - yi)
                 return grad
             end
-            xs = [10 * randn(5) for i = 1:10000]
+            xs = [10 * randn(5) for i in 1:10000]
             params = rand(6) .- 1 # start params in (-1,0)
             bias = 4π
             params_perfect = [1:5; bias]

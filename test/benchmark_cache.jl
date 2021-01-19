@@ -10,7 +10,7 @@ for n in (10, 100, 1000)
     lmo_unit = FrankWolfe.UnitSimplexOracle(rhs)
     lmo_veccached = FrankWolfe.VectorCacheLMO(lmo_unit)
     res_vec = @benchmark begin
-        for idx = 1:$n
+        for idx in 1:$n
             $direction .= 0
             $direction[idx] = -1
             res_point_cached_vec =
@@ -22,7 +22,7 @@ for n in (10, 100, 1000)
     res_multi = map(1:10) do N
         lmo_multicached = FrankWolfe.MultiCacheLMO{N}(lmo_unit)
         @benchmark begin
-            for idx = 1:$n
+            for idx in 1:$n
                 $direction .= 0
                 $direction[idx] = -1
                 res_point_cached_vec =
@@ -34,7 +34,7 @@ for n in (10, 100, 1000)
     end
     @info "Vec benchmark"
     display(res_vec)
-    for N = 1:10
+    for N in 1:10
         @info "Tuple benchmark $N"
         display(res_multi[N])
     end
