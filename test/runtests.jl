@@ -27,9 +27,9 @@ end
                 grad,
                 lmo_prob,
                 x0,
-                maxIt = 1000,
-                stepSize = FrankWolfe.agnostic,
-                verbose = true,
+                maxIt=1000,
+                stepSize=FrankWolfe.agnostic,
+                verbose=true,
             )[3] - 0.2,
         ) < 1.0e-5
         @test abs(
@@ -38,9 +38,9 @@ end
                 grad,
                 lmo_prob,
                 x0,
-                maxIt = 1000,
-                stepSize = FrankWolfe.goldenratio,
-                verbose = true,
+                maxIt=1000,
+                stepSize=FrankWolfe.goldenratio,
+                verbose=true,
             )[3] - 0.2,
         ) < 1.0e-5
         @test abs(
@@ -49,9 +49,9 @@ end
                 grad,
                 lmo_prob,
                 x0,
-                maxIt = 1000,
-                stepSize = FrankWolfe.backtracking,
-                verbose = true,
+                maxIt=1000,
+                stepSize=FrankWolfe.backtracking,
+                verbose=true,
             )[3] - 0.2,
         ) < 1.0e-5
         @test abs(
@@ -60,9 +60,9 @@ end
                 grad,
                 lmo_prob,
                 x0,
-                maxIt = 1000,
-                stepSize = FrankWolfe.nonconvex,
-                verbose = true,
+                maxIt=1000,
+                stepSize=FrankWolfe.nonconvex,
+                verbose=true,
             )[3] - 0.2,
         ) < 1.0e-2
         @test FrankWolfe.fw(
@@ -70,10 +70,10 @@ end
             grad,
             lmo_prob,
             x0,
-            maxIt = 1000,
-            stepSize = FrankWolfe.shortstep,
-            L = 2,
-            verbose = true,
+            maxIt=1000,
+            stepSize=FrankWolfe.shortstep,
+            L=2,
+            verbose=true,
         )[3] ≈ 0.2
         @test abs(
             FrankWolfe.fw(
@@ -81,9 +81,9 @@ end
                 grad,
                 lmo_prob,
                 x0,
-                maxIt = 1000,
-                stepSize = FrankWolfe.nonconvex,
-                verbose = true,
+                maxIt=1000,
+                stepSize=FrankWolfe.nonconvex,
+                verbose=true,
             )[3] - 0.2,
         ) < 1.0e-2
         @test abs(
@@ -92,10 +92,10 @@ end
                 grad,
                 lmo_prob,
                 x0,
-                maxIt = 1000,
-                stepSize = FrankWolfe.agnostic,
-                verbose = false,
-                momentum = 0.9,
+                maxIt=1000,
+                stepSize=FrankWolfe.agnostic,
+                verbose=false,
+                momentum=0.9,
             )[3] - 0.2,
         ) < 1.0e-3
         @test abs(
@@ -104,10 +104,10 @@ end
                 grad,
                 lmo_prob,
                 x0,
-                maxIt = 1000,
-                stepSize = FrankWolfe.agnostic,
-                verbose = false,
-                momentum = 0.5,
+                maxIt=1000,
+                stepSize=FrankWolfe.agnostic,
+                verbose=false,
+                momentum=0.5,
             )[3] - 0.2,
         ) < 1.0e-3
         @test abs(
@@ -116,11 +116,11 @@ end
                 grad,
                 lmo_prob,
                 x0,
-                maxIt = 1000,
-                stepSize = FrankWolfe.agnostic,
-                verbose = false,
-                momentum = 0.9,
-                emph = FrankWolfe.memory,
+                maxIt=1000,
+                stepSize=FrankWolfe.agnostic,
+                verbose=false,
+                momentum=0.9,
+                emph=FrankWolfe.memory,
             )[3] - 0.2,
         ) < 1.0e-3
         @test abs(
@@ -129,11 +129,11 @@ end
                 grad,
                 lmo_prob,
                 x0,
-                maxIt = 1000,
-                stepSize = FrankWolfe.adaptive,
-                L = 100,
-                verbose = false,
-                momentum = 0.9,
+                maxIt=1000,
+                stepSize=FrankWolfe.adaptive,
+                L=100,
+                verbose=false,
+                momentum=0.9,
             )[3] - 0.2,
         ) < 1.0e-3
         @test abs(
@@ -142,11 +142,11 @@ end
                 grad,
                 lmo_prob,
                 x0,
-                maxIt = 1000,
-                stepSize = FrankWolfe.adaptive,
-                L = 100,
-                verbose = false,
-                momentum = 0.5,
+                maxIt=1000,
+                stepSize=FrankWolfe.adaptive,
+                L=100,
+                verbose=false,
+                momentum=0.5,
             )[3] - 0.2,
         ) < 1.0e-3
         @test abs(
@@ -155,12 +155,12 @@ end
                 grad,
                 lmo_prob,
                 x0,
-                maxIt = 1000,
-                stepSize = FrankWolfe.adaptive,
-                L = 100,
-                verbose = false,
-                momentum = 0.9,
-                emph = FrankWolfe.memory,
+                maxIt=1000,
+                stepSize=FrankWolfe.adaptive,
+                L=100,
+                verbose=false,
+                momentum=0.9,
+                emph=FrankWolfe.memory,
             )[3] - 0.2,
         ) < 1.0e-3
     end
@@ -175,9 +175,9 @@ end
                 grad,
                 lmo_prob,
                 x0,
-                maxIt = 1000,
-                stepSize = FrankWolfe.goldenratio,
-                verbose = true,
+                maxIt=1000,
+                stepSize=FrankWolfe.goldenratio,
+                verbose=true,
             )[3] - 0.2,
         ) < 1.0e-5
         @test abs(
@@ -186,9 +186,9 @@ end
                 grad,
                 lmo_prob,
                 x0,
-                maxIt = 1000,
-                stepSize = FrankWolfe.backtracking,
-                verbose = true,
+                maxIt=1000,
+                stepSize=FrankWolfe.backtracking,
+                verbose=true,
             )[3] - 0.2,
         ) < 1.0e-5
         @test abs(
@@ -197,10 +197,10 @@ end
                 grad,
                 lmo_prob,
                 x0,
-                maxIt = 1000,
-                stepSize = FrankWolfe.shortstep,
-                L = 2,
-                verbose = true,
+                maxIt=1000,
+                stepSize=FrankWolfe.shortstep,
+                L=2,
+                verbose=true,
             )[3] - 0.2,
         ) < 1.0e-5
     end
@@ -221,10 +221,10 @@ end
             grad,
             lmo_prob,
             x0,
-            maxIt = k,
-            stepSize = FrankWolfe.shortstep,
-            L = 2,
-            verbose = true,
+            maxIt=k,
+            stepSize=FrankWolfe.shortstep,
+            L=2,
+            verbose=true,
         )
 
         @test primal - 1 // n <= bound
@@ -234,11 +234,11 @@ end
             grad,
             lmo_prob,
             x0,
-            maxIt = k,
-            stepSize = FrankWolfe.shortstep,
-            L = 2,
-            cacheSize = 100,
-            verbose = true,
+            maxIt=k,
+            stepSize=FrankWolfe.shortstep,
+            L=2,
+            cacheSize=100,
+            verbose=true,
         )
 
         @test primal - 1 // n <= bound
@@ -248,12 +248,12 @@ end
             grad,
             lmo_prob,
             x0,
-            maxIt = k,
-            stepSize = FrankWolfe.shortstep,
-            L = 2,
-            cacheSize = 100,
-            greedyLazy = true,
-            verbose = true,
+            maxIt=k,
+            stepSize=FrankWolfe.shortstep,
+            L=2,
+            cacheSize=100,
+            greedyLazy=true,
+            verbose=true,
         )
 
         @test primal - 1 // n <= bound
@@ -276,11 +276,11 @@ end
                 grad,
                 lmo_prob,
                 x0,
-                maxIt = k,
-                stepSize = FrankWolfe.backtracking,
-                printIt = k / 10,
-                verbose = true,
-                emph = FrankWolfe.blas,
+                maxIt=k,
+                stepSize=FrankWolfe.backtracking,
+                printIt=k / 10,
+                verbose=true,
+                emph=FrankWolfe.blas,
             )
 
             @test x !== nothing
@@ -290,11 +290,11 @@ end
                 grad,
                 lmo_prob,
                 x0,
-                maxIt = k,
-                stepSize = FrankWolfe.backtracking,
-                printIt = k / 10,
-                verbose = true,
-                emph = FrankWolfe.memory,
+                maxIt=k,
+                stepSize=FrankWolfe.backtracking,
+                printIt=k / 10,
+                verbose=true,
+                emph=FrankWolfe.memory,
             )
 
             @test x !== nothing
@@ -308,11 +308,11 @@ end
                 grad,
                 lmo_prob,
                 x0,
-                maxIt = k,
-                stepSize = FrankWolfe.backtracking,
-                printIt = k / 10,
-                verbose = true,
-                emph = FrankWolfe.blas,
+                maxIt=k,
+                stepSize=FrankWolfe.backtracking,
+                printIt=k / 10,
+                verbose=true,
+                emph=FrankWolfe.blas,
             )
 
             @test x !== nothing
@@ -322,11 +322,11 @@ end
                 grad,
                 lmo_prob,
                 x0,
-                maxIt = k,
-                stepSize = FrankWolfe.backtracking,
-                printIt = k / 10,
-                verbose = true,
-                emph = FrankWolfe.memory,
+                maxIt=k,
+                stepSize=FrankWolfe.backtracking,
+                printIt=k / 10,
+                verbose=true,
+                emph=FrankWolfe.memory,
             )
 
             @test x !== nothing
@@ -353,11 +353,11 @@ end
             grad,
             lmo,
             x0,
-            maxIt = k,
-            stepSize = FrankWolfe.agnostic,
-            printIt = k / 10,
-            emph = FrankWolfe.blas,
-            verbose = true,
+            maxIt=k,
+            stepSize=FrankWolfe.agnostic,
+            printIt=k / 10,
+            emph=FrankWolfe.blas,
+            verbose=true,
         )
 
         @test eltype(x0) == Rational{BigInt}
@@ -367,11 +367,11 @@ end
             grad,
             lmo,
             x0,
-            maxIt = k,
-            stepSize = FrankWolfe.agnostic,
-            printIt = k / 10,
-            emph = FrankWolfe.memory,
-            verbose = true,
+            maxIt=k,
+            stepSize=FrankWolfe.agnostic,
+            printIt=k / 10,
+            emph=FrankWolfe.memory,
+            verbose=true,
         )
         @test eltype(x0) == Rational{BigInt}
 
@@ -401,11 +401,11 @@ end
                 grad,
                 lmo,
                 x0,
-                maxIt = k,
-                stepSize = FrankWolfe.agnostic,
-                printIt = k / 10,
-                emph = FrankWolfe.blas,
-                verbose = true,
+                maxIt=k,
+                stepSize=FrankWolfe.agnostic,
+                printIt=k / 10,
+                emph=FrankWolfe.blas,
+                verbose=true,
             )
 
             @test eltype(x0) == T
@@ -416,11 +416,11 @@ end
                 grad,
                 lmo,
                 x0,
-                maxIt = k,
-                stepSize = FrankWolfe.agnostic,
-                printIt = k / 10,
-                emph = FrankWolfe.memory,
-                verbose = true,
+                maxIt=k,
+                stepSize=FrankWolfe.agnostic,
+                printIt=k / 10,
+                emph=FrankWolfe.memory,
+                verbose=true,
             )
 
             @test eltype(x0) == T

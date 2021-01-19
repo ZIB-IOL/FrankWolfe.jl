@@ -31,11 +31,7 @@ Returns a 1-element vector `[sum(v)]` of appropriate type.
 """
 function Base.:*(S::SimplexMatrix{T1}, v::AbstractVector{T2}) where {T1,T2}
     if length(v) != size(S, 2)
-        throw(
-            DimensionMismatch(
-                "Vector length $(length(v)), simplex matrix dimension $(size(S))",
-            ),
-        )
+        throw(DimensionMismatch("Vector length $(length(v)), simplex matrix dimension $(size(S))"))
     end
     T = promote_type(T1, T2)
     return T[sum(v)]
@@ -68,5 +64,5 @@ function Base.:*(M::AbstractMatrix{T2}, S::SimplexMatrix{T1}) where {T1,T2}
 end
 
 function Base.convert(::Type{SimplexMatrix{T}}, s::SimplexMatrix) where {T}
-    SimplexMatrix{T}(s.dim)
+    return SimplexMatrix{T}(s.dim)
 end

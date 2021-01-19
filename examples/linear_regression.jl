@@ -50,8 +50,7 @@ end
 
 # similar example with noisy data, Gaussian noise around the linear estimate
 data_noisy = [(x, x ⋅ (1:5) + bias + 0.5 * randn()) for x in xs]
-f_stoch_noisy =
-    FrankWolfe.StochasticObjective(simple_reg_loss, ∇simple_reg_loss, data_noisy)
+f_stoch_noisy = FrankWolfe.StochasticObjective(simple_reg_loss, ∇simple_reg_loss, data_noisy)
 
 params = rand(6) .- 1 # start params in (-1,0)
 
@@ -87,10 +86,10 @@ FrankWolfe.stochastic_frank_wolfe(
     f_stoch_noisy,
     lmo,
     params,
-    momentum = 0.9,
-    verbose = true,
-    rng = Random.GLOBAL_RNG,
-    batch_size = length(f_stoch_noisy.xs) ÷ 10 + 1,
+    momentum=0.9,
+    verbose=true,
+    rng=Random.GLOBAL_RNG,
+    batch_size=length(f_stoch_noisy.xs) ÷ 10 + 1,
 )
 
 # FrankWolfe.stochastic_frank_wolfe(f_stoch_noisy, lmo, params, momentum=0.9,

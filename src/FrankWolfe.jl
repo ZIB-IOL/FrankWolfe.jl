@@ -30,7 +30,7 @@ include("fw_algorithms.jl")
 
 # TODO: add actual use of T for the rand(n)
 
-function benchmark_oracles(f, grad, lmo, n; k = 100, nocache = true, T = Float64)
+function benchmark_oracles(f, grad, lmo, n; k=100, nocache=true, T=Float64)
     sv = n * sizeof(T) / 1024 / 1024
     println("\nSize of single vector ($T): $sv MB\n")
     to = TimerOutput()
@@ -100,18 +100,18 @@ function fw(
     grad,
     lmo,
     x0;
-    stepSize::LSMethod = agnostic,
-    L = Inf,
-    gamma0 = 0,
-    stepLim = 20,
-    momentum = nothing,
-    epsilon = 1e-7,
-    maxIt = 10000,
-    printIt = 1000,
-    trajectory = false,
-    verbose = false,
-    lsTol = 1e-7,
-    emph::Emph = blas,
+    stepSize::LSMethod=agnostic,
+    L=Inf,
+    gamma0=0,
+    stepLim=20,
+    momentum=nothing,
+    epsilon=1e-7,
+    maxIt=10000,
+    printIt=1000,
+    trajectory=false,
+    verbose=false,
+    lsTol=1e-7,
+    emph::Emph=blas,
 )
     function headerPrint(data)
         @printf(
@@ -202,18 +202,15 @@ function fw(
         end
 
         if trajectory === true
-            append!(
-                trajData,
-                [t, primal, primal - dualGap, dualGap, (time_ns() - timeEl) / 1.0e9],
-            )
+            append!(trajData, [t, primal, primal - dualGap, dualGap, (time_ns() - timeEl) / 1.0e9])
         end
 
         if stepSize === agnostic
             gamma = 2 // (2 + t)
         elseif stepSize === goldenratio
-            _, gamma = segmentSearch(f, grad, x, v, lsTol = lsTol)
+            _, gamma = segmentSearch(f, grad, x, v, lsTol=lsTol)
         elseif stepSize === backtracking
-            _, gamma = backtrackingLS(f, grad, x, v, lsTol = lsTol, stepLim = stepLim)
+            _, gamma = backtrackingLS(f, grad, x, v, lsTol=lsTol, stepLim=stepLim)
         elseif stepSize === nonconvex
             gamma = 1 / sqrt(t + 1)
         elseif stepSize === shortstep
@@ -234,14 +231,7 @@ function fw(
             if t === 0
                 tt = initial
             end
-            rep = [
-                tt,
-                string(t),
-                primal,
-                primal - dualGap,
-                dualGap,
-                (time_ns() - timeEl) / 1.0e9,
-            ]
+            rep = [tt, string(t), primal, primal - dualGap, dualGap, (time_ns() - timeEl) / 1.0e9]
             itPrint(rep)
             flush(stdout)
         end
@@ -256,14 +246,7 @@ function fw(
     dualGap = dot(x, gradient) - dot(v, gradient)
     if verbose
         tt = last
-        rep = [
-            tt,
-            string(t - 1),
-            primal,
-            primal - dualGap,
-            dualGap,
-            (time_ns() - timeEl) / 1.0e9,
-        ]
+        rep = [tt, string(t - 1), primal, primal - dualGap, dualGap, (time_ns() - timeEl) / 1.0e9]
         itPrint(rep)
         footerPrint()
         flush(stdout)
@@ -280,18 +263,18 @@ function lcg(
     grad,
     lmoBase,
     x0;
-    stepSize::LSMethod = agnostic,
-    L = Inf,
-    phiFactor = 2,
-    cacheSize = Inf,
-    greedyLazy = false,
-    epsilon = 1e-7,
-    maxIt = 10000,
-    printIt = 1000,
-    trajectory = false,
-    verbose = false,
-    lsTol = 1e-7,
-    emph::Emph = blas,
+    stepSize::LSMethod=agnostic,
+    L=Inf,
+    phiFactor=2,
+    cacheSize=Inf,
+    greedyLazy=false,
+    epsilon=1e-7,
+    maxIt=10000,
+    printIt=1000,
+    trajectory=false,
+    verbose=false,
+    lsTol=1e-7,
+    emph::Emph=blas,
 )
 
     if isfinite(cacheSize)
@@ -381,7 +364,7 @@ function lcg(
 
         threshold = dot(x, gradient) - phi
 
-        v = compute_extreme_point(lmo, gradient, threshold = threshold, greedy = greedyLazy)
+        v = compute_extreme_point(lmo, gradient, threshold=threshold, greedy=greedyLazy)
         tt = lazy
         if dot(v, gradient) > threshold
             tt = dualstep
@@ -392,23 +375,16 @@ function lcg(
         if trajectory === true
             append!(
                 trajData,
-                [
-                    t,
-                    primal,
-                    primal - dualGap,
-                    dualGap,
-                    (time_ns() - timeEl) / 1.0e9,
-                    length(lmo),
-                ],
+                [t, primal, primal - dualGap, dualGap, (time_ns() - timeEl) / 1.0e9, length(lmo)],
             )
         end
 
         if stepSize === agnostic
             gamma = 2 / (2 + t)
         elseif stepSize === goldenratio
-            _, gamma = segmentSearch(f, grad, x, v, lsTol = lsTol)
+            _, gamma = segmentSearch(f, grad, x, v, lsTol=lsTol)
         elseif stepSize === backtracking
-            _, gamma = backtrackingLS(f, grad, x, v, lsTol = lsTol)
+            _, gamma = backtrackingLS(f, grad, x, v, lsTol=lsTol)
         elseif stepSize === nonconvex
             gamma = 1 / sqrt(t + 1)
         elseif stepSize === shortstep

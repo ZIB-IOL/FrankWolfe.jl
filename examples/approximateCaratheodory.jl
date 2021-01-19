@@ -18,7 +18,7 @@ x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 println("Output type of LMO: ", eltype(x0))
 
 # benchmarking Oracles
-FrankWolfe.benchmark_oracles(f, grad, lmo, n; k = 100, T = Float64)
+FrankWolfe.benchmark_oracles(f, grad, lmo, n; k=100, T=Float64)
 
 # the algorithm runs in rational arithmetic even if the gradients and the function itself are not rational
 # this is because we replace the descent direction by the directions of the LMO are rational
@@ -28,10 +28,10 @@ FrankWolfe.benchmark_oracles(f, grad, lmo, n; k = 100, T = Float64)
     grad,
     lmo,
     x0,
-    maxIt = k,
-    stepSize = FrankWolfe.agnostic,
-    printIt = k / 10,
-    verbose = true,
+    maxIt=k,
+    stepSize=FrankWolfe.agnostic,
+    printIt=k / 10,
+    verbose=true,
 );
 
 println("\nOutput type of solution: ", eltype(x))
@@ -44,11 +44,11 @@ println("\nOutput type of solution: ", eltype(x))
     grad,
     lmo,
     x0,
-    maxIt = k,
-    stepSize = FrankWolfe.rationalshortstep,
-    L = 2,
-    printIt = k / 10,
-    verbose = true,
+    maxIt=k,
+    stepSize=FrankWolfe.rationalshortstep,
+    L=2,
+    printIt=k / 10,
+    verbose=true,
 );
 
 println("\nOutput type of solution: ", eltype(x))
