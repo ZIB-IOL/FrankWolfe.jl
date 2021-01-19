@@ -21,6 +21,8 @@ include("function_gradient.jl")
 # move advanced variants etc to there own files to prevent excessive clutter
 include("afw.jl")
 
+include("fw_algorithms.jl")
+
 ##############################################################
 # simple benchmark of elementary costs of oracles and 
 # critical components

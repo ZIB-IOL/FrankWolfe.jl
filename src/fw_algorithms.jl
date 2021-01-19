@@ -1,4 +1,5 @@
-function stochastic_frank_wolfe(f::StochasticObjective, lmo; x0stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0, stepLim=20, momentum=nothing,
+
+function stochastic_frank_wolfe(f::StochasticObjective, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0, stepLim=20, momentum=nothing,
         epsilon=1e-7, maxIt=10000, printIt=1000, trajectory=false, verbose=false, lsTol=1e-7, emph::Emph = blas, rng=Random.GLOBAL_RNG, batch_size=length(f.xs) ÷ 10 + 1,
     )
     function headerPrint(data)
@@ -20,7 +21,7 @@ function stochastic_frank_wolfe(f::StochasticObjective, lmo; x0stepSize::LSMetho
     primal = Inf
     v = []
     x = x0
-    tt:StepType = regular
+    tt = regular
     trajData = []
     dx = similar(x0) # Array{eltype(x0)}(undef, length(x0))
     timeEl = time_ns()
@@ -34,7 +35,7 @@ function stochastic_frank_wolfe(f::StochasticObjective, lmo; x0stepSize::LSMetho
     end
 
     if verbose
-        println("\Stochastic Frank-Wolfe Algorithm.")
+        println("\nStochastic Frank-Wolfe Algorithm.")
         numType = eltype(x0)
         println("EMPHASIS: $emph STEPSIZE: $stepSize EPSILON: $epsilon MAXIT: $maxIt TYPE: $numType")
         println("BATCHSIZE: $batch_size")
@@ -52,11 +53,7 @@ function stochastic_frank_wolfe(f::StochasticObjective, lmo; x0stepSize::LSMetho
         if momentum === nothing || first_iter
             gradient = compute_gradient(f, x, rng=rng, batch_size=batch_size)
         else
-            if emph === memory
-                @. gradient = (momentum * gradient) .+ (1 - momentum) .* compute_gradient(f, x, rng=rng, batch_size=batch_size)
-            else
-                gradient = (momentum * gradient) .+ (1 - momentum) * compute_gradient(f, x, rng=rng, batch_size=batch_size)
-            end
+            @emphasis(emph, gradient = (momentum * gradient) .+ (1 - momentum) * compute_gradient(f, x, rng=rng, batch_size=batch_size))
         end
         first_iter = false
 
@@ -108,8 +105,9 @@ function stochastic_frank_wolfe(f::StochasticObjective, lmo; x0stepSize::LSMetho
     # hence the final computation.
     # last computation done with full evaluation for exact gradient
 
-    (gradient, primal) = compute_value_gradient(f, x, full_evaluation=true)
+    (primal, gradient) = compute_value_gradient(f, x, full_evaluation=true)
     v = compute_extreme_point(lmo, gradient)
+    @show (gradient, primal)
     dualGap = dot(x, gradient) - dot(v, gradient)
     if verbose
         tt = last
