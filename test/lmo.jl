@@ -23,7 +23,7 @@ import FrankWolfe: SimplexMatrix
     @test eltype(s * rand(Float32, 3)) === Float64
 end
 
-@testset "Simplex LMOs projections" begin
+@testset "Simplex LMOs" begin
     n = 6
     direction = zeros(6)
     rhs = 10 * rand()

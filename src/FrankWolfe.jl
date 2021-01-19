@@ -119,7 +119,7 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0
     dx = similar(x0) # Array{eltype(x0)}(undef, length(x0))
     timeEl = time_ns()
     
-    if stepSize === shortstep && L == Inf
+    if (stepSize === shortstep || stepSize === adaptive) && L == Inf
         println("WARNING: Lipschitz constant not set. Prepare to blow up spectacularly.")
     end
 
@@ -176,7 +176,9 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0
             ratDualGap = sum( (x - v) .* gradient )
             gamma = ratDualGap // (L * sum( (x - v).^2 ) )
         elseif stepSize === fixed
-            gamma = gamma0
+            gamma = gamma
+        elseif stepSize === adaptive
+            L, gamma = adaptive_step_size(f,gradient,x,v,L)
         end
 
         @emphasis(emph, x = (1 - gamma) * x + gamma * v)
