@@ -13,7 +13,7 @@ end
 
 LpNormLMO{p}(right_hand_side::T) where {T,p} = LpNormLMO{T,p}(right_hand_side)
 
-function compute_extreme_point(lmo::LpNormLMO{T, 2}, direction) where {T}
+function compute_extreme_point(lmo::LpNormLMO{T,2}, direction) where {T}
     dir_norm = norm(direction, 2)
     res = similar(direction)
     n = length(direction)
