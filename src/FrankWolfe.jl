@@ -18,6 +18,9 @@ include("polytope_oracles.jl")
 include("utils.jl")
 include("function_gradient.jl")
 
+# move advanced variants etc to there own files to prevent excessive clutter
+include("afw.jl")
+
 ##############################################################
 # simple benchmark of elementary costs of oracles and 
 # critical components
@@ -25,7 +28,7 @@ include("function_gradient.jl")
 
 # TODO: add actual use of T for the rand(n)
 
-function benchmarkOracles(f,grad,lmo,n;k=100,nocache=true,T=Float64)
+function benchmark_oracles(f,grad,lmo,n;k=100,nocache=true,T=Float64)
     sv = n*sizeof(T)/1024/1024
     println("\nSize of single vector ($T): $sv MB\n")
     to = TimerOutput()
@@ -83,6 +86,7 @@ function benchmarkOracles(f,grad,lmo,n;k=100,nocache=true,T=Float64)
         end
     end
     print_timer(to)
+    return nothing
 end
 
 ##############################################################
@@ -197,7 +201,7 @@ function fw(f, grad, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0
     dualGap = dot(x, gradient) - dot(v, gradient)
     if verbose
         tt = last
-        rep = [tt, "", primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9]
+        rep = [tt, string(t-1), primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9]
         itPrint(rep)
         footerPrint()
         flush(stdout)
@@ -211,7 +215,7 @@ end
 
 function lcg(f, grad, lmoBase, x0; stepSize::LSMethod = agnostic, L = Inf,
     phiFactor=2, cacheSize = Inf, greedyLazy = false,
-    epsilon=1e-7, maxIt=10000, printIt=1000, trajectory=false, verbose=false,lsTol=1e-7,emph::Emph = blas) where T
+    epsilon=1e-7, maxIt=10000, printIt=1000, trajectory=false, verbose=false,lsTol=1e-7,emph::Emph = blas)
 
     if isfinite(cacheSize)
         lmo = MultiCacheLMO{cacheSize}(lmoBase)
@@ -310,7 +314,7 @@ function lcg(f, grad, lmoBase, x0; stepSize::LSMethod = agnostic, L = Inf,
     end
     if verbose
         tt = last
-        rep = [tt, "", primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9, length(lmo)]
+        rep = [tt, string(t-1), primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9, length(lmo)]
         itPrint(rep)
         footerPrint()
         flush(stdout)
