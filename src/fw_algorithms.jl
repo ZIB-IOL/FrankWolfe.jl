@@ -3,7 +3,7 @@ function stochastic_frank_wolfe(
     f::StochasticObjective,
     lmo,
     x0;
-    stepSize::LSMethod=agnostic,
+    stepSize::LSMethod=nonconvex,
     L=Inf,
     gamma0=0,
     stepLim=20,
