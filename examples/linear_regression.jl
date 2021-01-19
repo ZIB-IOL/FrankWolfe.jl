@@ -89,6 +89,8 @@ lmo = FrankWolfe.LpNormLMO{2}(bias)
 
 params = rand(6) .- 1 # start params in (-1,0)
 
-FrankWolfe.stochastic_frank_wolfe(f_stoch_noisy, lmo, params, momentum=0.9,
-    verbose=true, rng=Random.GLOBAL_RNG, batch_size=length(f_stoch_noisy.xs) ÷ 10 + 1,
+k = 1000
+
+@time FrankWolfe.stochastic_frank_wolfe(f_stoch_noisy, lmo, params, momentum=0.9,
+    verbose=true, rng=Random.GLOBAL_RNG, stepSize=FrankWolfe.nonconvex, maxIt=k, printIt=k/10, batch_size=length(f_stoch_noisy.xs) ÷ 10 + 1,
 )
