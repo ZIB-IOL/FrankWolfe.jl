@@ -8,8 +8,7 @@ Subtypes of `ObjectiveFunction` must implement at least
 * `compute_gradient(::ObjectiveFunction, x)` for gradient evaluation.
 and optionally `compute_value_gradient(::ObjectiveFunction, x)` returning the (primal, gradient) pair.
 """
-abstract type ObjectiveFunction
-end
+abstract type ObjectiveFunction end
 
 function compute_value end
 
@@ -22,9 +21,10 @@ Computes in one call the pair `(function_value, function_grad)` evaluated at `x`
 By default, calls `compute_value` and `compute_gradient` with keyword `kwargs`
 passed to both.
 """
-compute_value_gradient(f::ObjectiveFunction, x; kwargs...) = (compute_value(f, x; kwargs...), compute_gradient(f, x; kwargs...))
+compute_value_gradient(f::ObjectiveFunction, x; kwargs...) =
+    (compute_value(f, x; kwargs...), compute_gradient(f, x; kwargs...))
 
-struct SimpleFunctionObjective{F, G} <: ObjectiveFunction
+struct SimpleFunctionObjective{F,G} <: ObjectiveFunction
     f::F
     grad::G
 end
@@ -42,13 +42,19 @@ Represents an objective function evaluated with stochastic gradient.
 Functions using a `StochasticObjective` have optional keyword arguments `rng`, `batch_size`
 and `full_evaluation` controlling whether the function should be evaluated over all data points.
 """
-struct StochasticObjective{F, G, XT} <: ObjectiveFunction
+struct StochasticObjective{F,G,XT} <: ObjectiveFunction
     f::F
     grad::G
     xs::XT
 end
 
-function compute_value(f::StochasticObjective, θ; batch_size::Integer=length(f.xs), rng=Random.GLOBAL_RNG, full_evaluation=false)
+function compute_value(
+    f::StochasticObjective,
+    θ;
+    batch_size::Integer = length(f.xs),
+    rng = Random.GLOBAL_RNG,
+    full_evaluation = false,
+)
     rand_indices = if full_evaluation
         eachindex(f.xs)
     else
@@ -57,7 +63,13 @@ function compute_value(f::StochasticObjective, θ; batch_size::Integer=length(f.
     return sum(f.f(θ, f.xs[idx]) for idx in rand_indices)
 end
 
-function compute_gradient(f::StochasticObjective, θ; batch_size::Integer=length(f.xs) ÷ 10 + 1, rng=Random.GLOBAL_RNG, full_evaluation=false)
+function compute_gradient(
+    f::StochasticObjective,
+    θ;
+    batch_size::Integer = length(f.xs) ÷ 10 + 1,
+    rng = Random.GLOBAL_RNG,
+    full_evaluation = false,
+)
     rand_indices = if full_evaluation
         eachindex(f.xs)
     else
@@ -66,7 +78,13 @@ function compute_gradient(f::StochasticObjective, θ; batch_size::Integer=length
     return sum(f.grad(θ, f.xs[idx]) for idx in rand_indices)
 end
 
-function compute_value_gradient(f::StochasticObjective, θ; batch_size::Integer=length(f.xs) ÷ 10 + 1, rng=Random.GLOBAL_RNG, full_evaluation=false)
+function compute_value_gradient(
+    f::StochasticObjective,
+    θ;
+    batch_size::Integer = length(f.xs) ÷ 10 + 1,
+    rng = Random.GLOBAL_RNG,
+    full_evaluation = false,
+)
     rand_indices = if full_evaluation
         eachindex(f.xs)
     else
@@ -84,9 +102,5 @@ function compute_value_gradient(f::StochasticObjective, θ; batch_size::Integer=
         (f_val + f_new, g_val + g_new)
     end
 
-    return mapfoldr(
-        map_op,
-        reduce_op,
-        rand_indices,
-    )
+    return mapfoldr(map_op, reduce_op, rand_indices)
 end
