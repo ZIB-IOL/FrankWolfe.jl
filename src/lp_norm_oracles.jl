@@ -13,8 +13,17 @@ end
 
 LpNormLMO{p}(right_hand_side::T) where {T,p} = LpNormLMO{T,p}(right_hand_side)
 
-function compute_extreme_point(lmo::LpNormLMO{T,2}, direction) where {T}
-    return -lmo.right_hand_side * direction / norm(direction, 2)
+function compute_extreme_point(lmo::LpNormLMO{T, 2}, direction) where {T}
+    dir_norm = norm(direction, 2)
+    res = similar(direction)
+    n = length(direction)
+    # if direction numerically 0, 
+    if dir_norm <= 10eps(eltype(direction))
+        @. res = lmo.right_hand_side / sqrt(n)
+    else
+        @. res = -lmo.right_hand_side * direction / dir_norm
+    end
+    return res
 end
 
 function compute_extreme_point(lmo::LpNormLMO{T,Inf}, direction) where {T}

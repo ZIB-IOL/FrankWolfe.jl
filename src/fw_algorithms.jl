@@ -166,11 +166,11 @@ function stochastic_frank_wolfe(
 
     (primal, gradient) = compute_value_gradient(f, x, full_evaluation=true)
     v = compute_extreme_point(lmo, gradient)
-    @show (gradient, primal)
+    # @show (gradient, primal)
     dualGap = dot(x, gradient) - dot(v, gradient)
     if verbose
         tt = last
-        rep = [tt, "", primal, primal - dualGap, dualGap, (time_ns() - timeEl) / 1.0e9]
+        rep = [tt, string(t - 1), primal, primal-dualGap, dualGap, (time_ns() - timeEl)/1.0e9]
         itPrint(rep)
         footerPrint()
         flush(stdout)
