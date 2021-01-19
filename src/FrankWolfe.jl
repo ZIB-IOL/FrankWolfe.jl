@@ -156,7 +156,7 @@ function fw(
     dualGap = Inf
     primal = Inf
     v = []
-    x = copy(x0)
+    x = x0
     tt:StepType = regular
     trajData = []
     dx = similar(x0) # Array{eltype(x0)}(undef, length(x0))
