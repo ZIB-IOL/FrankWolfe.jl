@@ -30,6 +30,9 @@ end
         @test abs(FrankWolfe.fw(f,grad,lmo_prob,x0,maxIt=1000,stepSize=FrankWolfe.agnostic,verbose=false, momentum = 0.9)[3] - 0.2) < 1.0e-3
         @test abs(FrankWolfe.fw(f,grad,lmo_prob,x0,maxIt=1000,stepSize=FrankWolfe.agnostic,verbose=false, momentum = 0.5)[3] - 0.2) < 1.0e-3
         @test abs(FrankWolfe.fw(f,grad,lmo_prob,x0,maxIt=1000,stepSize=FrankWolfe.agnostic,verbose=false, momentum=0.9, emph=FrankWolfe.memory)[3] - 0.2) < 1.0e-3
+        @test abs(FrankWolfe.fw(f,grad,lmo_prob,x0,maxIt=1000,stepSize=FrankWolfe.adaptive,L=100,verbose=false, momentum = 0.9)[3] - 0.2) < 1.0e-3
+        @test abs(FrankWolfe.fw(f,grad,lmo_prob,x0,maxIt=1000,stepSize=FrankWolfe.adaptive,L=100,verbose=false, momentum = 0.5)[3] - 0.2) < 1.0e-3
+        @test abs(FrankWolfe.fw(f,grad,lmo_prob,x0,maxIt=1000,stepSize=FrankWolfe.adaptive,L=100,verbose=false, momentum=0.9, emph=FrankWolfe.memory)[3] - 0.2) < 1.0e-3
     end
     @testset "Testing Lazified Conditional Gradients with various step size strategies" begin
         f(x) = LinearAlgebra.norm(x)^2
