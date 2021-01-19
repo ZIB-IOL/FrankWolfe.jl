@@ -21,7 +21,7 @@ lmo = FrankWolfe.ProbabilitySimplexOracle(1.0); #radius needs to be float
 x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
 # benchmarking Oracles
-FrankWolfe.benchmarkOracles(f,grad,lmo,n;k=100,T=Float64)
+FrankWolfe.benchmark_oracles(f,grad,lmo,n;k=100,T=Float64)
 
 @time x, v, primal, dualGap, trajectory = FrankWolfe.fw(f,grad,lmo,x0,maxIt=k,
     stepSize=FrankWolfe.nonconvex,printIt=k/10,verbose=true);

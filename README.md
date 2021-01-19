@@ -1,4 +1,4 @@
-# Frank Wolfe and Conditional Gradients : a Julia package
+# Frank-Wolfe and Conditional Gradients : a Julia package
 
 This package defines a generic interface and several implementations for the
 Frank-Wolfe algorithms.
