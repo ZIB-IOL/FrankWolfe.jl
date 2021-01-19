@@ -73,6 +73,10 @@ function stochastic_frank_wolfe(
         println("WARNING: gamma0 not set. We are not going to move a single bit.")
     end
 
+    if emph === memory && verbose
+        println("WARNING: In memory emphasis mode iterates are written back into x0!")
+    end
+
     if verbose
         println("\nStochastic Frank-Wolfe Algorithm.")
         numType = eltype(x0)
