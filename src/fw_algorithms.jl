@@ -1,6 +1,7 @@
 
 function stochastic_frank_wolfe(f::StochasticObjective, lmo, x0; stepSize::LSMethod = agnostic, L = Inf, gamma0 = 0, stepLim=20, momentum=nothing,
-        epsilon=1e-7, maxIt=10000, printIt=1000, trajectory=false, verbose=false, lsTol=1e-7, emph::Emph = blas, rng=Random.GLOBAL_RNG, batch_size=length(f.xs) ÷ 10 + 1,
+        epsilon=1e-7, maxIt=10000, printIt=1000, trajectory=false, verbose=false, lsTol=1e-7, emph::Emph = blas, rng=Random.GLOBAL_RNG,
+        batch_size=length(f.xs) ÷ 10 + 1, full_evaluation=false,
     )
     function headerPrint(data)
         @printf("\n───────────────────────────────────────────────────────────────────────────────────\n")
@@ -51,9 +52,9 @@ function stochastic_frank_wolfe(f::StochasticObjective, lmo, x0; stepSize::LSMet
     while t <= maxIt && dualGap >= max(epsilon,eps())
 
         if momentum === nothing || first_iter
-            gradient = compute_gradient(f, x, rng=rng, batch_size=batch_size)
+            gradient = compute_gradient(f, x, rng=rng, batch_size=batch_size, full_evaluation=full_evaluation)
         else
-            @emphasis(emph, gradient = (momentum * gradient) .+ (1 - momentum) * compute_gradient(f, x, rng=rng, batch_size=batch_size))
+            @emphasis(emph, gradient = (momentum * gradient) .+ (1 - momentum) * compute_gradient(f, x, rng=rng, batch_size=batch_size, full_evaluation=full_evaluation))
         end
         first_iter = false
 
