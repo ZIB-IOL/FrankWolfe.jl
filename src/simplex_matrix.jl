@@ -43,7 +43,7 @@ function Base.:*(S::SimplexMatrix{T1}, M::AbstractMatrix{T2}) where {T1,T2}
     end
     T = promote_type(T1, T2)
     res = Matrix{T}(undef, 1, size(M, 2))
-    @inbounds for j = 1:size(M, 2)
+    @inbounds for j in 1:size(M, 2)
         res[1, j] = sum(view(M, :, j))
     end
     return res
@@ -55,8 +55,8 @@ function Base.:*(M::AbstractMatrix{T2}, S::SimplexMatrix{T1}) where {T1,T2}
     end
     T = promote_type(T1, T2)
     res = Matrix{T}(undef, size(M, 1), size(S, 2))
-    @inbounds for j = 1:size(M, 1)
-        for i = 1:size(S, 2)
+    @inbounds for j in 1:size(M, 1)
+        for i in 1:size(S, 2)
             res[j, i] = M[j, 1]
         end
     end

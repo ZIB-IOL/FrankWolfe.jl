@@ -34,19 +34,19 @@ function benchmark_oracles(f, grad, lmo, n; k=100, nocache=true, T=Float64)
     sv = n * sizeof(T) / 1024 / 1024
     println("\nSize of single vector ($T): $sv MB\n")
     to = TimerOutput()
-    @showprogress 1 "Testing f... " for i = 1:k
+    @showprogress 1 "Testing f... " for i in 1:k
         x = rand(n)
         @timeit to "f" temp = f(x)
     end
-    @showprogress 1 "Testing grad... " for i = 1:k
+    @showprogress 1 "Testing grad... " for i in 1:k
         x = rand(n)
         @timeit to "grad" temp = grad(x)
     end
-    @showprogress 1 "Testing lmo... " for i = 1:k
+    @showprogress 1 "Testing lmo... " for i in 1:k
         x = rand(n)
         @timeit to "lmo" temp = compute_extreme_point(lmo, x)
     end
-    @showprogress 1 "Testing dual gap... " for i = 1:k
+    @showprogress 1 "Testing dual gap... " for i in 1:k
         x = rand(n)
         gradient = grad(x)
         v = compute_extreme_point(lmo, gradient)
@@ -54,14 +54,14 @@ function benchmark_oracles(f, grad, lmo, n; k=100, nocache=true, T=Float64)
             dualGap = dot(x, gradient) - dot(v, gradient)
         end
     end
-    @showprogress 1 "Testing update... (emph: blas) " for i = 1:k
+    @showprogress 1 "Testing update... (emph: blas) " for i in 1:k
         x = rand(n)
         gradient = grad(x)
         v = compute_extreme_point(lmo, gradient)
         gamma = 1 / 2
         @timeit to "update (blas)" @emphasis(blas, x = (1 - gamma) * x + gamma * v)
     end
-    @showprogress 1 "Testing update... (emph: memory) " for i = 1:k
+    @showprogress 1 "Testing update... (emph: memory) " for i in 1:k
         x = rand(n)
         gradient = grad(x)
         v = compute_extreme_point(lmo, gradient)
@@ -70,10 +70,10 @@ function benchmark_oracles(f, grad, lmo, n; k=100, nocache=true, T=Float64)
         @timeit to "update (memory)" @emphasis(memory, x = (1 - gamma) * x + gamma * v)
     end
     if !nocache
-        @showprogress 1 "Testing caching 100 points... " for i = 1:k
+        @showprogress 1 "Testing caching 100 points... " for i in 1:k
             @timeit to "caching 100 points" begin
                 cache = Float64[]
-                for j = 1:100
+                for j in 1:100
                     x = rand(n)
                     push!(cache, x)
                 end

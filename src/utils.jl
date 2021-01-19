@@ -93,7 +93,7 @@ function segmentSearch(f, grad, x, y; stepSize=true, lsTol=1e-10)
     # compute step size gamma
     gamma = 0
     if stepSize === true
-        for i = 1:length(d)
+        for i in 1:length(d)
             if d[i] != 0
                 gamma = (x_min[i] - x[i]) / d[i]
                 break
