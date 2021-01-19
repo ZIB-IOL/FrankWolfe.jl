@@ -97,12 +97,6 @@ k = 100000
     batch_size=length(f_stoch_noisy.xs) ÷ 10 + 1,
 )
 
-<<<<<<< HEAD
-@time FrankWolfe.stochastic_frank_wolfe(f_stoch_noisy, lmo, params, momentum=0.9,
-    verbose=true, rng=Random.GLOBAL_RNG, batch_size=length(f_stoch_noisy.xs) ÷ 10 + 1, full_evaluation=true
-)
-=======
 # FrankWolfe.stochastic_frank_wolfe(f_stoch_noisy, lmo, params, momentum=0.9,
 # verbose=true, rng=Random.GLOBAL_RNG, batch_size=length(f_stoch_noisy.xs) ÷ 10 + 1, full_evaluation=true
 # )
->>>>>>> origin/master
