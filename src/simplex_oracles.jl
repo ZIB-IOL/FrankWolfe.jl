@@ -36,8 +36,8 @@ and the second is the reduced costs for the variables.
 """
 function compute_dual_solution(lmo::UnitSimplexOracle{T}, direction, primalSolution) where {T}
     idx = argmax(primalSolution)
-    critical = min(direction[idx],0)
-    lambda = [ critical ]
+    critical = min(direction[idx], 0)
+    lambda = [critical]
     mu = direction .- lambda
     return lambda, mu
 end
@@ -76,9 +76,13 @@ for scaled probability simplex.
 Returns two vectors. The first one is the dual costs associated with the constraints 
 and the second is the reduced costs for the variables.
 """
-function compute_dual_solution(lmo::ProbabilitySimplexOracle{T}, direction, primalSolution) where {T}
+function compute_dual_solution(
+    lmo::ProbabilitySimplexOracle{T},
+    direction,
+    primalSolution,
+) where {T}
     idx = argmax(primalSolution)
-    lambda = [ direction[idx] ]
+    lambda = [direction[idx]]
     mu = direction .- lambda
     return lambda, mu
 end
