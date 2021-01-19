@@ -2,7 +2,7 @@ using Test
 using FrankWolfe
 using LinearAlgebra
 
-import FrankWolfe: compute_extreme_point, LpNormLMO, KSparseLMO 
+import FrankWolfe: compute_extreme_point, LpNormLMO, KSparseLMO
 import FrankWolfe: SimplexMatrix
 
 @testset "Simplex matrix type" begin
@@ -29,7 +29,7 @@ end
     rhs = 10 * rand()
     lmo_prob = FrankWolfe.ProbabilitySimplexOracle(rhs)
     lmo_unit = FrankWolfe.UnitSimplexOracle(rhs)
-    @testset "Choosing improving direction" for idx in 1:n
+    @testset "Choosing improving direction" for idx = 1:n
         direction .= 0
         direction[idx] = -1
         res_point_prob = FrankWolfe.compute_extreme_point(lmo_prob, direction)
@@ -43,11 +43,11 @@ end
         end
         # computing dual solutions and testing complementarity
         dual, redC = FrankWolfe.compute_dual_solution(lmo_prob, direction, res_point_prob)
-        @test sum((redC .* res_point_prob )) + (dual[1] * (rhs - sum(res_point_prob))) == 0
+        @test sum((redC .* res_point_prob)) + (dual[1] * (rhs - sum(res_point_prob))) == 0
         dual, redC = FrankWolfe.compute_dual_solution(lmo_unit, direction, res_point_unit)
-        @test sum((redC .* res_point_unit )) + (dual[1] * (rhs - sum(res_point_unit))) == 0
+        @test sum((redC .* res_point_unit)) + (dual[1] * (rhs - sum(res_point_unit))) == 0
     end
-    @testset "Choosing least-degrading direction" for idx in 1:n
+    @testset "Choosing least-degrading direction" for idx = 1:n
         # all directions worsening, must pick idx
         direction .= 2
         direction[idx] = 1
@@ -63,9 +63,9 @@ end
         end
         # computing dual solutions and testing complementarity
         dual, redC = FrankWolfe.compute_dual_solution(lmo_prob, direction, res_point_prob)
-        @test sum((redC .* res_point_prob )) + (dual[1] * (rhs - sum(res_point_prob))) == 0
+        @test sum((redC .* res_point_prob)) + (dual[1] * (rhs - sum(res_point_prob))) == 0
         dual, redC = FrankWolfe.compute_dual_solution(lmo_unit, direction, res_point_unit)
-        @test sum((redC .* res_point_unit )) + (dual[1] * (rhs - sum(res_point_unit))) == 0
+        @test sum((redC .* res_point_unit)) + (dual[1] * (rhs - sum(res_point_unit))) == 0
     end
 end
 
@@ -74,30 +74,28 @@ end
         τ = 5 + 3 * rand()
         # tests that the "special" p behaves like the "any" p, i.e. 2.0 and 2
         @testset "$p-norm" for p in (1, 1.0, 1.5, 2, 2.0, Inf, Inf32)
-            for _ in 1:100
+            for _ = 1:100
                 c = 5 * randn(n)
-                lmo = LpNormLMO{Float64, p}(τ)
+                lmo = LpNormLMO{Float64,p}(τ)
                 v = FrankWolfe.compute_extreme_point(lmo, c)
                 @test norm(v, p) ≈ τ
             end
         end
-        @testset "K-Norm ball $K" for K in 1:n
+        @testset "K-Norm ball $K" for K = 1:n
             lmo_ball = FrankWolfe.KNormBallLMO(K, τ)
-            for _ in 1:20
+            for _ = 1:20
                 c = 5 * randn(n)
                 v = FrankWolfe.compute_extreme_point(lmo_ball, c)
                 v1 = FrankWolfe.compute_extreme_point(FrankWolfe.LpNormLMO{1}(τ), c)
-                v_inf = FrankWolfe.compute_extreme_point(FrankWolfe.LpNormLMO{Inf}(τ / K), c)
+                v_inf =
+                    FrankWolfe.compute_extreme_point(FrankWolfe.LpNormLMO{Inf}(τ / K), c)
                 # K-norm is convex hull of union of the two norm epigraphs
                 # => cannot do better than the best of them
-                @test dot(v, c) ≈ min(
-                    dot(v1, c),
-                    dot(v_inf, c),
-                )
+                @test dot(v, c) ≈ min(dot(v1, c), dot(v_inf, c))
                 # test according to original norm definition
                 # norm constraint must be tight
                 K_sum = 0.0
-                for vi in sort!(abs.(v), rev=true)[1:K]
+                for vi in sort!(abs.(v), rev = true)[1:K]
                     K_sum += vi
                 end
                 @test K_sum ≈ τ
@@ -109,7 +107,7 @@ end
 @testset "K-sparse polytope LMO" begin
     @testset "$n-dimension" for n in (1, 2, 10)
         τ = 5 + 3 * rand()
-        for K in 1:n
+        for K = 1:n
             lmo = KSparseLMO(K, τ)
             x = 10 * randn(n) # dense vector
             v = compute_extreme_point(lmo, x)
@@ -137,21 +135,27 @@ end
     lmo_cached = FrankWolfe.SingleLastCachedLMO(lmo_unit)
     lmo_multicached = FrankWolfe.MultiCacheLMO{3}(lmo_unit)
     lmo_veccached = FrankWolfe.VectorCacheLMO(lmo_unit)
-    @testset "Forcing no cache remains nothing" for idx in 1:n
+    @testset "Forcing no cache remains nothing" for idx = 1:n
         direction .= 0
         direction[idx] = -1
         res_point_unit = FrankWolfe.compute_extreme_point(lmo_unit, direction)
-        res_point_cached = FrankWolfe.compute_extreme_point(lmo_cached, direction, threshold=0)
-        res_point_cached_multi = FrankWolfe.compute_extreme_point(lmo_multicached, direction, threshold=-1000)
-        res_point_cached_vec = FrankWolfe.compute_extreme_point(lmo_veccached, direction, threshold=-1000)
-        res_point_never_cached = FrankWolfe.compute_extreme_point(lmo_cached, direction, store_cache=false)
+        res_point_cached =
+            FrankWolfe.compute_extreme_point(lmo_cached, direction, threshold = 0)
+        res_point_cached_multi =
+            FrankWolfe.compute_extreme_point(lmo_multicached, direction, threshold = -1000)
+        res_point_cached_vec =
+            FrankWolfe.compute_extreme_point(lmo_veccached, direction, threshold = -1000)
+        res_point_never_cached =
+            FrankWolfe.compute_extreme_point(lmo_cached, direction, store_cache = false)
         @test res_point_never_cached == res_point_unit
         @test lmo_never_cached.last_vertex === nothing
         @test length(lmo_never_cached) == 0
         empty!(lmo_never_cached)
         @test lmo_cached.last_vertex !== nothing
         @test length(lmo_cached) == 1
-        @test count(!isnothing, lmo_multicached.vertices) == min(3, idx) == length(lmo_multicached)
+        @test count(!isnothing, lmo_multicached.vertices) ==
+              min(3, idx) ==
+              length(lmo_multicached)
         @test length(lmo_veccached.vertices) == idx == length(lmo_veccached)
         # we set the cache at least at the first iteration
         if idx == 1

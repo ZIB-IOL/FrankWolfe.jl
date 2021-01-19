@@ -15,9 +15,9 @@ end
 
 function compute_extreme_point(lmo::KSparseLMO{T}, direction) where {T}
     K = min(lmo.K, length(direction))
-    K_indices = sortperm(direction[1:K], by=abs, rev=true)
+    K_indices = sortperm(direction[1:K], by = abs, rev = true)
     K_values = direction[K_indices]
-    for idx in K+1:length(direction)
+    for idx = K+1:length(direction)
         new_val = direction[idx]
         # new greater value: shift everything right
         if abs(new_val) > abs(K_values[1])
@@ -25,10 +25,10 @@ function compute_extreme_point(lmo::KSparseLMO{T}, direction) where {T}
             K_indices[2:end] .= K_indices[1:end-1]
             K_indices[1] = idx
             K_values[1] = new_val
-        # new value in the interior
+            # new value in the interior
         elseif abs(new_val) > abs(K_values[K])
             # NOTE: not out of bound since unreachable with K=1
-            j = K-1
+            j = K - 1
             while abs(new_val) > abs(K_values[j])
                 j -= 1
             end
