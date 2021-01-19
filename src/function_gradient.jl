@@ -51,9 +51,9 @@ end
 function compute_value(
     f::StochasticObjective,
     θ;
-    batch_size::Integer = length(f.xs),
-    rng = Random.GLOBAL_RNG,
-    full_evaluation = false,
+    batch_size::Integer=length(f.xs),
+    rng=Random.GLOBAL_RNG,
+    full_evaluation=false,
 )
     rand_indices = if full_evaluation
         eachindex(f.xs)
@@ -66,9 +66,9 @@ end
 function compute_gradient(
     f::StochasticObjective,
     θ;
-    batch_size::Integer = length(f.xs) ÷ 10 + 1,
-    rng = Random.GLOBAL_RNG,
-    full_evaluation = false,
+    batch_size::Integer=length(f.xs) ÷ 10 + 1,
+    rng=Random.GLOBAL_RNG,
+    full_evaluation=false,
 )
     rand_indices = if full_evaluation
         eachindex(f.xs)
@@ -81,9 +81,9 @@ end
 function compute_value_gradient(
     f::StochasticObjective,
     θ;
-    batch_size::Integer = length(f.xs) ÷ 10 + 1,
-    rng = Random.GLOBAL_RNG,
-    full_evaluation = false,
+    batch_size::Integer=length(f.xs) ÷ 10 + 1,
+    rng=Random.GLOBAL_RNG,
+    full_evaluation=false,
 )
     rand_indices = if full_evaluation
         eachindex(f.xs)
@@ -99,7 +99,7 @@ function compute_value_gradient(
     function reduce_op(left_tup, right_tup)
         (f_val, g_val) = left_tup
         (f_new, g_new) = right_tup
-        (f_val + f_new, g_val + g_new)
+        return (f_val + f_new, g_val + g_new)
     end
 
     return mapfoldr(map_op, reduce_op, rand_indices)

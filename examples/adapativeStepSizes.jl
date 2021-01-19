@@ -25,14 +25,7 @@ end
 lmo = FrankWolfe.KSparseLMO(40, 1);
 x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
-FrankWolfe.benchmark_oracles(
-    x -> cf(x, xp),
-    x -> cgrad(x, xp),
-    lmo,
-    n;
-    k = 100,
-    T = Float64,
-)
+FrankWolfe.benchmark_oracles(x -> cf(x, xp), x -> cgrad(x, xp), lmo, n; k=100, T=Float64)
 
 println("\n==> Short Step rule - if you know L.\n")
 
@@ -41,12 +34,12 @@ println("\n==> Short Step rule - if you know L.\n")
     grad,
     lmo,
     x0,
-    maxIt = k,
-    stepSize = FrankWolfe.shortstep,
-    L = 2,
-    printIt = k / 10,
-    emph = FrankWolfe.memory,
-    verbose = true,
+    maxIt=k,
+    stepSize=FrankWolfe.shortstep,
+    L=2,
+    printIt=k / 10,
+    emph=FrankWolfe.memory,
+    verbose=true,
 );
 
 println("\n==> Adaptive if you do not know L.\n")
@@ -56,12 +49,12 @@ println("\n==> Adaptive if you do not know L.\n")
     grad,
     lmo,
     x0,
-    maxIt = k,
-    stepSize = FrankWolfe.adaptive,
-    L = 100,
-    printIt = k / 10,
-    emph = FrankWolfe.memory,
-    verbose = true,
+    maxIt=k,
+    stepSize=FrankWolfe.adaptive,
+    L=100,
+    printIt=k / 10,
+    emph=FrankWolfe.memory,
+    verbose=true,
 );
 
 println("\n==> Agnostic if function is too expensive for adaptive.\n")
@@ -71,9 +64,9 @@ println("\n==> Agnostic if function is too expensive for adaptive.\n")
     grad,
     lmo,
     x0,
-    maxIt = k,
-    stepSize = FrankWolfe.agnostic,
-    printIt = k / 10,
-    emph = FrankWolfe.memory,
-    verbose = true,
+    maxIt=k,
+    stepSize=FrankWolfe.agnostic,
+    printIt=k / 10,
+    emph=FrankWolfe.memory,
+    verbose=true,
 );

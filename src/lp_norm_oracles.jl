@@ -14,11 +14,11 @@ end
 LpNormLMO{p}(right_hand_side::T) where {T,p} = LpNormLMO{T,p}(right_hand_side)
 
 function compute_extreme_point(lmo::LpNormLMO{T,2}, direction) where {T}
-    -lmo.right_hand_side * direction / norm(direction, 2)
+    return -lmo.right_hand_side * direction / norm(direction, 2)
 end
 
 function compute_extreme_point(lmo::LpNormLMO{T,Inf}, direction) where {T}
-    -lmo.right_hand_side * sign.(direction)
+    return -lmo.right_hand_side * sign.(direction)
 end
 
 function compute_extreme_point(lmo::LpNormLMO{T,1}, direction) where {T}
@@ -31,11 +31,7 @@ function compute_extreme_point(lmo::LpNormLMO{T,1}, direction) where {T}
         end
     end
 
-    return MaybeHotVector(
-        -lmo.right_hand_side * sign(direction[idx]),
-        idx,
-        length(direction),
-    )
+    return MaybeHotVector(-lmo.right_hand_side * sign(direction[idx]), idx, length(direction))
 end
 
 function compute_extreme_point(lmo::LpNormLMO{T,p}, direction) where {T,p}

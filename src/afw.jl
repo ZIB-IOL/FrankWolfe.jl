@@ -9,18 +9,18 @@ function afw(
     grad,
     lmo,
     x0;
-    stepSize::LSMethod = agnostic,
-    L = Inf,
-    gamma0 = 0,
-    stepLim = 20,
-    momentum = nothing,
-    epsilon = 1e-7,
-    maxIt = 10000,
-    printIt = 1000,
-    trajectory = false,
-    verbose = false,
-    lsTol = 1e-7,
-    emph::Emph = blas,
+    stepSize::LSMethod=agnostic,
+    L=Inf,
+    gamma0=0,
+    stepLim=20,
+    momentum=nothing,
+    epsilon=1e-7,
+    maxIt=10000,
+    printIt=1000,
+    trajectory=false,
+    verbose=false,
+    lsTol=1e-7,
+    emph::Emph=blas,
 )
     function headerPrint(data)
         @printf(
@@ -111,18 +111,15 @@ function afw(
         end
 
         if trajectory === true
-            append!(
-                trajData,
-                [t, primal, primal - dualGap, dualGap, (time_ns() - timeEl) / 1.0e9],
-            )
+            append!(trajData, [t, primal, primal - dualGap, dualGap, (time_ns() - timeEl) / 1.0e9])
         end
 
         if stepSize === agnostic
             gamma = 2 // (2 + t)
         elseif stepSize === goldenratio
-            nothing, gamma = segmentSearch(f, grad, x, v, lsTol = lsTol)
+            nothing, gamma = segmentSearch(f, grad, x, v, lsTol=lsTol)
         elseif stepSize === backtracking
-            nothing, gamma = backtrackingLS(f, grad, x, v, lsTol = lsTol, stepLim = stepLim)
+            nothing, gamma = backtrackingLS(f, grad, x, v, lsTol=lsTol, stepLim=stepLim)
         elseif stepSize === nonconvex
             gamma = 1 / sqrt(t + 1)
         elseif stepSize === shortstep
@@ -141,14 +138,7 @@ function afw(
             if t === 0
                 tt = initial
             end
-            rep = [
-                tt,
-                string(t),
-                primal,
-                primal - dualGap,
-                dualGap,
-                (time_ns() - timeEl) / 1.0e9,
-            ]
+            rep = [tt, string(t), primal, primal - dualGap, dualGap, (time_ns() - timeEl) / 1.0e9]
             itPrint(rep)
             flush(stdout)
         end
@@ -163,14 +153,7 @@ function afw(
     dualGap = dot(x, gradient) - dot(v, gradient)
     if verbose
         tt = last
-        rep = [
-            tt,
-            string(t - 1),
-            primal,
-            primal - dualGap,
-            dualGap,
-            (time_ns() - timeEl) / 1.0e9,
-        ]
+        rep = [tt, string(t - 1), primal, primal - dualGap, dualGap, (time_ns() - timeEl) / 1.0e9]
         itPrint(rep)
         footerPrint()
         flush(stdout)

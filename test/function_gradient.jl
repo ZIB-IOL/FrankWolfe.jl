@@ -25,8 +25,7 @@ Random.seed!(123)
                       (simple_quad(x), ∇simple_quad(x))
                 @test FrankWolfe.compute_gradient(f_simple, convert(Vector{Float32}, x)) isa
                       Vector{Float32}
-                @test FrankWolfe.compute_value(f_simple, convert(Vector{Float32}, x)) isa
-                      Float32
+                @test FrankWolfe.compute_value(f_simple, convert(Vector{Float32}, x)) isa Float32
             end
         end
         @testset "Stochastic function linear regression" begin
@@ -50,50 +49,43 @@ Random.seed!(123)
             @testset "Perfectly representable data" begin
                 # Y perfectly representable by X
                 data_perfect = [(x, x ⋅ (1:5) + bias) for x in xs]
-                f_stoch = FrankWolfe.StochasticObjective(
-                    simple_reg_loss,
-                    ∇simple_reg_loss,
-                    data_perfect,
-                )
-                @test compute_value(f_stoch, params) >
-                      compute_value(f_stoch, params_perfect)
+                f_stoch =
+                    FrankWolfe.StochasticObjective(simple_reg_loss, ∇simple_reg_loss, data_perfect)
+                @test compute_value(f_stoch, params) > compute_value(f_stoch, params_perfect)
                 @test compute_value(f_stoch, params_perfect) ≈ 0
                 @test compute_gradient(f_stoch, params_perfect) ≈ zeros(6)
                 @test !isapprox(compute_gradient(f_stoch, params), zeros(6))
                 (f_estimate, g_estimate) = compute_value_gradient(
                     f_stoch,
                     params_perfect,
-                    batch_size = length(data_perfect),
-                    rng = Random.seed!(33),
+                    batch_size=length(data_perfect),
+                    rng=Random.seed!(33),
                 )
                 @test f_estimate ≈ 0
                 @test g_estimate ≈ zeros(6)
                 (f_estimate, g_estimate) = compute_value_gradient(
                     f_stoch,
                     params,
-                    batch_size = length(data_perfect),
-                    rng = Random.seed!(33),
+                    batch_size=length(data_perfect),
+                    rng=Random.seed!(33),
                 )
                 @test f_estimate ≈ compute_value(
                     f_stoch,
                     params,
-                    batch_size = length(data_perfect),
-                    rng = Random.seed!(33),
+                    batch_size=length(data_perfect),
+                    rng=Random.seed!(33),
                 )
                 @test g_estimate ≈ compute_gradient(
                     f_stoch,
                     params,
-                    batch_size = length(data_perfect),
-                    rng = Random.seed!(33),
+                    batch_size=length(data_perfect),
+                    rng=Random.seed!(33),
                 )
             end
             @testset "Noisy data" begin
                 data_noisy = [(x, x ⋅ (1:5) + bias + 0.5 * randn()) for x in xs]
-                f_stoch_noisy = FrankWolfe.StochasticObjective(
-                    simple_reg_loss,
-                    ∇simple_reg_loss,
-                    data_noisy,
-                )
+                f_stoch_noisy =
+                    FrankWolfe.StochasticObjective(simple_reg_loss, ∇simple_reg_loss, data_noisy)
                 @test compute_value(f_stoch_noisy, params) >
                       compute_value(f_stoch_noisy, params_perfect)
                 # perfect parameters shouldn't have too high of a residual gradient
@@ -105,20 +97,20 @@ Random.seed!(123)
                 (f_estimate, g_estimate) = compute_value_gradient(
                     f_stoch_noisy,
                     params,
-                    batch_size = length(data_noisy),
-                    rng = Random.seed!(33),
+                    batch_size=length(data_noisy),
+                    rng=Random.seed!(33),
                 )
                 @test f_estimate ≈ compute_value(
                     f_stoch_noisy,
                     params,
-                    batch_size = length(data_noisy),
-                    rng = Random.seed!(33),
+                    batch_size=length(data_noisy),
+                    rng=Random.seed!(33),
                 )
                 @test g_estimate ≈ compute_gradient(
                     f_stoch_noisy,
                     params,
-                    batch_size = length(data_noisy),
-                    rng = Random.seed!(33),
+                    batch_size=length(data_noisy),
+                    rng=Random.seed!(33),
                 )
             end
         end

@@ -34,11 +34,7 @@ for scaled unit simplex.
 Returns two vectors. The first one is the dual costs associated with the constraints 
 and the second is the reduced costs for the variables.
 """
-function compute_dual_solution(
-    lmo::UnitSimplexOracle{T},
-    direction,
-    primalSolution,
-) where {T}
+function compute_dual_solution(lmo::UnitSimplexOracle{T}, direction, primalSolution) where {T}
     idx = argmax(primalSolution)
     critical = min(direction[idx], 0)
     lambda = [critical]

@@ -7,7 +7,7 @@ TODO:
 - make emphasis aware and optimize
 """
 
-function adaptive_step_size(f, gradient, x, v, L_est; eta = 0.9, tau = 2, gamma_max = 1)
+function adaptive_step_size(f, gradient, x, v, L_est; eta=0.9, tau=2, gamma_max=1)
     M = eta * L_est
     direction = x - v
     gamma = min(
@@ -26,16 +26,7 @@ end
 # TODO:
 # - code needs optimization
 
-function backtrackingLS(
-    f,
-    grad,
-    x,
-    y;
-    stepSize = true,
-    lsTol = 1e-10,
-    stepLim = 20,
-    lsTau = 0.5,
-)
+function backtrackingLS(f, grad, x, y; stepSize=true, lsTol=1e-10, stepLim=20, lsTau=0.5)
     gamma = 1
     d = y - x
     i = 0
@@ -67,7 +58,7 @@ end
 # TODO:
 # - code needs optimization 
 
-function segmentSearch(f, grad, x, y; stepSize = true, lsTol = 1e-10)
+function segmentSearch(f, grad, x, y; stepSize=true, lsTol=1e-10)
     # restrict segment of search to [x, y]
     d = (y - x)
     left, right = copy(x), copy(y)
@@ -94,8 +85,7 @@ function segmentSearch(f, grad, x, y; stepSize = true, lsTol = 1e-10)
             left, right = left, probe
         end
         improv =
-            LinearAlgebra.norm(f(right) - f(old_right)) +
-            LinearAlgebra.norm(f(left) - f(old_left))
+            LinearAlgebra.norm(f(right) - f(old_right)) + LinearAlgebra.norm(f(left) - f(old_left))
     end
 
     x_min = (left + right) / 2.0
@@ -154,7 +144,7 @@ function LinearAlgebra.dot(v1::MaybeHotVector, v2::MaybeHotVector)
 end
 
 function Base.:*(v::MaybeHotVector, x::Number)
-    MaybeHotVector(v.active_val * x, v.val_idx, v.len)
+    return MaybeHotVector(v.active_val * x, v.val_idx, v.len)
 end
 
 Base.:*(x::Number, v::MaybeHotVector) = v * x
@@ -165,7 +155,7 @@ Base.:*(x::Number, v::MaybeHotVector) = v * x
 
 
 macro emphasis(emph, ex)
-    esc(quote
+    return esc(quote
         if $emph === memory
             @. $ex
         else

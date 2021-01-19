@@ -3,21 +3,21 @@ function stochastic_frank_wolfe(
     f::StochasticObjective,
     lmo,
     x0;
-    stepSize::LSMethod = agnostic,
-    L = Inf,
-    gamma0 = 0,
-    stepLim = 20,
-    momentum = nothing,
-    epsilon = 1e-7,
-    maxIt = 10000,
-    printIt = 1000,
-    trajectory = false,
-    verbose = false,
-    lsTol = 1e-7,
-    emph::Emph = blas,
-    rng = Random.GLOBAL_RNG,
-    batch_size = length(f.xs) ÷ 10 + 1,
-    full_evaluation = false,
+    stepSize::LSMethod=agnostic,
+    L=Inf,
+    gamma0=0,
+    stepLim=20,
+    momentum=nothing,
+    epsilon=1e-7,
+    maxIt=10000,
+    printIt=1000,
+    trajectory=false,
+    verbose=false,
+    lsTol=1e-7,
+    emph::Emph=blas,
+    rng=Random.GLOBAL_RNG,
+    batch_size=length(f.xs) ÷ 10 + 1,
+    full_evaluation=false,
 )
     function headerPrint(data)
         @printf(
@@ -95,9 +95,9 @@ function stochastic_frank_wolfe(
             gradient = compute_gradient(
                 f,
                 x,
-                rng = rng,
-                batch_size = batch_size,
-                full_evaluation = full_evaluation,
+                rng=rng,
+                batch_size=batch_size,
+                full_evaluation=full_evaluation,
             )
         else
             @emphasis(
@@ -107,9 +107,9 @@ function stochastic_frank_wolfe(
                     (1 - momentum) * compute_gradient(
                         f,
                         x,
-                        rng = rng,
-                        batch_size = batch_size,
-                        full_evaluation = full_evaluation,
+                        rng=rng,
+                        batch_size=batch_size,
+                        full_evaluation=full_evaluation,
                     )
             )
         end
@@ -121,23 +121,20 @@ function stochastic_frank_wolfe(
         if (mod(t, printIt) == 0 && verbose) ||
            trajectory ||
            !(stepSize == agnostic || stepSize == nonconvex || stepSize == fixed)
-            primal = compute_value(f, x, full_evaluation = true)
+            primal = compute_value(f, x, full_evaluation=true)
             dualGap = dot(x, gradient) - dot(v, gradient)
         end
 
         if trajectory === true
-            append!(
-                trajData,
-                [t, primal, primal - dualGap, dualGap, (time_ns() - timeEl) / 1.0e9],
-            )
+            append!(trajData, [t, primal, primal - dualGap, dualGap, (time_ns() - timeEl) / 1.0e9])
         end
 
         if stepSize === agnostic
             gamma = 2 // (2 + t)
         elseif stepSize === goldenratio
-            _, gamma = segmentSearch(f, grad, x, v, lsTol = lsTol)
+            _, gamma = segmentSearch(f, grad, x, v, lsTol=lsTol)
         elseif stepSize === backtracking
-            _, gamma = backtrackingLS(f, grad, x, v, lsTol = lsTol, stepLim = stepLim)
+            _, gamma = backtrackingLS(f, grad, x, v, lsTol=lsTol, stepLim=stepLim)
         elseif stepSize === nonconvex
             gamma = 1 / sqrt(t + 1)
         elseif stepSize === shortstep
@@ -156,14 +153,7 @@ function stochastic_frank_wolfe(
             if t === 0
                 tt = initial
             end
-            rep = [
-                tt,
-                string(t),
-                primal,
-                primal - dualGap,
-                dualGap,
-                (time_ns() - timeEl) / 1.0e9,
-            ]
+            rep = [tt, string(t), primal, primal - dualGap, dualGap, (time_ns() - timeEl) / 1.0e9]
             itPrint(rep)
             flush(stdout)
         end
@@ -174,7 +164,7 @@ function stochastic_frank_wolfe(
     # hence the final computation.
     # last computation done with full evaluation for exact gradient
 
-    (primal, gradient) = compute_value_gradient(f, x, full_evaluation = true)
+    (primal, gradient) = compute_value_gradient(f, x, full_evaluation=true)
     v = compute_extreme_point(lmo, gradient)
     @show (gradient, primal)
     dualGap = dot(x, gradient) - dot(v, gradient)
