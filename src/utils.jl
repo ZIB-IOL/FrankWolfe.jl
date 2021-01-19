@@ -1,4 +1,22 @@
 
+"""
+Slight modification of
+Aaptive Step Size strategy from https://arxiv.org/pdf/1806.05123.pdf
+
+TODO: 
+- make emphasis aware and optimize
+"""
+
+function adaptive_step_size(f, gradient, x, v, L_est; eta = 0.9, tau = 2, gamma_max = 1)
+    M = eta * L_est
+    direction = x - v
+    gamma = min(LinearAlgebra.dot(gradient, direction) / (M * LinearAlgebra.norm(direction)^2), gamma_max )
+    while f(x - gamma * direction) - f(x) > - gamma * LinearAlgebra.dot(gradient, direction) + gamma^2 * M / 2.0 * LinearAlgebra.norm(direction)^2
+        M *= tau
+    end
+    return M, gamma
+end
+
 # simple backtracking line search (not optimized)
 # TODO:
 # - code needs optimization
