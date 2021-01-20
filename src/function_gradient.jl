@@ -60,7 +60,7 @@ function compute_value(
     else
         (batch_size, rand(rng, eachindex(f.xs), batch_size))
     end
-    return sum(f.f(θ, f.xs[idx]) for idx in rand_indices)  / batch_size
+    return sum(f.f(θ, f.xs[idx]) for idx in rand_indices) / batch_size
 end
 
 function compute_gradient(
