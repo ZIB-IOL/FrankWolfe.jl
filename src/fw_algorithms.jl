@@ -83,7 +83,7 @@ function stochastic_frank_wolfe(
         println(
             "EMPHASIS: $emph STEPSIZE: $stepSize EPSILON: $epsilon MAXIT: $maxIt TYPE: $numType",
         )
-        println("BATCHSIZE: $batch_size")
+        println("MOMENTUM: $momentum BATCHSIZE: $batch_size ")
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time"]
         headerPrint(headers)
     end

@@ -180,9 +180,7 @@ function fw(
         println(
             "EMPHASIS: $emph STEPSIZE: $stepSize EPSILON: $epsilon MAXIT: $maxIt TYPE: $numType",
         )
-        if momentum !== nothing
-            println("MOMENTUM: $momentum")
-        end
+        println("MOMENTUM: $momentum")
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time"]
         headerPrint(headers)
     end
