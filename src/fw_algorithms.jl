@@ -73,10 +73,6 @@ function stochastic_frank_wolfe(
         println("FATAL: gamma0 not set. We are not going to move a single bit.")
     end
 
-    if emph === memory && verbose
-        println("WARNING: In memory emphasis mode iterates are written back into x0!")
-    end
-
     if verbose
         println("\nStochastic Frank-Wolfe Algorithm.")
         numType = eltype(x0)
@@ -84,6 +80,9 @@ function stochastic_frank_wolfe(
             "EMPHASIS: $emph STEPSIZE: $step_size EPSILON: $epsilon MAXIT: $maxIt TYPE: $numType",
         )
         println("MOMENTUM: $momentum BATCHSIZE: $batch_size ")
+        if emph === memory
+            println("WARNING: In memory emphasis mode iterates are written back into x0!")
+        end    
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time"]
         headerPrint(headers)
     end
