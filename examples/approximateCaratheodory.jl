@@ -29,7 +29,7 @@ FrankWolfe.benchmark_oracles(f, grad, lmo, n; k=100, T=Float64)
     lmo,
     x0,
     maxIt=k,
-    stepSize=FrankWolfe.agnostic,
+    step_size=FrankWolfe.agnostic,
     printIt=k / 10,
     verbose=true,
 );
@@ -45,7 +45,7 @@ println("\nOutput type of solution: ", eltype(x))
     lmo,
     x0,
     maxIt=k,
-    stepSize=FrankWolfe.rationalshortstep,
+    step_size=FrankWolfe.rationalshortstep,
     L=2,
     printIt=k / 10,
     verbose=true,
