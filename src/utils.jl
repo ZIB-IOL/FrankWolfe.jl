@@ -217,6 +217,23 @@ function active_set_atom_present(active_set, atom)
     return -1
 end
 
+
+function active_set_argmin(active_set, direction)
+    val = Inf
+    idx = -1
+    temp = 0
+    for i in 1:length(active_set)
+        temp = LinearAlgebra.dot(active_set[i][2], direction)
+        if temp < val
+            val = temp
+            idx = i
+        end
+    end
+    # return vertex, lambda, index
+    return active_set[idx][2], active_set[idx][1], idx
+end    
+
+
 # slicing the array for lambdas
 function active_set_lambdas(active_set)
     lambdas = [active_set[j][1] for j in 1:length(active_set)]
