@@ -13,12 +13,12 @@ f(x) = LinearAlgebra.norm(x-xp)^2
 grad(x) = 2 * (x-xp)
 # better for memory consumption as we do coordinate-wise ops
 
-function cf(x,xp)
-    return @. LinearAlgebra.norm(x-xp)^2
+function cf(x, xp)
+    return @. LinearAlgebra.norm(x - xp)^2
 end
 
-function cgrad(x,xp)
-    return @. 2 * (x-xp)
+function cgrad(x, xp)
+    return @. 2 * (x - xp)
 end
 
 # lmo = FrankWolfe.KSparseLMO(100, 1.0)
@@ -28,7 +28,7 @@ lmo = FrankWolfe.LpNormLMO{Float64, 1}(1.0)
 x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
 # print(x0)
 
-FrankWolfe.benchmark_oracles(x -> cf(x,xp),x -> cgrad(x,xp),lmo,n;k=100,T=Float64)
+FrankWolfe.benchmark_oracles(x -> cf(x, xp), x -> cgrad(x, xp), lmo, n; k=100, T=Float64)
 
 # 1/t *can be* better than short step
 
@@ -61,8 +61,8 @@ x0 = copy(x00)
 
 # @time x, v, primal, dualGap, trajectoryBack = FrankWolfe.fw(f,grad,lmo,x0,maxIt=k,
 #     stepSize=FrankWolfe.backtracking,L=100,printIt=k/10,emph=FrankWolfe.memory,verbose=true, trajectory=true);
-    
-    
+
+
 println("\n==> Agnostic if function is too expensive for adaptive.\n")
 
 x0 = copy(x00)
@@ -72,9 +72,8 @@ x0 = copy(x00)
 
 
 
-data = [trajectorySs, trajectoryAda, trajectoryAg, trajectoryM] 
+data = [trajectorySs, trajectoryAda, trajectoryAg, trajectoryM]
 label = ["short step" "adaptive" "agnostic" "momentum"]
 
 
-FrankWolfe.plot_trajectories(data,label)
-
+FrankWolfe.plot_trajectories(data, label)

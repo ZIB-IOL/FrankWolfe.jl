@@ -8,7 +8,7 @@ using SparseArrays: spzeros
 import Random
 
 # for plotting -> keep here or move somewhere else?
-using Plots    
+using Plots
 
 include("defs.jl")
 include("simplex_matrix.jl")
@@ -210,7 +210,7 @@ function fw(
         end
 
         if trajectory === true
-            push!(trajData, [t, primal, primal - dualGap, dualGap, (time_ns() - timeEl)/1.0e9])
+            push!(trajData, [t, primal, primal - dualGap, dualGap, (time_ns() - timeEl) / 1.0e9])
         end
 
         if stepSize === agnostic

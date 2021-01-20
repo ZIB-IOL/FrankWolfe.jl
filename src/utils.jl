@@ -169,7 +169,7 @@ end
 function plot_trajectories(data, label;filename = nothing)
     theme(:dark)
     # theme(:vibrant)
-    gr() 
+    gr()
 
     x = []
     y = []
@@ -178,46 +178,83 @@ function plot_trajectories(data, label;filename = nothing)
     dit = nothing
     dti = nothing
     offset = 2
-    for i = 1:length(data)
-        trajectory =  data[i]
-        x = [trajectory[j][1] for j=offset:length(trajectory)]    
-        y = [trajectory[j][2] for j=offset:length(trajectory)]    
+    for i in 1:length(data)
+        trajectory = data[i]
+        x = [trajectory[j][1] for j in offset:length(trajectory)]
+        y = [trajectory[j][2] for j in offset:length(trajectory)]
         if i == 1
-            pit = plot(x, y, label=label[i], xaxis=:log, yaxis=:log, 
-                ylabel="Primal", legend=:best, yguidefontsize=8, xguidefontsize=8, legendfontsize=8)
+            pit = plot(
+                x,
+                y,
+                label=label[i],
+                xaxis=:log,
+                yaxis=:log,
+                ylabel="Primal",
+                legend=:bottomleft,
+                yguidefontsize=8,
+                xguidefontsize=8,
+                legendfontsize=8,
+            )
         else
             plot!(x, y, label=label[i])
         end
     end
-    for i = 1:length(data)
-        trajectory =  data[i]
-        x = [trajectory[j][5] for j=offset:length(trajectory)]    
-        y = [trajectory[j][2] for j=offset:length(trajectory)]    
+    for i in 1:length(data)
+        trajectory = data[i]
+        x = [trajectory[j][5] for j in offset:length(trajectory)]
+        y = [trajectory[j][2] for j in offset:length(trajectory)]
         if i == 1
-            pti = plot(x, y, label=label[i], legend = false, xaxis=:log, yaxis=:log, 
-                yguidefontsize=8, xguidefontsize=8)
+            pti = plot(
+                x,
+                y,
+                label=label[i],
+                legend=false,
+                xaxis=:log,
+                yaxis=:log,
+                yguidefontsize=8,
+                xguidefontsize=8,
+            )
         else
             plot!(x, y, label=label[i])
         end
     end
-    for i = 1:length(data)
-        trajectory =  data[i]
-        x = [trajectory[j][1] for j=offset:length(trajectory)]    
-        y = [trajectory[j][4] for j=offset:length(trajectory)]    
+    for i in 1:length(data)
+        trajectory = data[i]
+        x = [trajectory[j][1] for j in offset:length(trajectory)]
+        y = [trajectory[j][4] for j in offset:length(trajectory)]
         if i == 1
-            dit = plot(x, y, label=label[i], legend = false, xaxis=:log, yaxis=:log, ylabel="Dual Gap", xlabel="Iterations", 
-                yguidefontsize=8, xguidefontsize=8)
+            dit = plot(
+                x,
+                y,
+                label=label[i],
+                legend=false,
+                xaxis=:log,
+                yaxis=:log,
+                ylabel="Dual Gap",
+                xlabel="Iterations",
+                yguidefontsize=8,
+                xguidefontsize=8,
+            )
         else
             plot!(x, y, label=label[i])
         end
     end
-    for i = 1:length(data)
-        trajectory =  data[i]
-        x = [trajectory[j][5] for j=offset:length(trajectory)]    
-        y = [trajectory[j][4] for j=offset:length(trajectory)]    
+    for i in 1:length(data)
+        trajectory = data[i]
+        x = [trajectory[j][5] for j in offset:length(trajectory)]
+        y = [trajectory[j][4] for j in offset:length(trajectory)]
         if i == 1
-            dti = plot(x, y, label=label[i], legend = false, xaxis=:log, yaxis=:log, xlabel="Time", 
-                yguidefontsize=8, xguidefontsize=8)
+            dti = plot(
+                x,
+                y,
+                label=label[i],
+                legend=false,
+                xaxis=:log,
+                yaxis=:log,
+                xlabel="Time",
+                yguidefontsize=8,
+                xguidefontsize=8,
+            )
         else
             plot!(x, y, label=label[i])
         end
