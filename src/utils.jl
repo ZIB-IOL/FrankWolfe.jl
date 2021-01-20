@@ -155,6 +155,10 @@ Base.:*(x::Number, v::MaybeHotVector) = v * x
 ##############################
 
 
+struct ActiveSet{T, VT <: AbstractVector{T}}
+    active_set::Vector{VT}
+end
+
 
 
 ##############################
