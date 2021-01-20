@@ -66,11 +66,11 @@ function stochastic_frank_wolfe(
     timeEl = time_ns()
 
     if stepSize === shortstep && L == Inf
-        println("WARNING: Lipschitz constant not set. Prepare to blow up spectacularly.")
+        println("FATAL: Lipschitz constant not set. Prepare to blow up spectacularly.")
     end
 
     if stepSize === fixed && gamma0 == 0
-        println("WARNING: gamma0 not set. We are not going to move a single bit.")
+        println("FATAL: gamma0 not set. We are not going to move a single bit.")
     end
 
     if emph === memory && verbose
@@ -130,7 +130,7 @@ function stochastic_frank_wolfe(
         end
 
         if trajectory === true
-            append!(trajData, [t, primal, primal - dualGap, dualGap, (time_ns() - timeEl) / 1.0e9])
+            push!(trajData, [t, primal, primal - dualGap, dualGap, (time_ns() - timeEl) / 1.0e9])
         end
 
         if stepSize === agnostic
