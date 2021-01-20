@@ -103,7 +103,7 @@ function fw(
     grad,
     lmo,
     x0;
-    stepSize::LSMethod=agnostic,
+    step_size::LSMethod=agnostic,
     L=Inf,
     gamma0=0,
     stepLim=20,
@@ -162,11 +162,11 @@ function fw(
     dx = similar(x0) # Array{eltype(x0)}(undef, length(x0))
     timeEl = time_ns()
 
-    if (stepSize === shortstep || stepSize === adaptive) && L == Inf
+    if (step_size === shortstep || step_size === adaptive) && L == Inf
         println("FATAL: Lipschitz constant not set. Prepare to blow up spectacularly.")
     end
 
-    if stepSize === fixed && gamma0 == 0
+    if step_size === fixed && gamma0 == 0
         println("FATAL: gamma0 not set. We are not going to move a single bit.")
     end
 
@@ -178,7 +178,7 @@ function fw(
         println("\nVanilla Frank-Wolfe Algorithm.")
         numType = eltype(x0)
         println(
-            "EMPHASIS: $emph STEPSIZE: $stepSize EPSILON: $epsilon MAXIT: $maxIt TYPE: $numType",
+            "EMPHASIS: $emph STEPSIZE: $step_size EPSILON: $epsilon MAXIT: $maxIt TYPE: $numType",
         )
         println("MOMENTUM: $momentum")
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time"]
@@ -204,7 +204,7 @@ function fw(
         # go easy on the memory - only compute if really needed
         if (mod(t, printIt) == 0 && verbose) ||
            trajectory ||
-           !(stepSize == agnostic || stepSize == nonconvex || stepSize == fixed)
+           !(step_size == agnostic || step_size == nonconvex || step_size == fixed)
             primal = f(x)
             dualGap = dot(x, gradient) - dot(v, gradient)
         end
@@ -213,22 +213,22 @@ function fw(
             push!(trajData, [t, primal, primal - dualGap, dualGap, (time_ns() - timeEl) / 1.0e9])
         end
 
-        if stepSize === agnostic
+        if step_size === agnostic
             gamma = 2 // (2 + t)
-        elseif stepSize === goldenratio
+        elseif step_size === goldenratio
             _, gamma = segmentSearch(f, grad, x, v, lsTol=lsTol)
-        elseif stepSize === backtracking
+        elseif step_size === backtracking
             _, gamma = backtrackingLS(f, grad, x, v, lsTol=lsTol, stepLim=stepLim)
-        elseif stepSize === nonconvex
+        elseif step_size === nonconvex
             gamma = 1 / sqrt(t + 1)
-        elseif stepSize === shortstep
+        elseif step_size === shortstep
             gamma = dualGap / (L * norm(x - v)^2)
-        elseif stepSize === rationalshortstep
+        elseif step_size === rationalshortstep
             ratDualGap = sum((x - v) .* gradient)
             gamma = ratDualGap // (L * sum((x - v) .^ 2))
-        elseif stepSize === fixed
+        elseif step_size === fixed
             gamma = gamma
-        elseif stepSize === adaptive
+        elseif step_size === adaptive
             L, gamma = adaptive_step_size(f, gradient, x, v, L)
         end
 
@@ -271,7 +271,7 @@ function lcg(
     grad,
     lmoBase,
     x0;
-    stepSize::LSMethod=agnostic,
+    step_size::LSMethod=agnostic,
     L=Inf,
     phiFactor=2,
     cacheSize=Inf,
@@ -340,11 +340,11 @@ function lcg(
     dx = similar(x0) # Array{eltype(x0)}(undef, length(x0))
     timeEl = time_ns()
 
-    if stepSize === shortstep && L == Inf
+    if step_size === shortstep && L == Inf
         println("FATAL: Lipschitz constant not set. Prepare to blow up spectacularly.")
     end
 
-    if stepSize === agnostic || stepSize === nonconvex
+    if step_size === agnostic || step_size === nonconvex
         println(
             "FATAL: Lazification is not known to converge with open-loop step size strategies.",
         )
@@ -358,7 +358,7 @@ function lcg(
         println("\nLazified Conditional Gradients (Frank-Wolfe + Lazification).")
         numType = eltype(x0)
         println(
-            "EMPHASIS: $emph STEPSIZE: $stepSize EPSILON: $epsilon MAXIT: $maxIt PHIFACTOR: $phiFactor TYPE: $numType",
+            "EMPHASIS: $emph STEPSIZE: $step_size EPSILON: $epsilon MAXIT: $maxIt PHIFACTOR: $phiFactor TYPE: $numType",
         )
         println("CACHESIZE $cacheSize GREEDYCACHE: $greedyLazy")
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "Cache Size"]
@@ -391,15 +391,15 @@ function lcg(
             )
         end
 
-        if stepSize === agnostic
+        if step_size === agnostic
             gamma = 2 / (2 + t)
-        elseif stepSize === goldenratio
+        elseif step_size === goldenratio
             _, gamma = segmentSearch(f, grad, x, v, lsTol=lsTol)
-        elseif stepSize === backtracking
+        elseif step_size === backtracking
             _, gamma = backtrackingLS(f, grad, x, v, lsTol=lsTol)
-        elseif stepSize === nonconvex
+        elseif step_size === nonconvex
             gamma = 1 / sqrt(t + 1)
-        elseif stepSize === shortstep
+        elseif step_size === shortstep
             gamma = dualGap / (L * dot(x - v, x - v))
         end
 
