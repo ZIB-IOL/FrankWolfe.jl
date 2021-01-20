@@ -108,7 +108,7 @@ k = 10000
     maxIt=k,
     printIt=k / 10,
     batch_size=length(f_stoch_noisy.xs) ÷ 100 + 1,
-    trajectory = true
+    trajectory = true,
 )
 
 @time x, v, primal, dualGap, trajectory099 = FrankWolfe.stochastic_frank_wolfe(
@@ -122,15 +122,14 @@ k = 10000
     maxIt=k,
     printIt=k / 10,
     batch_size=length(f_stoch_noisy.xs) ÷ 100 + 1,
-    trajectory = true
+    trajectory = true,
 )
 
 
 
 
-ff = x -> compute_value(f_stoch_noisy, x, full_evaluation=true)
-gradf = x -> compute_gradient(f_stoch_noisy, x, full_evaluation=true)
-
+const ff = x -> compute_value(f_stoch_noisy, x, full_evaluation=true)
+const gradf = x -> compute_gradient(f_stoch_noisy, x, full_evaluation=true)
 @time x, v, primal, dualGap, trajectory = FrankWolfe.fw(
     ff,
     gradf,
@@ -148,5 +147,4 @@ data = [trajectory, trajectoryS, trajectory09, trajectory099]
 label = ["exact" "stochastic" "stochM 0.9" "stochM 0.99"]
 
 FrankWolfe.plot_trajectories(data,label,filename="after.pdf")
-
 
