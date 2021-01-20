@@ -6,7 +6,7 @@ using FrankWolfe
 # Testing extraction of lambdas and atoms
 ###########################################
 
-@testset "Active set" begin
+@testset "Active set" begin 
     active_set = [ 
         [0.1, [1,2,3]],
         [0.9, [2,3,4]],
@@ -111,5 +111,13 @@ using FrankWolfe
     x = FrankWolfe.active_set_return_iterate(active_set) 
 
     @test x == [1.25, 2.25, 3.25]
+
+    a, lambda, i = FrankWolfe.active_set_argmin(active_set, [1.0, 1.0, 1.0])
+
+    @test a == [1, 2, 3] && lambda == 0.75 && i == 1
+
+    a, lambda, i = FrankWolfe.active_set_argmin(active_set, [-1.0, -1.0, -1.0])
+
+    @test a == [2, 3, 4] && lambda == 0.25 && i == 2
 
 end
