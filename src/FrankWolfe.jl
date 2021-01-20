@@ -20,6 +20,7 @@ include("polytope_oracles.jl")
 
 include("utils.jl")
 include("function_gradient.jl")
+include("active_set.jl")
 
 # move advanced variants etc to there own files to prevent excessive clutter
 include("afw.jl")
