@@ -184,7 +184,7 @@ function plot_trajectories(data, label)
         y = [trajectory[j][2] for j=offset:length(trajectory)]    
         if i == 1
             pit = plot(x, y, label=label[i], xaxis=:log, yaxis=:log, 
-                ylabel="Primal", legend=:bottomleft, yguidefontsize=8, xguidefontsize=8, legendfontsize=8)
+                ylabel="Primal", legend=:best, yguidefontsize=8, xguidefontsize=8, legendfontsize=8)
         else
             plot!(x, y, label=label[i])
         end

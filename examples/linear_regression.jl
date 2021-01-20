@@ -82,9 +82,9 @@ lmo = FrankWolfe.LpNormLMO{2}(bias)
 
 params = rand(6) .- 1 # start params in (-1,0)
 
-k = 100000
+k = 10000
 
-@time FrankWolfe.stochastic_frank_wolfe(
+@time x, v, primal, dualGap, trajectoryS = FrankWolfe.stochastic_frank_wolfe(
     f_stoch_noisy,
     lmo,
     params,
@@ -95,8 +95,34 @@ k = 100000
     maxIt=k,
     printIt=k / 10,
     batch_size=length(f_stoch_noisy.xs) ÷ 10 + 1,
+    trajectory = true
 )
 
 # FrankWolfe.stochastic_frank_wolfe(f_stoch_noisy, lmo, params, momentum=0.9,
 # verbose=true, rng=Random.GLOBAL_RNG, batch_size=length(f_stoch_noisy.xs) ÷ 10 + 1, full_evaluation=true
 # )
+
+k = 10000
+
+ff = x -> compute_value(f_stoch_noisy, x, full_evaluation=true)
+gradf = x -> compute_gradient(f_stoch_noisy, x, full_evaluation=true)
+
+@time x, v, primal, dualGap, trajectory = FrankWolfe.fw(
+    ff,
+    gradf,
+    lmo,
+    L=10,
+    params,
+    verbose=true,
+    stepSize=FrankWolfe.adaptive,
+    maxIt=k,
+    printIt=k / 10,
+    trajectory=true
+)
+
+data = [trajectory, trajectoryS] 
+label = ["exact" "stochastic"]
+
+FrankWolfe.plot_trajectories(data,label)
+
+

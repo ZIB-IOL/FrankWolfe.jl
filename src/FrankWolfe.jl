@@ -163,11 +163,11 @@ function fw(
     timeEl = time_ns()
 
     if (stepSize === shortstep || stepSize === adaptive) && L == Inf
-        println("WARNING: Lipschitz constant not set. Prepare to blow up spectacularly.")
+        println("FATAL: Lipschitz constant not set. Prepare to blow up spectacularly.")
     end
 
     if stepSize === fixed && gamma0 == 0
-        println("WARNING: gamma0 not set. We are not going to move a single bit.")
+        println("FATAL: gamma0 not set. We are not going to move a single bit.")
     end
 
     if emph === memory && verbose
@@ -180,6 +180,9 @@ function fw(
         println(
             "EMPHASIS: $emph STEPSIZE: $stepSize EPSILON: $epsilon MAXIT: $maxIt TYPE: $numType",
         )
+        if momentum !== nothing
+            println("MOMENTUM: $momentum")
+        end
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time"]
         headerPrint(headers)
     end
@@ -340,12 +343,12 @@ function lcg(
     timeEl = time_ns()
 
     if stepSize === shortstep && L == Inf
-        println("WARNING: Lipschitz constant not set. Prepare to blow up spectacularly.")
+        println("FATAL: Lipschitz constant not set. Prepare to blow up spectacularly.")
     end
 
     if stepSize === agnostic || stepSize === nonconvex
         println(
-            "WARNING: Lazification is not known to converge with open-loop step size strategies.",
+            "FATAL: Lazification is not known to converge with open-loop step size strategies.",
         )
     end
 
