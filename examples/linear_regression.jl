@@ -76,9 +76,9 @@ end
 
 #####
 # Stochastic Frank Wolfe version
-# We constrain the argument in the L2-norm ball of radius "bias"
+# We constrain the argument in the L2-norm ball with a large-enough radius
 
-lmo = FrankWolfe.LpNormLMO{2}(bias)
+lmo = FrankWolfe.LpNormLMO{2}(1.05 * norm(params_perfect))
 
 params = rand(6) .- 1 # start params in (-1,0)
 
@@ -90,7 +90,7 @@ k = 10000
     params,
     verbose=true,
     rng=Random.GLOBAL_RNG,
-    stepSize=FrankWolfe.nonconvex,
+    step_size=FrankWolfe.nonconvex,
     maxIt=k,
     printIt=k / 10,
     batch_size=length(f_stoch_noisy.xs) ÷ 100 + 1,
@@ -104,7 +104,7 @@ k = 10000
     momentum=0.9,
     verbose=true,
     rng=Random.GLOBAL_RNG,
-    stepSize=FrankWolfe.nonconvex,
+    step_size=FrankWolfe.nonconvex,
     maxIt=k,
     printIt=k / 10,
     batch_size=length(f_stoch_noisy.xs) ÷ 100 + 1,
@@ -118,7 +118,7 @@ k = 10000
     momentum=0.99,
     verbose=true,
     rng=Random.GLOBAL_RNG,
-    stepSize=FrankWolfe.nonconvex,
+    step_size=FrankWolfe.nonconvex,
     maxIt=k,
     printIt=k / 10,
     batch_size=length(f_stoch_noisy.xs) ÷ 100 + 1,
@@ -137,7 +137,7 @@ const gradf = x -> compute_gradient(f_stoch_noisy, x, full_evaluation=true)
     L=10,
     params,
     verbose=true,
-    stepSize=FrankWolfe.adaptive,
+    step_size=FrankWolfe.adaptive,
     maxIt=k,
     printIt=k / 10,
     trajectory=true

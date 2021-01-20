@@ -5,7 +5,7 @@ Frank-Wolfe algorithms.
 The main entry point is the `fw` function running the algorithm.
 
 ```julia
-FrankWolfe.fw(f,grad,lmo,x0,maxIt=1000,stepSize=FrankWolfe.agnostic,verbose=true)
+FrankWolfe.fw(f,grad,lmo,x0,maxIt=1000,step_size=FrankWolfe.agnostic,verbose=true)
 ```
 
 ## LMO

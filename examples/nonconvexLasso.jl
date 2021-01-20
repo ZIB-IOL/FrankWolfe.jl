@@ -29,7 +29,7 @@ FrankWolfe.benchmark_oracles(f, grad, lmo, n; k=100, T=Float64)
     lmo,
     x0,
     maxIt=k,
-    stepSize=FrankWolfe.nonconvex,
+    step_size=FrankWolfe.nonconvex,
     printIt=k / 10,
     verbose=true,
 );
