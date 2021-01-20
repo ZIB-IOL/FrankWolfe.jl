@@ -170,10 +170,6 @@ function fw(
         println("FATAL: gamma0 not set. We are not going to move a single bit.")
     end
 
-    if emph === memory && verbose
-        println("WARNING: In memory emphasis mode iterates are written back into x0!")
-    end
-
     if verbose
         println("\nVanilla Frank-Wolfe Algorithm.")
         numType = eltype(x0)
@@ -181,6 +177,9 @@ function fw(
             "EMPHASIS: $emph STEPSIZE: $step_size EPSILON: $epsilon MAXIT: $maxIt TYPE: $numType",
         )
         println("MOMENTUM: $momentum")
+        if emph === memory
+            println("WARNING: In memory emphasis mode iterates are written back into x0!")
+        end    
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time"]
         headerPrint(headers)
     end
@@ -350,10 +349,6 @@ function lcg(
         )
     end
 
-    if emph === memory && verbose
-        println("WARNING: In memory emphasis mode iterates are written back into x0!")
-    end
-
     if verbose
         println("\nLazified Conditional Gradients (Frank-Wolfe + Lazification).")
         numType = eltype(x0)
@@ -361,6 +356,9 @@ function lcg(
             "EMPHASIS: $emph STEPSIZE: $step_size EPSILON: $epsilon MAXIT: $maxIt PHIFACTOR: $phiFactor TYPE: $numType",
         )
         println("CACHESIZE $cacheSize GREEDYCACHE: $greedyLazy")
+        if emph === memory
+            println("WARNING: In memory emphasis mode iterates are written back into x0!")
+        end    
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "Cache Size"]
         headerPrint(headers)
     end
