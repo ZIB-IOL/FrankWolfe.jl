@@ -55,12 +55,12 @@ function compute_value(
     rng=Random.GLOBAL_RNG,
     full_evaluation=false,
 )
-    rand_indices = if full_evaluation
-        eachindex(f.xs)
+    (batch_size, rand_indices) = if full_evaluation
+        (length(f.xs), eachindex(f.xs))
     else
-        rand(rng, eachindex(f.xs), batch_size)
+        (batch_size, rand(rng, eachindex(f.xs), batch_size))
     end
-    return sum(f.f(θ, f.xs[idx]) for idx in rand_indices)
+    return sum(f.f(θ, f.xs[idx]) for idx in rand_indices)  / batch_size
 end
 
 function compute_gradient(
@@ -70,12 +70,12 @@ function compute_gradient(
     rng=Random.GLOBAL_RNG,
     full_evaluation=false,
 )
-    rand_indices = if full_evaluation
-        eachindex(f.xs)
+    (batch_size, rand_indices) = if full_evaluation
+        (length(f.xs), eachindex(f.xs))
     else
-        rand(rng, eachindex(f.xs), batch_size)
+        (batch_size, rand(rng, eachindex(f.xs), batch_size))
     end
-    return sum(f.grad(θ, f.xs[idx]) for idx in rand_indices)
+    return sum(f.grad(θ, f.xs[idx]) for idx in rand_indices) / batch_size
 end
 
 function compute_value_gradient(
@@ -85,15 +85,15 @@ function compute_value_gradient(
     rng=Random.GLOBAL_RNG,
     full_evaluation=false,
 )
-    rand_indices = if full_evaluation
-        eachindex(f.xs)
+    (batch_size, rand_indices) = if full_evaluation
+        (length(f.xs), eachindex(f.xs))
     else
-        rand(rng, eachindex(f.xs), batch_size)
+        (batch_size, rand(rng, eachindex(f.xs), batch_size))
     end
     # map operation, for each index, computes value and gradient
     function map_op(idx)
         @inbounds x = f.xs[idx]
-        return (f.f(θ, x), f.grad(θ, x))
+        return (f.f(θ, x) / batch_size, f.grad(θ, x) / batch_size)
     end
     # reduce: take partial value and gradient, adds value and gradient wrt new point
     function reduce_op(left_tup, right_tup)
