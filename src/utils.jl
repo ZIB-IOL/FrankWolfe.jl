@@ -165,7 +165,7 @@ Base.:*(x::Number, v::MaybeHotVector) = v * x
 
 function active_set_update!(active_set, lambda, atom)
     # rescale active set
-    for i in 1:length(active_set)
+    for i in eachindex(active_set)
         active_set[i][1] *= (1 - lambda)
     end
     # add value for new atom
