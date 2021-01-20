@@ -180,7 +180,7 @@ function fw(
         println("MOMENTUM: $momentum")
         if emph === memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
-        end    
+        end
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time"]
         headerPrint(headers)
     end
@@ -345,9 +345,7 @@ function lcg(
     end
 
     if step_size === agnostic || step_size === nonconvex
-        println(
-            "FATAL: Lazification is not known to converge with open-loop step size strategies.",
-        )
+        println("FATAL: Lazification is not known to converge with open-loop step size strategies.")
     end
 
     if verbose
@@ -359,7 +357,7 @@ function lcg(
         println("CACHESIZE $cacheSize GREEDYCACHE: $greedyLazy")
         if emph === memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
-        end    
+        end
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "Cache Size"]
         headerPrint(headers)
     end

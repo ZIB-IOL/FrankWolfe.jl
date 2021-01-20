@@ -436,7 +436,7 @@ end
             pred = a ⋅ xi + b
             return (pred - yi)^2 / 2
         end
-        
+
         function ∇simple_reg_loss(θ, data_point)
             (xi, yi) = data_point
             (a, b) = (θ[1:end-1], θ[end])
@@ -445,7 +445,7 @@ end
             grad = push!(grad_a, pred - yi)
             return grad
         end
-        
+
         xs = [10 * randn(5) for i in 1:20000]
         params = rand(6) .- 1 # start params in (-1,0)
         bias = 2π
@@ -466,7 +466,7 @@ end
             step_size=FrankWolfe.nonconvex,
             maxIt=10000,
             batch_size=length(f_stoch.xs) ÷ 100,
-            trajectory = false,
+            trajectory=false,
         )
         @test norm(θ - params_perfect) ≤ 0.02 * length(θ)
     end
