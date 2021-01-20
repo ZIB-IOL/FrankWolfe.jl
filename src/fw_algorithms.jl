@@ -3,7 +3,7 @@ function stochastic_frank_wolfe(
     f::StochasticObjective,
     lmo,
     x0;
-    stepSize::LSMethod=agnostic,
+    stepSize::LSMethod=nonconvex,
     L=Inf,
     gamma0=0,
     stepLim=20,
@@ -71,6 +71,10 @@ function stochastic_frank_wolfe(
 
     if stepSize === fixed && gamma0 == 0
         println("WARNING: gamma0 not set. We are not going to move a single bit.")
+    end
+
+    if emph === memory && verbose
+        println("WARNING: In memory emphasis mode iterates are written back into x0!")
     end
 
     if verbose
