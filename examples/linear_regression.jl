@@ -29,7 +29,7 @@ function ∇simple_reg_loss(θ, data_point)
     return grad
 end
 
-xs = [10 * randn(5) for i in 1:50000]
+xs = [10 * randn(5) for i in 1:20000]
 params = rand(6) .- 1 # start params in (-1,0)
 bias = 4π
 params_perfect = [1:5; bias]
@@ -82,7 +82,7 @@ lmo = FrankWolfe.LpNormLMO{2}(bias)
 
 params = rand(6) .- 1 # start params in (-1,0)
 
-k = 1000
+k = 10000
 
 @time x, v, primal, dualGap, trajectoryS = FrankWolfe.stochastic_frank_wolfe(
     f_stoch_noisy,
@@ -138,7 +138,7 @@ gradf = x -> compute_gradient(f_stoch_noisy, x, full_evaluation=true)
     L=10,
     params,
     verbose=true,
-    stepSize=FrankWolfe.agnostic,
+    stepSize=FrankWolfe.adaptive,
     maxIt=k,
     printIt=k / 10,
     trajectory=true
