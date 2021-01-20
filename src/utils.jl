@@ -154,14 +154,8 @@ Base.:*(x::Number, v::MaybeHotVector) = v * x
 ### active set management
 ##############################
 
-# make a nice struct
-
-# struct ActiveSet{T, VT <: AbstractVector{T}}
-#     active_set::Vector{VT}
-# end
-
-
-# only add is not there
+# TODO: make much nicer with structs etc. also the active_set_return_iterate function needs to 
+# be modular for non-vector objects and potentially overloaded
 
 function active_set_update!(active_set, lambda, atom)
     # rescale active set
