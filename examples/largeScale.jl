@@ -32,7 +32,7 @@ FrankWolfe.benchmark_oracles(x -> cf(x, xp), x -> cgrad(x, xp), lmo, n; k=100, T
     lmo,
     x0,
     maxIt=k,
-    stepSize=FrankWolfe.agnostic,
+    step_size=FrankWolfe.agnostic,
     printIt=k / 10,
     emph=FrankWolfe.memory,
     verbose=true,
