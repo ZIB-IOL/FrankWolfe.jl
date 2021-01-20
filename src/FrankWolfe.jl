@@ -7,6 +7,9 @@ using TimerOutputs
 using SparseArrays: spzeros
 import Random
 
+# for plotting -> keep here or move somewhere else?
+using Plots    
+
 include("defs.jl")
 include("simplex_matrix.jl")
 
@@ -167,6 +170,10 @@ function fw(
         println("WARNING: gamma0 not set. We are not going to move a single bit.")
     end
 
+    if emph === memory && verbose
+        println("WARNING: In memory emphasis mode iterates are written back into x0!")
+    end
+
     if verbose
         println("\nVanilla Frank-Wolfe Algorithm.")
         numType = eltype(x0)
@@ -202,7 +209,7 @@ function fw(
         end
 
         if trajectory === true
-            append!(trajData, [t, primal, primal - dualGap, dualGap, (time_ns() - timeEl) / 1.0e9])
+            push!(trajData, [t, primal, primal - dualGap, dualGap, (time_ns() - timeEl)/1.0e9])
         end
 
         if stepSize === agnostic
@@ -342,6 +349,10 @@ function lcg(
         )
     end
 
+    if emph === memory && verbose
+        println("WARNING: In memory emphasis mode iterates are written back into x0!")
+    end
+
     if verbose
         println("\nLazified Conditional Gradients (Frank-Wolfe + Lazification).")
         numType = eltype(x0)
@@ -373,7 +384,7 @@ function lcg(
         end
 
         if trajectory === true
-            append!(
+            push!(
                 trajData,
                 [t, primal, primal - dualGap, dualGap, (time_ns() - timeEl) / 1.0e9, length(lmo)],
             )

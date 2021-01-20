@@ -82,7 +82,7 @@ lmo = FrankWolfe.LpNormLMO{2}(bias)
 
 params = rand(6) .- 1 # start params in (-1,0)
 
-k = 1000
+k = 100000
 
 @time FrankWolfe.stochastic_frank_wolfe(
     f_stoch_noisy,
