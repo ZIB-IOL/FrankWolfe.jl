@@ -68,7 +68,7 @@ using FrankWolfe
 
     # adding new element
 
-    FrankWolfe.active_set_update!(active_set, 1.0 / 2, [5,6,7]) 
+    FrankWolfe.active_set_update!(active_set, 1 / 2, [5,6,7]) 
 
     @test active_set == [[0.25, [1, 2, 3]], [0.25, [2, 3, 4]], [0.5, [5, 6, 7]]]
 
