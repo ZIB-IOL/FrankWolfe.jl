@@ -29,7 +29,7 @@ function ∇simple_reg_loss(θ, data_point)
     return grad
 end
 
-xs = [10 * randn(5) for i in 1:10000]
+xs = [10 * randn(5) for i in 1:20000]
 params = rand(6) .- 1 # start params in (-1,0)
 bias = 4π
 params_perfect = [1:5; bias]
@@ -82,9 +82,22 @@ lmo = FrankWolfe.LpNormLMO{2}(bias)
 
 params = rand(6) .- 1 # start params in (-1,0)
 
-k = 100000
+k = 10000
 
-@time FrankWolfe.stochastic_frank_wolfe(
+@time x, v, primal, dualGap, trajectoryS = FrankWolfe.stochastic_frank_wolfe(
+    f_stoch_noisy,
+    lmo,
+    params,
+    verbose=true,
+    rng=Random.GLOBAL_RNG,
+    stepSize=FrankWolfe.nonconvex,
+    maxIt=k,
+    printIt=k / 10,
+    batch_size=length(f_stoch_noisy.xs) ÷ 100 + 1,
+    trajectory = true
+)
+
+@time x, v, primal, dualGap, trajectory09 = FrankWolfe.stochastic_frank_wolfe(
     f_stoch_noisy,
     lmo,
     params,
@@ -94,9 +107,44 @@ k = 100000
     stepSize=FrankWolfe.nonconvex,
     maxIt=k,
     printIt=k / 10,
-    batch_size=length(f_stoch_noisy.xs) ÷ 10 + 1,
+    batch_size=length(f_stoch_noisy.xs) ÷ 100 + 1,
+    trajectory = true,
 )
 
-# FrankWolfe.stochastic_frank_wolfe(f_stoch_noisy, lmo, params, momentum=0.9,
-# verbose=true, rng=Random.GLOBAL_RNG, batch_size=length(f_stoch_noisy.xs) ÷ 10 + 1, full_evaluation=true
-# )
+@time x, v, primal, dualGap, trajectory099 = FrankWolfe.stochastic_frank_wolfe(
+    f_stoch_noisy,
+    lmo,
+    params,
+    momentum=0.99,
+    verbose=true,
+    rng=Random.GLOBAL_RNG,
+    stepSize=FrankWolfe.nonconvex,
+    maxIt=k,
+    printIt=k / 10,
+    batch_size=length(f_stoch_noisy.xs) ÷ 100 + 1,
+    trajectory = true,
+)
+
+
+
+
+const ff = x -> compute_value(f_stoch_noisy, x, full_evaluation=true)
+const gradf = x -> compute_gradient(f_stoch_noisy, x, full_evaluation=true)
+@time x, v, primal, dualGap, trajectory = FrankWolfe.fw(
+    ff,
+    gradf,
+    lmo,
+    L=10,
+    params,
+    verbose=true,
+    stepSize=FrankWolfe.adaptive,
+    maxIt=k,
+    printIt=k / 10,
+    trajectory=true
+)
+
+data = [trajectory, trajectoryS, trajectory09, trajectory099] 
+label = ["exact" "stochastic" "stochM 0.9" "stochM 0.99"]
+
+FrankWolfe.plot_trajectories(data,label,filename="after.pdf")
+
