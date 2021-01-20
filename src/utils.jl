@@ -166,7 +166,7 @@ end
 
 ######## Visualization etc
 
-function plot_trajectories(data, label)
+function plot_trajectories(data, label;filename = nothing)
     theme(:dark)
     # theme(:vibrant)
     gr() 
@@ -224,6 +224,8 @@ function plot_trajectories(data, label)
     end
     fp = plot(pit,pti,dit,dti, layout = (2,2)) # layout = @layout([A{0.01h}; [B C; D E]]))
     plot!(size=(600,400))
-    savefig(fp,  "convergence.pdf") 
+    if filename !== nothing
+        savefig(fp,  filename) 
+    end
     return fp
 end
