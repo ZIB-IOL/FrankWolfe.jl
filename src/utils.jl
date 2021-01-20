@@ -203,7 +203,7 @@ end
 function active_set_return_iterate(active_set)
     x = zeros(length(active_set[1][2]))
     for i in 1:length(active_set)
-        x += active_set[i][1] .* active_set[i][2]
+        x += active_set[i][1] * active_set[i][2]
     end
     return x
 end    
