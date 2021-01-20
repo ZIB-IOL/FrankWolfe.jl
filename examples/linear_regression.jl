@@ -76,9 +76,9 @@ end
 
 #####
 # Stochastic Frank Wolfe version
-# We constrain the argument in the L2-norm ball of radius "bias"
+# We constrain the argument in the L2-norm ball with a large-enough radius
 
-lmo = FrankWolfe.LpNormLMO{2}(bias)
+lmo = FrankWolfe.LpNormLMO{2}(1.05 * norm(params_perfect))
 
 params = rand(6) .- 1 # start params in (-1,0)
 
