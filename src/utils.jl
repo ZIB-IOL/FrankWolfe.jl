@@ -149,6 +149,14 @@ end
 
 Base.:*(x::Number, v::MaybeHotVector) = v * x
 
+
+##############################
+### active set management
+##############################
+
+
+
+
 ##############################
 ### emphasis macro
 ##############################
@@ -164,7 +172,9 @@ macro emphasis(emph, ex)
     end)
 end
 
-######## Visualization etc
+##############################
+### Visualization etc
+##############################
 
 function plot_trajectories(data, label;filename = nothing)
     theme(:dark)
