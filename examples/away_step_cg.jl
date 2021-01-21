@@ -3,7 +3,7 @@ import LinearAlgebra
 
 
 # n = Int(1e1)
-n = Int(1e2)
+n = Int(1e4)
 k = 10000
 
 xpi = rand(n);
