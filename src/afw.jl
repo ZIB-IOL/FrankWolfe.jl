@@ -34,7 +34,7 @@ function afw(
             data[3],
             data[4],
             data[5],
-            data[6]
+            data[6],
         )
         @printf(
             "───────────────────────────────────────────────────────────────────────────────────\n"
@@ -55,14 +55,13 @@ function afw(
             Float64(data[3]),
             Float64(data[4]),
             Float64(data[5]),
-            data[6]
+            data[6],
         )
     end
 
     t = 0
     dualGap = Inf
     primal = Inf
-    v = []
     x = x0
     active_set =  ActiveSet([(1.0, x0)]) # add the first vertex to active set from initialization
     tt:StepType = regular
@@ -92,7 +91,7 @@ function afw(
         if emph === memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
         end    
-        headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time"]
+        headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time")
         headerPrint(headers)
     end
 
@@ -124,7 +123,7 @@ function afw(
         end
 
         if trajectory === true
-            push!(trajData, [t, primal, primal - dualGap, dualGap, (time_ns() - timeEl) / 1.0e9])
+            push!(trajData, (t, primal, primal - dualGap, dualGap, (time_ns() - timeEl) / 1.0e9, length(active_set)))
         end
         
         # default is a FW step
@@ -181,7 +180,7 @@ function afw(
             if t === 0
                 tt = initial
             end
-            rep = [tt, string(t), primal, primal - dualGap, dualGap, (time_ns() - timeEl) / 1.0e9]
+            rep = (tt, string(t), primal, primal - dualGap, dualGap, (time_ns() - timeEl) / 1.0e9, length(active_set))
             itPrint(rep)
             flush(stdout)
         end
@@ -214,7 +213,7 @@ function afw(
     dualGap = dot(x, gradient) - dot(v, gradient)
     if verbose
         tt = pp
-        rep = [tt, string(t - 1), primal, primal - dualGap, dualGap, (time_ns() - timeEl) / 1.0e9]
+        rep = (tt, string(t - 1), primal, primal - dualGap, dualGap, (time_ns() - timeEl) / 1.0e9, length(active_set))
         itPrint(rep)
         footerPrint()
         flush(stdout)
