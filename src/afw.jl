@@ -117,7 +117,7 @@ function afw(
         v = compute_extreme_point(lmo, gradient)
 
         # go easy on the memory - only compute if really needed
-        if (mod(t, printIt) == 0 && verbose) || awaySteps
+        if (mod(t, printIt) == 0 && verbose) || awaySteps ||
            trajectory ||
            !(step_size == agnostic || step_size == nonconvex || step_size == fixed)
             primal = f(x)
