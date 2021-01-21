@@ -82,7 +82,7 @@ function stochastic_frank_wolfe(
         println("MOMENTUM: $momentum BATCHSIZE: $batch_size ")
         if emph === memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
-        end    
+        end
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time"]
         headerPrint(headers)
     end
