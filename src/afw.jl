@@ -93,7 +93,7 @@ function afw(
         if emph === memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
         end    
-        headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "|ActiveSet|")
+        headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "#ActiveSet")
         headerPrint(headers)
     end
 
