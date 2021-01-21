@@ -146,4 +146,4 @@ const gradf = x -> compute_gradient(f_stoch_noisy, x, full_evaluation=true)
 data = [trajectory, trajectoryS, trajectory09, trajectory099]
 label = ["exact" "stochastic" "stochM 0.9" "stochM 0.99"]
 
-FrankWolfe.plot_trajectories(data, label, filename="after.pdf")
+FrankWolfe.plot_trajectories(data, label)
