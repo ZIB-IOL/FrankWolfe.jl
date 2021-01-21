@@ -65,7 +65,7 @@ function afw(
     dualGap = Inf
     primal = Inf
     x = x0
-    active_set =  ActiveSet([(1.0, x0)]) # add the first vertex to active set from initialization
+    active_set = ActiveSet([(1.0, x0)]) # add the first vertex to active set from initialization
     tt:StepType = regular
     trajData = []
     timeEl = time_ns()
@@ -92,7 +92,7 @@ function afw(
         println("MOMENTUM: $momentum AWAYSTEPS: $awaySteps")
         if emph === memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
-        end    
+        end
         headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "#ActiveSet")
         headerPrint(headers)
     end
@@ -117,33 +117,46 @@ function afw(
         v = compute_extreme_point(lmo, gradient)
 
         # go easy on the memory - only compute if really needed
-        if (mod(t, printIt) == 0 && verbose) || awaySteps ||
-           trajectory ||
-           !(step_size == agnostic || step_size == nonconvex || step_size == fixed)
+        if (
+            (mod(t, printIt) == 0 && verbose) ||
+            awaySteps ||
+            trajectory ||
+            !(step_size == agnostic || step_size == nonconvex || step_size == fixed)
+        )
             primal = f(x)
             dualGap = dot(x, gradient) - dot(v, gradient)
         end
 
         if trajectory === true
-            push!(trajData, (t, primal, primal - dualGap, dualGap, (time_ns() - timeEl) / 1.0e9, length(active_set)))
+            push!(
+                trajData,
+                (
+                    t,
+                    primal,
+                    primal - dualGap,
+                    dualGap,
+                    (time_ns() - timeEl) / 1.0e9,
+                    length(active_set),
+                ),
+            )
         end
-        
+
         # default is a FW step
         # used for clipping the step
         tt = regular
         gamma_max = 1
         d = x - v
-        away_step_taken = false 
+        away_step_taken = false
 
         # above we have already compute the FW vetex and the dualGap. now we need to 
         # compute the away vertex and the away gap
-        lambda, a, i = active_set_argmin(active_set, - gradient)
+        lambda, a, i = active_set_argmin(active_set, -gradient)
         away_gap = dot(a, gradient) - dot(x, gradient)
 
         # if away_gap is larger than dualGap and we do awaySteps, then away step promises more progress
         if dualGap < away_gap && awaySteps
             tt = away
-            gamma_max = lambda / (1-lambda)
+            gamma_max = lambda / (1 - lambda)
             d = a - x
             away_step_taken = true
         end
@@ -167,9 +180,9 @@ function afw(
             gamma = gamma0
         elseif step_size === adaptive
             L, gamma = adaptive_step_size(f, gradient, x, d, L)
-       end
+        end
 
-       # clipping the step size for the away steps
+        # clipping the step size for the away steps
         gamma = min(gamma_max, gamma)
 
         if !away_step_taken
@@ -182,7 +195,15 @@ function afw(
             if t === 0
                 tt = initial
             end
-            rep = (tt, string(t), primal, primal - dualGap, dualGap, (time_ns() - timeEl) / 1.0e9, length(active_set))
+            rep = (
+                tt,
+                string(t),
+                primal,
+                primal - dualGap,
+                dualGap,
+                (time_ns() - timeEl) / 1.0e9,
+                length(active_set),
+            )
             itPrint(rep)
             flush(stdout)
         end
@@ -201,7 +222,15 @@ function afw(
         primal = f(x)
         dualGap = dot(x, gradient) - dot(v, gradient)
         tt = last
-        rep = (tt, string(t - 1), primal, primal - dualGap, dualGap, (time_ns() - timeEl) / 1.0e9, length(active_set))
+        rep = (
+            tt,
+            string(t - 1),
+            primal,
+            primal - dualGap,
+            dualGap,
+            (time_ns() - timeEl) / 1.0e9,
+            length(active_set),
+        )
         itPrint(rep)
         flush(stdout)
     end
@@ -215,7 +244,15 @@ function afw(
     dualGap = dot(x, gradient) - dot(v, gradient)
     if verbose
         tt = pp
-        rep = (tt, string(t - 1), primal, primal - dualGap, dualGap, (time_ns() - timeEl) / 1.0e9, length(active_set))
+        rep = (
+            tt,
+            string(t - 1),
+            primal,
+            primal - dualGap,
+            dualGap,
+            (time_ns() - timeEl) / 1.0e9,
+            length(active_set),
+        )
         itPrint(rep)
         footerPrint()
         flush(stdout)

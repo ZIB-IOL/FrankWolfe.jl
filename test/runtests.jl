@@ -481,14 +481,14 @@ end
 
         # compute reference from vanilla FW
         xref, _ = FrankWolfe.fw(
-                        f,
-                        grad,
-                        lmo_prob,
-                        x0,
-                        maxIt=k,
-                        step_size=FrankWolfe.backtracking,
-                        verbose=false,
-                        emph=FrankWolfe.blas,
+            f,
+            grad,
+            lmo_prob,
+            x0,
+            maxIt=k,
+            step_size=FrankWolfe.backtracking,
+            verbose=false,
+            emph=FrankWolfe.blas,
         )
 
         x, v, primal, dualGap, trajectory = FrankWolfe.afw(
@@ -504,7 +504,7 @@ end
         )
 
         @test x !== nothing
-        @test xref ≈ x atol=(1e-3 / length(x))
+        @test xref ≈ x atol = (1e-3 / length(x))
 
         x, v, primal, dualGap, trajectory = FrankWolfe.afw(
             f,
@@ -518,6 +518,6 @@ end
             emph=FrankWolfe.memory,
         )
         @test x !== nothing
-        @test xref ≈ x atol=(1e-3 / length(x))
+        @test xref ≈ x atol = (1e-3 / length(x))
     end
 end
