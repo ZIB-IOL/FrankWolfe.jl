@@ -25,37 +25,39 @@ function afw(
 )
     function headerPrint(data)
         @printf(
-            "\n───────────────────────────────────────────────────────────────────────────────────\n"
+            "\n───────────────────────────────────────────────────────────────────────────────────────────────\n"
         )
         @printf(
-            "%6s %13s %14s %14s %14s %14s\n",
+            "%6s %13s %14s %14s %14s %14s %14s\n",
             data[1],
             data[2],
             data[3],
             data[4],
             data[5],
             data[6],
+            data[7],
         )
         @printf(
-            "───────────────────────────────────────────────────────────────────────────────────\n"
+            "───────────────────────────────────────────────────────────────────────────────────────────────\n"
         )
     end
 
     function footerPrint()
         @printf(
-            "───────────────────────────────────────────────────────────────────────────────────\n\n"
+            "───────────────────────────────────────────────────────────────────────────────────────────────\n\n"
         )
     end
 
     function itPrint(data)
         @printf(
-            "%6s %13s %14e %14e %14e %14e\n",
+            "%6s %13s %14e %14e %14e %14e %14i\n",
             st[Symbol(data[1])],
             data[2],
             Float64(data[3]),
             Float64(data[4]),
             Float64(data[5]),
             data[6],
+            data[7],
         )
     end
 
@@ -91,7 +93,7 @@ function afw(
         if emph === memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
         end    
-        headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time")
+        headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "|ActiveSet|")
         headerPrint(headers)
     end
 
@@ -199,7 +201,7 @@ function afw(
         primal = f(x)
         dualGap = dot(x, gradient) - dot(v, gradient)
         tt = last
-        rep = [tt, string(t - 1), primal, primal - dualGap, dualGap, (time_ns() - timeEl) / 1.0e9]
+        rep = (tt, string(t - 1), primal, primal - dualGap, dualGap, (time_ns() - timeEl) / 1.0e9, length(active_set))
         itPrint(rep)
         flush(stdout)
     end

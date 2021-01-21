@@ -506,6 +506,6 @@ end
             emph=FrankWolfe.memory,
         )
         @test x !== nothing
+        @test x != x0
     end
-
 end
