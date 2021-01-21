@@ -20,8 +20,6 @@ x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
 FrankWolfe.benchmark_oracles(f, grad, lmo, n; k=100, T=Float64)
 
-println("\n==> Short Step rule - if you know L.\n")
-
 @time x, v, primal, dualGap, trajectory = FrankWolfe.fw(
     f,
     grad,
@@ -35,8 +33,6 @@ println("\n==> Short Step rule - if you know L.\n")
     verbose=true,
     trajectory=true
 );
-
-println("\n==> Short Step rule with active set.\n")
 
 @time x, v, primal, dualGap, trajectoryA, active_set = FrankWolfe.afw(
     f,
