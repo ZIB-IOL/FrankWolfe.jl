@@ -148,104 +148,6 @@ end
 
 Base.:*(x::Number, v::MaybeHotVector) = v * x
 
-
-##############################
-### active set management
-##############################
-
-# TODO: make much nicer with structs etc. also the active_set_return_iterate function needs to 
-# be modular for non-vector objects and potentially overloaded
-
-function active_set_update!(active_set, lambda, atom)
-    # rescale active set
-    for i in eachindex(active_set)
-        active_set[i][1] *= (1 - lambda)
-    end
-    # add value for new atom
-    idx = active_set_atom_present(active_set, atom)
-    if idx > 0
-        active_set[idx][1] += lambda 
-    else
-        push!(active_set,[lambda, atom])
-    end
-    active_set_cleanup!(active_set)
-end
-
-function active_set_validate(active_set)
-    lambdas = active_set_lambdas(active_set)
-    return sum(lambdas) ≈ 1.0
-end
-
-function active_set_renormalize!(active_set)
-    lambdas = active_set_lambdas(active_set)
-    renorm = sum(lambdas)
-    for i in 1:length(active_set)
-        active_set[i][1] /= renorm
-    end    
-end
-
-function active_set_get_lambda_atom(active_set,atom)
-    idx = active_set_atom_present(active_set, atom)
-    if idx > 0
-        return active_set[idx][1]
-    else
-        return nothing
-    end
-end
-
-function active_set_return_iterate(active_set)
-    x = zeros(length(active_set[1][2]))
-    for i in 1:length(active_set)
-        x += active_set[i][1] * active_set[i][2]
-    end
-    return x
-end    
-
-
-function active_set_cleanup!(active_set)
-    filter!(e->e[1] > 0.0,active_set)
-    # new_active_set = [element for element in active_set if element[1] > 0.0]
-end
-
-function active_set_atom_present(active_set, atom)
-    for i in 1:length(active_set)
-        if active_set[i][2] == atom
-            return i
-        end
-    end
-    return -1
-end
-
-
-function active_set_argmin(active_set, direction)
-    val = Inf
-    idx = -1
-    temp = 0
-    for i in 1:length(active_set)
-        temp = LinearAlgebra.dot(active_set[i][2], direction)
-        if temp < val
-            val = temp
-            idx = i
-        end
-    end
-    # return vertex, lambda, index
-    return active_set[idx][2], active_set[idx][1], idx
-end    
-
-
-# slicing the array for lambdas
-function active_set_lambdas(active_set)
-    lambdas = [active_set[j][1] for j in 1:length(active_set)]
-    return lambdas
-end
-
-# slicing the array for atoms
-function active_set_atoms(active_set)
-    atoms = [active_set[j][2] for j in 1:length(active_set)]
-    return atoms
-end
-
-
 ##############################
 ### emphasis macro
 ##############################
@@ -265,7 +167,7 @@ end
 ### Visualization etc
 ##############################
 
-function plot_trajectories(data, label;filename = nothing)
+function plot_trajectories(data, label; filename=nothing)
     theme(:dark)
     # theme(:vibrant)
     gr()
@@ -358,10 +260,10 @@ function plot_trajectories(data, label;filename = nothing)
             plot!(x, y, label=label[i])
         end
     end
-    fp = plot(pit,pti,dit,dti, layout = (2,2)) # layout = @layout([A{0.01h}; [B C; D E]]))
-    plot!(size=(600,400))
+    fp = plot(pit, pti, dit, dti, layout=(2, 2)) # layout = @layout([A{0.01h}; [B C; D E]]))
+    plot!(size=(600, 400))
     if filename !== nothing
-        savefig(fp,  filename) 
+        savefig(fp, filename)
     end
     return fp
 end
