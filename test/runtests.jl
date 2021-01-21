@@ -470,4 +470,54 @@ end
         )
         @test norm(θ - params_perfect) ≤ 0.02 * length(θ)
     end
+
+    @testset "Away-step FW" begin
+        n = 50
+        lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1.0)
+        x0 = FrankWolfe.compute_extreme_point(lmo_prob, rand(n))
+        f(x) = LinearAlgebra.norm(x)^2
+        grad(x) = 2x
+        k = 1000
+
+        # compute reference from vanilla FW
+        xref, _ = FrankWolfe.fw(
+                        f,
+                        grad,
+                        lmo_prob,
+                        x0,
+                        maxIt=k,
+                        step_size=FrankWolfe.backtracking,
+                        verbose=false,
+                        emph=FrankWolfe.blas,
+        )
+
+        x, v, primal, dualGap, trajectory = FrankWolfe.afw(
+            f,
+            grad,
+            lmo_prob,
+            x0,
+            maxIt=k,
+            step_size=FrankWolfe.backtracking,
+            printIt=k / 10,
+            verbose=true,
+            emph=FrankWolfe.blas,
+        )
+
+        @test x !== nothing
+        @test xref ≈ x atol=(1e-3 / length(x))
+
+        x, v, primal, dualGap, trajectory = FrankWolfe.afw(
+            f,
+            grad,
+            lmo_prob,
+            x0,
+            maxIt=k,
+            step_size=FrankWolfe.backtracking,
+            printIt=k / 10,
+            verbose=true,
+            emph=FrankWolfe.memory,
+        )
+        @test x !== nothing
+        @test xref ≈ x atol=(1e-3 / length(x))
+    end
 end

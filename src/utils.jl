@@ -7,9 +7,8 @@ TODO:
 - make emphasis aware and optimize
 """
 
-function adaptive_step_size(f, gradient, x, v, L_est; eta=0.9, tau=2, gamma_max=1)
+function adaptive_step_size(f, gradient, x, direction, L_est; eta=0.9, tau=2, gamma_max=1)
     M = eta * L_est
-    direction = x - v
     gamma = min(
         LinearAlgebra.dot(gradient, direction) / (M * LinearAlgebra.norm(direction)^2),
         gamma_max,
