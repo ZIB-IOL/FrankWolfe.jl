@@ -32,7 +32,7 @@ FrankWolfe.benchmark_oracles(f, grad, lmo, n; k=100, T=Float64)
     emph=FrankWolfe.memory,
     verbose=true,
     epsilon=1e-5,
-    trajectory=true
+    trajectory=true,
 );
 
 @time x, v, primal, dualGap, trajectoryA, active_set = FrankWolfe.afw(
@@ -48,7 +48,7 @@ FrankWolfe.benchmark_oracles(f, grad, lmo, n; k=100, T=Float64)
     emph=FrankWolfe.memory,
     verbose=true,
     awaySteps=true,
-    trajectory=true
+    trajectory=true,
 );
 
 @time x, v, primal, dualGap, trajectoryAM, active_set = FrankWolfe.afw(
@@ -65,11 +65,10 @@ FrankWolfe.benchmark_oracles(f, grad, lmo, n; k=100, T=Float64)
     emph=FrankWolfe.blas,
     verbose=true,
     awaySteps=true,
-    trajectory=true
+    trajectory=true,
 );
 
 data = [trajectory, trajectoryA, trajectoryAM]
 label = ["FW" "AFW" "MAFW"]
 
 FrankWolfe.plot_trajectories(data, label)
-

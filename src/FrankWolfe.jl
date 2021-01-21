@@ -202,9 +202,11 @@ function fw(
         v = compute_extreme_point(lmo, gradient)
 
         # go easy on the memory - only compute if really needed
-        if (mod(t, printIt) == 0 && verbose) ||
-           trajectory ||
-           !(step_size == agnostic || step_size == nonconvex || step_size == fixed)
+        if (
+            (mod(t, printIt) == 0 && verbose) ||
+            trajectory ||
+            !(step_size == agnostic || step_size == nonconvex || step_size == fixed)
+        )
             primal = f(x)
             dualGap = dot(x, gradient) - dot(v, gradient)
         end
@@ -402,7 +404,7 @@ function lcg(
 
         @emphasis(emph, x = (1 - gamma) * x + gamma * v)
 
-        if (mod(t, printIt) == 0 || tt == dualstep) && verbose
+        if mod(t, printIt) == 0 || tt == dualstep && verbose
             if t === 0
                 tt = initial
             end
