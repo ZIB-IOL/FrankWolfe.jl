@@ -29,7 +29,8 @@ over the set LMO represents.
 - Basic Frank-Wolfe Algorithm (see <http://proceedings.mlr.press/v28/jaggi13.html> for an overview)
   - works both for convex and non-convex function (use step size rule `FrankWolfe.nonconvex`)
 - Stochastic Frank-Wolfe 
-- (to come:) Away-Step Frank-Wolfe and Pairwise Conditional Gradients (see <https://arxiv.org/abs/1511.05932> for an overview)
+- Away-Step Frank-Wolfe (see <https://arxiv.org/abs/1511.05932> for an overview)
+- (to come:) Pairwise Conditional Gradients (see <https://arxiv.org/abs/1511.05932> for an overview)
 - (to come:) Blended Conditional Gradients (see <https://arxiv.org/abs/1805.07311>)
 
 - most algorithms also have a lazified version (see <https://arxiv.org/abs/1610.05120>)
