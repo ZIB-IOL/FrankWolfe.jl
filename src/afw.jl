@@ -4,8 +4,6 @@
 # decide in the whether we can lazify that version -> likely possible but will require careful checking. 
 # keep lazy variant separate but can be based off of afw
 
-# using Test
-
 function afw(
     f,
     grad,
@@ -66,7 +64,7 @@ function afw(
     primal = Inf
     v = []
     x = x0
-    active_set = [ [1, x0] ] # add the first vertex to active set from initialization
+    active_set =  ActiveSet([(1.0, x0)]) # add the first vertex to active set from initialization
     tt:StepType = regular
     trajData = []
     timeEl = time_ns()
@@ -106,7 +104,7 @@ function afw(
     while t <= maxIt && dualGap >= max(epsilon, eps())
 
         # compute current iterate from active set
-        x = active_set_return_iterate(active_set)
+        x = compute_active_set_iterate(active_set)
 
         if isnothing(momentum) || first_iter
             gradient = grad(x)
@@ -138,11 +136,11 @@ function afw(
 
         # above we have already compute the FW vetex and the dualGap. now we need to 
         # compute the away vertex and the away gap
-        a, lambda, i = active_set_argmin(active_set, - gradient)
-        awayGap = dot(a, gradient) - dot(x, gradient)
+        lambda, a, i = active_set_argmin(active_set, - gradient)
+        away_gap = dot(a, gradient) - dot(x, gradient)
 
-        # if awayGap is larger than dualGap and we do awaySteps, then away step promises more progress
-        if dualGap < awayGap && awaySteps
+        # if away_gap is larger than dualGap and we do awaySteps, then away step promises more progress
+        if dualGap < away_gap && awaySteps
             tt = away
             gamma_max = lambda / (1-lambda)
             d = a - x
@@ -196,7 +194,7 @@ function afw(
     # do also cleanup of active_set due to many operations on the same set
 
     if verbose
-        x = active_set_return_iterate(active_set)
+        x = compute_active_set_iterate(active_set)
         gradient = grad(x)
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
@@ -209,7 +207,7 @@ function afw(
 
     active_set_renormalize!(active_set)
     active_set_cleanup!(active_set)
-    x = active_set_return_iterate(active_set)
+    x = compute_active_set_iterate(active_set)
     gradient = grad(x)
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
