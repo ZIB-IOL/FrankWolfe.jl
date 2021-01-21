@@ -3,10 +3,6 @@ using Test
 using FrankWolfe
 import FrankWolfe: ActiveSet
 
-###########################################
-# Testing extraction of lambdas and atoms
-###########################################
-
 @testset "Active sets" begin
 
     @testset "Constructors and eltypes" begin
