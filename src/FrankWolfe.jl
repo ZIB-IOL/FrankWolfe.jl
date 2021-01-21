@@ -228,7 +228,7 @@ function fw(
         elseif step_size === fixed
             gamma = gamma
         elseif step_size === adaptive
-            L, gamma = adaptive_step_size(f, gradient, x, v, L)
+            L, gamma = adaptive_step_size(f, gradient, x, x - v, L)
         end
 
         @emphasis(emph, x = (1 - gamma) * x + gamma * v)
