@@ -84,7 +84,7 @@ function afw(
     end
 
     if verbose
-        println("\nActive-set Frank-Wolfe Algorithm.")
+        println("\nAway-step Frank-Wolfe Algorithm.")
         numType = eltype(x0)
         println(
             "EMPHASIS: $emph STEPSIZE: $step_size EPSILON: $epsilon MAXIT: $maxIt TYPE: $numType",
