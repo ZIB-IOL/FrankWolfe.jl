@@ -22,6 +22,8 @@ include("utils.jl")
 include("function_gradient.jl")
 include("active_set.jl")
 
+include("blended_cg.jl")
+
 # move advanced variants etc to there own files to prevent excessive clutter
 include("afw.jl")
 
