@@ -28,8 +28,8 @@ FrankWolfe.benchmark_oracles(f, grad, lmo, n; k=100, T=Float64)
     grad,
     lmo,
     x0,
-    maxIt=k,
-    step_size=FrankWolfe.nonconvex,
-    printIt=k / 10,
+    max_iteration=k,
+    line_search=FrankWolfe.nonconvex,
+    print_iter=k / 10,
     verbose=true,
 );

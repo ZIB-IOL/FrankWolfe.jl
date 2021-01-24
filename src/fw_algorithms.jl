@@ -3,18 +3,18 @@ function stochastic_frank_wolfe(
     f::StochasticObjective,
     lmo,
     x0;
-    step_size::LSMethod=nonconvex,
+    line_search::LineSearchMethod=nonconvex,
     L=Inf,
     gamma0=0,
-    stepLim=20,
+    step_lim=20,
     momentum=nothing,
     epsilon=1e-7,
-    maxIt=10000,
-    printIt=1000,
+    max_iteration=10000,
+    print_iter=1000,
     trajectory=false,
     verbose=false,
-    lsTol=1e-7,
-    emph::Emph=blas,
+    linesearch_tol=1e-7,
+    Emphasis::Emphasis=blas,
     rng=Random.GLOBAL_RNG,
     batch_size=length(f.xs) ÷ 10 + 1,
     full_evaluation=false,
@@ -63,13 +63,13 @@ function stochastic_frank_wolfe(
     tt = regular
     trajData = []
     dx = similar(x0) # Array{eltype(x0)}(undef, length(x0))
-    timeEl = time_ns()
+    time_start = time_ns()
 
-    if step_size === shortstep && L == Inf
+    if line_search === shortstep && L == Inf
         println("FATAL: Lipschitz constant not set. Prepare to blow up spectacularly.")
     end
 
-    if step_size === fixed && gamma0 == 0
+    if line_search === fixed && gamma0 == 0
         println("FATAL: gamma0 not set. We are not going to move a single bit.")
     end
 
@@ -77,22 +77,22 @@ function stochastic_frank_wolfe(
         println("\nStochastic Frank-Wolfe Algorithm.")
         numType = eltype(x0)
         println(
-            "EMPHASIS: $emph STEPSIZE: $step_size EPSILON: $epsilon MAXIT: $maxIt TYPE: $numType",
+            "EMPHASIS: $Emphasis STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration TYPE: $numType",
         )
         println("MOMENTUM: $momentum BATCHSIZE: $batch_size ")
-        if emph === memory
+        if Emphasis === memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
         end
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time"]
         headerPrint(headers)
     end
 
-    if emph === memory && !isa(x, Array)
+    if Emphasis === memory && !isa(x, Array)
         x = convert(Vector{promote_type(eltype(x), Float64)}, x)
     end
     first_iter = true
     gradient = 0
-    while t <= maxIt && dualGap >= max(epsilon, eps())
+    while t <= max_iteration && dualGap >= max(epsilon, eps())
 
         if momentum === nothing || first_iter
             gradient = compute_gradient(
@@ -104,7 +104,7 @@ function stochastic_frank_wolfe(
             )
         else
             @emphasis(
-                emph,
+                Emphasis,
                 gradient =
                     (momentum * gradient) .+
                     (1 - momentum) * compute_gradient(
@@ -121,42 +121,42 @@ function stochastic_frank_wolfe(
         v = compute_extreme_point(lmo, gradient)
 
         # go easy on the memory - only compute if really needed
-        if (mod(t, printIt) == 0 && verbose) ||
+        if (mod(t, print_iter) == 0 && verbose) ||
            trajectory ||
-           !(step_size == agnostic || step_size == nonconvex || step_size == fixed)
+           !(line_search == agnostic || line_search == nonconvex || line_search == fixed)
             primal = compute_value(f, x, full_evaluation=true)
             dualGap = dot(x, gradient) - dot(v, gradient)
         end
 
         if trajectory === true
-            push!(trajData, [t, primal, primal - dualGap, dualGap, (time_ns() - timeEl) / 1.0e9])
+            push!(trajData, [t, primal, primal - dualGap, dualGap, (time_ns() - time_start) / 1.0e9])
         end
 
-        if step_size === agnostic
+        if line_search === agnostic
             gamma = 2 // (2 + t)
-        elseif step_size === goldenratio
-            _, gamma = segmentSearch(f, grad, x, v, lsTol=lsTol)
-        elseif step_size === backtracking
-            _, gamma = backtrackingLS(f, grad, x, v, lsTol=lsTol, stepLim=stepLim)
-        elseif step_size === nonconvex
+        elseif line_search === goldenratio
+            _, gamma = segmentSearch(f, grad, x, v, linesearch_tol=linesearch_tol)
+        elseif line_search === backtracking
+            _, gamma = backtrackingLS(f, grad, x, v, linesearch_tol=linesearch_tol, step_lim=step_lim)
+        elseif line_search === nonconvex
             gamma = 1 / sqrt(t + 1)
-        elseif step_size === shortstep
+        elseif line_search === shortstep
             gamma = dualGap / (L * norm(x - v)^2)
-        elseif step_size === rationalshortstep
+        elseif line_search === rationalshortstep
             ratDualGap = sum((x - v) .* gradient)
             gamma = ratDualGap // (L * sum((x - v) .^ 2))
-        elseif step_size === fixed
+        elseif line_search === fixed
             gamma = gamma0
         end
 
-        @emphasis(emph, x = (1 - gamma) * x + gamma * v)
+        @emphasis(Emphasis, x = (1 - gamma) * x + gamma * v)
 
-        if mod(t, printIt) == 0 && verbose
+        if mod(t, print_iter) == 0 && verbose
             tt = regular
             if t === 0
                 tt = initial
             end
-            rep = [tt, string(t), primal, primal - dualGap, dualGap, (time_ns() - timeEl) / 1.0e9]
+            rep = [tt, string(t), primal, primal - dualGap, dualGap, (time_ns() - time_start) / 1.0e9]
             itPrint(rep)
             flush(stdout)
         end
@@ -173,7 +173,7 @@ function stochastic_frank_wolfe(
     dualGap = dot(x, gradient) - dot(v, gradient)
     if verbose
         tt = last
-        rep = [tt, string(t - 1), primal, primal - dualGap, dualGap, (time_ns() - timeEl) / 1.0e9]
+        rep = [tt, string(t - 1), primal, primal - dualGap, dualGap, (time_ns() - time_start) / 1.0e9]
         itPrint(rep)
         footerPrint()
         flush(stdout)
