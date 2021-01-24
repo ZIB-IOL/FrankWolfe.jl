@@ -25,7 +25,7 @@ end
 # TODO:
 # - code needs optimization
 
-function backtrackingLS(f, grad, x, y; step_size=true, lsTol=1e-10, stepLim=20, lsTau=0.5)
+function backtrackingLS(f, grad, x, y; line_search=true, linesearch_tol=1e-10, step_lim=20, lsTau=0.5)
     gamma = 1
     d = y - x
     i = 0
@@ -37,8 +37,8 @@ function backtrackingLS(f, grad, x, y; step_size=true, lsTol=1e-10, stepLim=20, 
 
     oldVal = f(x)
     newVal = f(x + gamma * d)
-    while newVal - oldVal > lsTol * gamma * gradDirection
-        if i > stepLim
+    while newVal - oldVal > linesearch_tol * gamma * gradDirection
+        if i > step_lim
             if oldVal - newVal >= 0
                 return i, gamma
             else
@@ -57,7 +57,7 @@ end
 # TODO:
 # - code needs optimization 
 
-function segmentSearch(f, grad, x, y; step_size=true, lsTol=1e-10)
+function segmentSearch(f, grad, x, y; line_search=true, linesearch_tol=1e-10)
     # restrict segment of search to [x, y]
     d = (y - x)
     left, right = copy(x), copy(y)
@@ -74,7 +74,7 @@ function segmentSearch(f, grad, x, y; step_size=true, lsTol=1e-10)
     # apply golden-section method to segment
     gold = (1.0 + sqrt(5)) / 2.0
     improv = Inf
-    while improv > lsTol
+    while improv > linesearch_tol
         old_left, old_right = left, right
         new = left + (right - left) / (1.0 + gold)
         probe = new + (right - new) / 2.0
@@ -91,7 +91,7 @@ function segmentSearch(f, grad, x, y; step_size=true, lsTol=1e-10)
 
     # compute step size gamma
     gamma = 0
-    if step_size === true
+    if line_search === true
         for i in 1:length(d)
             if d[i] != 0
                 gamma = (x_min[i] - x[i]) / d[i]
@@ -153,9 +153,9 @@ Base.:*(x::Number, v::MaybeHotVector) = v * x
 ##############################
 
 
-macro emphasis(emph, ex)
+macro emphasis(Emphasis, ex)
     return esc(quote
-        if $emph === memory
+        if $Emphasis === memory
             @. $ex
         else
             $ex

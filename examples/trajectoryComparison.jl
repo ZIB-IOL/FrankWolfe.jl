@@ -40,11 +40,11 @@ x0 = copy(x00)
     grad,
     lmo,
     x0,
-    maxIt=k,
-    step_size=FrankWolfe.shortstep,
+    max_iteration=k,
+    line_search=FrankWolfe.shortstep,
     L=2,
-    printIt=k / 10,
-    emph=FrankWolfe.memory,
+    print_iter=k / 10,
+    Emphasis=FrankWolfe.memory,
     verbose=true,
     trajectory=true,
 );
@@ -58,11 +58,11 @@ x0 = copy(x00)
     grad,
     lmo,
     x0,
-    maxIt=k,
-    step_size=FrankWolfe.shortstep,
+    max_iteration=k,
+    line_search=FrankWolfe.shortstep,
     L=2,
-    printIt=k / 10,
-    emph=FrankWolfe.blas,
+    print_iter=k / 10,
+    Emphasis=FrankWolfe.blas,
     verbose=true,
     trajectory=true,
     momentum=0.9,
@@ -77,24 +77,24 @@ x0 = copy(x00)
     grad,
     lmo,
     x0,
-    maxIt=k,
-    step_size=FrankWolfe.adaptive,
+    max_iteration=k,
+    line_search=FrankWolfe.adaptive,
     L=100,
-    printIt=k / 10,
-    emph=FrankWolfe.memory,
+    print_iter=k / 10,
+    Emphasis=FrankWolfe.memory,
     verbose=true,
     trajectory=true,
 );
 
 # println("\n==> Goldenratio LS.\n")
 
-# @time x, v, primal, dualGap, trajectoryGr = FrankWolfe.fw(f,grad,lmo,x0,maxIt=k,
-#     step_size=FrankWolfe.goldenratio,L=100,printIt=k/10,emph=FrankWolfe.memory,verbose=true, trajectory=true);
+# @time x, v, primal, dualGap, trajectoryGr = FrankWolfe.fw(f,grad,lmo,x0,max_iteration=k,
+#     line_search=FrankWolfe.goldenratio,L=100,print_iter=k/10,Emphasis=FrankWolfe.memory,verbose=true, trajectory=true);
 
 # println("\n==> Backtracking LS.\n")
 
-# @time x, v, primal, dualGap, trajectoryBack = FrankWolfe.fw(f,grad,lmo,x0,maxIt=k,
-#     step_size=FrankWolfe.backtracking,L=100,printIt=k/10,emph=FrankWolfe.memory,verbose=true, trajectory=true);
+# @time x, v, primal, dualGap, trajectoryBack = FrankWolfe.fw(f,grad,lmo,x0,max_iteration=k,
+#     line_search=FrankWolfe.backtracking,L=100,print_iter=k/10,Emphasis=FrankWolfe.memory,verbose=true, trajectory=true);
 
 
 println("\n==> Agnostic if function is too expensive for adaptive.\n")
@@ -106,10 +106,10 @@ x0 = copy(x00)
     grad,
     lmo,
     x0,
-    maxIt=k,
-    step_size=FrankWolfe.agnostic,
-    printIt=k / 10,
-    emph=FrankWolfe.memory,
+    max_iteration=k,
+    line_search=FrankWolfe.agnostic,
+    print_iter=k / 10,
+    Emphasis=FrankWolfe.memory,
     verbose=true,
     trajectory=true,
 );
