@@ -5,10 +5,13 @@ using Printf
 using ProgressMeter
 using TimerOutputs
 using SparseArrays: spzeros
+import SparseArrays
 import Random
 
 # for plotting -> keep here or move somewhere else?
 using Plots
+
+using Hungarian
 
 include("defs.jl")
 include("simplex_matrix.jl")
