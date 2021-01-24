@@ -14,7 +14,7 @@ function update_simplex_gradient_descent!(active_set::ActiveSet, direction, f)
     csum = sum(c)
     c .-= (csum / k)
     ActiveSet
-    # name change to stay consistent to the paper
+    # name change to stay consistent with the paper
     d = c
     if norm(c) <= 1e-5
         # reset x and S
