@@ -121,7 +121,7 @@ end
                 line_search=FrankWolfe.agnostic,
                 verbose=false,
                 momentum=0.9,
-                Emphasis=FrankWolfe.memory,
+                emphasis=FrankWolfe.memory,
             )[3] - 0.2,
         ) < 1.0e-3
         @test abs(
@@ -161,7 +161,7 @@ end
                 L=100,
                 verbose=false,
                 momentum=0.9,
-                Emphasis=FrankWolfe.memory,
+                emphasis=FrankWolfe.memory,
             )[3] - 0.2,
         ) < 1.0e-3
     end
@@ -281,7 +281,7 @@ end
                 line_search=FrankWolfe.backtracking,
                 print_iter=k / 10,
                 verbose=true,
-                Emphasis=FrankWolfe.blas,
+                emphasis=FrankWolfe.blas,
             )
 
             @test x !== nothing
@@ -295,7 +295,7 @@ end
                 line_search=FrankWolfe.backtracking,
                 print_iter=k / 10,
                 verbose=true,
-                Emphasis=FrankWolfe.memory,
+                emphasis=FrankWolfe.memory,
             )
 
             @test x !== nothing
@@ -313,7 +313,7 @@ end
                 line_search=FrankWolfe.backtracking,
                 print_iter=k / 10,
                 verbose=true,
-                Emphasis=FrankWolfe.blas,
+                emphasis=FrankWolfe.blas,
             )
 
             @test x !== nothing
@@ -327,7 +327,7 @@ end
                 line_search=FrankWolfe.backtracking,
                 print_iter=k / 10,
                 verbose=true,
-                Emphasis=FrankWolfe.memory,
+                emphasis=FrankWolfe.memory,
             )
 
             @test x !== nothing
@@ -357,7 +357,7 @@ end
             max_iteration=k,
             line_search=FrankWolfe.agnostic,
             print_iter=k / 10,
-            Emphasis=FrankWolfe.blas,
+            emphasis=FrankWolfe.blas,
             verbose=true,
         )
 
@@ -371,7 +371,7 @@ end
             max_iteration=k,
             line_search=FrankWolfe.agnostic,
             print_iter=k / 10,
-            Emphasis=FrankWolfe.memory,
+            emphasis=FrankWolfe.memory,
             verbose=true,
         )
         @test eltype(x0) == Rational{BigInt}
@@ -405,7 +405,7 @@ end
                 max_iteration=k,
                 line_search=FrankWolfe.agnostic,
                 print_iter=k / 10,
-                Emphasis=FrankWolfe.blas,
+                emphasis=FrankWolfe.blas,
                 verbose=true,
             )
 
@@ -420,7 +420,7 @@ end
                 max_iteration=k,
                 line_search=FrankWolfe.agnostic,
                 print_iter=k / 10,
-                Emphasis=FrankWolfe.memory,
+                emphasis=FrankWolfe.memory,
                 verbose=true,
             )
 
@@ -488,7 +488,7 @@ end
             max_iteration=k,
             line_search=FrankWolfe.backtracking,
             verbose=false,
-            Emphasis=FrankWolfe.blas,
+            emphasis=FrankWolfe.blas,
         )
 
         x, v, primal, dualGap, trajectory = FrankWolfe.afw(
@@ -500,7 +500,7 @@ end
             line_search=FrankWolfe.backtracking,
             print_iter=k / 10,
             verbose=true,
-            Emphasis=FrankWolfe.blas,
+            emphasis=FrankWolfe.blas,
         )
 
         @test x !== nothing
@@ -515,7 +515,7 @@ end
             line_search=FrankWolfe.backtracking,
             print_iter=k / 10,
             verbose=true,
-            Emphasis=FrankWolfe.memory,
+            emphasis=FrankWolfe.memory,
         )
         @test x !== nothing
         @test xref ≈ x atol = (1e-3 / length(x))
