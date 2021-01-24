@@ -29,7 +29,7 @@ FrankWolfe.benchmark_oracles(x -> cf(x, xp), x -> cgrad(x, xp), lmo, n; k=100, T
 
 println("\n==> Short Step rule - if you know L.\n")
 
-@time x, v, primal, dualGap, trajectory = FrankWolfe.fw(
+@time x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
     f,
     grad,
     lmo,
@@ -44,7 +44,7 @@ println("\n==> Short Step rule - if you know L.\n")
 
 println("\n==> Adaptive if you do not know L.\n")
 
-@time x, v, primal, dualGap, trajectory = FrankWolfe.fw(
+@time x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
     f,
     grad,
     lmo,
@@ -59,7 +59,7 @@ println("\n==> Adaptive if you do not know L.\n")
 
 println("\n==> Agnostic if function is too expensive for adaptive.\n")
 
-@time x, v, primal, dualGap, trajectory = FrankWolfe.fw(
+@time x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
     f,
     grad,
     lmo,
