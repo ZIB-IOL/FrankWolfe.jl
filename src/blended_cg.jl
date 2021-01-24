@@ -30,7 +30,7 @@ function update_simplex_gradient_descent!(active_set::ActiveSet, direction, f)
             )
         end
     end
-    η = max(0.0, η)
+    η = max(0, η)
     # TODO do not materialize previous point.
     x = compute_active_set_iterate(active_set)
     @. active_set.weights -= η * d
@@ -42,10 +42,12 @@ function update_simplex_gradient_descent!(active_set::ActiveSet, direction, f)
     end
     f_y = f(compute_active_set_iterate(active_set))
     if f(x) ≥ f_y
-        # TODO, remove one weight=0
+        # TODO make sure only one weight is removed?
+        active_set_cleanup!(active_set)
+        @assert(length(active_set) == length(x) - 1)
         return active_set
     end
     # TODO move η between x and y till opt
-    # perfect opt?
+    # perfect or approx opt?
     return active_set
 end
