@@ -5,7 +5,7 @@ Frank-Wolfe algorithms.
 The main entry point is the `fw` function running the algorithm.
 
 ```julia
-FrankWolfe.fw(f,grad,lmo,x0,maxIt=1000,step_size=FrankWolfe.agnostic,verbose=true)
+FrankWolfe.fw(f,grad,lmo,x0,max_iteration=1000,line_search=FrankWolfe.agnostic,verbose=true)
 ```
 
 ## LMO
@@ -74,7 +74,7 @@ Most common strategies and some more particular ones:
 
 #### Other 
 
-- Emphasis: All solvers support emphasis (parameter `emph`) to either exploit vectorized linear algebra or be memory efficient, e.g., for extreme large-scale instances
+- Emphasis: All solvers support emphasis (parameter `Emphasis`) to either exploit vectorized linear algebra or be memory efficient, e.g., for extreme large-scale instances
 - Various caching strategies for the lazy implementations. Unbounded cache sizes (can get slow), bounded cache sizes as well as early returns once any sufficient vertex is found in the cache.
 - (to come:) when the LMO can compute dual prices then the Frank-Wolfe algorithms return dual prices for the (approximately) optimal solutions (see <https://arxiv.org/abs/2101.02087>)
 - optionally all algorithms can be endowed with gradient momentum. This might help convergence especially in the stochastic context.
@@ -95,7 +95,7 @@ with n = 100.
 
 ````
 Vanilla Frank-Wolfe Algorithm.
-EMPHASIS: blas STEPSIZE: rationalshortstep EPSILON: 1.0e-7 MAXIT: 100 TYPE: Rational{BigInt}
+EMPHASIS: blas STEPSIZE: rationalshortstep EPSILON: 1.0e-7 max_iteration: 100 TYPE: Rational{BigInt}
 
 ───────────────────────────────────────────────────────────────────────────────────
   Type     Iteration         Primal           Dual       Dual Gap           Time
@@ -129,7 +129,7 @@ Example: `examples/largeScale.jl`
 
 The package is build to scale well, for those conditional gradients variants that can scale well. For exampple, Away-Step Frank-Wolfe and Pairwise Conditional Gradients do in most cases *not scale well* because they need to maintain active sets and maintaining them can be very expensive. Similarly, line search methods might become prohibitive at large sizes. However if we consider scale-friendly variants, e.g., the vanilla Frank-Wolfe algorithm with the agnostic step size rule or short step rule, then these algorithms can scale well to extreme sizes esentially only limited by the amount of memory that you have available. However even for these methods that tend to scale well, allocation of memory itself can be very slow when you need to allocate gigabytes of memory for a single gradient computation. 
 
-The package is build to support extreme sizes with a special memory efficient emphasis `emph=FrankWolfe.memory`, which minimizes very expensive allocation memory and performs as many operations as possible in-place. 
+The package is build to support extreme sizes with a special memory efficient emphasis `Emphasis=FrankWolfe.memory`, which minimizes very expensive allocation memory and performs as many operations as possible in-place. 
 
 Here is an example of a run with 1e9 variables (that is *one billion* variables). Each gradient is around 7.5 GB in size. Here is the output of the run broken down into pieces:
 
@@ -139,8 +139,8 @@ Testing f... 100%|████████████████████�
 Testing grad... 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████| Time: 0:00:23
 Testing lmo... 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████| Time: 0:00:29
 Testing dual gap... 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████| Time: 0:00:46
-Testing update... (emph: blas) 100%|███████████████████████████████████████████████████████████████████████████████████████████████| Time: 0:01:35
-Testing update... (emph: memory) 100%|█████████████████████████████████████████████████████████████████████████████████████████████| Time: 0:00:58
+Testing update... (Emphasis: blas) 100%|███████████████████████████████████████████████████████████████████████████████████████████████| Time: 0:01:35
+Testing update... (Emphasis: memory) 100%|█████████████████████████████████████████████████████████████████████████████████████████████| Time: 0:00:58
  ──────────────────────────────────────────────────────────────────────────
                                    Time                   Allocations      
                            ──────────────────────   ───────────────────────
@@ -161,7 +161,7 @@ The above is the optional benchmarking of the oracles that we provide to underst
 
 ````
 Vanilla Frank-Wolfe Algorithm.
-EMPHASIS: memory STEPSIZE: agnostic EPSILON: 1.0e-7 MAXIT: 1000 TYPE: Float64
+EMPHASIS: memory STEPSIZE: agnostic EPSILON: 1.0e-7 max_iteration: 1000 TYPE: Float64
 
 ───────────────────────────────────────────────────────────────────────────────────
   Type     Iteration         Primal           Dual       Dual Gap           Time
