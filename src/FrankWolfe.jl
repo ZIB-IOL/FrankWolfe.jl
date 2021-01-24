@@ -117,7 +117,7 @@ function fw(
     trajectory=false,
     verbose=false,
     linesearch_tol=1e-7,
-    Emphasis::Emphasis=blas,
+    emphasis::Emphasis=blas,
 )
     function headerPrint(data)
         @printf(
@@ -177,17 +177,17 @@ function fw(
         println("\nVanilla Frank-Wolfe Algorithm.")
         numType = eltype(x0)
         println(
-            "EMPHASIS: $Emphasis STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration TYPE: $numType",
+            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration TYPE: $numType",
         )
         println("MOMENTUM: $momentum")
-        if Emphasis === memory
+        if emphasis === memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
         end
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time"]
         headerPrint(headers)
     end
 
-    if Emphasis === memory && !isa(x, Array)
+    if emphasis === memory && !isa(x, Array)
         x = convert(Vector{promote_type(eltype(x), Float64)}, x)
     end
     first_iter = true
@@ -197,7 +197,7 @@ function fw(
         if momentum === nothing || first_iter
             gradient = grad(x)
         else
-            @emphasis(Emphasis, gradient = (momentum * gradient) .+ (1 - momentum) .* grad(x))
+            @emphasis(emphasis, gradient = (momentum * gradient) .+ (1 - momentum) .* grad(x))
         end
         first_iter = false
 
@@ -236,7 +236,7 @@ function fw(
             L, gamma = adaptive_step_size(f, gradient, x, x - v, L)
         end
 
-        @emphasis(Emphasis, x = (1 - gamma) * x + gamma * v)
+        @emphasis(emphasis, x = (1 - gamma) * x + gamma * v)
 
         if mod(t, print_iter) == 0 && verbose
             tt = regular
@@ -286,7 +286,7 @@ function lcg(
     trajectory=false,
     verbose=false,
     linesearch_tol=1e-7,
-    Emphasis::Emphasis=blas,
+    emphasis::Emphasis=blas,
 )
 
     if isfinite(cacheSize)
@@ -356,17 +356,17 @@ function lcg(
         println("\nLazified Conditional Gradients (Frank-Wolfe + Lazification).")
         numType = eltype(x0)
         println(
-            "EMPHASIS: $Emphasis STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration PHIFACTOR: $phiFactor TYPE: $numType",
+            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration PHIFACTOR: $phiFactor TYPE: $numType",
         )
         println("CACHESIZE $cacheSize GREEDYCACHE: $greedyLazy")
-        if Emphasis === memory
+        if emphasis === memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
         end
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "Cache Size"]
         headerPrint(headers)
     end
 
-    if Emphasis === memory && !isa(x, Array)
+    if emphasis === memory && !isa(x, Array)
         x = convert(Vector{promote_type(eltype(x), Float64)}, x)
     end
 
@@ -404,7 +404,7 @@ function lcg(
             gamma = dualGap / (L * dot(x - v, x - v))
         end
 
-        @emphasis(Emphasis, x = (1 - gamma) * x + gamma * v)
+        @emphasis(emphasis, x = (1 - gamma) * x + gamma * v)
 
         if mod(t, print_iter) == 0 || tt == dualstep && verbose
             if t === 0

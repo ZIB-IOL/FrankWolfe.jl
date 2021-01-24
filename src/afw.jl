@@ -21,7 +21,7 @@ function afw(
     trajectory=false,
     verbose=false,
     linesearch_tol=1e-7,
-    Emphasis::Emphasis=blas,
+    emphasis::Emphasis=blas,
 )
     function headerPrint(data)
         @printf(
@@ -87,10 +87,10 @@ function afw(
         println("\nAway-step Frank-Wolfe Algorithm.")
         numType = eltype(x0)
         println(
-            "EMPHASIS: $Emphasis STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration TYPE: $numType",
+            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration TYPE: $numType",
         )
         println("MOMENTUM: $momentum AWAYSTEPS: $awaySteps")
-        if Emphasis === memory
+        if emphasis === memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
         end
         headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "#ActiveSet")
@@ -98,7 +98,7 @@ function afw(
     end
 
     # likely not needed anymore as now the iterates are provided directly via the active set
-    if Emphasis === memory && !isa(x, Array)
+    if emphasis === memory && !isa(x, Array)
         x = convert(Vector{promote_type(eltype(x), Float64)}, x)
     end
 
@@ -110,7 +110,7 @@ function afw(
         if isnothing(momentum) || first_iter
             gradient = grad(x)
         else
-            @emphasis(Emphasis, gradient = (momentum * gradient) .+ (1 - momentum) * grad(x))
+            @emphasis(emphasis, gradient = (momentum * gradient) .+ (1 - momentum) * grad(x))
         end
         first_iter = false
 

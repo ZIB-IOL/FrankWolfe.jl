@@ -14,7 +14,7 @@ function stochastic_frank_wolfe(
     trajectory=false,
     verbose=false,
     linesearch_tol=1e-7,
-    Emphasis::Emphasis=blas,
+    emphasis::Emphasis=blas,
     rng=Random.GLOBAL_RNG,
     batch_size=length(f.xs) ÷ 10 + 1,
     full_evaluation=false,
@@ -77,17 +77,17 @@ function stochastic_frank_wolfe(
         println("\nStochastic Frank-Wolfe Algorithm.")
         numType = eltype(x0)
         println(
-            "EMPHASIS: $Emphasis STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration TYPE: $numType",
+            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration TYPE: $numType",
         )
         println("MOMENTUM: $momentum BATCHSIZE: $batch_size ")
-        if Emphasis === memory
+        if emphasis === memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
         end
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time"]
         headerPrint(headers)
     end
 
-    if Emphasis === memory && !isa(x, Array)
+    if emphasis === memory && !isa(x, Array)
         x = convert(Vector{promote_type(eltype(x), Float64)}, x)
     end
     first_iter = true
@@ -104,7 +104,7 @@ function stochastic_frank_wolfe(
             )
         else
             @emphasis(
-                Emphasis,
+                emphasis,
                 gradient =
                     (momentum * gradient) .+
                     (1 - momentum) * compute_gradient(
@@ -149,7 +149,7 @@ function stochastic_frank_wolfe(
             gamma = gamma0
         end
 
-        @emphasis(Emphasis, x = (1 - gamma) * x + gamma * v)
+        @emphasis(emphasis, x = (1 - gamma) * x + gamma * v)
 
         if mod(t, print_iter) == 0 && verbose
             tt = regular

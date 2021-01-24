@@ -38,7 +38,7 @@ println("\n==> Short Step rule - if you know L.\n")
     line_search=FrankWolfe.shortstep,
     L=2,
     print_iter=k / 10,
-    Emphasis=FrankWolfe.memory,
+    emphasis=FrankWolfe.memory,
     verbose=true,
 );
 
@@ -53,7 +53,7 @@ println("\n==> Adaptive if you do not know L.\n")
     line_search=FrankWolfe.adaptive,
     L=100,
     print_iter=k / 10,
-    Emphasis=FrankWolfe.memory,
+    emphasis=FrankWolfe.memory,
     verbose=true,
 );
 
@@ -67,6 +67,6 @@ println("\n==> Agnostic if function is too expensive for adaptive.\n")
     max_iteration=k,
     line_search=FrankWolfe.agnostic,
     print_iter=k / 10,
-    Emphasis=FrankWolfe.memory,
+    emphasis=FrankWolfe.memory,
     verbose=true,
 );
