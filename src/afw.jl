@@ -48,7 +48,7 @@ function afw(
         )
     end
 
-    function print_iter(data)
+    function print_iter_func(data)
         @printf(
             "%6s %13s %14e %14e %14e %14e %14i\n",
             st[Symbol(data[1])],
@@ -204,7 +204,7 @@ function afw(
                 (time_ns() - time_start) / 1.0e9,
                 length(active_set),
             )
-            print_iter(rep)
+            print_iter_func(rep)
             flush(stdout)
         end
         t = t + 1
@@ -231,7 +231,7 @@ function afw(
             (time_ns() - time_start) / 1.0e9,
             length(active_set),
         )
-        print_iter(rep)
+        print_iter_func(rep)
         flush(stdout)
     end
 
@@ -253,7 +253,7 @@ function afw(
             (time_ns() - time_start) / 1.0e9,
             length(active_set),
         )
-        print_iter(rep)
+        print_iter_func(rep)
         print_footer()
         flush(stdout)
     end

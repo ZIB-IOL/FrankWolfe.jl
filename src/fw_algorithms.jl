@@ -43,7 +43,7 @@ function stochastic_frank_wolfe(
         )
     end
 
-    function print_iter(data)
+    function print_iter_func(data)
         @printf(
             "%6s %13s %14e %14e %14e %14e\n",
             st[Symbol(data[1])],
@@ -157,7 +157,7 @@ function stochastic_frank_wolfe(
                 tt = initial
             end
             rep = [tt, string(t), primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9]
-            print_iter(rep)
+            print_iter_func(rep)
             flush(stdout)
         end
         t = t + 1
@@ -174,7 +174,7 @@ function stochastic_frank_wolfe(
     if verbose
         tt = last
         rep = [tt, string(t - 1), primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9]
-        print_iter(rep)
+        print_iter_func(rep)
         print_footer()
         flush(stdout)
     end
