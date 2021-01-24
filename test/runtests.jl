@@ -217,7 +217,7 @@ end
         lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
         x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n))
 
-        @time x, v, primal, dualGap, trajectory = FrankWolfe.lcg(
+        @time x, v, primal, dual_gap, trajectory = FrankWolfe.lcg(
             f,
             grad,
             lmo_prob,
@@ -230,7 +230,7 @@ end
 
         @test primal - 1 // n <= bound
 
-        @time x, v, primal, dualGap, trajectory = FrankWolfe.lcg(
+        @time x, v, primal, dual_gap, trajectory = FrankWolfe.lcg(
             f,
             grad,
             lmo_prob,
@@ -244,7 +244,7 @@ end
 
         @test primal - 1 // n <= bound
 
-        @time x, v, primal, dualGap, trajectory = FrankWolfe.lcg(
+        @time x, v, primal, dual_gap, trajectory = FrankWolfe.lcg(
             f,
             grad,
             lmo_prob,
@@ -272,7 +272,7 @@ end
             lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1.0)
             x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n))
 
-            x, v, primal, dualGap, trajectory = FrankWolfe.fw(
+            x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
                 f,
                 grad,
                 lmo_prob,
@@ -286,7 +286,7 @@ end
 
             @test x !== nothing
 
-            x, v, primal, dualGap, trajectory = FrankWolfe.fw(
+            x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
                 f,
                 grad,
                 lmo_prob,
@@ -304,7 +304,7 @@ end
             lmo_prob = FrankWolfe.L1ballDense{Float64}(1)
             x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n))
 
-            x, v, primal, dualGap, trajectory = FrankWolfe.fw(
+            x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
                 f,
                 grad,
                 lmo_prob,
@@ -318,7 +318,7 @@ end
 
             @test x !== nothing
 
-            x, v, primal, dualGap, trajectory = FrankWolfe.fw(
+            x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
                 f,
                 grad,
                 lmo_prob,
@@ -349,7 +349,7 @@ end
         direction = rand(n)
         x0 = FrankWolfe.compute_extreme_point(lmo, direction)
 
-        @time x, v, primal, dualGap, trajectory = FrankWolfe.fw(
+        @time x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
             f,
             grad,
             lmo,
@@ -363,7 +363,7 @@ end
 
         @test eltype(x0) == Rational{BigInt}
 
-        @time x, v, primal, dualGap, trajectory = FrankWolfe.fw(
+        @time x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
             f,
             grad,
             lmo,
@@ -397,7 +397,7 @@ end
             direction = rand(n)
             x0 = FrankWolfe.compute_extreme_point(lmo, direction)
 
-            @time x, v, primal, dualGap, trajectory = FrankWolfe.fw(
+            @time x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
                 f,
                 grad,
                 lmo,
@@ -412,7 +412,7 @@ end
             @test eltype(x0) == T
             @test primal - 1 // n <= bound
 
-            @time x, v, primal, dualGap, trajectory = FrankWolfe.fw(
+            @time x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
                 f,
                 grad,
                 lmo,
@@ -491,7 +491,7 @@ end
             emphasis=FrankWolfe.blas,
         )
 
-        x, v, primal, dualGap, trajectory = FrankWolfe.afw(
+        x, v, primal, dual_gap, trajectory = FrankWolfe.afw(
             f,
             grad,
             lmo_prob,
@@ -506,7 +506,7 @@ end
         @test x !== nothing
         @test xref ≈ x atol = (1e-3 / length(x))
 
-        x, v, primal, dualGap, trajectory = FrankWolfe.afw(
+        x, v, primal, dual_gap, trajectory = FrankWolfe.afw(
             f,
             grad,
             lmo_prob,

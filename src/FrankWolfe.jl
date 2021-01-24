@@ -55,7 +55,7 @@ function benchmark_oracles(f, grad, lmo, n; k=100, nocache=true, T=Float64)
         gradient = grad(x)
         v = compute_extreme_point(lmo, gradient)
         @timeit to "dual gap" begin
-            dualGap = dot(x, gradient) - dot(v, gradient)
+            dual_gap = dot(x, gradient) - dot(v, gradient)
         end
     end
     @showprogress 1 "Testing update... (Emphasis: blas) " for i in 1:k
@@ -117,7 +117,7 @@ function fw(
     linesearch_tol=1e-7,
     emphasis::Emphasis=blas,
 )
-    function headerPrint(data)
+    function print_header(data)
         @printf(
             "\n───────────────────────────────────────────────────────────────────────────────────\n"
         )
@@ -135,13 +135,13 @@ function fw(
         )
     end
 
-    function footerPrint()
+    function print_footer()
         @printf(
             "───────────────────────────────────────────────────────────────────────────────────\n\n"
         )
     end
 
-    function itPrint(data)
+    function print_iter(data)
         @printf(
             "%6s %13s %14e %14e %14e %14e\n",
             st[Symbol(data[1])],
@@ -154,7 +154,7 @@ function fw(
     end
 
     t = 0
-    dualGap = Inf
+    dual_gap = Inf
     primal = Inf
     v = []
     x = x0
@@ -182,7 +182,7 @@ function fw(
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
         end
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time"]
-        headerPrint(headers)
+        print_header(headers)
     end
 
     if emphasis === memory && !isa(x, Array)
@@ -190,7 +190,7 @@ function fw(
     end
     first_iter = true
     gradient = 0
-    while t <= max_iteration && dualGap >= max(epsilon, eps())
+    while t <= max_iteration && dual_gap >= max(epsilon, eps())
 
         if momentum === nothing || first_iter
             gradient = grad(x)
@@ -208,11 +208,11 @@ function fw(
             !(line_search == agnostic || line_search == nonconvex || line_search == fixed)
         )
             primal = f(x)
-            dualGap = dot(x, gradient) - dot(v, gradient)
+            dual_gap = dot(x, gradient) - dot(v, gradient)
         end
 
         if trajectory === true
-            push!(trajData, [t, primal, primal - dualGap, dualGap, (time_ns() - time_start) / 1.0e9])
+            push!(trajData, [t, primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9])
         end
 
         if line_search === agnostic
@@ -224,7 +224,7 @@ function fw(
         elseif line_search === nonconvex
             gamma = 1 / sqrt(t + 1)
         elseif line_search === shortstep
-            gamma = dualGap / (L * norm(x - v)^2)
+            gamma = dual_gap / (L * norm(x - v)^2)
         elseif line_search === rationalshortstep
             ratDualGap = sum((x - v) .* gradient)
             gamma = ratDualGap // (L * sum((x - v) .^ 2))
@@ -241,27 +241,27 @@ function fw(
             if t === 0
                 tt = initial
             end
-            rep = [tt, string(t), primal, primal - dualGap, dualGap, (time_ns() - time_start) / 1.0e9]
-            itPrint(rep)
+            rep = [tt, string(t), primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9]
+            print_iter(rep)
             flush(stdout)
         end
         t = t + 1
     end
     # recompute everything once for final verfication / do not record to trajectory though for now! 
-    # this is important as some variants do not recompute f(x) and the dualGap regularly but only when reporting
+    # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
     # hence the final computation.
     gradient = grad(x)
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
-    dualGap = dot(x, gradient) - dot(v, gradient)
+    dual_gap = dot(x, gradient) - dot(v, gradient)
     if verbose
         tt = last
-        rep = [tt, string(t - 1), primal, primal - dualGap, dualGap, (time_ns() - time_start) / 1.0e9]
-        itPrint(rep)
-        footerPrint()
+        rep = [tt, string(t - 1), primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9]
+        print_iter(rep)
+        print_footer()
         flush(stdout)
     end
-    return x, v, primal, dualGap, trajData
+    return x, v, primal, dual_gap, trajData
 end
 
 ##############################################################
@@ -293,7 +293,7 @@ function lcg(
         lmo = VectorCacheLMO(lmoBase)
     end
 
-    function headerPrint(data)
+    function print_header(data)
         @printf(
             "\n─────────────────────────────────────────────────────────────────────────────────────────────────\n"
         )
@@ -312,13 +312,13 @@ function lcg(
         )
     end
 
-    function footerPrint()
+    function print_footer()
         @printf(
             "─────────────────────────────────────────────────────────────────────────────────────────────────\n\n"
         )
     end
 
-    function itPrint(data)
+    function print_iter(data)
         @printf(
             "%6s %13s %14e %14e %14e %14e %14s\n",
             st[Symbol(data[1])],
@@ -332,7 +332,7 @@ function lcg(
     end
 
     t = 0
-    dualGap = Inf
+    dual_gap = Inf
     primal = Inf
     v = []
     x = x0
@@ -361,14 +361,14 @@ function lcg(
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
         end
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "Cache Size"]
-        headerPrint(headers)
+        print_header(headers)
     end
 
     if emphasis === memory && !isa(x, Array)
         x = convert(Vector{promote_type(eltype(x), Float64)}, x)
     end
 
-    while t <= max_iteration && dualGap >= max(epsilon, eps())
+    while t <= max_iteration && dual_gap >= max(epsilon, eps())
 
         primal = f(x)
         gradient = grad(x)
@@ -379,14 +379,14 @@ function lcg(
         tt = lazy
         if dot(v, gradient) > threshold
             tt = dualstep
-            dualGap = dot(x, gradient) - dot(v, gradient)
-            phi = dualGap / 2
+            dual_gap = dot(x, gradient) - dot(v, gradient)
+            phi = dual_gap / 2
         end
 
         if trajectory === true
             push!(
                 trajData,
-                [t, primal, primal - dualGap, dualGap, (time_ns() - time_start) / 1.0e9, length(lmo)],
+                [t, primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9, length(lmo)],
             )
         end
 
@@ -399,7 +399,7 @@ function lcg(
         elseif line_search === nonconvex
             gamma = 1 / sqrt(t + 1)
         elseif line_search === shortstep
-            gamma = dualGap / (L * dot(x - v, x - v))
+            gamma = dual_gap / (L * dot(x - v, x - v))
         end
 
         @emphasis(emphasis, x = (1 - gamma) * x + gamma * v)
@@ -412,12 +412,12 @@ function lcg(
                 tt,
                 string(t),
                 primal,
-                primal - dualGap,
-                dualGap,
+                primal - dual_gap,
+                dual_gap,
                 (time_ns() - time_start) / 1.0e9,
                 length(lmo),
             ]
-            itPrint(rep)
+            print_iter(rep)
             flush(stdout)
         end
         t = t + 1
@@ -428,16 +428,16 @@ function lcg(
             tt,
             string(t - 1),
             primal,
-            primal - dualGap,
-            dualGap,
+            primal - dual_gap,
+            dual_gap,
             (time_ns() - time_start) / 1.0e9,
             length(lmo),
         ]
-        itPrint(rep)
-        footerPrint()
+        print_iter(rep)
+        print_footer()
         flush(stdout)
     end
-    return x, v, primal, dualGap, trajData
+    return x, v, primal, dual_gap, trajData
 end
 
 
