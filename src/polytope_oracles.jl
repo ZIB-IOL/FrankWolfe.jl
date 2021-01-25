@@ -44,3 +44,24 @@ function compute_extreme_point(lmo::KSparseLMO{T}, direction) where {T}
     end
     return v
 end
+
+"""
+    BirkhoffPolytopeLMO
+
+The Birkhoff polytope encodes doubly stochastic matrices.
+Its extreme vertices are all permutation matrices of side-dimension `n`.
+"""
+struct BirkhoffPolytopeLMO <: LinearMinimizationOracle
+end
+
+function compute_extreme_point(lmo::BirkhoffPolytopeLMO, direction::AbstractMatrix{T}) where {T}
+    n = size(direction, 1)
+    n == size(direction, 2) || DimensionMismatch("direction should be square for BirkhoffPolytopeLMO")
+    res_mat = Hungarian.munkres(direction)
+    m = spzeros(Bool, n, n)
+    (rows, cols, vals) = SparseArrays.findnz(res_mat)
+    @inbounds for i in eachindex(cols)
+        m[rows[i],cols[i]] = vals[i] == 2
+    end
+    return m
+end

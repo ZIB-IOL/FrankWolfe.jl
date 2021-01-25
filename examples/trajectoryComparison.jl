@@ -35,7 +35,7 @@ FrankWolfe.benchmark_oracles(x -> cf(x, xp), x -> cgrad(x, xp), lmo, n; k=100, T
 println("\n==> Short Step rule - if you know L.\n")
 
 x0 = copy(x00)
-@time x, v, primal, dualGap, trajectorySs = FrankWolfe.fw(
+@time x, v, primal, dual_gap, trajectorySs = FrankWolfe.fw(
     f,
     grad,
     lmo,
@@ -53,7 +53,7 @@ println("\n==> Short Step rule with momentum - if you know L.\n")
 
 x0 = copy(x00)
 
-@time x, v, primal, dualGap, trajectoryM = FrankWolfe.fw(
+@time x, v, primal, dual_gap, trajectoryM = FrankWolfe.fw(
     f,
     grad,
     lmo,
@@ -72,7 +72,7 @@ println("\n==> Adaptive if you do not know L.\n")
 
 x0 = copy(x00)
 
-@time x, v, primal, dualGap, trajectoryAda = FrankWolfe.fw(
+@time x, v, primal, dual_gap, trajectoryAda = FrankWolfe.fw(
     f,
     grad,
     lmo,
@@ -88,12 +88,12 @@ x0 = copy(x00)
 
 # println("\n==> Goldenratio LS.\n")
 
-# @time x, v, primal, dualGap, trajectoryGr = FrankWolfe.fw(f,grad,lmo,x0,max_iteration=k,
+# @time x, v, primal, dual_gap, trajectoryGr = FrankWolfe.fw(f,grad,lmo,x0,max_iteration=k,
 #     line_search=FrankWolfe.goldenratio,L=100,print_iter=k/10,Emphasis=FrankWolfe.memory,verbose=true, trajectory=true);
 
 # println("\n==> Backtracking LS.\n")
 
-# @time x, v, primal, dualGap, trajectoryBack = FrankWolfe.fw(f,grad,lmo,x0,max_iteration=k,
+# @time x, v, primal, dual_gap, trajectoryBack = FrankWolfe.fw(f,grad,lmo,x0,max_iteration=k,
 #     line_search=FrankWolfe.backtracking,L=100,print_iter=k/10,Emphasis=FrankWolfe.memory,verbose=true, trajectory=true);
 
 
@@ -101,7 +101,7 @@ println("\n==> Agnostic if function is too expensive for adaptive.\n")
 
 x0 = copy(x00)
 
-@time x, v, primal, dualGap, trajectoryAg = FrankWolfe.fw(
+@time x, v, primal, dual_gap, trajectoryAg = FrankWolfe.fw(
     f,
     grad,
     lmo,
