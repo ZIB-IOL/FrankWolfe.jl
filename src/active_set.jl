@@ -1,7 +1,4 @@
 
-# TODO: make much nicer with structs etc. also the active_set_return_iterate function needs to 
-# be modular for non-vector objects and potentially overloaded
-
 """
     ActiveSet{AT, R}
 

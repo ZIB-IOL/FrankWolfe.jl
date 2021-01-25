@@ -9,21 +9,21 @@ function afw(
     grad,
     lmo,
     x0;
-    step_size::LSMethod=adaptive,
+    line_search::LineSearchMethod=adaptive,
     awaySteps=true,
     L=Inf,
     gamma0=0,
-    stepLim=20,
+    step_lim=20,
     momentum=nothing,
     epsilon=1e-7,
-    maxIt=10000,
-    printIt=1000,
+    max_iteration=10000,
+    print_iter=1000,
     trajectory=false,
     verbose=false,
-    lsTol=1e-7,
-    emph::Emph=blas,
+    linesearch_tol=1e-7,
+    emphasis::Emphasis=blas,
 )
-    function headerPrint(data)
+    function print_header(data)
         @printf(
             "\n───────────────────────────────────────────────────────────────────────────────────────────────\n"
         )
@@ -42,13 +42,13 @@ function afw(
         )
     end
 
-    function footerPrint()
+    function print_footer()
         @printf(
             "───────────────────────────────────────────────────────────────────────────────────────────────\n\n"
         )
     end
 
-    function itPrint(data)
+    function print_iter_func(data)
         @printf(
             "%6s %13s %14e %14e %14e %14e %14i\n",
             st[Symbol(data[1])],
@@ -62,24 +62,24 @@ function afw(
     end
 
     t = 0
-    dualGap = Inf
+    dual_gap = Inf
     primal = Inf
     x = x0
     active_set = ActiveSet([(1.0, x0)]) # add the first vertex to active set from initialization
     tt:StepType = regular
     trajData = []
-    timeEl = time_ns()
+    time_start = time_ns()
 
     first_iter = true
     gradient = 0
     d = 0 # working direction
     away_step_taken = false # flag whether the current step is an away step
 
-    if step_size === shortstep && L == Inf
+    if line_search === shortstep && L == Inf
         println("WARNING: Lipschitz constant not set. Prepare to blow up spectacularly.")
     end
 
-    if step_size === fixed && gamma0 == 0
+    if line_search === fixed && gamma0 == 0
         println("WARNING: gamma0 not set. We are not going to move a single bit.")
     end
 
@@ -87,22 +87,22 @@ function afw(
         println("\nAway-step Frank-Wolfe Algorithm.")
         numType = eltype(x0)
         println(
-            "EMPHASIS: $emph STEPSIZE: $step_size EPSILON: $epsilon MAXIT: $maxIt TYPE: $numType",
+            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration TYPE: $numType",
         )
         println("MOMENTUM: $momentum AWAYSTEPS: $awaySteps")
-        if emph === memory
+        if emphasis === memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
         end
         headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "#ActiveSet")
-        headerPrint(headers)
+        print_header(headers)
     end
 
     # likely not needed anymore as now the iterates are provided directly via the active set
-    if emph === memory && !isa(x, Array)
+    if emphasis === memory && !isa(x, Array)
         x = convert(Vector{promote_type(eltype(x), Float64)}, x)
     end
 
-    while t <= maxIt && dualGap >= max(epsilon, eps())
+    while t <= max_iteration && dual_gap >= max(epsilon, eps())
 
         # compute current iterate from active set
         x = compute_active_set_iterate(active_set)
@@ -110,7 +110,7 @@ function afw(
         if isnothing(momentum) || first_iter
             gradient = grad(x)
         else
-            @emphasis(emph, gradient = (momentum * gradient) .+ (1 - momentum) * grad(x))
+            @emphasis(emphasis, gradient = (momentum * gradient) .+ (1 - momentum) * grad(x))
         end
         first_iter = false
 
@@ -118,13 +118,13 @@ function afw(
 
         # go easy on the memory - only compute if really needed
         if (
-            (mod(t, printIt) == 0 && verbose) ||
+            (mod(t, print_iter) == 0 && verbose) ||
             awaySteps ||
             trajectory ||
-            !(step_size == agnostic || step_size == nonconvex || step_size == fixed)
+            !(line_search == agnostic || line_search == nonconvex || line_search == fixed)
         )
             primal = f(x)
-            dualGap = dot(x, gradient) - dot(v, gradient)
+            dual_gap = dot(x, gradient) - dot(v, gradient)
         end
 
         if trajectory === true
@@ -133,9 +133,9 @@ function afw(
                 (
                     t,
                     primal,
-                    primal - dualGap,
-                    dualGap,
-                    (time_ns() - timeEl) / 1.0e9,
+                    primal - dual_gap,
+                    dual_gap,
+                    (time_ns() - time_start) / 1.0e9,
                     length(active_set),
                 ),
             )
@@ -148,13 +148,13 @@ function afw(
         d = x - v
         away_step_taken = false
 
-        # above we have already compute the FW vetex and the dualGap. now we need to 
+        # above we have already compute the FW vetex and the dual_gap. now we need to 
         # compute the away vertex and the away gap
         lambda, a, i = active_set_argmin(active_set, -gradient)
         away_gap = dot(a, gradient) - dot(x, gradient)
 
-        # if away_gap is larger than dualGap and we do awaySteps, then away step promises more progress
-        if dualGap < away_gap && awaySteps
+        # if away_gap is larger than dual_gap and we do awaySteps, then away step promises more progress
+        if dual_gap < away_gap && awaySteps
             tt = away
             gamma_max = lambda / (1 - lambda)
             d = a - x
@@ -162,23 +162,23 @@ function afw(
         end
 
 
-        if step_size === agnostic
+        if line_search === agnostic
             gamma = 2 // (2 + t)
-        elseif step_size === goldenratio
-            nothing, gamma = segmentSearch(f, grad, x, v, lsTol=lsTol)
-        elseif step_size === backtracking
-            nothing, gamma = backtrackingLS(f, grad, x, v, lsTol=lsTol, stepLim=stepLim)
-        elseif step_size === nonconvex
+        elseif line_search === goldenratio
+            nothing, gamma = segmentSearch(f, grad, x, v, linesearch_tol=linesearch_tol)
+        elseif line_search === backtracking
+            nothing, gamma = backtrackingLS(f, grad, x, v, linesearch_tol=linesearch_tol, step_lim=step_lim)
+        elseif line_search === nonconvex
             gamma = 1 / sqrt(t + 1)
-        elseif step_size === shortstep
+        elseif line_search === shortstep
             gap = dot(gradient, d)
             gamma = gap / (L * norm(d)^2)
-        elseif step_size === rationalshortstep
+        elseif line_search === rationalshortstep
             ratDualGap = sum(d .* gradient)
             gamma = ratDualGap // (L * sum(d .^ 2))
-        elseif step_size === fixed
+        elseif line_search === fixed
             gamma = gamma0
-        elseif step_size === adaptive
+        elseif line_search === adaptive
             L, gamma = adaptive_step_size(f, gradient, x, d, L)
         end
 
@@ -191,7 +191,7 @@ function afw(
             active_set_update!(active_set, -gamma, a)
         end
 
-        if mod(t, printIt) == 0 && verbose
+        if mod(t, print_iter) == 0 && verbose
             if t === 0
                 tt = initial
             end
@@ -199,19 +199,19 @@ function afw(
                 tt,
                 string(t),
                 primal,
-                primal - dualGap,
-                dualGap,
-                (time_ns() - timeEl) / 1.0e9,
+                primal - dual_gap,
+                dual_gap,
+                (time_ns() - time_start) / 1.0e9,
                 length(active_set),
             )
-            itPrint(rep)
+            print_iter_func(rep)
             flush(stdout)
         end
         t = t + 1
     end
 
     # recompute everything once more for final verfication / do not record to trajectory though for now! 
-    # this is important as some variants do not recompute f(x) and the dualGap regularly but only when reporting
+    # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
     # hence the final computation.
     # do also cleanup of active_set due to many operations on the same set
 
@@ -220,18 +220,18 @@ function afw(
         gradient = grad(x)
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
-        dualGap = dot(x, gradient) - dot(v, gradient)
+        dual_gap = dot(x, gradient) - dot(v, gradient)
         tt = last
         rep = (
             tt,
             string(t - 1),
             primal,
-            primal - dualGap,
-            dualGap,
-            (time_ns() - timeEl) / 1.0e9,
+            primal - dual_gap,
+            dual_gap,
+            (time_ns() - time_start) / 1.0e9,
             length(active_set),
         )
-        itPrint(rep)
+        print_iter_func(rep)
         flush(stdout)
     end
 
@@ -241,22 +241,22 @@ function afw(
     gradient = grad(x)
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
-    dualGap = dot(x, gradient) - dot(v, gradient)
+    dual_gap = dot(x, gradient) - dot(v, gradient)
     if verbose
         tt = pp
         rep = (
             tt,
             string(t - 1),
             primal,
-            primal - dualGap,
-            dualGap,
-            (time_ns() - timeEl) / 1.0e9,
+            primal - dual_gap,
+            dual_gap,
+            (time_ns() - time_start) / 1.0e9,
             length(active_set),
         )
-        itPrint(rep)
-        footerPrint()
+        print_iter_func(rep)
+        print_footer()
         flush(stdout)
     end
 
-    return x, v, primal, dualGap, trajData, active_set
+    return x, v, primal, dual_gap, trajData, active_set
 end

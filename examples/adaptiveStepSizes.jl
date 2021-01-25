@@ -29,44 +29,44 @@ FrankWolfe.benchmark_oracles(x -> cf(x, xp), x -> cgrad(x, xp), lmo, n; k=100, T
 
 println("\n==> Short Step rule - if you know L.\n")
 
-@time x, v, primal, dualGap, trajectory = FrankWolfe.fw(
+@time x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
     f,
     grad,
     lmo,
     x0,
-    maxIt=k,
-    step_size=FrankWolfe.shortstep,
+    max_iteration=k,
+    line_search=FrankWolfe.shortstep,
     L=2,
-    printIt=k / 10,
-    emph=FrankWolfe.memory,
+    print_iter=k / 10,
+    emphasis=FrankWolfe.memory,
     verbose=true,
 );
 
 println("\n==> Adaptive if you do not know L.\n")
 
-@time x, v, primal, dualGap, trajectory = FrankWolfe.fw(
+@time x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
     f,
     grad,
     lmo,
     x0,
-    maxIt=k,
-    step_size=FrankWolfe.adaptive,
+    max_iteration=k,
+    line_search=FrankWolfe.adaptive,
     L=100,
-    printIt=k / 10,
-    emph=FrankWolfe.memory,
+    print_iter=k / 10,
+    emphasis=FrankWolfe.memory,
     verbose=true,
 );
 
 println("\n==> Agnostic if function is too expensive for adaptive.\n")
 
-@time x, v, primal, dualGap, trajectory = FrankWolfe.fw(
+@time x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
     f,
     grad,
     lmo,
     x0,
-    maxIt=k,
-    step_size=FrankWolfe.agnostic,
-    printIt=k / 10,
-    emph=FrankWolfe.memory,
+    max_iteration=k,
+    line_search=FrankWolfe.agnostic,
+    print_iter=k / 10,
+    emphasis=FrankWolfe.memory,
     verbose=true,
 );

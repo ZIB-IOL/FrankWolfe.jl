@@ -23,13 +23,13 @@ x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 # benchmarking Oracles
 FrankWolfe.benchmark_oracles(f, grad, lmo, n; k=100, T=Float64)
 
-@time x, v, primal, dualGap, trajectory = FrankWolfe.fw(
+@time x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
     f,
     grad,
     lmo,
     x0,
-    maxIt=k,
-    step_size=FrankWolfe.nonconvex,
-    printIt=k / 10,
+    max_iteration=k,
+    line_search=FrankWolfe.nonconvex,
+    print_iter=k / 10,
     verbose=true,
 );
