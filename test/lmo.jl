@@ -171,3 +171,53 @@ end
     empty!(lmo_veccached)
     @test length(lmo_veccached) == 0
 end
+
+function _is_doubly_stochastic(m)
+    for col in eachcol(m)
+        @test sum(col) == 1
+    end
+    for row in eachrow(m)
+        @test sum(row) == 1
+    end
+end
+
+@testset "Birkhoff polytope" begin
+    lmo = FrankWolfe.BirkhoffPolytopeLMO()
+    for n in (1, 2, 10)
+        cost = rand(n, n)
+        res = FrankWolfe.compute_extreme_point(lmo, cost)
+        _is_doubly_stochastic(res)
+    end
+    cost_mat = [
+        2 3 3
+        3 2 3
+        3 3 2
+    ]
+    res = FrankWolfe.compute_extreme_point(lmo, cost_mat)
+    @test res == I
+    @test sum(cost_mat .* res) == 6
+    cost_mat = [
+        3 2 3
+        2 3 3
+        3 3 2
+    ]
+    res = FrankWolfe.compute_extreme_point(lmo, cost_mat)
+    @test sum(cost_mat .* res) == 6
+    @test res == Bool[
+        0 1 0
+        1 0 0
+        0 0 1
+    ]
+    cost_mat = [
+        3 2 3
+        3 3 2
+        2 3 3
+    ]
+    res = FrankWolfe.compute_extreme_point(lmo, cost_mat)
+    @test sum(cost_mat .* res) == 6
+    @test res == Bool[
+        0 1 0
+        0 0 1
+        1 0 0
+    ]
+end

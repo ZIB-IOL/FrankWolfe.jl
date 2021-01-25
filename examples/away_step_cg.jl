@@ -20,7 +20,7 @@ x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
 FrankWolfe.benchmark_oracles(f, grad, lmo, n; k=100, T=Float64)
 
-@time x, v, primal, dualGap, trajectory = FrankWolfe.fw(
+@time x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
     f,
     grad,
     lmo,
@@ -35,7 +35,7 @@ FrankWolfe.benchmark_oracles(f, grad, lmo, n; k=100, T=Float64)
     trajectory=true,
 );
 
-@time x, v, primal, dualGap, trajectoryA, active_set = FrankWolfe.afw(
+@time x, v, primal, dual_gap, trajectoryA, active_set = FrankWolfe.afw(
     f,
     grad,
     lmo,
@@ -51,7 +51,7 @@ FrankWolfe.benchmark_oracles(f, grad, lmo, n; k=100, T=Float64)
     trajectory=true,
 );
 
-@time x, v, primal, dualGap, trajectoryAM, active_set = FrankWolfe.afw(
+@time x, v, primal, dual_gap, trajectoryAM, active_set = FrankWolfe.afw(
     f,
     grad,
     lmo,
