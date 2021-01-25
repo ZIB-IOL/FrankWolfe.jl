@@ -28,8 +28,8 @@ end
                 grad,
                 lmo_prob,
                 x0,
-                maxIt=1000,
-                step_size=FrankWolfe.agnostic,
+                max_iteration=1000,
+                line_search=FrankWolfe.agnostic,
                 verbose=true,
             )[3] - 0.2,
         ) < 1.0e-5
@@ -39,8 +39,8 @@ end
                 grad,
                 lmo_prob,
                 x0,
-                maxIt=1000,
-                step_size=FrankWolfe.goldenratio,
+                max_iteration=1000,
+                line_search=FrankWolfe.goldenratio,
                 verbose=true,
             )[3] - 0.2,
         ) < 1.0e-5
@@ -50,8 +50,8 @@ end
                 grad,
                 lmo_prob,
                 x0,
-                maxIt=1000,
-                step_size=FrankWolfe.backtracking,
+                max_iteration=1000,
+                line_search=FrankWolfe.backtracking,
                 verbose=true,
             )[3] - 0.2,
         ) < 1.0e-5
@@ -61,8 +61,8 @@ end
                 grad,
                 lmo_prob,
                 x0,
-                maxIt=1000,
-                step_size=FrankWolfe.nonconvex,
+                max_iteration=1000,
+                line_search=FrankWolfe.nonconvex,
                 verbose=true,
             )[3] - 0.2,
         ) < 1.0e-2
@@ -71,8 +71,8 @@ end
             grad,
             lmo_prob,
             x0,
-            maxIt=1000,
-            step_size=FrankWolfe.shortstep,
+            max_iteration=1000,
+            line_search=FrankWolfe.shortstep,
             L=2,
             verbose=true,
         )[3] ≈ 0.2
@@ -82,8 +82,8 @@ end
                 grad,
                 lmo_prob,
                 x0,
-                maxIt=1000,
-                step_size=FrankWolfe.nonconvex,
+                max_iteration=1000,
+                line_search=FrankWolfe.nonconvex,
                 verbose=true,
             )[3] - 0.2,
         ) < 1.0e-2
@@ -93,8 +93,8 @@ end
                 grad,
                 lmo_prob,
                 x0,
-                maxIt=1000,
-                step_size=FrankWolfe.agnostic,
+                max_iteration=1000,
+                line_search=FrankWolfe.agnostic,
                 verbose=false,
                 momentum=0.9,
             )[3] - 0.2,
@@ -105,8 +105,8 @@ end
                 grad,
                 lmo_prob,
                 x0,
-                maxIt=1000,
-                step_size=FrankWolfe.agnostic,
+                max_iteration=1000,
+                line_search=FrankWolfe.agnostic,
                 verbose=false,
                 momentum=0.5,
             )[3] - 0.2,
@@ -117,11 +117,11 @@ end
                 grad,
                 lmo_prob,
                 x0,
-                maxIt=1000,
-                step_size=FrankWolfe.agnostic,
+                max_iteration=1000,
+                line_search=FrankWolfe.agnostic,
                 verbose=false,
                 momentum=0.9,
-                emph=FrankWolfe.memory,
+                emphasis=FrankWolfe.memory,
             )[3] - 0.2,
         ) < 1.0e-3
         @test abs(
@@ -130,8 +130,8 @@ end
                 grad,
                 lmo_prob,
                 x0,
-                maxIt=1000,
-                step_size=FrankWolfe.adaptive,
+                max_iteration=1000,
+                line_search=FrankWolfe.adaptive,
                 L=100,
                 verbose=false,
                 momentum=0.9,
@@ -143,8 +143,8 @@ end
                 grad,
                 lmo_prob,
                 x0,
-                maxIt=1000,
-                step_size=FrankWolfe.adaptive,
+                max_iteration=1000,
+                line_search=FrankWolfe.adaptive,
                 L=100,
                 verbose=false,
                 momentum=0.5,
@@ -156,12 +156,12 @@ end
                 grad,
                 lmo_prob,
                 x0,
-                maxIt=1000,
-                step_size=FrankWolfe.adaptive,
+                max_iteration=1000,
+                line_search=FrankWolfe.adaptive,
                 L=100,
                 verbose=false,
                 momentum=0.9,
-                emph=FrankWolfe.memory,
+                emphasis=FrankWolfe.memory,
             )[3] - 0.2,
         ) < 1.0e-3
     end
@@ -176,8 +176,8 @@ end
                 grad,
                 lmo_prob,
                 x0,
-                maxIt=1000,
-                step_size=FrankWolfe.goldenratio,
+                max_iteration=1000,
+                line_search=FrankWolfe.goldenratio,
                 verbose=true,
             )[3] - 0.2,
         ) < 1.0e-5
@@ -187,8 +187,8 @@ end
                 grad,
                 lmo_prob,
                 x0,
-                maxIt=1000,
-                step_size=FrankWolfe.backtracking,
+                max_iteration=1000,
+                line_search=FrankWolfe.backtracking,
                 verbose=true,
             )[3] - 0.2,
         ) < 1.0e-5
@@ -198,8 +198,8 @@ end
                 grad,
                 lmo_prob,
                 x0,
-                maxIt=1000,
-                step_size=FrankWolfe.shortstep,
+                max_iteration=1000,
+                line_search=FrankWolfe.shortstep,
                 L=2,
                 verbose=true,
             )[3] - 0.2,
@@ -217,26 +217,26 @@ end
         lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
         x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n))
 
-        @time x, v, primal, dualGap, trajectory = FrankWolfe.lcg(
+        @time x, v, primal, dual_gap, trajectory = FrankWolfe.lcg(
             f,
             grad,
             lmo_prob,
             x0,
-            maxIt=k,
-            step_size=FrankWolfe.shortstep,
+            max_iteration=k,
+            line_search=FrankWolfe.shortstep,
             L=2,
             verbose=true,
         )
 
         @test primal - 1 // n <= bound
 
-        @time x, v, primal, dualGap, trajectory = FrankWolfe.lcg(
+        @time x, v, primal, dual_gap, trajectory = FrankWolfe.lcg(
             f,
             grad,
             lmo_prob,
             x0,
-            maxIt=k,
-            step_size=FrankWolfe.shortstep,
+            max_iteration=k,
+            line_search=FrankWolfe.shortstep,
             L=2,
             cacheSize=100,
             verbose=true,
@@ -244,13 +244,13 @@ end
 
         @test primal - 1 // n <= bound
 
-        @time x, v, primal, dualGap, trajectory = FrankWolfe.lcg(
+        @time x, v, primal, dual_gap, trajectory = FrankWolfe.lcg(
             f,
             grad,
             lmo_prob,
             x0,
-            maxIt=k,
-            step_size=FrankWolfe.shortstep,
+            max_iteration=k,
+            line_search=FrankWolfe.shortstep,
             L=2,
             cacheSize=100,
             greedyLazy=true,
@@ -272,30 +272,30 @@ end
             lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1.0)
             x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n))
 
-            x, v, primal, dualGap, trajectory = FrankWolfe.fw(
+            x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
                 f,
                 grad,
                 lmo_prob,
                 x0,
-                maxIt=k,
-                step_size=FrankWolfe.backtracking,
-                printIt=k / 10,
+                max_iteration=k,
+                line_search=FrankWolfe.backtracking,
+                print_iter=k / 10,
                 verbose=true,
-                emph=FrankWolfe.blas,
+                emphasis=FrankWolfe.blas,
             )
 
             @test x !== nothing
 
-            x, v, primal, dualGap, trajectory = FrankWolfe.fw(
+            x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
                 f,
                 grad,
                 lmo_prob,
                 x0,
-                maxIt=k,
-                step_size=FrankWolfe.backtracking,
-                printIt=k / 10,
+                max_iteration=k,
+                line_search=FrankWolfe.backtracking,
+                print_iter=k / 10,
                 verbose=true,
-                emph=FrankWolfe.memory,
+                emphasis=FrankWolfe.memory,
             )
 
             @test x !== nothing
@@ -304,30 +304,30 @@ end
             lmo_prob = FrankWolfe.L1ballDense{Float64}(1)
             x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n))
 
-            x, v, primal, dualGap, trajectory = FrankWolfe.fw(
+            x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
                 f,
                 grad,
                 lmo_prob,
                 x0,
-                maxIt=k,
-                step_size=FrankWolfe.backtracking,
-                printIt=k / 10,
+                max_iteration=k,
+                line_search=FrankWolfe.backtracking,
+                print_iter=k / 10,
                 verbose=true,
-                emph=FrankWolfe.blas,
+                emphasis=FrankWolfe.blas,
             )
 
             @test x !== nothing
 
-            x, v, primal, dualGap, trajectory = FrankWolfe.fw(
+            x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
                 f,
                 grad,
                 lmo_prob,
                 x0,
-                maxIt=k,
-                step_size=FrankWolfe.backtracking,
-                printIt=k / 10,
+                max_iteration=k,
+                line_search=FrankWolfe.backtracking,
+                print_iter=k / 10,
                 verbose=true,
-                emph=FrankWolfe.memory,
+                emphasis=FrankWolfe.memory,
             )
 
             @test x !== nothing
@@ -349,29 +349,29 @@ end
         direction = rand(n)
         x0 = FrankWolfe.compute_extreme_point(lmo, direction)
 
-        @time x, v, primal, dualGap, trajectory = FrankWolfe.fw(
+        @time x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
             f,
             grad,
             lmo,
             x0,
-            maxIt=k,
-            step_size=FrankWolfe.agnostic,
-            printIt=k / 10,
-            emph=FrankWolfe.blas,
+            max_iteration=k,
+            line_search=FrankWolfe.agnostic,
+            print_iter=k / 10,
+            emphasis=FrankWolfe.blas,
             verbose=true,
         )
 
         @test eltype(x0) == Rational{BigInt}
 
-        @time x, v, primal, dualGap, trajectory = FrankWolfe.fw(
+        @time x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
             f,
             grad,
             lmo,
             x0,
-            maxIt=k,
-            step_size=FrankWolfe.agnostic,
-            printIt=k / 10,
-            emph=FrankWolfe.memory,
+            max_iteration=k,
+            line_search=FrankWolfe.agnostic,
+            print_iter=k / 10,
+            emphasis=FrankWolfe.memory,
             verbose=true,
         )
         @test eltype(x0) == Rational{BigInt}
@@ -397,30 +397,30 @@ end
             direction = rand(n)
             x0 = FrankWolfe.compute_extreme_point(lmo, direction)
 
-            @time x, v, primal, dualGap, trajectory = FrankWolfe.fw(
+            @time x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
                 f,
                 grad,
                 lmo,
                 x0,
-                maxIt=k,
-                step_size=FrankWolfe.agnostic,
-                printIt=k / 10,
-                emph=FrankWolfe.blas,
+                max_iteration=k,
+                line_search=FrankWolfe.agnostic,
+                print_iter=k / 10,
+                emphasis=FrankWolfe.blas,
                 verbose=true,
             )
 
             @test eltype(x0) == T
             @test primal - 1 // n <= bound
 
-            @time x, v, primal, dualGap, trajectory = FrankWolfe.fw(
+            @time x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
                 f,
                 grad,
                 lmo,
                 x0,
-                maxIt=k,
-                step_size=FrankWolfe.agnostic,
-                printIt=k / 10,
-                emph=FrankWolfe.memory,
+                max_iteration=k,
+                line_search=FrankWolfe.agnostic,
+                print_iter=k / 10,
+                emphasis=FrankWolfe.memory,
                 verbose=true,
             )
 
@@ -463,8 +463,8 @@ end
             params,
             momentum=0.95,
             verbose=false,
-            step_size=FrankWolfe.nonconvex,
-            maxIt=10000,
+            line_search=FrankWolfe.nonconvex,
+            max_iteration=10000,
             batch_size=length(f_stoch.xs) ÷ 100,
             trajectory=false,
         )
@@ -485,37 +485,37 @@ end
             grad,
             lmo_prob,
             x0,
-            maxIt=k,
-            step_size=FrankWolfe.backtracking,
+            max_iteration=k,
+            line_search=FrankWolfe.backtracking,
             verbose=false,
-            emph=FrankWolfe.blas,
+            emphasis=FrankWolfe.blas,
         )
 
-        x, v, primal, dualGap, trajectory = FrankWolfe.afw(
+        x, v, primal, dual_gap, trajectory = FrankWolfe.afw(
             f,
             grad,
             lmo_prob,
             x0,
-            maxIt=k,
-            step_size=FrankWolfe.backtracking,
-            printIt=k / 10,
+            max_iteration=k,
+            line_search=FrankWolfe.backtracking,
+            print_iter=k / 10,
             verbose=true,
-            emph=FrankWolfe.blas,
+            emphasis=FrankWolfe.blas,
         )
 
         @test x !== nothing
         @test xref ≈ x atol = (1e-3 / length(x))
 
-        x, v, primal, dualGap, trajectory = FrankWolfe.afw(
+        x, v, primal, dual_gap, trajectory = FrankWolfe.afw(
             f,
             grad,
             lmo_prob,
             x0,
-            maxIt=k,
-            step_size=FrankWolfe.backtracking,
-            printIt=k / 10,
+            max_iteration=k,
+            line_search=FrankWolfe.backtracking,
+            print_iter=k / 10,
             verbose=true,
-            emph=FrankWolfe.memory,
+            emphasis=FrankWolfe.memory,
         )
         @test x !== nothing
         @test xref ≈ x atol = (1e-3 / length(x))

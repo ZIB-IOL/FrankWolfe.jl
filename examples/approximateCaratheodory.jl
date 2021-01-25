@@ -23,14 +23,14 @@ FrankWolfe.benchmark_oracles(f, grad, lmo, n; k=100, T=Float64)
 # the algorithm runs in rational arithmetic even if the gradients and the function itself are not rational
 # this is because we replace the descent direction by the directions of the LMO are rational
 
-@time x, v, primal, dualGap, trajectory = FrankWolfe.fw(
+@time x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
     f,
     grad,
     lmo,
     x0,
-    maxIt=k,
-    step_size=FrankWolfe.agnostic,
-    printIt=k / 10,
+    max_iteration=k,
+    line_search=FrankWolfe.agnostic,
+    print_iter=k / 10,
     verbose=true,
 );
 
@@ -39,15 +39,15 @@ println("\nOutput type of solution: ", eltype(x))
 # you can even run everything in rational arithmetic using the shortstep rule
 # NOTE: in this case the gradient computation has to be rational as well
 
-@time x, v, primal, dualGap, trajectory = FrankWolfe.fw(
+@time x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
     f,
     grad,
     lmo,
     x0,
-    maxIt=k,
-    step_size=FrankWolfe.rationalshortstep,
+    max_iteration=k,
+    line_search=FrankWolfe.rationalshortstep,
     L=2,
-    printIt=k / 10,
+    print_iter=k / 10,
     verbose=true,
 );
 

@@ -20,49 +20,49 @@ x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
 FrankWolfe.benchmark_oracles(f, grad, lmo, n; k=100, T=Float64)
 
-@time x, v, primal, dualGap, trajectory = FrankWolfe.fw(
+@time x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
     f,
     grad,
     lmo,
     x0,
-    maxIt=k,
-    step_size=FrankWolfe.adaptive,
+    max_iteration=k,
+    line_search=FrankWolfe.adaptive,
     L=100,
-    printIt=k / 10,
-    emph=FrankWolfe.memory,
+    print_iter=k / 10,
+    emphasis=FrankWolfe.memory,
     verbose=true,
     epsilon=1e-5,
     trajectory=true,
 );
 
-@time x, v, primal, dualGap, trajectoryA, active_set = FrankWolfe.afw(
+@time x, v, primal, dual_gap, trajectoryA, active_set = FrankWolfe.afw(
     f,
     grad,
     lmo,
     x0,
-    maxIt=k,
-    step_size=FrankWolfe.adaptive,
+    max_iteration=k,
+    line_search=FrankWolfe.adaptive,
     L=100,
-    printIt=k / 10,
+    print_iter=k / 10,
     epsilon=1e-5,
-    emph=FrankWolfe.memory,
+    emphasis=FrankWolfe.memory,
     verbose=true,
     awaySteps=true,
     trajectory=true,
 );
 
-@time x, v, primal, dualGap, trajectoryAM, active_set = FrankWolfe.afw(
+@time x, v, primal, dual_gap, trajectoryAM, active_set = FrankWolfe.afw(
     f,
     grad,
     lmo,
     x0,
-    maxIt=k,
-    step_size=FrankWolfe.adaptive,
+    max_iteration=k,
+    line_search=FrankWolfe.adaptive,
     L=100,
-    printIt=k / 10,
+    print_iter=k / 10,
     epsilon=1e-5,
     momentum=0.9,
-    emph=FrankWolfe.blas,
+    emphasis=FrankWolfe.blas,
     verbose=true,
     awaySteps=true,
     trajectory=true,

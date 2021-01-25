@@ -84,43 +84,43 @@ params = rand(6) .- 1 # start params in (-1,0)
 
 k = 10000
 
-@time x, v, primal, dualGap, trajectoryS = FrankWolfe.stochastic_frank_wolfe(
+@time x, v, primal, dual_gap, trajectoryS = FrankWolfe.stochastic_frank_wolfe(
     f_stoch_noisy,
     lmo,
     params,
     verbose=true,
     rng=Random.GLOBAL_RNG,
-    step_size=FrankWolfe.nonconvex,
-    maxIt=k,
-    printIt=k / 10,
+    line_search=FrankWolfe.nonconvex,
+    max_iteration=k,
+    print_iter=k / 10,
     batch_size=length(f_stoch_noisy.xs) ÷ 100 + 1,
     trajectory=true,
 )
 
-@time x, v, primal, dualGap, trajectory09 = FrankWolfe.stochastic_frank_wolfe(
+@time x, v, primal, dual_gap, trajectory09 = FrankWolfe.stochastic_frank_wolfe(
     f_stoch_noisy,
     lmo,
     params,
     momentum=0.9,
     verbose=true,
     rng=Random.GLOBAL_RNG,
-    step_size=FrankWolfe.nonconvex,
-    maxIt=k,
-    printIt=k / 10,
+    line_search=FrankWolfe.nonconvex,
+    max_iteration=k,
+    print_iter=k / 10,
     batch_size=length(f_stoch_noisy.xs) ÷ 100 + 1,
     trajectory=true,
 )
 
-@time x, v, primal, dualGap, trajectory099 = FrankWolfe.stochastic_frank_wolfe(
+@time x, v, primal, dual_gap, trajectory099 = FrankWolfe.stochastic_frank_wolfe(
     f_stoch_noisy,
     lmo,
     params,
     momentum=0.99,
     verbose=true,
     rng=Random.GLOBAL_RNG,
-    step_size=FrankWolfe.nonconvex,
-    maxIt=k,
-    printIt=k / 10,
+    line_search=FrankWolfe.nonconvex,
+    max_iteration=k,
+    print_iter=k / 10,
     batch_size=length(f_stoch_noisy.xs) ÷ 100 + 1,
     trajectory=true,
 )
@@ -130,16 +130,16 @@ k = 10000
 
 const ff = x -> compute_value(f_stoch_noisy, x, full_evaluation=true)
 const gradf = x -> compute_gradient(f_stoch_noisy, x, full_evaluation=true)
-@time x, v, primal, dualGap, trajectory = FrankWolfe.fw(
+@time x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
     ff,
     gradf,
     lmo,
     L=10,
     params,
     verbose=true,
-    step_size=FrankWolfe.adaptive,
-    maxIt=k,
-    printIt=k / 10,
+    line_search=FrankWolfe.adaptive,
+    max_iteration=k,
+    print_iter=k / 10,
     trajectory=true,
 )
 
