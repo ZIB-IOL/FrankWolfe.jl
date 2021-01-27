@@ -18,7 +18,7 @@ end
 
 @testset "FrankWolfe.jl" begin
     @testset "Testing vanilla Frank-Wolfe with various step size and momentum strategies" begin
-        f(x) = LinearAlgebra.norm(x)^2
+        f(x) = norm(x)^2
         grad(x) = 2x
         lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
         x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(5))
@@ -166,7 +166,7 @@ end
         ) < 1.0e-3
     end
     @testset "Testing Lazified Conditional Gradients with various step size strategies" begin
-        f(x) = LinearAlgebra.norm(x)^2
+        f(x) = norm(x)^2
         grad(x) = 2x
         lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
         x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(5))
@@ -212,7 +212,7 @@ end
         k = 1000
         bound = 16 * L * 2 / (k + 2)
 
-        f(x) = LinearAlgebra.norm(x)^2
+        f(x) = norm(x)^2
         grad(x) = 2x
         lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
         x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n))
@@ -266,7 +266,7 @@ end
         xpi = rand(n)
         total = sum(xpi)
         xp = xpi ./ total
-        f(x) = LinearAlgebra.norm(x - xp)^2
+        f(x) = norm(x - xp)^2
         grad(x) = 2 * (x - xp)
         @testset "Using sparse structure" begin
             lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1.0)
@@ -342,7 +342,7 @@ end
         total = sum(xpi)
         xp = xpi ./ total
 
-        f(x) = LinearAlgebra.norm(x - xp)^2
+        f(x) = norm(x - xp)^2
         grad(x) = 2 * (x - xp)
 
         lmo = FrankWolfe.ProbabilitySimplexOracle{Rational{BigInt}}(rhs)
@@ -387,7 +387,7 @@ end
         L = 2
         bound = 2 * L * 2 / (k + 2)
 
-        f(x) = LinearAlgebra.norm(x - xp)^2
+        f(x) = norm(x - xp)^2
         grad(x) = 2 * (x - xp)
         test_types = [Float16, Float32, Float64, BigFloat, Rational{BigInt}]
 
@@ -464,7 +464,7 @@ end
             momentum=0.95,
             verbose=false,
             line_search=FrankWolfe.nonconvex,
-            max_iteration=10000,
+            max_iteration=50_000,
             batch_size=length(f_stoch.xs) ÷ 100,
             trajectory=false,
         )
@@ -475,7 +475,7 @@ end
         n = 50
         lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1.0)
         x0 = FrankWolfe.compute_extreme_point(lmo_prob, rand(n))
-        f(x) = LinearAlgebra.norm(x)^2
+        f(x) = norm(x)^2
         grad(x) = 2x
         k = 1000
 

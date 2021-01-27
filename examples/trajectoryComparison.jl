@@ -9,12 +9,12 @@ xpi = rand(n);
 total = sum(xpi);
 const xp = xpi ./ total;
 
-f(x) = LinearAlgebra.norm(x - xp)^2
+f(x) = norm(x - xp)^2
 grad(x) = 2 * (x - xp)
 # better for memory consumption as we do coordinate-wise ops
 
 function cf(x, xp)
-    return @. LinearAlgebra.norm(x - xp)^2
+    return @. norm(x - xp)^2
 end
 
 function cgrad(x, xp)

@@ -10,7 +10,7 @@ xpi = rand(n);
 total = sum(xpi);
 const xp = xpi # ./ total;
 
-f(x) = LinearAlgebra.norm(x - xp)^2
+f(x) = norm(x - xp)^2
 grad(x) = 2 * (x - xp)
 
 # problem with active set updates and the ksparselmo
