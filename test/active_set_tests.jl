@@ -8,12 +8,10 @@ import FrankWolfe: ActiveSet
     @testset "Constructors and eltypes" begin
         active_set = ActiveSet([(0.1, [1, 2, 3]), (0.9, [2, 3, 4]), (0.0, [5, 6, 7])])
 
-
         @test active_set.weights == [0.1, 0.9, 0.0]
         @test active_set.atoms == [[1, 2, 3], [2, 3, 4], [5, 6, 7]]
         @test eltype(active_set) === Tuple{Float64,Vector{Int}}
-
-        @test FrankWolfe.active_set_validate(active_set) == true
+        @test FrankWolfe.active_set_validate(active_set)
 
         # providing the weight type converts the provided weights
         active_set2 = ActiveSet{Vector{Int},Float64}([
@@ -23,7 +21,6 @@ import FrankWolfe: ActiveSet
         ])
 
         @test eltype(active_set) === eltype(active_set2)
-
         @test first(active_set) isa eltype(active_set)
         @test first(active_set2) isa eltype(active_set)
     end
@@ -77,4 +74,7 @@ import FrankWolfe: ActiveSet
         λ, a, i = FrankWolfe.active_set_argmin(active_set, [-1.0, -1.0, -1.0])
         @test a == [2, 3, 4] && λ == 0.25 && i == 2
     end
+end
+
+@testset "" begin
 end
