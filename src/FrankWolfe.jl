@@ -218,7 +218,10 @@ function fw(
         end
 
         if trajectory === true
-            push!(trajData, [t, primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9])
+            push!(
+                trajData,
+                [t, primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9]
+            )
         end
 
         if line_search === agnostic

@@ -26,12 +26,12 @@ end
 # - code needs optimization
 
 function backtrackingLS(f, grad, x, y; line_search=true, linesearch_tol=1e-10, step_lim=20, lsTau=0.5)
-    gamma = 1
+    gamma = one(lsTau)
     d = y - x
     i = 0
     gradDirection = dot(grad(x), d)
 
-    if gradDirection === 0
+    if gradDirection == 0
         return i, 0
     end
 

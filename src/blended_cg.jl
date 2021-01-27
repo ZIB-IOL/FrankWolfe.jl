@@ -8,7 +8,7 @@ Algorithm reference and notation taken from:
 Blended Conditional Gradients:The Unconditioning of Conditional Gradients
 http://proceedings.mlr.press/v97/braun19a/braun19a.pdf
 """
-function update_simplex_gradient_descent!(active_set::ActiveSet, direction, f, L=nothing)
+function update_simplex_gradient_descent!(active_set::ActiveSet, direction, f, L=nothing, linesearch_tol=10e-7, step_lim=20)
     linesearch_method = L === nothing ? backtracking : shortstep
     c = [dot(direction, a) for a in active_set]
     k = length(active_set)
@@ -41,13 +41,17 @@ function update_simplex_gradient_descent!(active_set::ActiveSet, direction, f, L
         $η\n$d\nactive_set.weights
         """)
     end
-    f_y = f(compute_active_set_iterate(active_set))
-    if f(x) ≥ f_y
+    y = compute_active_set_iterate(active_set)
+    if f(x) ≥ f(y)
         active_set_cleanup!(active_set)
         @assert(length(active_set) == length(x) - 1)
         return active_set
     end
     # TODO move η between x and y till opt
+    if linesearch_method == backtracking
+        _, gamma = backtrackingLS(f, grad, x, v, linesearch_tol=linesearch_tol, step_lim=step_lim)
+    else # just two methods here for now
+    end
 
     return active_set
 end
