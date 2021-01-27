@@ -1,6 +1,6 @@
 
 """
-    simplex_gradient_descent(active_set::ActiveSet, direction, f)
+    simplex_gradient_descent(active_set::ActiveSet, direction, f, gradient_dir)
 
 Performs a Simplex Gradient Descent step and modifies `active_set`.
 
@@ -17,7 +17,7 @@ function update_simplex_gradient_descent!(active_set::ActiveSet, direction, f, g
     d = c
     if norm(d) <= 1e-7
         # resetting active set to singleton
-        a0 = active_set.atoms
+        a0 = active_set.atoms[1]
         empty!(active_set)
         push!(active_set, (1, a0))
         return active_set
@@ -44,13 +44,12 @@ function update_simplex_gradient_descent!(active_set::ActiveSet, direction, f, g
     y = compute_active_set_iterate(active_set)
     if f(x) ≥ f(y)
         active_set_cleanup!(active_set)
-        @assert(length(active_set) == length(x) - 1)
         return active_set
     end
     # TODO move η between x and y till opt
     linesearch_method = L === nothing || !isfinite(L) ? backtracking : shortstep
     if linesearch_method == backtracking
-        _, gamma = backtrackingLS(f, gradient_dir, x, v, linesearch_tol=linesearch_tol, step_lim=step_lim)
+        _, gamma = backtrackingLS(f, gradient_dir, x, y, linesearch_tol=linesearch_tol, step_lim=step_lim)
     else # == shortstep, just two methods here for now
         @assert dot(gradient_dir, x - y) ≥ 0
         gamma = dot(gradient_dir, x - y) / (L * norm(x - y)^2)
