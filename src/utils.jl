@@ -6,7 +6,6 @@ Aaptive Step Size strategy from https://arxiv.org/pdf/1806.05123.pdf
 TODO: 
 - make emphasis aware and optimize
 """
-
 function adaptive_step_size(f, gradient, x, direction, L_est; eta=0.9, tau=2, gamma_max=1)
     M = eta * L_est
     gamma = min(
@@ -25,29 +24,30 @@ end
 # TODO:
 # - code needs optimization
 
-function backtrackingLS(f, grad, x, y; line_search=true, linesearch_tol=1e-10, step_lim=20, lsTau=0.5)
+function backtrackingLS(f, grad_direction, x, y; line_search=true, linesearch_tol=1e-10, step_lim=20, lsTau=0.5)
     gamma = one(lsTau)
     d = y - x
     i = 0
-    gradDirection = dot(grad(x), d)
 
-    if gradDirection == 0
-        return i, 0
+    dot_gdir = dot(grad_direction, d)
+    @assert dot_gdir ≤ 0
+    if dot_gdir ≥ 0
+        return i, 0 * gamma
     end
 
     oldVal = f(x)
     newVal = f(x + gamma * d)
-    while newVal - oldVal > linesearch_tol * gamma * gradDirection
+    while newVal - oldVal > linesearch_tol * gamma * dot_gdir
         if i > step_lim
             if oldVal - newVal >= 0
                 return i, gamma
             else
-                return i, 0
+                return i, 0 * gamma
             end
         end
-        gamma = gamma * lsTau
+        gamma *= lsTau
         newVal = f(x + gamma * d)
-        i = i + 1
+        i += 1
     end
     return i, gamma
 end

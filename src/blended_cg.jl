@@ -8,8 +8,7 @@ Algorithm reference and notation taken from:
 Blended Conditional Gradients:The Unconditioning of Conditional Gradients
 http://proceedings.mlr.press/v97/braun19a/braun19a.pdf
 """
-function update_simplex_gradient_descent!(active_set::ActiveSet, direction, f, L=nothing, linesearch_tol=10e-7, step_lim=20)
-    linesearch_method = L === nothing ? backtracking : shortstep
+function update_simplex_gradient_descent!(active_set::ActiveSet, direction, f, gradient_dir ; L=nothing, linesearch_tol=10e-7, step_lim=20)
     c = [dot(direction, a) for a in active_set]
     k = length(active_set)
     csum = sum(c)
@@ -18,8 +17,8 @@ function update_simplex_gradient_descent!(active_set::ActiveSet, direction, f, L
     # name change to stay consistent with the paper
     d = c
     if norm(c) <= 1e-5
-        # reset x and S
-        return
+        # TODO reset x and S
+        return active_set
     end
     η = eltype(d)(Inf)
     remove_idx = -1
@@ -48,9 +47,12 @@ function update_simplex_gradient_descent!(active_set::ActiveSet, direction, f, L
         return active_set
     end
     # TODO move η between x and y till opt
+    linesearch_method = L === nothing || !isfinite(L) ? backtracking : shortstep
+    # NOTE: -d since 
     if linesearch_method == backtracking
-        _, gamma = backtrackingLS(f, grad, x, v, linesearch_tol=linesearch_tol, step_lim=step_lim)
+        _, gamma = backtrackingLS(f, gradient_dir, x, v, linesearch_tol=linesearch_tol, step_lim=step_lim)
     else # just two methods here for now
+        gamma = dual_gap / (L * norm(x - y)^2)
     end
 
     return active_set
