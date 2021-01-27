@@ -12,7 +12,8 @@ include("utils.jl")
     b = [1.0, 1.0, 1.0]
     grad(x) = 2x
     f(x) = norm(x)^2
-    @test FrankWolfe.backtrackingLS(f, grad, a, b) == (1, 0.5)
+    gradient = grad(a)
+    @test FrankWolfe.backtrackingLS(f, gradient, a, b) == (1, 0.5)
     @test abs(FrankWolfe.segmentSearch(f, grad, a, b)[2] - 0.5) < 0.0001
 end
 

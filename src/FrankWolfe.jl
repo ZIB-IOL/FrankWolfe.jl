@@ -229,7 +229,7 @@ function fw(
         elseif line_search === goldenratio
             _, gamma = segmentSearch(f, grad, x, v, linesearch_tol=linesearch_tol)
         elseif line_search === backtracking
-            _, gamma = backtrackingLS(f, grad, x, v, linesearch_tol=linesearch_tol, step_lim=step_lim)
+            _, gamma = backtrackingLS(f, gradient, x, v, linesearch_tol=linesearch_tol, step_lim=step_lim)
         elseif line_search === nonconvex
             gamma = 1 / sqrt(t + 1)
         elseif line_search === shortstep
@@ -404,7 +404,7 @@ function lcg(
         elseif line_search === goldenratio
             _, gamma = segmentSearch(f, grad, x, v, linesearch_tol=linesearch_tol)
         elseif line_search === backtracking
-            _, gamma = backtrackingLS(f, grad, x, v, linesearch_tol=linesearch_tol)
+            _, gamma = backtrackingLS(f, gradient, x, v, linesearch_tol=linesearch_tol)
         elseif line_search === nonconvex
             gamma = 1 / sqrt(t + 1)
         elseif line_search === shortstep
