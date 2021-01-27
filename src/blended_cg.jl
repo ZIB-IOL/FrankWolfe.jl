@@ -13,7 +13,6 @@ function update_simplex_gradient_descent!(active_set::ActiveSet, direction, f, g
     k = length(active_set)
     csum = sum(c)
     c .-= (csum / k)
-    ActiveSet
     # name change to stay consistent with the paper
     d = c
     if norm(c) <= 1e-5
@@ -48,12 +47,17 @@ function update_simplex_gradient_descent!(active_set::ActiveSet, direction, f, g
     end
     # TODO move η between x and y till opt
     linesearch_method = L === nothing || !isfinite(L) ? backtracking : shortstep
-    # NOTE: -d since 
     if linesearch_method == backtracking
         _, gamma = backtrackingLS(f, gradient_dir, x, v, linesearch_tol=linesearch_tol, step_lim=step_lim)
-    else # just two methods here for now
-        gamma = dual_gap / (L * norm(x - y)^2)
+    else # == shortstep, just two methods here for now
+        @assert dot(gradient_dir, x - y) ≥ 0
+        gamma = dot(gradient_dir, x - y) / (L * norm(x - y)^2)
     end
-
+    @assert 0 ≤ gamma ≤ 1
+    # step back from y to x by γ η d
+    # new point is x - (1 - γ) η d
+    @. active_set.weights += η * gamma * d
+    # could be required in some cases?
+    active_set_cleanup!(active_set)
     return active_set
 end
