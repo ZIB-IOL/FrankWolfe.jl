@@ -15,8 +15,11 @@ function update_simplex_gradient_descent!(active_set::ActiveSet, direction, f, g
     c .-= (csum / k)
     # name change to stay consistent with the paper
     d = c
-    if norm(c) <= 1e-5
-        # TODO reset x and S
+    if norm(d) <= 1e-7
+        # resetting active set to singleton
+        a0 = active_set.atoms
+        empty!(active_set)
+        push!(active_set, (1, a0))
         return active_set
     end
     η = eltype(d)(Inf)
@@ -30,7 +33,6 @@ function update_simplex_gradient_descent!(active_set::ActiveSet, direction, f, g
         end
     end
     η = max(0, η)
-    # TODO do not materialize previous point.
     x = compute_active_set_iterate(active_set)
     @. active_set.weights -= η * d
     if !active_set_validate(active_set)
