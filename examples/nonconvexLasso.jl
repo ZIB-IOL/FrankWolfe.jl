@@ -11,7 +11,7 @@ xpi = rand(n);
 total = sum(xpi);
 const xp = xpi ./ total;
 
-const f(x) = 2 * LinearAlgebra.norm(x - xp)^3 - LinearAlgebra.norm(x)^2
+const f(x) = 2 * norm(x - xp)^3 - norm(x)^2
 const grad = x -> ReverseDiff.gradient(f, x) # this is just for the example -> better explicitly define your gradient
 
 # pick feasible region

@@ -136,7 +136,7 @@ function active_set_argmin(active_set::ActiveSet, direction)
     idx = -1
     temp = 0
     for i in eachindex(active_set)
-        temp = LinearAlgebra.dot(active_set.atoms[i], direction)
+        temp = dot(active_set.atoms[i], direction)
         if temp < val
             val = temp
             idx = i

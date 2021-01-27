@@ -10,12 +10,12 @@ TODO:
 function adaptive_step_size(f, gradient, x, direction, L_est; eta=0.9, tau=2, gamma_max=1)
     M = eta * L_est
     gamma = min(
-        LinearAlgebra.dot(gradient, direction) / (M * LinearAlgebra.norm(direction)^2),
+        dot(gradient, direction) / (M * norm(direction)^2),
         gamma_max,
     )
     while f(x - gamma * direction) - f(x) >
-          -gamma * LinearAlgebra.dot(gradient, direction) +
-          gamma^2 * M / 2.0 * LinearAlgebra.norm(direction)^2
+          -gamma * dot(gradient, direction) +
+          gamma^2 * M / 2.0 * norm(direction)^2
         M *= tau
     end
     return M, gamma
@@ -29,7 +29,7 @@ function backtrackingLS(f, grad, x, y; line_search=true, linesearch_tol=1e-10, s
     gamma = 1
     d = y - x
     i = 0
-    gradDirection = LinearAlgebra.dot(grad(x), d)
+    gradDirection = dot(grad(x), d)
 
     if gradDirection === 0
         return i, 0
@@ -63,7 +63,7 @@ function segmentSearch(f, grad, x, y; line_search=true, linesearch_tol=1e-10)
     left, right = copy(x), copy(y)
 
     # if the minimum is at an endpoint
-    if LinearAlgebra.dot(d, grad(x)) * LinearAlgebra.dot(d, grad(y)) >= 0
+    if dot(d, grad(x)) * dot(d, grad(y)) >= 0
         if f(y) <= f(x)
             return y, 1
         else
@@ -84,7 +84,7 @@ function segmentSearch(f, grad, x, y; line_search=true, linesearch_tol=1e-10)
             left, right = left, probe
         end
         improv =
-            LinearAlgebra.norm(f(right) - f(old_right)) + LinearAlgebra.norm(f(left) - f(old_left))
+            norm(f(right) - f(old_right)) + norm(f(left) - f(old_left))
     end
 
     x_min = (left + right) / 2.0
@@ -132,7 +132,7 @@ function LinearAlgebra.dot(v1::MaybeHotVector, v2::AbstractVector)
     return v1.active_val * v2[v1.val_idx]
 end
 
-LinearAlgebra.dot(v1::AbstractVector, v2::MaybeHotVector) = LinearAlgebra.dot(v2, v1)
+LinearAlgebra.dot(v1::AbstractVector, v2::MaybeHotVector) = dot(v2, v1)
 
 # warning, no bound check
 function LinearAlgebra.dot(v1::MaybeHotVector, v2::MaybeHotVector)
