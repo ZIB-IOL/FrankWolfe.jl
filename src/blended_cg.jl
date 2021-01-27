@@ -9,11 +9,11 @@ Blended Conditional Gradients:The Unconditioning of Conditional Gradients
 http://proceedings.mlr.press/v97/braun19a/braun19a.pdf
 """
 function update_simplex_gradient_descent!(active_set::ActiveSet, direction, f, gradient_dir ; L=nothing, linesearch_tol=10e-7, step_lim=20)
-    c = [dot(direction, a) for a in active_set]
+    c = [dot(direction, a) for a in active_set.atoms]
     k = length(active_set)
     csum = sum(c)
     c .-= (csum / k)
-    # name change to stay consistent with the paper
+    # name change to stay consistent with the paper, c is actually updated in-place
     d = c
     if norm(d) <= 1e-7
         # resetting active set to singleton
