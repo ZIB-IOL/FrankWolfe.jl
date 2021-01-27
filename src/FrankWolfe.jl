@@ -11,7 +11,8 @@ import Random
 # for plotting -> keep here or move somewhere else?
 using Plots
 
-using Hungarian
+# for Birkhoff polytope LMO
+import Hungarian
 
 include("defs.jl")
 include("simplex_matrix.jl")
