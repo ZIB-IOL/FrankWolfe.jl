@@ -76,5 +76,42 @@ import FrankWolfe: ActiveSet
     end
 end
 
-@testset "" begin
+@testset "Simplex gradient descent" begin
+    # Gradient descent over a 2-D unit simplex
+    # each atom is a vertex, direction points to [1,1]
+    # note: integers for atom element types
+    # |\ - -  + 
+    # | \     |
+    # |  \
+    # |   \   |
+    # |    \
+    # |     \ |
+    # |______\|
+
+    active_set = ActiveSet([
+        (0.5, [0, 0]), (0.5, [0, 1]), (0.0, [1, 0]),
+    ])
+    @test FrankWolfe.compute_active_set_iterate(active_set) ≈ [0, 0.5]
+    f(x) = (x[1]-1)^2 + (x[2]-1)^2
+    ∇f(x) = [2 * (x[1] - 1), 2 * (x[2] - 1)]
+    direction = -[0.02, 0]
+    gradient_dir = ∇f([0, 0.5])
+    FrankWolfe.update_simplex_gradient_descent!(active_set, direction, f, gradient_dir)
+    @test length(active_set) == 1
+    @test active_set.atoms[1] == [1, 0]
+
+    active_set2 = ActiveSet([
+        (0.5, [0, 0]), (0.0, [0, 1]), (0.5, [1, 0]),
+    ])
+    @test FrankWolfe.compute_active_set_iterate(active_set2) ≈ [0.5, 0]
+    direction = -[0, 0.02]
+    gradient_dir = ∇f([0.5, 0])
+    FrankWolfe.update_simplex_gradient_descent!(active_set2, direction, f, gradient_dir, L=4.0)
+    @test length(active_set2) == 1
+    @test active_set2.atoms[1] == [0, 1]
+    # updating again remains stationary point
+    as2 = copy(active_set2)
+    FrankWolfe.update_simplex_gradient_descent!(active_set2, direction, f, gradient_dir, L=4.0)
+    @test all(a1 == a2 && λ1 ≈ λ2 for ((λ1, a1), (λ2, a2)) in zip(as2, active_set2))    
 end
+

@@ -58,6 +58,12 @@ function Base.setindex!(as::ActiveSet, tup::Tuple, idx)
     return tup
 end
 
+function Base.empty!(as::ActiveSet)
+    empty!(as.atoms)
+    empty!(as.weights)
+    return as
+end
+
 """
     active_set_update!(active_set::ActiveSet, lambda, atom)
 
