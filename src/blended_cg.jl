@@ -65,7 +65,7 @@ end
 """
 Returns either an atom `y` from the active set satisfying
 the progress criterion
-`cdot(y, direction) ≤ cdot(x, direction) - min_gap / Ktolerance`.
+`dot(y, direction) ≤ dot(x, direction) - min_gap / Ktolerance`.
 with `x` the current iterate stored in the active set,
 or a point `y` satisfying the progress criterion using the LMO.
 
@@ -75,7 +75,7 @@ or a point `y` satisfying the progress criterion using the LMO.
 function lp_separation_oracle(lmo::LinearMinimizationOracle, active_set::ActiveSet, direction, min_gap, Ktolerance; inplace_loop=true, kwargs...)
     ybest = active_set.atoms[1]
     x = active_set.weights[1] * active_set.atoms[1]
-    val_best = cdot(direction, ybest)
+    val_best = dot(direction, ybest)
     for idx in 2:length(active_set)
         y = active_set.atoms[idx]
         if inplace_loop
@@ -83,13 +83,13 @@ function lp_separation_oracle(lmo::LinearMinimizationOracle, active_set::ActiveS
         else
             x += active_set.weights[idx] * y
         end
-        val = cdot(direction, y)
-        if val ≤ val_best
+        val = dot(direction, y)
+        if val < val_best
             val_best = val
             ybest = y
         end
     end
-    xval = cdot(direction, x)
+    xval = dot(direction, x)
     if val_best ≤ xval - min_gap / Ktolerance
         return ybest
     end
