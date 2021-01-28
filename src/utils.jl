@@ -6,16 +6,15 @@ Aaptive Step Size strategy from https://arxiv.org/pdf/1806.05123.pdf
 TODO: 
 - make emphasis aware and optimize
 """
-
 function adaptive_step_size(f, gradient, x, direction, L_est; eta=0.9, tau=2, gamma_max=1)
     M = eta * L_est
     gamma = min(
-        LinearAlgebra.dot(gradient, direction) / (M * LinearAlgebra.norm(direction)^2),
+        dot(gradient, direction) / (M * norm(direction)^2),
         gamma_max,
     )
     while f(x - gamma * direction) - f(x) >
-          -gamma * LinearAlgebra.dot(gradient, direction) +
-          gamma^2 * M / 2.0 * LinearAlgebra.norm(direction)^2
+          -gamma * dot(gradient, direction) +
+          gamma^2 * M / 2.0 * norm(direction)^2
         M *= tau
     end
     return M, gamma
@@ -25,29 +24,30 @@ end
 # TODO:
 # - code needs optimization
 
-function backtrackingLS(f, grad, x, y; line_search=true, linesearch_tol=1e-10, step_lim=20, lsTau=0.5)
-    gamma = 1
+function backtrackingLS(f, grad_direction, x, y; line_search=true, linesearch_tol=1e-10, step_lim=20, lsTau=0.5)
+    gamma = one(lsTau)
     d = y - x
     i = 0
-    gradDirection = LinearAlgebra.dot(grad(x), d)
 
-    if gradDirection === 0
-        return i, 0
+    dot_gdir = dot(grad_direction, d)
+    @assert dot_gdir ≤ 0
+    if dot_gdir ≥ 0
+        return i, 0 * gamma
     end
 
     oldVal = f(x)
     newVal = f(x + gamma * d)
-    while newVal - oldVal > linesearch_tol * gamma * gradDirection
+    while newVal - oldVal > linesearch_tol * gamma * dot_gdir
         if i > step_lim
             if oldVal - newVal >= 0
                 return i, gamma
             else
-                return i, 0
+                return i, 0 * gamma
             end
         end
-        gamma = gamma * lsTau
+        gamma *= lsTau
         newVal = f(x + gamma * d)
-        i = i + 1
+        i += 1
     end
     return i, gamma
 end
@@ -63,7 +63,7 @@ function segmentSearch(f, grad, x, y; line_search=true, linesearch_tol=1e-10)
     left, right = copy(x), copy(y)
 
     # if the minimum is at an endpoint
-    if LinearAlgebra.dot(d, grad(x)) * LinearAlgebra.dot(d, grad(y)) >= 0
+    if dot(d, grad(x)) * dot(d, grad(y)) >= 0
         if f(y) <= f(x)
             return y, 1
         else
@@ -84,7 +84,7 @@ function segmentSearch(f, grad, x, y; line_search=true, linesearch_tol=1e-10)
             left, right = left, probe
         end
         improv =
-            LinearAlgebra.norm(f(right) - f(old_right)) + LinearAlgebra.norm(f(left) - f(old_left))
+            norm(f(right) - f(old_right)) + norm(f(left) - f(old_left))
     end
 
     x_min = (left + right) / 2.0
@@ -132,7 +132,7 @@ function LinearAlgebra.dot(v1::MaybeHotVector, v2::AbstractVector)
     return v1.active_val * v2[v1.val_idx]
 end
 
-LinearAlgebra.dot(v1::AbstractVector, v2::MaybeHotVector) = LinearAlgebra.dot(v2, v1)
+LinearAlgebra.dot(v1::AbstractVector, v2::MaybeHotVector) = dot(v2, v1)
 
 # warning, no bound check
 function LinearAlgebra.dot(v1::MaybeHotVector, v2::MaybeHotVector)

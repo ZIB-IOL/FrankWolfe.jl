@@ -165,9 +165,9 @@ function afw(
         if line_search === agnostic
             gamma = 2 // (2 + t)
         elseif line_search === goldenratio
-            nothing, gamma = segmentSearch(f, grad, x, v, linesearch_tol=linesearch_tol)
+            _, gamma = segmentSearch(f, grad, x, v, linesearch_tol=linesearch_tol)
         elseif line_search === backtracking
-            nothing, gamma = backtrackingLS(f, grad, x, v, linesearch_tol=linesearch_tol, step_lim=step_lim)
+            _, gamma = backtrackingLS(f, gradient, x, v, linesearch_tol=linesearch_tol, step_lim=step_lim)
         elseif line_search === nonconvex
             gamma = 1 / sqrt(t + 1)
         elseif line_search === shortstep

@@ -52,8 +52,8 @@ Random.seed!(123)
                 f_stoch =
                     FrankWolfe.StochasticObjective(simple_reg_loss, ∇simple_reg_loss, data_perfect)
                 @test compute_value(f_stoch, params) > compute_value(f_stoch, params_perfect)
-                @test compute_value(f_stoch, params_perfect) ≈ 0
-                @test compute_gradient(f_stoch, params_perfect) ≈ zeros(6)
+                @test compute_value(f_stoch, params_perfect) ≈ 0 atol=1e-10
+                @test compute_gradient(f_stoch, params_perfect) ≈ zeros(6) atol=6e-10
                 @test !isapprox(compute_gradient(f_stoch, params), zeros(6))
                 (f_estimate, g_estimate) = compute_value_gradient(
                     f_stoch,
@@ -61,8 +61,8 @@ Random.seed!(123)
                     batch_size=length(data_perfect),
                     rng=Random.seed!(33),
                 )
-                @test f_estimate ≈ 0
-                @test g_estimate ≈ zeros(6)
+                @test f_estimate ≈ 0 atol=1e-10
+                @test g_estimate ≈ zeros(6) atol=6e-10
                 (f_estimate, g_estimate) = compute_value_gradient(
                     f_stoch,
                     params,
