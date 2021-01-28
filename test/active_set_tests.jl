@@ -8,12 +8,10 @@ import FrankWolfe: ActiveSet
     @testset "Constructors and eltypes" begin
         active_set = ActiveSet([(0.1, [1, 2, 3]), (0.9, [2, 3, 4]), (0.0, [5, 6, 7])])
 
-
         @test active_set.weights == [0.1, 0.9, 0.0]
         @test active_set.atoms == [[1, 2, 3], [2, 3, 4], [5, 6, 7]]
         @test eltype(active_set) === Tuple{Float64,Vector{Int}}
-
-        @test FrankWolfe.active_set_validate(active_set) == true
+        @test FrankWolfe.active_set_validate(active_set)
 
         # providing the weight type converts the provided weights
         active_set2 = ActiveSet{Vector{Int},Float64}([
@@ -23,7 +21,6 @@ import FrankWolfe: ActiveSet
         ])
 
         @test eltype(active_set) === eltype(active_set2)
-
         @test first(active_set) isa eltype(active_set)
         @test first(active_set2) isa eltype(active_set)
     end
@@ -76,5 +73,47 @@ import FrankWolfe: ActiveSet
         @test a == [1, 2, 3] && λ == 0.75 && i == 1
         λ, a, i = FrankWolfe.active_set_argmin(active_set, [-1.0, -1.0, -1.0])
         @test a == [2, 3, 4] && λ == 0.25 && i == 2
+    end
+end
+
+@testset "Simplex gradient descent" begin
+    # Gradient descent over a 2-D unit simplex
+    # each atom is a vertex, direction points to [1,1]
+    # note: integers for atom element types
+    # |\ - -  + 
+    # | \     |
+    # |  \
+    # |   \   |
+    # |    \
+    # |     \ |
+    # |______\|
+
+    active_set = ActiveSet([
+        (0.5, [0, 0]), (0.5, [0, 1]), (0.0, [1, 0]),
+    ])
+    @test FrankWolfe.compute_active_set_iterate(active_set) ≈ [0, 0.5]
+    f(x) = (x[1]-1)^2 + (x[2]-1)^2
+    ∇f(x) = [2 * (x[1] - 1), 2 * (x[2] - 1)]
+    gradient_dir = ∇f([0, 0.5])
+    FrankWolfe.update_simplex_gradient_descent!(active_set, gradient_dir, f)
+    @test length(active_set) == 2
+    @test [1, 0] ∈ active_set.atoms
+    @test [0, 1] ∈ active_set.atoms
+
+    active_set2 = ActiveSet([
+        (0.5, [0, 0]), (0.0, [0, 1]), (0.5, [1, 0]),
+    ])
+    @test FrankWolfe.compute_active_set_iterate(active_set2) ≈ [0.5, 0]
+    gradient_dir = ∇f(FrankWolfe.compute_active_set_iterate(active_set2))
+    FrankWolfe.update_simplex_gradient_descent!(active_set2, gradient_dir, f, L=4.0)
+    @test length(active_set) == 2
+    @test [1, 0] ∈ active_set.atoms
+    @test [0, 1] ∈ active_set.atoms
+    @test FrankWolfe.compute_active_set_iterate(active_set2) ≈ [0.5, 0.5]
+    # updating again (at optimum) triggers the active set emptying
+    for as in (active_set, active_set2)
+        gradient_dir = ∇f(FrankWolfe.compute_active_set_iterate(as))
+        FrankWolfe.update_simplex_gradient_descent!(as, gradient_dir, f)
+        @test length(active_set) == 1
     end
 end

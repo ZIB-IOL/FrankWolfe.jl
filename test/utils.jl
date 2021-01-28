@@ -9,7 +9,7 @@ import LinearAlgebra
     total = sum(xpi)
     xp = xpi ./ total
 
-    f(x) = LinearAlgebra.norm(x - xp)^2
+    f(x) = norm(x - xp)^2
     grad(x) = 2 * (x - xp)
 
     lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)

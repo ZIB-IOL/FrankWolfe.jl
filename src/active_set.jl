@@ -58,6 +58,12 @@ function Base.setindex!(as::ActiveSet, tup::Tuple, idx)
     return tup
 end
 
+function Base.empty!(as::ActiveSet)
+    empty!(as.atoms)
+    empty!(as.weights)
+    return as
+end
+
 """
     active_set_update!(active_set::ActiveSet, lambda, atom)
 
@@ -104,6 +110,14 @@ function compute_active_set_iterate(active_set)
     return sum(λi * ai for (λi, ai) in active_set)
 end
 
+function compute_active_set_iterate!(x, active_set)
+    x .= 0
+    for (λi, ai) in active_set
+        x .+= λi * ai
+    end
+    return x
+end
+
 function active_set_cleanup!(active_set)
     return filter!(e -> e[1] > 0, active_set)
 end
@@ -128,7 +142,7 @@ function active_set_argmin(active_set::ActiveSet, direction)
     idx = -1
     temp = 0
     for i in eachindex(active_set)
-        temp = LinearAlgebra.dot(active_set.atoms[i], direction)
+        temp = dot(active_set.atoms[i], direction)
         if temp < val
             val = temp
             idx = i
@@ -136,4 +150,32 @@ function active_set_argmin(active_set::ActiveSet, direction)
     end
     # return lambda, vertex, index
     return (active_set[idx]..., idx)
+end
+
+
+"""
+    find_minmax_directions(active_set::ActiveSet, direction, Φ)
+
+Computes the point of the active set minimizing in `direction`
+on the active set (local Frank Wolfe)
+and the maximizing one (away step).
+Returns the two corresponding indices in the active set, along with a flag
+indicating if the direction improvement is above a threshold.
+"""
+function find_minmax_directions(active_set::ActiveSet, direction, Φ)
+    idx_fw = idx_as = -1
+    v_fw = Inf
+    v_as = -Inf
+    for (idx, a) in active_set.atoms
+        val = dot(direction, a)
+        if val ≤ v_fw
+            v_fw = val
+            idx_fw = idx
+        elseif val ≥ v_as
+            v_as = val
+            idx_as = val
+        end
+    end
+    # improving step
+    return (idx_fw, idx_as, v_as - v_fw ≥ Φ)
 end

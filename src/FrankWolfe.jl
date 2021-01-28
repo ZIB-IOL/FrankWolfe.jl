@@ -11,7 +11,8 @@ import Random
 # for plotting -> keep here or move somewhere else?
 using Plots
 
-using Hungarian
+# for Birkhoff polytope LMO
+import Hungarian
 
 include("defs.jl")
 include("simplex_matrix.jl")
@@ -24,6 +25,8 @@ include("polytope_oracles.jl")
 include("utils.jl")
 include("function_gradient.jl")
 include("active_set.jl")
+
+include("blended_cg.jl")
 
 # move advanced variants etc to there own files to prevent excessive clutter
 include("afw.jl")
@@ -215,7 +218,10 @@ function fw(
         end
 
         if trajectory === true
-            push!(trajData, [t, primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9])
+            push!(
+                trajData,
+                [t, primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9]
+            )
         end
 
         if line_search === agnostic
@@ -223,7 +229,7 @@ function fw(
         elseif line_search === goldenratio
             _, gamma = segmentSearch(f, grad, x, v, linesearch_tol=linesearch_tol)
         elseif line_search === backtracking
-            _, gamma = backtrackingLS(f, grad, x, v, linesearch_tol=linesearch_tol, step_lim=step_lim)
+            _, gamma = backtrackingLS(f, gradient, x, v, linesearch_tol=linesearch_tol, step_lim=step_lim)
         elseif line_search === nonconvex
             gamma = 1 / sqrt(t + 1)
         elseif line_search === shortstep
@@ -398,7 +404,7 @@ function lcg(
         elseif line_search === goldenratio
             _, gamma = segmentSearch(f, grad, x, v, linesearch_tol=linesearch_tol)
         elseif line_search === backtracking
-            _, gamma = backtrackingLS(f, grad, x, v, linesearch_tol=linesearch_tol)
+            _, gamma = backtrackingLS(f, gradient, x, v, linesearch_tol=linesearch_tol)
         elseif line_search === nonconvex
             gamma = 1 / sqrt(t + 1)
         elseif line_search === shortstep
