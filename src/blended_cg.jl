@@ -54,7 +54,6 @@ function update_simplex_gradient_descent!(active_set::ActiveSet, direction, f; L
         @assert dot(gradient_dir, x - y) ≥ 0
         gamma = dot(gradient_dir, x - y) / (L * norm(x - y)^2)
     end
-    @assert 0 ≤ gamma ≤ 1
     # step back from y to x by γ η d
     # new point is x - (1 - γ) η d
     @. active_set.weights += η * gamma * d
