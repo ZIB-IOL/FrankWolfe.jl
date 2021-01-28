@@ -63,8 +63,6 @@ function update_simplex_gradient_descent!(active_set::ActiveSet, direction, f; L
 end
 
 """
-    lp_separation_oracle(lmo::LMO, active_set::ActiveSet, direction, min_gap, Ktolerance)
-
 Returns either an atom `y` from the active set satisfying
 the progress criterion
 `cdot(y, direction) ≤ cdot(x, direction) - min_gap / Ktolerance`.
@@ -72,8 +70,9 @@ with `x` the current iterate stored in the active set,
 or a point `y` satisfying the progress criterion using the LMO.
 
 `inplace_loop` controls whether the iterate type allows in-place writes.
+`kwargs` are passed on to the LMO oracle.
 """
-function lp_separation_oracle(lmo::LinearMinimizationOracle, active_set::ActiveSet, direction, min_gap, Ktolerance; inplace_loop=true)
+function lp_separation_oracle(lmo::LinearMinimizationOracle, active_set::ActiveSet, direction, min_gap, Ktolerance; inplace_loop=true, kwargs...)
     ybest = active_set.atoms[1]
     x = active_set.weights[1] * active_set.atoms[1]
     val_best = cdot(direction, ybest)
@@ -95,7 +94,7 @@ function lp_separation_oracle(lmo::LinearMinimizationOracle, active_set::ActiveS
         return ybest
     end
     # otherwise, call the LMO
-    y = compute_extreme_point(lmo, direction)
+    y = compute_extreme_point(lmo, direction; kwargs...)
     return if dot(direction, y) ≤ xval - min_gap / Ktolerance
         y
     else
