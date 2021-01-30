@@ -138,7 +138,7 @@ Algorithm reference and notation taken from:
 Blended Conditional Gradients:The Unconditioning of Conditional Gradients
 https://arxiv.org/abs/1805.07311
 """
-function update_simplex_gradient_descent!(active_set::ActiveSet, direction, f; L=nothing, linesearch_tol=10e-7, step_lim=20)
+function update_simplex_gradient_descent!(active_set::ActiveSet, direction, f; L=nothing, linesearch_tol=10e-10, step_lim=100)
     c = [dot(direction, a) for a in active_set.atoms]
     k = length(active_set)
     csum = sum(c)
@@ -154,7 +154,6 @@ function update_simplex_gradient_descent!(active_set::ActiveSet, direction, f; L
         return active_set
     end
     η = eltype(d)(Inf)
-    remove_idx = -1
     @inbounds for idx in eachindex(d)
         if d[idx] ≥ 0
             η = min(
@@ -182,12 +181,11 @@ function update_simplex_gradient_descent!(active_set::ActiveSet, direction, f; L
     if linesearch_method == backtracking
         _, gamma = backtrackingLS(f, direction, x, y, linesearch_tol=linesearch_tol, step_lim=step_lim)
     else # == shortstep, just two methods here for now
-        @assert dot(direction, x - y) ≥ 0
         gamma = dot(direction, x - y) / (L * norm(x - y)^2)
     end
-    # step back from y to x by γ η d
-    # new point is x - (1 - γ) η d
-    @. active_set.weights += η * gamma * d
+    # step back from y to x by (1 - γ) η d
+    # new point is x - γ η d
+    @. active_set.weights += η * (1 - gamma) * d
     # could be required in some cases?
     active_set_cleanup!(active_set)
     return active_set

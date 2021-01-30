@@ -553,15 +553,13 @@ end
         epsilon=1e-7,
         max_iteration=100000,
         print_iter=100,
-        trajectory=true,
-        verbose=true,
+        trajectory=false,
+        verbose=false,
         linesearch_tol=1e-10,
         emphasis=FrankWolfe.blas,
     )
 
-    ps = getindex.(trajectory, 2)
-    plot(ps[1:500])
     @test x !== nothing
-    @test f(x) ≈ f(xref) atol=1e-3
+    @test f(x) ≈ f(xref)
 
 end
