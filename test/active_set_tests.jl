@@ -2,6 +2,7 @@ using Test
 
 using FrankWolfe
 import FrankWolfe: ActiveSet
+using LinearAlgebra: norm
 
 @testset "Active sets" begin
 
@@ -116,4 +117,37 @@ end
         FrankWolfe.update_simplex_gradient_descent!(as, gradient_dir, f)
         @test length(active_set) == 1
     end
+end
+
+@testset "LP separation oracle" begin
+    # Gradient descent over a L-inf ball of radius one
+    # current active set contains 3 vertices
+    # direction points to [1,1]
+    # |\ - -  + 
+    # | \     |
+    # |  \
+    # |   \   |
+    # |    \
+    # |     \ |
+    # |______\|
+
+    active_set = ActiveSet([
+        (0.6, [-1, -1]), (0.2, [0, 1]), (0.2, [1, 0]),
+    ])
+    f(x) = (x[1]-1)^2 + (x[2]-1)^2
+    ∇f(x) = [2 * (x[1] - 1), 2 * (x[2] - 1)]
+    lmo = FrankWolfe.LpNormLMO{Inf}(1)
+
+    x = FrankWolfe.compute_active_set_iterate(active_set)
+    @test x ≈ [-0.4, -0.4]
+    gradient_dir = ∇f(x)
+    y = FrankWolfe.lp_separation_oracle(lmo, active_set, gradient_dir, 0.5, 1)
+    @test y ∈ active_set.atoms
+    y2 = FrankWolfe.lp_separation_oracle(lmo, active_set, gradient_dir, 3 + dot(x, gradient_dir), 1)
+    # found new vertex not in active set
+    @test y2 ∉ active_set.atoms && y2 !== nothing
+
+    # Criterion too high, no satisfactory point
+    y3 = FrankWolfe.lp_separation_oracle(lmo, active_set, gradient_dir, norm(gradient_dir)^2 + dot(x, gradient_dir), 1)
+    @test y3 === nothing
 end
