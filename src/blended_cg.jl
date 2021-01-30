@@ -17,6 +17,19 @@ function bcg(
     lmo_kwargs...
 )
 
+    function print_iter_func(data)
+        @printf(
+            "%6s %13s %14e %14e %14e %14e %14i\n",
+            st[Symbol(data[1])],
+            data[2],
+            Float64(data[3]),
+            Float64(data[4]),
+            Float64(data[5]),
+            data[6],
+            data[7],
+        )
+    end
+
     t = 0
     primal = Inf
     dual_gap = Inf
@@ -26,7 +39,7 @@ function bcg(
     gradient = grad(x)
     vmax = compute_extreme_point(lmo, gradient)
     phi = dot(gradient, x0 - vmax)  / 2
-    trajData = []
+    traj_data = []
     tt = regular
     time_start = time_ns()
     v = x0
@@ -43,7 +56,7 @@ function bcg(
         x = convert(Vector{promote_type(eltype(x), Float64)}, x)
     end
 
-    while t <= max_iteration && dual_gap >= max(epsilon, eps())
+    while t <= max_iteration && phi ≥ epsilon
         x = if emphasis == memory
             compute_active_set_iterate!(x, active_set)
         else
@@ -54,16 +67,23 @@ function bcg(
         gradient = grad(x)
         (idx_fw, idx_as, good_progress) = find_minmax_directions(active_set, gradient, phi)
         if good_progress
+            tt = simplex_descent
             update_simplex_gradient_descent!(
                 active_set, gradient, f, L=L,
             )
         else
             # compute new atom
-            v = lp_separation_oracle(lmo, active_set, gradient, phi, Ktolerance; inplace_loop=(emphasis==memory), lmo_kwargs...)
+            v = lp_separation_oracle(
+                lmo, active_set,
+                gradient, phi, Ktolerance;
+                inplace_loop=(emphasis==memory), lmo_kwargs...,
+            )
             # no new vertex found -> reduce min gap progression
             if v === nothing
+                tt = gap_step
                 phi /= 2
             else
+                tt = regular
                 if line_search === agnostic
                     gamma = 2 / (2 + t)
                 elseif line_search === goldenratio
@@ -85,15 +105,27 @@ function bcg(
             dual_gap = dot(gradient, x - v)
         end
         if trajectory
-            # TODO replace 33 with useful info
             push!(
-                trajData,
-                (t, primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9, 33),
+                traj_data,
+                (t, primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9, length(active_set)),
             )
         end
         t = t + 1
+        if verbose && mod(t, print_iter) == 0
+            rep = (
+                tt,
+                string(t),
+                primal,
+                primal - dual_gap,
+                dual_gap,
+                (time_ns() - time_start) / 1.0e9,
+                length(active_set),
+            )
+            print_iter_func(rep)
+            flush(stdout)
+        end
     end
-    return x, v, primal, dual_gap, trajData
+    return x, v, primal, dual_gap, traj_data
 end
 
 
@@ -114,6 +146,7 @@ function update_simplex_gradient_descent!(active_set::ActiveSet, direction, f; L
     # name change to stay consistent with the paper, c is actually updated in-place
     d = c
     if norm(d) <= 1e-7
+        @info "Resetting active set."
         # resetting active set to singleton
         a0 = active_set.atoms[1]
         empty!(active_set)
