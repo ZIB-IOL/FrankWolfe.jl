@@ -522,3 +522,41 @@ end
         @test xref ≈ x atol = (1e-3 / length(x))
     end
 end
+
+@testset "Away-step FW" begin
+    n = 50
+    lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1.0)
+    x0 = FrankWolfe.compute_extreme_point(lmo_prob, randn(n))
+    f(x) = norm(x)^2
+    grad(x) = 2x
+    k = 1000
+
+    # compute reference from vanilla FW
+    xref, _ = FrankWolfe.fw(
+        f,
+        grad,
+        lmo_prob,
+        x0,
+        max_iteration=k,
+        line_search=FrankWolfe.backtracking,
+        verbose=false,
+        emphasis=FrankWolfe.blas,
+    )
+
+    x, v, primal, dual_gap, trajectory = FrankWolfe.bcg(
+        f,
+        grad,
+        lmo_prob,
+        x0;
+        line_search=FrankWolfe.backtracking,
+        L=Inf,
+        epsilon=1e-7,
+        max_iteration=10000,
+        print_iter=1000,
+        trajectory=false,
+        verbose=true,
+        linesearch_tol=1e-7,
+        emphasis=FrankWolfe.blas,
+    )
+    @test x !== nothing
+end
