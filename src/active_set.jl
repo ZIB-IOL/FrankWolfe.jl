@@ -166,7 +166,7 @@ function find_minmax_directions(active_set::ActiveSet, direction, Φ)
     idx_fw = idx_as = -1
     v_fw = Inf
     v_as = -Inf
-    for (idx, a) in active_set.atoms
+    for (idx, a) in enumerate(active_set.atoms)
         val = dot(direction, a)
         if val ≤ v_fw
             v_fw = val

@@ -26,12 +26,12 @@ include("utils.jl")
 include("function_gradient.jl")
 include("active_set.jl")
 
+# move advanced variants etc to their own files to prevent excessive clutter
+
 include("blended_cg.jl")
-
-# move advanced variants etc to there own files to prevent excessive clutter
 include("afw.jl")
-
 include("fw_algorithms.jl")
+
 
 ##############################################################
 # simple benchmark of elementary costs of oracles and 
@@ -166,7 +166,6 @@ function fw(
     x = x0
     tt:StepType = regular
     trajData = []
-    dx = similar(x0) # Array{eltype(x0)}(undef, length(x0))
     time_start = time_ns()
 
     if (line_search === shortstep || line_search === adaptive) && L == Inf
@@ -348,7 +347,6 @@ function lcg(
     phi = Inf
     trajData = []
     tt::StepType = regular
-    dx = similar(x0) # Array{eltype(x0)}(undef, length(x0))
     time_start = time_ns()
 
     if line_search === shortstep && L == Inf

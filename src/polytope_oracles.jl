@@ -54,7 +54,7 @@ Its extreme vertices are all permutation matrices of side-dimension `n`.
 struct BirkhoffPolytopeLMO <: LinearMinimizationOracle
 end
 
-function compute_extreme_point(lmo::BirkhoffPolytopeLMO, direction::AbstractMatrix{T}) where {T}
+function compute_extreme_point(::BirkhoffPolytopeLMO, direction::AbstractMatrix{T}) where {T}
     n = size(direction, 1)
     n == size(direction, 2) || DimensionMismatch("direction should be square for BirkhoffPolytopeLMO")
     res_mat = Hungarian.munkres(direction)

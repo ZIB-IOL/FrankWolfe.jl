@@ -1,12 +1,110 @@
 
+function bcg(
+    f,
+    grad,
+    lmo,
+    x0;
+    line_search::LineSearchMethod=agnostic,
+    L=Inf,
+    epsilon=1e-7,
+    max_iteration=10000,
+    print_iter=1000,
+    trajectory=false,
+    verbose=false,
+    linesearch_tol=1e-7,
+    emphasis::Emphasis=blas,
+    Ktolerance=1.05,
+    lmo_kwargs...
+)
+
+    t = 0
+    primal = Inf
+    dual_gap = Inf
+    active_set = ActiveSet([(1.0, x0)])
+    x = x0
+    # initial gap estimate computation
+    gradient = grad(x)
+    vmax = compute_extreme_point(lmo, gradient)
+    phi = dot(gradient, x0 - vmax)  / 2
+    trajData = []
+    tt = regular
+    time_start = time_ns()
+    v = x0
+
+    if line_search === shortstep && !isfinite(L)
+        @error("Lipschitz constant not set to a finite value. Prepare to blow up spectacularly.")
+    end
+
+    if line_search === agnostic || line_search === nonconvex
+        @error("Lazification is not known to converge with open-loop step size strategies.")
+    end
+
+    if emphasis === memory && !isa(x, Array)
+        x = convert(Vector{promote_type(eltype(x), Float64)}, x)
+    end
+
+    while t <= max_iteration && dual_gap >= max(epsilon, eps())
+        x = if emphasis == memory
+            compute_active_set_iterate!(x, active_set)
+        else
+            compute_active_set_iterate(active_set)
+        end
+        # TODO replace with single call interface from function_gradient.jl
+        primal = f(x)
+        gradient = grad(x)
+        (idx_fw, idx_as, good_progress) = find_minmax_directions(active_set, gradient, phi)
+        if good_progress
+            update_simplex_gradient_descent!(
+                active_set, gradient, f, L=L,
+            )
+        else
+            # compute new atom
+            v = lp_separation_oracle(lmo, active_set, gradient, phi, Ktolerance; inplace_loop=(emphasis==memory), lmo_kwargs...)
+            # no new vertex found -> reduce min gap progression
+            if v === nothing
+                phi /= 2
+            else
+                if line_search === agnostic
+                    gamma = 2 / (2 + t)
+                elseif line_search === goldenratio
+                    _, gamma = segmentSearch(f, grad, x, ynew, linesearch_tol=linesearch_tol)
+                elseif line_search === backtracking
+                    _, gamma = backtrackingLS(f, gradient, x, v, linesearch_tol=linesearch_tol)
+                elseif line_search === nonconvex
+                    gamma = 1 / sqrt(t + 1)
+                elseif line_search === shortstep
+                    gamma = dual_gap / (L * dot(x - v, x - v))
+                end
+                active_set.weights .*= (1 - gamma)
+                # we push directly since ynew is by nature not in active set
+                push!(active_set, (gamma, v))
+                active_set_cleanup!(active_set)
+            end
+        end
+        if v !== nothing
+            dual_gap = dot(gradient, x - v)
+        end
+        if trajectory
+            # TODO replace 33 with useful info
+            push!(
+                trajData,
+                (t, primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9, 33),
+            )
+        end
+        t = t + 1
+    end
+    return x, v, primal, dual_gap, trajData
+end
+
+
 """
-    simplex_gradient_descent(active_set::ActiveSet, direction, f)
+    update_simplex_gradient_descent!(active_set::ActiveSet, direction, f)
 
 Performs a Simplex Gradient Descent step and modifies `active_set` inplace.
 
 Algorithm reference and notation taken from:
 Blended Conditional Gradients:The Unconditioning of Conditional Gradients
-http://proceedings.mlr.press/v97/braun19a/braun19a.pdf
+https://arxiv.org/abs/1805.07311
 """
 function update_simplex_gradient_descent!(active_set::ActiveSet, direction, f; L=nothing, linesearch_tol=10e-7, step_lim=20)
     c = [dot(direction, a) for a in active_set.atoms]
@@ -49,10 +147,10 @@ function update_simplex_gradient_descent!(active_set::ActiveSet, direction, f; L
     # TODO move η between x and y till opt
     linesearch_method = L === nothing || !isfinite(L) ? backtracking : shortstep
     if linesearch_method == backtracking
-        _, gamma = backtrackingLS(f, gradient_dir, x, y, linesearch_tol=linesearch_tol, step_lim=step_lim)
+        _, gamma = backtrackingLS(f, direction, x, y, linesearch_tol=linesearch_tol, step_lim=step_lim)
     else # == shortstep, just two methods here for now
-        @assert dot(gradient_dir, x - y) ≥ 0
-        gamma = dot(gradient_dir, x - y) / (L * norm(x - y)^2)
+        @assert dot(direction, x - y) ≥ 0
+        gamma = dot(direction, x - y) / (L * norm(x - y)^2)
     end
     # step back from y to x by γ η d
     # new point is x - (1 - γ) η d
