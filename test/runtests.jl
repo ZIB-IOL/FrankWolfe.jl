@@ -523,7 +523,7 @@ end
     end
 end
 
-@testset "Away-step FW" begin
+@testset "Blended conditional gradient" begin
     n = 50
     lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1.0)
     x0 = FrankWolfe.compute_extreme_point(lmo_prob, randn(n))
@@ -551,12 +551,17 @@ end
         line_search=FrankWolfe.backtracking,
         L=Inf,
         epsilon=1e-7,
-        max_iteration=10000,
-        print_iter=1000,
-        trajectory=false,
+        max_iteration=100000,
+        print_iter=100,
+        trajectory=true,
         verbose=true,
-        linesearch_tol=1e-7,
+        linesearch_tol=1e-10,
         emphasis=FrankWolfe.blas,
     )
+
+    ps = getindex.(trajectory, 2)
+    plot(ps[1:500])
     @test x !== nothing
+    @test f(x) ≈ f(xref) atol=1e-3
+
 end

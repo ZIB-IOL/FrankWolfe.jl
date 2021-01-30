@@ -27,6 +27,8 @@ blas mode for small dimensions.
     lazylazy = 4
     dualstep = 5
     away = 6
+    simplex_descent=101
+    gap_step=102
     last = 1000
     pp = 1001
 end
@@ -38,6 +40,8 @@ const st = (
     lazylazy="LL",
     dualstep="LD",
     away="A",
+    simplex_descent="SD",
+    gap_step="GS",
     last="Last",
     pp="PP",
 )

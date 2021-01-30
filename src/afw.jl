@@ -127,7 +127,7 @@ function afw(
             dual_gap = dot(x, gradient) - dot(v, gradient)
         end
 
-        if trajectory === true
+        if trajectory
             push!(
                 trajData,
                 (
