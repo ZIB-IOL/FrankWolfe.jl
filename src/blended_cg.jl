@@ -140,7 +140,7 @@ function bcg(
                     gamma = dual_gap / (L * dot(x - v, x - v))
                 elseif line_search == adaptive
                     L, gamma = adaptive_step_size(f, gradient, x, x - v, L)
-            end
+                end
                 active_set.weights .*= (1 - gamma)
                 # we push directly since ynew is by nature not in active set
                 push!(active_set, (gamma, v))
