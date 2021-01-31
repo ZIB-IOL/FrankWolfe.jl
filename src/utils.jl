@@ -8,13 +8,9 @@ TODO:
 """
 function adaptive_step_size(f, gradient, x, direction, L_est; eta=0.9, tau=2, gamma_max=1)
     M = eta * L_est
-    gamma = min(
-        dot(gradient, direction) / (M * norm(direction)^2),
-        gamma_max,
-    )
+    gamma = min(dot(gradient, direction) / (M * norm(direction)^2), gamma_max)
     while f(x - gamma * direction) - f(x) >
-          -gamma * dot(gradient, direction) +
-          gamma^2 * M / 2.0 * norm(direction)^2
+          -gamma * dot(gradient, direction) + gamma^2 * M / 2.0 * norm(direction)^2
         M *= tau
     end
     return M, gamma
@@ -24,7 +20,16 @@ end
 # TODO:
 # - code needs optimization
 
-function backtrackingLS(f, grad_direction, x, y; line_search=true, linesearch_tol=1e-10, step_lim=20, lsTau=0.5)
+function backtrackingLS(
+    f,
+    grad_direction,
+    x,
+    y;
+    line_search=true,
+    linesearch_tol=1e-10,
+    step_lim=20,
+    lsTau=0.5,
+)
     gamma = one(lsTau)
     d = y - x
     i = 0
@@ -83,8 +88,7 @@ function segmentSearch(f, grad, x, y; line_search=true, linesearch_tol=1e-10)
         else
             left, right = left, probe
         end
-        improv =
-            norm(f(right) - f(old_right)) + norm(f(left) - f(old_left))
+        improv = norm(f(right) - f(old_right)) + norm(f(left) - f(old_left))
     end
 
     x_min = (left + right) / 2.0
