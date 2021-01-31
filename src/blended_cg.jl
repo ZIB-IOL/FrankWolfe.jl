@@ -174,8 +174,45 @@ function bcg(
             flush(stdout)
         end
     end
-    print_footer()
-    flush(stdout)
+    if verbose
+        x = compute_active_set_iterate(active_set)
+        gradient = grad(x)
+        v = compute_extreme_point(lmo, gradient)
+        primal = f(x)
+        dual_gap = dot(x, gradient) - dot(v, gradient)
+        rep = (
+            last,
+            string(t - 1),
+            primal,
+            primal - dual_gap,
+            dual_gap,
+            (time_ns() - time_start) / 1.0e9,
+            length(active_set),
+        )
+        print_iter_func(rep)
+        flush(stdout)
+    end
+    active_set_renormalize!(active_set)
+    active_set_cleanup!(active_set)
+    x = compute_active_set_iterate(active_set)
+    gradient = grad(x)
+    v = compute_extreme_point(lmo, gradient)
+    primal = f(x)
+    dual_gap = dot(x, gradient) - dot(v, gradient)
+    if verbose
+        rep = (
+            pp,
+            string(t - 1),
+            primal,
+            primal - dual_gap,
+            dual_gap,
+            (time_ns() - time_start) / 1.0e9,
+            length(active_set),
+        )
+        print_iter_func(rep)
+        print_footer()
+        flush(stdout)
+    end
     return x, v, primal, dual_gap, traj_data
 end
 
@@ -220,12 +257,7 @@ function update_simplex_gradient_descent!(
     η = max(0, η)
     x = compute_active_set_iterate(active_set)
     @. active_set.weights -= η * d
-    if !active_set_validate(active_set)
-        error("""
-        Eta computation error?
-        $η\n$d\nactive_set.weights
-        """)
-    end
+    active_set_renormalize!(active_set)
     y = compute_active_set_iterate(active_set)
     if f(x) ≥ f(y)
         active_set_cleanup!(active_set)
