@@ -4,7 +4,7 @@ function bcg(
     grad,
     lmo,
     x0;
-    line_search::LineSearchMethod=agnostic,
+    line_search::LineSearchMethod=adaptive,
     L=Inf,
     epsilon=1e-7,
     max_iteration=10000,
@@ -16,6 +16,30 @@ function bcg(
     Ktolerance=1.05,
     lmo_kwargs...,
 )
+    function print_header(data)
+        @printf(
+            "\n───────────────────────────────────────────────────────────────────────────────────────────────\n"
+        )
+        @printf(
+            "%6s %13s %14s %14s %14s %14s %14s\n",
+            data[1],
+            data[2],
+            data[3],
+            data[4],
+            data[5],
+            data[6],
+            data[7],
+        )
+        @printf(
+            "───────────────────────────────────────────────────────────────────────────────────────────────\n"
+        )
+    end
+
+    function print_footer()
+        @printf(
+            "───────────────────────────────────────────────────────────────────────────────────────────────\n\n"
+        )
+    end
 
     function print_iter_func(data)
         @printf(
@@ -50,6 +74,20 @@ function bcg(
 
     if line_search === agnostic || line_search === nonconvex
         @error("Lazification is not known to converge with open-loop step size strategies.")
+    end
+    
+    if verbose
+        println("\nBlended Conditional Gradients Algorithm.")
+        numType = eltype(x0)
+        println(
+            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration TYPE: $numType",
+        )
+        println("K: $Ktolerance")
+        if emphasis === memory
+            println("WARNING: In memory emphasis mode iterates are written back into x0!")
+        end
+        headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "#ActiveSet")
+        print_header(headers)
     end
 
     if emphasis === memory && !isa(x, Array)
@@ -96,7 +134,9 @@ function bcg(
                     gamma = 1 / sqrt(t + 1)
                 elseif line_search === shortstep
                     gamma = dual_gap / (L * dot(x - v, x - v))
-                end
+                elseif line_search === adaptive
+                    L, gamma = adaptive_step_size(f, gradient, x, x - v, L)
+            end
                 active_set.weights .*= (1 - gamma)
                 # we push directly since ynew is by nature not in active set
                 push!(active_set, (gamma, v))
@@ -134,6 +174,8 @@ function bcg(
             flush(stdout)
         end
     end
+    print_footer()
+    flush(stdout)
     return x, v, primal, dual_gap, traj_data
 end
 
