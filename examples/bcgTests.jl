@@ -1,7 +1,6 @@
 import FrankWolfe
 using LinearAlgebra
 
-
 n = Int(1e4)
 k = 5000
 
@@ -85,7 +84,7 @@ x0 = copy(x00)
     line_search=FrankWolfe.adaptive,
     print_iter=k / 10,
     emphasis=FrankWolfe.memory,
-    L=100,
+    L=2,
     verbose=true,
     trajectory=true,
     Ktolerance=1.00,
@@ -95,5 +94,7 @@ x0 = copy(x00)
 data = [trajectorySs, trajectoryAda, trajectoryBCG]
 label = ["short step" "AFW" "BCG"]
 
-
 FrankWolfe.plot_trajectories(data, label)
+
+
+plot(getindex.(trajectoryBCG, 1))

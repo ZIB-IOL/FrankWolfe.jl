@@ -88,7 +88,9 @@ end
 
 function active_set_renormalize!(active_set::ActiveSet)
     renorm = sum(active_set.weights)
-    active_set.weights ./= renorm
+    if !isapprox(sum(active_set.weights), 1.0)
+        active_set.weights ./= renorm
+    end
     return nothing
 end
 

@@ -469,5 +469,4 @@ function lcg(
     return x, v, primal, dual_gap, trajData
 end
 
-
 end
