@@ -219,7 +219,7 @@ function fw(
         if trajectory === true
             push!(
                 trajData,
-                [t, primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9]
+                [t, primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9],
             )
         end
 
@@ -228,7 +228,8 @@ function fw(
         elseif line_search === goldenratio
             _, gamma = segmentSearch(f, grad, x, v, linesearch_tol=linesearch_tol)
         elseif line_search === backtracking
-            _, gamma = backtrackingLS(f, gradient, x, v, linesearch_tol=linesearch_tol, step_lim=step_lim)
+            _, gamma =
+                backtrackingLS(f, gradient, x, v, linesearch_tol=linesearch_tol, step_lim=step_lim)
         elseif line_search === nonconvex
             gamma = 1 / sqrt(t + 1)
         elseif line_search === shortstep
@@ -249,7 +250,14 @@ function fw(
             if t === 0
                 tt = initial
             end
-            rep = [tt, string(t), primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9]
+            rep = [
+                tt,
+                string(t),
+                primal,
+                primal - dual_gap,
+                dual_gap,
+                (time_ns() - time_start) / 1.0e9,
+            ]
             print_iter_func(rep)
             flush(stdout)
         end
@@ -264,7 +272,14 @@ function fw(
     dual_gap = dot(x, gradient) - dot(v, gradient)
     if verbose
         tt = last
-        rep = [tt, string(t - 1), primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9]
+        rep = [
+            tt,
+            string(t - 1),
+            primal,
+            primal - dual_gap,
+            dual_gap,
+            (time_ns() - time_start) / 1.0e9,
+        ]
         print_iter_func(rep)
         print_footer()
         flush(stdout)
@@ -393,7 +408,14 @@ function lcg(
         if trajectory === true
             push!(
                 trajData,
-                [t, primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9, length(lmo)],
+                [
+                    t,
+                    primal,
+                    primal - dual_gap,
+                    dual_gap,
+                    (time_ns() - time_start) / 1.0e9,
+                    length(lmo),
+                ],
             )
         end
 
