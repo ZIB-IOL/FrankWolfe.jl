@@ -89,7 +89,7 @@ println("\n==> Agnostic if function is too expensive for adaptive.\n")
 );
 
 data = [trajectorySs, trajectoryAda, trajectoryBCG]
-label = ["short step" "AFW" "BCG"]
+label = ["short step", "AFW", "BCG"]
 
 FrankWolfe.plot_trajectories(data, label)
 
