@@ -73,13 +73,11 @@ x0 = copy(x00)
 
 println("\n==> Agnostic if function is too expensive for adaptive.\n")
 
-x0 = copy(x00)
-
 @time x, v, primal, dual_gap, trajectoryBCG = FrankWolfe.bcg(
     f,
     grad,
     lmo,
-    x0,
+    copy(x00),
     max_iteration=k,
     line_search=FrankWolfe.adaptive,
     print_iter=k / 10,
@@ -89,7 +87,6 @@ x0 = copy(x00)
     trajectory=true,
     Ktolerance=1.00,
 );
-
 
 data = [trajectorySs, trajectoryAda, trajectoryBCG]
 label = ["short step" "AFW" "BCG"]
