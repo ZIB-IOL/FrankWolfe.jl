@@ -18,10 +18,10 @@ function bcg(
 )
     function print_header(data)
         @printf(
-            "\n───────────────────────────────────────────────────────────────────────────────────────────────\n"
+            "\n──────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
         )
         @printf(
-            "%6s %13s %14s %14s %14s %14s %14s\n",
+            "%6s %13s %14s %14s %14s %14s %14s %14s\n",
             data[1],
             data[2],
             data[3],
@@ -29,21 +29,22 @@ function bcg(
             data[5],
             data[6],
             data[7],
+            data[8],
         )
         @printf(
-            "───────────────────────────────────────────────────────────────────────────────────────────────\n"
+            "──────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
         )
     end
 
     function print_footer()
         @printf(
-            "───────────────────────────────────────────────────────────────────────────────────────────────\n\n"
+            "──────────────────────────────────────────────────────────────────────────────────────────────────────────────\n\n"
         )
     end
 
     function print_iter_func(data)
         @printf(
-            "%6s %13s %14e %14e %14e %14e %14i\n",
+            "%6s %13s %14e %14e %14e %14e %14i %14i\n",
             st[Symbol(data[1])],
             data[2],
             Float64(data[3]),
@@ -51,6 +52,7 @@ function bcg(
             Float64(data[5]),
             data[6],
             data[7],
+            data[8],
         )
     end
 
@@ -83,16 +85,17 @@ function bcg(
             "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration TYPE: $numType",
         )
         println("K: $Ktolerance")
-        if emphasis === memory
+        if emphasis == memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
         end
-        headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "#ActiveSet")
+        headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "#ActiveSet", "#non-simplex")
         print_header(headers)
     end
 
-    if emphasis === memory && !isa(x, Array)
+    if emphasis == memory && !isa(x, Array)
         x = convert(Vector{promote_type(eltype(x), Float64)}, x)
     end
+    non_simplex_iter = 0
 
     while t <= max_iteration && phi ≥ epsilon
         x = if emphasis == memory
@@ -108,6 +111,7 @@ function bcg(
             tt = simplex_descent
             update_simplex_gradient_descent!(active_set, gradient, f, L=L)
         else
+            non_simplex_iter += 1
             # compute new atom
             v = lp_separation_oracle(
                 lmo,
@@ -124,17 +128,17 @@ function bcg(
                 phi /= 2
             else
                 tt = regular
-                if line_search === agnostic
+                if line_search == agnostic
                     gamma = 2 / (2 + t)
-                elseif line_search === goldenratio
+                elseif line_search == goldenratio
                     _, gamma = segmentSearch(f, grad, x, ynew, linesearch_tol=linesearch_tol)
-                elseif line_search === backtracking
+                elseif line_search == backtracking
                     _, gamma = backtrackingLS(f, gradient, x, v, linesearch_tol=linesearch_tol)
-                elseif line_search === nonconvex
+                elseif line_search == nonconvex
                     gamma = 1 / sqrt(t + 1)
-                elseif line_search === shortstep
+                elseif line_search == shortstep
                     gamma = dual_gap / (L * dot(x - v, x - v))
-                elseif line_search === adaptive
+                elseif line_search == adaptive
                     L, gamma = adaptive_step_size(f, gradient, x, x - v, L)
             end
                 active_set.weights .*= (1 - gamma)
@@ -169,6 +173,7 @@ function bcg(
                 dual_gap,
                 (time_ns() - time_start) / 1.0e9,
                 length(active_set),
+                non_simplex_iter,
             )
             print_iter_func(rep)
             flush(stdout)
@@ -188,6 +193,7 @@ function bcg(
             dual_gap,
             (time_ns() - time_start) / 1.0e9,
             length(active_set),
+            non_simplex_iter,
         )
         print_iter_func(rep)
         flush(stdout)
@@ -208,6 +214,7 @@ function bcg(
             dual_gap,
             (time_ns() - time_start) / 1.0e9,
             length(active_set),
+            non_simplex_iter,
         )
         print_iter_func(rep)
         print_footer()
