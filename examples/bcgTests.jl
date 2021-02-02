@@ -1,8 +1,13 @@
 import FrankWolfe
 using LinearAlgebra
+using Random
 
 n = Int(1e4)
 k = 5000
+
+s = rand(1:100)
+@info "Seed $s"
+Random.seed!(s)
 
 xpi = rand(n);
 total = sum(xpi);
@@ -88,7 +93,7 @@ x0 = deepcopy(x00)
     trajectory=true,
     Ktolerance=1.00,
     goodstep_tolerance=0.95,
-    weight_purge_threshold=1e-8,
+    weight_purge_threshold=1e-10,
 );
 
 data = [trajectorySs, trajectoryAda, trajectoryBCG]
