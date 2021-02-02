@@ -103,10 +103,11 @@ function bcg(
         print_header(headers)
     end
 
-    if emphasis == memory && !isa(x, Array)
+    if emphasis == memory && !isa(x, Union{Array, SparseVector})
         x = convert(Vector{promote_type(eltype(x), Float64)}, x)
     end
     non_simplex_iter = 0
+    force_fw_step = false
 
     while t <= max_iteration && phi ≥ epsilon
         x = if emphasis == memory
@@ -117,18 +118,29 @@ function bcg(
         # TODO replace with single call interface from function_gradient.jl
         primal = f(x)
         gradient = grad(x)
-        (idx_fw, idx_as, good_progress) = find_minmax_directions(
-            active_set, gradient, phi, goodstep_tolerance=goodstep_tolerance,
-        )
-        if good_progress
+        if !force_fw_step
+            (idx_fw, idx_as, good_progress) = find_minmax_directions(
+                active_set, gradient, phi, goodstep_tolerance=goodstep_tolerance,
+            )
+            if good_progress
+                @info "FW and AW vertices $idx_fw, $idx_as"
+                @info "Observed gap: $(dot(gradient, active_set.atoms[idx_as] - active_set.atoms[idx_fw]))"
+                @info "phi $phi"
+            end
+        end
+        if !force_fw_step && good_progress
             tt = simplex_descent
-            must_fw = update_simplex_gradient_descent!(
+            @info "SGD"
+            force_fw_step = update_simplex_gradient_descent!(
                 active_set,
                 gradient,
                 f,
                 L=L,
                 weight_purge_threshold=weight_purge_threshold,
             )
+            if force_fw_step
+                @info "Forcing"
+            end
         else
             non_simplex_iter += 1
             # compute new atom
@@ -141,10 +153,11 @@ function bcg(
                 inplace_loop=(emphasis == memory),
                 lmo_kwargs...,
             )
+            force_fw_step = false
             xval = dot(x, gradient)
-            if value > xval - phi
+            if value > xval - 2phi
                 tt = dualstep
-                # ∇f(x) (x - v_FW) / 2
+                # setting gap estimate as ∇f(x) (x - v_FW) / 2
                 phi = (xval - value) / 2
             else
                 tt = regular
@@ -262,6 +275,8 @@ function update_simplex_gradient_descent!(
     step_lim=100,
     weight_purge_threshold=1e-12,
 )
+    active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
+    active_set_renormalize!(active_set)
     c = [dot(direction, a) for a in active_set.atoms]
     k = length(active_set)
     csum = sum(c)
@@ -281,7 +296,10 @@ function update_simplex_gradient_descent!(
     # usual suspects are floating-point errors when multiplying atoms with near-zero weights
     # in that case, inverting the sense of d
     @inbounds if dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), direction) < 0
-        @warn "Non-improving d, inverting the sense" # don't invert in this case but force next step to be FW step
+        @show d
+        @show active_set
+        @show dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), direction)
+        @warn "Non-improving d, aborting descent"
         return true
     end
     @inbounds for idx in eachindex(d)
@@ -290,8 +308,8 @@ function update_simplex_gradient_descent!(
         end
     end
     η = max(0, η)
+    @show η
     x = compute_active_set_iterate(active_set)
-    y0 = sum(λi * ai for (λi, ai) in zip(active_set.weights .- η * d, active_set.atoms))
     @. active_set.weights -= η * d
     active_set_renormalize!(active_set)
     y = compute_active_set_iterate(active_set)
@@ -347,7 +365,7 @@ function lp_separation_oracle(
         end
     end
     xval = dot(direction, x)
-    if val_best ≤ xval - min_gap / Ktolerance
+    if xval - val_best ≥ min_gap / Ktolerance
         @warn "Active set should not yield good solution"
         return (ybest, val_best)
     end
