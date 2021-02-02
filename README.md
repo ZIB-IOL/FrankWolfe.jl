@@ -43,8 +43,8 @@ Several common LMOs are available out-of-the-box
 - K-sparse polytope
 - K-norm ball
 - L_p-norm ball
+- Birkhoff polytope
 - (to come:) Permutahedron
-- (to come:) Birkhoff polytope
 - (to come:) Flow Polytope
 
 See <https://arxiv.org/pdf/2010.07243.pdf> and *** add LP complexity paper *** for details
