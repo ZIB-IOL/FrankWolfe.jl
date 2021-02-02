@@ -278,7 +278,7 @@ function update_simplex_gradient_descent!(
     # usual suspects are floating-point errors when multiplying atoms with near-zero weights
     # in that case, inverting the sense of d
     @inbounds if dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), direction) < 0
-        @warn "Non-improving d, inverting the sense"
+        @warn "Non-improving d, inverting the sense" # don't invert in this case but force next step to be FW step
         d .*= -1
     end
     @inbounds for idx in eachindex(d)
@@ -355,6 +355,6 @@ function lp_separation_oracle(
     return if dot(direction, y) ≤ xval - min_gap / Ktolerance
         y
     else
-        nothing
+        nothing # don't return nothing but y, dot(direction, y) / use y for step outside / and update phi as in LCG (lines 402 - 406)
     end
 end
