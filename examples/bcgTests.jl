@@ -26,8 +26,8 @@ function cgrad(x, xp)
     return @. 2 * (x - xp)
 end
 
-# lmo = FrankWolfe.KSparseLMO(100, 1.0)
-lmo = FrankWolfe.KSparseLMO(100, big"1.0")
+lmo = FrankWolfe.KSparseLMO(100, 1.0)
+# lmo = FrankWolfe.KSparseLMO(100, big"1.0")
 # lmo = FrankWolfe.LpNormLMO{Float64,1}(1.0)
 # lmo = FrankWolfe.ProbabilitySimplexOracle(1.0);
 # lmo = FrankWolfe.UnitSimplexOracle(1.0);
