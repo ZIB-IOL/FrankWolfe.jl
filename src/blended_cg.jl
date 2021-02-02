@@ -1,4 +1,3 @@
-x =rand()
 
 function bcg(
     f,
@@ -80,7 +79,7 @@ function bcg(
     if line_search == agnostic || line_search == nonconvex
         @error("Lazification is not known to converge with open-loop step size strategies.")
     end
-    
+
     if verbose
         println("\nBlended Conditional Gradients Algorithm.")
         numType = eltype(x0)
@@ -91,7 +90,16 @@ function bcg(
         if emphasis == memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
         end
-        headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "#ActiveSet", "#non-simplex")
+        headers = (
+            "Type",
+            "Iteration",
+            "Primal",
+            "Dual",
+            "Dual Gap",
+            "Time",
+            "#ActiveSet",
+            "#non-simplex",
+        )
         print_header(headers)
     end
 
@@ -109,10 +117,18 @@ function bcg(
         # TODO replace with single call interface from function_gradient.jl
         primal = f(x)
         gradient = grad(x)
-        (idx_fw, idx_as, good_progress) = find_minmax_directions(active_set, gradient, phi, goodstep_tolerance=goodstep_tolerance)
+        (idx_fw, idx_as, good_progress) = find_minmax_directions(
+            active_set, gradient, phi, goodstep_tolerance=goodstep_tolerance,
+        )
         if good_progress
             tt = simplex_descent
-            update_simplex_gradient_descent!(active_set, gradient, f, L=L,weight_purge_threshold=weight_purge_threshold)
+            update_simplex_gradient_descent!(
+                active_set,
+                gradient,
+                f,
+                L=L,
+                weight_purge_threshold=weight_purge_threshold,
+            )
         else
             non_simplex_iter += 1
             # compute new atom
@@ -291,7 +307,7 @@ function update_simplex_gradient_descent!(
     # new point is x - γ η d
     @. active_set.weights += η * (1 - gamma) * d
     # could be required in some cases?
-    active_set_cleanup!(active_set,weight_purge_threshold=weight_purge_threshold)
+    active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
     return active_set
 end
 
