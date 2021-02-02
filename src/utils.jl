@@ -195,7 +195,7 @@ function plot_trajectories(data, label; filename=nothing)
                 xaxis=:log,
                 yaxis=:log,
                 ylabel="Primal",
-                legend=:bottomleft,
+                legend=:topright,
                 yguidefontsize=8,
                 xguidefontsize=8,
                 legendfontsize=8,
@@ -261,7 +261,7 @@ function plot_trajectories(data, label; filename=nothing)
                 xguidefontsize=8,
             )
         else
-            plot!(x, y, label=label[i])
+            plot!(x, y, label=label[i], legend=:topright)
         end
     end
     fp = plot(pit, pti, dit, dti, layout=(2, 2)) # layout = @layout([A{0.01h}; [B C; D E]]))
