@@ -180,5 +180,5 @@ function find_minmax_directions(active_set::ActiveSet, direction, Φ; goodstep_t
         end
     end
     # improving step
-    return (idx_fw, idx_as, v_as - v_fw ≥ Φ * goodstep_tolerance)
+    return (idx_fw, idx_as, v_as - v_fw ≥ Φ)
 end
