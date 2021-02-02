@@ -294,13 +294,13 @@ function update_simplex_gradient_descent!(
             η = min(η, active_set.weights[idx] / d[idx])
         end
     end
+    # TODO at some point avoid materializing both x and y
     η = max(0, η)
     x = compute_active_set_iterate(active_set)
-    f_x = f(x)
     @. active_set.weights -= η * d
     active_set_renormalize!(active_set)
-    y = compute_active_set_iterate!(x, active_set)
-    if f_x ≥ f(y)
+    y = compute_active_set_iterate(active_set)
+    if f(x) ≥ f(y)
         active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
         return false
     end
