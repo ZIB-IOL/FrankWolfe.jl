@@ -380,9 +380,6 @@ function lp_separation_oracle(
     end
     # otherwise, call the LMO
     y = compute_extreme_point(lmo, direction; kwargs...)
-    if y in active_set.atoms
-        error("New atom already in active set")
-    end
     # don't return nothing but y, dot(direction, y) / use y for step outside / and update phi as in LCG (lines 402 - 406)
     return (y, dot(direction, y))
 end
