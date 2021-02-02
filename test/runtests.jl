@@ -539,7 +539,7 @@ end
         x0,
         max_iteration=k,
         line_search=FrankWolfe.backtracking,
-        verbose=false,
+        verbose=true,
         emphasis=FrankWolfe.blas,
     )
 
