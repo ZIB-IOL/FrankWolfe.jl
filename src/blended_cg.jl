@@ -122,15 +122,9 @@ function bcg(
             (idx_fw, idx_as, good_progress) = find_minmax_directions(
                 active_set, gradient, phi, goodstep_tolerance=goodstep_tolerance,
             )
-            if good_progress
-                @info "FW and AW vertices $idx_fw, $idx_as"
-                @info "Observed gap: $(dot(gradient, active_set.atoms[idx_as] - active_set.atoms[idx_fw]))"
-                @info "phi $phi"
-            end
         end
         if !force_fw_step && good_progress
             tt = simplex_descent
-            @info "SGD"
             force_fw_step = update_simplex_gradient_descent!(
                 active_set,
                 gradient,
@@ -138,9 +132,6 @@ function bcg(
                 L=L,
                 weight_purge_threshold=weight_purge_threshold,
             )
-            if force_fw_step
-                @info "Forcing"
-            end
         else
             non_simplex_iter += 1
             # compute new atom
@@ -151,6 +142,7 @@ function bcg(
                 phi,
                 Ktolerance;
                 inplace_loop=(emphasis == memory),
+                force_fw_step=force_fw_step,
                 lmo_kwargs...,
             )
             force_fw_step = false
@@ -275,8 +267,6 @@ function update_simplex_gradient_descent!(
     step_lim=100,
     weight_purge_threshold=1e-12,
 )
-    active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
-    active_set_renormalize!(active_set)
     c = [dot(direction, a) for a in active_set.atoms]
     k = length(active_set)
     csum = sum(c)
@@ -296,10 +286,7 @@ function update_simplex_gradient_descent!(
     # usual suspects are floating-point errors when multiplying atoms with near-zero weights
     # in that case, inverting the sense of d
     @inbounds if dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), direction) < 0
-        @show d
-        @show active_set
-        @show dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), direction)
-        @warn "Non-improving d, aborting descent"
+        @warn "Non-improving d, aborting simplex descent"
         return true
     end
     @inbounds for idx in eachindex(d)
@@ -308,12 +295,12 @@ function update_simplex_gradient_descent!(
         end
     end
     η = max(0, η)
-    @show η
     x = compute_active_set_iterate(active_set)
+    f_x = f(x)
     @. active_set.weights -= η * d
     active_set_renormalize!(active_set)
-    y = compute_active_set_iterate(active_set)
-    if f(x) ≥ f(y)
+    y = compute_active_set_iterate!(x, active_set)
+    if f_x ≥ f(y)
         active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
         return false
     end
@@ -346,31 +333,38 @@ function lp_separation_oracle(
     min_gap,
     Ktolerance;
     inplace_loop=true,
+    force_fw_step::Bool=false,
     kwargs...,
 )
-    ybest = active_set.atoms[1]
-    x = active_set.weights[1] * active_set.atoms[1]
-    val_best = dot(direction, ybest)
-    for idx in 2:length(active_set)
-        y = active_set.atoms[idx]
-        if inplace_loop
-            x .+= active_set.weights[idx] * y
-        else
-            x += active_set.weights[idx] * y
+    # if FW step forced, ignore active set
+    if !force_fw_step
+        ybest = active_set.atoms[1]
+        x = active_set.weights[1] * active_set.atoms[1]
+        val_best = dot(direction, ybest)
+        for idx in 2:length(active_set)
+            y = active_set.atoms[idx]
+            if inplace_loop
+                x .+= active_set.weights[idx] * y
+            else
+                x += active_set.weights[idx] * y
+            end
+            val = dot(direction, y)
+            if val < val_best
+                val_best = val
+                ybest = y
+            end
         end
-        val = dot(direction, y)
-        if val < val_best
-            val_best = val
-            ybest = y
+        xval = dot(direction, x)
+        if xval - val_best ≥ min_gap / Ktolerance
+            @warn "Active set should not yield good solution"
+            return (ybest, val_best)
         end
-    end
-    xval = dot(direction, x)
-    if xval - val_best ≥ min_gap / Ktolerance
-        @warn "Active set should not yield good solution"
-        return (ybest, val_best)
     end
     # otherwise, call the LMO
     y = compute_extreme_point(lmo, direction; kwargs...)
+    if y in active_set.atoms
+        error("New atom already in active set")
+    end
     # don't return nothing but y, dot(direction, y) / use y for step outside / and update phi as in LCG (lines 402 - 406)
     return (y, dot(direction, y))
 end
