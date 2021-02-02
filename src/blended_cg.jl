@@ -1,3 +1,4 @@
+x =rand()
 
 function bcg(
     f,
@@ -13,7 +14,9 @@ function bcg(
     verbose=false,
     linesearch_tol=1e-7,
     emphasis::Emphasis=blas,
-    Ktolerance=1.05,
+    Ktolerance=1.0,
+    goodstep_tolerance=0.75,
+    weight_purge_threshold=1e-9,
     lmo_kwargs...,
 )
     function print_header(data)
@@ -70,11 +73,11 @@ function bcg(
     time_start = time_ns()
     v = x0
 
-    if line_search === shortstep && !isfinite(L)
+    if line_search == shortstep && !isfinite(L)
         @error("Lipschitz constant not set to a finite value. Prepare to blow up spectacularly.")
     end
 
-    if line_search === agnostic || line_search === nonconvex
+    if line_search == agnostic || line_search == nonconvex
         @error("Lazification is not known to converge with open-loop step size strategies.")
     end
     
@@ -106,10 +109,10 @@ function bcg(
         # TODO replace with single call interface from function_gradient.jl
         primal = f(x)
         gradient = grad(x)
-        (idx_fw, idx_as, good_progress) = find_minmax_directions(active_set, gradient, phi)
+        (idx_fw, idx_as, good_progress) = find_minmax_directions(active_set, gradient, phi, goodstep_tolerance=goodstep_tolerance)
         if good_progress
             tt = simplex_descent
-            update_simplex_gradient_descent!(active_set, gradient, f, L=L)
+            update_simplex_gradient_descent!(active_set, gradient, f, L=L,weight_purge_threshold=weight_purge_threshold)
         else
             non_simplex_iter += 1
             # compute new atom
@@ -144,12 +147,10 @@ function bcg(
                 active_set.weights .*= (1 - gamma)
                 # we push directly since ynew is by nature not in active set
                 push!(active_set, (gamma, v))
-                active_set_cleanup!(active_set)
+                active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
             end
         end
-        if v !== nothing
-            dual_gap = dot(gradient, x - v)
-        end
+        dual_gap = 2phi
         if trajectory
             push!(
                 traj_data,
@@ -184,7 +185,7 @@ function bcg(
         gradient = grad(x)
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
-        dual_gap = dot(x, gradient) - dot(v, gradient)
+        dual_gap = 2phi
         rep = (
             last,
             string(t - 1),
@@ -198,13 +199,13 @@ function bcg(
         print_iter_func(rep)
         flush(stdout)
     end
+    active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
     active_set_renormalize!(active_set)
-    active_set_cleanup!(active_set)
     x = compute_active_set_iterate(active_set)
     gradient = grad(x)
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
-    dual_gap = dot(x, gradient) - dot(v, gradient)
+    dual_gap = 2phi
     if verbose
         rep = (
             pp,
@@ -240,6 +241,7 @@ function update_simplex_gradient_descent!(
     L=nothing,
     linesearch_tol=10e-10,
     step_lim=100,
+    weight_purge_threshold=1e-12,
 )
     c = [dot(direction, a) for a in active_set.atoms]
     k = length(active_set)
@@ -247,7 +249,7 @@ function update_simplex_gradient_descent!(
     c .-= (csum / k)
     # name change to stay consistent with the paper, c is actually updated in-place
     d = c
-    if norm(d) <= 1e-7
+    if norm(d) <= 1e-8
         @info "Resetting active set."
         # resetting active set to singleton
         a0 = active_set.atoms[1]
@@ -256,6 +258,13 @@ function update_simplex_gradient_descent!(
         return active_set
     end
     η = eltype(d)(Inf)
+    # NOTE: sometimes the direction is non-improving
+    # usual suspects are floating-point errors when multiplying atoms with near-zero weights
+    # in that case, inverting the sense of d
+    @inbounds if dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), direction) < 0
+        @warn "Non-improving d, inverting the sense"
+        d .*= -1
+    end
     @inbounds for idx in eachindex(d)
         if d[idx] ≥ 0
             η = min(η, active_set.weights[idx] / d[idx])
@@ -263,14 +272,14 @@ function update_simplex_gradient_descent!(
     end
     η = max(0, η)
     x = compute_active_set_iterate(active_set)
+    y0 = sum(λi * ai for (λi, ai) in zip(active_set.weights .- η * d, active_set.atoms))
     @. active_set.weights -= η * d
     active_set_renormalize!(active_set)
     y = compute_active_set_iterate(active_set)
     if f(x) ≥ f(y)
-        active_set_cleanup!(active_set)
+        active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
         return active_set
     end
-    # TODO move η between x and y till opt
     linesearch_method = L === nothing || !isfinite(L) ? backtracking : shortstep
     if linesearch_method == backtracking
         _, gamma =
@@ -282,7 +291,7 @@ function update_simplex_gradient_descent!(
     # new point is x - γ η d
     @. active_set.weights += η * (1 - gamma) * d
     # could be required in some cases?
-    active_set_cleanup!(active_set)
+    active_set_cleanup!(active_set,weight_purge_threshold=weight_purge_threshold)
     return active_set
 end
 

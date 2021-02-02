@@ -120,8 +120,8 @@ function compute_active_set_iterate!(x, active_set)
     return x
 end
 
-function active_set_cleanup!(active_set)
-    return filter!(e -> e[1] > 0, active_set)
+function active_set_cleanup!(active_set; weight_purge_threshold=1e-12)
+    return filter!(e -> e[1] > weight_purge_threshold, active_set)
 end
 
 function find_atom(active_set::ActiveSet, atom)
@@ -163,8 +163,9 @@ on the active set (local Frank Wolfe)
 and the maximizing one (away step).
 Returns the two corresponding indices in the active set, along with a flag
 indicating if the direction improvement is above a threshold.
+`goodstep_tolerance ∈ (0, 1]` is a tolerance coefficient multiplying Φ for the validation of the progress. 
 """
-function find_minmax_directions(active_set::ActiveSet, direction, Φ)
+function find_minmax_directions(active_set::ActiveSet, direction, Φ; goodstep_tolerance=0.75)
     idx_fw = idx_as = -1
     v_fw = Inf
     v_as = -Inf
@@ -175,9 +176,9 @@ function find_minmax_directions(active_set::ActiveSet, direction, Φ)
             idx_fw = idx
         elseif val ≥ v_as
             v_as = val
-            idx_as = val
+            idx_as = idx
         end
     end
     # improving step
-    return (idx_fw, idx_as, v_as - v_fw ≥ Φ)
+    return (idx_fw, idx_as, v_as - v_fw ≥ Φ * goodstep_tolerance)
 end
