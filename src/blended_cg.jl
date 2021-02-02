@@ -122,7 +122,7 @@ function bcg(
         )
         if good_progress
             tt = simplex_descent
-            update_simplex_gradient_descent!(
+            must_fw = update_simplex_gradient_descent!(
                 active_set,
                 gradient,
                 f,
@@ -132,7 +132,7 @@ function bcg(
         else
             non_simplex_iter += 1
             # compute new atom
-            v = lp_separation_oracle(
+            (v, value) = lp_separation_oracle(
                 lmo,
                 active_set,
                 gradient,
@@ -141,10 +141,11 @@ function bcg(
                 inplace_loop=(emphasis == memory),
                 lmo_kwargs...,
             )
-            # no new vertex found -> reduce min gap progression
-            if v === nothing
+            xval = dot(x, gradient)
+            if value > xval - min_gap / Ktolerance
                 tt = dualstep
-                phi /= 2
+                # ∇f(x) (x - v_FW) / 2
+                phi = (xval - value) / 2
             else
                 tt = regular
                 if line_search == agnostic
@@ -246,6 +247,8 @@ end
 
 Performs a Simplex Gradient Descent step and modifies `active_set` inplace.
 
+Returns boolean flag -> whether next step must be a FW step (if numerical instability).
+
 Algorithm reference and notation taken from:
 Blended Conditional Gradients:The Unconditioning of Conditional Gradients
 https://arxiv.org/abs/1805.07311
@@ -271,7 +274,7 @@ function update_simplex_gradient_descent!(
         a0 = active_set.atoms[1]
         empty!(active_set)
         push!(active_set, (1, a0))
-        return active_set
+        return false
     end
     η = eltype(d)(Inf)
     # NOTE: sometimes the direction is non-improving
@@ -279,7 +282,7 @@ function update_simplex_gradient_descent!(
     # in that case, inverting the sense of d
     @inbounds if dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), direction) < 0
         @warn "Non-improving d, inverting the sense" # don't invert in this case but force next step to be FW step
-        d .*= -1
+        return true
     end
     @inbounds for idx in eachindex(d)
         if d[idx] ≥ 0
@@ -294,7 +297,7 @@ function update_simplex_gradient_descent!(
     y = compute_active_set_iterate(active_set)
     if f(x) ≥ f(y)
         active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
-        return active_set
+        return false
     end
     linesearch_method = L === nothing || !isfinite(L) ? backtracking : shortstep
     if linesearch_method == backtracking
@@ -306,17 +309,14 @@ function update_simplex_gradient_descent!(
     # step back from y to x by (1 - γ) η d
     # new point is x - γ η d
     @. active_set.weights += η * (1 - gamma) * d
-    # could be required in some cases?
     active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
-    return active_set
+    return false
 end
 
 """
-Returns either an atom `y` from the active set satisfying
-the progress criterion
-`dot(y, direction) ≤ dot(x, direction) - min_gap / Ktolerance`.
-with `x` the current iterate stored in the active set,
-or a point `y` satisfying the progress criterion using the LMO.
+Returns either a tuple `(y, val)` with `y` an atom from the active set satisfying
+the progress criterion and `val` the corresponding gap `dot(y, direction)`
+or the same tuple with `y` from the LMO.
 
 `inplace_loop` controls whether the iterate type allows in-place writes.
 `kwargs` are passed on to the LMO oracle.
@@ -348,13 +348,11 @@ function lp_separation_oracle(
     end
     xval = dot(direction, x)
     if val_best ≤ xval - min_gap / Ktolerance
-        return ybest
+        @warn "Active set should not yield good solution"
+        return (ybest, val_best)
     end
     # otherwise, call the LMO
     y = compute_extreme_point(lmo, direction; kwargs...)
-    return if dot(direction, y) ≤ xval - min_gap / Ktolerance
-        y
-    else
-        nothing # don't return nothing but y, dot(direction, y) / use y for step outside / and update phi as in LCG (lines 402 - 406)
-    end
+    # don't return nothing but y, dot(direction, y) / use y for step outside / and update phi as in LCG (lines 402 - 406)
+    return (y, dot(direction, y))
 end
