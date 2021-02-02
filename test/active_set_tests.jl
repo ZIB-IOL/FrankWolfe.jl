@@ -135,19 +135,22 @@ end
     x = FrankWolfe.compute_active_set_iterate(active_set)
     @test x ≈ [-0.4, -0.4]
     gradient_dir = ∇f(x)
-    y = FrankWolfe.lp_separation_oracle(lmo, active_set, gradient_dir, 0.5, 1)
+    (y, _) = @test_logs(
+        (:warn,),
+        FrankWolfe.lp_separation_oracle(lmo, active_set, gradient_dir, 0.5, 1),
+
+    )
     @test y ∈ active_set.atoms
-    y2 = FrankWolfe.lp_separation_oracle(lmo, active_set, gradient_dir, 3 + dot(x, gradient_dir), 1)
+    (y2, _) = FrankWolfe.lp_separation_oracle(lmo, active_set, gradient_dir, 3 + dot(x, gradient_dir), 1)
     # found new vertex not in active set
-    @test y2 ∉ active_set.atoms && y2 !== nothing
+    @test y2 ∉ active_set.atoms
 
     # Criterion too high, no satisfactory point
-    y3 = FrankWolfe.lp_separation_oracle(
+    (y3, _) = FrankWolfe.lp_separation_oracle(
         lmo,
         active_set,
         gradient_dir,
         norm(gradient_dir)^2 + dot(x, gradient_dir),
         1,
     )
-    @test y3 === nothing
 end
