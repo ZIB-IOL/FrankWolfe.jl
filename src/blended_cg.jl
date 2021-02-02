@@ -142,7 +142,7 @@ function bcg(
                 lmo_kwargs...,
             )
             xval = dot(x, gradient)
-            if value > xval - min_gap / Ktolerance
+            if value > xval - phi
                 tt = dualstep
                 # ∇f(x) (x - v_FW) / 2
                 phi = (xval - value) / 2
