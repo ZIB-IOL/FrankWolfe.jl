@@ -23,7 +23,7 @@ function bcg(
             "\n──────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
         )
         @printf(
-            "%6s %13s %14s %14s %14s %14s %14s %14s\n",
+            "%6s %13s %14s %14s %14s %14s %14s %14s %14s\n",
             data[1],
             data[2],
             data[3],
@@ -32,6 +32,7 @@ function bcg(
             data[6],
             data[7],
             data[8],
+            data[9],
         )
         @printf(
             "──────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
@@ -46,7 +47,7 @@ function bcg(
 
     function print_iter_func(data)
         @printf(
-            "%6s %13s %14e %14e %14e %14e %14i %14i\n",
+            "%6s %13s %14e %14e %14e %14e %14i %14i %14i\n",
             st[Symbol(data[1])],
             data[2],
             Float64(data[3]),
@@ -55,6 +56,7 @@ function bcg(
             data[6],
             data[7],
             data[8],
+            data[9],
         )
     end
 
@@ -99,6 +101,7 @@ function bcg(
             "Time",
             "#ActiveSet",
             "#non-simplex",
+            "#forced FW",
         )
         print_header(headers)
     end
@@ -107,6 +110,7 @@ function bcg(
         x = convert(Vector{promote_type(eltype(x), Float64)}, x)
     end
     non_simplex_iter = 0
+    nforced_fw = 0
     force_fw_step = false
 
     while t <= max_iteration && phi ≥ epsilon
@@ -132,6 +136,7 @@ function bcg(
                 L=L,
                 weight_purge_threshold=weight_purge_threshold,
             )
+            nforced_fw += force_fw_step
         else
             non_simplex_iter += 1
             # compute new atom
@@ -197,6 +202,7 @@ function bcg(
                 (time_ns() - time_start) / 1.0e9,
                 length(active_set),
                 non_simplex_iter,
+                nforced_fw,
             )
             print_iter_func(rep)
             flush(stdout)
@@ -217,6 +223,7 @@ function bcg(
             (time_ns() - time_start) / 1.0e9,
             length(active_set),
             non_simplex_iter,
+            nforced_fw,
         )
         print_iter_func(rep)
         flush(stdout)
@@ -238,6 +245,7 @@ function bcg(
             (time_ns() - time_start) / 1.0e9,
             length(active_set),
             non_simplex_iter,
+            nforced_fw,
         )
         print_iter_func(rep)
         print_footer()
