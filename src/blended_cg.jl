@@ -143,7 +143,7 @@ function bcg(
             )
             # no new vertex found -> reduce min gap progression
             if v === nothing
-                tt = gap_step
+                tt = dualstep
                 phi /= 2
             else
                 tt = regular
