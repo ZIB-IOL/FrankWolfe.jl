@@ -286,7 +286,7 @@ function update_simplex_gradient_descent!(
     # usual suspects are floating-point errors when multiplying atoms with near-zero weights
     # in that case, inverting the sense of d
     @inbounds if dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), direction) < 0
-        @warn "Non-improving d, aborting simplex descent"
+        # @warn "Non-improving d, aborting simplex descent"
         return true
     end
     @inbounds for idx in eachindex(d)
