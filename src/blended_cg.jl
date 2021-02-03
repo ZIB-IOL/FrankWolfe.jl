@@ -355,7 +355,7 @@ function lp_separation_oracle(
     kwargs...,
 )
     # if FW step forced, ignore active set
-    if !force_fw_step && false # TODO: temporarily forced for demonstration
+    if !force_fw_step
         ybest = active_set.atoms[1]
         x = active_set.weights[1] * active_set.atoms[1]
         val_best = dot(direction, ybest)
@@ -374,8 +374,8 @@ function lp_separation_oracle(
         end
         xval = dot(direction, x)
         if xval - val_best ≥ min_gap / Ktolerance
-           @warn "Active set should not yield good solution"
-           return (ybest, val_best)
+            @warn "Active set should not yield good solution"
+            return (ybest, val_best)
         end
     end
     # otherwise, call the LMO
