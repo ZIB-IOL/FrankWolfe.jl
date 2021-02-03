@@ -113,10 +113,7 @@ function compute_active_set_iterate(active_set)
 end
 
 function compute_active_set_iterate!(x, active_set)
-    x .= 0
-    for (λi, ai) in active_set
-        x .+= λi * ai
-    end
+    x .= sum(λi * ai for (λi, ai) in active_set)
     return x
 end
 
