@@ -374,7 +374,6 @@ function lp_separation_oracle(
         end
         xval = dot(direction, x)
         if xval - val_best ≥ min_gap / Ktolerance
-            @warn "Active set should not yield good solution"
             return (ybest, val_best)
         end
     end
