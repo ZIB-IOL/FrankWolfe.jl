@@ -16,8 +16,6 @@ function bcg(
     Ktolerance=1.0,
     goodstep_tolerance=0.75,
     weight_purge_threshold=1e-9,
-    reset_threshold=100,
-    sd_linesearch_tol=1e-10,
     lmo_kwargs...,
 )
     function print_header(data)
@@ -114,7 +112,6 @@ function bcg(
     non_simplex_iter = 0
     nforced_fw = 0
     force_fw_step = false
-    forced_reset = false
 
     while t <= max_iteration && phi ≥ epsilon
         x = if emphasis == memory
@@ -138,7 +135,6 @@ function bcg(
                 f,
                 L=L,
                 weight_purge_threshold=weight_purge_threshold,
-                linesearch_tol=sd_linesearch_tol # TODO: think about a good tolerance -> maybe adaptive as we do SD steps but keep from improving
             )
             nforced_fw += force_fw_step
         else
@@ -182,12 +178,6 @@ function bcg(
             end
         end
         dual_gap = 2phi
-
-        if nforced_fw >= reset_threshold && forced_reset === false
-            active_set_cleanup!(active_set, weight_purge_threshold=100*weight_purge_threshold)
-            forced_reset = true
-        end
-
         if trajectory
             push!(
                 traj_data,
