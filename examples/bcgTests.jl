@@ -3,7 +3,7 @@ using LinearAlgebra
 using Random
 
 n = Int(1e4)
-k = 5000
+k = 3000
 
 s = rand(1:100)
 @info "Seed $s"
@@ -11,7 +11,7 @@ Random.seed!(s)
 
 xpi = rand(n);
 total = sum(xpi);
-const xp = xpi ./ total;
+const xp = xpi # ./ total;
 
 f(x) = norm(x - xp)^2
 grad(x) = 2 * (x - xp)
@@ -26,8 +26,8 @@ function cgrad(x, xp)
     return @. 2 * (x - xp)
 end
 
-lmo = FrankWolfe.KSparseLMO(100, 1.0)
-# lmo = FrankWolfe.KSparseLMO(100, big"1.0")
+# lmo = FrankWolfe.KSparseLMO(100, 1.0)
+lmo = FrankWolfe.KSparseLMO(100, big"1.0")
 # lmo = FrankWolfe.LpNormLMO{Float64,1}(1.0)
 # lmo = FrankWolfe.ProbabilitySimplexOracle(1.0);
 # lmo = FrankWolfe.UnitSimplexOracle(1.0);
