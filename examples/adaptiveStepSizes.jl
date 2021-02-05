@@ -86,7 +86,7 @@ x0 = deepcopy(x00)
 );
 
 data = [trajectorySs, trajectoryAda, trajectoryAdaL, trajectoryAg]
-label = ["short step" "adaptive" "adaptiveL" "agnostic"]
+label = ["short step", "adaptive", "adaptiveL", "agnostic"]
 
 
 FrankWolfe.plot_trajectories(data, label)
