@@ -70,16 +70,21 @@ end
 Adds the atom to the active set with weight lambda or adds lambda to existing atom.
 """
 function active_set_update!(active_set::ActiveSet, lambda, atom)
+    active_set_renormalize!(active_set)
     # rescale active set
     active_set.weights .*= (1 - lambda)
     # add value for new atom
     idx = find_atom(active_set, atom)
     if idx > 0
-        @inbounds active_set.weights[idx] = active_set[idx][1] + lambda
+        @debug "found index $idx, previous w $(active_set.weights[idx])"
+        @inbounds active_set.weights[idx] = active_set.weights[idx] + lambda
     else
+        @debug "New atom"
         push!(active_set, (lambda, atom))
     end
-    return active_set_cleanup!(active_set)
+    active_set_cleanup!(active_set)
+    active_set_renormalize!(active_set)
+    return active_set
 end
 
 function active_set_validate(active_set::ActiveSet)
@@ -107,13 +112,47 @@ end
     compute_active_set_iterate(active_set)
 """
 function compute_active_set_iterate(active_set)
-    # iteration protocol is obtained for free from
-    # the fact that active_set is an abstract vector
     return sum(λi * ai for (λi, ai) in active_set)
 end
 
+# to remove, used for reference
+function compute_active_set_iterate_full(active_set)
+    weighted = map(active_set) do (λi, ai)
+        λi * ai
+    end
+    res = 0 .* weighted[1]
+    for idx in eachindex(res)
+        res[idx] = sum(getindex.(weighted, idx))
+    end
+    return res
+end
+
+# TODO change for proper inplace version, for now results in imprecisions
+# NO NOT use for now - mysterious BigFloat + Sparse problems
 function compute_active_set_iterate!(x, active_set)
-    x .= sum(λi * ai for (λi, ai) in active_set)
+    x .= 0
+    SparseArrays.dropzeros!(x)
+    y = compute_active_set_iterate(active_set)
+    n0y = norm(y)
+    y2 = compute_active_set_iterate(active_set)
+    @debug "ny $(norm(y))"
+    @debug "ny2 $(norm(y2))"
+    @debug "$(norm(compute_active_set_iterate(active_set)))"
+    @debug "$(norm(compute_active_set_iterate(active_set)))"
+    x .= deepcopy(y)
+    @debug "$(norm(compute_active_set_iterate(active_set)))"
+    if norm(y2) != (norm(compute_active_set_iterate(active_set)))
+        return false
+        error("WHUT")
+    end
+    @debug "nf $(norm(compute_active_set_iterate(active_set)))"
+    @debug "ny $(norm(y))"
+    @debug "nx $(norm(x))"
+    @debug "nf $(norm(compute_active_set_iterate(active_set)))"
+    if norm(y) != norm(compute_active_set_iterate(active_set))
+        @debug "$(typeof(y))"
+        error("Even before")
+    end
     return x
 end
 
@@ -122,7 +161,7 @@ function active_set_cleanup!(active_set; weight_purge_threshold=1e-12)
 end
 
 function find_atom(active_set::ActiveSet, atom)
-    for idx in eachindex(active_set)
+    @inbounds for idx in eachindex(active_set)
         if active_set.atoms[idx] == atom
             return idx
         end

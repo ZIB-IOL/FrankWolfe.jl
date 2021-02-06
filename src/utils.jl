@@ -1,18 +1,57 @@
 
 """
 Slight modification of
-Aaptive Step Size strategy from https://arxiv.org/pdf/1806.05123.pdf
+Adaptive Step Size strategy from https://arxiv.org/pdf/1806.05123.pdf
 
+Note: direction is opposite to the improving direction
+norm(gradient, direction) > 0
 TODO: 
 - make emphasis aware and optimize
 """
 function adaptive_step_size(f, gradient, x, direction, L_est; eta=0.9, tau=2, gamma_max=1)
     M = eta * L_est
-    gamma = min(dot(gradient, direction) / (M * norm(direction)^2), gamma_max)
-    while f(x - gamma * direction) - f(x) >
-          -gamma * dot(gradient, direction) + gamma^2 * M / 2.0 * norm(direction)^2
+    ndir2 = norm(direction)^2
+    norm_dot = dot(gradient, direction)
+    gamma0 = gamma = min(
+        gamma_max,
+        norm_dot / (M * ndir2),
+    )
+    lscounter = 0
+    while (
+            f(x - gamma * direction) - f(x) >
+            -gamma * norm_dot + gamma^2 * ndir2 * M / 2
+    )
+        @debug "M: $M"
+        @debug "Expected progress: $(-gamma * norm_dot + gamma^2 * ndir2 * M / 2)"
         M *= tau
+        gamma = min(
+            gamma_max,
+            norm_dot / (M * ndir2),
+        )
+        lscounter += 1
+        if lscounter > 500
+            @warn("too many iterations")
+            break
+        end
+        if f(x - gamma * direction) < f(x)
+            @debug "Progress of"
+            @debug "$(f(x - gamma * direction) - f(x))"
+        end
     end
+    if f(x) ≤ f(x - gamma * direction)
+        @debug "Not improving after $lscounter iters"
+        @debug "γ: $gamma"
+        @debug "γ0: $gamma0"
+        @debug "norm_dot: $norm_dot"
+        @debug "ndir2: $ndir2"
+        @debug "L: $L_est"
+        @debug "Final M: $M"
+        @debug (f(x), f(x - gamma * direction))
+        if !isfinite(M)
+            error("")
+        end
+    end
+    @debug "Finished LS"
     return M, gamma
 end
 
@@ -37,6 +76,7 @@ function backtrackingLS(
     dot_gdir = dot(grad_direction, d)
     @assert dot_gdir ≤ 0
     if dot_gdir ≥ 0
+        @warn "Non-improving"
         return i, 0 * gamma
     end
 
@@ -47,6 +87,7 @@ function backtrackingLS(
             if oldVal - newVal >= 0
                 return i, gamma
             else
+                @warn "Non-improving internal"
                 return i, 0 * gamma
             end
         end

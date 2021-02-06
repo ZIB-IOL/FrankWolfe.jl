@@ -114,11 +114,7 @@ function bcg(
     force_fw_step = false
 
     while t <= max_iteration && phi ≥ epsilon
-        x = if emphasis == memory
-            compute_active_set_iterate!(x, active_set)
-        else
-            compute_active_set_iterate(active_set)
-        end
+        x = compute_active_set_iterate(active_set)
         # TODO replace with single call interface from function_gradient.jl
         primal = f(x)
         gradient = grad(x)
@@ -138,6 +134,7 @@ function bcg(
             )
             nforced_fw += force_fw_step
         else
+            @debug "non simplex"
             non_simplex_iter += 1
             # compute new atom
             (v, value) = lp_separation_oracle(
@@ -152,18 +149,25 @@ function bcg(
             )
             force_fw_step = false
             xval = dot(x, gradient)
-            if value > xval - 2phi
+            if value > xval - phi
+                @debug "Dual step"
                 tt = dualstep
                 # setting gap estimate as ∇f(x) (x - v_FW) / 2
                 phi = (xval - value) / 2
+                @debug "New phi: $(phi)"
             else
+                @debug "Line search $line_search"
+                active_set_cleanup!(active_set)
+                active_set_renormalize!(active_set)
+                x = compute_active_set_iterate(active_set)
                 tt = regular
+                @debug "progress $(dot(v - x, gradient))"
                 if line_search == agnostic
                     gamma = 2 / (2 + t)
                 elseif line_search == goldenratio
                     _, gamma = segmentSearch(f, grad, x, ynew, linesearch_tol=linesearch_tol)
                 elseif line_search == backtracking
-                    _, gamma = backtrackingLS(f, gradient, x, v, linesearch_tol=linesearch_tol)
+                    _, gamma = backtrackingLS(f, gradient, x, v, linesearch_tol=linesearch_tol, step_lim=100)
                 elseif line_search == nonconvex
                     gamma = 1 / sqrt(t + 1)
                 elseif line_search == shortstep
@@ -171,10 +175,28 @@ function bcg(
                 elseif line_search == adaptive
                     L, gamma = adaptive_step_size(f, gradient, x, x - v, L)
                 end
-                active_set.weights .*= (1 - gamma)
-                # we push directly since ynew is by nature not in active set
-                push!(active_set, (gamma, v))
-                active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
+                fprev = f(x)
+                fprev2 = f(compute_active_set_iterate(active_set))
+                fnew_first = f(
+                    compute_active_set_iterate(active_set) - gamma * (x - v)
+                )
+                norm_x_err = norm(x - compute_active_set_iterate(active_set))
+                fnew_first_init = f(x - gamma * (x - v))
+                new_iterate_theo = x - gamma * (x - v)
+                active_set_update!(active_set, gamma, v)
+                new_iterate_real = compute_active_set_iterate(active_set)
+                fnew = f(new_iterate_real)
+                if fprev <= fnew
+                    @debug "val before update $(fprev)"
+                    @debug "val before update actual $(fprev2)"
+                    @debug "val before update on x $(fnew_first_init)"
+                    @debug "val update theory $(fnew_first)"
+                    @debug "Gap $(dot(gradient, x - v))"
+                    @debug "current x $(sum(x))"
+                    @debug "x out place $(sum(compute_active_set_iterate(active_set)))"
+                    @debug "difference iterates\n$(norm(new_iterate_real - new_iterate_theo))"
+                    error("END")
+                end
             end
         end
         dual_gap = 2phi
@@ -294,18 +316,25 @@ function update_simplex_gradient_descent!(
     # usual suspects are floating-point errors when multiplying atoms with near-zero weights
     # in that case, inverting the sense of d
     @inbounds if dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), direction) < 0
-        # @warn "Non-improving d, aborting simplex descent"
+        @warn "Non-improving d, aborting simplex descent"
+        println(dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), direction))
         return true
     end
+    rem_idx = -1
     @inbounds for idx in eachindex(d)
         if d[idx] ≥ 0
-            η = min(η, active_set.weights[idx] / d[idx])
+            max_val = active_set.weights[idx] / d[idx]
+            if η > max_val
+                η = max_val
+                rem_idx = idx
+            end
         end
     end
     # TODO at some point avoid materializing both x and y
     η = max(0, η)
     x = compute_active_set_iterate(active_set)
     @. active_set.weights -= η * d
+    active_set.weights[rem_idx] = 0
     active_set_renormalize!(active_set)
     y = compute_active_set_iterate(active_set)
     if f(x) ≥ f(y)

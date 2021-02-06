@@ -26,17 +26,18 @@ function cgrad(x, xp)
     return @. 2 * (x - xp)
 end
 
-# lmo = FrankWolfe.KSparseLMO(100, 1.0)
-lmo = FrankWolfe.KSparseLMO(100, big"1.0")
+const lmo = FrankWolfe.KSparseLMO(100, 1.0)
+const lmo_big = FrankWolfe.KSparseLMO(100, big"1.0")
 # lmo = FrankWolfe.LpNormLMO{Float64,1}(1.0)
 # lmo = FrankWolfe.ProbabilitySimplexOracle(1.0);
 # lmo = FrankWolfe.UnitSimplexOracle(1.0);
-const x00 = FrankWolfe.compute_extreme_point(lmo, zeros(BigFloat, n))
+const x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
+const x00_big = FrankWolfe.compute_extreme_point(lmo_big, zeros(n))
 # print(x0)
 
 FrankWolfe.benchmark_oracles(x -> cf(x, xp), x -> cgrad(x, xp), lmo, n; k=100, T=Float64)
 
-x0 = deepcopy(x00)
+x0 = deepcopy(x00_big)
 @time x, v, primal, dual_gap, trajectorySs = FrankWolfe.fw(
     f,
     grad,
@@ -51,7 +52,7 @@ x0 = deepcopy(x00)
     trajectory=true,
 );
 
-x0 = deepcopy(x00)
+x0 = deepcopy(x00_big)
 @time x, v, primal, dual_gap, trajectoryAda = FrankWolfe.afw(
     f,
     grad,
@@ -79,14 +80,14 @@ x0 = deepcopy(x00)
 
 println("\n==> Agnostic if function is too expensive for adaptive.\n")
 
-x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, trajectoryBCG = FrankWolfe.bcg(
+x0 = deepcopy(x00_big)
+x, v, primal, dual_gap, trajectoryBCG = FrankWolfe.bcg(
     f,
     grad,
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.adaptive,
+    line_search=FrankWolfe.backtracking,
     print_iter=k / 10,
     emphasis=FrankWolfe.memory,
     L=2,
@@ -95,7 +96,7 @@ x0 = deepcopy(x00)
     Ktolerance=1.00,
     goodstep_tolerance=0.95,
     weight_purge_threshold=1e-10,
-);
+)
 
 data = [trajectorySs, trajectoryAda, trajectoryBCG]
 label = ["short step", "AFW", "BCG"]
