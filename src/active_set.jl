@@ -91,10 +91,8 @@ end
 
 function active_set_renormalize!(active_set::ActiveSet)
     renorm = sum(active_set.weights)
-    if !isapprox(sum(active_set.weights), 1.0)
-        active_set.weights ./= renorm
-    end
-    return nothing
+    active_set.weights ./= renorm
+    return active_set
 end
 
 function weight_from_atom(active_set::ActiveSet, atom)
