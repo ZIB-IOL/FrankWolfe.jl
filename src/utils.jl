@@ -21,22 +21,11 @@ function adaptive_step_size(f, gradient, x, direction, L_est; eta=0.9, tau=2, ga
             f(x - gamma * direction) - f(x) >
             -gamma * norm_dot + gamma^2 * ndir2 * M / 2
     )
-        @debug "M: $M"
-        @debug "Expected progress: $(-gamma * norm_dot + gamma^2 * ndir2 * M / 2)"
         M *= tau
         gamma = min(
+            dot(gradient, direction) / (M * norm(direction)^2),
             gamma_max,
-            norm_dot / (M * ndir2),
         )
-        lscounter += 1
-        if lscounter > 500
-            @warn("too many iterations")
-            break
-        end
-        if f(x - gamma * direction) < f(x)
-            @debug "Progress of"
-            @debug "$(f(x - gamma * direction) - f(x))"
-        end
     end
     if f(x) ≤ f(x - gamma * direction)
         @debug "Not improving after $lscounter iters"

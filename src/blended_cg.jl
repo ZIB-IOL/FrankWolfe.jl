@@ -134,7 +134,6 @@ function bcg(
             )
             nforced_fw += force_fw_step
         else
-            @debug "non simplex"
             non_simplex_iter += 1
             # compute new atom
             (v, value) = lp_separation_oracle(
@@ -150,11 +149,9 @@ function bcg(
             force_fw_step = false
             xval = dot(x, gradient)
             if value > xval - phi
-                @debug "Dual step"
                 tt = dualstep
                 # setting gap estimate as ∇f(x) (x - v_FW) / 2
                 phi = (xval - value) / 2
-                @debug "New phi: $(phi)"
             else
                 @debug "Line search $line_search"
                 active_set_cleanup!(active_set)
