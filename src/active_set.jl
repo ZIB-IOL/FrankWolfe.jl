@@ -76,10 +76,8 @@ function active_set_update!(active_set::ActiveSet, lambda, atom)
     # add value for new atom
     idx = find_atom(active_set, atom)
     if idx > 0
-        @debug "found index $idx, previous w $(active_set.weights[idx])"
         @inbounds active_set.weights[idx] = active_set.weights[idx] + lambda
     else
-        @debug "New atom"
         push!(active_set, (lambda, atom))
     end
     active_set_cleanup!(active_set)

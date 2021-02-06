@@ -153,12 +153,10 @@ function bcg(
                 # setting gap estimate as ∇f(x) (x - v_FW) / 2
                 phi = (xval - value) / 2
             else
-                @debug "Line search $line_search"
                 active_set_cleanup!(active_set)
                 active_set_renormalize!(active_set)
                 x = compute_active_set_iterate(active_set)
                 tt = regular
-                @debug "progress $(dot(v - x, gradient))"
                 if line_search == agnostic
                     gamma = 2 / (2 + t)
                 elseif line_search == goldenratio
