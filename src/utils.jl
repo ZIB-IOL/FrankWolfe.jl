@@ -10,37 +10,21 @@ TODO:
 """
 function adaptive_step_size(f, gradient, x, direction, L_est; eta=0.9, tau=2, gamma_max=1)
     M = eta * L_est
+    dot_dir = dot(gradient, direction)
     ndir2 = norm(direction)^2
-    norm_dot = dot(gradient, direction)
-    gamma0 = gamma = min(
+    gamma = min(
+        dot_dir / (M * ndir2),
         gamma_max,
-        norm_dot / (M * ndir2),
     )
-    lscounter = 0
-    while (
-            f(x - gamma * direction) - f(x) >
-            -gamma * norm_dot + gamma^2 * ndir2 * M / 2
-    )
+    while f(x - gamma * direction) - f(x) >
+          -gamma * dot_dir +
+          gamma^2 * ndir2 * M / 2
         M *= tau
         gamma = min(
-            dot(gradient, direction) / (M * norm(direction)^2),
+            dot_dir / (M * ndir2),
             gamma_max,
         )
     end
-    if f(x) ≤ f(x - gamma * direction)
-        @debug "Not improving after $lscounter iters"
-        @debug "γ: $gamma"
-        @debug "γ0: $gamma0"
-        @debug "norm_dot: $norm_dot"
-        @debug "ndir2: $ndir2"
-        @debug "L: $L_est"
-        @debug "Final M: $M"
-        @debug (f(x), f(x - gamma * direction))
-        if !isfinite(M)
-            error("")
-        end
-    end
-    @debug "Finished LS"
     return M, gamma
 end
 
