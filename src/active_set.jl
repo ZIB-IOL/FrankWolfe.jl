@@ -115,19 +115,6 @@ function compute_active_set_iterate(active_set)
     return sum(λi * ai for (λi, ai) in active_set)
 end
 
-# to remove, used for reference
-function compute_active_set_iterate_full(active_set)
-    weighted = map(active_set) do (λi, ai)
-        λi * ai
-    end
-    res = 0 .* weighted[1]
-    for idx in eachindex(res)
-        res[idx] = sum(getindex.(weighted, idx))
-    end
-    return res
-end
-
-# TODO change for proper inplace version, for now results in imprecisions
 # NO NOT use for now - mysterious BigFloat + Sparse problems
 function compute_active_set_iterate!(x, active_set)
     x .= 0
@@ -135,24 +122,7 @@ function compute_active_set_iterate!(x, active_set)
     y = compute_active_set_iterate(active_set)
     n0y = norm(y)
     y2 = compute_active_set_iterate(active_set)
-    @debug "ny $(norm(y))"
-    @debug "ny2 $(norm(y2))"
-    @debug "$(norm(compute_active_set_iterate(active_set)))"
-    @debug "$(norm(compute_active_set_iterate(active_set)))"
     x .= deepcopy(y)
-    @debug "$(norm(compute_active_set_iterate(active_set)))"
-    if norm(y2) != (norm(compute_active_set_iterate(active_set)))
-        return false
-        error("WHUT")
-    end
-    @debug "nf $(norm(compute_active_set_iterate(active_set)))"
-    @debug "ny $(norm(y))"
-    @debug "nx $(norm(x))"
-    @debug "nf $(norm(compute_active_set_iterate(active_set)))"
-    if norm(y) != norm(compute_active_set_iterate(active_set))
-        @debug "$(typeof(y))"
-        error("Even before")
-    end
     return x
 end
 

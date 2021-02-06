@@ -87,7 +87,6 @@ function backtrackingLS(
             if oldVal - newVal >= 0
                 return i, gamma
             else
-                @warn "Non-improving internal"
                 return i, 0 * gamma
             end
         end
