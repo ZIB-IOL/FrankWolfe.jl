@@ -12,6 +12,10 @@ function adaptive_step_size(f, gradient, x, direction, L_est; eta=0.9, tau=2, ga
     while f(x - gamma * direction) - f(x) >
           -gamma * dot(gradient, direction) + gamma^2 * M / 2.0 * norm(direction)^2
         M *= tau
+        gamma = min(
+            dot(gradient, direction) / (M * norm(direction)^2),
+            gamma_max,
+        )
     end
     return M, gamma
 end
