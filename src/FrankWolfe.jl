@@ -4,7 +4,7 @@ using LinearAlgebra
 using Printf
 using ProgressMeter
 using TimerOutputs
-using SparseArrays: spzeros
+using SparseArrays: spzeros, SparseVector
 import SparseArrays
 import Random
 
@@ -26,12 +26,12 @@ include("utils.jl")
 include("function_gradient.jl")
 include("active_set.jl")
 
+# move advanced variants etc to their own files to prevent excessive clutter
+
 include("blended_cg.jl")
-
-# move advanced variants etc to there own files to prevent excessive clutter
 include("afw.jl")
-
 include("fw_algorithms.jl")
+
 
 ##############################################################
 # simple benchmark of elementary costs of oracles and 
@@ -166,7 +166,6 @@ function fw(
     x = x0
     tt:StepType = regular
     trajData = []
-    dx = similar(x0) # Array{eltype(x0)}(undef, length(x0))
     time_start = time_ns()
 
     if (line_search === shortstep || line_search === adaptive) && L == Inf
@@ -220,7 +219,7 @@ function fw(
         if trajectory === true
             push!(
                 trajData,
-                [t, primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9]
+                [t, primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9],
             )
         end
 
@@ -229,7 +228,8 @@ function fw(
         elseif line_search === goldenratio
             _, gamma = segmentSearch(f, grad, x, v, linesearch_tol=linesearch_tol)
         elseif line_search === backtracking
-            _, gamma = backtrackingLS(f, gradient, x, v, linesearch_tol=linesearch_tol, step_lim=step_lim)
+            _, gamma =
+                backtrackingLS(f, gradient, x, v, linesearch_tol=linesearch_tol, step_lim=step_lim)
         elseif line_search === nonconvex
             gamma = 1 / sqrt(t + 1)
         elseif line_search === shortstep
@@ -250,7 +250,14 @@ function fw(
             if t === 0
                 tt = initial
             end
-            rep = [tt, string(t), primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9]
+            rep = [
+                tt,
+                string(t),
+                primal,
+                primal - dual_gap,
+                dual_gap,
+                (time_ns() - time_start) / 1.0e9,
+            ]
             print_iter_func(rep)
             flush(stdout)
         end
@@ -265,7 +272,14 @@ function fw(
     dual_gap = dot(x, gradient) - dot(v, gradient)
     if verbose
         tt = last
-        rep = [tt, string(t - 1), primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9]
+        rep = [
+            tt,
+            string(t - 1),
+            primal,
+            primal - dual_gap,
+            dual_gap,
+            (time_ns() - time_start) / 1.0e9,
+        ]
         print_iter_func(rep)
         print_footer()
         flush(stdout)
@@ -348,7 +362,6 @@ function lcg(
     phi = Inf
     trajData = []
     tt::StepType = regular
-    dx = similar(x0) # Array{eltype(x0)}(undef, length(x0))
     time_start = time_ns()
 
     if line_search === shortstep && L == Inf
@@ -395,7 +408,14 @@ function lcg(
         if trajectory === true
             push!(
                 trajData,
-                [t, primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9, length(lmo)],
+                [
+                    t,
+                    primal,
+                    primal - dual_gap,
+                    dual_gap,
+                    (time_ns() - time_start) / 1.0e9,
+                    length(lmo),
+                ],
             )
         end
 
@@ -448,6 +468,5 @@ function lcg(
     end
     return x, v, primal, dual_gap, trajData
 end
-
 
 end
