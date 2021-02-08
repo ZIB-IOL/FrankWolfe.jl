@@ -1,23 +1,27 @@
 
 """
 Slight modification of
-Aaptive Step Size strategy from https://arxiv.org/pdf/1806.05123.pdf
+Adaptive Step Size strategy from https://arxiv.org/pdf/1806.05123.pdf
 
+Note: direction is opposite to the improving direction
+norm(gradient, direction) > 0
 TODO: 
 - make emphasis aware and optimize
 """
 function adaptive_step_size(f, gradient, x, direction, L_est; eta=0.9, tau=2, gamma_max=1)
     M = eta * L_est
+    dot_dir = dot(gradient, direction)
+    ndir2 = norm(direction)^2
     gamma = min(
-        dot(gradient, direction) / (M * norm(direction)^2),
+        dot_dir / (M * ndir2),
         gamma_max,
     )
     while f(x - gamma * direction) - f(x) >
-          -gamma * dot(gradient, direction) +
-          gamma^2 * M / 2.0 * norm(direction)^2
+          -gamma * dot_dir +
+          gamma^2 * ndir2 * M / 2
         M *= tau
         gamma = min(
-            dot(gradient, direction) / (M * norm(direction)^2),
+            dot_dir / (M * ndir2),
             gamma_max,
         )
     end
@@ -28,7 +32,16 @@ end
 # TODO:
 # - code needs optimization
 
-function backtrackingLS(f, grad_direction, x, y; line_search=true, linesearch_tol=1e-10, step_lim=20, lsTau=0.5)
+function backtrackingLS(
+    f,
+    grad_direction,
+    x,
+    y;
+    line_search=true,
+    linesearch_tol=1e-10,
+    step_lim=20,
+    lsTau=0.5,
+)
     gamma = one(lsTau)
     d = y - x
     i = 0
@@ -36,6 +49,7 @@ function backtrackingLS(f, grad_direction, x, y; line_search=true, linesearch_to
     dot_gdir = dot(grad_direction, d)
     @assert dot_gdir ≤ 0
     if dot_gdir ≥ 0
+        @warn "Non-improving"
         return i, 0 * gamma
     end
 
@@ -87,8 +101,7 @@ function segmentSearch(f, grad, x, y; line_search=true, linesearch_tol=1e-10)
         else
             left, right = left, probe
         end
-        improv =
-            norm(f(right) - f(old_right)) + norm(f(left) - f(old_left))
+        improv = norm(f(right) - f(old_right)) + norm(f(left) - f(old_left))
     end
 
     x_min = (left + right) / 2.0
@@ -195,7 +208,7 @@ function plot_trajectories(data, label; filename=nothing)
                 xaxis=:log,
                 yaxis=:log,
                 ylabel="Primal",
-                legend=:bottomleft,
+                legend=:topright,
                 yguidefontsize=8,
                 xguidefontsize=8,
                 legendfontsize=8,
@@ -261,7 +274,7 @@ function plot_trajectories(data, label; filename=nothing)
                 xguidefontsize=8,
             )
         else
-            plot!(x, y, label=label[i])
+            plot!(x, y, label=label[i], legend=:topright)
         end
     end
     fp = plot(pit, pti, dit, dti, layout=(2, 2)) # layout = @layout([A{0.01h}; [B C; D E]]))

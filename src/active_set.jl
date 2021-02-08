@@ -70,16 +70,19 @@ end
 Adds the atom to the active set with weight lambda or adds lambda to existing atom.
 """
 function active_set_update!(active_set::ActiveSet, lambda, atom)
+    active_set_renormalize!(active_set)
     # rescale active set
     active_set.weights .*= (1 - lambda)
     # add value for new atom
     idx = find_atom(active_set, atom)
     if idx > 0
-        @inbounds active_set.weights[idx] = active_set[idx][1] + lambda
+        @inbounds active_set.weights[idx] = active_set.weights[idx] + lambda
     else
         push!(active_set, (lambda, atom))
     end
-    return active_set_cleanup!(active_set)
+    active_set_cleanup!(active_set)
+    active_set_renormalize!(active_set)
+    return active_set
 end
 
 function active_set_validate(active_set::ActiveSet)
@@ -89,7 +92,7 @@ end
 function active_set_renormalize!(active_set::ActiveSet)
     renorm = sum(active_set.weights)
     active_set.weights ./= renorm
-    return nothing
+    return active_set
 end
 
 function weight_from_atom(active_set::ActiveSet, atom)
@@ -105,25 +108,26 @@ end
     compute_active_set_iterate(active_set)
 """
 function compute_active_set_iterate(active_set)
-    # iteration protocol is obtained for free from
-    # the fact that active_set is an abstract vector
     return sum(λi * ai for (λi, ai) in active_set)
 end
 
+# NO NOT use for now - mysterious BigFloat + Sparse problems
 function compute_active_set_iterate!(x, active_set)
     x .= 0
-    for (λi, ai) in active_set
-        x .+= λi * ai
-    end
+    SparseArrays.dropzeros!(x)
+    y = compute_active_set_iterate(active_set)
+    n0y = norm(y)
+    y2 = compute_active_set_iterate(active_set)
+    x .= deepcopy(y)
     return x
 end
 
-function active_set_cleanup!(active_set)
-    return filter!(e -> e[1] > 0, active_set)
+function active_set_cleanup!(active_set; weight_purge_threshold=1e-12)
+    return filter!(e -> e[1] > weight_purge_threshold, active_set)
 end
 
 function find_atom(active_set::ActiveSet, atom)
-    for idx in eachindex(active_set)
+    @inbounds for idx in eachindex(active_set)
         if active_set.atoms[idx] == atom
             return idx
         end
@@ -161,19 +165,20 @@ on the active set (local Frank Wolfe)
 and the maximizing one (away step).
 Returns the two corresponding indices in the active set, along with a flag
 indicating if the direction improvement is above a threshold.
+`goodstep_tolerance ∈ (0, 1]` is a tolerance coefficient multiplying Φ for the validation of the progress. 
 """
-function find_minmax_directions(active_set::ActiveSet, direction, Φ)
+function find_minmax_directions(active_set::ActiveSet, direction, Φ; goodstep_tolerance=0.75)
     idx_fw = idx_as = -1
     v_fw = Inf
     v_as = -Inf
-    for (idx, a) in active_set.atoms
+    for (idx, a) in enumerate(active_set.atoms)
         val = dot(direction, a)
         if val ≤ v_fw
             v_fw = val
             idx_fw = idx
         elseif val ≥ v_as
             v_as = val
-            idx_as = val
+            idx_as = idx
         end
     end
     # improving step
