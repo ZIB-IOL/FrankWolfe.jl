@@ -328,6 +328,7 @@ function plot_sparsity(data, label; filename=nothing)
                 legend=false,
                 xaxis=:log,
                 yaxis=:log,
+                ylabel="Dual",
                 yguidefontsize=8,
                 xguidefontsize=8,
             )
