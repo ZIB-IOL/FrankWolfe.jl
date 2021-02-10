@@ -2,8 +2,8 @@ import FrankWolfe
 using LinearAlgebra
 using Random
 
-n = Int(5e5)
-k = 5000
+n = Int(5e4)
+k = 10000
 
 s = rand(1:100)
 @info "Seed $s"
@@ -67,24 +67,6 @@ f,
 
 println("\n==> Localized AFW.\n")
 
-# x0 = deepcopy(x00)
-# x, v, primal, dual_gap, trajectoryBCG = FrankWolfe.bcg(
-#     f,
-#     grad,
-#     lmo,
-#     x0,
-#     max_iteration=k,
-#     line_search=FrankWolfe.backtracking,
-#     print_iter=k / 10,
-#     emphasis=FrankWolfe.memory,
-#     L=2,
-#     verbose=true,
-#     trajectory=true,
-#     Ktolerance=1.00,
-#     goodstep_tolerance=0.95,
-#     weight_purge_threshold=1e-10,
-# )
-
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, trajectoryAdaLoc = FrankWolfe.afw(
     f,
@@ -93,7 +75,7 @@ x0 = deepcopy(x00)
     x0,
     max_iteration=k,
     localized=true,
-    localizedFactor=0.66,
+    localizedFactor=0.66, # 66,
     line_search=FrankWolfe.adaptive,
     L=100,
     print_iter=k / 10,
@@ -103,6 +85,57 @@ x0 = deepcopy(x00)
 );
 
 
+x0 = deepcopy(x00)
+@time x, v, primal, dual_gap, trajectoryAdaLoc5 = FrankWolfe.afw(
+    f,
+    grad,
+    lmo,
+    x0,
+    max_iteration=k,
+    localized=true,
+    localizedFactor=0.5, # 66,
+    line_search=FrankWolfe.adaptive,
+    L=100,
+    print_iter=k / 10,
+    emphasis=FrankWolfe.memory,
+    verbose=true,
+    trajectory=true,
+);
+
+x0 = deepcopy(x00)
+@time x, v, primal, dual_gap, trajectoryAdaLoc25 = FrankWolfe.afw(
+    f,
+    grad,
+    lmo,
+    x0,
+    max_iteration=k,
+    localized=true,
+    localizedFactor=0.25, # 66,
+    line_search=FrankWolfe.adaptive,
+    L=100,
+    print_iter=k / 10,
+    emphasis=FrankWolfe.memory,
+    verbose=true,
+    trajectory=true,
+);
+
+x0 = deepcopy(x00)
+@time x, v, primal, dual_gap, trajectoryAdaLoc1 = FrankWolfe.afw(
+    f,
+    grad,
+    lmo,
+    x0,
+    max_iteration=k,
+    localized=true,
+    localizedFactor=0.1, # 66,
+    line_search=FrankWolfe.adaptive,
+    L=100,
+    print_iter=k / 10,
+    emphasis=FrankWolfe.memory,
+    verbose=true,
+    trajectory=true,
+);
+
 
 # data = [trajectorySs, trajectoryAda, trajectoryBCG]
 # label = ["short step", "AFW", "BCG"]
@@ -110,18 +143,9 @@ x0 = deepcopy(x00)
 data = [trajectorySs, trajectoryAda, trajectoryAdaLoc]
 label = ["short step", "AFW", "AFW-Loc"]
 
-FrankWolfe.plot_trajectories(data, label)
+# FrankWolfe.plot_trajectories(data, label, filename="convergence.pdf")
 
-dataSparsity = [trajectoryAda, trajectoryAdaLoc]
-labelSparsity = ["AFW", "AFW-Loc"]
+dataSparsity = [trajectoryAda, trajectoryAdaLoc, trajectoryAdaLoc5, trajectoryAdaLoc25, trajectoryAdaLoc1]
+labelSparsity = ["AFW", "AFW-Loc066", "AFW-Loc05", "AFW-Loc025", "AFW-Loc01" ]
 
-FrankWolfe.plot_sparsity(dataSparsity, labelSparsity)
-# FrankWolfe.plot_trajectories(data[2:2], label[2:2])
-
-# using Plots
-# plot(getindex.(trajectoryAda, 4), xaxis=:log, yaxis=:log)
-
-
-# vs = getindex.(trajectoryBCG, 3)
-
-# plot(vs)
+FrankWolfe.plot_sparsity(dataSparsity, labelSparsity,filename="sparse.pdf")
