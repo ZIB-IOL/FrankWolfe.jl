@@ -132,6 +132,10 @@ end
             @test all(abs(vi) ≈ abs(τ * sign(vi)) for vi in v[1:K])
         end
     end
+    # type stability of K-sparse polytope LMO
+    lmo = KSparseLMO(3, 2.0)
+    x = 10 * randn(n) # dense vector
+    @inferred compute_extreme_point(lmo, x)    
 end
 
 @testset "Caching on simplex LMOs" begin
