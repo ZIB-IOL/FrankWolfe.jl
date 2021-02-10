@@ -284,3 +284,63 @@ function plot_trajectories(data, label; filename=nothing)
     end
     return fp
 end
+
+function plot_sparsity(data, label; filename=nothing)
+    theme(:dark)
+    # theme(:vibrant)
+    gr()
+
+    x = []
+    y = []
+    ps = nothing
+    ds = nothing
+    offset = 2
+    for i in 1:length(data)
+        trajectory = data[i]
+        x = [trajectory[j][6] for j in offset:length(trajectory)]
+        y = [trajectory[j][2] for j in offset:length(trajectory)]
+        if i == 1
+            ps = plot(
+                x,
+                y,
+                label=label[i],
+                xaxis=:log,
+                yaxis=:log,
+                ylabel="Primal",
+                legend=:topright,
+                yguidefontsize=8,
+                xguidefontsize=8,
+                legendfontsize=8,
+            )
+        else
+            plot!(x, y, label=label[i])
+        end
+    end
+    for i in 1:length(data)
+        trajectory = data[i]
+        x = [trajectory[j][6] for j in offset:length(trajectory)]
+        y = [trajectory[j][4] for j in offset:length(trajectory)]
+        if i == 1
+            ds = plot(
+                x,
+                y,
+                label=label[i],
+                legend=false,
+                xaxis=:log,
+                yaxis=:log,
+                yguidefontsize=8,
+                xguidefontsize=8,
+            )
+        else
+            plot!(x, y, label=label[i])
+        end
+    end
+    
+    fp = plot(ps,ds, layout=(1, 2)) # layout = @layout([A{0.01h}; [B C; D E]]))
+    plot!(size=(600, 200))
+    if filename !== nothing
+        savefig(fp, filename)
+    end
+    return fp
+end
+

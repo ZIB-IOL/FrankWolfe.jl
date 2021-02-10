@@ -156,6 +156,35 @@ function active_set_argmin(active_set::ActiveSet, direction)
     return (active_set[idx]..., idx)
 end
 
+"""
+    active_set_argminmax(active_set::ActiveSet, direction)
+
+Computes the linear minimizer in the direction on the active set.
+Returns `(λ_i, a_i, i)`
+"""
+function active_set_argminmax(active_set::ActiveSet, direction)
+    val = Inf
+    valM = -Inf
+    idx = -1
+    idxM = -1
+    temp = 0
+    tempM = 0
+    for i in eachindex(active_set)
+        temp = dot(active_set.atoms[i], direction)
+        tempM = -tempM
+        if temp < val
+            val = temp
+            idx = i
+        end
+        if tempM > valM
+            valM = tempM
+            idxM = i
+        end 
+    end
+    # return lambda, vertex, index
+    return (active_set[idx]..., idx,active_set[idxM]...,idxM)
+end
+
 
 """
     find_minmax_directions(active_set::ActiveSet, direction, Φ)

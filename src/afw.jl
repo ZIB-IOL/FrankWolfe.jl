@@ -11,6 +11,8 @@ function afw(
     x0;
     line_search::LineSearchMethod=adaptive,
     awaySteps=true,
+    localized=false,
+    localizedFactor=0.66,
     L=Inf,
     gamma0=0,
     step_lim=20,
@@ -89,7 +91,7 @@ function afw(
         println(
             "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration TYPE: $numType",
         )
-        println("MOMENTUM: $momentum AWAYSTEPS: $awaySteps")
+        println("MOMENTUM: $momentum AWAYSTEPS: $awaySteps LOCALIZED: $localized ($localizedFactor)")
         if emphasis === memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
         end
@@ -150,10 +152,27 @@ function afw(
 
         # above we have already compute the FW vetex and the dual_gap. now we need to 
         # compute the away vertex and the away gap
-        lambda, a, i = active_set_argmin(active_set, -gradient)
+        
+        # lambda, a, i = active_set_argmin(active_set, -gradient)
+
+        # compute away and localized FW in one go -> saves one pass over the active set
+        # note the switch in the sign in front of the gradient as the maximizer is returned in the last three elements
+        lambdaVLoc, vloc, iloc, lambda, a, i = active_set_argminmax(active_set, gradient)
+        
+        # if we localized AFW then also compute FW vertex over active set - if not too bad use this one instead of the FW one
+        # helps with sparsity
+        if localized
+            # lambdaVLoc, vloc, iloc = active_set_argmin(active_set, gradient)
+            if  dot(a, gradient) - dot(vloc,gradient) >= localizedFactor * (dot(a, gradient) - dot(v,gradient))
+                v = vloc
+                d = x - v
+                tt = local_fw 
+            end
+        end
         away_gap = dot(a, gradient) - dot(x, gradient)
 
         # if away_gap is larger than dual_gap and we do awaySteps, then away step promises more progress
+        # do not do away_step in very first iteration. you might remove the only one vertex that we have so far
         if dual_gap < away_gap && awaySteps
             tt = away
             gamma_max = lambda / (1 - lambda)
