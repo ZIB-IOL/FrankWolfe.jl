@@ -74,12 +74,15 @@ end
         τ = 5 + 3 * rand()
         # tests that the "special" p behaves like the "any" p, i.e. 2.0 and 2
         @testset "$p-norm" for p in (1, 1.0, 1.5, 2, 2.0, Inf, Inf32)
+        lmo = LpNormLMO{Float64,p}(τ)
             for _ in 1:100
                 c = 5 * randn(n)
-                lmo = LpNormLMO{Float64,p}(τ)
                 v = FrankWolfe.compute_extreme_point(lmo, c)
                 @test norm(v, p) ≈ τ
             end
+            c = zeros(n)
+            v = FrankWolfe.compute_extreme_point(lmo, c)
+            @test !any(isnan, v)            
         end
         @testset "K-Norm ball $K" for K in 1:n
             lmo_ball = FrankWolfe.KNormBallLMO(K, τ)
