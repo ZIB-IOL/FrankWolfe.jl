@@ -8,3 +8,4 @@ convergence.pdf
 test/bug.jl
 before.pdf
 after.pdf
+*.pdf
