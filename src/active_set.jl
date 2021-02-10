@@ -160,7 +160,7 @@ end
     active_set_argminmax(active_set::ActiveSet, direction)
 
 Computes the linear minimizer in the direction on the active set.
-Returns `(λ_i, a_i, i)`
+Returns `(λ_min, a_min, i_min, λ_max, a_max, i_max)`
 """
 function active_set_argminmax(active_set::ActiveSet, direction)
     val = Inf
