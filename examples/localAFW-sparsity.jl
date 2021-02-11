@@ -2,7 +2,7 @@ import FrankWolfe
 using LinearAlgebra
 using Random
 
-n = Int(5e4)
+n = Int(1e5)
 k = 10000
 
 s = rand(1:100)
@@ -16,10 +16,10 @@ const xp = xpi ./ total;
 f(x) = norm(x - xp)^2
 grad(x) = 2 * (x - xp)
 
-# const lmo = FrankWolfe.KSparseLMO(100, 1.0)
+const lmo = FrankWolfe.KSparseLMO(100, 1.0)
 
 # const lmo_big = FrankWolfe.KSparseLMO(100, big"1.0")
-const lmo = FrankWolfe.LpNormLMO{Float64,5}(1.0)
+# const lmo = FrankWolfe.LpNormLMO{Float64,5}(1.0)
 # lmo = FrankWolfe.ProbabilitySimplexOracle(1.0);
 # lmo = FrankWolfe.UnitSimplexOracle(1.0);
 
