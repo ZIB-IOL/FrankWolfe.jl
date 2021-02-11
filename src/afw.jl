@@ -206,12 +206,12 @@ function afw(
         gamma = min(gamma_max, gamma)
 
         # cleanup and renormalize every 10 iterations
-        renorm = mod(t, 10) == 0
+        renorm = mod(t, 1000) == 0
 
         if !away_step_taken
             active_set_update!(active_set, gamma, v, renorm)
         else
-            active_set_update!(active_set, -gamma, a, renorm)
+            active_set_update!(active_set, -gamma, a, true)
         end
 
         if mod(t, print_iter) == 0 && verbose
