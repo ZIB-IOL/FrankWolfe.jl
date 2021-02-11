@@ -2,7 +2,7 @@ import FrankWolfe
 using LinearAlgebra
 using Random
 
-n = Int(5e4)
+n = Int(1e5)
 k = 10000
 
 s = rand(1:100)
