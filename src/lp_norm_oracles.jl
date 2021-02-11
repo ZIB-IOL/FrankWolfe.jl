@@ -27,7 +27,7 @@ function compute_extreme_point(lmo::LpNormLMO{T,2}, direction) where {T}
 end
 
 function compute_extreme_point(lmo::LpNormLMO{T,Inf}, direction) where {T}
-    return -lmo.right_hand_side * sign.(direction)
+    return -[lmo.right_hand_side * sign(d) for d in direction]
 end
 
 function compute_extreme_point(lmo::LpNormLMO{T,1}, direction) where {T}
