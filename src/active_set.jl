@@ -69,7 +69,7 @@ end
 
 Adds the atom to the active set with weight lambda or adds lambda to existing atom.
 """
-function active_set_update!(active_set::ActiveSet, lambda, atom)
+function active_set_update!(active_set::ActiveSet, lambda, atom, renorm=true)
     active_set_renormalize!(active_set)
     # rescale active set
     active_set.weights .*= (1 - lambda)
@@ -80,8 +80,10 @@ function active_set_update!(active_set::ActiveSet, lambda, atom)
     else
         push!(active_set, (lambda, atom))
     end
-    active_set_cleanup!(active_set)
-    active_set_renormalize!(active_set)
+    if renorm
+        active_set_cleanup!(active_set)
+        active_set_renormalize!(active_set)
+    end
     return active_set
 end
 

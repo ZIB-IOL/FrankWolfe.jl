@@ -205,10 +205,13 @@ function afw(
         # clipping the step size for the away steps
         gamma = min(gamma_max, gamma)
 
+        # cleanup and renormalize every 10 iterations
+        renorm = mod(t, 1000) == 0
+
         if !away_step_taken
-            active_set_update!(active_set, gamma, v)
+            active_set_update!(active_set, gamma, v, renorm)
         else
-            active_set_update!(active_set, -gamma, a)
+            active_set_update!(active_set, -gamma, a, true)
         end
 
         if mod(t, print_iter) == 0 && verbose
