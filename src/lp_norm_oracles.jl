@@ -39,7 +39,6 @@ function compute_extreme_point(lmo::LpNormLMO{T,1}, direction) where {T}
             idx = i
         end
     end
-
     return MaybeHotVector(-lmo.right_hand_side * sign(direction[idx]), idx, length(direction))
 end
 
@@ -53,6 +52,12 @@ function compute_extreme_point(lmo::LpNormLMO{T,p}, direction) where {T,p}
     q = p / (p - 1)
     pow_ratio = q / p
     q_norm = norm(direction, q)^(pow_ratio)
+    # handle zero_direction first
+    # assuming the direction is a vector of 1
+    if q_norm < eps()
+        one_vec = trues(length(direction))
+        return @. -lmo.right_hand_side * one_vec^(pow_ratio) / oftype(q_norm, 1)
+    end
     return @. -lmo.right_hand_side * sign(direction) * abs(direction)^(pow_ratio) / q_norm
 end
 
@@ -95,9 +100,22 @@ end
 
 function compute_extreme_point(lmo::KNormBallLMO{T}, direction) where {T}
     K = max(min(lmo.K, length(direction)), 1)
-    v1 = compute_extreme_point(LpNormLMO{T,1}(lmo.right_hand_side), direction)
-    vinf = compute_extreme_point(LpNormLMO{T,Inf}(lmo.right_hand_side / K), direction)
+    
+    v = -lmo.right_hand_side / K * sign.(direction)
+    oinf = dot(v, direction)
+
+    idx = 0
+    val = -one(eltype(direction))
+    for i in eachindex(direction)
+        if abs(direction[i]) > val
+            val = abs(direction[i])
+            idx = i
+        end
+    end
+    v1 = MaybeHotVector(-lmo.right_hand_side * sign(direction[idx]), idx, length(direction))
     o1 = dot(v1, direction)
-    oinf = dot(vinf, direction)
-    return o1 ≤ oinf ? v1 : vinf
+    if o1 < oinf
+        v .= v1
+    end
+    return v
 end
