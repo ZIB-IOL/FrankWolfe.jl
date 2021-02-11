@@ -101,18 +101,23 @@ end
 function compute_extreme_point(lmo::KNormBallLMO{T}, direction) where {T}
     K = max(min(lmo.K, length(direction)), 1)
     
-    v = -lmo.right_hand_side / K * sign.(direction)
-    oinf = dot(v, direction)
+    oinf = zero(eltype(direction))
+    idx_l1 = 0
+    val_l1 = -one(eltype(direction))
+    v = similar(direction)
 
-    idx = 0
-    val = -one(eltype(direction))
-    for i in eachindex(direction)
-        if abs(direction[i]) > val
-            val = abs(direction[i])
-            idx = i
+    @inbounds for (i, dir_val) in enumerate(direction)
+        temp = -lmo.right_hand_side / K * sign(dir_val)
+        v[i] = temp
+        oinf += dir_val * temp
+        abs_v = abs(dir_val)
+        if abs_v > val_l1
+            idx_l1 = i
+            val_l1 = abs_v
         end
     end
-    v1 = MaybeHotVector(-lmo.right_hand_side * sign(direction[idx]), idx, length(direction))
+
+    v1 = MaybeHotVector(-lmo.right_hand_side * sign(direction[idx_l1]), idx_l1, length(direction))
     o1 = dot(v1, direction)
     if o1 < oinf
         v .= v1
