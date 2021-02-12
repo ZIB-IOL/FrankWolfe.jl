@@ -200,7 +200,8 @@ function fw(
         if momentum === nothing || first_iter
             gradient = grad(x)
         else
-            @emphasis(emphasis, gradient = (momentum * gradient) .+ (1 - momentum) .* grad(x))
+            gtemp = grad(x)
+            @emphasis(emphasis, gradient = (momentum * gradient) + (1 - momentum) * gtemp)
         end
         first_iter = false
 
