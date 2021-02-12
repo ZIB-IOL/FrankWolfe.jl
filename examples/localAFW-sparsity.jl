@@ -14,7 +14,9 @@ total = sum(xpi);
 const xp = xpi ./ total;
 
 f(x) = norm(x - xp)^2
-grad(x) = 2 * (x - xp)
+function grad!(storage, x)
+    @. storage = 2 * (x - xp)
+end
 
 const lmo = FrankWolfe.KSparseLMO(100, 1.0)
 
@@ -32,12 +34,12 @@ const x00 = FrankWolfe.compute_extreme_point(lmo, rand(n))
 
 
 
-FrankWolfe.benchmark_oracles(f, grad, lmo, n; k=100, T=eltype(x00))
+FrankWolfe.benchmark_oracles(f, grad!, lmo, n; k=100, T=eltype(x00))
 
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, trajectorySs = FrankWolfe.fw(
     f,
-    grad,
+    grad!,
     lmo,
     x0,
     max_iteration=k,
@@ -52,7 +54,7 @@ x0 = deepcopy(x00)
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, trajectoryAda = FrankWolfe.afw(
 f,
-    grad,
+    grad!,
     lmo,
     x0,
     max_iteration=k,
@@ -70,7 +72,7 @@ println("\n==> Localized AFW.\n")
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, trajectoryAdaLoc = FrankWolfe.afw(
     f,
-    grad,
+    grad!,
     lmo,
     x0,
     max_iteration=k,
@@ -88,7 +90,7 @@ x0 = deepcopy(x00)
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, trajectoryAdaLoc5 = FrankWolfe.afw(
     f,
-    grad,
+    grad!,
     lmo,
     x0,
     max_iteration=k,
@@ -105,7 +107,7 @@ x0 = deepcopy(x00)
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, trajectoryAdaLoc25 = FrankWolfe.afw(
     f,
-    grad,
+    grad!,
     lmo,
     x0,
     max_iteration=k,
@@ -122,7 +124,7 @@ x0 = deepcopy(x00)
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, trajectoryAdaLoc1 = FrankWolfe.afw(
     f,
-    grad,
+    grad!,
     lmo,
     x0,
     max_iteration=k,

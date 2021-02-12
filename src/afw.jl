@@ -6,7 +6,7 @@
 
 function afw(
     f,
-    grad,
+    grad!,
     lmo,
     x0;
     line_search::LineSearchMethod=adaptive,
@@ -24,6 +24,7 @@ function afw(
     verbose=false,
     linesearch_tol=1e-7,
     emphasis::Emphasis=blas,
+    gradient=nothing,
 )
     function print_header(data)
         @printf(
@@ -68,20 +69,19 @@ function afw(
     primal = Inf
     x = x0
     active_set = ActiveSet([(1.0, x0)]) # add the first vertex to active set from initialization
-    tt:StepType = regular
+    tt = regular
     trajData = []
     time_start = time_ns()
 
     first_iter = true
-    gradient = 0
     d = 0 # working direction
     away_step_taken = false # flag whether the current step is an away step
 
-    if line_search === shortstep && L == Inf
+    if line_search == shortstep && L == Inf
         println("WARNING: Lipschitz constant not set. Prepare to blow up spectacularly.")
     end
 
-    if line_search === fixed && gamma0 == 0
+    if line_search == fixed && gamma0 == 0
         println("WARNING: gamma0 not set. We are not going to move a single bit.")
     end
 
@@ -92,7 +92,7 @@ function afw(
             "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration TYPE: $numType",
         )
         println("MOMENTUM: $momentum AWAYSTEPS: $awaySteps LOCALIZED: $localized ($localizedFactor)")
-        if emphasis === memory
+        if emphasis == memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
         end
         headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "#ActiveSet")
@@ -100,8 +100,13 @@ function afw(
     end
 
     # likely not needed anymore as now the iterates are provided directly via the active set
-    if emphasis === memory && !isa(x, Array)
-        x = convert(Vector{promote_type(eltype(x), Float64)}, x)
+    if gradient === nothing
+        gradient = Vector{promote_type(eltype(x), Float64)}(undef, length(x0))
+    end
+    gtemp = if momentum !== nothing
+        similar(gradient)
+    else
+        nothing
     end
 
     while t <= max_iteration && dual_gap >= max(epsilon, eps())
@@ -110,9 +115,10 @@ function afw(
         x = compute_active_set_iterate(active_set)
 
         if isnothing(momentum) || first_iter
-            gradient = grad(x)
+            grad!(gradient, x)
         else
-            @emphasis(emphasis, gradient = (momentum * gradient) .+ (1 - momentum) * grad(x))
+            grad!(gtemp, x)
+            @emphasis(emphasis, gradient = (momentum * gradient) + (1 - momentum) * gtemp)
         end
         first_iter = false
 
@@ -184,7 +190,7 @@ function afw(
         if line_search === agnostic
             gamma = 2 // (2 + t)
         elseif line_search === goldenratio
-            _, gamma = segmentSearch(f, grad, x, v, linesearch_tol=linesearch_tol)
+            _, gamma = segment_search(f, grad!, x, v, linesearch_tol=linesearch_tol)
         elseif line_search === backtracking
             _, gamma =
                 backtrackingLS(f, gradient, x, v, linesearch_tol=linesearch_tol, step_lim=step_lim)
@@ -205,7 +211,7 @@ function afw(
         # clipping the step size for the away steps
         gamma = min(gamma_max, gamma)
 
-        # cleanup and renormalize every 10 iterations
+        # cleanup and renormalize every x iterations
         renorm = mod(t, 1000) == 0
 
         if !away_step_taken
@@ -215,7 +221,7 @@ function afw(
         end
 
         if mod(t, print_iter) == 0 && verbose
-            if t === 0
+            if t == 0
                 tt = initial
             end
             rep = (
@@ -240,7 +246,7 @@ function afw(
 
     if verbose
         x = compute_active_set_iterate(active_set)
-        gradient = grad(x)
+        grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
         dual_gap = dot(x, gradient) - dot(v, gradient)
@@ -261,7 +267,7 @@ function afw(
     active_set_renormalize!(active_set)
     active_set_cleanup!(active_set)
     x = compute_active_set_iterate(active_set)
-    gradient = grad(x)
+    grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
     dual_gap = dot(x, gradient) - dot(v, gradient)

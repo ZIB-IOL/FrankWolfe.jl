@@ -9,7 +9,9 @@ total = sum(xpi);
 const xp = xpi ./ total;
 
 f(x) = norm(x - xp)^2
-grad(x) = 2 * (x - xp)
+function grad!(storage, x)
+    @. storage = 2 * (x - xp)
+end
 
 # better for memory consumption as we do coordinate-wise ops
 
@@ -17,18 +19,18 @@ function cf(x, xp)
     return @. norm(x - xp)^2
 end
 
-function cgrad(x, xp)
-    return @. 2 * (x - xp)
+function cgrad(storage, x, xp)
+    return @. storage = 2 * (x - xp)
 end
 
 lmo = FrankWolfe.ProbabilitySimplexOracle(1);
 x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
-FrankWolfe.benchmark_oracles(x -> cf(x, xp), x -> cgrad(x, xp), lmo, n; k=100, T=Float64)
+FrankWolfe.benchmark_oracles(x -> cf(x, xp), (str, x) -> cgrad!(str, x, xp), lmo, n; k=100, T=Float64)
 
 @time x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
-    cf,
-    cgrad,
+    x -> cf(x, xp),
+    (str, x) -> cgrad!(str, x, xp),
     lmo,
     x0,
     max_iteration=k,

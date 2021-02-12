@@ -32,82 +32,13 @@ include("blended_cg.jl")
 include("afw.jl")
 include("fw_algorithms.jl")
 
-
-##############################################################
-# simple benchmark of elementary costs of oracles and 
-# critical components
-##############################################################
-
-# TODO: add actual use of T for the rand(n)
-
-function benchmark_oracles(f, grad, lmo, n; k=100, nocache=true, T=Float64)
-    sv = n * sizeof(T) / 1024 / 1024
-    println("\nSize of single vector ($T): $sv MB\n")
-    to = TimerOutput()
-    @showprogress 1 "Testing f... " for i in 1:k
-        x = rand(n)
-        @timeit to "f" temp = f(x)
-    end
-    @showprogress 1 "Testing grad... " for i in 1:k
-        x = rand(n)
-        @timeit to "grad" temp = grad(x)
-    end
-    @showprogress 1 "Testing lmo... " for i in 1:k
-        x = rand(n)
-        @timeit to "lmo" temp = compute_extreme_point(lmo, x)
-    end
-    @showprogress 1 "Testing dual gap... " for i in 1:k
-        x = rand(n)
-        gradient = grad(x)
-        v = compute_extreme_point(lmo, gradient)
-        @timeit to "dual gap" begin
-            dual_gap = dot(x, gradient) - dot(v, gradient)
-        end
-    end
-    @showprogress 1 "Testing update... (Emphasis: blas) " for i in 1:k
-        x = rand(n)
-        gradient = grad(x)
-        v = compute_extreme_point(lmo, gradient)
-        gamma = 1 / 2
-        @timeit to "update (blas)" @emphasis(blas, x = (1 - gamma) * x + gamma * v)
-    end
-    @showprogress 1 "Testing update... (Emphasis: memory) " for i in 1:k
-        x = rand(n)
-        gradient = grad(x)
-        v = compute_extreme_point(lmo, gradient)
-        gamma = 1 / 2
-        # TODO: to be updated to broadcast version once data structure MaybeHotVector allows for it
-        @timeit to "update (memory)" @emphasis(memory, x = (1 - gamma) * x + gamma * v)
-    end
-    if !nocache
-        @showprogress 1 "Testing caching 100 points... " for i in 1:k
-            @timeit to "caching 100 points" begin
-                cache = Float64[]
-                for j in 1:100
-                    x = rand(n)
-                    push!(cache, x)
-                end
-                x = rand(n)
-                gradient = grad(x)
-                v = compute_extreme_point(lmo, gradient)
-                gamma = 1 / 2
-                test = (x -> dot(x, gradient)).(cache)
-                v = cache[argmin(test)]
-                val = v in cache
-            end
-        end
-    end
-    print_timer(to)
-    return nothing
-end
-
 ##############################################################
 # Vanilla FW
 ##############################################################
 
 function fw(
     f,
-    grad,
+    grad!,
     lmo,
     x0;
     line_search::LineSearchMethod=agnostic,
@@ -122,6 +53,7 @@ function fw(
     verbose=false,
     linesearch_tol=1e-7,
     emphasis::Emphasis=blas,
+    gradient=nothing
 )
     function print_header(data)
         @printf(
@@ -194,13 +126,20 @@ function fw(
         x = convert(Vector{promote_type(eltype(x), Float64)}, x)
     end
     first_iter = true
-    gradient = 0
+    # instanciating container for gradient
+    if gradient === nothing
+        gradient = similar(x)
+    end
+    gtemp = if momentum === nothing
+        nothing
+    else
+        similar(x)
+    end
     while t <= max_iteration && dual_gap >= max(epsilon, eps())
-
         if momentum === nothing || first_iter
-            gradient = grad(x)
+            grad!(gradient, x)
         else
-            gtemp = grad(x)
+            grad!(gtemp, x)
             @emphasis(emphasis, gradient = (momentum * gradient) + (1 - momentum) * gtemp)
         end
         first_iter = false
@@ -220,14 +159,14 @@ function fw(
         if trajectory === true
             push!(
                 trajData,
-                [t, primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9],
+                (t, primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9),
             )
         end
 
         if line_search === agnostic
             gamma = 2 // (2 + t)
         elseif line_search === goldenratio
-            _, gamma = segmentSearch(f, grad, x, v, linesearch_tol=linesearch_tol)
+            _, gamma = segment_search(f, grad!, x, v, linesearch_tol=linesearch_tol)
         elseif line_search === backtracking
             _, gamma =
                 backtrackingLS(f, gradient, x, v, linesearch_tol=linesearch_tol, step_lim=step_lim)
@@ -248,17 +187,17 @@ function fw(
 
         if mod(t, print_iter) == 0 && verbose
             tt = regular
-            if t === 0
+            if t == 0
                 tt = initial
             end
-            rep = [
+            rep = (
                 tt,
                 string(t),
                 primal,
                 primal - dual_gap,
                 dual_gap,
                 (time_ns() - time_start) / 1.0e9,
-            ]
+            )
             print_iter_func(rep)
             flush(stdout)
         end
@@ -267,20 +206,20 @@ function fw(
     # recompute everything once for final verfication / do not record to trajectory though for now! 
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
     # hence the final computation.
-    gradient = grad(x)
+    grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
     dual_gap = dot(x, gradient) - dot(v, gradient)
     if verbose
         tt = last
-        rep = [
+        rep = (
             tt,
             string(t - 1),
             primal,
             primal - dual_gap,
             dual_gap,
             (time_ns() - time_start) / 1.0e9,
-        ]
+        )
         print_iter_func(rep)
         print_footer()
         flush(stdout)
@@ -294,14 +233,14 @@ end
 
 function lcg(
     f,
-    grad,
+    grad!,
     lmoBase,
     x0;
     line_search::LineSearchMethod=agnostic,
     L=Inf,
     phiFactor=2,
-    cacheSize=Inf,
-    greedyLazy=false,
+    cache_size=Inf,
+    greedy_lazy=false,
     epsilon=1e-7,
     max_iteration=10000,
     print_iter=1000,
@@ -309,10 +248,11 @@ function lcg(
     verbose=false,
     linesearch_tol=1e-7,
     emphasis::Emphasis=blas,
+    gradient=nothing,
 )
 
-    if isfinite(cacheSize)
-        lmo = MultiCacheLMO{cacheSize}(lmoBase)
+    if isfinite(cache_size)
+        lmo = MultiCacheLMO{cache_size}(lmoBase)
     else
         lmo = VectorCacheLMO(lmoBase)
     end
@@ -365,11 +305,11 @@ function lcg(
     tt::StepType = regular
     time_start = time_ns()
 
-    if line_search === shortstep && L == Inf
+    if line_search == shortstep && L == Inf
         println("FATAL: Lipschitz constant not set. Prepare to blow up spectacularly.")
     end
 
-    if line_search === agnostic || line_search === nonconvex
+    if line_search == agnostic || line_search == nonconvex
         println("FATAL: Lazification is not known to converge with open-loop step size strategies.")
     end
 
@@ -379,26 +319,30 @@ function lcg(
         println(
             "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration PHIFACTOR: $phiFactor TYPE: $numType",
         )
-        println("CACHESIZE $cacheSize GREEDYCACHE: $greedyLazy")
-        if emphasis === memory
+        println("cache_size $cache_size GREEDYCACHE: $greedy_lazy")
+        if emphasis == memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
         end
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "Cache Size"]
         print_header(headers)
     end
 
-    if emphasis === memory && !isa(x, Array)
+    if emphasis == memory && !isa(x, Union{Array, SparseArrays.AbstractSparseArray})
         x = convert(Vector{promote_type(eltype(x), Float64)}, x)
+    end
+
+    if gradient === nothing
+        gradient = similar(x)
     end
 
     while t <= max_iteration && dual_gap >= max(epsilon, eps())
 
         primal = f(x)
-        gradient = grad(x)
+        grad!(gradient, x)
 
         threshold = dot(x, gradient) - phi
 
-        v = compute_extreme_point(lmo, gradient, threshold=threshold, greedy=greedyLazy)
+        v = compute_extreme_point(lmo, gradient, threshold=threshold, greedy=greedy_lazy)
         tt = lazy
         if dot(v, gradient) > threshold
             tt = dualstep
@@ -406,29 +350,29 @@ function lcg(
             phi = dual_gap / 2
         end
 
-        if trajectory === true
+        if trajectory
             push!(
                 trajData,
-                [
+                (
                     t,
                     primal,
                     primal - dual_gap,
                     dual_gap,
                     (time_ns() - time_start) / 1.0e9,
                     length(lmo),
-                ],
+                ),
             )
         end
 
-        if line_search === agnostic
+        if line_search == agnostic
             gamma = 2 / (2 + t)
-        elseif line_search === goldenratio
-            _, gamma = segmentSearch(f, grad, x, v, linesearch_tol=linesearch_tol)
-        elseif line_search === backtracking
+        elseif line_search == goldenratio
+            _, gamma = segment_search(f, grad!, x, v, linesearch_tol=linesearch_tol)
+        elseif line_search == backtracking
             _, gamma = backtrackingLS(f, gradient, x, v, linesearch_tol=linesearch_tol)
-        elseif line_search === nonconvex
+        elseif line_search == nonconvex
             gamma = 1 / sqrt(t + 1)
-        elseif line_search === shortstep
+        elseif line_search == shortstep
             gamma = dual_gap / (L * dot(x - v, x - v))
         end
 
@@ -438,7 +382,7 @@ function lcg(
             if t === 0
                 tt = initial
             end
-            rep = [
+            rep = (
                 tt,
                 string(t),
                 primal,
@@ -446,7 +390,7 @@ function lcg(
                 dual_gap,
                 (time_ns() - time_start) / 1.0e9,
                 length(lmo),
-            ]
+            )
             print_iter_func(rep)
             flush(stdout)
         end
@@ -454,7 +398,7 @@ function lcg(
     end
     if verbose
         tt = last
-        rep = [
+        rep = (
             tt,
             string(t - 1),
             primal,
@@ -462,7 +406,7 @@ function lcg(
             dual_gap,
             (time_ns() - time_start) / 1.0e9,
             length(lmo),
-        ]
+        )
         print_iter_func(rep)
         print_footer()
         flush(stdout)
