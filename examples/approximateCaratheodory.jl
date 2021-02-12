@@ -5,8 +5,10 @@ using LinearAlgebra
 n = Int(1e2);
 k = n
 
-const f(x) = dot(x, x)
-const grad(x) = 2 * (x)
+f(x) = dot(x, x)
+function grad!(storage, x)
+    @. storage = 2 * x
+end
 
 # pick feasible region
 lmo = FrankWolfe.ProbabilitySimplexOracle{Rational{BigInt}}(1); # radius needs to be integer or rational
@@ -18,14 +20,14 @@ x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 println("Output type of LMO: ", eltype(x0))
 
 # benchmarking Oracles
-FrankWolfe.benchmark_oracles(f, grad, lmo, n; k=100, T=Float64)
+FrankWolfe.benchmark_oracles(f, grad!, lmo, n; k=100, T=Float64)
 
 # the algorithm runs in rational arithmetic even if the gradients and the function itself are not rational
 # this is because we replace the descent direction by the directions of the LMO are rational
 
 @time x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
     f,
-    grad,
+    grad!,
     lmo,
     x0,
     max_iteration=k,
@@ -41,7 +43,7 @@ println("\nOutput type of solution: ", eltype(x))
 
 @time x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
     f,
-    grad,
+    grad!,
     lmo,
     x0,
     max_iteration=k,
