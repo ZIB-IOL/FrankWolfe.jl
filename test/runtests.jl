@@ -166,6 +166,10 @@ end
             )[3] - 0.2,
         ) < 1.0e-3
     end
+    @testset "Gradient with momentum correctly updated" begin
+        # fixing https://github.com/ZIB-IOL/FrankWolfe.jl/issues/47
+        include("momentum_memory.jl")
+    end
     @testset "Testing Lazified Conditional Gradients with various step size strategies" begin
         f(x) = norm(x)^2
         grad(x) = 2x
