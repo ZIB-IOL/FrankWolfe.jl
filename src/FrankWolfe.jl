@@ -53,6 +53,7 @@ function fw(
     verbose=false,
     linesearch_tol=1e-7,
     emphasis::Emphasis=blas,
+    nep=false,
     gradient=nothing
 )
     function print_header(data)
@@ -143,6 +144,13 @@ function fw(
             @emphasis(emphasis, gradient = (momentum * gradient) + (1 - momentum) * gtemp)
         end
         first_iter = false
+        
+        # build-in NEP here
+        if nep === true
+            # argmin_v v^T(1-2y)
+            # y = x_t - 1/L * (t+1)/2 * gradient
+            @. gradient = 1 - 2 * (x - 1 / L * (t+1) / 2 * gradient)
+        end
 
         v = compute_extreme_point(lmo, gradient)
 
