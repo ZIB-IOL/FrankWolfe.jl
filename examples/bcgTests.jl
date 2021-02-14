@@ -14,7 +14,9 @@ total = sum(xpi);
 const xp = xpi ./ total;
 
 f(x) = norm(x - xp)^2
-grad(x) = 2 * (x - xp)
+function grad!(storage, x)
+    @. storage = 2 * (x - xp)
+end
 
 # better for memory consumption as we do coordinate-wise ops
 
@@ -22,8 +24,8 @@ function cf(x, xp)
     return @. norm(x - xp)^2
 end
 
-function cgrad(x, xp)
-    return @. 2 * (x - xp)
+function cgrad!(storage, x, xp)
+    return @. storage = 2 * (x - xp)
 end
 
 const lmo = FrankWolfe.KSparseLMO(100, 1.0)
@@ -35,12 +37,12 @@ const x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
 const x00_big = FrankWolfe.compute_extreme_point(lmo_big, zeros(n))
 # print(x0)
 
-FrankWolfe.benchmark_oracles(x -> cf(x, xp), x -> cgrad(x, xp), lmo, n; k=100, T=Float64)
+FrankWolfe.benchmark_oracles(x -> cf(x, xp), (str, x) -> cgrad!(str, x, xp), lmo, n; k=100, T=Float64)
 
 x0 = deepcopy(x00_big)
 @time x, v, primal, dual_gap, trajectorySs = FrankWolfe.fw(
     f,
-    grad,
+    grad!,
     lmo,
     x0,
     max_iteration=k,
@@ -55,7 +57,7 @@ x0 = deepcopy(x00_big)
 x0 = deepcopy(x00_big)
 @time x, v, primal, dual_gap, trajectoryAda = FrankWolfe.afw(
     f,
-    grad,
+    grad!,
     lmo,
     x0,
     max_iteration=k,
@@ -67,23 +69,12 @@ x0 = deepcopy(x00_big)
     trajectory=true,
 );
 
-# println("\n==> Goldenratio LS.\n")
-
-# @time x, v, primal, dual_gap, trajectoryGr = FrankWolfe.fw(f,grad,lmo,x0,max_iteration=k,
-#     line_search=FrankWolfe.goldenratio,L=100,print_iter=k/10,Emphasis=FrankWolfe.memory,verbose=true, trajectory=true);
-
-# println("\n==> Backtracking LS.\n")
-
-# @time x, v, primal, dual_gap, trajectoryBack = FrankWolfe.fw(f,grad,lmo,x0,max_iteration=k,
-#     line_search=FrankWolfe.backtracking,L=100,print_iter=k/10,Emphasis=FrankWolfe.memory,verbose=true, trajectory=true);
-
-
 println("\n==> Agnostic if function is too expensive for adaptive.\n")
 
 x0 = deepcopy(x00_big)
 x, v, primal, dual_gap, trajectoryBCG = FrankWolfe.bcg(
     f,
-    grad,
+    grad!,
     lmo,
     x0,
     max_iteration=k,
@@ -102,13 +93,3 @@ data = [trajectorySs, trajectoryAda, trajectoryBCG]
 label = ["short step", "AFW", "BCG"]
 
 FrankWolfe.plot_trajectories(data, label)
-
-FrankWolfe.plot_trajectories(data[2:2], label[2:2])
-
-using Plots
-plot(getindex.(trajectoryAda, 4), xaxis=:log, yaxis=:log)
-
-
-vs = getindex.(trajectoryBCG, 3)
-
-plot(vs)

@@ -10,10 +10,12 @@ import LinearAlgebra
     xp = xpi ./ total
 
     f(x) = norm(x - xp)^2
-    grad(x) = 2 * (x - xp)
+    function grad!(storage, x)
+        @. storage = 2 * (x - xp)
+    end
 
     lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
     x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n))
 
-    @test nothing === FrankWolfe.benchmark_oracles(f, grad, lmo_prob, n; k=100, T=Float64)
+    @test nothing === FrankWolfe.benchmark_oracles(f, grad!, lmo_prob, n; k=100, T=Float64)
 end

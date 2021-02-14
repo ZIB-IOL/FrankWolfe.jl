@@ -75,13 +75,26 @@ end
 # TODO:
 # - code needs optimization 
 
-function segmentSearch(f, grad, x, y; line_search=true, linesearch_tol=1e-10)
+function segment_search(f, grad, x, y; line_search=true, linesearch_tol=1e-10, inplace_gradient=true)
     # restrict segment of search to [x, y]
-    d = (y - x)
+    d = y - x
     left, right = copy(x), copy(y)
 
+    if inplace_gradient
+        gradient = similar(d)    
+        grad(gradient, x)
+        dgx = dot(d, gradient)
+        grad(gradient, y)
+        dgy = dot(d, gradient)
+    else
+        gradient = grad(x)
+        dgx = dot(d, gradient)
+        gradient = grad(y)
+        dgy = dot(d, gradient)
+    end
+    
     # if the minimum is at an endpoint
-    if dot(d, grad(x)) * dot(d, grad(y)) >= 0
+    if dgx * dgy >= 0
         if f(y) <= f(x)
             return y, 1
         else
@@ -90,12 +103,12 @@ function segmentSearch(f, grad, x, y; line_search=true, linesearch_tol=1e-10)
     end
 
     # apply golden-section method to segment
-    gold = (1.0 + sqrt(5)) / 2.0
+    gold = 0.5 * (1 + sqrt(5))
     improv = Inf
     while improv > linesearch_tol
         old_left, old_right = left, right
-        new = left + (right - left) / (1.0 + gold)
-        probe = new + (right - new) / 2.0
+        new = left + (right - left) / (1 + gold)
+        probe = new + (right - new) / 2
         if f(probe) <= f(new)
             left, right = new, right
         else
@@ -108,8 +121,8 @@ function segmentSearch(f, grad, x, y; line_search=true, linesearch_tol=1e-10)
 
     # compute step size gamma
     gamma = 0
-    if line_search === true
-        for i in 1:length(d)
+    if line_search
+        for i in eachindex(d)
             if d[i] != 0
                 gamma = (x_min[i] - x[i]) / d[i]
                 break
@@ -345,3 +358,71 @@ function plot_sparsity(data, label; filename=nothing)
     return fp
 end
 
+##############################################################
+# simple benchmark of elementary costs of oracles and 
+# critical components
+##############################################################
+
+# TODO: add actual use of T for the rand(n)
+
+function benchmark_oracles(f, grad!, lmo, n; k=100, nocache=true, T=Float64)
+    sv = n * sizeof(T) / 1024^2
+    println("\nSize of single vector ($T): $sv MB\n")
+    to = TimerOutput()
+    @showprogress 1 "Testing f... " for i in 1:k
+        x = rand(n)
+        @timeit to "f" temp = f(x)
+    end
+    @showprogress 1 "Testing grad... " for i in 1:k
+        x = rand(n)
+        temp = similar(x)
+        @timeit to "grad" grad!(temp, x)
+    end
+    @showprogress 1 "Testing lmo... " for i in 1:k
+        x = rand(n)
+        @timeit to "lmo" temp = compute_extreme_point(lmo, x)
+    end
+    @showprogress 1 "Testing dual gap... " for i in 1:k
+        x = rand(n)
+        gradient = similar(x)
+        grad!(gradient, x)
+        v = compute_extreme_point(lmo, gradient)
+        @timeit to "dual gap" begin
+            dual_gap = dot(x, gradient) - dot(v, gradient)
+        end
+    end
+    @showprogress 1 "Testing update... (Emphasis: blas) " for i in 1:k
+        x = rand(n)
+        gradient = similar(x)
+        grad!(gradient, x)
+        v = compute_extreme_point(lmo, gradient)
+        gamma = 1 / 2
+        @timeit to "update (blas)" @emphasis(blas, x = (1 - gamma) * x + gamma * v)
+    end
+    @showprogress 1 "Testing update... (Emphasis: memory) " for i in 1:k
+        x = rand(n)
+        gradient = similar(x)
+        grad!(gradient, x)
+        v = compute_extreme_point(lmo, gradient)
+        gamma = 1 / 2
+        # TODO: to be updated to broadcast version once data structure MaybeHotVector allows for it
+        @timeit to "update (memory)" @emphasis(memory, x = (1 - gamma) * x + gamma * v)
+    end
+    if !nocache
+        @showprogress 1 "Testing caching 100 points... " for i in 1:k
+            @timeit to "caching 100 points" begin
+                cache = [rand(n) for _ in 1:100]
+                x = rand(n)
+                gradient = similar(x)
+                grad!(gradient, x)
+                v = compute_extreme_point(lmo, gradient)
+                gamma = 1 / 2
+                test = (x -> dot(x, gradient)).(cache)
+                v = cache[argmin(test)]
+                val = v in cache
+            end
+        end
+    end
+    print_timer(to)
+    return nothing
+end

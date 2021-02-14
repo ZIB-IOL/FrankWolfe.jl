@@ -86,17 +86,6 @@ x0 = copy(x00)
     trajectory=true,
 );
 
-# println("\n==> Goldenratio LS.\n")
-
-# @time x, v, primal, dual_gap, trajectoryGr = FrankWolfe.fw(f,grad,lmo,x0,max_iteration=k,
-#     line_search=FrankWolfe.goldenratio,L=100,print_iter=k/10,Emphasis=FrankWolfe.memory,verbose=true, trajectory=true);
-
-# println("\n==> Backtracking LS.\n")
-
-# @time x, v, primal, dual_gap, trajectoryBack = FrankWolfe.fw(f,grad,lmo,x0,max_iteration=k,
-#     line_search=FrankWolfe.backtracking,L=100,print_iter=k/10,Emphasis=FrankWolfe.memory,verbose=true, trajectory=true);
-
-
 println("\n==> Agnostic if function is too expensive for adaptive.\n")
 
 x0 = copy(x00)
