@@ -101,7 +101,7 @@ function fw(
     trajData = []
     time_start = time_ns()
 
-    if (line_search === shortstep || line_search === adaptive) && L == Inf
+    if (line_search === shortstep || line_search === adaptive  || nep === true ) && L == Inf
         println("FATAL: Lipschitz constant not set. Prepare to blow up spectacularly.")
     end
 
@@ -314,7 +314,7 @@ function lcg(
     tt::StepType = regular
     time_start = time_ns()
 
-    if (line_search == shortstep || nep === true ) && L == Inf
+    if line_search == shortstep && L == Inf
         println("FATAL: Lipschitz constant not set. Prepare to blow up spectacularly.")
     end
 
