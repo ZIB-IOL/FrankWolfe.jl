@@ -1,5 +1,5 @@
 import FrankWolfe
-import LinearAlgebra
+using LinearAlgebra
 
 n = Int(1e9)
 k = 1000
@@ -16,10 +16,10 @@ end
 # better for memory consumption as we do coordinate-wise ops
 
 function cf(x, xp)
-    return @. norm(x - xp)^2
+    return norm(x .- xp)^2
 end
 
-function cgrad(storage, x, xp)
+function cgrad!(storage, x, xp)
     return @. storage = 2 * (x - xp)
 end
 
