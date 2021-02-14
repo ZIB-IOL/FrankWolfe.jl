@@ -1,8 +1,8 @@
 import FrankWolfe
 using LinearAlgebra
 
-n = Int(1e4)
-k = 1000
+n = Int(1e5)
+k = 10000
 
 xpi = rand(n);
 total = sum(xpi);
@@ -34,6 +34,7 @@ FrankWolfe.benchmark_oracles(x -> cf(x, xp), (str, x) -> cgrad!(str, x, xp), lmo
     lmo,
     x0,
     nep=false,
+    L=2,
     max_iteration=k,
     line_search=FrankWolfe.agnostic,
     print_iter=k / 10,

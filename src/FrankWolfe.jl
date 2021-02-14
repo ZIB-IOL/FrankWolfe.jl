@@ -145,13 +145,6 @@ function fw(
         end
         first_iter = false
         
-        # build-in NEP here
-        if nep === true
-            # argmin_v v^T(1-2y)
-            # y = x_t - 1/L * (t+1)/2 * gradient
-            @. gradient = 1 - 2 * (x - 1 / L * (t+1) / 2 * gradient)
-        end
-
         v = compute_extreme_point(lmo, gradient)
 
         # go easy on the memory - only compute if really needed
@@ -169,6 +162,14 @@ function fw(
                 trajData,
                 (t, primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9),
             )
+        end
+        
+        # build-in NEP here
+        if nep === true
+            # argmin_v v^T(1-2y)
+            # y = x_t - 1/L * (t+1)/2 * gradient
+            @. gradient = 1 - 2 * (x - 1 / (L * 2 / (t+1)) * gradient)
+            v = compute_extreme_point(lmo, gradient)
         end
 
         if line_search === agnostic
@@ -313,7 +314,7 @@ function lcg(
     tt::StepType = regular
     time_start = time_ns()
 
-    if line_search == shortstep && L == Inf
+    if (line_search == shortstep || nep === true ) && L == Inf
         println("FATAL: Lipschitz constant not set. Prepare to blow up spectacularly.")
     end
 
