@@ -20,13 +20,13 @@ function simple_reg_loss(θ, data_point)
     return (pred - yi)^2 / 2
 end
 
-function ∇simple_reg_loss(θ, data_point)
+function ∇simple_reg_loss(storage, θ, data_point)
     (xi, yi) = data_point
     (a, b) = (θ[1:end-1], θ[end])
     pred = a ⋅ xi + b
-    grad_a = xi * (pred - yi)
-    grad = push!(grad_a, pred - yi)
-    return grad
+    @. storage[1:end-1] = xi * (pred - yi)
+    storage[end] = pred - yi
+    return nothing
 end
 
 xs = [10 * randn(5) for i in 1:20000]
@@ -40,9 +40,10 @@ f_stoch = FrankWolfe.StochasticObjective(simple_reg_loss, ∇simple_reg_loss, da
 @test compute_value(f_stoch, params) > compute_value(f_stoch, params_perfect)
 
 # Vanilla Stochastic Gradient Descent with reshuffling
+storage = similar(params)
 for idx in 1:1000
     for data_point in shuffle!(data_perfect)
-        params .-= 0.05 * ∇simple_reg_loss(params, data_point) / length(data_perfect)
+        params .-= 0.05 * ∇simple_reg_loss(storage, params, data_point) / length(data_perfect)
     end
 end
 

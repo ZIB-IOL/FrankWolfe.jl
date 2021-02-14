@@ -1,7 +1,7 @@
 
 function bcg(
     f,
-    grad,
+    grad!,
     lmo,
     x0;
     line_search::LineSearchMethod=adaptive,
@@ -16,6 +16,7 @@ function bcg(
     Ktolerance=1.0,
     goodstep_tolerance=0.75,
     weight_purge_threshold=1e-9,
+    gradient=nothing,
     lmo_kwargs...,
 )
     function print_header(data)
@@ -65,8 +66,11 @@ function bcg(
     dual_gap = Inf
     active_set = ActiveSet([(1.0, x0)])
     x = x0
+    if gradient === nothing
+        gradient = similar(x)
+    end
+    grad!(gradient, x)
     # initial gap estimate computation
-    gradient = grad(x)
     vmax = compute_extreme_point(lmo, gradient)
     phi = dot(gradient, x0 - vmax) / 2
     traj_data = []
@@ -117,7 +121,7 @@ function bcg(
         x = compute_active_set_iterate(active_set)
         # TODO replace with single call interface from function_gradient.jl
         primal = f(x)
-        gradient = grad(x)
+        grad!(gradient, x)
         if !force_fw_step
             (idx_fw, idx_as, good_progress) = find_minmax_directions(
                 active_set, gradient, phi, goodstep_tolerance=goodstep_tolerance,
@@ -160,7 +164,7 @@ function bcg(
                 if line_search == agnostic
                     gamma = 2 / (2 + t)
                 elseif line_search == goldenratio
-                    _, gamma = segmentSearch(f, grad, x, ynew, linesearch_tol=linesearch_tol)
+                    _, gamma = segment_search(f, grad!, x, ynew, linesearch_tol=linesearch_tol)
                 elseif line_search == backtracking
                     _, gamma = backtrackingLS(f, gradient, x, v, linesearch_tol=linesearch_tol, step_lim=100)
                 elseif line_search == nonconvex
@@ -227,7 +231,7 @@ function bcg(
     end
     if verbose
         x = compute_active_set_iterate(active_set)
-        gradient = grad(x)
+        grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
         dual_gap = 2phi
@@ -248,7 +252,7 @@ function bcg(
     active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
     active_set_renormalize!(active_set)
     x = compute_active_set_iterate(active_set)
-    gradient = grad(x)
+    grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
     dual_gap = 2phi

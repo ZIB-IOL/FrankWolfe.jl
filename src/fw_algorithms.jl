@@ -65,11 +65,11 @@ function stochastic_frank_wolfe(
     dx = similar(x0) # Array{eltype(x0)}(undef, length(x0))
     time_start = time_ns()
 
-    if line_search === shortstep && L == Inf
+    if line_search == shortstep && L == Inf
         println("FATAL: Lipschitz constant not set. Prepare to blow up spectacularly.")
     end
 
-    if line_search === fixed && gamma0 == 0
+    if line_search == fixed && gamma0 == 0
         println("FATAL: gamma0 not set. We are not going to move a single bit.")
     end
 
@@ -80,14 +80,14 @@ function stochastic_frank_wolfe(
             "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration TYPE: $numType",
         )
         println("MOMENTUM: $momentum BATCHSIZE: $batch_size ")
-        if emphasis === memory
+        if emphasis == memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
         end
-        headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time"]
+        headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time")
         print_header(headers)
     end
 
-    if emphasis === memory && !isa(x, Array)
+    if emphasis == memory && !isa(x, Array)
         x = convert(Vector{promote_type(eltype(x), Float64)}, x)
     end
     first_iter = true
@@ -128,28 +128,24 @@ function stochastic_frank_wolfe(
             dual_gap = dot(x, gradient) - dot(v, gradient)
         end
 
-        if trajectory === true
+        if trajectory
             push!(
                 trajData,
-                [t, primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9],
+                (t, primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9),
             )
         end
 
-        if line_search === agnostic
+        if line_search == agnostic
             gamma = 2 // (2 + t)
-        elseif line_search === goldenratio
-            _, gamma = segmentSearch(f, grad, x, v, linesearch_tol=linesearch_tol)
-        elseif line_search === backtracking
-            _, gamma =
-                backtrackingLS(f, gradient, x, v, linesearch_tol=linesearch_tol, step_lim=step_lim)
-        elseif line_search === nonconvex
+        elseif line_search == nonconvex
             gamma = 1 / sqrt(t + 1)
-        elseif line_search === shortstep
+        elseif line_search == shortstep
+            dual_gap = dot(x, gradient) - dot(v, gradient)
             gamma = dual_gap / (L * norm(x - v)^2)
-        elseif line_search === rationalshortstep
-            ratDualGap = sum((x - v) .* gradient)
-            gamma = ratDualGap // (L * sum((x - v) .^ 2))
-        elseif line_search === fixed
+        elseif line_search == rationalshortstep
+            rat_dual_gap = sum((x - v) .* gradient)
+            gamma = rat_dual_gap // (L * sum((x - v) .^ 2))
+        elseif line_search == fixed
             gamma = gamma0
         end
 
@@ -157,17 +153,17 @@ function stochastic_frank_wolfe(
 
         if mod(t, print_iter) == 0 && verbose
             tt = regular
-            if t === 0
+            if t == 0
                 tt = initial
             end
-            rep = [
+            rep = (
                 tt,
                 string(t),
                 primal,
                 primal - dual_gap,
                 dual_gap,
                 (time_ns() - time_start) / 1.0e9,
-            ]
+            )
             print_iter_func(rep)
             flush(stdout)
         end
@@ -184,14 +180,14 @@ function stochastic_frank_wolfe(
     dual_gap = dot(x, gradient) - dot(v, gradient)
     if verbose
         tt = last
-        rep = [
+        rep = (
             tt,
             string(t - 1),
             primal,
             primal - dual_gap,
             dual_gap,
             (time_ns() - time_start) / 1.0e9,
-        ]
+        )
         print_iter_func(rep)
         print_footer()
         flush(stdout)
