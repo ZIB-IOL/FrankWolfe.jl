@@ -306,6 +306,7 @@ end
         vref = compute_extreme_point(lmo_ref, direction)
         for i in eachindex(x)
             @test vref[i] ≈ (i == 3)
+        end
     end
     @testset "Non-settable optimizer with cache" begin
         n = 5
