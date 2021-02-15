@@ -5,6 +5,13 @@ using LinearAlgebra
 import FrankWolfe: compute_extreme_point, LpNormLMO, KSparseLMO
 import FrankWolfe: SimplexMatrix
 
+import GLPK
+import MathOptInterface
+const MOI = MathOptInterface
+
+using Clp
+using Random
+
 @testset "Simplex matrix type" begin
     s = SimplexMatrix{Float64}(3)
     sm = collect(s)
@@ -227,4 +234,105 @@ end
         0 0 1
         1 0 0
     ]
+end
+
+@testset "MOI oracle consistency" begin
+    @testset "MOI oracle consistent with unit simplex" for n in (1, 2, 10)
+        o =  GLPK.Optimizer()
+        x = MOI.add_variables(o, n)
+        for xi in x
+            MOI.add_constraint(o, xi, MOI.Interval(0.0, 1.0))
+        end
+        MOI.add_constraint(
+            o,
+            MOI.ScalarAffineFunction(
+                MOI.ScalarAffineTerm.(1.0, x),
+                0.0,
+            ),
+            MOI.LessThan(1.0),
+        )
+        lmo = FrankWolfe.MathOptLMO(o)
+        lmo_ref = FrankWolfe.UnitSimplexOracle(1.0)
+        direction = Vector{Float64}(undef, n)
+        for _ in 1:10
+            Random.randn!(direction)
+            vref = compute_extreme_point(lmo_ref, direction)
+            v = compute_extreme_point(lmo, direction)
+            @test vref ≈ v
+        end
+    end
+    @testset "MOI consistent probability simplex" for n in (1, 2, 10)
+        o =  GLPK.Optimizer()
+        x = MOI.add_variables(o, n)
+        for xi in x
+            MOI.add_constraint(o, xi, MOI.Interval(0.0, 1.0))
+        end
+        MOI.add_constraint(
+            o,
+            MOI.ScalarAffineFunction(
+                MOI.ScalarAffineTerm.(1.0, x),
+                0.0,
+            ),
+            MOI.EqualTo(1.0),
+        )
+        lmo = FrankWolfe.MathOptLMO(o)
+        lmo_ref = FrankWolfe.ProbabilitySimplexOracle(1.0)
+        direction = Vector{Float64}(undef, n)
+        for _ in 1:10
+            Random.randn!(direction)
+            vref = compute_extreme_point(lmo_ref, direction)
+            v = compute_extreme_point(lmo, direction)
+            @test vref ≈ v
+        end
+    end
+    @testset "Direction with coefficients" begin
+        n = 5
+        o =  GLPK.Optimizer()
+        x = MOI.add_variables(o, n)
+        for xi in x
+            MOI.add_constraint(o, xi, MOI.Interval(0.0, 1.0))
+        end
+        MOI.add_constraint(
+            o,
+            MOI.ScalarAffineFunction(
+                MOI.ScalarAffineTerm.(1.0, x),
+                0.0,
+            ),
+            MOI.EqualTo(1.0),
+        )
+        lmo = FrankWolfe.MathOptLMO(o)
+        lmo_ref = FrankWolfe.ProbabilitySimplexOracle(1.0)
+        direction = [MOI.ScalarAffineTerm(-2.0i, x[i]) for i in 2:3]
+        vref = compute_extreme_point(lmo_ref, direction)
+        for i in eachindex(x)
+            @test vref[i] ≈ (i == 3)
+    end
+    @testset "Non-settable optimizer with cache" begin
+        n = 5
+        o = MOI.Utilities.CachingOptimizer(
+            MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
+            Clp.Optimizer(),
+        )
+        x = MOI.add_variables(o, 5)
+        for xi in x
+            MOI.add_constraint(o, xi, MOI.Interval(0.0, 1.0))
+        end
+        MOI.add_constraint(
+            o,
+            MOI.ScalarAffineFunction(
+                MOI.ScalarAffineTerm.(1.0, x),
+                0.0,
+            ),
+            MOI.EqualTo(1.0),
+        )
+        lmo = FrankWolfe.MathOptLMO(o)
+        lmo_ref = FrankWolfe.ProbabilitySimplexOracle(1.0)
+        direction = Vector{Float64}(undef, n)
+        for _ in 1:10
+            Random.randn!(direction)
+            vref = compute_extreme_point(lmo_ref, direction)
+            v = compute_extreme_point(lmo, direction)
+            @test vref ≈ v
+        end
+    end
 end
