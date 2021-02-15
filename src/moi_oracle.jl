@@ -34,7 +34,7 @@ function compute_extreme_point(lmo::MathOptLMO{OT, Function}, direction::Abstrac
 end
 
 
-function compute_extreme_point(lmo::MathOptLMO{OT, Nothing}, direction::AbstractVector{<:MOI.ScalarAffineTerm}) where {OT, T <: Real}
+function compute_extreme_point(lmo::MathOptLMO{OT, Nothing}, direction::AbstractVector{MOI.ScalarAffineTerm{T}}) where {OT, T}
     variables = MOI.get(lmo.o, MathOptInterface.ListOfVariableIndices())
     obj = MathOptInterface.ScalarAffineFunction(
         direction,

@@ -239,6 +239,7 @@ end
 @testset "MOI oracle consistency" begin
     @testset "MOI oracle consistent with unit simplex" for n in (1, 2, 10)
         o =  GLPK.Optimizer()
+        MOI.set(o, MOI.Silent(), true)
         x = MOI.add_variables(o, n)
         for xi in x
             MOI.add_constraint(o, xi, MOI.Interval(0.0, 1.0))
@@ -263,6 +264,7 @@ end
     end
     @testset "MOI consistent probability simplex" for n in (1, 2, 10)
         o =  GLPK.Optimizer()
+        MOI.set(o, MOI.Silent(), true)
         x = MOI.add_variables(o, n)
         for xi in x
             MOI.add_constraint(o, xi, MOI.Interval(0.0, 1.0))
@@ -288,6 +290,7 @@ end
     @testset "Direction with coefficients" begin
         n = 5
         o =  GLPK.Optimizer()
+        MOI.set(o, MOI.Silent(), true)
         x = MOI.add_variables(o, n)
         for xi in x
             MOI.add_constraint(o, xi, MOI.Interval(0.0, 1.0))
@@ -301,11 +304,10 @@ end
             MOI.EqualTo(1.0),
         )
         lmo = FrankWolfe.MathOptLMO(o)
-        lmo_ref = FrankWolfe.ProbabilitySimplexOracle(1.0)
         direction = [MOI.ScalarAffineTerm(-2.0i, x[i]) for i in 2:3]
-        vref = compute_extreme_point(lmo_ref, direction)
+        v = compute_extreme_point(lmo, direction)
         for i in eachindex(x)
-            @test vref[i] ≈ (i == 3)
+            @test v[i] ≈ (i == 3)
         end
     end
     @testset "Non-settable optimizer with cache" begin
@@ -314,6 +316,7 @@ end
             MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
             Clp.Optimizer(),
         )
+        MOI.set(o, MOI.Silent(), true)
         x = MOI.add_variables(o, 5)
         for xi in x
             MOI.add_constraint(o, xi, MOI.Interval(0.0, 1.0))
