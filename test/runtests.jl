@@ -4,7 +4,7 @@ using LinearAlgebra
 
 include("lmo.jl")
 include("function_gradient.jl")
-include("active_set_tests.jl")
+include("active_set.jl")
 include("utils.jl")
 
 @testset "Line Search methods" begin

@@ -169,22 +169,18 @@ function active_set_argminmax(active_set::ActiveSet, direction)
     valM = -Inf
     idx = -1
     idxM = -1
-    temp = 0
-    tempM = 0
     for i in eachindex(active_set)
-        temp = dot(active_set.atoms[i], direction)
-        tempM = -tempM
-        if temp < val
-            val = temp
+        temp_val = dot(active_set.atoms[i], direction)
+        if temp_val < val
+            val = temp_val
             idx = i
         end
-        if tempM > valM
-            valM = tempM
+        if valM < temp_val
+            valM = temp_val
             idxM = i
-        end 
+        end
     end
-    # return lambda, vertex, index
-    return (active_set[idx]..., idx,active_set[idxM]...,idxM)
+    return (active_set[idx]..., idx, active_set[idxM]..., idxM)
 end
 
 
