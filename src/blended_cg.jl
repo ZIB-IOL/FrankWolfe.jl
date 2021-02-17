@@ -170,7 +170,7 @@ function bcg(
                 elseif line_search == nonconvex
                     gamma = 1 / sqrt(t + 1)
                 elseif line_search == shortstep
-                    gamma = dual_gap / (L * dot(x - v, x - v))
+                    gamma =  dot(gradient, x - v) / (L * dot(x - v, x - v))
                 elseif line_search == adaptive
                     L, gamma = adaptive_step_size(f, gradient, x, x - v, L)
                 end
