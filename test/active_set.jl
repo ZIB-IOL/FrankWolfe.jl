@@ -157,3 +157,21 @@ end
     @test i_min == 1
     @test i_max == 2
 end
+
+@testset "LPseparationWithMaybeHotVector" begin
+    active_set = FrankWolfe.ActiveSet([(0.6, [-1, -1]), (0.2, [0, 1]), (0.2, [1, 0])])
+    lmo = FrankWolfe.LpNormLMO{Float64,1}(1.0)
+    direction = ones(2)
+    min_gap = 0.5
+    Ktolerance = 1.0
+    FrankWolfe.lp_separation_oracle(
+        lmo,
+        active_set,
+        direction,
+        min_gap,
+        Ktolerance;
+        inplace_loop=true,
+    )
+end
+
+ 
