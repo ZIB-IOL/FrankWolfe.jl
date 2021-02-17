@@ -376,6 +376,11 @@ function lp_separation_oracle(
     if !force_fw_step
         ybest = active_set.atoms[1]
         x = active_set.weights[1] * active_set.atoms[1]
+        if inplace_loop
+            if !isa(x, Union{Array, SparseArrays.AbstractSparseArray})
+                x = convert(SparseVector{eltype(x)}, x)
+            end
+        end
         val_best = dot(direction, ybest)
         for idx in 2:length(active_set)
             y = active_set.atoms[idx]
