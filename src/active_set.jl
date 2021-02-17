@@ -130,7 +130,7 @@ end
 
 function find_atom(active_set::ActiveSet, atom)
     @inbounds for idx in eachindex(active_set)
-        if isequal(active_set.atoms[idx], atom)
+        if _unsafe_equal(active_set.atoms[idx], atom)
             return idx
         end
     end
