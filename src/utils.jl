@@ -426,3 +426,20 @@ function benchmark_oracles(f, grad!, lmo, n; k=100, nocache=true, T=Float64)
     print_timer(to)
     return nothing
 end
+
+"""
+`isequal` without the checks. Assumes a and b have the same axes.
+"""
+function _unsafe_equal(a::AbstractArray, b::AbstractArray)
+    if a === b
+        return true
+    end
+    @inbounds for idx in eachindex(a)
+        if a[idx] != b[idx]
+            return false
+        end
+    end
+    return true
+end
+
+_unsafe_equal(a, b) = isequal(a, b)
