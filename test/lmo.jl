@@ -9,7 +9,7 @@ import GLPK
 import MathOptInterface
 const MOI = MathOptInterface
 
-using Clp
+import Clp
 using Random
 
 @testset "Simplex matrix type" begin
@@ -196,6 +196,7 @@ function _is_doubly_stochastic(m)
 end
 
 @testset "Birkhoff polytope" begin
+    Random.seed!(42)
     lmo = FrankWolfe.BirkhoffPolytopeLMO()
     for n in (1, 2, 10)
         cost = rand(n, n)
@@ -337,6 +338,52 @@ end
             vref = compute_extreme_point(lmo_ref, direction)
             v = compute_extreme_point(lmo, direction)
             @test vref ≈ v
+        end
+    end
+end
+
+@testset "MOI oracle on Birkhoff polytope" begin
+    o = GLPK.Optimizer()
+    for n in (1, 2, 10)
+        MOI.empty!(o)
+        (x, _) = MOI.add_constrained_variables(o, fill(MOI.Interval(0.0, 1.0), n*n))
+        xmat = reshape(x, n, n)
+        for idx in 1:n
+            # column constraint
+            MOI.add_constraint(
+                o,
+                MOI.ScalarAffineFunction(
+                    MOI.ScalarAffineTerm.(
+                        ones(n),
+                        xmat[:,idx],
+                    ),
+                    0.0,
+                ),
+                MOI.EqualTo(1.0),
+            )
+            # row constraint
+            MOI.add_constraint(
+                o,
+                MOI.ScalarAffineFunction(
+                    MOI.ScalarAffineTerm.(
+                        ones(n),
+                        xmat[idx,:],
+                    ),
+                    0.0,
+                ),
+                MOI.EqualTo(1.0),
+            )
+        end
+        direction_vec = Vector{Float64}(undef, n * n)
+        lmo_bkf = FrankWolfe.BirkhoffPolytopeLMO()
+        lmo_moi = FrankWolfe.MathOptLMO(o)
+        for _ in 1:10
+            randn!(direction_vec)
+            direction_mat = reshape(direction_vec, n, n)
+            v_moi = FrankWolfe.compute_extreme_point(lmo_moi, direction_vec)
+            v_moi_mat = reshape(v_moi, n, n)
+            v_bfk = FrankWolfe.compute_extreme_point(lmo_bkf, direction_mat)
+            @test all(isapprox.(v_moi_mat, v_bfk, atol=1e-4))
         end
     end
 end
