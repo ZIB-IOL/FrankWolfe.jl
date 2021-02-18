@@ -19,7 +19,7 @@ include("simplex_matrix.jl")
 
 include("oracles.jl")
 include("simplex_oracles.jl")
-include("lp_norm_oracles.jl")
+include("norm_oracles.jl")
 include("polytope_oracles.jl")
 
 include("utils.jl")

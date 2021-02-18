@@ -443,3 +443,44 @@ function _unsafe_equal(a::AbstractArray, b::AbstractArray)
 end
 
 _unsafe_equal(a, b) = isequal(a, b)
+
+"""
+    RankOneMatrix{T, UT, VT}
+
+Represents a rank-one matrix `R = u * vt'`.
+Composes like a charm.
+"""
+struct RankOneMatrix{T, UT <: AbstractVector, VT <: AbstractVector} <: AbstractMatrix{T}
+    u::UT
+    v::VT
+end
+
+function RankOneMatrix(u::UT, v::VT) where {UT, VT}
+    T = promote_type(eltype(u), eltype(v))
+    return RankOneMatrix{T, UT, VT}(u, v)
+end
+
+# not checking indices
+Base.@propagate_inbounds function Base.getindex(R::RankOneMatrix, i, j)
+    return R.u[i] * R.v[j]
+end
+
+Base.size(R::RankOneMatrix) = (length(R.u), length(R.v))
+function Base.:*(R::RankOneMatrix, v::AbstractVector)
+    temp = dot(R.v, v)
+    return R.u * temp
+end
+
+function Base.:*(R::RankOneMatrix, M::AbstractMatrix)
+    temp = R.v' * M
+    return RankOneMatrix(u, temp')
+end
+
+function Base.:*(R1::RankOneMatrix, R2::RankOneMatrix)
+    # middle product
+    temp = dot(R1.v, R2.u)
+    return RankOneMatrix(R1.u * temp, R2.v)
+end
+
+Matrix(R::RankOneMatrix) = R.u * R.v'
+collect(R::RankOneMatrix) = Matrix(R)
