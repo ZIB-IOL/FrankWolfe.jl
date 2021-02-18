@@ -124,3 +124,20 @@ function compute_extreme_point(lmo::KNormBallLMO{T}, direction) where {T}
     end
     return v
 end
+
+struct SpectralNormLMO <: LinearMinimizationOracle
+end
+
+"""
+Best rank-one approximation using the
+Golub-Kahan-Lanczos bidiagonalization from IterativeSolvers.
+
+Warning: this does not work (yet) with all number types, including BigFloat and Float16.
+"""
+function compute_extreme_point(lmo::SpectralNormLMO, direction::AbstractMatrix{T}) where {T}
+    (svd_res, _) = IterativeSolvers.svdl(direction, nsv=1, vecs=:both)
+    return RankOneMatrix(
+        svd_res.U[:] * svd_res.S[1],
+        svd_res.V[:],
+    )
+end
