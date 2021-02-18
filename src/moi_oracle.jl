@@ -20,27 +20,26 @@ function compute_extreme_point(lmo::MathOptLMO{OT}, direction::AbstractVector{T}
     )
     MOI.set(lmo.o, MOI.ObjectiveFunction{typeof(obj)}(), obj)
     MOI.set(lmo.o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
-    _optimize_and_return(lmo)
+    _optimize_and_return(lmo, variables)
 end
 
 function compute_extreme_point(lmo::MathOptLMO{OT}, direction::AbstractVector{MOI.ScalarAffineTerm{T}}) where {OT, T}
-    variables = MOI.get(lmo.o, MathOptInterface.ListOfVariableIndices())
+    variables = [term.variable_index for term in direction]
     obj = MathOptInterface.ScalarAffineFunction(
         direction,
         zero(T),
     )
     MOI.set(lmo.o, MOI.ObjectiveFunction{typeof(obj)}(), obj)
     MOI.set(lmo.o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
-    return _optimize_and_return(lmo)
+    return _optimize_and_return(lmo, variables)
 end
 
-function _optimize_and_return(lmo)
+function _optimize_and_return(lmo, variables)
     MOI.optimize!(lmo.o)
     term_st = MOI.get(lmo.o, MathOptInterface.TerminationStatus())
     if term_st ∉ (MOI.OPTIMAL, MathOptInterface.ALMOST_OPTIMAL)
         @error "Unexpected termionation: $term_st"
         return nothing
     end
-    variables = MOI.get(lmo.o, MathOptInterface.ListOfVariableIndices())
     return MOI.get.(lmo.o, MathOptInterface.VariablePrimal(), variables)
 end

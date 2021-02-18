@@ -307,9 +307,7 @@ end
         lmo = FrankWolfe.MathOptLMO(o)
         direction = [MOI.ScalarAffineTerm(-2.0i, x[i]) for i in 2:3]
         v = compute_extreme_point(lmo, direction)
-        for i in eachindex(x)
-            @test v[i] ≈ (i == 3)
-        end
+        @test v ≈ [0,1]
     end
     @testset "Non-settable optimizer with cache" begin
         n = 5
@@ -384,6 +382,71 @@ end
             v_moi_mat = reshape(v_moi, n, n)
             v_bfk = FrankWolfe.compute_extreme_point(lmo_bkf, direction_mat)
             @test all(isapprox.(v_moi_mat, v_bfk, atol=1e-4))
+        end
+    end
+end
+
+@testset "MOI oracle and KSparseLMO" begin
+    o_base = GLPK.Optimizer()
+    cached = MOI.Utilities.CachingOptimizer(
+        MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
+        o_base,
+    )
+    o = MOI.Bridges.full_bridge_optimizer(cached, Float64)
+    
+    for n in (1, 2, 5, 10)
+        for K in 1:3:n
+            τ = 10 * rand()
+            MOI.empty!(o)
+            x = MOI.add_variables(o, n)
+            tinf = MOI.add_variable(o)
+            MOI.add_constraint(
+                o,
+                MOI.VectorOfVariables([tinf;x]),
+                MOI.NormInfinityCone(n+1),
+            )
+            MOI.add_constraint(
+                o,
+                tinf,
+                MOI.LessThan(τ),
+            )
+            t1 = MOI.add_variable(o)
+            MOI.add_constraint(
+                o,
+                MOI.VectorOfVariables([t1;x]),
+                MOI.NormOneCone(n+1),
+            )
+            MOI.add_constraint(
+                o,
+                t1,
+                MOI.LessThan(τ * K),
+            )
+            direction = Vector{Float64}(undef, n)
+            lmo_moi = FrankWolfe.MathOptLMO(o)
+            lmo_ksp = FrankWolfe.KSparseLMO(K, τ)
+            for _ in 1:20
+                randn!(direction)
+                v_moi = FrankWolfe.compute_extreme_point(lmo_moi, MOI.ScalarAffineTerm.(direction, x))
+                v_ksp = FrankWolfe.compute_extreme_point(lmo_ksp, direction)
+                for idx in eachindex(v_moi)
+                    @test isapprox(v_moi[idx], v_ksp[idx], atol=1e-4)
+                end
+            end
+            # verifying absence of a bug
+            if n == 5
+                direction .= (
+                    -0.07020498519126772,
+                    0.4298929981513661,
+                    -0.8678437699266819,
+                    -0.08899938054920563,
+                    1.160622285477465,
+                )
+                v_moi = FrankWolfe.compute_extreme_point(lmo_moi, MOI.ScalarAffineTerm.(direction, x))
+                v_ksp = FrankWolfe.compute_extreme_point(lmo_ksp, direction)
+                for idx in eachindex(v_moi)
+                    @test isapprox(v_moi[idx], v_ksp[idx], atol=1e-4)
+                end
+            end
         end
     end
 end

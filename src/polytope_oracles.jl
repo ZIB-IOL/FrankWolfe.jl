@@ -7,6 +7,8 @@ LMO for the K-sparse polytope:
 C = B_1(τK) ∩ B_∞(τ)
 ```
 with `τ` the `right_hand_side` parameter.
+The LMO results in a vector with the K largest absolute values
+of direction, taking values `-τ sign(x_i)`.
 """
 struct KSparseLMO{T} <: LinearMinimizationOracle
     K::Int
@@ -25,7 +27,7 @@ function compute_extreme_point(lmo::KSparseLMO{T}, direction) where {T}
             K_indices[2:end] .= K_indices[1:end-1]
             K_indices[1] = idx
             K_values[1] = new_val
-            # new value in the interior
+        # new value in the interior
         elseif abs(new_val) > abs(K_values[K])
             # NOTE: not out of bound since unreachable with K=1
             j = K - 1
@@ -34,8 +36,8 @@ function compute_extreme_point(lmo::KSparseLMO{T}, direction) where {T}
             end
             K_values[j+1:end] .= K_values[j:end-1]
             K_indices[j+1:end] .= K_indices[j:end-1]
-            K_values[j] = new_val
-            K_indices[j] = idx
+            K_values[j+1] = new_val
+            K_indices[j+1] = idx
         end
     end
     v = spzeros(T, length(direction))
