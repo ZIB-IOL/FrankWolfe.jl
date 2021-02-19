@@ -125,19 +125,37 @@ function compute_extreme_point(lmo::KNormBallLMO{T}, direction) where {T}
     return v
 end
 
-struct SpectralNormLMO <: LinearMinimizationOracle
+"""
+    NuclearNormLMO{T}(δ)
+
+LMO over matrices that have a nuclear norm less than δ.
+The LMO returns the rank-one matrix with singular value δ.
+"""
+struct NuclearNormLMO{T} <: LinearMinimizationOracle
+    radius::T
 end
+
+NuclearNormLMO{T}() where {T} = NuclearNormLMO{T}(one(T))
+NuclearNormLMO() = NuclearNormLMO(1.0)
 
 """
 Best rank-one approximation using the
 Golub-Kahan-Lanczos bidiagonalization from IterativeSolvers.
 
-Warning: this does not work (yet) with all number types, including BigFloat and Float16.
+Warning: this does not work (yet) with all number types, BigFloat and Float16 fail.
 """
-function compute_extreme_point(lmo::SpectralNormLMO, direction::AbstractMatrix{T}) where {T}
-    (svd_res, _) = IterativeSolvers.svdl(direction, nsv=1, vecs=:both)
-    return RankOneMatrix(
-        svd_res.U[:] * svd_res.S[1],
+function compute_extreme_point(lmo::NuclearNormLMO, direction::AbstractMatrix)
+    if iszero(direction)
+        # zero gradient: return unit R-O with two MaybeHotVector
+        (nrows, ncols) = size(direction)
+        return RankOneMatrix(
+            MaybeHotVector(lmo.radius, 1, nrows),
+            MaybeHotVector(1, 1, ncols),
+        )
+    end
+    (svd_res, _, history) = IterativeSolvers.svdl(-direction, nsv=1, vecs=:both, log=true, maxiter=maximum(size(direction)),)
+    res = RankOneMatrix(
+        svd_res.U[:] * lmo.radius,
         svd_res.V[:],
     )
 end

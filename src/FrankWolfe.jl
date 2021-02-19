@@ -14,6 +14,9 @@ using Plots
 # for Birkhoff polytope LMO
 import Hungarian
 
+# for nuclear norm
+import IterativeSolvers
+
 include("defs.jl")
 include("simplex_matrix.jl")
 
@@ -96,7 +99,7 @@ function fw(
     primal = Inf
     v = []
     x = x0
-    tt:StepType = regular
+    tt = regular
     trajData = []
     time_start = time_ns()
 
@@ -123,7 +126,7 @@ function fw(
     end
 
     if emphasis === memory && !isa(x, Array)
-        x = convert(Vector{promote_type(eltype(x), Float64)}, x)
+        x = convert(Array{promote_type(eltype(x), Float64)}, x)
     end
     first_iter = true
     # instanciating container for gradient
@@ -156,7 +159,7 @@ function fw(
             dual_gap = dot(x, gradient) - dot(v, gradient)
         end
 
-        if trajectory === true
+        if trajectory
             push!(
                 trajData,
                 (t, primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9),
@@ -328,7 +331,7 @@ function lcg(
     end
 
     if emphasis == memory && !isa(x, Union{Array, SparseArrays.AbstractSparseArray})
-        x = convert(Vector{promote_type(eltype(x), Float64)}, x)
+        x = convert(Array{promote_type(eltype(x), Float64)}, x)
     end
 
     if gradient === nothing

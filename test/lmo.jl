@@ -1,6 +1,7 @@
 using Test
 using FrankWolfe
 using LinearAlgebra
+import SparseArrays
 
 import FrankWolfe: compute_extreme_point, LpNormLMO, KSparseLMO
 import FrankWolfe: SimplexMatrix
@@ -227,4 +228,66 @@ end
         0 0 1
         1 0 0
     ]
+end
+
+@testset "Matrix completion and nuclear norm" begin
+    nfeat = 100
+    nobs = 500
+    r = 30
+    X_gen_cols = randn(nfeat, r)
+    X_gen_rows = randn(r, nobs)
+    svals = 100 * rand(r)
+    Xreal = Matrix{Float64}(undef, nobs, nfeat)
+    for i in 1:nobs
+        for j in 1:nfeat
+            Xreal[i,j] = sum(
+                X_gen_cols[j,k] * X_gen_rows[k,i] * svals[k]
+                for k in 1:r
+            )
+        end
+    end
+    @test rank(Xreal) == r
+    missing_entries = unique!([
+        (rand(1:nobs), rand(1:nfeat))
+        for _ in 1:1000
+    ])
+    f(X) = 0.5 * sum(
+        (X[i,j] - Xreal[i,j])^2
+        for i in 1:nobs, j in 1:nfeat
+        if (i,j) ∉ missing_entries
+    )
+    function grad!(storage, X)
+        storage .= 0
+        for i in 1:nobs
+            for j in 1:nfeat
+                if (i,j) ∉ missing_entries
+                    storage[i,j] = X[i,j] - Xreal[i,j]
+                end
+            end
+        end
+        return nothing
+    end
+    # TODO value of radius?
+    lmo = FrankWolfe.NuclearNormLMO(100.0)
+    x0 = FrankWolfe.compute_extreme_point(lmo, zero(Xreal))
+    gradient = similar(x0)
+    grad!(gradient, x0)
+    v0 = FrankWolfe.compute_extreme_point(lmo, gradient)
+    xfin, vmin, _, _, traj_data = FrankWolfe.fw(
+        f,
+        grad!,
+        lmo,
+        x0;
+        epsilon=1e-7,
+        max_iteration=200,
+        print_iter=100,
+        trajectory=false,
+        verbose=false,
+        linesearch_tol=1e-8,
+        line_search=FrankWolfe.backtracking,
+        emphasis=FrankWolfe.memory,
+    )
+
+    @test abs((f(x0) - f(xfin)) / f(xfin)) < 2e-2
+    @test rank(xfin) ≤ r
 end
