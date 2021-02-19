@@ -173,7 +173,7 @@ function fw(
         elseif line_search === nonconvex
             gamma = 1 / sqrt(t + 1)
         elseif line_search === shortstep
-            gamma = dot(gradient, x - v) / (L * norm(x - v)^2)
+            gamma = dual_gap / (L * norm(x - v)^2)
         elseif line_search === rationalshortstep
             ratDualGap = sum((x - v) .* gradient)
             gamma = ratDualGap // (L * sum((x - v) .^ 2))

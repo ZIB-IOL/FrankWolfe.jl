@@ -196,8 +196,8 @@ indicating if the direction improvement is above a threshold.
 """
 function find_minmax_directions(active_set::ActiveSet, direction, Φ; goodstep_tolerance=0.75)
     idx_fw = idx_as = -1
-    v_fw = Inf
-    v_as = -Inf
+    v_fw = dot(direction, active_set.atoms[1])
+    v_as = v_fw
     for (idx, a) in enumerate(active_set.atoms)
         val = dot(direction, a)
         if val ≤ v_fw
