@@ -170,7 +170,7 @@ function bcg(
                 elseif line_search == nonconvex
                     gamma = 1 / sqrt(t + 1)
                 elseif line_search == shortstep
-                    gamma = dual_gap / (L * dot(x - v, x - v))
+                    gamma =  dot(gradient, x - v) / (L * dot(x - v, x - v))
                 elseif line_search == adaptive
                     L, gamma = adaptive_step_size(f, gradient, x, x - v, L)
                 end
@@ -376,6 +376,11 @@ function lp_separation_oracle(
     if !force_fw_step
         ybest = active_set.atoms[1]
         x = active_set.weights[1] * active_set.atoms[1]
+        if inplace_loop
+            if !isa(x, Union{Array, SparseArrays.AbstractSparseArray})
+                x = convert(SparseVector{eltype(x)}, x)
+            end
+        end
         val_best = dot(direction, ybest)
         for idx in 2:length(active_set)
             y = active_set.atoms[idx]

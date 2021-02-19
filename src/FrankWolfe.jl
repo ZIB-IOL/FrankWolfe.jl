@@ -376,7 +376,7 @@ function lcg(
         elseif line_search == nonconvex
             gamma = 1 / sqrt(t + 1)
         elseif line_search == shortstep
-            gamma = dual_gap / (L * dot(x - v, x - v))
+            gamma = dot(gradient, x - v) / (L * dot(x - v, x - v))
         end
 
         @emphasis(emphasis, x = (1 - gamma) * x + gamma * v)

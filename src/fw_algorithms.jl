@@ -140,7 +140,6 @@ function stochastic_frank_wolfe(
         elseif line_search == nonconvex
             gamma = 1 / sqrt(t + 1)
         elseif line_search == shortstep
-            dual_gap = dot(x, gradient) - dot(v, gradient)
             gamma = dual_gap / (L * norm(x - v)^2)
         elseif line_search == rationalshortstep
             rat_dual_gap = sum((x - v) .* gradient)
