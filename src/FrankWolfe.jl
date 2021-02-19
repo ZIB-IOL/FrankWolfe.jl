@@ -8,6 +8,9 @@ using SparseArrays: spzeros, SparseVector
 import SparseArrays
 import Random
 
+import MathOptInterface
+const MOI = MathOptInterface
+
 # for plotting -> keep here or move somewhere else?
 using Plots
 
@@ -20,12 +23,12 @@ import IterativeSolvers
 include("defs.jl")
 include("simplex_matrix.jl")
 
+include("utils.jl")
 include("oracles.jl")
 include("simplex_oracles.jl")
 include("norm_oracles.jl")
 include("polytope_oracles.jl")
-
-include("utils.jl")
+include("moi_oracle.jl")
 include("function_gradient.jl")
 include("active_set.jl")
 
