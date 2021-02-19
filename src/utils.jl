@@ -482,5 +482,9 @@ function Base.:*(R1::RankOneMatrix, R2::RankOneMatrix)
     return RankOneMatrix(R1.u * temp, R2.v)
 end
 
-Matrix(R::RankOneMatrix) = R.u * R.v'
-collect(R::RankOneMatrix) = Matrix(R)
+Base.Matrix(R::RankOneMatrix) = R.u * R.v'
+Base.collect(R::RankOneMatrix) = Matrix(R)
+Base.copymutable(R::RankOneMatrix) = Matrix(R)
+Base.copy(R::RankOneMatrix) = RankOneMatrix(
+    copy(R.u), copy(R.v),
+)
