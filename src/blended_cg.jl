@@ -319,21 +319,12 @@ function update_simplex_gradient_descent!(
         println(dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), direction))
         return true
     end
-    rem_idx = -1
-    @inbounds for idx in eachindex(d)
-        if d[idx] ≥ 0
-            max_val = active_set.weights[idx] / d[idx]
-            if η > max_val
-                η = max_val
-                rem_idx = idx
-            end
-        end
-    end
+    arr = active_set.weights ./ d
+    η, rem_idx = findmin(ifelse.(arr .> 0.0, arr, Inf))
     # TODO at some point avoid materializing both x and y
     η = max(0, η)
     x = compute_active_set_iterate(active_set)
     @. active_set.weights -= η * d
-    active_set.weights[rem_idx] = 0
     active_set_renormalize!(active_set)
     y = compute_active_set_iterate(active_set)
     if f(x) ≥ f(y)
@@ -347,6 +338,7 @@ function update_simplex_gradient_descent!(
     else # == shortstep, just two methods here for now
         gamma = dot(direction, x - y) / (L * norm(x - y)^2)
     end
+    gamma = min(1.0, gamma)
     # step back from y to x by (1 - γ) η d
     # new point is x - γ η d
     @. active_set.weights += η * (1 - gamma) * d
