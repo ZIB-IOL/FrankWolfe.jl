@@ -150,3 +150,31 @@ end
         1,
     )
 end
+
+@testset "Argminmax" begin
+    active_set = FrankWolfe.ActiveSet([(0.6, [-1, -1]), (0.2, [0, 1]), (0.2, [1, 0])])
+    (λ_min, a_min, i_min, λ_max, a_max, i_max) = FrankWolfe.active_set_argminmax(active_set::ActiveSet, [1, 1.5])
+    @test i_min == 1
+    @test i_max == 2
+end
+
+@testset "LPseparationWithMaybeHotVector" begin
+    v1 = FrankWolfe.MaybeHotVector(1, 1, 2)
+    v2 = FrankWolfe.MaybeHotVector(1, 2, 2)
+    v3 = FrankWolfe.MaybeHotVector(0, 2, 2)
+    active_set = FrankWolfe.ActiveSet([(0.6, v1), (0.2, v2), (0.2, v3)])
+    lmo = FrankWolfe.LpNormLMO{Float64,1}(1.0)
+    direction = ones(2)
+    min_gap = 0.5
+    Ktolerance = 1.0
+    FrankWolfe.lp_separation_oracle(
+        lmo,
+        active_set,
+        direction,
+        min_gap,
+        Ktolerance;
+        inplace_loop=true,
+    )
+end
+
+ 
