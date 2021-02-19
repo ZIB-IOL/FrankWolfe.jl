@@ -255,12 +255,15 @@ end
         )
         lmo = FrankWolfe.MathOptLMO(o)
         lmo_ref = FrankWolfe.UnitSimplexOracle(1.0)
+        lmo_moi_ref = FrankWolfe.convert_mathopt(lmo_ref, GLPK.Optimizer(), dimension=n)
         direction = Vector{Float64}(undef, n)
         for _ in 1:10
             Random.randn!(direction)
             vref = compute_extreme_point(lmo_ref, direction)
             v = compute_extreme_point(lmo, direction)
+            v_moi = compute_extreme_point(lmo_moi_ref, direction)
             @test vref ≈ v
+            @test vref ≈ v_moi
         end
     end
     @testset "MOI consistent probability simplex" for n in (1, 2, 10)
@@ -280,12 +283,15 @@ end
         )
         lmo = FrankWolfe.MathOptLMO(o)
         lmo_ref = FrankWolfe.ProbabilitySimplexOracle(1.0)
+        lmo_moi_ref = FrankWolfe.convert_mathopt(lmo_ref, GLPK.Optimizer(), dimension=n)
         direction = Vector{Float64}(undef, n)
         for _ in 1:10
             Random.randn!(direction)
             vref = compute_extreme_point(lmo_ref, direction)
             v = compute_extreme_point(lmo, direction)
+            v_moi = compute_extreme_point(lmo_moi_ref, direction)
             @test vref ≈ v
+            @test vref ≈ v_moi
         end
     end
     @testset "Direction with coefficients" begin
@@ -342,6 +348,7 @@ end
 
 @testset "MOI oracle on Birkhoff polytope" begin
     o = GLPK.Optimizer()
+    o_ref = GLPK.Optimizer()
     for n in (1, 2, 10)
         MOI.empty!(o)
         (x, _) = MOI.add_constrained_variables(o, fill(MOI.Interval(0.0, 1.0), n*n))
@@ -375,6 +382,7 @@ end
         direction_vec = Vector{Float64}(undef, n * n)
         lmo_bkf = FrankWolfe.BirkhoffPolytopeLMO()
         lmo_moi = FrankWolfe.MathOptLMO(o)
+        lmo_moi_ref = FrankWolfe.convert_mathopt(lmo_bkf, o_ref, dimension=n)
         for _ in 1:10
             randn!(direction_vec)
             direction_mat = reshape(direction_vec, n, n)
@@ -393,7 +401,13 @@ end
         o_base,
     )
     o = MOI.Bridges.full_bridge_optimizer(cached, Float64)
-    
+    o_ref = MOI.Bridges.full_bridge_optimizer(
+        MOI.Utilities.CachingOptimizer(
+            MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
+            GLPK.Optimizer(),
+        ),
+        Float64,
+    )
     for n in (1, 2, 5, 10)
         for K in 1:3:n
             τ = 10 * rand()
@@ -424,12 +438,15 @@ end
             direction = Vector{Float64}(undef, n)
             lmo_moi = FrankWolfe.MathOptLMO(o)
             lmo_ksp = FrankWolfe.KSparseLMO(K, τ)
+            lmo_moi_convert = FrankWolfe.convert_mathopt(lmo_ksp, o_ref, dimension=n)
             for _ in 1:20
                 randn!(direction)
                 v_moi = FrankWolfe.compute_extreme_point(lmo_moi, MOI.ScalarAffineTerm.(direction, x))
                 v_ksp = FrankWolfe.compute_extreme_point(lmo_ksp, direction)
+                v_moi_conv = FrankWolfe.compute_extreme_point(lmo_moi_convert, MOI.ScalarAffineTerm.(direction, x))
                 for idx in eachindex(v_moi)
                     @test isapprox(v_moi[idx], v_ksp[idx], atol=1e-4)
+                    @test isapprox(v_moi_conv[idx], v_ksp[idx], atol=1e-4)
                 end
             end
             # verifying absence of a bug
