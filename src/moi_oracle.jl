@@ -43,3 +43,11 @@ function _optimize_and_return(lmo, variables)
     end
     return MOI.get.(lmo.o, MathOptInterface.VariablePrimal(), variables)
 end
+
+"""
+    convert_mathopt(lmo::LMO, optimizer::OT; kwargs...) -> MathOptLMO{OT}
+
+Converts the given LMO to its equivalent MathOptInterface representation using `optimizer`.
+Must be implemented by LMOs.
+"""
+function convert_mathopt end
