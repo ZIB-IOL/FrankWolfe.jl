@@ -67,7 +67,7 @@ function bcg(
     active_set = ActiveSet([(1.0, x0)])
     x = x0
     if gradient === nothing
-        gradient = similar(x)
+        gradient = similar(x0, float(eltype(x0)))
     end
     grad!(gradient, x)
     # initial gap estimate computation
@@ -111,7 +111,7 @@ function bcg(
     end
 
     if emphasis == memory && !isa(x, Union{Array, SparseVector})
-        x = convert(Array{promote_type(eltype(x), Float64)}, x)
+        x = convert(Array{float(eltype(x))}, x)
     end
     non_simplex_iter = 0
     nforced_fw = 0

@@ -179,6 +179,12 @@ end
 
 Base.:*(x::Number, v::MaybeHotVector) = v * x
 
+function Base.convert(::Type{Vector{T}}, v::MaybeHotVector) where {T}
+    vc = zeros(T, v.len)
+    vc[v.val_idx] = v.active_val
+    return vc
+end
+
 ##############################
 ### emphasis macro
 ##############################
@@ -489,3 +495,10 @@ Base.copymutable(R::RankOneMatrix) = Matrix(R)
 Base.copy(R::RankOneMatrix) = RankOneMatrix(
     copy(R.u), copy(R.v),
 )
+
+function Base.convert(::Type{<:RankOneMatrix{T, Vector{T}, Vector{T}}}, R::RankOneMatrix) where {T}
+    return RankOneMatrix(
+        convert(Vector{T}, R.u),
+        convert(Vector{T}, R.v),
+    )
+end

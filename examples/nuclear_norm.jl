@@ -53,12 +53,8 @@ function grad!(storage, X)
 end
 
 
-
-
-
-# TODO value of radius?
-lmo = FrankWolfe.NuclearNormLMO(275_000.0)
-x0 = FrankWolfe.compute_extreme_point(lmo, zero(Xreal))
+const lmo = FrankWolfe.NuclearNormLMO(275_000.0)
+const x0 = FrankWolfe.compute_extreme_point(lmo, zero(Xreal))
 
 
 # gradient descent
@@ -77,7 +73,7 @@ grad!(gradient, x0)
 v0 = FrankWolfe.compute_extreme_point(lmo, gradient)
 @test dot(v0 - x0, gradient) < 0
 
-k = 10000
+const k = 10000
 
 xfin, vmin, _, _, traj_data = FrankWolfe.fw(
     f,
@@ -100,3 +96,20 @@ plot(svdvals(xfin), label="FW solution", width=3)
 plot!(svdvals(xgd), label="Gradient descent", width=3)
 plot!(svdvals(Xreal), label="Real matrix", linestyle=:dash, width=3, color=:black)
 title!("Singular values")
+
+xfin, vmin, _, _, traj_data = FrankWolfe.afw(
+    f,
+    grad!,
+    lmo,
+    x0;
+    epsilon=1e-9,
+    max_iteration=500,
+    print_iter=50,
+    trajectory=true,
+    verbose=true,
+    linesearch_tol=1e-7,
+    line_search=FrankWolfe.adaptive,
+    L=100,
+    emphasis=FrankWolfe.memory,
+    active_set_type=FrankWolfe.RankOneMatrix{Float64,Vector{Float64},Vector{Float64}},
+)
