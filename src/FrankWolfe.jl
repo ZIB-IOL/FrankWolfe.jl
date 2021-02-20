@@ -8,6 +8,9 @@ using SparseArrays: spzeros, SparseVector
 import SparseArrays
 import Random
 
+import MathOptInterface
+const MOI = MathOptInterface
+
 # for plotting -> keep here or move somewhere else?
 using Plots
 
@@ -17,12 +20,12 @@ import Hungarian
 include("defs.jl")
 include("simplex_matrix.jl")
 
+include("utils.jl")
 include("oracles.jl")
 include("simplex_oracles.jl")
 include("lp_norm_oracles.jl")
 include("polytope_oracles.jl")
-
-include("utils.jl")
+include("moi_oracle.jl")
 include("function_gradient.jl")
 include("active_set.jl")
 
@@ -382,7 +385,7 @@ function lcg(
         elseif line_search == nonconvex
             gamma = 1 / sqrt(t + 1)
         elseif line_search == shortstep
-            gamma = dual_gap / (L * dot(x - v, x - v))
+            gamma = dot(gradient, x - v) / (L * dot(x - v, x - v))
         end
 
         @emphasis(emphasis, x = (1 - gamma) * x + gamma * v)
