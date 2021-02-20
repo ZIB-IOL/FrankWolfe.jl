@@ -1,8 +1,8 @@
 import FrankWolfe
 using LinearAlgebra
 
-n = Int(1e9)
-k = 1000
+n = Int(1e5)
+k = 10000
 
 xpi = rand(n);
 total = sum(xpi);
@@ -16,7 +16,7 @@ end
 # better for memory consumption as we do coordinate-wise ops
 
 function cf(x, xp)
-    return norm(x .- xp)^2
+    return LinearAlgebra.norm(x .- xp)^2
 end
 
 function cgrad!(storage, x, xp)
@@ -33,6 +33,8 @@ FrankWolfe.benchmark_oracles(x -> cf(x, xp), (str, x) -> cgrad!(str, x, xp), lmo
     (str, x) -> cgrad!(str, x, xp),
     lmo,
     x0,
+    nep=false,
+    L=2,
     max_iteration=k,
     line_search=FrankWolfe.agnostic,
     print_iter=k / 10,
