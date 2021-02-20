@@ -73,7 +73,8 @@ end
 # simple golden-ratio based line search (not optimized)
 # based on boostedFW paper code and adapted for julia
 # TODO:
-# - code needs optimization 
+# - code needs optimization.
+# In particular, passing a gradient container instead of allocating
 
 function segment_search(f, grad, x, y; line_search=true, linesearch_tol=1e-10, inplace_gradient=true)
     # restrict segment of search to [x, y]
@@ -81,7 +82,7 @@ function segment_search(f, grad, x, y; line_search=true, linesearch_tol=1e-10, i
     left, right = copy(x), copy(y)
 
     if inplace_gradient
-        gradient = similar(d)    
+        gradient = similar(d)
         grad(gradient, x)
         dgx = dot(d, gradient)
         grad(gradient, y)
@@ -96,14 +97,14 @@ function segment_search(f, grad, x, y; line_search=true, linesearch_tol=1e-10, i
     # if the minimum is at an endpoint
     if dgx * dgy >= 0
         if f(y) <= f(x)
-            return y, 1
+            return y, one(eltype(d))
         else
-            return x, 0
+            return x, zero(eltype(d))
         end
     end
 
     # apply golden-section method to segment
-    gold = 0.5 * (1 + sqrt(5))
+    gold = (1 + sqrt(5)) / 2
     improv = Inf
     while improv > linesearch_tol
         old_left, old_right = left, right
@@ -117,10 +118,10 @@ function segment_search(f, grad, x, y; line_search=true, linesearch_tol=1e-10, i
         improv = norm(f(right) - f(old_right)) + norm(f(left) - f(old_left))
     end
 
-    x_min = (left + right) / 2.0
+    x_min = (left + right) / 2
 
     # compute step size gamma
-    gamma = 0
+    gamma = zero(eltype(d))
     if line_search
         for i in eachindex(d)
             if d[i] != 0
