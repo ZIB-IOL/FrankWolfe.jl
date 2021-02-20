@@ -5,6 +5,7 @@ version = "0.1.0"
 
 [deps]
 Hungarian = "e91730f6-4275-51fb-a7a0-7064cfbd3b39"
+Hypatia = "b99e6be6-89ff-11e8-14f8-45c827f4f8f2"
 IterativeSolvers = "42fd0dbc-a981-5370-80f2-aaf504508153"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MathOptInterface = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"

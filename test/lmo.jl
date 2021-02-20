@@ -289,7 +289,7 @@ end
         lmo,
         x0;
         epsilon=1e-6,
-        max_iteration=300,
+        max_iteration=400,
         print_iter=100,
         trajectory=false,
         verbose=false,
@@ -299,7 +299,7 @@ end
     )
     @test 1 - (f(x0) - f(xfin)) / f(x0) < 1e-3
     svals_fin = svdvals(xfin)
-    @test sum(svals_fin[r+1:end])/sum(svals_fin) ≤ 5e-3
+    @test sum(svals_fin[r+1:end])/sum(svals_fin) ≤ 2e-2
 end
 
 @testset "MOI oracle consistency" begin
