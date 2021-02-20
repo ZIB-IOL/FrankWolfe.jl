@@ -12,6 +12,7 @@ const MOI = MathOptInterface
 
 import Clp
 using Random
+import Hypatia
 
 @testset "Simplex matrix type" begin
     s = SimplexMatrix{Float64}(3)
@@ -239,13 +240,13 @@ end
 end
 
 @testset "Matrix completion and nuclear norm" begin
-    nfeat = 100
-    nobs = 500
-    r = 30
+    nfeat = 50
+    nobs = 100
+    r = 5
+    Xreal = Matrix{Float64}(undef, nobs, nfeat)
     X_gen_cols = randn(nfeat, r)
     X_gen_rows = randn(r, nobs)
     svals = 100 * rand(r)
-    Xreal = Matrix{Float64}(undef, nobs, nfeat)
     for i in 1:nobs
         for j in 1:nfeat
             Xreal[i,j] = sum(
@@ -276,31 +277,33 @@ end
         return nothing
     end
     # TODO value of radius?
-    lmo = FrankWolfe.NuclearNormLMO(100.0)
+    lmo = FrankWolfe.NuclearNormLMO(sum(svdvals(Xreal)))
     x0 = FrankWolfe.compute_extreme_point(lmo, zero(Xreal))
     gradient = similar(x0)
     grad!(gradient, x0)
     v0 = FrankWolfe.compute_extreme_point(lmo, gradient)
-    xfin, vmin, _, _, traj_data = FrankWolfe.fw(
+    @test dot(v0 - x0, gradient) < 0
+    xfin, vmin, _ = FrankWolfe.fw(
         f,
         grad!,
         lmo,
         x0;
-        epsilon=1e-7,
-        max_iteration=200,
+        epsilon=1e-6,
+        max_iteration=300,
         print_iter=100,
         trajectory=false,
         verbose=false,
-        linesearch_tol=1e-8,
+        linesearch_tol=1e-7,
         line_search=FrankWolfe.backtracking,
         emphasis=FrankWolfe.memory,
     )
-
-    @test abs((f(x0) - f(xfin)) / f(xfin)) < 2e-2
-    @test rank(xfin) ≤ r
+    @test 1 - (f(x0) - f(xfin)) / f(x0) < 1e-3
+    svals_fin = svdvals(xfin)
+    @test sum(svals_fin[r+1:end])/sum(svals_fin) ≤ 5e-3
 end
 
 @testset "MOI oracle consistency" begin
+    Random.seed!(42)
     @testset "MOI oracle consistent with unit simplex" for n in (1, 2, 10)
         o =  GLPK.Optimizer()
         MOI.set(o, MOI.Silent(), true)
@@ -405,6 +408,32 @@ end
             vref = compute_extreme_point(lmo_ref, direction)
             v = compute_extreme_point(lmo, direction)
             @test vref ≈ v
+        end
+    end
+    @testset "Nuclear norm" for n in (5, 10)
+        optimizer = MOI.Utilities.CachingOptimizer(
+            MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
+            Hypatia.Optimizer(),
+        )
+        MOI.set(optimizer, MOI.Silent(), true)
+        nrows = 3n
+        ncols = n
+        direction = Matrix{Float64}(undef, nrows, ncols)
+        τ = 10.0
+        lmo = FrankWolfe.NuclearNormLMO(τ)
+        lmo_moi = FrankWolfe.convert_mathopt(lmo, optimizer, row_dimension=nrows, col_dimension=ncols)
+        for _ in 1:10
+            randn!(direction)
+            v_r = FrankWolfe.compute_extreme_point(lmo, direction)
+            flattened = collect(vec(direction))
+            push!(flattened, 0)
+            v_moi = FrankWolfe.compute_extreme_point(lmo_moi, flattened)
+            if v_moi === nothing
+                # ignore non-terminating MOI solver results
+                continue
+            end
+            v_moi_mat = reshape(v_moi[1:end-1], nrows, ncols)
+            @test v_r ≈ v_moi_mat rtol=1e-2
         end
     end
 end
