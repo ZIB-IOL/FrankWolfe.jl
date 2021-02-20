@@ -2,6 +2,7 @@ import Random
 using LinearAlgebra
 using FrankWolfe
 using Test
+using Plots
 
 const nfeat = 100
 const nobs = 500
@@ -76,23 +77,26 @@ grad!(gradient, x0)
 v0 = FrankWolfe.compute_extreme_point(lmo, gradient)
 @test dot(v0 - x0, gradient) < 0
 
+k = 10000
+
 xfin, vmin, _, _, traj_data = FrankWolfe.fw(
     f,
     grad!,
     lmo,
     x0;
     epsilon=1e-9,
-    max_iteration=5000,
-    print_iter=50,
+    max_iteration=k,
+    print_iter=k/10,
     trajectory=true,
     verbose=true,
     linesearch_tol=1e-7,
-    line_search=FrankWolfe.backtracking,
+    line_search=FrankWolfe.adaptive,
+    L=100,
     emphasis=FrankWolfe.memory,
 )
 
 
 plot(svdvals(xfin), label="FW solution", width=3)
-plot!(svdvals(x), label="Gradient descent", width=3)
+plot!(svdvals(xgd), label="Gradient descent", width=3)
 plot!(svdvals(Xreal), label="Real matrix", linestyle=:dash, width=3, color=:black)
 title!("Singular values")
