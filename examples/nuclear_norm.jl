@@ -108,7 +108,6 @@ xfinAFW, vmin, _, _, traj_data = FrankWolfe.afw(
     line_search=FrankWolfe.adaptive,
     L=100,
     emphasis=FrankWolfe.memory#,
-#    active_set_type=FrankWolfe.RankOneMatrix{Float64,Vector{Float64},Vector{Float64}},
 )
 
 
