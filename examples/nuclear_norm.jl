@@ -75,7 +75,24 @@ v0 = FrankWolfe.compute_extreme_point(lmo, gradient)
 
 const k = 10000
 
-xfin, vmin, _, _, traj_data = FrankWolfe.fw(
+# xfin, vmin, _, _, traj_data = FrankWolfe.fw(
+#     f,
+#     grad!,
+#     lmo,
+#     x0;
+#     epsilon=1e-9,
+#     max_iteration=k,
+#     print_iter=k/10,
+#     trajectory=true,
+#     verbose=true,
+#     linesearch_tol=1e-7,
+#     line_search=FrankWolfe.adaptive,
+#     L=100,
+#     emphasis=FrankWolfe.memory,
+# )
+
+
+xfin, vmin, _, _, traj_data = FrankWolfe.afw(
     f,
     grad!,
     lmo,
@@ -86,9 +103,12 @@ xfin, vmin, _, _, traj_data = FrankWolfe.fw(
     trajectory=true,
     verbose=true,
     linesearch_tol=1e-7,
+    localized=true,
+    localizedFactor=0.5,
     line_search=FrankWolfe.adaptive,
     L=100,
-    emphasis=FrankWolfe.memory,
+    emphasis=FrankWolfe.memory#,
+#    active_set_type=FrankWolfe.RankOneMatrix{Float64,Vector{Float64},Vector{Float64}},
 )
 
 
@@ -96,20 +116,3 @@ plot(svdvals(xfin), label="FW solution", width=3)
 plot!(svdvals(xgd), label="Gradient descent", width=3)
 plot!(svdvals(Xreal), label="Real matrix", linestyle=:dash, width=3, color=:black)
 title!("Singular values")
-
-xfin, vmin, _, _, traj_data = FrankWolfe.afw(
-    f,
-    grad!,
-    lmo,
-    x0;
-    epsilon=1e-9,
-    max_iteration=500,
-    print_iter=50,
-    trajectory=true,
-    verbose=true,
-    linesearch_tol=1e-7,
-    line_search=FrankWolfe.adaptive,
-    L=100,
-    emphasis=FrankWolfe.memory,
-    active_set_type=FrankWolfe.RankOneMatrix{Float64,Vector{Float64},Vector{Float64}},
-)
