@@ -13,7 +13,7 @@ end
 
 LpNormLMO{p}(right_hand_side::T) where {T,p} = LpNormLMO{T,p}(right_hand_side)
 
-function compute_extreme_point(lmo::LpNormLMO{T,2}, direction) where {T}
+function compute_extreme_point(lmo::LpNormLMO{T,2}, direction; kwargs...) where {T}
     dir_norm = norm(direction, 2)
     res = similar(direction)
     n = length(direction)
@@ -26,11 +26,11 @@ function compute_extreme_point(lmo::LpNormLMO{T,2}, direction) where {T}
     return res
 end
 
-function compute_extreme_point(lmo::LpNormLMO{T,Inf}, direction) where {T}
+function compute_extreme_point(lmo::LpNormLMO{T,Inf}, direction; kwargs...) where {T}
     return -[lmo.right_hand_side * sign(d) for d in direction]
 end
 
-function compute_extreme_point(lmo::LpNormLMO{T,1}, direction) where {T}
+function compute_extreme_point(lmo::LpNormLMO{T,1}, direction; kwargs...) where {T}
     idx = 0
     v = -one(eltype(direction))
     for i in eachindex(direction)
@@ -42,7 +42,7 @@ function compute_extreme_point(lmo::LpNormLMO{T,1}, direction) where {T}
     return MaybeHotVector(-lmo.right_hand_side * sign(direction[idx]), idx, length(direction))
 end
 
-function compute_extreme_point(lmo::LpNormLMO{T,p}, direction) where {T,p}
+function compute_extreme_point(lmo::LpNormLMO{T,p}, direction; kwargs...) where {T,p}
     # covers the case where the Inf or 1 is of another type
     if p == Inf
         return compute_extreme_point(LpNormLMO{T,Inf}(lmo.right_hand_side), direction)
@@ -69,7 +69,7 @@ struct L1ballDense{T} <: LinearMinimizationOracle
 end
 
 
-function compute_extreme_point(lmo::L1ballDense{T}, direction) where {T}
+function compute_extreme_point(lmo::L1ballDense{T}, direction; kwargs...) where {T}
     idx = 0
     v = -1.0
     for i in eachindex(direction)
@@ -98,7 +98,7 @@ struct KNormBallLMO{T} <: LinearMinimizationOracle
     right_hand_side::T
 end
 
-function compute_extreme_point(lmo::KNormBallLMO{T}, direction) where {T}
+function compute_extreme_point(lmo::KNormBallLMO{T}, direction; kwargs...) where {T}
     K = max(min(lmo.K, length(direction)), 1)
     
     oinf = zero(eltype(direction))
