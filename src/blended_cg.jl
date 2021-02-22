@@ -1,3 +1,15 @@
+stop(text="Stop.") = throw(StopException(text))
+
+struct StopException{T}
+    S::T
+end
+
+function Base.showerror(io::IO, ex::StopException, bt; backtrace=true)
+    Base.with_output_color(get(io, :color, false) ? :green : :nothing, io) do io
+        showerror(io, ex.S)
+    end
+end
+
 
 function bcg(
     f,
@@ -14,7 +26,7 @@ function bcg(
     linesearch_tol=1e-7,
     emphasis::Emphasis=blas,
     Ktolerance=1.0,
-    goodstep_tolerance=0.75,
+    goodstep_tolerance=1.0,
     weight_purge_threshold=1e-9,
     gradient=nothing,
     lmo_kwargs...,
@@ -118,7 +130,6 @@ function bcg(
     force_fw_step = false
 
     while t <= max_iteration && phi ≥ epsilon
-        x = compute_active_set_iterate(active_set)
         # TODO replace with single call interface from function_gradient.jl
         primal = f(x)
         grad!(gradient, x)
@@ -131,6 +142,7 @@ function bcg(
             tt = simplex_descent
             force_fw_step = update_simplex_gradient_descent!(
                 active_set,
+                x,
                 gradient,
                 f,
                 L=L,
@@ -150,16 +162,14 @@ function bcg(
                 force_fw_step=force_fw_step,
                 lmo_kwargs...,
             )
+
             force_fw_step = false
             xval = dot(x, gradient)
-            if value > xval - phi
+            if value > xval - phi/Ktolerance
                 tt = dualstep
                 # setting gap estimate as ∇f(x) (x - v_FW) / 2
                 phi = (xval - value) / 2
             else
-                active_set_cleanup!(active_set)
-                active_set_renormalize!(active_set)
-                x = compute_active_set_iterate(active_set)
                 tt = regular
                 if line_search == agnostic
                     gamma = 2 / (2 + t)
@@ -174,31 +184,18 @@ function bcg(
                 elseif line_search == adaptive
                     L, gamma = adaptive_step_size(f, gradient, x, x - v, L)
                 end
-                fprev = f(x)
-                fprev2 = f(compute_active_set_iterate(active_set))
-                fnew_first = f(
-                    compute_active_set_iterate(active_set) - gamma * (x - v)
-                )
-                norm_x_err = norm(x - compute_active_set_iterate(active_set))
-                fnew_first_init = f(x - gamma * (x - v))
-                new_iterate_theo = x - gamma * (x - v)
-                active_set_update!(active_set, gamma, v)
-                new_iterate_real = compute_active_set_iterate(active_set)
-                fnew = f(new_iterate_real)
-                if fprev <= fnew
-                    @debug "val before update $(fprev)"
-                    @debug "val before update actual $(fprev2)"
-                    @debug "val before update on x $(fnew_first_init)"
-                    @debug "val update theory $(fnew_first)"
-                    @debug "Gap $(dot(gradient, x - v))"
-                    @debug "current x $(sum(x))"
-                    @debug "x out place $(sum(compute_active_set_iterate(active_set)))"
-                    @debug "difference iterates\n$(norm(new_iterate_real - new_iterate_theo))"
-                    error("END")
+                gamma = min(1.0, gamma)
+                if gamma == 1.0
+                    active_set = ActiveSet([(1.0, v)])
+                    @. x = v
+                else
+                    active_set_update!(active_set, gamma, v)
+                    @. x += gamma*(v - x)
                 end
             end
         end
-        dual_gap = 2phi
+        x = compute_active_set_iterate(active_set)
+        dual_gap = phi
         if trajectory
             push!(
                 traj_data,
@@ -234,7 +231,8 @@ function bcg(
         grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
-        dual_gap = 2phi
+        dual_gap = dot(x, gradient) - dot(v, gradient)
+        #dual_gap = 2phi
         rep = (
             last,
             string(t - 1),
@@ -255,7 +253,8 @@ function bcg(
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
-    dual_gap = 2phi
+    #dual_gap = 2phi
+    dual_gap = dot(x, gradient) - dot(v, gradient)
     if verbose
         rep = (
             pp,
@@ -289,6 +288,7 @@ https://arxiv.org/abs/1805.07311
 """
 function update_simplex_gradient_descent!(
     active_set::ActiveSet,
+    x,
     direction,
     f;
     L=nothing,
@@ -310,7 +310,6 @@ function update_simplex_gradient_descent!(
         push!(active_set, (1, a0))
         return false
     end
-    η = eltype(d)(Inf)
     # NOTE: sometimes the direction is non-improving
     # usual suspects are floating-point errors when multiplying atoms with near-zero weights
     # in that case, inverting the sense of d
@@ -323,12 +322,11 @@ function update_simplex_gradient_descent!(
     η, rem_idx = findmin(ifelse.(arr .> 0.0, arr, Inf))
     # TODO at some point avoid materializing both x and y
     η = max(0, η)
-    x = compute_active_set_iterate(active_set)
     @. active_set.weights -= η * d
-    active_set_renormalize!(active_set)
     y = compute_active_set_iterate(active_set)
     if f(x) ≥ f(y)
         active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
+        @. x = y
         return false
     end
     linesearch_method = L === nothing || !isfinite(L) ? backtracking : shortstep
@@ -342,7 +340,12 @@ function update_simplex_gradient_descent!(
     # step back from y to x by (1 - γ) η d
     # new point is x - γ η d
     @. active_set.weights += η * (1 - gamma) * d
-    active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
+    if gamma == 1.0
+        active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
+        @. x = y
+    else
+        @. x += gamma*(y - x)
+    end
     return false
 end
 
@@ -360,7 +363,7 @@ function lp_separation_oracle(
     direction,
     min_gap,
     Ktolerance;
-    inplace_loop=true,
+    inplace_loop=false,
     force_fw_step::Bool=false,
     kwargs...,
 )

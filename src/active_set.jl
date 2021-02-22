@@ -195,7 +195,7 @@ indicating if the direction improvement is above a threshold.
 `goodstep_tolerance ∈ (0, 1]` is a tolerance coefficient multiplying Φ for the validation of the progress. 
 """
 function find_minmax_directions(active_set::ActiveSet, direction, Φ; goodstep_tolerance=0.75)
-    idx_fw = idx_as = 0
+    idx_fw = idx_as = 1
     v_fw = dot(direction, active_set.atoms[1])
     v_as = v_fw
     for (idx, a) in enumerate(active_set.atoms)
