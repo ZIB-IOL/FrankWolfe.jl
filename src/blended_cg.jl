@@ -29,6 +29,7 @@ function bcg(
     goodstep_tolerance=1.0,
     weight_purge_threshold=1e-9,
     gradient=nothing,
+    WT=Float64,
     lmo_kwargs...,
 )
     function print_header(data)
@@ -76,7 +77,7 @@ function bcg(
     t = 0
     primal = Inf
     dual_gap = Inf
-    active_set = ActiveSet([(1.0, x0)])
+    active_set = ActiveSet([(one(WT), x0)])
     x = x0
     if gradient === nothing
         gradient = similar(x)
@@ -186,11 +187,9 @@ function bcg(
                 end
                 gamma = min(1.0, gamma)
                 if gamma == 1.0
-                    active_set = ActiveSet([(1.0, v)])
-                    @. x = v
+                    active_set_initialize!(active_set, v)
                 else
                     active_set_update!(active_set, gamma, v)
-                    @. x += gamma*(v - x)
                 end
             end
         end
