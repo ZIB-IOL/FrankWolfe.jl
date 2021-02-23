@@ -187,13 +187,17 @@ function bcg(
                 end
                 gamma = min(1.0, gamma)
                 if gamma == 1.0
-                    active_set_initialize!(active_set, v)
+                    active_set = ActiveSet([(1.0, v)])
+                    @. x = v
+                    #x = v
                 else
                     active_set_update!(active_set, gamma, v)
+                    @. x += gamma*(v - x)
+                    #x += gamma*(v - x)
                 end
             end
         end
-        x = compute_active_set_iterate(active_set)
+        x  = compute_active_set_iterate(active_set)
         dual_gap = phi
         if trajectory
             push!(
@@ -317,8 +321,23 @@ function update_simplex_gradient_descent!(
         println(dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), direction))
         return true
     end
-    arr = active_set.weights ./ d
-    η, rem_idx = findmin(ifelse.(arr .> 0.0, arr, Inf))
+    #arr = active_set.weights ./ d
+    #η, rem_idx = findmin(ifelse.(arr .> 0.0, arr, Inf))
+
+    η = eltype(d)(Inf)
+    rem_idx = -1
+    @inbounds for idx in eachindex(d)
+        if d[idx] > 0
+            max_val = active_set.weights[idx] / d[idx]
+            if η > max_val
+                η = max_val
+                rem_idx = idx
+            end
+        end
+    end
+
+
+
     # TODO at some point avoid materializing both x and y
     η = max(0, η)
     @. active_set.weights -= η * d
