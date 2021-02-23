@@ -211,3 +211,9 @@ function find_minmax_directions(active_set::ActiveSet, direction, Φ; goodstep_t
     # improving step
     return (idx_fw, idx_as, v_as - v_fw ≥ Φ)
 end
+
+function active_set_initialize!(as::ActiveSet{AT, R}, v) where {AT, R}
+    empty!(as)
+    push!(as, (one(R), v))
+    return as
+end
