@@ -1,15 +1,3 @@
-stop(text="Stop.") = throw(StopException(text))
-
-struct StopException{T}
-    S::T
-end
-
-function Base.showerror(io::IO, ex::StopException, bt; backtrace=true)
-    Base.with_output_color(get(io, :color, false) ? :green : :nothing, io) do io
-        showerror(io, ex.S)
-    end
-end
-
 
 function bcg(
     f,
@@ -24,12 +12,12 @@ function bcg(
     trajectory=false,
     verbose=false,
     linesearch_tol=1e-7,
-    emphasis::Emphasis=blas,
+    emphasis=nothing,
     Ktolerance=1.0,
     goodstep_tolerance=1.0,
     weight_purge_threshold=1e-9,
     gradient=nothing,
-    WT=Float64,
+    direction_storage=nothing,
     lmo_kwargs...,
 )
     function print_header(data)
@@ -77,7 +65,7 @@ function bcg(
     t = 0
     primal = Inf
     dual_gap = Inf
-    active_set = ActiveSet([(one(WT), x0)])
+    active_set = ActiveSet([(1.0, x0)])
     x = x0
     if gradient === nothing
         gradient = similar(x)
@@ -90,6 +78,10 @@ function bcg(
     tt = regular
     time_start = time_ns()
     v = x0
+    if direction_storage === nothing
+        direction_storage = Vector{float(eltype(x))}()
+        Base.sizehint!(direction_storage, 100)
+    end
 
     if line_search == shortstep && !isfinite(L)
         @error("Lipschitz constant not set to a finite value. Prepare to blow up spectacularly.")
@@ -103,12 +95,10 @@ function bcg(
         println("\nBlended Conditional Gradients Algorithm.")
         numType = eltype(x0)
         println(
-            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration TYPE: $numType",
+            "EMPHASIS: $memory STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration TYPE: $numType",
         )
         println("K: $Ktolerance")
-        if emphasis == memory
-            println("WARNING: In memory emphasis mode iterates are written back into x0!")
-        end
+        println("WARNING: In memory emphasis mode iterates are written back into x0!")
         headers = (
             "Type",
             "Iteration",
@@ -123,8 +113,8 @@ function bcg(
         print_header(headers)
     end
 
-    if emphasis == memory && !isa(x, Union{Array, SparseVector})
-        x = convert(Vector{promote_type(eltype(x), Float64)}, x)
+    if !isa(x, Union{Array, SparseVector})
+        x = convert(Vector{float(eltype(x))}, x)
     end
     non_simplex_iter = 0
     nforced_fw = 0
@@ -143,11 +133,11 @@ function bcg(
             tt = simplex_descent
             force_fw_step = update_simplex_gradient_descent!(
                 active_set,
-                x,
                 gradient,
                 f,
                 L=L,
                 weight_purge_threshold=weight_purge_threshold,
+                storage=direction_storage,
             )
             nforced_fw += force_fw_step
         else
@@ -187,13 +177,9 @@ function bcg(
                 end
                 gamma = min(1.0, gamma)
                 if gamma == 1.0
-                    active_set = ActiveSet([(1.0, v)])
-                    @. x = v
-                    #x = v
+                    active_set_initialize!(active_set, v)
                 else
                     active_set_update!(active_set, gamma, v)
-                    @. x += gamma*(v - x)
-                    #x += gamma*(v - x)
                 end
             end
         end
@@ -235,7 +221,6 @@ function bcg(
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
         dual_gap = dot(x, gradient) - dot(v, gradient)
-        #dual_gap = 2phi
         rep = (
             last,
             string(t - 1),
@@ -291,15 +276,37 @@ https://arxiv.org/abs/1805.07311
 """
 function update_simplex_gradient_descent!(
     active_set::ActiveSet,
-    x,
     direction,
     f;
     L=nothing,
     linesearch_tol=10e-10,
     step_lim=100,
     weight_purge_threshold=1e-12,
+    storage=nothing,
 )
-    c = [dot(direction, a) for a in active_set.atoms]
+    c = if storage === nothing
+        [dot(direction, a) for a in active_set.atoms]
+    else
+        if length(storage) == length(active_set)
+            for (idx, a) in enumerate(active_set.atoms)
+                storage[idx] = dot(direction, a)
+            end
+            storage
+        elseif length(storage) > length(active_set)
+            for (idx, a) in enumerate(active_set.atoms)
+                storage[idx] = dot(direction, a)
+            end
+            storage[1:length(active_set)]
+        else
+            for idx in 1:length(storage)
+                storage[idx] = dot(direction, active_set.atoms[idx])
+            end
+            for idx in (length(storage)+1):length(active_set)
+                push!(storage, dot(direction, active_set.atoms[idx]))
+            end
+            storage
+        end
+    end
     k = length(active_set)
     csum = sum(c)
     c .-= (csum / k)
@@ -339,12 +346,12 @@ function update_simplex_gradient_descent!(
 
 
     # TODO at some point avoid materializing both x and y
+    x = copy(active_set.x)
     η = max(0, η)
     @. active_set.weights -= η * d
-    y = compute_active_set_iterate(active_set)
+    y = copy(update_active_set_iterate!(active_set))
     if f(x) ≥ f(y)
         active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
-        @. x = y
         return false
     end
     linesearch_method = L === nothing || !isfinite(L) ? backtracking : shortstep
@@ -357,12 +364,11 @@ function update_simplex_gradient_descent!(
     gamma = min(1.0, gamma)
     # step back from y to x by (1 - γ) η d
     # new point is x - γ η d
-    @. active_set.weights += η * (1 - gamma) * d
     if gamma == 1.0
         active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
-        @. x = y
     else
-        @. x += gamma*(y - x)
+        @. active_set.weights += η * (1 - gamma) * d
+        @. active_set.x =  x + gamma * (y - x)
     end
     return false
 end
