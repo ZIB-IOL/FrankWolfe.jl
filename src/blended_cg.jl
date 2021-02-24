@@ -1,15 +1,3 @@
-stop(text="Stop.") = throw(StopException(text))
-
-struct StopException{T}
-    S::T
-end
-
-function Base.showerror(io::IO, ex::StopException, bt; backtrace=true)
-    Base.with_output_color(get(io, :color, false) ? :green : :nothing, io) do io
-        showerror(io, ex.S)
-    end
-end
-
 
 function bcg(
     f,
@@ -29,7 +17,6 @@ function bcg(
     goodstep_tolerance=1.0,
     weight_purge_threshold=1e-9,
     gradient=nothing,
-    WT=Float64,
     lmo_kwargs...,
 )
     function print_header(data)
@@ -77,7 +64,7 @@ function bcg(
     t = 0
     primal = Inf
     dual_gap = Inf
-    active_set = ActiveSet([(one(WT), x0)])
+    active_set = ActiveSet([(1.0, x0)])
     x = x0
     if gradient === nothing
         gradient = similar(x)
