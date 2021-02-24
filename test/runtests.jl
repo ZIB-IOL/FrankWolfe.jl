@@ -594,7 +594,6 @@ end
         trajectory=false,
         verbose=false,
         linesearch_tol=1e-10,
-        emphasis=FrankWolfe.blas,
     )
 
     @test x !== nothing
