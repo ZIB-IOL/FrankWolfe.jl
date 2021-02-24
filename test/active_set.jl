@@ -90,7 +90,8 @@ end
     # |______\|
 
     active_set = ActiveSet([(0.5, [0, 0]), (0.5, [0, 1]), (0.0, [1, 0])])
-    @test FrankWolfe.compute_active_set_iterate(active_set) ≈ [0, 0.5]
+    x = FrankWolfe.compute_active_set_iterate(active_set)
+    @test x ≈ [0, 0.5]
     f(x) = (x[1] - 1)^2 + (x[2] - 1)^2
     ∇f(x) = [2 * (x[1] - 1), 2 * (x[2] - 1)]
     gradient_dir = ∇f([0, 0.5])
@@ -100,7 +101,8 @@ end
     @test [0, 1] ∈ active_set.atoms
 
     active_set2 = ActiveSet([(0.5, [0, 0]), (0.0, [0, 1]), (0.5, [1, 0])])
-    @test FrankWolfe.compute_active_set_iterate(active_set2) ≈ [0.5, 0]
+    x2 = FrankWolfe.compute_active_set_iterate(active_set2)
+    @test x2 ≈ [0.5, 0]
     gradient_dir = ∇f(FrankWolfe.compute_active_set_iterate(active_set2))
     FrankWolfe.update_simplex_gradient_descent!(active_set2, gradient_dir, f, L=4.0)
     @test length(active_set) == 2
@@ -109,7 +111,8 @@ end
     @test FrankWolfe.compute_active_set_iterate(active_set2) ≈ [0.5, 0.5]
     # updating again (at optimum) triggers the active set emptying
     for as in (active_set, active_set2)
-        gradient_dir = ∇f(FrankWolfe.compute_active_set_iterate(as))
+        x = FrankWolfe.compute_active_set_iterate(as)
+        gradient_dir = ∇f(x)
         FrankWolfe.update_simplex_gradient_descent!(as, gradient_dir, f)
         @test length(active_set) == 1
     end
