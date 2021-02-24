@@ -17,6 +17,7 @@ function bcg(
     goodstep_tolerance=1.0,
     weight_purge_threshold=1e-9,
     gradient=nothing,
+    direction_storage=nothing,
     lmo_kwargs...,
 )
     function print_header(data)
@@ -77,6 +78,10 @@ function bcg(
     tt = regular
     time_start = time_ns()
     v = x0
+    if direction_storage === nothing
+        direction_storage = Vector{float(eltype(x))}()
+        Base.sizehint!(direction_storage, 100)
+    end
 
     if line_search == shortstep && !isfinite(L)
         @error("Lipschitz constant not set to a finite value. Prepare to blow up spectacularly.")
@@ -132,6 +137,7 @@ function bcg(
                 f,
                 L=L,
                 weight_purge_threshold=weight_purge_threshold,
+                storage=direction_storage,
             )
             nforced_fw += force_fw_step
         else
@@ -278,7 +284,29 @@ function update_simplex_gradient_descent!(
     weight_purge_threshold=1e-12,
     storage=nothing,
 )
-    c = [dot(direction, a) for a in active_set.atoms]    
+    c = if storage === nothing
+        [dot(direction, a) for a in active_set.atoms]
+    else
+        if length(storage) == length(active_set)
+            for (idx, a) in enumerate(active_set.atoms)
+                storage[idx] = dot(direction, a)
+            end
+            storage
+        elseif length(storage) > length(active_set)
+            for (idx, a) in enumerate(active_set.atoms)
+                storage[idx] = dot(direction, a)
+            end
+            storage[1:length(active_set)]
+        else
+            for idx in 1:length(storage)
+                storage[idx] = dot(direction, active_set.atoms[idx])
+            end
+            for idx in (length(storage)+1):length(active_set)
+                push!(storage, dot(direction, active_set.atoms[idx]))
+            end
+            storage
+        end
+    end
     k = length(active_set)
     csum = sum(c)
     c .-= (csum / k)
