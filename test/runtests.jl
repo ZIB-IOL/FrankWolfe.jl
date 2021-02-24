@@ -592,7 +592,7 @@ end
         max_iteration=k,
         print_iter=1,
         trajectory=false,
-        verbose=true,
+        verbose=false,
         linesearch_tol=1e-10,
     )
 
