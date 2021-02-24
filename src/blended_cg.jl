@@ -276,8 +276,9 @@ function update_simplex_gradient_descent!(
     linesearch_tol=10e-10,
     step_lim=100,
     weight_purge_threshold=1e-12,
+    storage=nothing,
 )
-    c = [dot(direction, a) for a in active_set.atoms]
+    c = [dot(direction, a) for a in active_set.atoms]    
     k = length(active_set)
     csum = sum(c)
     c .-= (csum / k)
@@ -320,7 +321,7 @@ function update_simplex_gradient_descent!(
     x = copy(active_set.x)
     η = max(0, η)
     @. active_set.weights -= η * d
-    y = update_active_set_iterate!(active_set)
+    y = copy(update_active_set_iterate!(active_set))
     if f(x) ≥ f(y)
         active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
         return false
@@ -339,7 +340,7 @@ function update_simplex_gradient_descent!(
         active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
     else
         @. active_set.weights += η * (1 - gamma) * d
-        active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
+        @. active_set.x =  x + gamma * (y - x)
     end
     return false
 end
