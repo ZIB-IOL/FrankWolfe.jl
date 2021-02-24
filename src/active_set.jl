@@ -35,7 +35,8 @@ function ActiveSet{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}) 
     n = length(tuple_values)
     weights = Vector{R}(undef, n)
     atoms = Vector{AT}(undef, n)
-    x = 0 .* float.(similar(tuple_values[1][2]))
+    x = float.(similar(tuple_values[1][2]))
+    x .= 0
     @inbounds for idx in 1:n
         weights[idx] = tuple_values[idx][1]
         atoms[idx] = tuple_values[idx][2]
@@ -50,7 +51,6 @@ Base.size(as::ActiveSet) = size(as.weights)
 function Base.push!(as::ActiveSet, (λ, a))
     push!(as.weights, λ)
     push!(as.atoms, a)
-    as.x .+= λ * a
     return as
 end
 
@@ -81,20 +81,44 @@ end
 Adds the atom to the active set with weight lambda or adds lambda to existing atom.
 """
 function active_set_update!(active_set::ActiveSet, lambda, atom, renorm=true)
+    x_before = active_set.x * (1-lambda) + lambda * atom
+    xa_before = sum(λi * ai for (λi, ai) in active_set) * (1 - lambda) + lambda * atom
+    @debug "diff v beginning $(norm(x_before - xa_before))"
+    if norm(x_before - xa_before) > 1e-6
+        error("")
+    end
     # rescale active set
     active_set.weights .*= (1 - lambda)
     # add value for new atom
     idx = find_atom(active_set, atom)
+    updating = false
     if idx > 0
         @inbounds active_set.weights[idx] = active_set.weights[idx] + lambda
+        updating = true
     else
         push!(active_set, (lambda, atom))
     end
+    # active_set.x .= 0
+    # for (λ, a) in active_set
+    #     active_set.x .= active_set.x + λ * a
+    # end
+    @. active_set.x = active_set.x * (1 - lambda) + lambda * atom
     if renorm
         active_set_cleanup!(active_set, update=false)
         active_set_renormalize!(active_set)
     end
-    update_active_set_iterate!(active_set)
+    xreal = sum(λi * ai for (λi, ai) in active_set)
+    # works
+    # update_active_set_iterate!(active_set)
+    # not
+    nafter = norm(active_set.x)
+    @debug "diff $(norm(xreal - active_set.x))"
+    @debug "update? $updating"
+    @debug "diff2 $(norm(xreal - x_before))"
+    @debug "diff3 $(norm(xreal - xa_before))"
+    if (norm(xreal - active_set.x)) > 0.01
+        error("QUIT")
+    end
     return active_set
 end
 

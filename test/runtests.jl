@@ -588,11 +588,11 @@ end
         x0;
         line_search=FrankWolfe.backtracking,
         L=Inf,
-        epsilon=1e-7,
-        max_iteration=100000,
-        print_iter=100,
+        epsilon=1e-9,
+        max_iteration=k,
+        print_iter=1,
         trajectory=false,
-        verbose=false,
+        verbose=true,
         linesearch_tol=1e-10,
     )
 
