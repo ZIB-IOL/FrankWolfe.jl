@@ -68,7 +68,7 @@ function bcg(
     active_set = ActiveSet([(1.0, x0)])
     x = x0
     if gradient === nothing
-        gradient = similar(x)
+        gradient = similar(x0, float(eltype(x0)))
     end
     grad!(gradient, x)
     # initial gap estimate computation
@@ -114,7 +114,7 @@ function bcg(
     end
 
     if !isa(x, Union{Array, SparseVector})
-        x = convert(Vector{float(eltype(x))}, x)
+            x = convert(Array{float(eltype(x))}, x)
     end
     non_simplex_iter = 0
     nforced_fw = 0
@@ -397,7 +397,11 @@ function lp_separation_oracle(
         x = active_set.weights[1] * active_set.atoms[1]
         if inplace_loop
             if !isa(x, Union{Array, SparseArrays.AbstractSparseArray})
-                x = convert(SparseVector{eltype(x)}, x)
+                if x isa AbstractVector
+                    x = convert(SparseVector{eltype(x)}, x)
+                else
+                    x = convert(SparseArrays.SparseMatrixCSC{eltype(x)}, x)
+                end
             end
         end
         val_best = dot(direction, ybest)
