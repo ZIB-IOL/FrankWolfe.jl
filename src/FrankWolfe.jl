@@ -118,7 +118,7 @@ function fw(
         println("\nVanilla Frank-Wolfe Algorithm.")
         numType = eltype(x0)
         println(
-            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration TYPE: $numType",
+            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $numType",
         )
         println("MOMENTUM: $momentum")
         if emphasis === memory
