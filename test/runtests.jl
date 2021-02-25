@@ -4,7 +4,7 @@ using LinearAlgebra
 
 include("lmo.jl")
 include("function_gradient.jl")
-include("active_set_tests.jl")
+include("active_set.jl")
 include("utils.jl")
 
 @testset "Line Search methods" begin
@@ -588,13 +588,12 @@ end
         x0;
         line_search=FrankWolfe.backtracking,
         L=Inf,
-        epsilon=1e-7,
-        max_iteration=100000,
-        print_iter=100,
+        epsilon=1e-9,
+        max_iteration=k,
+        print_iter=1,
         trajectory=false,
         verbose=false,
         linesearch_tol=1e-10,
-        emphasis=FrankWolfe.blas,
     )
 
     @test x !== nothing

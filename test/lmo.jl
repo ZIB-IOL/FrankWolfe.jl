@@ -1,9 +1,18 @@
 using Test
 using FrankWolfe
 using LinearAlgebra
+import SparseArrays
 
 import FrankWolfe: compute_extreme_point, LpNormLMO, KSparseLMO
 import FrankWolfe: SimplexMatrix
+
+import GLPK
+import MathOptInterface
+const MOI = MathOptInterface
+
+import Clp
+using Random
+import Hypatia
 
 @testset "Simplex matrix type" begin
     s = SimplexMatrix{Float64}(3)
@@ -189,6 +198,7 @@ function _is_doubly_stochastic(m)
 end
 
 @testset "Birkhoff polytope" begin
+    Random.seed!(42)
     lmo = FrankWolfe.BirkhoffPolytopeLMO()
     for n in (1, 2, 10)
         cost = rand(n, n)
@@ -227,4 +237,325 @@ end
         0 0 1
         1 0 0
     ]
+end
+
+@testset "Matrix completion and nuclear norm" begin
+    nfeat = 50
+    nobs = 100
+    r = 5
+    Xreal = Matrix{Float64}(undef, nobs, nfeat)
+    X_gen_cols = randn(nfeat, r)
+    X_gen_rows = randn(r, nobs)
+    svals = 100 * rand(r)
+    for i in 1:nobs
+        for j in 1:nfeat
+            Xreal[i,j] = sum(
+                X_gen_cols[j,k] * X_gen_rows[k,i] * svals[k]
+                for k in 1:r
+            )
+        end
+    end
+    @test rank(Xreal) == r
+    missing_entries = unique!([
+        (rand(1:nobs), rand(1:nfeat))
+        for _ in 1:1000
+    ])
+    f(X) = 0.5 * sum(
+        (X[i,j] - Xreal[i,j])^2
+        for i in 1:nobs, j in 1:nfeat
+        if (i,j) ∉ missing_entries
+    )
+    function grad!(storage, X)
+        storage .= 0
+        for i in 1:nobs
+            for j in 1:nfeat
+                if (i,j) ∉ missing_entries
+                    storage[i,j] = X[i,j] - Xreal[i,j]
+                end
+            end
+        end
+        return nothing
+    end
+    # TODO value of radius?
+    lmo = FrankWolfe.NuclearNormLMO(sum(svdvals(Xreal)))
+    x0 = FrankWolfe.compute_extreme_point(lmo, zero(Xreal))
+    gradient = similar(x0)
+    grad!(gradient, x0)
+    v0 = FrankWolfe.compute_extreme_point(lmo, gradient)
+    @test dot(v0 - x0, gradient) < 0
+    xfin, vmin, _ = FrankWolfe.fw(
+        f,
+        grad!,
+        lmo,
+        x0;
+        epsilon=1e-6,
+        max_iteration=400,
+        print_iter=100,
+        trajectory=false,
+        verbose=false,
+        linesearch_tol=1e-7,
+        line_search=FrankWolfe.backtracking,
+        emphasis=FrankWolfe.memory,
+    )
+    @test 1 - (f(x0) - f(xfin)) / f(x0) < 1e-3
+    svals_fin = svdvals(xfin)
+    @test sum(svals_fin[r+1:end])/sum(svals_fin) ≤ 2e-2
+end
+
+@testset "MOI oracle consistency" begin
+    Random.seed!(42)
+    @testset "MOI oracle consistent with unit simplex" for n in (1, 2, 10)
+        o =  GLPK.Optimizer()
+        MOI.set(o, MOI.Silent(), true)
+        x = MOI.add_variables(o, n)
+        for xi in x
+            MOI.add_constraint(o, xi, MOI.Interval(0.0, 1.0))
+        end
+        MOI.add_constraint(
+            o,
+            MOI.ScalarAffineFunction(
+                MOI.ScalarAffineTerm.(1.0, x),
+                0.0,
+            ),
+            MOI.LessThan(1.0),
+        )
+        lmo = FrankWolfe.MathOptLMO(o)
+        lmo_ref = FrankWolfe.UnitSimplexOracle(1.0)
+        lmo_moi_ref = FrankWolfe.convert_mathopt(lmo_ref, GLPK.Optimizer(), dimension=n)
+        direction = Vector{Float64}(undef, n)
+        for _ in 1:10
+            Random.randn!(direction)
+            vref = compute_extreme_point(lmo_ref, direction)
+            v = compute_extreme_point(lmo, direction)
+            v_moi = compute_extreme_point(lmo_moi_ref, direction)
+            @test vref ≈ v
+            @test vref ≈ v_moi
+        end
+    end
+    @testset "MOI consistent probability simplex" for n in (1, 2, 10)
+        o =  GLPK.Optimizer()
+        MOI.set(o, MOI.Silent(), true)
+        x = MOI.add_variables(o, n)
+        for xi in x
+            MOI.add_constraint(o, xi, MOI.Interval(0.0, 1.0))
+        end
+        MOI.add_constraint(
+            o,
+            MOI.ScalarAffineFunction(
+                MOI.ScalarAffineTerm.(1.0, x),
+                0.0,
+            ),
+            MOI.EqualTo(1.0),
+        )
+        lmo = FrankWolfe.MathOptLMO(o)
+        lmo_ref = FrankWolfe.ProbabilitySimplexOracle(1.0)
+        lmo_moi_ref = FrankWolfe.convert_mathopt(lmo_ref, GLPK.Optimizer(), dimension=n)
+        direction = Vector{Float64}(undef, n)
+        for _ in 1:10
+            Random.randn!(direction)
+            vref = compute_extreme_point(lmo_ref, direction)
+            v = compute_extreme_point(lmo, direction)
+            v_moi = compute_extreme_point(lmo_moi_ref, direction)
+            @test vref ≈ v
+            @test vref ≈ v_moi
+        end
+    end
+    @testset "Direction with coefficients" begin
+        n = 5
+        o =  GLPK.Optimizer()
+        MOI.set(o, MOI.Silent(), true)
+        x = MOI.add_variables(o, n)
+        for xi in x
+            MOI.add_constraint(o, xi, MOI.Interval(0.0, 1.0))
+        end
+        MOI.add_constraint(
+            o,
+            MOI.ScalarAffineFunction(
+                MOI.ScalarAffineTerm.(1.0, x),
+                0.0,
+            ),
+            MOI.EqualTo(1.0),
+        )
+        lmo = FrankWolfe.MathOptLMO(o)
+        direction = [MOI.ScalarAffineTerm(-2.0i, x[i]) for i in 2:3]
+        v = compute_extreme_point(lmo, direction)
+        @test v ≈ [0,1]
+    end
+    @testset "Non-settable optimizer with cache" begin
+        n = 5
+        o = MOI.Utilities.CachingOptimizer(
+            MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
+            Clp.Optimizer(),
+        )
+        MOI.set(o, MOI.Silent(), true)
+        x = MOI.add_variables(o, 5)
+        for xi in x
+            MOI.add_constraint(o, xi, MOI.Interval(0.0, 1.0))
+        end
+        MOI.add_constraint(
+            o,
+            MOI.ScalarAffineFunction(
+                MOI.ScalarAffineTerm.(1.0, x),
+                0.0,
+            ),
+            MOI.EqualTo(1.0),
+        )
+        lmo = FrankWolfe.MathOptLMO(o)
+        lmo_ref = FrankWolfe.ProbabilitySimplexOracle(1.0)
+        direction = Vector{Float64}(undef, n)
+        for _ in 1:10
+            Random.randn!(direction)
+            vref = compute_extreme_point(lmo_ref, direction)
+            v = compute_extreme_point(lmo, direction)
+            @test vref ≈ v
+        end
+    end
+    @testset "Nuclear norm" for n in (5, 10)
+        optimizer = MOI.Utilities.CachingOptimizer(
+            MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
+            Hypatia.Optimizer(),
+        )
+        MOI.set(optimizer, MOI.Silent(), true)
+        nrows = 3n
+        ncols = n
+        direction = Matrix{Float64}(undef, nrows, ncols)
+        τ = 10.0
+        lmo = FrankWolfe.NuclearNormLMO(τ)
+        lmo_moi = FrankWolfe.convert_mathopt(lmo, optimizer, row_dimension=nrows, col_dimension=ncols)
+        for _ in 1:10
+            randn!(direction)
+            v_r = FrankWolfe.compute_extreme_point(lmo, direction)
+            flattened = collect(vec(direction))
+            push!(flattened, 0)
+            v_moi = FrankWolfe.compute_extreme_point(lmo_moi, flattened)
+            if v_moi === nothing
+                # ignore non-terminating MOI solver results
+                continue
+            end
+            v_moi_mat = reshape(v_moi[1:end-1], nrows, ncols)
+            @test v_r ≈ v_moi_mat rtol=1e-2
+        end
+    end
+end
+
+@testset "MOI oracle on Birkhoff polytope" begin
+    o = GLPK.Optimizer()
+    o_ref = GLPK.Optimizer()
+    for n in (1, 2, 10)
+        MOI.empty!(o)
+        (x, _) = MOI.add_constrained_variables(o, fill(MOI.Interval(0.0, 1.0), n*n))
+        xmat = reshape(x, n, n)
+        for idx in 1:n
+            # column constraint
+            MOI.add_constraint(
+                o,
+                MOI.ScalarAffineFunction(
+                    MOI.ScalarAffineTerm.(
+                        ones(n),
+                        xmat[:,idx],
+                    ),
+                    0.0,
+                ),
+                MOI.EqualTo(1.0),
+            )
+            # row constraint
+            MOI.add_constraint(
+                o,
+                MOI.ScalarAffineFunction(
+                    MOI.ScalarAffineTerm.(
+                        ones(n),
+                        xmat[idx,:],
+                    ),
+                    0.0,
+                ),
+                MOI.EqualTo(1.0),
+            )
+        end
+        direction_vec = Vector{Float64}(undef, n * n)
+        lmo_bkf = FrankWolfe.BirkhoffPolytopeLMO()
+        lmo_moi = FrankWolfe.MathOptLMO(o)
+        lmo_moi_ref = FrankWolfe.convert_mathopt(lmo_bkf, o_ref, dimension=n)
+        for _ in 1:10
+            randn!(direction_vec)
+            direction_mat = reshape(direction_vec, n, n)
+            v_moi = FrankWolfe.compute_extreme_point(lmo_moi, direction_vec)
+            v_moi_mat = reshape(v_moi, n, n)
+            v_bfk = FrankWolfe.compute_extreme_point(lmo_bkf, direction_mat)
+            @test all(isapprox.(v_moi_mat, v_bfk, atol=1e-4))
+        end
+    end
+end
+
+@testset "MOI oracle and KSparseLMO" begin
+    o_base = GLPK.Optimizer()
+    cached = MOI.Utilities.CachingOptimizer(
+        MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
+        o_base,
+    )
+    o = MOI.Bridges.full_bridge_optimizer(cached, Float64)
+    o_ref = MOI.Bridges.full_bridge_optimizer(
+        MOI.Utilities.CachingOptimizer(
+            MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
+            GLPK.Optimizer(),
+        ),
+        Float64,
+    )
+    for n in (1, 2, 5, 10)
+        for K in 1:3:n
+            τ = 10 * rand()
+            MOI.empty!(o)
+            x = MOI.add_variables(o, n)
+            tinf = MOI.add_variable(o)
+            MOI.add_constraint(
+                o,
+                MOI.VectorOfVariables([tinf;x]),
+                MOI.NormInfinityCone(n+1),
+            )
+            MOI.add_constraint(
+                o,
+                tinf,
+                MOI.LessThan(τ),
+            )
+            t1 = MOI.add_variable(o)
+            MOI.add_constraint(
+                o,
+                MOI.VectorOfVariables([t1;x]),
+                MOI.NormOneCone(n+1),
+            )
+            MOI.add_constraint(
+                o,
+                t1,
+                MOI.LessThan(τ * K),
+            )
+            direction = Vector{Float64}(undef, n)
+            lmo_moi = FrankWolfe.MathOptLMO(o)
+            lmo_ksp = FrankWolfe.KSparseLMO(K, τ)
+            lmo_moi_convert = FrankWolfe.convert_mathopt(lmo_ksp, o_ref, dimension=n)
+            for _ in 1:20
+                randn!(direction)
+                v_moi = FrankWolfe.compute_extreme_point(lmo_moi, MOI.ScalarAffineTerm.(direction, x))
+                v_ksp = FrankWolfe.compute_extreme_point(lmo_ksp, direction)
+                v_moi_conv = FrankWolfe.compute_extreme_point(lmo_moi_convert, MOI.ScalarAffineTerm.(direction, x))
+                for idx in eachindex(v_moi)
+                    @test isapprox(v_moi[idx], v_ksp[idx], atol=1e-4)
+                    @test isapprox(v_moi_conv[idx], v_ksp[idx], atol=1e-4)
+                end
+            end
+            # verifying absence of a bug
+            if n == 5
+                direction .= (
+                    -0.07020498519126772,
+                    0.4298929981513661,
+                    -0.8678437699266819,
+                    -0.08899938054920563,
+                    1.160622285477465,
+                )
+                v_moi = FrankWolfe.compute_extreme_point(lmo_moi, MOI.ScalarAffineTerm.(direction, x))
+                v_ksp = FrankWolfe.compute_extreme_point(lmo_ksp, direction)
+                for idx in eachindex(v_moi)
+                    @test isapprox(v_moi[idx], v_ksp[idx], atol=1e-4)
+                end
+            end
+        end
+    end
 end

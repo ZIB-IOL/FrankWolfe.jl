@@ -8,21 +8,27 @@ using SparseArrays: spzeros, SparseVector
 import SparseArrays
 import Random
 
+import MathOptInterface
+const MOI = MathOptInterface
+
 # for plotting -> keep here or move somewhere else?
 using Plots
 
 # for Birkhoff polytope LMO
 import Hungarian
 
+# for nuclear norm
+import IterativeSolvers
+
 include("defs.jl")
 include("simplex_matrix.jl")
 
+include("utils.jl")
 include("oracles.jl")
 include("simplex_oracles.jl")
-include("lp_norm_oracles.jl")
+include("norm_oracles.jl")
 include("polytope_oracles.jl")
-
-include("utils.jl")
+include("moi_oracle.jl")
 include("function_gradient.jl")
 include("active_set.jl")
 
@@ -97,7 +103,7 @@ function fw(
     primal = Inf
     v = []
     x = x0
-    tt:StepType = regular
+    tt = regular
     trajData = []
     time_start = time_ns()
 
@@ -124,7 +130,7 @@ function fw(
     end
 
     if emphasis === memory && !isa(x, Array)
-        x = convert(Vector{promote_type(eltype(x), Float64)}, x)
+        x = convert(Array{promote_type(eltype(x), Float64)}, x)
     end
     first_iter = true
     # instanciating container for gradient
@@ -164,7 +170,7 @@ function fw(
             dual_gap = dot(x, gradient) - dot(v, gradient)
         end
 
-        if trajectory === true
+        if trajectory
             push!(
                 trajData,
                 (t, primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9),
@@ -174,7 +180,7 @@ function fw(
         if line_search === agnostic
             gamma = 2 // (2 + t)
         elseif line_search === goldenratio
-            _, gamma = segment_search(f, grad!, x, v, linesearch_tol=linesearch_tol)
+            _, gamma = segment_search(f, grad!, x, v, linesearch_tol=linesearch_tol, inplace_gradient=true)
         elseif line_search === backtracking
             _, gamma =
                 backtrackingLS(f, gradient, x, v, linesearch_tol=linesearch_tol, step_lim=step_lim)
@@ -183,13 +189,14 @@ function fw(
         elseif line_search === shortstep
             gamma = dual_gap / (L * norm(x - v)^2)
         elseif line_search === rationalshortstep
-            ratDualGap = sum((x - v) .* gradient)
-            gamma = ratDualGap // (L * sum((x - v) .^ 2))
+            rat_dual_gap = sum((x - v) .* gradient)
+            gamma = rat_dual_gap // (L * sum((x - v) .^ 2))
         elseif line_search === fixed
             gamma = gamma
         elseif line_search === adaptive
             L, gamma = adaptive_step_size(f, gradient, x, x - v, L)
         end
+        @debug "gamma: $gamma"
 
         @emphasis(emphasis, x = (1 - gamma) * x + gamma * v)
 
@@ -336,7 +343,7 @@ function lcg(
     end
 
     if emphasis == memory && !isa(x, Union{Array, SparseArrays.AbstractSparseArray})
-        x = convert(Vector{promote_type(eltype(x), Float64)}, x)
+        x = convert(Array{promote_type(eltype(x), Float64)}, x)
     end
 
     if gradient === nothing
@@ -381,7 +388,7 @@ function lcg(
         elseif line_search == nonconvex
             gamma = 1 / sqrt(t + 1)
         elseif line_search == shortstep
-            gamma = dual_gap / (L * dot(x - v, x - v))
+            gamma = dot(gradient, x - v) / (L * dot(x - v, x - v))
         end
 
         @emphasis(emphasis, x = (1 - gamma) * x + gamma * v)
