@@ -87,19 +87,21 @@ for _ in 1:5000
     end
 end
 
-const k = 1000
+const k = 10000
 
-xfin, vmin, _, _, traj_data = FrankWolfe.fw(
+xfin, vmin, _, _, traj_data = FrankWolfe.bcg(
     f,
     grad!,
     lmo,
     x0;
     epsilon=1e-9,
     max_iteration=k,
-    print_iter=k/10,
+    print_iter=k/20,
     trajectory=true,
     verbose=true,
     linesearch_tol=1e-7,
+#    localized=true,
+#    localizedFactor=0.5,
     line_search=FrankWolfe.adaptive,
     L=100,
     emphasis=FrankWolfe.memory,
