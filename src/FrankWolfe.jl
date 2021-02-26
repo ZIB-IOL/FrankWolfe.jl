@@ -196,7 +196,6 @@ function fw(
         elseif line_search === adaptive
             L, gamma = adaptive_step_size(f, gradient, x, x - v, L)
         end
-        @debug "gamma: $gamma"
 
         @emphasis(emphasis, x = (1 - gamma) * x + gamma * v)
 
