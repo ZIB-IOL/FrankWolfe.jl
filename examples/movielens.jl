@@ -87,16 +87,20 @@ for _ in 1:5000
     end
 end
 
-const k = 10000
 
-xfin, vmin, _, _, traj_data = FrankWolfe.bcg(
+# FrankWolfe.benchmark_oracles(f, (str, x) -> grad!(str, x), lmo, n; k=100, T=Float64)
+
+
+const k = 1000
+
+xfin, vmin, _, _, traj_data = FrankWolfe.fw(
     f,
     grad!,
     lmo,
     x0;
     epsilon=1e-9,
     max_iteration=k,
-    print_iter=k/20,
+    print_iter=k/10,
     trajectory=true,
     verbose=true,
     linesearch_tol=1e-7,
