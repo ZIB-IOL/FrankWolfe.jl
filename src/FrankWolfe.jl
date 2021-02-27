@@ -332,7 +332,7 @@ function lcg(
         println("\nLazified Conditional Gradients (Frank-Wolfe + Lazification).")
         numType = eltype(x0)
         println(
-            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration PHIFACTOR: $phiFactor TYPE: $numType",
+            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration PHIFACTOR: $phiFactor TYPE: $numType",
         )
         println("cache_size $cache_size GREEDYCACHE: $greedy_lazy")
         if emphasis == memory
