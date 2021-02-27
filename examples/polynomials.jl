@@ -8,9 +8,9 @@ using TypedPolynomials
 
 import ReverseDiff
 
-N = 10
+const N = 10
 
-@polyvar X[1:N]
+@polyvar X[1:$N]
 
 
 const max_degree = 3
