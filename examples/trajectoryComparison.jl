@@ -10,15 +10,20 @@ total = sum(xpi);
 const xp = xpi ./ total;
 
 f(x) = norm(x - xp)^2
-grad(x) = 2 * (x - xp)
+function grad!(storage, x)
+    storage .= 2 * (x - xp)
+    return nothing
+end
+
 # better for memory consumption as we do coordinate-wise ops
 
 function cf(x, xp)
     return @. norm(x - xp)^2
 end
 
-function cgrad(x, xp)
-    return @. 2 * (x - xp)
+function cgrad(storage, x, xp)
+    @. storage = 2 * (x - xp)
+    return nothing
 end
 
 # lmo = FrankWolfe.KSparseLMO(100, 1.0)
@@ -28,7 +33,8 @@ lmo = FrankWolfe.LpNormLMO{Float64,1}(1.0)
 x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
 # print(x0)
 
-FrankWolfe.benchmark_oracles(x -> cf(x, xp), x -> cgrad(x, xp), lmo, n; k=100, T=Float64)
+gradient = similar(x00)
+FrankWolfe.benchmark_oracles(x -> cf(x, xp), x -> cgrad(gradient, x, xp), lmo, n; k=100, T=Float64)
 
 # 1/t *can be* better than short step
 
@@ -37,7 +43,7 @@ println("\n==> Short Step rule - if you know L.\n")
 x0 = copy(x00)
 @time x, v, primal, dual_gap, trajectorySs = FrankWolfe.fw(
     f,
-    grad,
+    grad!,
     lmo,
     x0,
     max_iteration=k,
@@ -55,7 +61,7 @@ x0 = copy(x00)
 
 @time x, v, primal, dual_gap, trajectoryM = FrankWolfe.fw(
     f,
-    grad,
+    grad!,
     lmo,
     x0,
     max_iteration=k,
@@ -74,7 +80,7 @@ x0 = copy(x00)
 
 @time x, v, primal, dual_gap, trajectoryAda = FrankWolfe.fw(
     f,
-    grad,
+    grad!,
     lmo,
     x0,
     max_iteration=k,
@@ -92,7 +98,7 @@ x0 = copy(x00)
 
 @time x, v, primal, dual_gap, trajectoryAg = FrankWolfe.fw(
     f,
-    grad,
+    grad!,
     lmo,
     x0,
     max_iteration=k,
