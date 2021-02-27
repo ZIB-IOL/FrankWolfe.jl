@@ -372,25 +372,26 @@ end
 
 # TODO: add actual use of T for the rand(n)
 
-function benchmark_oracles(f, grad!, lmo, n; k=100, nocache=true, T=Float64)
-    sv = n * sizeof(T) / 1024^2
-    println("\nSize of single vector ($T): $sv MB\n")
+function benchmark_oracles(f, grad!, x_gen, lmo; k=100, nocache=true)
+    x = x_gen()
+    sv = sizeof(x) / 1024^2
+    println("\nSize of single atom ($(eltype(x))): $sv MB\n")
     to = TimerOutput()
     @showprogress 1 "Testing f... " for i in 1:k
-        x = rand(n)
+        x = x_gen()
         @timeit to "f" temp = f(x)
     end
     @showprogress 1 "Testing grad... " for i in 1:k
-        x = rand(n)
+        x = x_gen()
         temp = similar(x)
         @timeit to "grad" grad!(temp, x)
     end
     @showprogress 1 "Testing lmo... " for i in 1:k
-        x = rand(n)
+        x = x_gen()
         @timeit to "lmo" temp = compute_extreme_point(lmo, x)
     end
     @showprogress 1 "Testing dual gap... " for i in 1:k
-        x = rand(n)
+        x = x_gen()
         gradient = similar(x)
         grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
@@ -399,7 +400,7 @@ function benchmark_oracles(f, grad!, lmo, n; k=100, nocache=true, T=Float64)
         end
     end
     @showprogress 1 "Testing update... (Emphasis: blas) " for i in 1:k
-        x = rand(n)
+        x = x_gen()
         gradient = similar(x)
         grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
@@ -407,7 +408,7 @@ function benchmark_oracles(f, grad!, lmo, n; k=100, nocache=true, T=Float64)
         @timeit to "update (blas)" @emphasis(blas, x = (1 - gamma) * x + gamma * v)
     end
     @showprogress 1 "Testing update... (Emphasis: memory) " for i in 1:k
-        x = rand(n)
+        x = x_gen()
         gradient = similar(x)
         grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
@@ -418,8 +419,8 @@ function benchmark_oracles(f, grad!, lmo, n; k=100, nocache=true, T=Float64)
     if !nocache
         @showprogress 1 "Testing caching 100 points... " for i in 1:k
             @timeit to "caching 100 points" begin
-                cache = [rand(n) for _ in 1:100]
-                x = rand(n)
+                cache = [gen_x() for _ in 1:100]
+                x = gen_x()
                 gradient = similar(x)
                 grad!(gradient, x)
                 v = compute_extreme_point(lmo, gradient)

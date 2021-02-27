@@ -34,7 +34,7 @@ x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
 # print(x0)
 
 gradient = similar(x00)
-FrankWolfe.benchmark_oracles(x -> cf(x, xp), x -> cgrad(gradient, x, xp), lmo, n; k=100, T=Float64)
+FrankWolfe.benchmark_oracles(x -> cf(x, xp), x -> cgrad(gradient, x, xp), () -> randn(n), lmo; k=100)
 
 # 1/t *can be* better than short step
 
