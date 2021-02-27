@@ -10,7 +10,7 @@ import ReverseDiff
 
 const N = 10
 
-@polyvar X[1:$N]
+@polyvar X[1:10]
 
 
 const max_degree = 3
