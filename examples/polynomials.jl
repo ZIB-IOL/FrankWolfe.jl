@@ -95,8 +95,10 @@ end
 # end
 
 # gradient descent
+gradient = similar(flattened_coeff)
 xgd = rand(length(flattened_coeff))
 for _ in 1:2000
+    global xgd
     grad!(gradient, xgd)
     xgd -= 0.05 * gradient
 end
