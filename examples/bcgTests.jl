@@ -37,7 +37,7 @@ const x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
 const x00_big = FrankWolfe.compute_extreme_point(lmo_big, zeros(n))
 # print(x0)
 
-FrankWolfe.benchmark_oracles(x -> cf(x, xp), (str, x) -> cgrad!(str, x, xp), lmo, n; k=100, T=Float64)
+FrankWolfe.benchmark_oracles(x -> cf(x, xp), (str, x) -> cgrad!(str, x, xp), ()->randn(n), lmo; k=100)
 
 x0 = deepcopy(x00_big)
 @time x, v, primal, dual_gap, trajectorySs = FrankWolfe.fw(

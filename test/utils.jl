@@ -17,7 +17,7 @@ using Test
     lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
     x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n))
 
-    FrankWolfe.benchmark_oracles(f, grad!, lmo_prob, n; k=100, T=Float64)
+    FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo_prob; k=100)
 end
 
 @testset "RankOneMatrix" begin

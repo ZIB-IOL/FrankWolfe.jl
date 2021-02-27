@@ -89,7 +89,7 @@ function afw(
         println("\nAway-step Frank-Wolfe Algorithm.")
         numType = eltype(x0)
         println(
-            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration TYPE: $numType",
+            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $numType",
         )
         println("MOMENTUM: $momentum AWAYSTEPS: $awaySteps LOCALIZED: $localized ($localizedFactor)")
         if emphasis == memory
