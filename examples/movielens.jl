@@ -88,9 +88,6 @@ for _ in 1:5000
 end
 
 
-# FrankWolfe.benchmark_oracles(f, (str, x) -> grad!(str, x), lmo, n; k=100, T=Float64)
-
-
 const k = 1000
 
 xfin, vmin, _, _, traj_data = FrankWolfe.fw(
