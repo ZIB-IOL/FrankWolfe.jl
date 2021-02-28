@@ -1,3 +1,4 @@
+import Arpack
 
 """
     LpNormLMO{T, p}(right_hand_side)
@@ -155,13 +156,17 @@ function compute_extreme_point(lmo::NuclearNormLMO, direction::AbstractMatrix; m
         v[1] = 1
         return RankOneMatrix(u, v)
     end
-    (svd_res, _, history) = IterativeSolvers.svdl(-direction, nsv=1, vecs=:both, log=true, maxiter=maxiter)
-    if !history.isconverged
-        @warn("SVD solver did not converge:\n$(history)")
-    end
+    # (svd_res, _, history) = IterativeSolvers.svdl(-direction, nsv=1, vecs=:both, log=true, maxiter=maxiter)
+    # if !history.isconverged
+    #    @warn("SVD solver did not converge:\n$(history)")
+    # end
+
+    # TODO: do we need to include the singular vector are normed / CHECK
+    # Z = Arpack.svds(-direction, nsv=1, tol=1e-4)[1]; # with restricted precision
+    Z = Arpack.svds(-direction, nsv=1)[1];
     res = RankOneMatrix(
-        svd_res.U[:] * lmo.radius,
-        svd_res.V[:],
+        Z.U[:] * lmo.radius,
+        Z.V[:],
     )
 end
 
