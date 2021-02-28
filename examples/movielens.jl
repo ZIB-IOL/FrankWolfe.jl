@@ -4,6 +4,8 @@ include(joinpath(@__DIR__, "activate.jl"))
 # download movielens data
 using ZipFile, DataFrames, CSV
 
+using Random
+
 using SparseArrays, LinearAlgebra
 temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest-small.zip")
 
@@ -74,6 +76,8 @@ norm_estimation = sum(svdvals(collect(rating_matrix))[1:400])
 
 const lmo = FrankWolfe.NuclearNormLMO(norm_estimation)
 const x0 = FrankWolfe.compute_extreme_point(lmo, zero(rating_matrix))
+
+FrankWolfe.benchmark_oracles(f, (str, x) -> grad!(str, x), () -> randn(size(rating_matrix)), lmo; k=100)
 
 
 gradient = similar(x0)
