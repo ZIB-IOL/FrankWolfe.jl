@@ -198,8 +198,11 @@ function bcg(
                 ),
             )
         end
-        t = t + 1
+
         if verbose && mod(t, print_iter) == 0
+            if t == 0
+                tt = initial
+            end
             rep = (
                 tt,
                 string(t),
@@ -214,6 +217,7 @@ function bcg(
             print_iter_func(rep)
             flush(stdout)
         end
+        t = t + 1
     end
     if verbose
         x = compute_active_set_iterate(active_set)
