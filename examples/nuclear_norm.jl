@@ -56,6 +56,7 @@ end
 const lmo = FrankWolfe.NuclearNormLMO(275_000.0)
 const x0 = FrankWolfe.compute_extreme_point(lmo, zero(Xreal))
 
+FrankWolfe.benchmark_oracles(f, grad!, () -> randn(size(Xreal)), lmo; k=100)
 
 # gradient descent
 gradient = similar(x0)

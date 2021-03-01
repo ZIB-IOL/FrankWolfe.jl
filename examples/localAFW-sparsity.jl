@@ -34,7 +34,7 @@ const x00 = FrankWolfe.compute_extreme_point(lmo, rand(n))
 
 
 
-FrankWolfe.benchmark_oracles(f, grad!, lmo, n; k=100, T=eltype(x00))
+FrankWolfe.benchmark_oracles(f, grad!, () -> randn(n), lmo; k=100)
 
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, trajectorySs = FrankWolfe.fw(

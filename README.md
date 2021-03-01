@@ -31,7 +31,7 @@ over the set LMO represents.
 - Stochastic Frank-Wolfe 
 - Away-Step Frank-Wolfe (see <https://arxiv.org/abs/1511.05932> for an overview)
 - (to come:) Pairwise Conditional Gradients (see <https://arxiv.org/abs/1511.05932> for an overview)
-- (to come:) Blended Conditional Gradients (see <https://arxiv.org/abs/1805.07311>)
+- Blended Conditional Gradients (see <https://arxiv.org/abs/1805.07311>)
 
 - most algorithms also have a lazified version (see <https://arxiv.org/abs/1610.05120>)
 
