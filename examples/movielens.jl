@@ -5,10 +5,11 @@ include(joinpath(@__DIR__, "activate.jl"))
 using ZipFile, DataFrames, CSV
 
 using Random
+using ProgressMeter
 
 using SparseArrays, LinearAlgebra
-temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest-small.zip")
-# temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest.zip")
+# temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest-small.zip")
+temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest.zip")
 
 zarchive = ZipFile.Reader(temp_zipfile)
 
@@ -28,7 +29,7 @@ users = unique(ratings_frame[:,:userId])
 movies = unique(ratings_frame[:,:movieId])
 
 const rating_matrix = spzeros(length(users), length(movies))
-for row in eachrow(ratings_frame)
+@showprogress 1 "Extracting user and movie indices... " for row in eachrow(ratings_frame)
     user_idx = findfirst(==(row.userId), users)
     movie_idx = findfirst(==(row.movieId), movies)
     rating_matrix[user_idx, movie_idx] = row.rating
@@ -93,9 +94,9 @@ for _ in 1:5000
 end
 
 
-const k = 10000
+const k = 1000
 
-xfin, vmin, _, _, traj_data = FrankWolfe.bcg(
+xfin, vmin, _, _, traj_data = FrankWolfe.fw(
     f,
     grad!,
     lmo,
