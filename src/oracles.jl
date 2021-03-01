@@ -82,10 +82,14 @@ Cache for a LMO storing up to `N` vertices in the cache, removed in FIFO style.
 `oldest_idx` keeps track of the oldest index in the tuple, i.e. to replace next.
 `VT`, if provided, must be the type of vertices returned by `LMO`
 """
-mutable struct MultiCacheLMO{N,LMO,VT<:AbstractVector} <: CachedLinearMinimizationOracle{LMO}
+mutable struct MultiCacheLMO{N,LMO<:LinearMinimizationOracle,VT<:AbstractVector} <: CachedLinearMinimizationOracle{LMO}
     vertices::NTuple{N,Union{VT,Nothing}}
     inner::LMO
     oldest_idx::Int
+end
+
+function MultiCacheLMO{N,LMO,VT}(lmo::LMO) where {N,LMO<:LinearMinimizationOracle,VT}
+    return MultiCacheLMO{N,LMO,AbstractVector}(ntuple(_ -> nothing, Val{N}()), lmo, 1)
 end
 
 function MultiCacheLMO{N}(lmo::LMO) where {N,LMO<:LinearMinimizationOracle}
@@ -177,17 +181,17 @@ end
 Cache for a LMO storing an unbounded number of vertices of type `VT` in the cache.
 `VT`, if provided, must be the type of vertices returned by `LMO`
 """
-mutable struct VectorCacheLMO{LMO,VT<:AbstractVector} <: CachedLinearMinimizationOracle{LMO}
+mutable struct VectorCacheLMO{LMO<:LinearMinimizationOracle,VT} <: CachedLinearMinimizationOracle{LMO}
     vertices::Vector{VT}
     inner::LMO
 end
 
-function VectorCacheLMO{VT}(lmo::LMO) where {VT,LMO<:LinearMinimizationOracle}
+function VectorCacheLMO{LMO, VT}(lmo::LMO) where {VT,LMO<:LinearMinimizationOracle}
     return VectorCacheLMO{LMO,VT}(VT[], lmo)
 end
 
 function VectorCacheLMO(lmo::LMO) where {LMO<:LinearMinimizationOracle}
-    return VectorCacheLMO{LMO,AbstractVector}(AbstractVector[], lmo)
+    return VectorCacheLMO{LMO,Vector{Float64}}(AbstractVector[], lmo)
 end
 
 function Base.empty!(lmo::VectorCacheLMO)

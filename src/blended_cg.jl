@@ -22,7 +22,7 @@ function bcg(
 )
     function print_header(data)
         @printf(
-            "\n──────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
+            "\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
         )
         @printf(
             "%6s %13s %14s %14s %14s %14s %14s %14s %14s\n",
@@ -37,13 +37,13 @@ function bcg(
             data[9],
         )
         @printf(
-            "──────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
+            "────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
         )
     end
 
     function print_footer()
         @printf(
-            "──────────────────────────────────────────────────────────────────────────────────────────────────────────────\n\n"
+            "────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n\n"
         )
     end
 
@@ -95,7 +95,7 @@ function bcg(
         println("\nBlended Conditional Gradients Algorithm.")
         numType = eltype(x0)
         println(
-            "EMPHASIS: $memory STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration TYPE: $numType",
+            "EMPHASIS: $memory STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $numType",
         )
         println("K: $Ktolerance")
         println("WARNING: In memory emphasis mode iterates are written back into x0!")

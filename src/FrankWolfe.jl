@@ -119,7 +119,7 @@ function fw(
         println("\nVanilla Frank-Wolfe Algorithm.")
         numType = eltype(x0)
         println(
-            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration TYPE: $numType",
+            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $numType",
         )
         println("MOMENTUM: $momentum")
         if emphasis === memory
@@ -196,7 +196,6 @@ function fw(
         elseif line_search === adaptive
             L, gamma = adaptive_step_size(f, gradient, x, x - v, L)
         end
-        @debug "gamma: $gamma"
 
         @emphasis(emphasis, x = (1 - gamma) * x + gamma * v)
 
@@ -249,7 +248,7 @@ end
 function lcg(
     f,
     grad!,
-    lmoBase,
+    lmo_base,
     x0;
     line_search::LineSearchMethod=agnostic,
     L=Inf,
@@ -264,12 +263,13 @@ function lcg(
     linesearch_tol=1e-7,
     emphasis::Emphasis=blas,
     gradient=nothing,
+    VType=typeof(x0),
 )
 
     if isfinite(cache_size)
-        lmo = MultiCacheLMO{cache_size}(lmoBase)
+        lmo = MultiCacheLMO{cache_size, typeof(lmo_base), VType}(lmo_base)
     else
-        lmo = VectorCacheLMO(lmoBase)
+        lmo = VectorCacheLMO{typeof(lmo_base),VType}(lmo_base)
     end
 
     function print_header(data)
@@ -284,7 +284,7 @@ function lcg(
             data[4],
             data[5],
             data[6],
-            data[7]
+            data[7],
         )
         @printf(
             "─────────────────────────────────────────────────────────────────────────────────────────────────\n"
@@ -317,7 +317,7 @@ function lcg(
     x = x0
     phi = Inf
     trajData = []
-    tt::StepType = regular
+    tt = regular
     time_start = time_ns()
 
     if line_search == shortstep && L == Inf
@@ -332,7 +332,7 @@ function lcg(
         println("\nLazified Conditional Gradients (Frank-Wolfe + Lazification).")
         numType = eltype(x0)
         println(
-            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration PHIFACTOR: $phiFactor TYPE: $numType",
+            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration PHIFACTOR: $phiFactor TYPE: $numType",
         )
         println("cache_size $cache_size GREEDYCACHE: $greedy_lazy")
         if emphasis == memory
@@ -343,7 +343,7 @@ function lcg(
     end
 
     if emphasis == memory && !isa(x, Union{Array, SparseArrays.AbstractSparseArray})
-        x = convert(Array{promote_type(eltype(x), Float64)}, x)
+        x = convert(Array{float(eltype(x))}, x)
     end
 
     if gradient === nothing
@@ -393,8 +393,8 @@ function lcg(
 
         @emphasis(emphasis, x = (1 - gamma) * x + gamma * v)
 
-        if mod(t, print_iter) == 0 || tt == dualstep && verbose
-            if t === 0
+        if verbose && (mod(t, print_iter) == 0 || tt == dualstep)
+            if t == 0
                 tt = initial
             end
             rep = (
@@ -409,7 +409,7 @@ function lcg(
             print_iter_func(rep)
             flush(stdout)
         end
-        t = t + 1
+        t += 1
     end
     if verbose
         tt = last

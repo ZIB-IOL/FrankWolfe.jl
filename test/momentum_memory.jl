@@ -8,7 +8,7 @@ n = Int(1e3)
 k = 10000
 
 s = rand(1:100)
-@debug "Seed: $s"
+@info "Seed: $s"
 
 Random.seed!(s)
 
