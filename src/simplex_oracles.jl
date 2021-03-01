@@ -87,7 +87,7 @@ LMO for scaled probability simplex.
 Returns a vector with one active value equal to RHS in the
 most improving (or least degrading) direction.
 """
-function compute_extreme_point(lmo::ProbabilitySimplexOracle{T}, direction) where {T}
+function compute_extreme_point(lmo::ProbabilitySimplexOracle{T}, direction; kwargs...) where {T}
     idx = argmin(direction)
     return MaybeHotVector(lmo.right_side, idx, length(direction))
 end
@@ -120,7 +120,7 @@ for scaled probability simplex.
 Returns two vectors. The first one is the dual costs associated with the constraints 
 and the second is the reduced costs for the variables.
 """
-function compute_dual_solution(::ProbabilitySimplexOracle{T}, direction, primal_solution) where {T}
+function compute_dual_solution(::ProbabilitySimplexOracle{T}, direction, primal_solution; kwargs...) where {T}
     idx = argmax(primal_solution)
     lambda = [direction[idx]]
     mu = direction .- lambda
