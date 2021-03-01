@@ -8,6 +8,7 @@ using Random
 
 using SparseArrays, LinearAlgebra
 temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest-small.zip")
+# temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest.zip")
 
 zarchive = ZipFile.Reader(temp_zipfile)
 
@@ -92,9 +93,9 @@ for _ in 1:5000
 end
 
 
-const k = 1000
+const k = 10000
 
-xfin, vmin, _, _, traj_data = FrankWolfe.fw(
+xfin, vmin, _, _, traj_data = FrankWolfe.bcg(
     f,
     grad!,
     lmo,
