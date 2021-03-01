@@ -5,6 +5,8 @@ version = "0.1.0"
 
 [deps]
 Hungarian = "e91730f6-4275-51fb-a7a0-7064cfbd3b39"
+Hypatia = "b99e6be6-89ff-11e8-14f8-45c827f4f8f2"
+IterativeSolvers = "42fd0dbc-a981-5370-80f2-aaf504508153"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MathOptInterface = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"
 PlotThemes = "ccf2f8ad-2431-5c83-bf29-c5338b663b6a"
@@ -17,6 +19,8 @@ TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 
 [compat]
 Hungarian = "0.6"
+Hypatia = "0.3"
+IterativeSolvers = "0.9"
 MathOptInterface = "0.9.19"
 PlotThemes = "2"
 Plots = "1.10"
@@ -27,7 +31,8 @@ julia = "1"
 [extras]
 Clp = "e2554f3b-3117-50c0-817c-e040a3ddf72d"
 GLPK = "60bf3e95-4087-53dc-ae20-288a0d20c6a6"
+Hypatia = "b99e6be6-89ff-11e8-14f8-45c827f4f8f2"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test", "Clp", "GLPK"]
+test = ["Test", "Clp", "GLPK", "Hypatia"]
