@@ -17,7 +17,7 @@ function compute_extreme_point(lmo::LpNormLMO{T,2}, direction; kwargs...) where 
     dir_norm = norm(direction, 2)
     res = similar(direction)
     n = length(direction)
-    # if direction numerically 0, 
+    # if direction numerically 0
     if dir_norm <= 10eps(eltype(direction))
         @. res = lmo.right_hand_side / sqrt(n)
     else
@@ -123,4 +123,52 @@ function compute_extreme_point(lmo::KNormBallLMO{T}, direction; kwargs...) where
         v .= v1
     end
     return v
+end
+
+"""
+    NuclearNormLMO{T}(δ)
+
+LMO over matrices that have a nuclear norm less than δ.
+The LMO returns the rank-one matrix with singular value δ.
+"""
+struct NuclearNormLMO{T} <: LinearMinimizationOracle
+    radius::T
+end
+
+NuclearNormLMO{T}() where {T} = NuclearNormLMO{T}(one(T))
+NuclearNormLMO() = NuclearNormLMO(1.0)
+
+"""
+Best rank-one approximation using the
+Golub-Kahan-Lanczos bidiagonalization from IterativeSolvers.
+
+Warning: this does not work (yet) with all number types, BigFloat and Float16 fail.
+"""
+function compute_extreme_point(lmo::NuclearNormLMO, direction::AbstractMatrix; maxiter=prod(size(direction)), kwargs...)
+    T = float(eltype(direction))
+    if iszero(direction)
+        # zero gradient: return unit R-O with two MaybeHotVector
+        (nrows, ncols) = size(direction)
+        u = zeros(T, nrows)
+        u[1] = lmo.radius
+        v = zeros(T, ncols)
+        v[1] = 1
+        return RankOneMatrix(u, v)
+    end
+    (svd_res, _, history) = IterativeSolvers.svdl(-direction, nsv=1, vecs=:both, log=true, maxiter=maxiter)
+    if !history.isconverged
+        @warn("SVD solver did not converge:\n$(history)")
+    end
+    res = RankOneMatrix(
+        svd_res.U[:] * lmo.radius,
+        svd_res.V[:],
+    )
+end
+
+function convert_mathopt(lmo::NuclearNormLMO, optimizer::OT; row_dimension::Integer, col_dimension::Integer, kwargs...) where {OT}
+    MOI.empty!(optimizer)
+    x = MOI.add_variables(optimizer, row_dimension * col_dimension)
+    (t, _) = MOI.add_constrained_variable(optimizer, MOI.LessThan(lmo.radius))
+    MOI.add_constraint(optimizer, [t;x], MOI.NormNuclearCone(row_dimension, col_dimension))
+    return MathOptLMO(optimizer)
 end

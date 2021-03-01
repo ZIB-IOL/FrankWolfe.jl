@@ -101,7 +101,7 @@ function afw(
 
     # likely not needed anymore as now the iterates are provided directly via the active set
     if gradient === nothing
-        gradient = Vector{promote_type(eltype(x), Float64)}(undef, length(x0))
+        gradient = similar(x0, float(eltype(x0)))
     end
     gtemp = if momentum !== nothing
         similar(gradient)

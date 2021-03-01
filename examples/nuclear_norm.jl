@@ -1,0 +1,118 @@
+import Random
+using LinearAlgebra
+using FrankWolfe
+using Test
+using Plots
+
+const nfeat = 100
+const nobs = 500
+
+# rank of the real data
+const r = 30
+const Xreal = Matrix{Float64}(undef, nobs, nfeat)
+
+const X_gen_cols = randn(nfeat, r)
+const X_gen_rows = randn(r, nobs)
+const svals = 100 * rand(r)
+for i in 1:nobs
+    for j in 1:nfeat
+        Xreal[i,j] = sum(
+            X_gen_cols[j,k] * X_gen_rows[k,i] * svals[k]
+            for k in 1:r
+        )
+    end
+end
+
+nucnorm(Xmat) = sum(abs(σi) for σi in LinearAlgebra.svdvals(Xmat))
+
+
+@test rank(Xreal) == r
+
+# 0.2 of entries missing
+const missing_entries = unique!([
+    (rand(1:nobs), rand(1:nfeat))
+    for _ in 1:10000
+])
+const present_entries = [
+    (i, j)
+    for i in 1:nobs, j in 1:nfeat
+    if (i,j) ∉ missing_entries
+]
+
+f(X) = 0.5 * sum(
+    (X[i,j] - Xreal[i,j])^2
+    for (i,j) in present_entries
+)
+
+function grad!(storage, X)
+    storage .= 0
+    for (i, j) in present_entries
+        storage[i,j] = X[i,j] - Xreal[i,j]
+    end
+    return nothing
+end
+
+
+const lmo = FrankWolfe.NuclearNormLMO(275_000.0)
+const x0 = FrankWolfe.compute_extreme_point(lmo, zero(Xreal))
+
+
+# gradient descent
+gradient = similar(x0)
+xgd = Matrix(x0)
+for _ in 1:5000
+    @info f(xgd)
+    grad!(gradient, xgd)
+    xgd .-= 0.01 * gradient
+    if norm(gradient) ≤ sqrt(eps())
+        break
+    end
+end
+
+grad!(gradient, x0)
+v0 = FrankWolfe.compute_extreme_point(lmo, gradient)
+@test dot(v0 - x0, gradient) < 0
+
+const k = 1000
+
+xfin, vmin, _, _, traj_data = FrankWolfe.fw(
+    f,
+    grad!,
+    lmo,
+    x0;
+    epsilon=1e-9,
+    max_iteration=k,
+    print_iter=k/10,
+    trajectory=true,
+    verbose=true,
+    linesearch_tol=1e-7,
+    line_search=FrankWolfe.adaptive,
+    L=100,
+    emphasis=FrankWolfe.memory,
+)
+
+
+xfinAFW, vmin, _, _, traj_data = FrankWolfe.afw(
+    f,
+    grad!,
+    lmo,
+    x0;
+    epsilon=1e-9,
+    max_iteration=k,
+    print_iter=k/10,
+    trajectory=true,
+    verbose=true,
+    linesearch_tol=1e-7,
+    localized=true,
+    localizedFactor=0.5,
+    line_search=FrankWolfe.adaptive,
+    L=100,
+    emphasis=FrankWolfe.memory#,
+)
+
+
+plot(svdvals(xfin), label="FW", width=3,yaxis=:log)
+plot!(svdvals(xfinAFW), label="AFW", width=3,yaxis=:log)
+plot!(svdvals(xgd), label="Gradient descent", width=3,yaxis=:log)
+plot!(svdvals(Xreal), label="Real matrix", linestyle=:dash, width=3, color=:black)
+title!("Singular values")
