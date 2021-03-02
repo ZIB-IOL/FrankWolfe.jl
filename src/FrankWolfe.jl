@@ -64,37 +64,38 @@ function fw(
 )
     function print_header(data)
         @printf(
-            "\n───────────────────────────────────────────────────────────────────────────────────\n"
+            "\n─────────────────────────────────────────────────────────────────────────────────────────────────\n"
         )
         @printf(
-            "%6s %13s %14s %14s %14s %14s\n",
+            "%6s %13s %14s %14s %14s %14s %14s\n",
             data[1],
             data[2],
             data[3],
             data[4],
             data[5],
-            data[6]
-        )
+            data[6],
+            data[7]        )
         @printf(
-            "───────────────────────────────────────────────────────────────────────────────────\n"
+            "─────────────────────────────────────────────────────────────────────────────────────────────────\n"
         )
     end
 
     function print_footer()
         @printf(
-            "───────────────────────────────────────────────────────────────────────────────────\n\n"
+            "─────────────────────────────────────────────────────────────────────────────────────────────────\n\n"
         )
     end
 
     function print_iter_func(data)
         @printf(
-            "%6s %13s %14e %14e %14e %14e\n",
+            "%6s %13s %14e %14e %14e %14e %14e\n",
             st[Symbol(data[1])],
             data[2],
             Float64(data[3]),
             Float64(data[4]),
             Float64(data[5]),
-            data[6]
+            data[6],
+            data[7]
         )
     end
 
@@ -121,11 +122,12 @@ function fw(
         println(
             "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $numType",
         )
-        println("MOMENTUM: $momentum")
+        grad_type = typeof(gradient)
+        println("MOMENTUM: $momentum GRADIENTTYPE: $grad_type")
         if emphasis === memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
         end
-        headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time"]
+        headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec"]
         print_header(headers)
     end
 
@@ -155,7 +157,8 @@ function fw(
         if nep === true
             # argmin_v v^T(1-2y)
             # y = x_t - 1/L * (t+1)/2 * gradient
-            @. gradient = 1 - 2 * (x - 1 / L * (t+1) / 2 * gradient)
+            # check whether emphasis works
+            @emphasis(emphasis, gradient = 1 - 2 * (x - 1 / L * (t+1) / 2 * gradient))
         end
 
         v = compute_extreme_point(lmo, gradient)
@@ -211,6 +214,7 @@ function fw(
                 primal - dual_gap,
                 dual_gap,
                 (time_ns() - time_start) / 1.0e9,
+                t / ( (time_ns() - time_start) / 1.0e9 )
             )
             print_iter_func(rep)
             flush(stdout)
@@ -233,6 +237,7 @@ function fw(
             primal - dual_gap,
             dual_gap,
             (time_ns() - time_start) / 1.0e9,
+            t / ( (time_ns() - time_start) / 1.0e9 )
         )
         print_iter_func(rep)
         print_footer()

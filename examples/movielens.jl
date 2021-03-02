@@ -6,6 +6,8 @@ using ZipFile, DataFrames, CSV
 
 using Random
 
+using Profile
+
 using SparseArrays, LinearAlgebra
 temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest-small.zip")
 # temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest.zip")
@@ -77,9 +79,10 @@ norm_estimation = sum(svdvals(collect(rating_matrix))[1:400])
 const lmo = FrankWolfe.NuclearNormLMO(norm_estimation)
 const x0 = FrankWolfe.compute_extreme_point(lmo, zero(rating_matrix))
 
-FrankWolfe.benchmark_oracles(f, (str, x) -> grad!(str, x), () -> randn(size(rating_matrix)), lmo; k=100)
+# FrankWolfe.benchmark_oracles(f, (str, x) -> grad!(str, x), () -> randn(size(rating_matrix)), lmo; k=100)
 
 
+<<<<<<< HEAD
 const gradient = spzeros(size(x0)...)
 xgd = Matrix(x0)
 for _ in 1:5000
@@ -94,6 +97,22 @@ end
 const k = 1000
 
 xfin, vmin, _, _, traj_data = FrankWolfe.fw(
+=======
+gradient = spzeros(size(x0)...)
+# xgd = Matrix(x0)
+# for _ in 1:5000
+#     @info f(xgd)
+#     grad!(gradient, xgd)
+#     xgd .-= 0.01 * gradient
+#     if norm(gradient) ≤ sqrt(eps())
+#         break
+#     end
+# end
+
+const k = 10000
+
+@profview xfin, vmin, _, _, traj_data = FrankWolfe.fw(
+>>>>>>> 9ac74dac0e95b285b8b9ad4af3b643a883ac1be6
     f,
     grad!,
     lmo,
@@ -101,16 +120,16 @@ xfin, vmin, _, _, traj_data = FrankWolfe.fw(
     epsilon=1e-9,
     max_iteration=k,
     print_iter=k/10,
-    trajectory=true,
+    trajectory=false,
     verbose=true,
     linesearch_tol=1e-7,
 #    localized=true,
 #    localizedFactor=0.5,
-    line_search=FrankWolfe.adaptive,
+    line_search=FrankWolfe.agnostic,
     L=100,
     emphasis=FrankWolfe.memory,
     gradient=gradient,
 )
 
-@info "Gdescent test loss: $(test_loss(xgd))"
-@info "FW test loss: $(test_loss(xfin))"
+# @info "Gdescent test loss: $(test_loss(xgd))"
+# @info "FW test loss: $(test_loss(xfin))"
