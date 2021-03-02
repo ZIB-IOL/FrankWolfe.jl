@@ -5,6 +5,7 @@ include(joinpath(@__DIR__, "activate.jl"))
 using ZipFile, DataFrames, CSV
 
 using Random
+using ProgressMeter
 
 using Profile
 
@@ -82,22 +83,6 @@ const x0 = FrankWolfe.compute_extreme_point(lmo, zero(rating_matrix))
 # FrankWolfe.benchmark_oracles(f, (str, x) -> grad!(str, x), () -> randn(size(rating_matrix)), lmo; k=100)
 
 
-<<<<<<< HEAD
-const gradient = spzeros(size(x0)...)
-xgd = Matrix(x0)
-for _ in 1:5000
-    @info f(xgd)
-    grad!(gradient, xgd)
-    xgd .-= 0.01 * gradient
-    if norm(gradient) ≤ sqrt(eps())
-        break
-    end
-end
-
-const k = 1000
-
-xfin, vmin, _, _, traj_data = FrankWolfe.fw(
-=======
 gradient = spzeros(size(x0)...)
 # xgd = Matrix(x0)
 # for _ in 1:5000
@@ -109,10 +94,9 @@ gradient = spzeros(size(x0)...)
 #     end
 # end
 
-const k = 10000
+const k = 1000
 
-@profview xfin, vmin, _, _, traj_data = FrankWolfe.fw(
->>>>>>> 9ac74dac0e95b285b8b9ad4af3b643a883ac1be6
+xfin, vmin, _, _, traj_data = FrankWolfe.fw(
     f,
     grad!,
     lmo,
@@ -125,7 +109,7 @@ const k = 10000
     linesearch_tol=1e-7,
 #    localized=true,
 #    localizedFactor=0.5,
-    line_search=FrankWolfe.agnostic,
+    line_search=FrankWolfe.adaptive,
     L=100,
     emphasis=FrankWolfe.memory,
     gradient=gradient,
