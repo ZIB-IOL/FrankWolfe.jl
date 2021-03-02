@@ -10,14 +10,16 @@ function afw(
     lmo,
     x0;
     line_search::LineSearchMethod=adaptive,
-    awaySteps=true,
-    localized=false,
-    localizedFactor=0.66,
     L=Inf,
     gamma0=0,
+    K = 2.0,
     step_lim=20,
-    momentum=nothing,
     epsilon=1e-7,
+    awaySteps = true,
+    lazy = false,
+    localized=false,
+    momentum = nothing,
+    localizedFactor=0.66,
     max_iteration=10000,
     print_iter=1000,
     trajectory=false,
@@ -73,7 +75,6 @@ function afw(
     trajData = []
     time_start = time_ns()
 
-    first_iter = true
     d = 0 # working direction
     away_step_taken = false # flag whether the current step is an away step
 
@@ -91,7 +92,7 @@ function afw(
         println(
             "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $numType",
         )
-        println("MOMENTUM: $momentum AWAYSTEPS: $awaySteps LOCALIZED: $localized ($localizedFactor)")
+        println("LAZY: $lazy MOMENTUM: $momentum AWAYSTEPS: $awaySteps LOCALIZED: $localized ($localizedFactor)")
         if emphasis == memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
         end
@@ -109,30 +110,86 @@ function afw(
         nothing
     end
 
+    x = compute_active_set_iterate(active_set)
+    grad!(gradient, x)
+    v = compute_extreme_point(lmo, gradient)
+    phi_value = dot(x, gradient) - dot(v, gradient)
+
     while t <= max_iteration && dual_gap >= max(epsilon, eps())
 
         # compute current iterate from active set
         x = compute_active_set_iterate(active_set)
-
-        if isnothing(momentum) || first_iter
+        if isnothing(momentum)
             grad!(gradient, x)
         else
             grad!(gtemp, x)
             @emphasis(emphasis, gradient = (momentum * gradient) + (1 - momentum) * gtemp)
         end
-        first_iter = false
 
-        v = compute_extreme_point(lmo, gradient)
+        if awaySteps
+            if lazy
+                d, vertex, index, gamma_max, phi_value, away_step_taken, fw_step_taken, tt = lazy_afw_step(x,
+                gradient,
+                lmo,
+                active_set,
+                phi_value;
+                K = K)
+            else
+                d, vertex, index, gamma_max, phi_value, away_step_taken, fw_step_taken, tt = afw_step(
+                x,
+                gradient,
+                lmo,
+                active_set;
+                localized = localized,
+                localizedFactor = localizedFactor,
+                )
+            end
+        else
+            d, vertex, index, gamma_max, phi_value, away_step_taken, fw_step_taken, tt = fw_step(
+                x,
+                gradient,
+                lmo,
+                )
+        end
 
-        # go easy on the memory - only compute if really needed
+
+        if fw_step_taken || away_step_taken
+            if line_search === agnostic
+                gamma = 2 // (2 + t)
+            elseif line_search === nonconvex
+                gamma = 1 / sqrt(t + 1)
+            elseif line_search === shortstep
+                gap = dot(gradient, d)
+                gamma = gap / (L * norm(d)^2)
+            elseif line_search === rationalshortstep
+                ratDualGap = sum(d .* gradient)
+                gamma = ratDualGap // (L * sum(d .^ 2))
+            elseif line_search === fixed
+                gamma = gamma0
+            elseif line_search === adaptive
+                L, gamma = adaptive_step_size(f, gradient, x, d, L)
+            end
+
+            # clipping the step size for the away steps
+            gamma = min(gamma_max, gamma)
+
+            # cleanup and renormalize every x iterations
+            renorm = mod(t, 1000) == 0
+
+            if away_step_taken 
+                active_set_update!(active_set, -gamma, vertex, true)
+            else
+                active_set_update!(active_set, gamma, vertex, renorm)
+            end
+        end
+
         if (
             (mod(t, print_iter) == 0 && verbose) ||
-            awaySteps ||
             trajectory ||
             !(line_search == agnostic || line_search == nonconvex || line_search == fixed)
         )
             primal = f(x)
-            dual_gap = dot(x, gradient) - dot(v, gradient)
+            dual_gap = phi_value
         end
 
         if trajectory
@@ -142,83 +199,13 @@ function afw(
                     t,
                     primal,
                     primal - dual_gap,
-                    dual_gap,
+                    phi_value,
                     (time_ns() - time_start) / 1.0e9,
                     length(active_set),
                 ),
             )
         end
 
-        # default is a FW step
-        # used for clipping the step
-        tt = regular
-        gamma_max = 1
-        d = x - v
-        away_step_taken = false
-
-        # above we have already compute the FW vetex and the dual_gap. now we need to 
-        # compute the away vertex and the away gap
-        
-        # lambda, a, i = active_set_argmin(active_set, -gradient)
-
-        # compute away and localized FW in one go -> saves one pass over the active set
-        # note the switch in the sign in front of the gradient as the maximizer is returned in the last three elements
-        lambdaVLoc, vloc, iloc, lambda, a, i = active_set_argminmax(active_set, gradient)
-        
-        # if we localized AFW then also compute FW vertex over active set - if not too bad use this one instead of the FW one
-        # helps with sparsity
-        if localized
-            # lambdaVLoc, vloc, iloc = active_set_argmin(active_set, gradient)
-            if  dot(a, gradient) - dot(vloc,gradient) >= localizedFactor * (dot(a, gradient) - dot(v,gradient))
-                v = vloc
-                d = x - v
-                tt = local_fw 
-            end
-        end
-        away_gap = dot(a, gradient) - dot(x, gradient)
-
-        # if away_gap is larger than dual_gap and we do awaySteps, then away step promises more progress
-        # do not do away_step in very first iteration. you might remove the only one vertex that we have so far
-        if dual_gap < away_gap && awaySteps
-            tt = away
-            gamma_max = lambda / (1 - lambda)
-            d = a - x
-            away_step_taken = true
-        end
-
-
-        if line_search === agnostic
-            gamma = 2 // (2 + t)
-        elseif line_search === goldenratio
-            _, gamma = segment_search(f, grad!, x, v, linesearch_tol=linesearch_tol)
-        elseif line_search === backtracking
-            _, gamma =
-                backtrackingLS(f, gradient, x, v, linesearch_tol=linesearch_tol, step_lim=step_lim)
-        elseif line_search === nonconvex
-            gamma = 1 / sqrt(t + 1)
-        elseif line_search === shortstep
-            gap = dot(gradient, d)
-            gamma = gap / (L * norm(d)^2)
-        elseif line_search === rationalshortstep
-            ratDualGap = sum(d .* gradient)
-            gamma = ratDualGap // (L * sum(d .^ 2))
-        elseif line_search === fixed
-            gamma = gamma0
-        elseif line_search === adaptive
-            L, gamma = adaptive_step_size(f, gradient, x, d, L)
-        end
-
-        # clipping the step size for the away steps
-        gamma = min(gamma_max, gamma)
-
-        # cleanup and renormalize every x iterations
-        renorm = mod(t, 1000) == 0
-
-        if !away_step_taken
-            active_set_update!(active_set, gamma, v, renorm)
-        else
-            active_set_update!(active_set, -gamma, a, true)
-        end
 
         if mod(t, print_iter) == 0 && verbose
             if t == 0
@@ -288,4 +275,119 @@ function afw(
     end
 
     return x, v, primal, dual_gap, trajData, active_set
+end
+
+function lazy_afw_step(
+    x,
+    gradient,
+    lmo,
+    active_set,
+    phi;
+    K = 2.0
+)
+    v_lambda, v, v_loc, a_lambda, a, a_loc = active_set_argminmax(active_set, gradient)
+    #Do lazy FW step
+    grad_dot_lazy_fw_vertex = dot(v, gradient)
+    grad_dot_x = dot(x, gradient)
+    grad_dot_a = dot(a, gradient)
+    if grad_dot_x - grad_dot_lazy_fw_vertex >= grad_dot_a - grad_dot_x && grad_dot_x - grad_dot_lazy_fw_vertex >= phi / K
+        tt = regular
+        gamma_max = 1
+        d = x - v
+        vertex = v
+        away_step_taken = false
+        fw_step_taken = true
+        index = v_loc
+    else
+        #Do away step, as it promises enough progress.
+        if grad_dot_a - grad_dot_x > grad_dot_x - grad_dot_lazy_fw_vertex && grad_dot_a - grad_dot_x >= phi / K
+            tt = away
+            gamma_max = a_lambda / (1 - a_lambda)
+            d = a - x
+            vertex = a
+            away_step_taken = true
+            fw_step_taken = false
+            index = a_loc
+        #Resort to calling the LMO
+        else
+            v = compute_extreme_point(lmo, gradient)
+            # Real dual gap promises enough progress.
+            grad_dot_fw_vertex = dot(v, gradient)
+            dual_gap = grad_dot_x - grad_dot_fw_vertex
+            if dual_gap >= phi / K
+                tt = regular
+                gamma_max = 1
+                d = x - v
+                vertex = v
+                away_step_taken = false
+                fw_step_taken = true
+                index = nothing
+            #Lower our expectation for progress.
+            else
+                tt = regular
+                phi = min(dual_gap, phi / 2.0)
+                gamma_max = 0.0
+                d = zeros(length(x))
+                vertex = v
+                away_step_taken = false
+                fw_step_taken = false
+                index = nothing
+            end
+        end
+    end
+    return d, vertex, index, gamma_max, phi, away_step_taken, fw_step_taken, tt
+end
+
+function afw_step(
+    x,
+    gradient,
+    lmo,
+    active_set;
+    localized = false,
+    localizedFactor = 0.66,
+)
+    local_v_lambda, local_v, local_v_loc, a_lambda, a, a_loc = active_set_argminmax(active_set, gradient)
+    away_gap = dot(a, gradient) - dot(x, gradient)
+    v = compute_extreme_point(lmo, gradient)
+    grad_dot_x = dot(x, gradient)
+    away_gap = dot(a, gradient) - grad_dot_x
+    dual_gap = grad_dot_x - dot(v, gradient)
+    if localized
+        local_dual_gap = grad_dot_x - dot(local_v, gradient)
+        if  away_gap + local_dual_gap >= localizedFactor * (away_gap + dual_gap)
+            v = vloc
+            dual_gap = local_dual_gap
+        end
+    end
+    if dual_gap >= away_gap
+        tt = regular
+        gamma_max = 1
+        d = x - v
+        vertex = v
+        away_step_taken = false
+        fw_step_taken = true
+        if localized
+            index = local_v_loc
+        else
+            index = nothing 
+        end
+    else
+        tt = away
+        gamma_max = a_lambda / (1 - a_lambda)
+        d = a - x
+        vertex = a
+        away_step_taken = true
+        fw_step_taken = false
+        index = a_loc
+    end
+    return d, vertex, index, gamma_max, dual_gap, away_step_taken, fw_step_taken, tt
+end
+
+function fw_step(
+    x,
+    gradient,
+    lmo,
+)
+    vertex = compute_extreme_point(lmo, gradient)
+    return x - vertex, vertex, nothing, 1, dot(x, gradient) - dot(vertex, gradient), false, true, regular
 end
