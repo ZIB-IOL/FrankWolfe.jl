@@ -8,8 +8,8 @@ using Random
 using ProgressMeter
 
 using SparseArrays, LinearAlgebra
-# temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest-small.zip")
-temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest.zip")
+temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest-small.zip")
+# temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest.zip")
 
 zarchive = ZipFile.Reader(temp_zipfile)
 
@@ -78,19 +78,19 @@ norm_estimation = sum(svdvals(collect(rating_matrix))[1:400])
 const lmo = FrankWolfe.NuclearNormLMO(norm_estimation)
 const x0 = FrankWolfe.compute_extreme_point(lmo, zero(rating_matrix))
 
-FrankWolfe.benchmark_oracles(f, (str, x) -> grad!(str, x), () -> randn(size(rating_matrix)), lmo; k=100)
+# FrankWolfe.benchmark_oracles(f, (str, x) -> grad!(str, x), () -> randn(size(rating_matrix)), lmo; k=100)
 
 
 gradient = spzeros(size(x0)...)
-xgd = Matrix(x0)
-for _ in 1:5000
-    @info f(xgd)
-    grad!(gradient, xgd)
-    xgd .-= 0.01 * gradient
-    if norm(gradient) ≤ sqrt(eps())
-        break
-    end
-end
+# xgd = Matrix(x0)
+# for _ in 1:5000
+#     @info f(xgd)
+#     grad!(gradient, xgd)
+#     xgd .-= 0.01 * gradient
+#     if norm(gradient) ≤ sqrt(eps())
+#         break
+#     end
+# end
 
 const k = 1000
 
