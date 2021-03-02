@@ -12,6 +12,11 @@ function adaptive_step_size(f, gradient, x, direction, L_est; eta=0.9, tau=2, ga
     M = eta * L_est
     dot_dir = fast_dot(gradient, direction)
     ndir2 = norm(direction)^2
+
+    # alternative via broadcast -> not faster
+    # dot_dir = sum(gradient .* gradient)
+    # ndir2 = sum(direction .* direction)
+
     gamma = min(
         dot_dir / (M * ndir2),
         gamma_max,

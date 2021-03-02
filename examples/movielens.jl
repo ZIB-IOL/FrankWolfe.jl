@@ -96,6 +96,7 @@ gradient = spzeros(size(x0)...)
 
 const k = 1000
 
+# @profview 
 xfin, vmin, _, _, traj_data = FrankWolfe.fw(
     f,
     grad!,
