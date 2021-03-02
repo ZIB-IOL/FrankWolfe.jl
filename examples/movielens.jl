@@ -7,6 +7,8 @@ using ZipFile, DataFrames, CSV
 using Random
 using ProgressMeter
 
+using Profile
+
 using SparseArrays, LinearAlgebra
 temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest-small.zip")
 # temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest.zip")
@@ -92,9 +94,9 @@ gradient = spzeros(size(x0)...)
 #     end
 # end
 
-const k = 1000
+const k = 10000
 
-xfin, vmin, _, _, traj_data = FrankWolfe.fw(
+@profview xfin, vmin, _, _, traj_data = FrankWolfe.fw(
     f,
     grad!,
     lmo,
@@ -102,16 +104,16 @@ xfin, vmin, _, _, traj_data = FrankWolfe.fw(
     epsilon=1e-9,
     max_iteration=k,
     print_iter=k/10,
-    trajectory=true,
+    trajectory=false,
     verbose=true,
     linesearch_tol=1e-7,
 #    localized=true,
 #    localizedFactor=0.5,
-    line_search=FrankWolfe.adaptive,
+    line_search=FrankWolfe.agnostic,
     L=100,
     emphasis=FrankWolfe.memory,
     gradient=gradient,
 )
 
-@info "Gdescent test loss: $(test_loss(xgd))"
-@info "FW test loss: $(test_loss(xfin))"
+# @info "Gdescent test loss: $(test_loss(xgd))"
+# @info "FW test loss: $(test_loss(xfin))"

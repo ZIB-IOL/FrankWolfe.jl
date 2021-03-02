@@ -157,7 +157,8 @@ function fw(
         if nep === true
             # argmin_v v^T(1-2y)
             # y = x_t - 1/L * (t+1)/2 * gradient
-            @. gradient = 1 - 2 * (x - 1 / L * (t+1) / 2 * gradient)
+            # check whether emphasis works
+            @emphasis(emphasis, gradient = 1 - 2 * (x - 1 / L * (t+1) / 2 * gradient))
         end
 
         v = compute_extreme_point(lmo, gradient)
@@ -166,7 +167,7 @@ function fw(
         if (
             (mod(t, print_iter) == 0 && verbose) ||
             trajectory ||
-            !(line_search == agnostic || line_search == nonconvex || line_search == fixed)
+            !(line_search == agnostic || line_search == nonconvex || line_search == fixed || line_search == adaptive)
         )
             primal = f(x)
             dual_gap = dot(x, gradient) - dot(v, gradient)
