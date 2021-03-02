@@ -1,5 +1,5 @@
 import Random
-using LinearAlgebra
+using SparseArrays, LinearAlgebra
 using FrankWolfe
 using Test
 using Plots
