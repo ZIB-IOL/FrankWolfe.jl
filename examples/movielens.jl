@@ -17,7 +17,6 @@ zarchive = ZipFile.Reader(temp_zipfile)
 movies_file = zarchive.files[findfirst(f -> occursin("movies", f.name), zarchive.files)]
 movies_frame = CSV.read(movies_file, DataFrame)
 
-
 ratings_file = zarchive.files[findfirst(f -> occursin("ratings", f.name), zarchive.files)]
 ratings_frame = CSV.read(ratings_file, DataFrame)
 
@@ -82,7 +81,7 @@ const x0 = FrankWolfe.compute_extreme_point(lmo, zero(rating_matrix))
 FrankWolfe.benchmark_oracles(f, (str, x) -> grad!(str, x), () -> randn(size(rating_matrix)), lmo; k=100)
 
 
-gradient = similar(x0)
+gradient = spzeros(size(x0)...)
 xgd = Matrix(x0)
 for _ in 1:5000
     @info f(xgd)
@@ -92,7 +91,6 @@ for _ in 1:5000
         break
     end
 end
-
 
 const k = 1000
 
@@ -112,6 +110,7 @@ xfin, vmin, _, _, traj_data = FrankWolfe.fw(
     line_search=FrankWolfe.adaptive,
     L=100,
     emphasis=FrankWolfe.memory,
+    gradient=gradient,
 )
 
 @info "Gdescent test loss: $(test_loss(xgd))"
