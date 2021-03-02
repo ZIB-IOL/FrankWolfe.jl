@@ -355,7 +355,7 @@ function afw_step(
     if localized
         local_dual_gap = grad_dot_x - dot(local_v, gradient)
         if  away_gap + local_dual_gap >= localizedFactor * (away_gap + dual_gap)
-            v = vloc
+            v = local_v
             dual_gap = local_dual_gap
         end
     end

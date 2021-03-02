@@ -21,55 +21,7 @@ lmo = FrankWolfe.KSparseLMO(number_nonzero, 1);
 # lmo = FrankWolfe.ProbabilitySimplexOracle(1)
 x0 = FrankWolfe.compute_extreme_point(lmo, ones(n));
 
-@time x, v, primal, dual_gap, trajectorylazy, active_set = FrankWolfe.lazy_afw(
-    f,
-    grad!,
-    lmo,
-    x0,
-    max_iteration=k,
-    line_search=FrankWolfe.adaptive,
-    L=100,
-    print_iter=k / 10,
-    epsilon=1e-5,
-    emphasis=FrankWolfe.memory,
-    verbose=true,
-    trajectory=true,
-    lazy = true,
-);
-
-@time x, v, primal, dual_gap, trajectoryAFW, active_set = FrankWolfe.lazy_afw(
-    f,
-    grad!,
-    lmo,
-    x0,
-    max_iteration=k,
-    line_search=FrankWolfe.adaptive,
-    L=100,
-    print_iter=k / 10,
-    epsilon=1e-5,
-    emphasis=FrankWolfe.memory,
-    verbose=true,
-    awaySteps=true,
-    trajectory=true,
-);
-
-@time x, v, primal, dual_gap, trajectoryFW = FrankWolfe.lazy_afw(
-    f,
-    grad!,
-    lmo,
-    x0,
-    max_iteration=k,
-    line_search=FrankWolfe.adaptive,
-    L=100,
-    print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
-    verbose=true,
-    epsilon=1e-5,
-    trajectory=true,
-    awaySteps = false,
-);
-
-@time x, v, primal, dual_gap, trajectoryLAFW = FrankWolfe.lazy_afw(
+@time x, v, primal, dual_gap, trajectoryLAFW = FrankWolfe.afw(
     f,
     grad!,
     lmo,
@@ -85,13 +37,66 @@ x0 = FrankWolfe.compute_extreme_point(lmo, ones(n));
     localized = true,
 );
 
+@time x, v, primal, dual_gap, trajectorylazy, active_set = FrankWolfe.afw(
+    f,
+    grad!,
+    lmo,
+    x0,
+    max_iteration=k,
+    line_search=FrankWolfe.adaptive,
+    L=100,
+    print_iter=k / 10,
+    epsilon=1e-5,
+    emphasis=FrankWolfe.memory,
+    verbose=true,
+    trajectory=true,
+    lazy = true,
+);
 
+@time x, v, primal, dual_gap, trajectoryAFW, active_set = FrankWolfe.afw(
+    f,
+    grad!,
+    lmo,
+    x0,
+    max_iteration=k,
+    line_search=FrankWolfe.adaptive,
+    L=100,
+    print_iter=k / 10,
+    epsilon=1e-5,
+    emphasis=FrankWolfe.memory,
+    verbose=true,
+    awaySteps=true,
+    trajectory=true,
+);
 
+@time x, v, primal, dual_gap, trajectoryFW = FrankWolfe.afw(
+    f,
+    grad!,
+    lmo,
+    x0,
+    max_iteration=k,
+    line_search=FrankWolfe.adaptive,
+    L=100,
+    print_iter=k / 10,
+    emphasis=FrankWolfe.memory,
+    verbose=true,
+    epsilon=1e-5,
+    trajectory=true,
+    awaySteps = false,
+);
 
-
-
-
-data = [trajectory, trajectoryA, trajectoryAM]
-label = ["FW" "AFW" "MAFW"]
-
-FrankWolfe.plot_trajectories(data, label)
+@time x, v, primal, dual_gap, trajectoryLAFW = FrankWolfe.afw(
+    f,
+    grad!,
+    lmo,
+    x0,
+    max_iteration=k,
+    line_search=FrankWolfe.adaptive,
+    L=100,
+    print_iter=k / 10,
+    emphasis=FrankWolfe.memory,
+    verbose=true,
+    epsilon=1e-5,
+    trajectory=true,
+    localized = true,
+);
