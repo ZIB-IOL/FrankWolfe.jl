@@ -162,7 +162,7 @@ function active_set_argmin(active_set::ActiveSet, direction)
     idx = -1
     temp = 0
     for i in eachindex(active_set)
-        temp = dot(active_set.atoms[i], direction)
+        temp = fast_dot(active_set.atoms[i], direction)
         if temp < val
             val = temp
             idx = i
@@ -184,7 +184,7 @@ function active_set_argminmax(active_set::ActiveSet, direction)
     idx = -1
     idxM = -1
     for i in eachindex(active_set)
-        temp_val = dot(active_set.atoms[i], direction)
+        temp_val = fast_dot(active_set.atoms[i], direction)
         if temp_val < val
             val = temp_val
             idx = i
@@ -210,10 +210,10 @@ indicating if the direction improvement is above a threshold.
 """
 function find_minmax_directions(active_set::ActiveSet, direction, Φ; goodstep_tolerance=0.75)
     idx_fw = idx_as = 1
-    v_fw = dot(direction, active_set.atoms[1])
+    v_fw = fast_dot(direction, active_set.atoms[1])
     v_as = v_fw
     for (idx, a) in enumerate(active_set.atoms)
-        val = dot(direction, a)
+        val = fast_dot(direction, a)
         if val ≤ v_fw
             v_fw = val
             idx_fw = idx

@@ -164,10 +164,10 @@ function fw(
         if (
             (mod(t, print_iter) == 0 && verbose) ||
             trajectory ||
-            !(line_search == agnostic || line_search == nonconvex || line_search == fixed)
+            line_search == shortstep
         )
             primal = f(x)
-            dual_gap = dot(x, gradient) - dot(v, gradient)
+            dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         end
 
         if trajectory
@@ -177,23 +177,23 @@ function fw(
             )
         end
 
-        if line_search === agnostic
+        if line_search == agnostic
             gamma = 2 // (2 + t)
-        elseif line_search === goldenratio
+        elseif line_search == goldenratio
             _, gamma = segment_search(f, grad!, x, v, linesearch_tol=linesearch_tol, inplace_gradient=true)
-        elseif line_search === backtracking
+        elseif line_search == backtracking
             _, gamma =
                 backtrackingLS(f, gradient, x, v, linesearch_tol=linesearch_tol, step_lim=step_lim)
-        elseif line_search === nonconvex
+        elseif line_search == nonconvex
             gamma = 1 / sqrt(t + 1)
-        elseif line_search === shortstep
+        elseif line_search == shortstep
             gamma = dual_gap / (L * norm(x - v)^2)
-        elseif line_search === rationalshortstep
+        elseif line_search == rationalshortstep
             rat_dual_gap = sum((x - v) .* gradient)
             gamma = rat_dual_gap // (L * sum((x - v) .^ 2))
-        elseif line_search === fixed
+        elseif line_search == fixed
             gamma = gamma
-        elseif line_search === adaptive
+        elseif line_search == adaptive
             L, gamma = adaptive_step_size(f, gradient, x, x - v, L)
         end
 
@@ -223,7 +223,7 @@ function fw(
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
-    dual_gap = dot(x, gradient) - dot(v, gradient)
+    dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
     if verbose
         tt = last
         rep = (
@@ -355,13 +355,13 @@ function lcg(
         primal = f(x)
         grad!(gradient, x)
 
-        threshold = dot(x, gradient) - phi
+        threshold = fast_dot(x, gradient) - phi
 
         v = compute_extreme_point(lmo, gradient, threshold=threshold, greedy=greedy_lazy)
         tt = lazy
-        if dot(v, gradient) > threshold
+        if fast_dot(v, gradient) > threshold
             tt = dualstep
-            dual_gap = dot(x, gradient) - dot(v, gradient)
+            dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
             phi = dual_gap / 2
         end
 
@@ -388,7 +388,7 @@ function lcg(
         elseif line_search == nonconvex
             gamma = 1 / sqrt(t + 1)
         elseif line_search == shortstep
-            gamma = dot(gradient, x - v) / (L * dot(x - v, x - v))
+            gamma = fast_dot(gradient, x - v) / (L * fast_dot(x - v, x - v))
         end
 
         @emphasis(emphasis, x = (1 - gamma) * x + gamma * v)

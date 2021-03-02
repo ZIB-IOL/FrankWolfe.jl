@@ -125,7 +125,7 @@ function stochastic_frank_wolfe(
            trajectory ||
            !(line_search == agnostic || line_search == nonconvex || line_search == fixed)
             primal = compute_value(f, x, full_evaluation=true)
-            dual_gap = dot(x, gradient) - dot(v, gradient)
+            dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         end
 
         if trajectory
@@ -176,7 +176,7 @@ function stochastic_frank_wolfe(
     (primal, gradient) = compute_value_gradient(f, x, full_evaluation=true)
     v = compute_extreme_point(lmo, gradient)
     # @show (gradient, primal)
-    dual_gap = dot(x, gradient) - dot(v, gradient)
+    dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
     if verbose
         tt = last
         rep = (
