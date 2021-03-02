@@ -158,10 +158,10 @@ Computes the linear minimizer in the direction on the active set.
 Returns `(λ_i, a_i, i)`
 """
 function active_set_argmin(active_set::ActiveSet, direction)
-    val = Inf
-    idx = -1
+    val = dot(active_set.atoms[1], direction)
+    idx = 1
     temp = 0
-    for i in eachindex(active_set)
+    for i in 2:length(active_set)
         temp = dot(active_set.atoms[i], direction)
         if temp < val
             val = temp
