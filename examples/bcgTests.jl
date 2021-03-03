@@ -7,11 +7,12 @@ k = 3000
 
 s = rand(1:100)
 @info "Seed $s"
+s = 41
 Random.seed!(s)
 
 xpi = rand(n);
 total = sum(xpi);
-const xp = xpi ./ total;
+const xp = xpi # ./ total;
 
 f(x) = norm(x - xp)^2
 function grad!(storage, x)
@@ -39,7 +40,7 @@ const x00_big = FrankWolfe.compute_extreme_point(lmo_big, zeros(n))
 
 FrankWolfe.benchmark_oracles(x -> cf(x, xp), (str, x) -> cgrad!(str, x, xp), ()->randn(n), lmo; k=100)
 
-x0 = deepcopy(x00_big)
+x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, trajectorySs = FrankWolfe.fw(
     f,
     grad!,
@@ -54,7 +55,7 @@ x0 = deepcopy(x00_big)
     trajectory=true,
 );
 
-x0 = deepcopy(x00_big)
+x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, trajectoryAda = FrankWolfe.afw(
     f,
     grad!,
@@ -69,16 +70,14 @@ x0 = deepcopy(x00_big)
     trajectory=true,
 );
 
-println("\n==> Agnostic if function is too expensive for adaptive.\n")
-
-x0 = deepcopy(x00_big)
+x0 = deepcopy(x00)
 x, v, primal, dual_gap, trajectoryBCG = FrankWolfe.bcg(
     f,
     grad!,
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.backtracking,
+    line_search=FrankWolfe.adaptive,
     print_iter=k / 10,
     emphasis=FrankWolfe.memory,
     L=2,
