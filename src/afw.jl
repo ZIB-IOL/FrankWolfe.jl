@@ -291,7 +291,7 @@ function lazy_afw_step(
     grad_dot_x = dot(x, gradient)
     grad_dot_a = dot(a, gradient)
     if grad_dot_x - grad_dot_lazy_fw_vertex >= grad_dot_a - grad_dot_x && grad_dot_x - grad_dot_lazy_fw_vertex >= phi / K
-        tt = regular
+        tt = lazy
         gamma_max = 1
         d = x - v
         vertex = v
