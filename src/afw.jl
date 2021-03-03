@@ -132,7 +132,7 @@ function afw(
             !(line_search == agnostic || line_search == nonconvex || line_search == fixed)
         )
             primal = f(x)
-            dual_gap = dot(x, gradient) - dot(v, gradient)
+            dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         end
 
         if trajectory
@@ -169,13 +169,13 @@ function afw(
         # helps with sparsity
         if localized
             # lambdaVLoc, vloc, iloc = active_set_argmin(active_set, gradient)
-            if  dot(a, gradient) - dot(vloc,gradient) >= localizedFactor * (dot(a, gradient) - dot(v,gradient))
+            if  fast_dot(a, gradient) - fast_dot(vloc,gradient) >= localizedFactor * (dot(a, gradient) - fast_dot(v,gradient))
                 v = vloc
                 d = x - v
                 tt = local_fw 
             end
         end
-        away_gap = dot(a, gradient) - dot(x, gradient)
+        away_gap = fast_dot(a, gradient) - fast_dot(x, gradient)
 
         # if away_gap is larger than dual_gap and we do awaySteps, then away step promises more progress
         # do not do away_step in very first iteration. you might remove the only one vertex that we have so far
@@ -197,7 +197,7 @@ function afw(
         elseif line_search === nonconvex
             gamma = 1 / sqrt(t + 1)
         elseif line_search === shortstep
-            gap = dot(gradient, d)
+            gap = fast_dot(gradient, d)
             gamma = gap / (L * norm(d)^2)
         elseif line_search === rationalshortstep
             ratDualGap = sum(d .* gradient)
@@ -249,7 +249,7 @@ function afw(
         grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
-        dual_gap = dot(x, gradient) - dot(v, gradient)
+        dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         tt = last
         rep = (
             tt,
@@ -270,7 +270,7 @@ function afw(
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
-    dual_gap = dot(x, gradient) - dot(v, gradient)
+    dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
     if verbose
         tt = pp
         rep = (
