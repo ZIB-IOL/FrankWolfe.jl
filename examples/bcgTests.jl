@@ -8,6 +8,8 @@ k = 3000
 
 s = rand(1:100)
 @info "Seed $s"
+
+# this seed produces numerical issues with Float64 with the k-sparse 100 lmo / for testing
 s = 41
 Random.seed!(s)
 
@@ -30,11 +32,18 @@ function cgrad!(storage, x, xp)
     return @. storage = 2 * (x - xp)
 end
 
-const lmo = FrankWolfe.KSparseLMO(100, 1.0)
+# the standard LMO might produce numerical instabilities
+# const lmo = FrankWolfe.KSparseLMO(100, 1.0)
+
+# the same lmo with Double64 is much more numerically robust. costs relatively little in speed.
+const lmo = FrankWolfe.KSparseLMO(100, Double64(1.0))
+
+# the same lmo here with bigfloat. even more robust but much slower
 # const lmo = FrankWolfe.KSparseLMO(100, big"1.0")
-# const lmo = FrankWolfe.KSparseLMO(100, Double64(1.0))
+
+# other oracles to test
 # lmo = FrankWolfe.LpNormLMO{Float64,1}(1.0)
-# lmo = FrankWolfe.ProbabilitySimplexOracle(1.0);
+# const lmo = FrankWolfe.ProbabilitySimplexOracle(Double64(1.0));
 # lmo = FrankWolfe.UnitSimplexOracle(1.0);
 
 const x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
