@@ -1,3 +1,4 @@
+import Arpack
 
 """
     LpNormLMO{T, p}(right_hand_side)
@@ -144,24 +145,12 @@ Golub-Kahan-Lanczos bidiagonalization from IterativeSolvers.
 
 Warning: this does not work (yet) with all number types, BigFloat and Float16 fail.
 """
-function compute_extreme_point(lmo::NuclearNormLMO, direction::AbstractMatrix; maxiter=prod(size(direction)), kwargs...)
-    T = float(eltype(direction))
-    if iszero(direction)
-        # zero gradient: return unit R-O with two MaybeHotVector
-        (nrows, ncols) = size(direction)
-        u = zeros(T, nrows)
-        u[1] = lmo.radius
-        v = zeros(T, ncols)
-        v[1] = 1
-        return RankOneMatrix(u, v)
-    end
-    (svd_res, _, history) = IterativeSolvers.svdl(-direction, nsv=1, vecs=:both, log=true, maxiter=maxiter)
-    if !history.isconverged
-        @warn("SVD solver did not converge:\n$(history)")
-    end
-    res = RankOneMatrix(
-        svd_res.U[:] * lmo.radius,
-        svd_res.V[:],
+function compute_extreme_point(lmo::NuclearNormLMO, direction::AbstractMatrix; tol=1e-8, kwargs...)
+    Z = Arpack.svds(direction, nsv=1, tol=tol)[1]
+    u = - lmo.radius * view(Z.U, :)
+    return FrankWolfe.RankOneMatrix(
+        u,
+        Z.V[:],
     )
 end
 

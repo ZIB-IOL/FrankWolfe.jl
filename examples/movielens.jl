@@ -4,15 +4,20 @@ include(joinpath(@__DIR__, "activate.jl"))
 # download movielens data
 using ZipFile, DataFrames, CSV
 
+using Random
+using ProgressMeter
+
+using Profile
+
 using SparseArrays, LinearAlgebra
 temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest-small.zip")
+# temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest.zip")
 
 zarchive = ZipFile.Reader(temp_zipfile)
 
 
 movies_file = zarchive.files[findfirst(f -> occursin("movies", f.name), zarchive.files)]
 movies_frame = CSV.read(movies_file, DataFrame)
-
 
 ratings_file = zarchive.files[findfirst(f -> occursin("ratings", f.name), zarchive.files)]
 ratings_frame = CSV.read(ratings_file, DataFrame)
@@ -25,7 +30,7 @@ users = unique(ratings_frame[:,:userId])
 movies = unique(ratings_frame[:,:movieId])
 
 const rating_matrix = spzeros(length(users), length(movies))
-for row in eachrow(ratings_frame)
+@showprogress 1 "Extracting user and movie indices... " for row in eachrow(ratings_frame)
     user_idx = findfirst(==(row.userId), users)
     movie_idx = findfirst(==(row.movieId), movies)
     rating_matrix[user_idx, movie_idx] = row.rating
@@ -75,21 +80,23 @@ norm_estimation = sum(svdvals(collect(rating_matrix))[1:400])
 const lmo = FrankWolfe.NuclearNormLMO(norm_estimation)
 const x0 = FrankWolfe.compute_extreme_point(lmo, zero(rating_matrix))
 
+# FrankWolfe.benchmark_oracles(f, (str, x) -> grad!(str, x), () -> randn(size(rating_matrix)), lmo; k=100)
 
-gradient = similar(x0)
-xgd = Matrix(x0)
-for _ in 1:5000
-    @info f(xgd)
-    grad!(gradient, xgd)
-    xgd .-= 0.01 * gradient
-    if norm(gradient) ≤ sqrt(eps())
-        break
-    end
-end
 
+gradient = spzeros(size(x0)...)
+# xgd = Matrix(x0)
+# for _ in 1:5000
+#     @info f(xgd)
+#     grad!(gradient, xgd)
+#     xgd .-= 0.01 * gradient
+#     if norm(gradient) ≤ sqrt(eps())
+#         break
+#     end
+# end
 
 const k = 1000
 
+# @profview 
 xfin, vmin, _, _, traj_data = FrankWolfe.fw(
     f,
     grad!,
@@ -98,7 +105,7 @@ xfin, vmin, _, _, traj_data = FrankWolfe.fw(
     epsilon=1e-9,
     max_iteration=k,
     print_iter=k/10,
-    trajectory=true,
+    trajectory=false,
     verbose=true,
     linesearch_tol=1e-7,
 #    localized=true,
@@ -106,7 +113,8 @@ xfin, vmin, _, _, traj_data = FrankWolfe.fw(
     line_search=FrankWolfe.adaptive,
     L=100,
     emphasis=FrankWolfe.memory,
+    gradient=gradient,
 )
 
-@info "Gdescent test loss: $(test_loss(xgd))"
-@info "FW test loss: $(test_loss(xfin))"
+# @info "Gdescent test loss: $(test_loss(xgd))"
+# @info "FW test loss: $(test_loss(xfin))"

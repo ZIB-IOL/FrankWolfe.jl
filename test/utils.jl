@@ -38,6 +38,10 @@ end
                 r2 = M * x
                 @test r1 ≈ r2
             end
+            @testset "Add and sub" begin
+                @test M + R ≈ R + R
+                @test M - R ≈ R - R
+            end            
         end
     end
 end

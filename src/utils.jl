@@ -10,8 +10,13 @@ TODO:
 """
 function adaptive_step_size(f, gradient, x, direction, L_est; eta=0.9, tau=2, gamma_max=1)
     M = eta * L_est
-    dot_dir = dot(gradient, direction)
+    dot_dir = fast_dot(gradient, direction)
     ndir2 = norm(direction)^2
+
+    # alternative via broadcast -> not faster
+    # dot_dir = sum(gradient .* gradient)
+    # ndir2 = sum(direction .* direction)
+
     gamma = min(
         dot_dir / (M * ndir2),
         gamma_max,
@@ -470,7 +475,8 @@ end
 
 # not checking indices
 Base.@propagate_inbounds function Base.getindex(R::RankOneMatrix, i, j)
-    return R.u[i] * R.v[j]
+    @boundscheck (checkbounds(R.u, i); checkbounds(R.v, j))
+    @inbounds R.u[i] * R.v[j]
 end
 
 Base.size(R::RankOneMatrix) = (length(R.u), length(R.v))
@@ -502,4 +508,74 @@ function Base.convert(::Type{<:RankOneMatrix{T, Vector{T}, Vector{T}}}, R::RankO
         convert(Vector{T}, R.u),
         convert(Vector{T}, R.v),
     )
+end
+
+function LinearAlgebra.dot(R::RankOneMatrix{T1}, S::SparseArrays.AbstractSparseMatrixCSC{T2}) where {T1 <: Real, T2 <: Real}
+    (m, n) = size(R)
+    T = promote_type(T1, T2)
+    if (m, n) != size(S)
+        throw(DimensionMismatch("Size mismatch"))
+    end
+    s = zero(T)
+    if m * n == 0
+        return s
+    end
+    rows = SparseArrays.rowvals(S)
+    vals = SparseArrays.nonzeros(S)
+    @inbounds for j in 1:n
+        for ridx in SparseArrays.nzrange(S, j)
+            i = rows[ridx]
+            v = vals[ridx]
+            s += v * R.u[i] * R.v[j]
+        end
+    end
+    return s
+end
+
+Base.@propagate_inbounds function Base.:-(a::RankOneMatrix, b::RankOneMatrix)
+    @boundscheck size(a) == size(b) || throw(DimensionMismatch())
+    r = similar(a)
+    @inbounds for j in 1:size(a, 2)
+        for i in 1:size(a, 1)
+            r[i,j] = a.u[i] * a.v[j] - b.u[i] * b.v[j]
+        end
+    end
+    return r
+end
+
+Base.@propagate_inbounds function Base.:+(a::RankOneMatrix, b::RankOneMatrix)
+    @boundscheck size(a) == size(b) || throw(DimensionMismatch())
+    r = similar(a)
+    @inbounds for j in 1:size(a, 2)
+        for i in 1:size(a, 1)
+            r[i,j] = a.u[i] * a.v[j] + b.u[i] * b.v[j]
+        end
+    end
+    return r
+end
+
+fast_dot(A, B) = dot(A, B)
+
+fast_dot(B::SparseArrays.SparseMatrixCSC, A::Matrix) = fast_dot(A, B)
+
+function fast_dot(A::Matrix{T1}, B::SparseArrays.SparseMatrixCSC{T2}) where {T1, T2}
+    T = promote_type(T1, T2)
+    (m, n) = size(A)
+    if (m, n) != size(B)
+        throw(DimensionMismatch("Size mismatch"))
+    end
+    s = zero(T)
+    if m * n == 0
+        return s
+    end
+    rows = SparseArrays.rowvals(B)
+    vals = SparseArrays.nonzeros(B)
+    for j in 1:n
+        for ridx in SparseArrays.nzrange(B, j)
+            i = rows[ridx]
+            v = vals[ridx]
+            s += v * A[i,j]
+        end
+    end
+    return s
 end
