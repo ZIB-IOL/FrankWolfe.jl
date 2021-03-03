@@ -1,13 +1,14 @@
 import FrankWolfe
 using LinearAlgebra
 using Random
+using DoubleFloats
 
-n = Int(1e4)
+n = Int(1e5)
 k = 3000
 
 s = rand(1:100)
 @info "Seed $s"
-s = 41
+# s = 41
 Random.seed!(s)
 
 xpi = rand(n);
@@ -29,13 +30,14 @@ function cgrad!(storage, x, xp)
     return @. storage = 2 * (x - xp)
 end
 
-const lmo = FrankWolfe.KSparseLMO(100, 1.0)
-const lmo_big = FrankWolfe.KSparseLMO(100, big"1.0")
+# const lmo = FrankWolfe.KSparseLMO(100, 1.0)
+# const lmo_big = FrankWolfe.KSparseLMO(100, big"1.0")
+const lmo = FrankWolfe.KSparseLMO(100, Double64(1.0))
 # lmo = FrankWolfe.LpNormLMO{Float64,1}(1.0)
 # lmo = FrankWolfe.ProbabilitySimplexOracle(1.0);
 # lmo = FrankWolfe.UnitSimplexOracle(1.0);
+
 const x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
-const x00_big = FrankWolfe.compute_extreme_point(lmo_big, zeros(n))
 # print(x0)
 
 FrankWolfe.benchmark_oracles(x -> cf(x, xp), (str, x) -> cgrad!(str, x, xp), ()->randn(n), lmo; k=100)
