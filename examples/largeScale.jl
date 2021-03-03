@@ -1,7 +1,7 @@
 import FrankWolfe
 using LinearAlgebra
 
-n = Int(1e4)
+n = Int(1e7)
 k = 1000
 
 xpi = rand(n);

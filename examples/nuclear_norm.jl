@@ -1,5 +1,5 @@
 import Random
-using LinearAlgebra
+using SparseArrays, LinearAlgebra
 using FrankWolfe
 using Test
 using Plots
@@ -90,6 +90,7 @@ xfin, vmin, _, _, traj_data = FrankWolfe.fw(
     line_search=FrankWolfe.adaptive,
     L=100,
     emphasis=FrankWolfe.memory,
+    gradient=spzeros(size(x0)...),
 )
 
 

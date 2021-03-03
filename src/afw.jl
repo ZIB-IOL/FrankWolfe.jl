@@ -232,7 +232,7 @@ function afw(
         grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
-        dual_gap = dot(x, gradient) - dot(v, gradient)
+        dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         tt = last
         rep = (
             tt,
@@ -253,7 +253,7 @@ function afw(
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
-    dual_gap = dot(x, gradient) - dot(v, gradient)
+    dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
     if verbose
         tt = pp
         rep = (
