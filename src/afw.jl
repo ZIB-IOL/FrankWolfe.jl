@@ -324,7 +324,7 @@ function lazy_afw_step(
                 index = nothing
             #Lower our expectation for progress.
             else
-                tt = regular
+                tt = dualstep
                 phi = min(dual_gap, phi / 2.0)
                 gamma_max = 0.0
                 d = zeros(length(x))
