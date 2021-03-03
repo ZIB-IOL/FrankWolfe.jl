@@ -21,22 +21,6 @@ lmo = FrankWolfe.KSparseLMO(number_nonzero, 1);
 # lmo = FrankWolfe.ProbabilitySimplexOracle(1)
 x0 = FrankWolfe.compute_extreme_point(lmo, ones(n));
 
-@time x, v, primal, dual_gap, trajectoryLAFW = FrankWolfe.afw(
-    f,
-    grad!,
-    lmo,
-    x0,
-    max_iteration=k,
-    line_search=FrankWolfe.adaptive,
-    L=100,
-    print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
-    verbose=true,
-    epsilon=1e-5,
-    trajectory=true,
-    localized = true,
-);
-
 @time x, v, primal, dual_gap, trajectorylazy, active_set = FrankWolfe.afw(
     f,
     grad!,
@@ -83,20 +67,4 @@ x0 = FrankWolfe.compute_extreme_point(lmo, ones(n));
     epsilon=1e-5,
     trajectory=true,
     awaySteps = false,
-);
-
-@time x, v, primal, dual_gap, trajectoryLAFW = FrankWolfe.afw(
-    f,
-    grad!,
-    lmo,
-    x0,
-    max_iteration=k,
-    line_search=FrankWolfe.adaptive,
-    L=100,
-    print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
-    verbose=true,
-    epsilon=1e-5,
-    trajectory=true,
-    localized = true,
 );

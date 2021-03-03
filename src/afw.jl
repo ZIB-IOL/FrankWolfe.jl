@@ -17,9 +17,7 @@ function afw(
     epsilon=1e-7,
     awaySteps = true,
     lazy = false,
-    localized=false,
     momentum = nothing,
-    localizedFactor=0.66,
     max_iteration=10000,
     print_iter=1000,
     trajectory=false,
@@ -92,7 +90,7 @@ function afw(
         println(
             "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $numType",
         )
-        println("LAZY: $lazy MOMENTUM: $momentum AWAYSTEPS: $awaySteps LOCALIZED: $localized ($localizedFactor)")
+        println("LAZY: $lazy MOMENTUM: $momentum AWAYSTEPS: $awaySteps")
         if emphasis == memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
         end
@@ -139,9 +137,7 @@ function afw(
                 x,
                 gradient,
                 lmo,
-                active_set;
-                localized = localized,
-                localizedFactor = localizedFactor,
+                active_set
                 )
             end
         else
@@ -342,9 +338,7 @@ function afw_step(
     x,
     gradient,
     lmo,
-    active_set;
-    localized = false,
-    localizedFactor = 0.66,
+    active_set
 )
     local_v_lambda, local_v, local_v_loc, a_lambda, a, a_loc = active_set_argminmax(active_set, gradient)
     away_gap = dot(a, gradient) - dot(x, gradient)
@@ -352,13 +346,6 @@ function afw_step(
     grad_dot_x = dot(x, gradient)
     away_gap = dot(a, gradient) - grad_dot_x
     dual_gap = grad_dot_x - dot(v, gradient)
-    if localized
-        local_dual_gap = grad_dot_x - dot(local_v, gradient)
-        if  away_gap + local_dual_gap >= localizedFactor * (away_gap + dual_gap)
-            v = local_v
-            dual_gap = local_dual_gap
-        end
-    end
     if dual_gap >= away_gap
         tt = regular
         gamma_max = 1
@@ -366,11 +353,7 @@ function afw_step(
         vertex = v
         away_step_taken = false
         fw_step_taken = true
-        if localized
-            index = local_v_loc
-        else
-            index = nothing 
-        end
+        index = nothing 
     else
         tt = away
         gamma_max = a_lambda / (1 - a_lambda)
