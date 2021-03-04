@@ -15,7 +15,7 @@ struct KSparseLMO{T} <: LinearMinimizationOracle
     right_hand_side::T
 end
 
-function compute_extreme_point(lmo::KSparseLMO{T}, direction) where {T}
+function compute_extreme_point(lmo::KSparseLMO{T}, direction; kwargs...) where {T}
     K = min(lmo.K, length(direction))
     K_indices = sortperm(direction[1:K], by=abs, rev=true)
     K_values = direction[K_indices]
@@ -87,7 +87,7 @@ Its extreme vertices are all permutation matrices of side-dimension `dimension`.
 struct BirkhoffPolytopeLMO <: LinearMinimizationOracle
 end
 
-function compute_extreme_point(::BirkhoffPolytopeLMO, direction::AbstractMatrix{T}) where {T}
+function compute_extreme_point(::BirkhoffPolytopeLMO, direction::AbstractMatrix{T}; kwargs...) where {T}
     n = size(direction, 1)
     n == size(direction, 2) ||
         DimensionMismatch("direction should be square and matching BirkhoffPolytopeLMO dimension")
