@@ -139,6 +139,10 @@ function fw(
     if gradient === nothing
         gradient = similar(x)
     end
+
+    # container for direction
+    d = similar(x0)
+
     gtemp = if momentum === nothing
         nothing
     else
@@ -179,7 +183,9 @@ function fw(
                 (t, primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9),
             )
         end
-        d = x - v
+        
+        @emphasis(emphasis, d = x - v)
+
         L, gamma = line_search_wrapper(line_search,t,f,grad!,x, d,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim, 1.0)
 
         @emphasis(emphasis, x = x - gamma*d)
@@ -341,12 +347,23 @@ function lcg(
         gradient = similar(x)
     end
 
+    # container for direction
+    d = similar(x0)
+
     while t <= max_iteration && dual_gap >= max(epsilon, eps())
 
-        primal = f(x)
+        # primal = f(x)
         grad!(gradient, x)
 
         threshold = fast_dot(x, gradient) - phi
+
+        # go easy on the memory - only compute if really needed
+        if (
+            (mod(t, print_iter) == 0 && verbose) ||
+            trajectory
+        )
+            primal = f(x)
+        end
 
         v = compute_extreme_point(lmo, gradient, threshold=threshold, greedy=greedy_lazy)
         tt = lazy
@@ -369,7 +386,9 @@ function lcg(
                 ),
             )
         end
-        d = x - v
+
+        @emphasis(emphasis, d = x - v)
+        
         L, gamma = line_search_wrapper(line_search,t,f,grad!,x,d,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim, 1.0)
 
         @emphasis(emphasis, x = x - gamma*d)
