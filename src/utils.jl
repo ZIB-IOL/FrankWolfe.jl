@@ -2,25 +2,33 @@
 """
 line search wrapper to clean up functions
 """
-function line_search_wrapper(line_search,t,f,grad!,x,v,gradient,dual_gap,L,linesearch_tol,step_lim)
+function line_search_wrapper(line_search,t,f,grad!,x,v,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim;d=nothing)
+
+    # only compute direction if not only of the agnostic step_sizes
+    if isnothing(d) && ! (line_search == agnostic || line_search == fixed || line_search == nonconvex)  
+        d = x - v
+    end
+
+    # TODO/DOUBLECHECK: needs adjustment for arbitrary directions to support AFW, PFW, and BCG
+
     if line_search == agnostic
         gamma = 2 // (2 + t)
-    elseif line_search == goldenratio
+    elseif line_search == goldenratio # FIX for general d
         _, gamma = segment_search(f, grad!, x, v, linesearch_tol=linesearch_tol, inplace_gradient=true)
-    elseif line_search == backtracking
+    elseif line_search == backtracking # FIX for general d
         _, gamma =
             backtrackingLS(f, gradient, x, v, linesearch_tol=linesearch_tol, step_lim=step_lim)
     elseif line_search == nonconvex
         gamma = 1 / sqrt(t + 1)
     elseif line_search == shortstep
-        gamma = dual_gap / (L * norm(x - v)^2)
+        gamma = dual_gap / (L * norm(d)^2)
     elseif line_search == rationalshortstep
-        rat_dual_gap = sum((x - v) .* gradient)
-        gamma = rat_dual_gap // (L * sum((x - v) .^ 2))
+        rat_dual_gap = sum((d) .* gradient)
+        gamma = rat_dual_gap // (L * sum((d) .^ 2))
     elseif line_search == fixed
-        gamma = gamma
+        gamma = gamma0
     elseif line_search == adaptive
-        L, gamma = adaptive_step_size(f, gradient, x, x - v, L)
+        L, gamma = adaptive_step_size(f, gradient, x, d, L)
     end
     return L, gamma
 end
