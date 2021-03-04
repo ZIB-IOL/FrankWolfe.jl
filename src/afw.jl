@@ -74,7 +74,6 @@ function afw(
     time_start = time_ns()
 
     d = 0 # working direction
-    away_step_taken = false # flag whether the current step is an away step
 
     if line_search == shortstep && L == Inf
         println("WARNING: Lipschitz constant not set. Prepare to blow up spectacularly.")

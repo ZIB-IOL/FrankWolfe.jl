@@ -16,7 +16,7 @@ function grad!(storage, x)
 end
 
 # problem with active set updates and the ksparselmo
-lmo = FrankWolfe.KSparseLMO(40, 1);
+lmo = FrankWolfe.KSparseLMO(40, 1.0);
 # lmo = FrankWolfe.ProbabilitySimplexOracle(1)
 x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
