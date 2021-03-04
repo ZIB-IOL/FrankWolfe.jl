@@ -162,20 +162,9 @@ function bcg(
                 phi = (xval - value) / 2
             else
                 tt = regular
-                if line_search == agnostic
-                    gamma = 2 / (2 + t)
-                elseif line_search == goldenratio
-                    _, gamma = segment_search(f, grad!, x, ynew, linesearch_tol=linesearch_tol)
-                elseif line_search == backtracking
-                    _, gamma = backtrackingLS(f, gradient, x, v, linesearch_tol=linesearch_tol, step_lim=100)
-                elseif line_search == nonconvex
-                    gamma = 1 / sqrt(t + 1)
-                elseif line_search == shortstep
-                    gamma =  fast_dot(gradient, x - v) / (L * fast_dot(x - v, x - v))
-                elseif line_search == adaptive
-                    L, gamma = adaptive_step_size(f, gradient, x, x - v, L)
-                end
-                gamma = min(1.0, gamma)
+                L, gamma = line_search_wrapper(line_search,t,f,grad!,x,v - x,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim, 1.0)
+
+
                 if gamma == 1.0
                     active_set_initialize!(active_set, v)
                 else
