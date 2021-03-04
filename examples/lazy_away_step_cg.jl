@@ -3,7 +3,7 @@ import LinearAlgebra
 
 # n = Int(1e1)
 n = Int(1e4)
-k = Int(1e4)
+k = 5*Int(1e3)
 number_nonzero = 40
 
 xpi = rand(n);
