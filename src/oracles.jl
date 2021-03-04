@@ -224,9 +224,6 @@ function compute_extreme_point(
         if new_val ≤ threshold
             # stop, store and return
             if greedy
-                if store_cache
-                    push!(lmo.vertices, v)
-                end
                 return v
             end
             # otherwise, compare to incumbent
@@ -240,9 +237,9 @@ function compute_extreme_point(
     v = best_v
     if best_idx < 0
         v = compute_extreme_point(lmo.inner, direction)
-    end
-    if store_cache
-        push!(lmo.vertices, v)
+        if store_cache
+            push!(lmo.vertices, v)
+        end
     end
     return v
 end
