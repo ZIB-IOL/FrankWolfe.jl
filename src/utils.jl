@@ -1,6 +1,8 @@
 
 """
 line search wrapper to clean up functions
+NOTE: The stepsize is defined as x - gamma*d
+
 """
 
 function line_search_wrapper(line_search,t,f,grad!,x,d,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim, gamma_max)
@@ -89,7 +91,7 @@ function backtrackingLS(
     end
 
     oldVal = f(x)
-    newVal = f(x + gamma * d)
+    newVal = f(x - gamma * d)
     while newVal - oldVal > linesearch_tol * gamma * dot_gdir
         if i > step_lim
             if oldVal - newVal >= 0
@@ -99,7 +101,7 @@ function backtrackingLS(
             end
         end
         gamma *= lsTau
-        newVal = f(x + gamma * d)
+        newVal = f(x - gamma * d)
         i += 1
     end
     return i, gamma
@@ -113,7 +115,7 @@ end
 
 function segment_search(f, grad, x, d, gamma_max; line_search=true, linesearch_tol=1e-10, inplace_gradient=true)
     # restrict segment of search to [x, y]
-    y = x + gamma_max*d
+    y = x - gamma_max*d
     left, right = copy(x), copy(y)
 
     if inplace_gradient
@@ -168,38 +170,6 @@ function segment_search(f, grad, x, d, gamma_max; line_search=true, linesearch_t
 
     return x_min, gamma
 end
-
-function line_search_wrapper_backup(line_search,t,f,grad!,x,v,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim;d=nothing)
-
-    # only compute direction if not only of the agnostic step_sizes
-    if isnothing(d) && ! (line_search == agnostic || line_search == fixed || line_search == nonconvex)  
-        d = x - v
-    end
-
-    # TODO/DOUBLECHECK: needs adjustment for arbitrary directions to support AFW, PFW, and BCG
-
-    if line_search == agnostic
-        gamma = 2 // (2 + t)
-    elseif line_search == goldenratio # FIX for general d
-        _, gamma = segment_search(f, grad!, x, v, linesearch_tol=linesearch_tol, inplace_gradient=true)
-    elseif line_search == backtracking # FIX for general d
-        _, gamma =
-            backtrackingLS(f, gradient, x, v, linesearch_tol=linesearch_tol, step_lim=step_lim)
-    elseif line_search == nonconvex
-        gamma = 1 / sqrt(t + 1)
-    elseif line_search == shortstep
-        gamma = dual_gap / (L * norm(d)^2)
-    elseif line_search == rationalshortstep
-        rat_dual_gap = sum((d) .* gradient)
-        gamma = rat_dual_gap // (L * sum((d) .^ 2))
-    elseif line_search == fixed
-        gamma = gamma0
-    elseif line_search == adaptive
-        L, gamma = adaptive_step_size(f, gradient, x, d, L)
-    end
-    return L, gamma
-end
-
 
 """
     MaybeHotVector{T}
