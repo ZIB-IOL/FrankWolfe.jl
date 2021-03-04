@@ -20,6 +20,7 @@ SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 
 [compat]
+Clp = "0.8"
 Hungarian = "0.6"
 Hypatia = "0.3"
 MathOptInterface = "0.9.19"
