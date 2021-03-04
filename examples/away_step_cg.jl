@@ -10,7 +10,7 @@ xpi = rand(n);
 total = sum(xpi);
 const xp = xpi # ./ total;
 
-f(x) = norm(x - xp)^2
+f(x) = LinearAlgebra.norm(x - xp)^2
 function grad!(storage, x)
     @. storage = 2 * (x - xp)
 end

@@ -1,6 +1,5 @@
 import FrankWolfe
 import LinearAlgebra
-using LinearAlgebra
 
 # n = Int(1e1)
 n = Int(1e4)
@@ -11,7 +10,7 @@ xpi = rand(n);
 total = sum(xpi);
 const xp = xpi # ./ total;
 
-f(x) = norm(x - xp)^2
+f(x) = LinearAlgebra.norm(x - xp)^2
 function grad!(storage, x)
     @. storage = 2 * (x - xp)
 end
@@ -68,3 +67,9 @@ x0 = FrankWolfe.compute_extreme_point(lmo, ones(n));
     trajectory=true,
     awaySteps = false,
 );
+
+
+data = [trajectorylazy, trajectoryAFW, trajectoryFW]
+label = ["LAFW" "AFW" "FW"]
+
+FrankWolfe.plot_trajectories(data, label)
