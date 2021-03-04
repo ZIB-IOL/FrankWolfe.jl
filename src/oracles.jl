@@ -56,7 +56,7 @@ function compute_extreme_point(
 )
     if lmo.last_vertex !== nothing && isfinite(threshold)
         v = lmo.last_vertex
-        if dot(v, direction) ≤ threshold # cache is a sufficiently-decreasing direction
+        if fast_dot(v, direction) ≤ threshold # cache is a sufficiently-decreasing direction
             return v
         end
     end
@@ -140,7 +140,7 @@ function compute_extreme_point(
         for idx in iter_order
             if lmo.vertices[idx] !== nothing
                 v = lmo.vertices[idx]
-                new_val = dot(v, direction)
+                new_val = fast_dot(v, direction)
                 if new_val ≤ threshold # cache is a sufficiently-decreasing direction
                     # if greedy, stop and return point
                     if greedy
@@ -156,7 +156,7 @@ function compute_extreme_point(
                 end
             end
         end
-        if best_idx > 0 # && dot(best_v, direction) ≤ threshold 
+        if best_idx > 0 # && fast_dot(best_v, direction) ≤ threshold 
             # println("cache sol")
             return best_v
         end
@@ -220,7 +220,7 @@ function compute_extreme_point(
     best_v = nothing
     for idx in reverse(eachindex(lmo.vertices))
         @inbounds v = lmo.vertices[idx]
-        new_val = dot(v, direction)
+        new_val = fast_dot(v, direction)
         if new_val ≤ threshold
             # stop, store and return
             if greedy
@@ -238,6 +238,13 @@ function compute_extreme_point(
     if best_idx < 0
         v = compute_extreme_point(lmo.inner, direction)
         if store_cache
+            # note: we do not check for duplicates. hence you might end up with more vertices, 
+            # in fact up to number of dual steps many, that might be already in the cache
+            # in order to reach this point, if v was already in the cache is must not meet the threshold (otherwise we would have returned it) 
+            # and it is the best possible, hence we will perform a dual step on the outside. 
+            #
+            # note: another possibility could be to test against that in the if statement but then you might end you recalculating the same vertex a few times.
+            # as such this might be a better tradeoff, i.e., to not check the set for duplicates and potentially accept #dualSteps many duplicates.
             push!(lmo.vertices, v)
         end
     end

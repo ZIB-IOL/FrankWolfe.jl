@@ -1,5 +1,32 @@
 
 """
+line search wrapper to clean up functions
+"""
+function line_search_wrapper(line_search,t,f,grad!,x,v,gradient,dual_gap,L,linesearch_tol,step_lim)
+    if line_search == agnostic
+        gamma = 2 // (2 + t)
+    elseif line_search == goldenratio
+        _, gamma = segment_search(f, grad!, x, v, linesearch_tol=linesearch_tol, inplace_gradient=true)
+    elseif line_search == backtracking
+        _, gamma =
+            backtrackingLS(f, gradient, x, v, linesearch_tol=linesearch_tol, step_lim=step_lim)
+    elseif line_search == nonconvex
+        gamma = 1 / sqrt(t + 1)
+    elseif line_search == shortstep
+        gamma = dual_gap / (L * norm(x - v)^2)
+    elseif line_search == rationalshortstep
+        rat_dual_gap = sum((x - v) .* gradient)
+        gamma = rat_dual_gap // (L * sum((x - v) .^ 2))
+    elseif line_search == fixed
+        gamma = gamma
+    elseif line_search == adaptive
+        L, gamma = adaptive_step_size(f, gradient, x, x - v, L)
+    end
+    return L, gamma
+end
+
+
+"""
 Slight modification of
 Adaptive Step Size strategy from https://arxiv.org/pdf/1806.05123.pdf
 
@@ -51,7 +78,7 @@ function backtrackingLS(
     d = y - x
     i = 0
 
-    dot_gdir = dot(grad_direction, d)
+    dot_gdir = fast_dot(grad_direction, d)
     @assert dot_gdir ≤ 0
     if dot_gdir ≥ 0
         @warn "Non-improving"
@@ -89,14 +116,14 @@ function segment_search(f, grad, x, y; line_search=true, linesearch_tol=1e-10, i
     if inplace_gradient
         gradient = similar(d)
         grad(gradient, x)
-        dgx = dot(d, gradient)
+        dgx = fast_dot(d, gradient)
         grad(gradient, y)
-        dgy = dot(d, gradient)
+        dgy = fast_dot(d, gradient)
     else
         gradient = grad(x)
-        dgx = dot(d, gradient)
+        dgx = fast_dot(d, gradient)
         gradient = grad(y)
-        dgy = dot(d, gradient)
+        dgy = fast_dot(d, gradient)
     end
     
     # if the minimum is at an endpoint
@@ -168,7 +195,7 @@ function LinearAlgebra.dot(v1::MaybeHotVector, v2::AbstractVector)
     return v1.active_val * v2[v1.val_idx]
 end
 
-LinearAlgebra.dot(v1::AbstractVector, v2::MaybeHotVector) = dot(v2, v1)
+LinearAlgebra.dot(v1::AbstractVector, v2::MaybeHotVector) = fast_dot(v2, v1)
 
 # warning, no bound check
 function LinearAlgebra.dot(v1::MaybeHotVector, v2::MaybeHotVector)
@@ -401,7 +428,7 @@ function benchmark_oracles(f, grad!, x_gen, lmo; k=100, nocache=true)
         grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
         @timeit to "dual gap" begin
-            dual_gap = dot(x, gradient) - dot(v, gradient)
+            dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         end
     end
     @showprogress 1 "Testing update... (Emphasis: blas) " for i in 1:k
@@ -430,7 +457,7 @@ function benchmark_oracles(f, grad!, x_gen, lmo; k=100, nocache=true)
                 grad!(gradient, x)
                 v = compute_extreme_point(lmo, gradient)
                 gamma = 1 / 2
-                test = (x -> dot(x, gradient)).(cache)
+                test = (x -> fast_dot(x, gradient)).(cache)
                 v = cache[argmin(test)]
                 val = v in cache
             end
@@ -481,7 +508,7 @@ end
 
 Base.size(R::RankOneMatrix) = (length(R.u), length(R.v))
 function Base.:*(R::RankOneMatrix, v::AbstractVector)
-    temp = dot(R.v, v)
+    temp = fast_dot(R.v, v)
     return R.u * temp
 end
 
@@ -492,7 +519,7 @@ end
 
 function Base.:*(R1::RankOneMatrix, R2::RankOneMatrix)
     # middle product
-    temp = dot(R1.v, R2.u)
+    temp = fast_dot(R1.v, R2.u)
     return RankOneMatrix(R1.u * temp, R2.v)
 end
 

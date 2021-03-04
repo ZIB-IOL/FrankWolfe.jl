@@ -180,25 +180,7 @@ function fw(
             )
         end
 
-        if line_search == agnostic
-            gamma = 2 // (2 + t)
-        elseif line_search == goldenratio
-            _, gamma = segment_search(f, grad!, x, v, linesearch_tol=linesearch_tol, inplace_gradient=true)
-        elseif line_search == backtracking
-            _, gamma =
-                backtrackingLS(f, gradient, x, v, linesearch_tol=linesearch_tol, step_lim=step_lim)
-        elseif line_search == nonconvex
-            gamma = 1 / sqrt(t + 1)
-        elseif line_search == shortstep
-            gamma = dual_gap / (L * norm(x - v)^2)
-        elseif line_search == rationalshortstep
-            rat_dual_gap = sum((x - v) .* gradient)
-            gamma = rat_dual_gap // (L * sum((x - v) .^ 2))
-        elseif line_search == fixed
-            gamma = gamma
-        elseif line_search == adaptive
-            L, gamma = adaptive_step_size(f, gradient, x, x - v, L)
-        end
+        L, gamma = line_search_wrapper(line_search,t,f,grad!,x,v,gradient,dual_gap,L,linesearch_tol,step_lim)
 
         @emphasis(emphasis, x = (1 - gamma) * x + gamma * v)
 
@@ -266,6 +248,7 @@ function lcg(
     trajectory=false,
     verbose=false,
     linesearch_tol=1e-7,
+    step_lim=20,
     emphasis::Emphasis=blas,
     gradient=nothing,
     VType=typeof(x0),
@@ -279,10 +262,10 @@ function lcg(
 
     function print_header(data)
         @printf(
-            "\n─────────────────────────────────────────────────────────────────────────────────────────────────\n"
+            "\n───────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
         )
         @printf(
-            "%6s %13s %14s %14s %14s %14s %14s\n",
+            "%6s %13s %14s %14s %14s %14s %14s %14s\n",
             data[1],
             data[2],
             data[3],
@@ -290,28 +273,30 @@ function lcg(
             data[5],
             data[6],
             data[7],
+            data[8]
         )
         @printf(
-            "─────────────────────────────────────────────────────────────────────────────────────────────────\n"
+            "───────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
         )
     end
 
     function print_footer()
         @printf(
-            "─────────────────────────────────────────────────────────────────────────────────────────────────\n\n"
+            "───────────────────────────────────────────────────────────────────────────────────────────────────────────────\n\n"
         )
     end
 
     function print_iter_func(data)
         @printf(
-            "%6s %13s %14e %14e %14e %14e %14s\n",
+            "%6s %13s %14e %14e %14e %14e %14e %14s\n",
             st[Symbol(data[1])],
             data[2],
             data[3],
             data[4],
             data[5],
             data[6],
-            data[7]
+            data[7],
+            data[8]
         )
     end
 
@@ -343,7 +328,7 @@ function lcg(
         if emphasis == memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
         end
-        headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "Cache Size"]
+        headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "Cache Size"]
         print_header(headers)
     end
 
@@ -384,17 +369,18 @@ function lcg(
             )
         end
 
-        if line_search == agnostic
-            gamma = 2 / (2 + t)
-        elseif line_search == goldenratio
-            _, gamma = segment_search(f, grad!, x, v, linesearch_tol=linesearch_tol)
-        elseif line_search == backtracking
-            _, gamma = backtrackingLS(f, gradient, x, v, linesearch_tol=linesearch_tol)
-        elseif line_search == nonconvex
-            gamma = 1 / sqrt(t + 1)
-        elseif line_search == shortstep
-            gamma = fast_dot(gradient, x - v) / (L * fast_dot(x - v, x - v))
-        end
+        L, gamma = line_search_wrapper(line_search,t,f,grad!,x,v,gradient,dual_gap,L,linesearch_tol,step_lim)
+        # if line_search == agnostic
+        #     gamma = 2 / (2 + t)
+        # elseif line_search == goldenratio
+        #     _, gamma = segment_search(f, grad!, x, v, linesearch_tol=linesearch_tol)
+        # elseif line_search == backtracking
+        #     _, gamma = backtrackingLS(f, gradient, x, v, linesearch_tol=linesearch_tol)
+        # elseif line_search == nonconvex
+        #     gamma = 1 / sqrt(t + 1)
+        # elseif line_search == shortstep
+        #     gamma = fast_dot(gradient, x - v) / (L * fast_dot(x - v, x - v))
+        # end
 
         @emphasis(emphasis, x = (1 - gamma) * x + gamma * v)
 
@@ -409,6 +395,7 @@ function lcg(
                 primal - dual_gap,
                 dual_gap,
                 (time_ns() - time_start) / 1.0e9,
+                t / ( (time_ns() - time_start) / 1.0e9 ),
                 length(lmo),
             )
             print_iter_func(rep)
@@ -425,6 +412,7 @@ function lcg(
             primal - dual_gap,
             dual_gap,
             (time_ns() - time_start) / 1.0e9,
+            t / ( (time_ns() - time_start) / 1.0e9 ),
             length(lmo),
         )
         print_iter_func(rep)
