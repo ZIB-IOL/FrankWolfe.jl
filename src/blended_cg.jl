@@ -6,6 +6,8 @@ function bcg(
     x0;
     line_search::LineSearchMethod=adaptive,
     L=Inf,
+    gamma0=0,
+    step_lim=20,
     epsilon=1e-7,
     max_iteration=10000,
     print_iter=1000,
@@ -91,6 +93,10 @@ function bcg(
         @error("Lazification is not known to converge with open-loop step size strategies.")
     end
 
+    if line_search == fixed && gamma0 == 0
+        println("WARNING: gamma0 not set. We are not going to move a single bit.")
+    end
+
     if verbose
         println("\nBlended Conditional Gradients Algorithm.")
         numType = eltype(x0)
@@ -162,8 +168,7 @@ function bcg(
                 phi = (xval - value) / 2
             else
                 tt = regular
-                L, gamma = line_search_wrapper(line_search,t,f,grad!,x,v - x,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim, 1.0)
-
+                L, gamma = line_search_wrapper(line_search,t,f,grad!,x,x - v,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim, 1.0)
 
                 if gamma == 1.0
                     active_set_initialize!(active_set, v)

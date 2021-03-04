@@ -179,10 +179,10 @@ function fw(
                 (t, primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9),
             )
         end
+        d = x - v
+        L, gamma = line_search_wrapper(line_search,t,f,grad!,x, d,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim, 1.0)
 
-        L, gamma = line_search_wrapper(line_search,t,f,grad!,x,v - x,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim, 1.0)
-
-        @emphasis(emphasis, x = (1 - gamma) * x + gamma * v)
+        @emphasis(emphasis, x = x - gamma*d)
 
         if mod(t, print_iter) == 0 && verbose
             tt = regular
@@ -369,10 +369,10 @@ function lcg(
                 ),
             )
         end
+        d = x - v
+        L, gamma = line_search_wrapper(line_search,t,f,grad!,x,d,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim, 1.0)
 
-        L, gamma = line_search_wrapper(line_search,t,f,grad!,x,v - x,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim, 1.0)
-
-        @emphasis(emphasis, x = (1 - gamma) * x + gamma * v)
+        @emphasis(emphasis, x = x - gamma*d)
 
         if verbose && (mod(t, print_iter) == 0 || tt == dualstep)
             if t == 0
