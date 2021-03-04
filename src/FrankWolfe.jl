@@ -352,7 +352,6 @@ function lcg(
 
     while t <= max_iteration && dual_gap >= max(epsilon, eps())
 
-        # primal = f(x)
         grad!(gradient, x)
 
         threshold = fast_dot(x, gradient) - phi
