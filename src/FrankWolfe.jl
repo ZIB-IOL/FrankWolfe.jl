@@ -141,7 +141,7 @@ function fw(
     end
 
     # container for direction
-    d = similar(x0)
+    d = similar(x)
 
     gtemp = if momentum === nothing
         nothing
@@ -348,7 +348,7 @@ function lcg(
     end
 
     # container for direction
-    d = similar(x0)
+    d = similar(x)
 
     while t <= max_iteration && dual_gap >= max(epsilon, eps())
 
