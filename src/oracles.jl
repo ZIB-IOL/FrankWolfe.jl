@@ -12,6 +12,7 @@ abstract type LinearMinimizationOracle end
 
 Computes the point `argmin_{v ∈ C} v ⋅ direction`
 with `C` the set represented by the LMO.
+All LMOs should accept keyword arguments that they can ignore.
 """
 function compute_extreme_point end
 
@@ -249,4 +250,47 @@ function compute_extreme_point(
         end
     end
     return v
+end
+
+"""
+    ProductLMO(lmos...)
+
+Linear minimization oracle over the Cartesian product of multiple LMOs.
+"""
+struct ProductLMO{N, TL <: NTuple{N, LinearMinimizationOracle}} <: LinearMinimizationOracle
+    lmos::TL
+end
+
+function ProductLMO{N}(lmos::TL) where {N, TL <: NTuple{N, LinearMinimizationOracle}}
+    return ProductLMO{N, TL}(lmos)
+end
+
+function ProductLMO(lmos::Vararg{LinearMinimizationOracle, N}) where {N}
+    return ProductLMO{N}(lmos)
+end
+
+"""
+    compute_extreme_point(lmo::ProductLMO, direction::Tuple; kwargs...)
+
+Extreme point computation on Cartesian product, with a direction `(d1, d2, ...)` given as a tuple of directions.
+All keyword arguments are passed to all LMOs.
+"""
+function compute_extreme_point(lmo::ProductLMO, direction::Tuple; kwargs...)
+    return compute_extreme_point.(lmo.lmos, direction; kwargs...)
+end
+
+"""
+    compute_extreme_point(lmo::ProductLMO, direction::AbstractArray; direction_indices, storage=similar(direction))
+
+Extreme point computation, with a direction array and `direction_indices` provided such that:
+`direction[direction_indices[i]]` is passed to the i-th LMO.
+The result is stored in the optional `storage` container.
+
+All keyword arguments are passed to all LMOs.
+"""
+function compute_extreme_point(lmo::ProductLMO{N}, direction::AbstractArray; storage=similar(direction), direction_indices, kwargs...) where {N}
+    for idx in 1:N
+        storage[direction_indices[idx]] .= compute_extreme_point(lmo.lmos[idx], direction[direction_indices[idx]]; kwargs...)
+    end
+    return storage
 end
