@@ -28,12 +28,11 @@ x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
 FrankWolfe.benchmark_oracles(x -> cf(x, xp), (str, x) -> cgrad!(str, x, xp), () -> randn(n), lmo; k=100)
 
-@time x, v, primal, dual_gap, trajectory = FrankWolfe.lcg(
+@time x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
     x -> cf(x, xp),
     (str, x) -> cgrad!(str, x, xp),
     lmo,
     x0,
-    lazy=true,
     max_iteration=k,
     line_search=FrankWolfe.agnostic,
     print_iter=k / 10,
