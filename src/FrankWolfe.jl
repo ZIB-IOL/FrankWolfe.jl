@@ -180,7 +180,7 @@ function fw(
             )
         end
 
-        L, gamma = line_search_wrapper(line_search,t,f,grad!,x,v,gradient,dual_gap,L,linesearch_tol,step_lim)
+        L, gamma = line_search_wrapper(line_search,t,f,grad!,x,v,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim)
 
         @emphasis(emphasis, x = (1 - gamma) * x + gamma * v)
 
@@ -239,6 +239,7 @@ function lcg(
     x0;
     line_search::LineSearchMethod=agnostic,
     L=Inf,
+    gamma0=0,
     phiFactor=2,
     cache_size=Inf,
     greedy_lazy=false,
@@ -369,18 +370,7 @@ function lcg(
             )
         end
 
-        L, gamma = line_search_wrapper(line_search,t,f,grad!,x,v,gradient,dual_gap,L,linesearch_tol,step_lim)
-        # if line_search == agnostic
-        #     gamma = 2 / (2 + t)
-        # elseif line_search == goldenratio
-        #     _, gamma = segment_search(f, grad!, x, v, linesearch_tol=linesearch_tol)
-        # elseif line_search == backtracking
-        #     _, gamma = backtrackingLS(f, gradient, x, v, linesearch_tol=linesearch_tol)
-        # elseif line_search == nonconvex
-        #     gamma = 1 / sqrt(t + 1)
-        # elseif line_search == shortstep
-        #     gamma = fast_dot(gradient, x - v) / (L * fast_dot(x - v, x - v))
-        # end
+        L, gamma = line_search_wrapper(line_search,t,f,grad!,x,v,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim)
 
         @emphasis(emphasis, x = (1 - gamma) * x + gamma * v)
 
