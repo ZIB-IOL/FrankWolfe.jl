@@ -180,7 +180,7 @@ function fw(
             )
         end
 
-        L, gamma = line_search_wrapper(line_search,t,f,grad!,x,v,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim)
+        L, gamma = line_search_wrapper(line_search,t,f,grad!,x,v - x,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim, 1.0)
 
         @emphasis(emphasis, x = (1 - gamma) * x + gamma * v)
 
@@ -370,7 +370,7 @@ function lcg(
             )
         end
 
-        L, gamma = line_search_wrapper(line_search,t,f,grad!,x,v,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim)
+        L, gamma = line_search_wrapper(line_search,t,f,grad!,x,v - x,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim, 1.0)
 
         @emphasis(emphasis, x = (1 - gamma) * x + gamma * v)
 

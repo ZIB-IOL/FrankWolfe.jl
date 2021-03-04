@@ -149,10 +149,7 @@ function afw(
 
 
         if fw_step_taken || away_step_taken
-            L, gamma = line_search_wrapper(line_search,t,f,grad!,x,v,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim,d=d)
-            
-            # clipping the step size for the away steps
-            gamma = min(gamma_max, gamma)
+            L, gamma = line_search_wrapper(line_search,t,f,grad!,x,d,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim, gamma_max)
 
             # cleanup and renormalize every x iterations
             renorm = mod(t, 1000) == 0
