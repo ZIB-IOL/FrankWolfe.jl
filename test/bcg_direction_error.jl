@@ -11,14 +11,14 @@ Random.seed!(s)
 
 xpi = rand(n);
 total = sum(xpi);
-const xp = xpi # ./ total;
+xp = xpi # ./ total;
 
 f(x) = norm(x - xp)^2
 function grad!(storage, x)
     @. storage = 2 * (x - xp)
 end
 
-const lmo = FrankWolfe.KSparseLMO(100, 1.0)
+lmo = FrankWolfe.KSparseLMO(100, 1.0)
 
 x, v, primal, dual_gap, _ = FrankWolfe.bcg(
     f,
