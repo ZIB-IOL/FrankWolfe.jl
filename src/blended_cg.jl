@@ -312,28 +312,31 @@ function update_simplex_gradient_descent!(
         end
     end
     k = length(active_set)
-    csum = sum(c)
-    c .-= (csum / k)
+    c .-= (sum(c) / k)
     # name change to stay consistent with the paper, c is actually updated in-place
     d = c
     if norm(d) <= 1e-8
         @info "Resetting active set."
         # resetting active set to singleton
-        a0 = active_set.atoms[1]
-        empty!(active_set)
-        push!(active_set, (1, a0))
+        active_set_initialize!(active_set, a0)
         return false
     end
     # NOTE: sometimes the direction is non-improving
     # usual suspects are floating-point errors when multiplying atoms with near-zero weights
     # in that case, inverting the sense of d
     @inbounds if fast_dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), direction) < 0
-        @warn "Non-improving d, aborting simplex descent"
+        @warn "Non-improving d, computing with larger precision"
         println(fast_dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), direction))
-        return true
+        bdir = big.(direction)
+        c = [fast_dot(bdir, a) for a in active_set.atoms]
+        c .-= sum(c) / k
+        d = c
+        @inbounds if fast_dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), direction) < 0
+            @warn "d non-improving in large precision, forcing FW"
+            @warn "dot value: $(fast_dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), direction))"
+            return true
+        end
     end
-    #arr = active_set.weights ./ d
-    #η, rem_idx = findmin(ifelse.(arr .> 0.0, arr, Inf))
 
     η = eltype(d)(Inf)
     rem_idx = -1
