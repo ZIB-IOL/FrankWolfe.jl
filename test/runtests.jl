@@ -603,6 +603,7 @@ end
 
 # in separate module for name space issues
 module BCGDirectionError
+using Test
 @testset "BCG direction accuracy" begin
     include("bcg_direction_error.jl")
 end
