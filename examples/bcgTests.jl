@@ -33,10 +33,10 @@ function cgrad!(storage, x, xp)
 end
 
 # the standard LMO might produce numerical instabilities
-# const lmo = FrankWolfe.KSparseLMO(100, 1.0)
+const lmo = FrankWolfe.KSparseLMO(100, 1.0)
 
 # the same lmo with Double64 is much more numerically robust. costs relatively little in speed.
-const lmo = FrankWolfe.KSparseLMO(100, Double64(1.0))
+# const lmo = FrankWolfe.KSparseLMO(100, Double64(1.0))
 
 # the same lmo here with bigfloat. even more robust but much slower
 # const lmo = FrankWolfe.KSparseLMO(100, big"1.0")
