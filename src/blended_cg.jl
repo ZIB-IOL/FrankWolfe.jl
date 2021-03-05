@@ -318,6 +318,7 @@ function update_simplex_gradient_descent!(
     if norm(d) <= 1e-8
         @info "Resetting active set."
         # resetting active set to singleton
+        a0 = active_set.atoms[1]
         active_set_initialize!(active_set, a0)
         return false
     end
