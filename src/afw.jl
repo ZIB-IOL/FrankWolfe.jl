@@ -73,8 +73,7 @@ function afw(
     trajData = []
     time_start = time_ns()
 
-    d = 0 # working direction
-    away_step_taken = false # flag whether the current step is an away step
+    d = similar(x)
 
     if line_search == shortstep && L == Inf
         println("WARNING: Lipschitz constant not set. Prepare to blow up spectacularly.")
@@ -111,7 +110,7 @@ function afw(
     x = compute_active_set_iterate(active_set)
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
-    phi_value = dot(x, gradient) - dot(v, gradient)
+    phi_value = fast_dot(x, gradient) - fast_dot(v, gradient)
 
     while t <= max_iteration && dual_gap >= max(epsilon, eps())
 
@@ -150,24 +149,7 @@ function afw(
 
 
         if fw_step_taken || away_step_taken
-            if line_search === agnostic
-                gamma = 2 // (2 + t)
-            elseif line_search === nonconvex
-                gamma = 1 / sqrt(t + 1)
-            elseif line_search === shortstep
-                gap = dot(gradient, d)
-                gamma = gap / (L * norm(d)^2)
-            elseif line_search === rationalshortstep
-                ratDualGap = sum(d .* gradient)
-                gamma = ratDualGap // (L * sum(d .^ 2))
-            elseif line_search === fixed
-                gamma = gamma0
-            elseif line_search === adaptive
-                L, gamma = adaptive_step_size(f, gradient, x, d, L)
-            end
-
-            # clipping the step size for the away steps
-            gamma = min(gamma_max, gamma)
+            L, gamma = line_search_wrapper(line_search,t,f,grad!,x,d,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim, gamma_max)
 
             # cleanup and renormalize every x iterations
             renorm = mod(t, 1000) == 0
@@ -203,7 +185,7 @@ function afw(
         end
 
 
-        if mod(t, print_iter) == 0 && verbose
+        if verbose && (mod(t, print_iter) == 0 || tt == dualstep)
             if t == 0
                 tt = initial
             end
@@ -283,9 +265,9 @@ function lazy_afw_step(
 )
     v_lambda, v, v_loc, a_lambda, a, a_loc = active_set_argminmax(active_set, gradient)
     #Do lazy FW step
-    grad_dot_lazy_fw_vertex = dot(v, gradient)
-    grad_dot_x = dot(x, gradient)
-    grad_dot_a = dot(a, gradient)
+    grad_dot_lazy_fw_vertex = fast_dot(v, gradient)
+    grad_dot_x = fast_dot(x, gradient)
+    grad_dot_a = fast_dot(a, gradient)
     if grad_dot_x - grad_dot_lazy_fw_vertex >= grad_dot_a - grad_dot_x && grad_dot_x - grad_dot_lazy_fw_vertex >= phi / K
         tt = lazy
         gamma_max = 1
@@ -308,7 +290,7 @@ function lazy_afw_step(
         else
             v = compute_extreme_point(lmo, gradient)
             # Real dual gap promises enough progress.
-            grad_dot_fw_vertex = dot(v, gradient)
+            grad_dot_fw_vertex = fast_dot(v, gradient)
             dual_gap = grad_dot_x - grad_dot_fw_vertex
             if dual_gap >= phi / K
                 tt = regular
@@ -341,11 +323,11 @@ function afw_step(
     active_set
 )
     local_v_lambda, local_v, local_v_loc, a_lambda, a, a_loc = active_set_argminmax(active_set, gradient)
-    away_gap = dot(a, gradient) - dot(x, gradient)
+    away_gap = fast_dot(a, gradient) - fast_dot(x, gradient)
     v = compute_extreme_point(lmo, gradient)
-    grad_dot_x = dot(x, gradient)
-    away_gap = dot(a, gradient) - grad_dot_x
-    dual_gap = grad_dot_x - dot(v, gradient)
+    grad_dot_x = fast_dot(x, gradient)
+    away_gap = fast_dot(a, gradient) - grad_dot_x
+    dual_gap = grad_dot_x - fast_dot(v, gradient)
     if dual_gap >= away_gap
         tt = regular
         gamma_max = 1
@@ -372,5 +354,5 @@ function fw_step(
     lmo,
 )
     vertex = compute_extreme_point(lmo, gradient)
-    return x - vertex, vertex, nothing, 1, dot(x, gradient) - dot(vertex, gradient), false, true, regular
+    return x - vertex, vertex, nothing, 1, fast_dot(x, gradient) - fast_dot(vertex, gradient), false, true, regular
 end

@@ -84,19 +84,18 @@ const x0 = FrankWolfe.compute_extreme_point(lmo, zero(rating_matrix))
 
 
 gradient = spzeros(size(x0)...)
-# xgd = Matrix(x0)
-# for _ in 1:5000
-#     @info f(xgd)
-#     grad!(gradient, xgd)
-#     xgd .-= 0.01 * gradient
-#     if norm(gradient) ≤ sqrt(eps())
-#         break
-#     end
-# end
+xgd = Matrix(x0)
+for _ in 1:5000
+    @info f(xgd)
+    grad!(gradient, xgd)
+    xgd .-= 0.01 * gradient
+    if norm(gradient) ≤ sqrt(eps())
+        break
+    end
+end
 
 const k = 1000
 
-# @profview 
 xfin, vmin, _, _, traj_data = FrankWolfe.fw(
     f,
     grad!,
@@ -108,13 +107,11 @@ xfin, vmin, _, _, traj_data = FrankWolfe.fw(
     trajectory=false,
     verbose=true,
     linesearch_tol=1e-7,
-#    localized=true,
-#    localizedFactor=0.5,
     line_search=FrankWolfe.adaptive,
     L=100,
     emphasis=FrankWolfe.memory,
     gradient=gradient,
 )
 
-# @info "Gdescent test loss: $(test_loss(xgd))"
-# @info "FW test loss: $(test_loss(xfin))"
+@info "Gdescent test loss: $(test_loss(xgd))"
+@info "FW test loss: $(test_loss(xfin))"
