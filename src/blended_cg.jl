@@ -321,6 +321,9 @@ function update_simplex_gradient_descent!(
     # in that case, inverting the sense of d
     @inbounds if fast_dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), direction) < 0
         @warn "Non-improving d, computing with larger precision"
+        # extended warning - we can discuss what to integrate
+        # If higher accuracy is required, consider using Double64 (still quite fast) and if that does not help BigFloat (slower) as type for the numbers.
+        # Alternatively, consider using AFW (with lazy = true) instead."
         println(fast_dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), direction))
         bdir = big.(direction)
         c = [fast_dot(bdir, a) for a in active_set.atoms]
