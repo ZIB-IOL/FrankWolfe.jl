@@ -17,9 +17,6 @@ using Plots
 # for Birkhoff polytope LMO
 import Hungarian
 
-# for nuclear norm
-import IterativeSolvers
-
 include("defs.jl")
 include("simplex_matrix.jl")
 
@@ -186,7 +183,7 @@ function fw(
         
         @emphasis(emphasis, d = x - v)
 
-        L, gamma = line_search_wrapper(line_search,t,f,grad!,x, d,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim, 1.0)
+        gamma, L = line_search_wrapper(line_search,t,f,grad!,x, d,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim, 1.0)
 
         @emphasis(emphasis, x = x - gamma*d)
 
@@ -388,7 +385,7 @@ function lcg(
 
         @emphasis(emphasis, d = x - v)
         
-        L, gamma = line_search_wrapper(line_search,t,f,grad!,x,d,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim, 1.0)
+        gamma, L = line_search_wrapper(line_search,t,f,grad!,x,d,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim, 1.0)
 
         @emphasis(emphasis, x = x - gamma*d)
 

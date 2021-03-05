@@ -10,9 +10,9 @@ function line_search_wrapper(line_search,t,f,grad!,x,d,gradient,dual_gap,L,gamma
     if line_search == agnostic
         gamma = 2 // (2 + t)
     elseif line_search == goldenratio # FIX for general d
-        _, gamma = segment_search(f, grad!, x, d, gamma_max, linesearch_tol=linesearch_tol, inplace_gradient=true)
+        gamma, _ = segment_search(f, grad!, x, d, gamma_max, linesearch_tol=linesearch_tol, inplace_gradient=true)
     elseif line_search == backtracking # FIX for general d
-        _, gamma =
+        gamma, _ =
             backtrackingLS(f, gradient, x, d, gamma_max, linesearch_tol=linesearch_tol, step_lim=step_lim)
     elseif line_search == nonconvex
         gamma = 1 / sqrt(t + 1)
@@ -24,9 +24,9 @@ function line_search_wrapper(line_search,t,f,grad!,x,d,gradient,dual_gap,L,gamma
     elseif line_search == fixed
         gamma = min(gamma0, gamma_max)
     elseif line_search == adaptive
-        L, gamma = adaptive_step_size(f, gradient, x, d, L, gamma_max = gamma_max)
+        gamma, L = adaptive_step_size(f, gradient, x, d, L, gamma_max = gamma_max)
     end
-    return L, gamma
+    return gamma, L
 end
 
 
@@ -62,7 +62,7 @@ function adaptive_step_size(f, gradient, x, direction, L_est; eta=0.9, tau=2, ga
             gamma_max,
         )
     end
-    return M, gamma
+    return gamma, M
 end
 
 # simple backtracking line search (not optimized)
@@ -80,14 +80,14 @@ function backtrackingLS(
     step_lim=20,
     lsTau=0.5,
 )
-    gamma = gamma_max*one(lsTau)
+    gamma = gamma_max * one(lsTau)
     i = 0
 
     dot_gdir = fast_dot(grad_direction, d)
     @assert dot_gdir ≤ 0
     if dot_gdir ≥ 0
         @warn "Non-improving"
-        return i, 0 * gamma
+        return 0 * gamma, i
     end
 
     oldVal = f(x)
@@ -95,16 +95,16 @@ function backtrackingLS(
     while newVal - oldVal > linesearch_tol * gamma * dot_gdir
         if i > step_lim
             if oldVal - newVal >= 0
-                return i, gamma
+                return gamma, i
             else
-                return i, 0 * gamma
+                return zero(gamma), i
             end
         end
         gamma *= lsTau
         newVal = f(x - gamma * d)
         i += 1
     end
-    return i, gamma
+    return gamma, i
 end
 
 # simple golden-ratio based line search (not optimized)
@@ -134,9 +134,9 @@ function segment_search(f, grad, x, d, gamma_max; line_search=true, linesearch_t
     # if the minimum is at an endpoint
     if dgx * dgy >= 0
         if f(y) <= f(x)
-            return y, one(eltype(d))
+            return one(eltype(d)), y
         else
-            return x, zero(eltype(d))
+            return zero(eltype(d)), x
         end
     end
 
@@ -168,7 +168,7 @@ function segment_search(f, grad, x, d, gamma_max; line_search=true, linesearch_t
         end
     end
 
-    return x_min, gamma
+    return gamma, x_min
 end
 
 """

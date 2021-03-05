@@ -168,7 +168,7 @@ function bcg(
                 phi = (xval - value) / 2
             else
                 tt = regular
-                L, gamma = line_search_wrapper(line_search,t,f,grad!,x,x - v,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim, 1.0)
+                gamma, L = line_search_wrapper(line_search,t,f,grad!,x,x - v,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim, 1.0)
 
                 if gamma == 1.0
                     active_set_initialize!(active_set, v)
@@ -323,8 +323,6 @@ function update_simplex_gradient_descent!(
         defect = fast_dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), direction)
         @warn "Non-improving d ($defect) due to numerical instability. Temporarily upgrading precision to BigFloat for the current iteration."
         # extended warning - we can discuss what to integrate
-        # @warn "Non-improving d, aborting simplex descent. We likely reached the limits of the numerical accuracy. 
-        # The solution is still valid but we might not be able to converge further from here onwards. 
         # If higher accuracy is required, consider using Double64 (still quite fast) and if that does not help BigFloat (slower) as type for the numbers.
         # Alternatively, consider using AFW (with lazy = true) instead."
         # println(fast_dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), direction))
