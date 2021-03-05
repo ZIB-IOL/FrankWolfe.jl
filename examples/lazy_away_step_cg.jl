@@ -1,10 +1,10 @@
 import FrankWolfe
 import LinearAlgebra
 
-
 # n = Int(1e1)
-n = Int(1e2)
-k = Int(1e4)
+n = Int(1e4)
+k = 5*Int(1e3)
+number_nonzero = 40
 
 xpi = rand(n);
 total = sum(xpi);
@@ -16,13 +16,11 @@ function grad!(storage, x)
 end
 
 # problem with active set updates and the ksparselmo
-lmo = FrankWolfe.KSparseLMO(40, 1.0);
+lmo = FrankWolfe.KSparseLMO(number_nonzero, 1.0);
 # lmo = FrankWolfe.ProbabilitySimplexOracle(1)
-x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
+x0 = FrankWolfe.compute_extreme_point(lmo, ones(n));
 
-FrankWolfe.benchmark_oracles(f, grad!, ()-> rand(n), lmo; k=100)
-
-@time x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
+@time x, v, primal, dual_gap, trajectorylazy, active_set = FrankWolfe.afw(
     f,
     grad!,
     lmo,
@@ -31,13 +29,14 @@ FrankWolfe.benchmark_oracles(f, grad!, ()-> rand(n), lmo; k=100)
     line_search=FrankWolfe.adaptive,
     L=100,
     print_iter=k / 10,
+    epsilon=1e-5,
     emphasis=FrankWolfe.memory,
     verbose=true,
-    epsilon=1e-5,
     trajectory=true,
+    lazy = true,
 );
 
-@time x, v, primal, dual_gap, trajectoryA, active_set = FrankWolfe.afw(
+@time x, v, primal, dual_gap, trajectoryAFW, active_set = FrankWolfe.afw(
     f,
     grad!,
     lmo,
@@ -53,7 +52,7 @@ FrankWolfe.benchmark_oracles(f, grad!, ()-> rand(n), lmo; k=100)
     trajectory=true,
 );
 
-@time x, v, primal, dual_gap, trajectoryAM, active_set = FrankWolfe.afw(
+@time x, v, primal, dual_gap, trajectoryFW = FrankWolfe.afw(
     f,
     grad!,
     lmo,
@@ -62,15 +61,31 @@ FrankWolfe.benchmark_oracles(f, grad!, ()-> rand(n), lmo; k=100)
     line_search=FrankWolfe.adaptive,
     L=100,
     print_iter=k / 10,
-    epsilon=1e-5,
-    momentum=0.9,
-    emphasis=FrankWolfe.blas,
+    emphasis=FrankWolfe.memory,
     verbose=true,
-    awaySteps=true,
+    epsilon=1e-5,
     trajectory=true,
+    awaySteps = false,
 );
 
-data = [trajectory, trajectoryA, trajectoryAM]
-label = ["FW" "AFW" "MAFW"]
+@time x, v, primal, dual_gap, trajectoryLFW = FrankWolfe.afw(
+    f,
+    grad!,
+    lmo,
+    x0,
+    max_iteration=k,
+    line_search=FrankWolfe.adaptive,
+    L=100,
+    print_iter=k / 10,
+    emphasis=FrankWolfe.memory,
+    verbose=true,
+    epsilon=1e-5,
+    trajectory=true,
+    awaySteps = false,
+    lazy=true
+);
+
+data = [trajectorylazy, trajectoryAFW, trajectoryFW, trajectoryLFW]
+label = ["LAFW" "AFW" "FW" "LFW"]
 
 FrankWolfe.plot_trajectories(data, label)
