@@ -602,9 +602,7 @@ end
 end
 
 @testset "BCG direction accuracy" begin
-    module BCGError
     include("bcg_direction_error.jl")
-    end
 end
 
 if get(ENV, "FW_TEST", nothing) == "full"
