@@ -73,7 +73,7 @@ function afw(
     trajData = []
     time_start = time_ns()
 
-    d = 0 # working direction
+    d = similar(x)
 
     if line_search == shortstep && L == Inf
         println("WARNING: Lipschitz constant not set. Prepare to blow up spectacularly.")
