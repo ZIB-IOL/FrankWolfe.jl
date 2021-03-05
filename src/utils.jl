@@ -87,7 +87,7 @@ function backtrackingLS(
     @assert dot_gdir ≤ 0
     if dot_gdir ≥ 0
         @warn "Non-improving"
-        return 0 * gamma, i
+        return zero(gamma), i
     end
 
     oldVal = f(x)
