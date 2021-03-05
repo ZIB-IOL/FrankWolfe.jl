@@ -601,8 +601,11 @@ end
 
 end
 
+# in separate module for name space issues
+module BCGDirectionError
 @testset "BCG direction accuracy" begin
     include("bcg_direction_error.jl")
+end
 end
 
 if get(ENV, "FW_TEST", nothing) == "full"

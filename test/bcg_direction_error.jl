@@ -2,6 +2,7 @@ import FrankWolfe
 using LinearAlgebra
 using Random
 using Test
+using SparseArrays
 
 n = Int(1e4)
 k = 3000
@@ -19,6 +20,8 @@ function grad!(storage, x)
 end
 
 lmo = FrankWolfe.KSparseLMO(100, 1.0)
+
+x0 = FrankWolfe.compute_extreme_point(lmo, spzeros(size(xp)...))
 
 x, v, primal, dual_gap, _ = FrankWolfe.bcg(
     f,
