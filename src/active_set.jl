@@ -162,7 +162,7 @@ function active_set_argmin(active_set::ActiveSet, direction)
     idx = 1
     temp = 0
     for i in 2:length(active_set)
-        temp = dot(active_set.atoms[i], direction)
+        temp = fast_dot(active_set.atoms[i], direction)
         if temp < val
             val = temp
             idx = i

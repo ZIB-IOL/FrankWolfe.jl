@@ -1,23 +1,25 @@
 import FrankWolfe
 using LinearAlgebra
 using Random
+import GLPK
 
-n = Int(1e3)
-k = 1000
+n = Int(3e2)
+k = 3000
 
 xpi = rand(n*n);
 total = sum(xpi);
+# next line needs to be commented out if we use the GLPK variants
 xpi = reshape(xpi, n, n)
 const xp = xpi # ./ total;
 
 # better for memory consumption as we do coordinate-wise ops
 
 function cf(x, xp)
-    return LinearAlgebra.norm(x .- xp)^2
+    return LinearAlgebra.norm(x .- xp)^2 / n^2 
 end
 
 function cgrad!(storage, x, xp)
-    return @. storage = 2 * (x - xp)
+    return @. storage = 2 * (x - xp) / n^2 
 end
 
 # initial direction for first vertex
@@ -27,6 +29,11 @@ direction_mat = reshape(direction_vec, n, n)
 
 lmo = FrankWolfe.BirkhoffPolytopeLMO()
 x00 = FrankWolfe.compute_extreme_point(lmo, direction_mat)
+
+# modify to GLPK variant
+# o = GLPK.Optimizer()
+# lmo = FrankWolfe.convert_mathopt(lmo, o, dimension=n)
+# x00 = FrankWolfe.compute_extreme_point(lmo, direction_vec)
 
 FrankWolfe.benchmark_oracles(x -> cf(x, xp), (str, x) -> cgrad!(str, x, xp), () -> randn(n,n), lmo; k=100)
 
@@ -90,11 +97,11 @@ x0 = deepcopy(x00)
 # );
 
 
-# AFW run
+# BCG run
 
 x0 = deepcopy(x00)
 
-@time x, v, primal, dual_gap, trajectoryBCG = FrankWolfe.afw(
+@time x, v, primal, dual_gap, trajectoryBCG = FrankWolfe.bcg(
     x -> cf(x, xp),
     (str, x) -> cgrad!(str, x, xp),
     lmo,
@@ -103,14 +110,14 @@ x0 = deepcopy(x00)
     L=100,
     line_search=FrankWolfe.adaptive,
     print_iter=k / 10,
+    linesearch_tol = 1e-9,
     emphasis=FrankWolfe.memory,
     trajectory=true,
-    lazy=true,
     verbose=true,
 );
 
 
 data = [trajectoryFW, trajectoryLCG, trajectoryBCG]
-label = ["FW" "LCG" "LAFW"]
+label = ["FW" "LCG" "BCG"]
 
 FrankWolfe.plot_trajectories(data, label)

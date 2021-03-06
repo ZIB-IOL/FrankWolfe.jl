@@ -142,6 +142,7 @@ function bcg(
                 gradient,
                 f,
                 L=L,
+                linesearch_tol=linesearch_tol,
                 weight_purge_threshold=weight_purge_threshold,
                 storage=direction_storage,
             )
