@@ -32,26 +32,31 @@ function cgrad!(storage, x, xp)
     return @. storage = 2 * (x - xp)
 end
 
-# the standard LMO might produce numerical instabilities
+# this LMO might produce numerical instabilities do demonstrate the recovery feature
 const lmo = FrankWolfe.KSparseLMO(100, 1.0)
 
+# full upgrade of the lmo (and hence optimization) to Double64.
 # the same lmo with Double64 is much more numerically robust. costs relatively little in speed.
 # const lmo = FrankWolfe.KSparseLMO(100, Double64(1.0))
 
+# as above but now to bigfloats
 # the same lmo here with bigfloat. even more robust but much slower
 # const lmo = FrankWolfe.KSparseLMO(100, big"1.0")
 
-# other oracles to test
-# lmo = FrankWolfe.LpNormLMO{Float64,1}(1.0)
+# other oracles to test / experiment with
+# const lmo = FrankWolfe.LpNormLMO{Float64,1}(1.0)
 # const lmo = FrankWolfe.ProbabilitySimplexOracle(Double64(1.0));
-# lmo = FrankWolfe.UnitSimplexOracle(1.0);
+# const lmo = FrankWolfe.UnitSimplexOracle(1.0);
 
 const x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
-# print(x0)
 
 FrankWolfe.benchmark_oracles(x -> cf(x, xp), (str, x) -> cgrad!(str, x, xp), ()->randn(n), lmo; k=100)
 
+# copying here and below the x00 as the algorithms write back into the variables to save memory.
+# as we do multiple runs from the same initial point we do not want this here.
+
 x0 = deepcopy(x00)
+
 @time x, v, primal, dual_gap, trajectorySs = FrankWolfe.fw(
     f,
     grad!,
@@ -67,6 +72,7 @@ x0 = deepcopy(x00)
 );
 
 x0 = deepcopy(x00)
+
 @time x, v, primal, dual_gap, trajectoryAda = FrankWolfe.afw(
     f,
     grad!,
@@ -82,6 +88,7 @@ x0 = deepcopy(x00)
 );
 
 x0 = deepcopy(x00)
+
 x, v, primal, dual_gap, trajectoryBCG = FrankWolfe.bcg(
     f,
     grad!,
