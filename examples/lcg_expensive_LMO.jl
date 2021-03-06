@@ -2,7 +2,7 @@ import FrankWolfe
 using LinearAlgebra
 using Random
 
-n = Int(3e2)
+n = Int(1e3)
 k = 1000
 
 xpi = rand(n*n);
@@ -70,10 +70,31 @@ x0 = deepcopy(x00)
 
 
 # fixed cache size
+# TODO/Question: does not work with sparse structure as the memory allocation is not clear?
+
+# x0 = deepcopy(x00)
+
+# @time x, v, primal, dual_gap, trajectoryBLCG = FrankWolfe.lcg(
+#     x -> cf(x, xp),
+#     (str, x) -> cgrad!(str, x, xp),
+#     lmo,
+#     x0,
+#     max_iteration=k,
+#     L=100,
+#     line_search=FrankWolfe.adaptive,
+#     print_iter=k / 10,
+#     emphasis=FrankWolfe.memory,
+#     trajectory=true,
+#     cache_size=500,
+#     verbose=true,
+# );
+
+
+# AFW run
 
 x0 = deepcopy(x00)
 
-@time x, v, primal, dual_gap, trajectoryBLCG = FrankWolfe.lcg(
+@time x, v, primal, dual_gap, trajectoryBCG = FrankWolfe.afw(
     x -> cf(x, xp),
     (str, x) -> cgrad!(str, x, xp),
     lmo,
@@ -84,12 +105,12 @@ x0 = deepcopy(x00)
     print_iter=k / 10,
     emphasis=FrankWolfe.memory,
     trajectory=true,
-    cache_size=500,
+    lazy=true,
     verbose=true,
 );
 
 
-data = [trajectoryFW, trajectoryLCG, trajectoryFW]
-label = ["FW" "LCG" "BLCG"]
+data = [trajectoryFW, trajectoryLCG, trajectoryBCG]
+label = ["FW" "LCG" "LAFW"]
 
 FrankWolfe.plot_trajectories(data, label)
