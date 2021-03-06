@@ -3,7 +3,7 @@ using LinearAlgebra
 using Random
 import GLPK
 
-n = Int(3e2)
+n = Int(1e2)
 k = 3000
 
 xpi = rand(n*n);
