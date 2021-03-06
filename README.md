@@ -32,6 +32,7 @@ over the set LMO represents.
 - Away-Step Frank-Wolfe (see <https://arxiv.org/abs/1511.05932> for an overview)
 - (to come:) Pairwise Conditional Gradients (see <https://arxiv.org/abs/1511.05932> for an overview)
 - Blended Conditional Gradients (see <https://arxiv.org/abs/1805.07311>)
+  - build-in stability feature that temporarily increases accuracy
 
 - most algorithms also have a lazified version (see <https://arxiv.org/abs/1610.05120>)
 
@@ -47,11 +48,11 @@ Several common LMOs are available out-of-the-box
 - (to come:) Permutahedron
 - (to come:) Flow Polytope
 
-See <https://arxiv.org/pdf/2010.07243.pdf> and *** add LP complexity paper *** for details
+See <https://arxiv.org/pdf/2010.07243.pdf> and <https://arxiv.org/abs/2101.10040> for details
 
 Moreover: 
 - you can simply define your own LMOs directly 
-- (to come:) via an LP solver (e.g., `glop`, `scip`, `soplex`)
+- you can use an LP oracle defined via an LP solver (e.g., `glop`, `scip`, `soplex`) with `MathOptInferface`
 
 ### General Features
 
@@ -157,33 +158,35 @@ Testing update... (Emphasis: memory) 100%|████████████�
  ──────────────────────────────────────────────────────────────────────────
 ````
 
-The above is the optional benchmarking of the oracles that we provide to understand how fast crucial parts of the algorithms are, mostly notably oracle evaluations, the update of the iterate and the computation of the dual gap. As you can see if you compare `update (blas)` vs. `update (memory)`, the normal update when we use BLAS requires an additional 14.9GB of memory on top of the gradient etc whereas the `update (memory)` (the memory emphasis mode) does not consume any extra memory. This is also reflected in the times: the BLAS version requires 3.61 seconds on average to update the iterate, while the memory emphasis version requires only 500ms. In fact none of the crucial components in the algorithm consume any memory when run in memory efficient mode. Now let us look at the actual footprint of the whole algorithm:
+The above is the optional benchmarking of the oracles that we provide to understand how fast crucial parts of the algorithms are, mostly notably oracle evaluations, the update of the iterate and the computation of the dual gap. As you can see if you compare `update (blas)` vs. `update (memory)`, the normal update when we use BLAS requires an additional 14.9GB of memory on top of the gradient etc whereas the `update (memory)` (the memory emphasis mode) does not consume any extra memory. This is also reflected in the computational times: the BLAS version requires 3.61 seconds on average to update the iterate, while the memory emphasis version requires only 500ms. In fact none of the crucial components in the algorithm consume any memory when run in memory efficient mode. Now let us look at the actual footprint of the whole algorithm:
 
 ````
 Vanilla Frank-Wolfe Algorithm.
-EMPHASIS: memory STEPSIZE: agnostic EPSILON: 1.0e-7 max_iteration: 1000 TYPE: Float64
+EMPHASIS: memory STEPSIZE: agnostic EPSILON: 1.0e-7 MAXITERATION: 1000 TYPE: Float64
+MOMENTUM: nothing GRADIENTTYPE: Nothing
+WARNING: In memory emphasis mode iterates are written back into x0!
 
-───────────────────────────────────────────────────────────────────────────────────
-  Type     Iteration         Primal           Dual       Dual Gap           Time
-───────────────────────────────────────────────────────────────────────────────────
-     I             0   1.000000e+00  -1.000000e+00   2.000000e+00   1.065668e+01
-    FW           100   1.326732e-02  -1.326733e-02   2.653465e-02   4.943181e+02
-    FW           200   6.650080e-03  -6.650086e-03   1.330017e-02   9.776392e+02
-    FW           300   4.437059e-03  -4.437064e-03   8.874123e-03   1.460490e+03
-    FW           400   3.329174e-03  -3.329180e-03   6.658354e-03   1.943530e+03
-    FW           500   2.664003e-03  -2.664008e-03   5.328011e-03   2.426762e+03
-    FW           600   2.220371e-03  -2.220376e-03   4.440747e-03   2.910154e+03
-    FW           700   1.903401e-03  -1.903406e-03   3.806807e-03   3.394155e+03
-    FW           800   1.665624e-03  -1.665629e-03   3.331253e-03   3.879587e+03
-    FW           900   1.480657e-03  -1.480662e-03   2.961319e-03   4.362325e+03
-    FW          1000   1.332665e-03  -1.332670e-03   2.665335e-03   4.845915e+03
-  Last                 1.331334e-03  -1.331339e-03   2.662673e-03   4.852188e+03
-───────────────────────────────────────────────────────────────────────────────────
+─────────────────────────────────────────────────────────────────────────────────────────────────
+  Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec
+─────────────────────────────────────────────────────────────────────────────────────────────────
+     I             0   1.000000e+00  -1.000000e+00   2.000000e+00   8.783523e+00   0.000000e+00
+    FW           100   1.326732e-02  -1.326733e-02   2.653465e-02   4.635923e+02   2.157068e-01
+    FW           200   6.650080e-03  -6.650086e-03   1.330017e-02   9.181294e+02   2.178342e-01
+    FW           300   4.437059e-03  -4.437064e-03   8.874123e-03   1.372615e+03   2.185609e-01
+    FW           400   3.329174e-03  -3.329180e-03   6.658354e-03   1.827260e+03   2.189070e-01
+    FW           500   2.664003e-03  -2.664008e-03   5.328011e-03   2.281865e+03   2.191190e-01
+    FW           600   2.220371e-03  -2.220376e-03   4.440747e-03   2.736387e+03   2.192672e-01
+    FW           700   1.903401e-03  -1.903406e-03   3.806807e-03   3.190951e+03   2.193703e-01
+    FW           800   1.665624e-03  -1.665629e-03   3.331253e-03   3.645425e+03   2.194532e-01
+    FW           900   1.480657e-03  -1.480662e-03   2.961319e-03   4.099931e+03   2.195159e-01
+    FW          1000   1.332665e-03  -1.332670e-03   2.665335e-03   4.554703e+03   2.195533e-01
+  Last          1000   1.331334e-03  -1.331339e-03   2.662673e-03   4.559822e+03   2.195261e-01
+─────────────────────────────────────────────────────────────────────────────────────────────────
 
-4853.033417 seconds (4.75 M allocations: 14.683 TiB, 0.50% gc time)
+4560.661203 seconds (7.41 M allocations: 112.121 GiB, 0.01% gc time)
 ````
 
-As you can see the algorithm ran for about 4900 secs (single-thread run) allocating 14.683TiB of memory throughout. So how does this average out to the per-iteration cost in terms of memory: `14.683 * 1024 / 7.45 / 1000 = 2.0181734228` so about 2 times the size of our gradient per iteration; the little extra is due to the logging (that requires compuation of f(x) which costs another 7.45 GB every 100 iterations) and overhead from other minor allocations. This factor 2 is essentially as good as it gets: you need one 7.45 GB to hold the gradient and another 7.45GB to hold the iterate.
+As you can see the algorithm ran for about 4600 secs (single-thread run) allocating 112.121 GiB of memory throughout. So how does this average out to the per-iteration cost in terms of memory: `112.121 / 7.45 / 1000 = 0.0151` so about 15.1MiB per iteration which is much less than the size of the gradient and in fact only stems from the reporting here. 
 
 **NB.** This example highlights also one of the great features of first-order methods and conditional gradients in particular: We have dimension-independent convergence rates. In fact, we contract the primal gap as `2LD^2 / (t+2)` (for the simple agnostic rule) and, e.g., if the feasible region is the probability simplex with `D = sqrt(2)` and the function has bounded Lipschitzness, e.g., the function `|| x - xp ||^2` has `L = 2`, then the convergence rate is completely independent of the input size. The only thing that limits scaling is how much memory you have available and whether you can stomach the (linear) per-iteration cost.
 
