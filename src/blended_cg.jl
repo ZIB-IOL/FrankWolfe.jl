@@ -141,7 +141,7 @@ function bcg(
                 active_set,
                 gradient,
                 f,
-                L=L,
+                L=nothing, #don't use the same L as we transform the function
                 linesearch_tol=linesearch_tol,
                 weight_purge_threshold=weight_purge_threshold,
                 storage=direction_storage,
