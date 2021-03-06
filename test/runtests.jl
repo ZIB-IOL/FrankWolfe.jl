@@ -1,6 +1,7 @@
 using FrankWolfe
 using Test
 using LinearAlgebra
+using DoubleFloats
 
 include("lmo.jl")
 include("function_gradient.jl")
@@ -424,7 +425,7 @@ end
         function grad!(storage, x)
             @. storage = 2 * (x - xp)
         end
-        test_types = (Float16, Float32, Float64, BigFloat, Rational{BigInt})
+        test_types = (Float16, Float32, Float64, Double64, BigFloat, Rational{BigInt})
 
         @testset "Multi-precision test for $T" for T in test_types
             println("\nTesting precision for type: ", T)

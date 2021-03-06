@@ -23,7 +23,7 @@ function afw(
     trajectory=false,
     verbose=false,
     linesearch_tol=1e-7,
-    emphasis::Emphasis=blas,
+    emphasis::Emphasis=memory,
     gradient=nothing,
 )
     function print_header(data)
