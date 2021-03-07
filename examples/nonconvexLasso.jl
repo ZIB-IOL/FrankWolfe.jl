@@ -5,7 +5,7 @@ using LinearAlgebra
 
 
 n = Int(1e3);
-k = 1000
+k = 10000
 
 xpi = rand(n);
 total = sum(xpi);
