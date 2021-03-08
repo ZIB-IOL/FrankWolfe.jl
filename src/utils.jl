@@ -84,15 +84,15 @@ function backtrackingLS(
     i = 0
 
     dot_gdir = fast_dot(grad_direction, d)
-    @assert dot_gdir ≤ 0
-    if dot_gdir ≥ 0
+    @assert dot_gdir ≥ 0
+    if dot_gdir ≤ 0
         @warn "Non-improving"
         return i, 0 * gamma
     end
 
     oldVal = f(x)
     newVal = f(x - gamma * d)
-    while newVal - oldVal > linesearch_tol * gamma * dot_gdir
+    while newVal - oldVal > -linesearch_tol * gamma * dot_gdir
         if i > step_lim
             if oldVal - newVal >= 0
                 return i, gamma
@@ -157,12 +157,13 @@ function segment_search(f, grad, x, d, gamma_max; line_search=true, linesearch_t
 
     x_min = (left + right) / 2
 
+
     # compute step size gamma
     gamma = zero(eltype(d))
     if line_search
         for i in eachindex(d)
             if d[i] != 0
-                gamma = (x_min[i] - x[i]) / d[i]
+                gamma = (x[i] - x_min[i]) / d[i]
                 break
             end
         end
