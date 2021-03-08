@@ -84,7 +84,6 @@ function backtrackingLS(
     i = 0
 
     dot_gdir = fast_dot(grad_direction, d)
-    @assert dot_gdir ≥ 0
     if dot_gdir ≤ 0
         @warn "Non-improving"
         return i, 0 * gamma
