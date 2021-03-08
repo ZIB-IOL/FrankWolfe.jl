@@ -4,112 +4,113 @@ using LinearAlgebra
 import Random
 
 using MultivariatePolynomials
-using TypedPolynomials
+using DynamicPolynomials
 
 import ReverseDiff
 
-const N = 10
+const N = 9
 
-@polyvar X[1:10]
-
+DynamicPolynomials.@polyvar X[1:9]
 
 const max_degree = 3
-Random.seed!(33)
-const all_coeffs = map(1:max_degree) do d
-    10 * rand(N^d) .* (rand(N^d) .> 0.8 * d / 3)
-end
-const flattened_coeff = pushfirst!(collect(Iterators.flatten(all_coeffs)), 12.0)
 
+const var_monomials = MultivariatePolynomials.monomials(X, 0:max_degree)
 
-function true_poly(x)
-    current = 1
-    12 + sum(1:max_degree) do d
-        current = [xi * c for xi in x for c in current]
-        # replace whith dot the issue is fixed
-        # https://github.com/JuliaAlgebra/TypedPolynomials.jl/issues/65
-        sum(c * x for (c, x) in zip(all_coeffs[d], current))
-    end
+Random.seed!(42)
+const all_coeffs = map(var_monomials) do m
+    d = MultivariatePolynomials.degree(m)
+    10 * rand() .* (rand() .> 0.3 * d / max_degree)
 end
 
-t = true_poly(X)
+const true_poly = dot(all_coeffs, var_monomials)
 
-# coefficients are considered flattened
-# builds the polynomial function
 function evaluate_poly(coefficients)
+    poly = dot(coefficients, var_monomials)
     function p(x)
-        current = 1
-        res = coefficients[1]
-        current_idx = 2
-        @inbounds for d in 1:max_degree
-            current = [xi * c for xi in x for c in current]
-            for idx in eachindex(current)
-                res += coefficients[current_idx+idx-1] * current[idx]
-            end
-            current_idx += length(current)
-        end
-        return res
+        MultivariatePolynomials.subs(poly, Pair(X, x)).a[1]
     end
 end
-
-
-ptrue = evaluate_poly(pushfirst!(collect(Iterators.flatten(all_coeffs)), 12.0))
-
-@time true_poly(X);
 
 const training_data = map(1:1000) do _
-    x = 3 * randn(10)
-    y = true_poly(x) + 2 * randn()
-    (x, y)
+    x = 3 * randn(N)
+    y = MultivariatePolynomials.subs(true_poly, Pair(X, x)) + 2 * randn()
+    (x, y.a[1])
 end
 
 function f(coefficients)
-    p = evaluate_poly(coefficients)
-    return 0.5 * sum(training_data) do (x, y)
-        (p(x) - y)^2
+    poly = evaluate_poly(coefficients)
+    return 0.5 / length(training_data) * sum(training_data) do (x, y)
+        (poly(x) - y)^2 
     end
 end
 
-function grad!(storage::Array, p_coefficients::Array)
-    ReverseDiff.gradient!(storage, f, p_coefficients)
+# faster version of the objective
+function f2(coefficients)
+    res = 0.0
+    @inbounds for (x, y) in training_data
+        yhat = 0.0
+        for midx in eachindex(var_monomials)
+            m = var_monomials[midx]
+            c = coefficients[midx]
+            if c > 0
+                r = c
+                for j in eachindex(m.z)
+                    r *= x[j]^m.z[j]
+                end
+                yhat += r
+            end
+        end
+        res += (yhat - y)^2
+    end
+    return res * 0.5 / length(training_data)
 end
 
 function grad!(storage, p_coefficients)
-    ReverseDiff.gradient!(convert(Array, storage), f, convert(Array, p_coefficients))
+    storage .= 0
+    for (x, y) in training_data
+        p_i = zero(eltype(p_coefficients))
+        for midx in eachindex(var_monomials)
+            m = var_monomials[midx]
+            c = p_coefficients[midx]
+            if c > 0
+                r = c
+                for j in eachindex(m.z)
+                    r *= x[j]^m.z[j]
+                end
+                p_i += r
+            end
+        end
+        for midx in eachindex(p_coefficients)
+            m = var_monomials[midx]
+            r = one(eltype(p_coefficients))
+            for j in eachindex(m.z)
+                r *= x[j]^m.z[j]
+            end
+            storage[midx] += r *  (p_i - y)
+        end
+    end
+    storage ./= length(training_data)
+    return nothing
 end
 
-
-# function grad!(storage, p_coefficients)
-#     p = evaluate_poly(p_coefficients)
-#     d = sum(p(x) - y for (x, y) in training_data)
-#     storage[1] = d
-#     current = 1
-#     current_idx = 2
-#     for d in 1:max_degree
-#         current = sum([xi * c for xi in xt for c in current] for (xt, _) in training_data)
-#         @info size(current)
-#         for idx in eachindex(current)
-#             storage[current_idx+idx-1] = current[idx] * d
-#         end
-#         current_idx += length(current)
-#     end
-# end
-
 # gradient descent
-gradient = similar(flattened_coeff)
-xgd = rand(length(flattened_coeff))
-for _ in 1:2000
+gradient = similar(all_coeffs)
+xgd = rand(length(all_coeffs))
+for iter in 1:2000
+    if mod(iter, 50) == 0
+        @info f2(xgd)
+    end
     global xgd
     grad!(gradient, xgd)
-    xgd -= 0.05 * gradient
+    @. xgd -= 0.00001 * gradient
 end
 
 lmo = FrankWolfe.KSparseLMO(
-    round(Int, length(flattened_coeff) / 4),
-    1.1 * maximum(flattened_coeff)
+    round(Int, length(all_coeffs) / 4),
+    1.1 * maximum(all_coeffs)
 )
 
-x0 = FrankWolfe.compute_extreme_point(lmo, rand(length(flattened_coeff)))
-
+x0 = FrankWolfe.compute_extreme_point(lmo, rand(length(all_coeffs)))
 
 k = 1000
 
@@ -120,9 +121,9 @@ k = 1000
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.shortstep,
+    line_search=FrankWolfe.adaptive,
     L=2,
-    print_iter=k / 50,
+    print_iter=k/50,
     emphasis=FrankWolfe.blas,
     verbose=true,
     trajectory=false,
@@ -135,7 +136,7 @@ k = 1000
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.shortstep,
+    line_search=FrankWolfe.adaptive,
     L=2,
     print_iter=k / 50,
     emphasis=FrankWolfe.blas,
