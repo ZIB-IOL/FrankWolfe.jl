@@ -359,8 +359,8 @@ function update_simplex_gradient_descent!(
     end
     linesearch_method = L === nothing || !isfinite(L) ? backtracking : shortstep
     if linesearch_method == backtracking
-        _, gamma =
-            backtrackingLS(f, direction, x, y, linesearch_tol=linesearch_tol, step_lim=step_lim)
+        gamma, _ =
+            backtrackingLS(f, direction, x, x - y, 1.0, linesearch_tol=linesearch_tol, step_lim=step_lim)
     else # == shortstep, just two methods here for now
         gamma = fast_dot(direction, x - y) / (L * norm(x - y)^2)
     end
