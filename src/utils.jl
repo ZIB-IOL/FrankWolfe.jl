@@ -17,10 +17,10 @@ function line_search_wrapper(line_search,t,f,grad!,x,d,gradient,dual_gap,L,gamma
     elseif line_search == nonconvex
         gamma = 1 / sqrt(t + 1)
     elseif line_search == shortstep
-        gamma = min(dual_gap / (L * norm(d)^2), gamma_max)
+        gamma = min(max(fast_dot(gradient, d) / (L * norm(d)^2), 0.0), gamma_max)
     elseif line_search == rationalshortstep
         rat_dual_gap = sum((d) .* gradient)
-        gamma = min(rat_dual_gap // (L * sum((d) .^ 2)), gamma_max) 
+        gamma = min(max(rat_dual_gap // (L * sum((d) .^ 2)), 0.0), gamma_max) 
     elseif line_search == fixed
         gamma = min(gamma0, gamma_max)
     elseif line_search == adaptive
@@ -50,15 +50,13 @@ function adaptive_step_size(f, gradient, x, direction, L_est; eta=0.9, tau=2, ga
     # ndir2 = sum(direction .* direction)
 
     gamma = min(
-        dot_dir / (M * ndir2),
+        max(dot_dir / (M * ndir2), 0.0),
         gamma_max,
     )
-    while f(x - gamma * direction) - f(x) >
-          -gamma * dot_dir +
-          gamma^2 * ndir2 * M / 2
+    while f(x - gamma * direction) - f(x) > -gamma * dot_dir + gamma^2 * ndir2 * M / 2
         M *= tau
         gamma = min(
-            dot_dir / (M * ndir2),
+            max(dot_dir / (M * ndir2), 0.0),
             gamma_max,
         )
     end
