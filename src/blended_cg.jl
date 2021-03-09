@@ -141,7 +141,8 @@ function bcg(
                 active_set,
                 gradient,
                 f,
-                L=L,
+                L=nothing, #don't use the same L as we transform the function
+                linesearch_tol=linesearch_tol,
                 weight_purge_threshold=weight_purge_threshold,
                 storage=direction_storage,
             )
@@ -168,7 +169,7 @@ function bcg(
                 phi = (xval - value) / 2
             else
                 tt = regular
-                L, gamma = line_search_wrapper(line_search,t,f,grad!,x,x - v,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim, 1.0)
+                gamma, L = line_search_wrapper(line_search,t,f,grad!,x,x - v,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim, 1.0)
 
                 if gamma == 1.0
                     active_set_initialize!(active_set, v)
@@ -306,31 +307,32 @@ function update_simplex_gradient_descent!(
         end
     end
     k = length(active_set)
-    csum = sum(c)
-    c .-= (csum / k)
+    c .-= (sum(c) / k)
     # name change to stay consistent with the paper, c is actually updated in-place
     d = c
     if norm(d) <= 1e-8
         @info "Resetting active set."
         # resetting active set to singleton
         a0 = active_set.atoms[1]
-        empty!(active_set)
-        push!(active_set, (1, a0))
+        active_set_initialize!(active_set, a0)
         return false
     end
     # NOTE: sometimes the direction is non-improving
     # usual suspects are floating-point errors when multiplying atoms with near-zero weights
-    # in that case, inverting the sense of d
     @inbounds if fast_dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), direction) < 0
-        @warn "Non-improving d, aborting simplex descent. We likely reached the limits of the numerical accuracy. 
-        The solution is still valid but we might not be able to converge further from here onwards. 
-        If higher accuracy is required, consider using Double64 (still quite fast) and if that does not help BigFloat (slower) as type for the numbers.
-        Alternatively, consider using AFW (with lazy = true) instead."
-        println(fast_dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), direction))
-        return true
+        defect = fast_dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), direction)
+        @warn "Non-improving d ($defect) due to numerical instability. Temporarily upgrading precision to BigFloat for the current iteration. 
+        If the numerical instability is persistent try to run the whole algorithm with Double64 (still quite fast) or BigFloat (slower)."
+        bdir = big.(direction)
+        c = [fast_dot(bdir, a) for a in active_set.atoms]
+        c .-= sum(c) / k
+        d = c
+        @inbounds if fast_dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), direction) < 0
+            @warn "d non-improving in large precision, forcing FW"
+            @warn "dot value: $(fast_dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), direction))"
+            return true
+        end
     end
-    #arr = active_set.weights ./ d
-    #η, rem_idx = findmin(ifelse.(arr .> 0.0, arr, Inf))
 
     η = eltype(d)(Inf)
     rem_idx = -1
@@ -357,8 +359,8 @@ function update_simplex_gradient_descent!(
     end
     linesearch_method = L === nothing || !isfinite(L) ? backtracking : shortstep
     if linesearch_method == backtracking
-        _, gamma =
-            backtrackingLS(f, direction, x, y, linesearch_tol=linesearch_tol, step_lim=step_lim)
+        gamma, _ =
+            backtrackingLS(f, direction, x, x - y, 1.0, linesearch_tol=linesearch_tol, step_lim=step_lim)
     else # == shortstep, just two methods here for now
         gamma = fast_dot(direction, x - y) / (L * norm(x - y)^2)
     end
