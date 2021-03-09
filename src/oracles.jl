@@ -12,6 +12,7 @@ abstract type LinearMinimizationOracle end
 
 Computes the point `argmin_{v ∈ C} v ⋅ direction`
 with `C` the set represented by the LMO.
+All LMOs should accept keyword arguments that they can ignore.
 """
 function compute_extreme_point end
 
@@ -56,7 +57,7 @@ function compute_extreme_point(
 )
     if lmo.last_vertex !== nothing && isfinite(threshold)
         v = lmo.last_vertex
-        if dot(v, direction) ≤ threshold # cache is a sufficiently-decreasing direction
+        if fast_dot(v, direction) ≤ threshold # cache is a sufficiently-decreasing direction
             return v
         end
     end
@@ -81,10 +82,14 @@ Cache for a LMO storing up to `N` vertices in the cache, removed in FIFO style.
 `oldest_idx` keeps track of the oldest index in the tuple, i.e. to replace next.
 `VT`, if provided, must be the type of vertices returned by `LMO`
 """
-mutable struct MultiCacheLMO{N,LMO,VT<:AbstractVector} <: CachedLinearMinimizationOracle{LMO}
+mutable struct MultiCacheLMO{N,LMO<:LinearMinimizationOracle,VT<:AbstractVector} <: CachedLinearMinimizationOracle{LMO}
     vertices::NTuple{N,Union{VT,Nothing}}
     inner::LMO
     oldest_idx::Int
+end
+
+function MultiCacheLMO{N,LMO,VT}(lmo::LMO) where {N,LMO<:LinearMinimizationOracle,VT}
+    return MultiCacheLMO{N,LMO,AbstractVector}(ntuple(_ -> nothing, Val{N}()), lmo, 1)
 end
 
 function MultiCacheLMO{N}(lmo::LMO) where {N,LMO<:LinearMinimizationOracle}
@@ -136,7 +141,7 @@ function compute_extreme_point(
         for idx in iter_order
             if lmo.vertices[idx] !== nothing
                 v = lmo.vertices[idx]
-                new_val = dot(v, direction)
+                new_val = fast_dot(v, direction)
                 if new_val ≤ threshold # cache is a sufficiently-decreasing direction
                     # if greedy, stop and return point
                     if greedy
@@ -152,7 +157,7 @@ function compute_extreme_point(
                 end
             end
         end
-        if best_idx > 0 # && dot(best_v, direction) ≤ threshold 
+        if best_idx > 0 # && fast_dot(best_v, direction) ≤ threshold 
             # println("cache sol")
             return best_v
         end
@@ -176,17 +181,17 @@ end
 Cache for a LMO storing an unbounded number of vertices of type `VT` in the cache.
 `VT`, if provided, must be the type of vertices returned by `LMO`
 """
-mutable struct VectorCacheLMO{LMO,VT<:AbstractVector} <: CachedLinearMinimizationOracle{LMO}
+mutable struct VectorCacheLMO{LMO<:LinearMinimizationOracle,VT} <: CachedLinearMinimizationOracle{LMO}
     vertices::Vector{VT}
     inner::LMO
 end
 
-function VectorCacheLMO{VT}(lmo::LMO) where {VT,LMO<:LinearMinimizationOracle}
+function VectorCacheLMO{LMO, VT}(lmo::LMO) where {VT,LMO<:LinearMinimizationOracle}
     return VectorCacheLMO{LMO,VT}(VT[], lmo)
 end
 
 function VectorCacheLMO(lmo::LMO) where {LMO<:LinearMinimizationOracle}
-    return VectorCacheLMO{LMO,AbstractVector}(AbstractVector[], lmo)
+    return VectorCacheLMO{LMO,Vector{Float64}}(AbstractVector[], lmo)
 end
 
 function Base.empty!(lmo::VectorCacheLMO)
@@ -216,13 +221,10 @@ function compute_extreme_point(
     best_v = nothing
     for idx in reverse(eachindex(lmo.vertices))
         @inbounds v = lmo.vertices[idx]
-        new_val = dot(v, direction)
+        new_val = fast_dot(v, direction)
         if new_val ≤ threshold
             # stop, store and return
             if greedy
-                if store_cache
-                    push!(lmo.vertices, v)
-                end
                 return v
             end
             # otherwise, compare to incumbent
@@ -236,9 +238,59 @@ function compute_extreme_point(
     v = best_v
     if best_idx < 0
         v = compute_extreme_point(lmo.inner, direction)
-    end
-    if store_cache
-        push!(lmo.vertices, v)
+        if store_cache
+            # note: we do not check for duplicates. hence you might end up with more vertices, 
+            # in fact up to number of dual steps many, that might be already in the cache
+            # in order to reach this point, if v was already in the cache is must not meet the threshold (otherwise we would have returned it) 
+            # and it is the best possible, hence we will perform a dual step on the outside. 
+            #
+            # note: another possibility could be to test against that in the if statement but then you might end you recalculating the same vertex a few times.
+            # as such this might be a better tradeoff, i.e., to not check the set for duplicates and potentially accept #dualSteps many duplicates.
+            push!(lmo.vertices, v)
+        end
     end
     return v
+end
+
+"""
+    ProductLMO(lmos...)
+
+Linear minimization oracle over the Cartesian product of multiple LMOs.
+"""
+struct ProductLMO{N, TL <: NTuple{N, LinearMinimizationOracle}} <: LinearMinimizationOracle
+    lmos::TL
+end
+
+function ProductLMO{N}(lmos::TL) where {N, TL <: NTuple{N, LinearMinimizationOracle}}
+    return ProductLMO{N, TL}(lmos)
+end
+
+function ProductLMO(lmos::Vararg{LinearMinimizationOracle, N}) where {N}
+    return ProductLMO{N}(lmos)
+end
+
+"""
+    compute_extreme_point(lmo::ProductLMO, direction::Tuple; kwargs...)
+
+Extreme point computation on Cartesian product, with a direction `(d1, d2, ...)` given as a tuple of directions.
+All keyword arguments are passed to all LMOs.
+"""
+function compute_extreme_point(lmo::ProductLMO, direction::Tuple; kwargs...)
+    return compute_extreme_point.(lmo.lmos, direction; kwargs...)
+end
+
+"""
+    compute_extreme_point(lmo::ProductLMO, direction::AbstractArray; direction_indices, storage=similar(direction))
+
+Extreme point computation, with a direction array and `direction_indices` provided such that:
+`direction[direction_indices[i]]` is passed to the i-th LMO.
+The result is stored in the optional `storage` container.
+
+All keyword arguments are passed to all LMOs.
+"""
+function compute_extreme_point(lmo::ProductLMO{N}, direction::AbstractArray; storage=similar(direction), direction_indices, kwargs...) where {N}
+    for idx in 1:N
+        storage[direction_indices[idx]] .= compute_extreme_point(lmo.lmos[idx], direction[direction_indices[idx]]; kwargs...)
+    end
+    return storage
 end

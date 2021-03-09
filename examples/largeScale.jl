@@ -1,7 +1,7 @@
 import FrankWolfe
 using LinearAlgebra
 
-n = Int(1e9)
+n = Int(1e7)
 k = 1000
 
 xpi = rand(n);
@@ -16,7 +16,7 @@ end
 # better for memory consumption as we do coordinate-wise ops
 
 function cf(x, xp)
-    return norm(x .- xp)^2
+    return LinearAlgebra.norm(x .- xp)^2
 end
 
 function cgrad!(storage, x, xp)
@@ -26,7 +26,7 @@ end
 lmo = FrankWolfe.ProbabilitySimplexOracle(1);
 x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
-FrankWolfe.benchmark_oracles(x -> cf(x, xp), (str, x) -> cgrad!(str, x, xp), lmo, n; k=100, T=Float64)
+FrankWolfe.benchmark_oracles(x -> cf(x, xp), (str, x) -> cgrad!(str, x, xp), () -> randn(n), lmo; k=100)
 
 @time x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
     x -> cf(x, xp),
