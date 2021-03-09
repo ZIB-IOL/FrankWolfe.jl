@@ -17,10 +17,10 @@ function line_search_wrapper(line_search,t,f,grad!,x,d,gradient,dual_gap,L,gamma
     elseif line_search == nonconvex
         gamma = 1 / sqrt(t + 1)
     elseif line_search == shortstep
-        gamma = min(dual_gap / (L * norm(d)^2), gamma_max)
+        gamma = min(max(fast_dot(gradient, d) / (L * norm(d)^2), 0.0), gamma_max)
     elseif line_search == rationalshortstep
         rat_dual_gap = sum((d) .* gradient)
-        gamma = min(rat_dual_gap // (L * sum((d) .^ 2)), gamma_max) 
+        gamma = min(max(rat_dual_gap // (L * sum((d) .^ 2)), 0.0), gamma_max) 
     elseif line_search == fixed
         gamma = min(gamma0, gamma_max)
     elseif line_search == adaptive
@@ -50,15 +50,13 @@ function adaptive_step_size(f, gradient, x, direction, L_est; eta=0.9, tau=2, ga
     # ndir2 = sum(direction .* direction)
 
     gamma = min(
-        dot_dir / (M * ndir2),
+        max(dot_dir / (M * ndir2), 0.0),
         gamma_max,
     )
-    while f(x - gamma * direction) - f(x) >
-          -gamma * dot_dir +
-          gamma^2 * ndir2 * M / 2
+    while f(x - gamma * direction) - f(x) > -gamma * dot_dir + gamma^2 * ndir2 * M / 2
         M *= tau
         gamma = min(
-            dot_dir / (M * ndir2),
+            max(dot_dir / (M * ndir2), 0.0),
             gamma_max,
         )
     end
@@ -84,15 +82,14 @@ function backtrackingLS(
     i = 0
 
     dot_gdir = fast_dot(grad_direction, d)
-    @assert dot_gdir ≤ 0
-    if dot_gdir ≥ 0
+    if dot_gdir ≤ 0
         @warn "Non-improving"
         return zero(gamma), i
     end
 
     oldVal = f(x)
     newVal = f(x - gamma * d)
-    while newVal - oldVal > linesearch_tol * gamma * dot_gdir
+    while newVal - oldVal > -linesearch_tol * gamma * dot_gdir
         if i > step_lim
             if oldVal - newVal >= 0
                 return gamma, i
@@ -157,12 +154,13 @@ function segment_search(f, grad, x, d, gamma_max; line_search=true, linesearch_t
 
     x_min = (left + right) / 2
 
+
     # compute step size gamma
     gamma = zero(eltype(d))
     if line_search
         for i in eachindex(d)
             if d[i] != 0
-                gamma = (x_min[i] - x[i]) / d[i]
+                gamma = (x[i] - x_min[i]) / d[i]
                 break
             end
         end
