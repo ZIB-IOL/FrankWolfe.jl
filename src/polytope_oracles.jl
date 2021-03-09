@@ -97,6 +97,7 @@ function compute_extreme_point(::BirkhoffPolytopeLMO, direction::AbstractMatrix{
     @inbounds for i in eachindex(cols)
         m[rows[i], cols[i]] = vals[i] == 2
     end
+    m = convert(SparseArrays.SparseMatrixCSC{Float64,Int64},m)
     return m
 end
 
