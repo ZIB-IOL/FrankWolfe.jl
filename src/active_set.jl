@@ -81,12 +81,6 @@ end
 Adds the atom to the active set with weight lambda or adds lambda to existing atom.
 """
 function active_set_update!(active_set::ActiveSet, lambda, atom, renorm=true)
-    x_before = active_set.x * (1-lambda) + lambda * atom
-    xa_before = sum(λi * ai for (λi, ai) in active_set) * (1 - lambda) + lambda * atom
-    @debug "diff v beginning $(norm(x_before - xa_before))"
-    if norm(x_before - xa_before) > 1e-6
-        error("")
-    end
     # rescale active set
     active_set.weights .*= (1 - lambda)
     # add value for new atom
@@ -98,27 +92,11 @@ function active_set_update!(active_set::ActiveSet, lambda, atom, renorm=true)
     else
         push!(active_set, (lambda, atom))
     end
-    # active_set.x .= 0
-    # for (λ, a) in active_set
-    #     active_set.x .= active_set.x + λ * a
-    # end
-    @. active_set.x = active_set.x * (1 - lambda) + lambda * atom
     if renorm
         active_set_cleanup!(active_set, update=false)
         active_set_renormalize!(active_set)
     end
-    xreal = sum(λi * ai for (λi, ai) in active_set)
-    # works
-    # update_active_set_iterate!(active_set)
-    # not
-    nafter = norm(active_set.x)
-    @debug "diff $(norm(xreal - active_set.x))"
-    @debug "update? $updating"
-    @debug "diff2 $(norm(xreal - x_before))"
-    @debug "diff3 $(norm(xreal - xa_before))"
-    if (norm(xreal - active_set.x)) > 0.01
-        error("QUIT")
-    end
+    @. active_set.x = active_set.x * (1 - lambda) + lambda * atom
     return active_set
 end
 
@@ -180,10 +158,10 @@ Computes the linear minimizer in the direction on the active set.
 Returns `(λ_i, a_i, i)`
 """
 function active_set_argmin(active_set::ActiveSet, direction)
-    val = Inf
-    idx = -1
+    val = dot(active_set.atoms[1], direction)
+    idx = 1
     temp = 0
-    for i in eachindex(active_set)
+    for i in 2:length(active_set)
         temp = dot(active_set.atoms[i], direction)
         if temp < val
             val = temp
@@ -206,7 +184,7 @@ function active_set_argminmax(active_set::ActiveSet, direction)
     idx = -1
     idxM = -1
     for i in eachindex(active_set)
-        temp_val = dot(active_set.atoms[i], direction)
+        temp_val = fast_dot(active_set.atoms[i], direction)
         if temp_val < val
             val = temp_val
             idx = i
@@ -232,10 +210,10 @@ indicating if the direction improvement is above a threshold.
 """
 function find_minmax_directions(active_set::ActiveSet, direction, Φ; goodstep_tolerance=0.75)
     idx_fw = idx_as = 1
-    v_fw = dot(direction, active_set.atoms[1])
+    v_fw = fast_dot(direction, active_set.atoms[1])
     v_as = v_fw
     for (idx, a) in enumerate(active_set.atoms)
-        val = dot(direction, a)
+        val = fast_dot(direction, a)
         if val ≤ v_fw
             v_fw = val
             idx_fw = idx

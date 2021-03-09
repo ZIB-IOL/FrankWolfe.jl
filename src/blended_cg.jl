@@ -6,6 +6,8 @@ function bcg(
     x0;
     line_search::LineSearchMethod=adaptive,
     L=Inf,
+    gamma0=0,
+    step_lim=20,
     epsilon=1e-7,
     max_iteration=10000,
     print_iter=1000,
@@ -22,7 +24,7 @@ function bcg(
 )
     function print_header(data)
         @printf(
-            "\n──────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
+            "\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
         )
         @printf(
             "%6s %13s %14s %14s %14s %14s %14s %14s %14s\n",
@@ -37,13 +39,13 @@ function bcg(
             data[9],
         )
         @printf(
-            "──────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
+            "────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
         )
     end
 
     function print_footer()
         @printf(
-            "──────────────────────────────────────────────────────────────────────────────────────────────────────────────\n\n"
+            "────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n\n"
         )
     end
 
@@ -68,12 +70,12 @@ function bcg(
     active_set = ActiveSet([(1.0, x0)])
     x = x0
     if gradient === nothing
-        gradient = similar(x)
+        gradient = similar(x0, float(eltype(x0)))
     end
     grad!(gradient, x)
     # initial gap estimate computation
     vmax = compute_extreme_point(lmo, gradient)
-    phi = dot(gradient, x0 - vmax) / 2
+    phi = fast_dot(gradient, x0 - vmax) / 2
     traj_data = []
     tt = regular
     time_start = time_ns()
@@ -91,11 +93,15 @@ function bcg(
         @error("Lazification is not known to converge with open-loop step size strategies.")
     end
 
+    if line_search == fixed && gamma0 == 0
+        println("WARNING: gamma0 not set. We are not going to move a single bit.")
+    end
+
     if verbose
         println("\nBlended Conditional Gradients Algorithm.")
         numType = eltype(x0)
         println(
-            "EMPHASIS: $memory STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration TYPE: $numType",
+            "EMPHASIS: $memory STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $numType",
         )
         println("K: $Ktolerance")
         println("WARNING: In memory emphasis mode iterates are written back into x0!")
@@ -114,7 +120,7 @@ function bcg(
     end
 
     if !isa(x, Union{Array, SparseVector})
-        x = convert(Vector{float(eltype(x))}, x)
+            x = convert(Array{float(eltype(x))}, x)
     end
     non_simplex_iter = 0
     nforced_fw = 0
@@ -155,27 +161,15 @@ function bcg(
             )
 
             force_fw_step = false
-            xval = dot(x, gradient)
+            xval = fast_dot(x, gradient)
             if value > xval - phi/Ktolerance
                 tt = dualstep
                 # setting gap estimate as ∇f(x) (x - v_FW) / 2
                 phi = (xval - value) / 2
             else
                 tt = regular
-                if line_search == agnostic
-                    gamma = 2 / (2 + t)
-                elseif line_search == goldenratio
-                    _, gamma = segment_search(f, grad!, x, ynew, linesearch_tol=linesearch_tol)
-                elseif line_search == backtracking
-                    _, gamma = backtrackingLS(f, gradient, x, v, linesearch_tol=linesearch_tol, step_lim=100)
-                elseif line_search == nonconvex
-                    gamma = 1 / sqrt(t + 1)
-                elseif line_search == shortstep
-                    gamma =  dot(gradient, x - v) / (L * dot(x - v, x - v))
-                elseif line_search == adaptive
-                    L, gamma = adaptive_step_size(f, gradient, x, x - v, L)
-                end
-                gamma = min(1.0, gamma)
+                L, gamma = line_search_wrapper(line_search,t,f,grad!,x,x - v,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim, 1.0)
+
                 if gamma == 1.0
                     active_set_initialize!(active_set, v)
                 else
@@ -198,8 +192,11 @@ function bcg(
                 ),
             )
         end
-        t = t + 1
+
         if verbose && mod(t, print_iter) == 0
+            if t == 0
+                tt = initial
+            end
             rep = (
                 tt,
                 string(t),
@@ -214,13 +211,14 @@ function bcg(
             print_iter_func(rep)
             flush(stdout)
         end
+        t = t + 1
     end
     if verbose
         x = compute_active_set_iterate(active_set)
         grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
-        dual_gap = dot(x, gradient) - dot(v, gradient)
+        dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         rep = (
             last,
             string(t - 1),
@@ -242,7 +240,7 @@ function bcg(
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
     #dual_gap = 2phi
-    dual_gap = dot(x, gradient) - dot(v, gradient)
+    dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
     if verbose
         rep = (
             pp,
@@ -285,24 +283,24 @@ function update_simplex_gradient_descent!(
     storage=nothing,
 )
     c = if storage === nothing
-        [dot(direction, a) for a in active_set.atoms]
+        [fast_dot(direction, a) for a in active_set.atoms]
     else
         if length(storage) == length(active_set)
             for (idx, a) in enumerate(active_set.atoms)
-                storage[idx] = dot(direction, a)
+                storage[idx] = fast_dot(direction, a)
             end
             storage
         elseif length(storage) > length(active_set)
             for (idx, a) in enumerate(active_set.atoms)
-                storage[idx] = dot(direction, a)
+                storage[idx] = fast_dot(direction, a)
             end
             storage[1:length(active_set)]
         else
             for idx in 1:length(storage)
-                storage[idx] = dot(direction, active_set.atoms[idx])
+                storage[idx] = fast_dot(direction, active_set.atoms[idx])
             end
             for idx in (length(storage)+1):length(active_set)
-                push!(storage, dot(direction, active_set.atoms[idx]))
+                push!(storage, fast_dot(direction, active_set.atoms[idx]))
             end
             storage
         end
@@ -323,9 +321,12 @@ function update_simplex_gradient_descent!(
     # NOTE: sometimes the direction is non-improving
     # usual suspects are floating-point errors when multiplying atoms with near-zero weights
     # in that case, inverting the sense of d
-    @inbounds if dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), direction) < 0
-        @warn "Non-improving d, aborting simplex descent"
-        println(dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), direction))
+    @inbounds if fast_dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), direction) < 0
+        @warn "Non-improving d, aborting simplex descent. We likely reached the limits of the numerical accuracy. 
+        The solution is still valid but we might not be able to converge further from here onwards. 
+        If higher accuracy is required, consider using Double64 (still quite fast) and if that does not help BigFloat (slower) as type for the numbers.
+        Alternatively, consider using AFW (with lazy = true) instead."
+        println(fast_dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), direction))
         return true
     end
     #arr = active_set.weights ./ d
@@ -359,7 +360,7 @@ function update_simplex_gradient_descent!(
         _, gamma =
             backtrackingLS(f, direction, x, y, linesearch_tol=linesearch_tol, step_lim=step_lim)
     else # == shortstep, just two methods here for now
-        gamma = dot(direction, x - y) / (L * norm(x - y)^2)
+        gamma = fast_dot(direction, x - y) / (L * norm(x - y)^2)
     end
     gamma = min(1.0, gamma)
     # step back from y to x by (1 - γ) η d
@@ -397,10 +398,14 @@ function lp_separation_oracle(
         x = active_set.weights[1] * active_set.atoms[1]
         if inplace_loop
             if !isa(x, Union{Array, SparseArrays.AbstractSparseArray})
-                x = convert(SparseVector{eltype(x)}, x)
+                if x isa AbstractVector
+                    x = convert(SparseVector{eltype(x)}, x)
+                else
+                    x = convert(SparseArrays.SparseMatrixCSC{eltype(x)}, x)
+                end
             end
         end
-        val_best = dot(direction, ybest)
+        val_best = fast_dot(direction, ybest)
         for idx in 2:length(active_set)
             y = active_set.atoms[idx]
             if inplace_loop
@@ -408,19 +413,19 @@ function lp_separation_oracle(
             else
                 x += active_set.weights[idx] * y
             end
-            val = dot(direction, y)
+            val = fast_dot(direction, y)
             if val < val_best
                 val_best = val
                 ybest = y
             end
         end
-        xval = dot(direction, x)
+        xval = fast_dot(direction, x)
         if xval - val_best ≥ min_gap / Ktolerance
             return (ybest, val_best)
         end
     end
     # otherwise, call the LMO
     y = compute_extreme_point(lmo, direction; kwargs...)
-    # don't return nothing but y, dot(direction, y) / use y for step outside / and update phi as in LCG (lines 402 - 406)
-    return (y, dot(direction, y))
+    # don't return nothing but y, fast_dot(direction, y) / use y for step outside / and update phi as in LCG (lines 402 - 406)
+    return (y, fast_dot(direction, y))
 end

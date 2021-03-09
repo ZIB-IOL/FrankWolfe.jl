@@ -1,5 +1,37 @@
 
 """
+line search wrapper to clean up functions
+NOTE: The stepsize is defined as x - gamma*d
+
+"""
+
+function line_search_wrapper(line_search,t,f,grad!,x,d,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim, gamma_max)
+
+    if line_search == agnostic
+        gamma = 2 // (2 + t)
+    elseif line_search == goldenratio # FIX for general d
+        _, gamma = segment_search(f, grad!, x, d, gamma_max, linesearch_tol=linesearch_tol, inplace_gradient=true)
+    elseif line_search == backtracking # FIX for general d
+        _, gamma =
+            backtrackingLS(f, gradient, x, d, gamma_max, linesearch_tol=linesearch_tol, step_lim=step_lim)
+    elseif line_search == nonconvex
+        gamma = 1 / sqrt(t + 1)
+    elseif line_search == shortstep
+        gamma = min(dual_gap / (L * norm(d)^2), gamma_max)
+    elseif line_search == rationalshortstep
+        rat_dual_gap = sum((d) .* gradient)
+        gamma = min(rat_dual_gap // (L * sum((d) .^ 2)), gamma_max) 
+    elseif line_search == fixed
+        gamma = min(gamma0, gamma_max)
+    elseif line_search == adaptive
+        L, gamma = adaptive_step_size(f, gradient, x, d, L, gamma_max = gamma_max)
+    end
+    return L, gamma
+end
+
+
+
+"""
 Slight modification of
 Adaptive Step Size strategy from https://arxiv.org/pdf/1806.05123.pdf
 
@@ -10,8 +42,13 @@ TODO:
 """
 function adaptive_step_size(f, gradient, x, direction, L_est; eta=0.9, tau=2, gamma_max=1)
     M = eta * L_est
-    dot_dir = dot(gradient, direction)
+    dot_dir = fast_dot(gradient, direction)
     ndir2 = norm(direction)^2
+
+    # alternative via broadcast -> not faster
+    # dot_dir = sum(gradient .* gradient)
+    # ndir2 = sum(direction .* direction)
+
     gamma = min(
         dot_dir / (M * ndir2),
         gamma_max,
@@ -36,17 +73,17 @@ function backtrackingLS(
     f,
     grad_direction,
     x,
-    y;
+    d,
+    gamma_max;
     line_search=true,
     linesearch_tol=1e-10,
     step_lim=20,
     lsTau=0.5,
 )
-    gamma = one(lsTau)
-    d = y - x
+    gamma = gamma_max*one(lsTau)
     i = 0
 
-    dot_gdir = dot(grad_direction, d)
+    dot_gdir = fast_dot(grad_direction, d)
     @assert dot_gdir ≤ 0
     if dot_gdir ≥ 0
         @warn "Non-improving"
@@ -54,7 +91,7 @@ function backtrackingLS(
     end
 
     oldVal = f(x)
-    newVal = f(x + gamma * d)
+    newVal = f(x - gamma * d)
     while newVal - oldVal > linesearch_tol * gamma * dot_gdir
         if i > step_lim
             if oldVal - newVal >= 0
@@ -64,7 +101,7 @@ function backtrackingLS(
             end
         end
         gamma *= lsTau
-        newVal = f(x + gamma * d)
+        newVal = f(x - gamma * d)
         i += 1
     end
     return i, gamma
@@ -73,37 +110,38 @@ end
 # simple golden-ratio based line search (not optimized)
 # based on boostedFW paper code and adapted for julia
 # TODO:
-# - code needs optimization 
+# - code needs optimization.
+# In particular, passing a gradient container instead of allocating
 
-function segment_search(f, grad, x, y; line_search=true, linesearch_tol=1e-10, inplace_gradient=true)
+function segment_search(f, grad, x, d, gamma_max; line_search=true, linesearch_tol=1e-10, inplace_gradient=true)
     # restrict segment of search to [x, y]
-    d = y - x
+    y = x - gamma_max*d
     left, right = copy(x), copy(y)
 
     if inplace_gradient
-        gradient = similar(d)    
+        gradient = similar(d)
         grad(gradient, x)
-        dgx = dot(d, gradient)
+        dgx = fast_dot(d, gradient)
         grad(gradient, y)
-        dgy = dot(d, gradient)
+        dgy = fast_dot(d, gradient)
     else
         gradient = grad(x)
-        dgx = dot(d, gradient)
+        dgx = fast_dot(d, gradient)
         gradient = grad(y)
-        dgy = dot(d, gradient)
+        dgy = fast_dot(d, gradient)
     end
     
     # if the minimum is at an endpoint
     if dgx * dgy >= 0
         if f(y) <= f(x)
-            return y, 1
+            return y, one(eltype(d))
         else
-            return x, 0
+            return x, zero(eltype(d))
         end
     end
 
     # apply golden-section method to segment
-    gold = 0.5 * (1 + sqrt(5))
+    gold = (1 + sqrt(5)) / 2
     improv = Inf
     while improv > linesearch_tol
         old_left, old_right = left, right
@@ -117,10 +155,10 @@ function segment_search(f, grad, x, y; line_search=true, linesearch_tol=1e-10, i
         improv = norm(f(right) - f(old_right)) + norm(f(left) - f(old_left))
     end
 
-    x_min = (left + right) / 2.0
+    x_min = (left + right) / 2
 
     # compute step size gamma
-    gamma = 0
+    gamma = zero(eltype(d))
     if line_search
         for i in eachindex(d)
             if d[i] != 0
@@ -162,7 +200,7 @@ function LinearAlgebra.dot(v1::MaybeHotVector, v2::AbstractVector)
     return v1.active_val * v2[v1.val_idx]
 end
 
-LinearAlgebra.dot(v1::AbstractVector, v2::MaybeHotVector) = dot(v2, v1)
+LinearAlgebra.dot(v1::AbstractVector, v2::MaybeHotVector) = fast_dot(v2, v1)
 
 # warning, no bound check
 function LinearAlgebra.dot(v1::MaybeHotVector, v2::MaybeHotVector)
@@ -177,6 +215,12 @@ function Base.:*(v::MaybeHotVector, x::Number)
 end
 
 Base.:*(x::Number, v::MaybeHotVector) = v * x
+
+function Base.convert(::Type{Vector{T}}, v::MaybeHotVector) where {T}
+    vc = zeros(T, v.len)
+    vc[v.val_idx] = v.active_val
+    return vc
+end
 
 ##############################
 ### emphasis macro
@@ -365,34 +409,35 @@ end
 
 # TODO: add actual use of T for the rand(n)
 
-function benchmark_oracles(f, grad!, lmo, n; k=100, nocache=true, T=Float64)
-    sv = n * sizeof(T) / 1024^2
-    println("\nSize of single vector ($T): $sv MB\n")
+function benchmark_oracles(f, grad!, x_gen, lmo; k=100, nocache=true)
+    x = x_gen()
+    sv = sizeof(x) / 1024^2
+    println("\nSize of single atom ($(eltype(x))): $sv MB\n")
     to = TimerOutput()
     @showprogress 1 "Testing f... " for i in 1:k
-        x = rand(n)
+        x = x_gen()
         @timeit to "f" temp = f(x)
     end
     @showprogress 1 "Testing grad... " for i in 1:k
-        x = rand(n)
+        x = x_gen()
         temp = similar(x)
         @timeit to "grad" grad!(temp, x)
     end
     @showprogress 1 "Testing lmo... " for i in 1:k
-        x = rand(n)
+        x = x_gen()
         @timeit to "lmo" temp = compute_extreme_point(lmo, x)
     end
     @showprogress 1 "Testing dual gap... " for i in 1:k
-        x = rand(n)
+        x = x_gen()
         gradient = similar(x)
         grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
         @timeit to "dual gap" begin
-            dual_gap = dot(x, gradient) - dot(v, gradient)
+            dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         end
     end
     @showprogress 1 "Testing update... (Emphasis: blas) " for i in 1:k
-        x = rand(n)
+        x = x_gen()
         gradient = similar(x)
         grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
@@ -400,7 +445,7 @@ function benchmark_oracles(f, grad!, lmo, n; k=100, nocache=true, T=Float64)
         @timeit to "update (blas)" @emphasis(blas, x = (1 - gamma) * x + gamma * v)
     end
     @showprogress 1 "Testing update... (Emphasis: memory) " for i in 1:k
-        x = rand(n)
+        x = x_gen()
         gradient = similar(x)
         grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
@@ -411,13 +456,13 @@ function benchmark_oracles(f, grad!, lmo, n; k=100, nocache=true, T=Float64)
     if !nocache
         @showprogress 1 "Testing caching 100 points... " for i in 1:k
             @timeit to "caching 100 points" begin
-                cache = [rand(n) for _ in 1:100]
-                x = rand(n)
+                cache = [gen_x() for _ in 1:100]
+                x = gen_x()
                 gradient = similar(x)
                 grad!(gradient, x)
                 v = compute_extreme_point(lmo, gradient)
                 gamma = 1 / 2
-                test = (x -> dot(x, gradient)).(cache)
+                test = (x -> fast_dot(x, gradient)).(cache)
                 v = cache[argmin(test)]
                 val = v in cache
             end
@@ -443,3 +488,126 @@ function _unsafe_equal(a::AbstractArray, b::AbstractArray)
 end
 
 _unsafe_equal(a, b) = isequal(a, b)
+
+"""
+    RankOneMatrix{T, UT, VT}
+
+Represents a rank-one matrix `R = u * vt'`.
+Composes like a charm.
+"""
+struct RankOneMatrix{T, UT <: AbstractVector, VT <: AbstractVector} <: AbstractMatrix{T}
+    u::UT
+    v::VT
+end
+
+function RankOneMatrix(u::UT, v::VT) where {UT, VT}
+    T = promote_type(eltype(u), eltype(v))
+    return RankOneMatrix{T, UT, VT}(u, v)
+end
+
+# not checking indices
+Base.@propagate_inbounds function Base.getindex(R::RankOneMatrix, i, j)
+    @boundscheck (checkbounds(R.u, i); checkbounds(R.v, j))
+    @inbounds R.u[i] * R.v[j]
+end
+
+Base.size(R::RankOneMatrix) = (length(R.u), length(R.v))
+function Base.:*(R::RankOneMatrix, v::AbstractVector)
+    temp = fast_dot(R.v, v)
+    return R.u * temp
+end
+
+function Base.:*(R::RankOneMatrix, M::AbstractMatrix)
+    temp = R.v' * M
+    return RankOneMatrix(u, temp')
+end
+
+function Base.:*(R1::RankOneMatrix, R2::RankOneMatrix)
+    # middle product
+    temp = fast_dot(R1.v, R2.u)
+    return RankOneMatrix(R1.u * temp, R2.v)
+end
+
+Base.Matrix(R::RankOneMatrix) = R.u * R.v'
+Base.collect(R::RankOneMatrix) = Matrix(R)
+Base.copymutable(R::RankOneMatrix) = Matrix(R)
+Base.copy(R::RankOneMatrix) = RankOneMatrix(
+    copy(R.u), copy(R.v),
+)
+
+function Base.convert(::Type{<:RankOneMatrix{T, Vector{T}, Vector{T}}}, R::RankOneMatrix) where {T}
+    return RankOneMatrix(
+        convert(Vector{T}, R.u),
+        convert(Vector{T}, R.v),
+    )
+end
+
+function LinearAlgebra.dot(R::RankOneMatrix{T1}, S::SparseArrays.AbstractSparseMatrixCSC{T2}) where {T1 <: Real, T2 <: Real}
+    (m, n) = size(R)
+    T = promote_type(T1, T2)
+    if (m, n) != size(S)
+        throw(DimensionMismatch("Size mismatch"))
+    end
+    s = zero(T)
+    if m * n == 0
+        return s
+    end
+    rows = SparseArrays.rowvals(S)
+    vals = SparseArrays.nonzeros(S)
+    @inbounds for j in 1:n
+        for ridx in SparseArrays.nzrange(S, j)
+            i = rows[ridx]
+            v = vals[ridx]
+            s += v * R.u[i] * R.v[j]
+        end
+    end
+    return s
+end
+
+Base.@propagate_inbounds function Base.:-(a::RankOneMatrix, b::RankOneMatrix)
+    @boundscheck size(a) == size(b) || throw(DimensionMismatch())
+    r = similar(a)
+    @inbounds for j in 1:size(a, 2)
+        for i in 1:size(a, 1)
+            r[i,j] = a.u[i] * a.v[j] - b.u[i] * b.v[j]
+        end
+    end
+    return r
+end
+
+Base.@propagate_inbounds function Base.:+(a::RankOneMatrix, b::RankOneMatrix)
+    @boundscheck size(a) == size(b) || throw(DimensionMismatch())
+    r = similar(a)
+    @inbounds for j in 1:size(a, 2)
+        for i in 1:size(a, 1)
+            r[i,j] = a.u[i] * a.v[j] + b.u[i] * b.v[j]
+        end
+    end
+    return r
+end
+
+fast_dot(A, B) = dot(A, B)
+
+fast_dot(B::SparseArrays.SparseMatrixCSC, A::Matrix) = fast_dot(A, B)
+
+function fast_dot(A::Matrix{T1}, B::SparseArrays.SparseMatrixCSC{T2}) where {T1, T2}
+    T = promote_type(T1, T2)
+    (m, n) = size(A)
+    if (m, n) != size(B)
+        throw(DimensionMismatch("Size mismatch"))
+    end
+    s = zero(T)
+    if m * n == 0
+        return s
+    end
+    rows = SparseArrays.rowvals(B)
+    vals = SparseArrays.nonzeros(B)
+    for j in 1:n
+        for ridx in SparseArrays.nzrange(B, j)
+            i = rows[ridx]
+            v = vals[ridx]
+            s += v * A[i,j]
+        end
+    end
+    return s
+end

@@ -1,3 +1,4 @@
+import Arpack
 
 """
     LpNormLMO{T, p}(right_hand_side)
@@ -13,11 +14,11 @@ end
 
 LpNormLMO{p}(right_hand_side::T) where {T,p} = LpNormLMO{T,p}(right_hand_side)
 
-function compute_extreme_point(lmo::LpNormLMO{T,2}, direction) where {T}
+function compute_extreme_point(lmo::LpNormLMO{T,2}, direction; kwargs...) where {T}
     dir_norm = norm(direction, 2)
     res = similar(direction)
     n = length(direction)
-    # if direction numerically 0, 
+    # if direction numerically 0
     if dir_norm <= 10eps(eltype(direction))
         @. res = lmo.right_hand_side / sqrt(n)
     else
@@ -26,11 +27,11 @@ function compute_extreme_point(lmo::LpNormLMO{T,2}, direction) where {T}
     return res
 end
 
-function compute_extreme_point(lmo::LpNormLMO{T,Inf}, direction) where {T}
+function compute_extreme_point(lmo::LpNormLMO{T,Inf}, direction; kwargs...) where {T}
     return -[lmo.right_hand_side * sign(d) for d in direction]
 end
 
-function compute_extreme_point(lmo::LpNormLMO{T,1}, direction) where {T}
+function compute_extreme_point(lmo::LpNormLMO{T,1}, direction; kwargs...) where {T}
     idx = 0
     v = -one(eltype(direction))
     for i in eachindex(direction)
@@ -42,7 +43,7 @@ function compute_extreme_point(lmo::LpNormLMO{T,1}, direction) where {T}
     return MaybeHotVector(-lmo.right_hand_side * sign(direction[idx]), idx, length(direction))
 end
 
-function compute_extreme_point(lmo::LpNormLMO{T,p}, direction) where {T,p}
+function compute_extreme_point(lmo::LpNormLMO{T,p}, direction; kwargs...) where {T,p}
     # covers the case where the Inf or 1 is of another type
     if p == Inf
         return compute_extreme_point(LpNormLMO{T,Inf}(lmo.right_hand_side), direction)
@@ -69,7 +70,7 @@ struct L1ballDense{T} <: LinearMinimizationOracle
 end
 
 
-function compute_extreme_point(lmo::L1ballDense{T}, direction) where {T}
+function compute_extreme_point(lmo::L1ballDense{T}, direction; kwargs...) where {T}
     idx = 0
     v = -1.0
     for i in eachindex(direction)
@@ -98,7 +99,7 @@ struct KNormBallLMO{T} <: LinearMinimizationOracle
     right_hand_side::T
 end
 
-function compute_extreme_point(lmo::KNormBallLMO{T}, direction) where {T}
+function compute_extreme_point(lmo::KNormBallLMO{T}, direction; kwargs...) where {T}
     K = max(min(lmo.K, length(direction)), 1)
     
     oinf = zero(eltype(direction))
@@ -123,4 +124,40 @@ function compute_extreme_point(lmo::KNormBallLMO{T}, direction) where {T}
         v .= v1
     end
     return v
+end
+
+"""
+    NuclearNormLMO{T}(δ)
+
+LMO over matrices that have a nuclear norm less than δ.
+The LMO returns the rank-one matrix with singular value δ.
+"""
+struct NuclearNormLMO{T} <: LinearMinimizationOracle
+    radius::T
+end
+
+NuclearNormLMO{T}() where {T} = NuclearNormLMO{T}(one(T))
+NuclearNormLMO() = NuclearNormLMO(1.0)
+
+"""
+Best rank-one approximation using the
+Golub-Kahan-Lanczos bidiagonalization from IterativeSolvers.
+
+Warning: this does not work (yet) with all number types, BigFloat and Float16 fail.
+"""
+function compute_extreme_point(lmo::NuclearNormLMO, direction::AbstractMatrix; tol=1e-8, kwargs...)
+    Z = Arpack.svds(direction, nsv=1, tol=tol)[1]
+    u = - lmo.radius * view(Z.U, :)
+    return FrankWolfe.RankOneMatrix(
+        u,
+        Z.V[:],
+    )
+end
+
+function convert_mathopt(lmo::NuclearNormLMO, optimizer::OT; row_dimension::Integer, col_dimension::Integer, kwargs...) where {OT}
+    MOI.empty!(optimizer)
+    x = MOI.add_variables(optimizer, row_dimension * col_dimension)
+    (t, _) = MOI.add_constrained_variable(optimizer, MOI.LessThan(lmo.radius))
+    MOI.add_constraint(optimizer, [t;x], MOI.NormNuclearCone(row_dimension, col_dimension))
+    return MathOptLMO(optimizer)
 end

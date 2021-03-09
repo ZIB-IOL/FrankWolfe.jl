@@ -1,6 +1,7 @@
 using Test
 using FrankWolfe
 using LinearAlgebra
+import SparseArrays
 
 import FrankWolfe: compute_extreme_point, LpNormLMO, KSparseLMO
 import FrankWolfe: SimplexMatrix
@@ -11,6 +12,7 @@ const MOI = MathOptInterface
 
 import Clp
 using Random
+import Hypatia
 
 @testset "Simplex matrix type" begin
     s = SimplexMatrix{Float64}(3)
@@ -237,7 +239,85 @@ end
     ]
 end
 
+@testset "Matrix completion and nuclear norm" begin
+    nfeat = 50
+    nobs = 100
+    r = 5
+    Xreal = Matrix{Float64}(undef, nobs, nfeat)
+    X_gen_cols = randn(nfeat, r)
+    X_gen_rows = randn(r, nobs)
+    svals = 100 * rand(r)
+    for i in 1:nobs
+        for j in 1:nfeat
+            Xreal[i,j] = sum(
+                X_gen_cols[j,k] * X_gen_rows[k,i] * svals[k]
+                for k in 1:r
+            )
+        end
+    end
+    @test rank(Xreal) == r
+    missing_entries = unique!([
+        (rand(1:nobs), rand(1:nfeat))
+        for _ in 1:1000
+    ])
+    f(X) = 0.5 * sum(
+        (X[i,j] - Xreal[i,j])^2
+        for i in 1:nobs, j in 1:nfeat
+        if (i,j) ∉ missing_entries
+    )
+    function grad!(storage, X)
+        storage .= 0
+        for i in 1:nobs
+            for j in 1:nfeat
+                if (i,j) ∉ missing_entries
+                    storage[i,j] = X[i,j] - Xreal[i,j]
+                end
+            end
+        end
+        return nothing
+    end
+    # TODO value of radius?
+    lmo = FrankWolfe.NuclearNormLMO(sum(svdvals(Xreal)))
+    x0 = FrankWolfe.compute_extreme_point(lmo, zero(Xreal))
+    gradient = similar(x0)
+    grad!(gradient, x0)
+    v0 = FrankWolfe.compute_extreme_point(lmo, gradient)
+    @test dot(v0 - x0, gradient) < 0
+    xfin, vmin, _ = FrankWolfe.fw(
+        f,
+        grad!,
+        lmo,
+        x0;
+        epsilon=1e-6,
+        max_iteration=400,
+        print_iter=100,
+        trajectory=false,
+        verbose=false,
+        linesearch_tol=1e-7,
+        line_search=FrankWolfe.backtracking,
+        emphasis=FrankWolfe.memory,
+    )
+    @test 1 - (f(x0) - f(xfin)) / f(x0) < 1e-3
+    svals_fin = svdvals(xfin)
+    @test sum(svals_fin[r+1:end])/sum(svals_fin) ≤ 2e-2
+    xfin, vmin, _ = FrankWolfe.lcg(
+        f,
+        grad!,
+        lmo,
+        x0;
+        epsilon=1e-6,
+        max_iteration=400,
+        print_iter=100,
+        trajectory=false,
+        verbose=false,
+        linesearch_tol=1e-7,
+        line_search=FrankWolfe.backtracking,
+        emphasis=FrankWolfe.memory,
+    )
+end
+
 @testset "MOI oracle consistency" begin
+    Random.seed!(42)
     @testset "MOI oracle consistent with unit simplex" for n in (1, 2, 10)
         o =  GLPK.Optimizer()
         MOI.set(o, MOI.Silent(), true)
@@ -342,6 +422,32 @@ end
             vref = compute_extreme_point(lmo_ref, direction)
             v = compute_extreme_point(lmo, direction)
             @test vref ≈ v
+        end
+    end
+    @testset "Nuclear norm" for n in (5, 10)
+        optimizer = MOI.Utilities.CachingOptimizer(
+            MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
+            Hypatia.Optimizer(),
+        )
+        MOI.set(optimizer, MOI.Silent(), true)
+        nrows = 3n
+        ncols = n
+        direction = Matrix{Float64}(undef, nrows, ncols)
+        τ = 10.0
+        lmo = FrankWolfe.NuclearNormLMO(τ)
+        lmo_moi = FrankWolfe.convert_mathopt(lmo, optimizer, row_dimension=nrows, col_dimension=ncols)
+        for _ in 1:10
+            randn!(direction)
+            v_r = FrankWolfe.compute_extreme_point(lmo, direction)
+            flattened = collect(vec(direction))
+            push!(flattened, 0)
+            v_moi = FrankWolfe.compute_extreme_point(lmo_moi, flattened)
+            if v_moi === nothing
+                # ignore non-terminating MOI solver results
+                continue
+            end
+            v_moi_mat = reshape(v_moi[1:end-1], nrows, ncols)
+            @test v_r ≈ v_moi_mat rtol=1e-2
         end
     end
 end
@@ -466,4 +572,22 @@ end
             end
         end
     end
+end
+
+@testset "Product LMO" begin
+    # 
+    lmo = FrankWolfe.ProductLMO(
+        FrankWolfe.LpNormLMO{Inf}(3.0),
+        FrankWolfe.LpNormLMO{1}(2.0),
+    )
+    dinf = randn(10)
+    d1 = randn(5)
+    vtup = FrankWolfe.compute_extreme_point(lmo, (dinf, d1))
+    @test length(vtup) == 2
+    (vinf, v1) = vtup
+    @test sum(abs, vinf) ≈ 10 * 3.0
+    @test sum(!iszero, v1) == 1
+
+    vvec = FrankWolfe.compute_extreme_point(lmo, [dinf;d1]; direction_indices=(1:10, 11:15))
+    @test vvec ≈ [vinf;v1]
 end

@@ -9,3 +9,5 @@ test/bug.jl
 before.pdf
 after.pdf
 *.pdf
+prof.txt
+workspace.code-workspace
