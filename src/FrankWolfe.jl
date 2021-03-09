@@ -113,6 +113,10 @@ function fw(
         println("FATAL: gamma0 not set. We are not going to move a single bit.")
     end
 
+    if !isnothing(momentum) && (line_search === shortstep || line_search === adaptive || line_search === rationalshortstep)
+        println("WARNING: Momentum-averaged gradients should usually be used with agnostic stepsize rules.")
+    end
+
     if verbose
         println("\nVanilla Frank-Wolfe Algorithm.")
         numType = eltype(x0)
@@ -183,7 +187,11 @@ function fw(
         
         @emphasis(emphasis, d = x - v)
 
-        gamma, L = line_search_wrapper(line_search,t,f,grad!,x, d,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim, 1.0)
+        if isnothing(momentum)
+            gamma, L = line_search_wrapper(line_search,t,f,grad!,x, d,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim, 1.0)
+        else
+            gamma, L = line_search_wrapper(line_search,t,f,grad!,x, d,gtemp,dual_gap,L,gamma0,linesearch_tol,step_lim, 1.0)
+        end
 
         @emphasis(emphasis, x = x - gamma*d)
 
@@ -408,6 +416,15 @@ function lcg(
         end
         t += 1
     end
+
+    # recompute everything once for final verfication / do not record to trajectory though for now! 
+    # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
+    # hence the final computation.
+    grad!(gradient, x)
+    v = compute_extreme_point(lmo, gradient)
+    primal = f(x)
+    dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
+
     if verbose
         tt = last
         rep = (
