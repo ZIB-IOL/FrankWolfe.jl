@@ -44,6 +44,7 @@ f(x) = dot(linear, x) + 0.5*transpose(x) * hessian * x
 function grad!(storage, x)
     storage .= linear + hessian * x
 end
+L = eigmax(hessian)
 
 # better for memory consumption as we do coordinate-wise ops
 
@@ -96,7 +97,7 @@ x, v, primal, dual_gap, trajectoryBCG = FrankWolfe.bcg(
     print_iter=k / 10,
     hessian = hessian,
     emphasis=FrankWolfe.memory,
-    L=2,
+    L=L,
     accelerated = true,
     verbose=true,
     trajectory=true,
@@ -114,7 +115,7 @@ x, v, primal, dual_gap, trajectoryBCG2 = FrankWolfe.bcg(
     line_search=FrankWolfe.adaptive,
     print_iter=k / 10,
     emphasis=FrankWolfe.memory,
-    L=2,
+    L=L,
     verbose=true,
     trajectory=true,
     Ktolerance=1.00,
@@ -130,7 +131,7 @@ x, v, primal, dual_gap, trajectoryBCG2 = FrankWolfe.bcg(
 #    line_search=FrankWolfe.adaptive,
 #    print_iter=k / 10,
 #    emphasis=FrankWolfe.memory,
-#    L=2,
+#    L=L,
 #    verbose=true,
 #    trajectory=true,
 #    Ktolerance=1.00,
