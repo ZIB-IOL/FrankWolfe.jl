@@ -17,9 +17,6 @@ using Plots
 # for Birkhoff polytope LMO
 import Hungarian
 
-# for nuclear norm
-import IterativeSolvers
-
 include("defs.jl")
 include("simplex_matrix.jl")
 
@@ -58,7 +55,7 @@ function fw(
     trajectory=false,
     verbose=false,
     linesearch_tol=1e-7,
-    emphasis::Emphasis=blas,
+    emphasis::Emphasis=memory,
     nep=false,
     gradient=nothing
 )
@@ -114,6 +111,10 @@ function fw(
 
     if line_search === fixed && gamma0 == 0
         println("FATAL: gamma0 not set. We are not going to move a single bit.")
+    end
+
+    if !isnothing(momentum) && (line_search === shortstep || line_search === adaptive || line_search === rationalshortstep)
+        println("WARNING: Momentum-averaged gradients should usually be used with agnostic stepsize rules.")
     end
 
     if verbose
@@ -186,7 +187,11 @@ function fw(
         
         @emphasis(emphasis, d = x - v)
 
-        L, gamma = line_search_wrapper(line_search,t,f,grad!,x, d,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim, 1.0)
+        if isnothing(momentum)
+            gamma, L = line_search_wrapper(line_search,t,f,grad!,x, d,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim, 1.0)
+        else
+            gamma, L = line_search_wrapper(line_search,t,f,grad!,x, d,gtemp,dual_gap,L,gamma0,linesearch_tol,step_lim, 1.0)
+        end
 
         @emphasis(emphasis, x = x - gamma*d)
 
@@ -256,7 +261,7 @@ function lcg(
     verbose=false,
     linesearch_tol=1e-7,
     step_lim=20,
-    emphasis::Emphasis=blas,
+    emphasis::Emphasis=memory,
     gradient=nothing,
     VType=typeof(x0),
 )
@@ -388,7 +393,7 @@ function lcg(
 
         @emphasis(emphasis, d = x - v)
         
-        L, gamma = line_search_wrapper(line_search,t,f,grad!,x,d,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim, 1.0)
+        gamma, L = line_search_wrapper(line_search,t,f,grad!,x,d,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim, 1.0)
 
         @emphasis(emphasis, x = x - gamma*d)
 
@@ -411,6 +416,15 @@ function lcg(
         end
         t += 1
     end
+
+    # recompute everything once for final verfication / do not record to trajectory though for now! 
+    # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
+    # hence the final computation.
+    grad!(gradient, x)
+    v = compute_extreme_point(lmo, gradient)
+    primal = f(x)
+    dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
+
     if verbose
         tt = last
         rep = (

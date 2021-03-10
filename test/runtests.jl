@@ -1,6 +1,7 @@
 using FrankWolfe
 using Test
 using LinearAlgebra
+using DoubleFloats
 
 include("lmo.jl")
 include("function_gradient.jl")
@@ -16,8 +17,8 @@ include("utils.jl")
     f(x) = norm(x)^2
     gradient = similar(a)
     grad!(gradient, a)
-    @test FrankWolfe.backtrackingLS(f, gradient, a, b) == (1, 0.5)
-    @test abs(FrankWolfe.segment_search(f, grad!, a, b)[2] - 0.5) < 0.0001
+    @test FrankWolfe.backtrackingLS(f, gradient, a, a - b, 1.0) == (1, 0.5)
+    @test abs(FrankWolfe.segment_search(f, grad!, a, a - b, 1.0)[2] - 0.5) < 0.0001
 end
 
 @testset "FrankWolfe.jl" begin
@@ -424,7 +425,7 @@ end
         function grad!(storage, x)
             @. storage = 2 * (x - xp)
         end
-        test_types = (Float16, Float32, Float64, BigFloat, Rational{BigInt})
+        test_types = (Float16, Float32, Float64, Double64, BigFloat, Rational{BigInt})
 
         @testset "Multi-precision test for $T" for T in test_types
             println("\nTesting precision for type: ", T)
@@ -599,6 +600,14 @@ end
     @test x !== nothing
     @test f(x) ≈ f(xref)
 
+end
+
+# in separate module for name space issues
+module BCGDirectionError
+using Test
+@testset "BCG direction accuracy" begin
+    include("bcg_direction_error.jl")
+end
 end
 
 if get(ENV, "FW_TEST", nothing) == "full"
