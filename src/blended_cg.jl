@@ -46,6 +46,7 @@ function bcg(
     line_search::LineSearchMethod=adaptive,
     L=Inf,
     gamma0=0,
+    hessian = nothing,
     step_lim=20,
     epsilon=1e-7,
     max_iteration=10000,
@@ -158,7 +159,7 @@ function bcg(
             non_simplex_iter,
             verbose = verbose,
             print_iter=print_iter,
-            hessian = nothing,
+            hessian = hessian,
             L=L,
             accelerated = false,
         )
@@ -188,7 +189,7 @@ function bcg(
             phi = (xval - value) / 2
         else
             tt = regular
-            L, gamma = line_search_wrapper(line_search, t, f, grad!, x, x - v, gradient, dual_gap, L, gamma0, linesearch_tol, step_lim, 1.0)
+            gamma, L = line_search_wrapper(line_search, t, f, grad!, x, x - v, gradient, dual_gap, L, gamma0, linesearch_tol, step_lim, 1.0)
 
             if gamma == 1.0
                 active_set_initialize!(active_set, v)
@@ -321,17 +322,133 @@ function minimize_over_convex_hull(
             weight_purge_threshold=weight_purge_threshold,
         )
     else
-        #Rewrite problem as problem over the simplex and solve using Nesterov's AGD
+        x = compute_active_set_iterate(active_set)
+        grad!(gradient, x)
+        #Rewrite as problem over the simplex
+        M, b = build_reduced_problem(active_set.atoms, active_set.weights, gradient, hessian)
+        L = eigmax(M)
+        reduced_f(y) =  f(x) - dot(gradient, x) + 0.5*transpose(x) * hessian * x + dot(b, y) + 0.5*transpose(y) * M * y
+
+        function reduced_grad!(storage, x)
+            storage .= b + M*x
+        end
+
+        function reduced_linesearch(gradient, direction)
+            return -dot(gradient, direction)/ (transpose(direction)*M*direction)
+        end
+        
+        #Solve using Nesterov's AGD
         if accelerated
             return
-        #Rewrite problem as problem over the simplex and solve using gradient descent.
+        #Solve using gradient descent.
         else
-            return
+            new_weights, number_of_steps = simplex_gradient_descent_over_probability_simplex(
+                active_set.weights, 
+                reduced_f, 
+                reduced_grad!, 
+                reduced_linesearch, 
+                tolerance,
+                t, 
+                trajectory, 
+                traj_data, 
+                time_start, 
+                non_simplex_iter, 
+                verbose = verbose, 
+                print_iter=print_iter, 
+                L = L,
+                )   
+            @. active_set.weights = new_weights
         end
     end
+    active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
     return number_of_steps
 end
 
+function simplex_gradient_descent_over_probability_simplex(
+    initial_point,
+    reduced_f,
+    reduced_grad!,
+    reduced_linesearch,
+    tolerance,
+    t,
+    trajectory,
+    traj_data,
+    time_start,
+    non_simplex_iter;
+    verbose = verbose,
+    print_iter=print_iter,
+    L = 1.0,
+)
+    number_of_steps = 0
+    x = deepcopy(initial_point)
+    gradient = similar(x)
+    d = similar(x)
+    reduced_grad!(gradient, x)
+    strong_wolfe_gap = Strong_Frank_Wolfe_gap_probability_simplex(gradient)
+    while strong_wolfe_gap > tolerance
+        y = projection_simplex_sort(x .- gradient/L)
+        @. d =   y - x
+        gamma = min(1.0, reduced_linesearch(gradient, d))
+        @. x =  x + gamma*d
+        number_of_steps = number_of_steps + 1
+        primal = reduced_f(x)
+        reduced_grad!(gradient, x)
+        strong_wolfe_gap = Strong_Frank_Wolfe_gap_probability_simplex(gradient)
+        if trajectory
+            push!(
+                traj_data,
+                (
+                    t + number_of_steps,
+                    primal,
+                    primal - tolerance,
+                    tolerance,
+                    (time_ns() - time_start) / 1.0e9,
+                    length(initial_point),
+                ),
+            )
+        end
+        tt = simplex_descent
+        if verbose && mod(t + number_of_steps, print_iter) == 0
+            if t == 0
+                tt = initial
+            end
+            rep = (
+                tt,
+                string(t+ number_of_steps),
+                primal,
+                primal - tolerance,
+                tolerance,
+                (time_ns() - time_start) / 1.0e9,
+                length(initial_point),
+                non_simplex_iter,
+            )
+            print_iter_func(rep)
+            flush(stdout)
+        end
+    end
+    return x, number_of_steps
+end
+
+# Sort projection for the simplex.
+function projection_simplex_sort(x)
+    n = length(x)
+    if sum(x) == 1.0 && all(>=(0.0), x)
+        return x
+    end
+    v = x .- maximum(x)
+    u = sort(v, rev=true)
+    cssv = cumsum(u)
+    rho = sum(u .* collect(1:1:n).>(cssv .- 1.0)) - 1
+    theta = (cssv[rho + 1] - 1.0) / (rho + 1)
+    w = clamp.(v .- theta, 0.0, Inf)
+    return w
+end
+
+function Strong_Frank_Wolfe_gap_probability_simplex(gradient)
+    index_min = argmin(gradient)
+    index_max = argmax(gradient)
+    return gradient[index_max] - gradient[index_min]
+end
 
 function simplex_gradient_descent_over_convex_hull(
     f,
@@ -409,8 +526,8 @@ function simplex_gradient_descent_over_convex_hull(
         end
         linesearch_method = L === nothing || !isfinite(L) ? backtracking : shortstep
         if linesearch_method == backtracking
-            _, gamma =
-                backtrackingLS(f, gradient, x, x - y, linesearch_tol=linesearch_tol, step_lim=step_lim)
+            gamma, _ =
+            backtrackingLS(f, direction, x, x - y, 1.0, linesearch_tol=linesearch_tol, step_lim=step_lim)
         else # == shortstep, just two methods here for now
             gamma = fast_dot(gradient, x - y) / (L * norm(x - y)^2)
         end
@@ -459,6 +576,45 @@ function simplex_gradient_descent_over_convex_hull(
             flush(stdout)
         end
     end
+end
+
+#In case the matrix is a maybe hot vector
+#Returns the problem written in the form:
+# reduced_linear^T \lambda + 0.5* \lambda^T reduced_hessian \lambda
+#according to the current active set.
+function build_reduced_problem(atoms::AbstractVector{<:FrankWolfe.MaybeHotVector}, weights, gradient, hessian)
+    n = atoms[1].len
+    k = length(atoms)
+    aux_matrix = zeros(eltype(atoms[1].active_val), n, k)
+    reduced_linear = zeros(eltype(atoms[1].active_val), k)
+    #Compute the intermediate matrix.
+    for i in 1:k
+        reduced_linear[i] = dot(atoms[i], gradient)
+        aux_matrix[:,i] .= atoms[i].active_val*hessian[atoms[i].val_idx, :] 
+    end
+    #Compute the final matrix.
+    reduced_hessian = zeros(eltype(atoms[1].active_val), k, k)
+    for i in 1:k
+        reduced_hessian[:,i] .= atoms[i].active_val*aux_matrix[atoms[i].val_idx,:]
+    end
+    reduced_linear .-=  reduced_hessian * weights
+    return reduced_hessian, reduced_linear
+end
+
+#In case the active set atoms are not MaybeHotVectors
+function build_reduced_problem(active_set::AbstractVector{<:Array}, weights, gradient, hessian)
+    n = length(atoms[1])
+    k = length(atoms)
+    #Construct the matrix of vertices.
+    vertex_matrix = zeros(n, k)
+    reduced_linear = zeros(k)
+    for i in 1:k
+        reduced_linear[i] = dot(atoms[i], gradient)
+        vertex_matrix[:, i] .= active_set.atoms[i]
+    end
+    reduced_hessian = transpose(vertex_matrix) * hessian * vertex_matrix
+    reduced_linear .-= reduced_hessian * weights
+    return reduced_hessian, reduced_linear
 end
 
 function bcg_backup(
