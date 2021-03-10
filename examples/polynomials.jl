@@ -110,9 +110,11 @@ lmo = FrankWolfe.KSparseLMO(
     1.1 * maximum(all_coeffs)
 )
 
-x0 = FrankWolfe.compute_extreme_point(lmo, rand(length(all_coeffs)))
+x00 = FrankWolfe.compute_extreme_point(lmo, rand(length(all_coeffs)))
 
 k = 1000
+
+x0 = deepcopy(x00)
 
 # vanilla FW
 @time x, v, primal, dual_gap, trajectoryFw = FrankWolfe.fw(
@@ -130,6 +132,8 @@ k = 1000
     gradient=gradient,
 );
 
+x0 = deepcopy(x00)
+
 @time x, v, primal, dual_gap, trajectoryFw = FrankWolfe.afw(
     f,
     grad!,
@@ -144,6 +148,9 @@ k = 1000
     trajectory=false,
     gradient=gradient,
 );
+
+x0 = deepcopy(x00)
+
 
 @time x, v, primal, dual_gap, trajectoryBCG = FrankWolfe.bcg(
     f,
