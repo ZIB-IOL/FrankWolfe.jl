@@ -1,4 +1,5 @@
 import Arpack
+using DoubleFloats
 
 function print_header(data)
     @printf(
@@ -278,6 +279,21 @@ function bcg(
 end
 
 
+"""
+minimize_over_convex_hull
+
+Given a function f with gradient grad! and an active set 
+active_set this function will minimize the function over 
+the convex hull of the active set until the strong-wolfe 
+gap over the active set is below tolerance.
+
+It will either directly minimize over the convex hull using
+simplex gradient descent, or it will transform the problem 
+to barycentric coordinates and minimize over the unit 
+probability simplex using gradient descent or Nesterov's 
+accelerated gradient descent.
+"""
+
 function minimize_over_convex_hull(
     f,
     grad!,
@@ -314,7 +330,7 @@ function minimize_over_convex_hull(
             non_simplex_iter,
             verbose = verbose,
             print_iter=print_iter,
-            L=L,
+            L=nothing,
             linesearch_tol=linesearch_tol,
             step_lim=step_lim,
             weight_purge_threshold=weight_purge_threshold,
@@ -322,55 +338,61 @@ function minimize_over_convex_hull(
     else
         x = compute_active_set_iterate(active_set)
         grad!(gradient, x)
-        c = [fast_dot(gradient, a) for a in active_set.atoms]
-        if maximum(c) - minimum(c) <= tolerance
-            return 0
-        end
+        #c = [fast_dot(gradient, a) for a in active_set.atoms]
+        #if maximum(c) - minimum(c) <= tolerance
+        #    return 0
+        #end
 
         #Rewrite as problem over the simplex
-        M, b = build_reduced_problem(active_set.atoms, hessian, active_set.weights, gradient)
-        L = eigmax(M)
-        #L = Arpack.eigs(M, nev=1, which=:LM)
-        #L = 2.0
-
-        mu = eigmin(M)
-        #mu = Arpack.eigs(M, nev=1, which=:SM)
-        #mu = 2.0
-
+        M, b = build_reduced_problem(active_set.atoms, hessian, active_set.weights, gradient, tolerance)
+        #Early exit if we have detected that the strong-Wolfe gap is below the desired tolerance while building the reduced problem.
+        if isnothing(M) && isnothing(b)
+            return 0
+        end
+        #In case the matrices are DoubleFloats we need to cast them as Float64, because LinearAlgebra does not work with them.
+        if eltype(M) === Double64
+            converted_matrix = convert(Array{Float64}, M)
+            L_reduced = eigmax(converted_matrix)
+        else
+            L_reduced = eigmax(M)
+            #L_reduced = Arpack.eigs(M, nev=1, which=:LM)
+        end
         reduced_f(y) =  f(x) - dot(gradient, x) + 0.5*transpose(x) * hessian * x + dot(b, y) + 0.5*transpose(y) * M * y
         function reduced_grad!(storage, x)
             storage .= b + M*x
         end
-
-        
         #Solve using Nesterov's AGD
-        if accelerated && L / mu > 1.0
-            new_weights, number_of_steps = accelerated_simplex_gradient_descent_over_probability_simplex(
-                active_set.weights, 
-                reduced_f, 
-                reduced_grad!,
-                tolerance,
-                t, 
-                trajectory, 
-                traj_data, 
-                time_start, 
-                non_simplex_iter, 
-                verbose = verbose, 
-                print_iter=print_iter, 
-                L = L,
-                mu = mu,
-                )   
-        #Solve using gradient descent.
-        else
-            function reduced_linesearch(gradient, direction)
-                return -dot(gradient, direction)/ (transpose(direction)*M*direction)
+        if accelerated 
+            if eltype(M) === Double64
+                mu_reduced = eigmin(converted_matrix)
+            else
+                mu_reduced = eigmin(M)
             end
-
+            if L_reduced / mu_reduced > 1.0
+                new_weights, number_of_steps = accelerated_simplex_gradient_descent_over_probability_simplex(
+                    active_set.weights, 
+                    reduced_f, 
+                    reduced_grad!,
+                    tolerance,
+                    t, 
+                    trajectory, 
+                    traj_data, 
+                    time_start, 
+                    non_simplex_iter, 
+                    verbose = verbose, 
+                    print_iter=print_iter, 
+                    L = L_reduced,
+                    mu = mu_reduced,
+                    )  
+                @. active_set.weights = new_weights
+            end
+        end
+        #Solve using gradient descent.
+        if !accelerated || L_reduced / mu_reduced == 1.0
             new_weights, number_of_steps = simplex_gradient_descent_over_probability_simplex(
                 active_set.weights, 
                 reduced_f, 
                 reduced_grad!, 
-                reduced_linesearch, 
                 tolerance,
                 t, 
                 trajectory, 
@@ -379,7 +401,7 @@ function minimize_over_convex_hull(
                 non_simplex_iter, 
                 verbose = verbose, 
                 print_iter=print_iter, 
-                L = L,
+                L = L_reduced,
                 )   
             @. active_set.weights = new_weights
         end
@@ -389,18 +411,28 @@ function minimize_over_convex_hull(
     return number_of_steps
 end
 
-#In case the matrix is a maybe hot vector
-#Returns the problem written in the form:
-# reduced_linear^T \lambda + 0.5* \lambda^T reduced_hessian \lambda
-#according to the current active set.
-function build_reduced_problem(atoms::AbstractVector{<:FrankWolfe.MaybeHotVector}, hessian, weights, gradient)
+"""
+build_reduced_problem
+
+Given an active set formed by MaybeHotVector, a (constant)
+Hessian and a gradient constructs a quadratic problem 
+over the unit probability simplex that is equivalent to 
+minimizing the original function over the convex hull of the
+active set. If λ are the barycentric coordinates of dimension
+equal to the cardinality of the active set, the objective 
+function is:
+    f(λ) = reduced_linear^T λ + 0.5 * λ^T reduced_hessian λ
+"""
+function build_reduced_problem(atoms::AbstractVector{<:FrankWolfe.MaybeHotVector}, hessian, weights, gradient, tolerance)
     n = atoms[1].len
     k = length(atoms)
+    reduced_linear = [fast_dot(gradient, a) for a in atoms]
+    if Strong_Frank_Wolfe_gap(reduced_linear) <= tolerance
+        return nothing, nothing
+    end
     aux_matrix = zeros(eltype(atoms[1].active_val), n, k)
-    reduced_linear = zeros(eltype(atoms[1].active_val), k)
     #Compute the intermediate matrix.
     for i in 1:k
-        reduced_linear[i] = dot(atoms[i], gradient)
         aux_matrix[:,i] .= atoms[i].active_val*hessian[atoms[i].val_idx, :] 
     end
     #Compute the final matrix.
@@ -412,15 +444,26 @@ function build_reduced_problem(atoms::AbstractVector{<:FrankWolfe.MaybeHotVector
     return reduced_hessian, reduced_linear
 end
 
-#Case where the active set contains sparse arrays
-function build_reduced_problem(atoms::AbstractVector{<:SparseArrays.AbstractSparseArray}, hessian, weights, gradient)
+"""
+build_reduced_problem
+
+Same as the function above, but for the case where the active 
+set is formed by Sparse Arrays.
+"""
+function build_reduced_problem(atoms::AbstractVector{<:SparseArrays.AbstractSparseArray}, hessian, weights, gradient, tolerance)
     n = length(atoms[1])
     k = length(atoms)
+
+    reduced_linear = [fast_dot(gradient, a) for a in atoms]
+    if Strong_Frank_Wolfe_gap(reduced_linear) <= tolerance
+        return nothing, nothing
+    end
+
     #Construct the matrix of vertices.
     vertex_matrix = zeros(n, k)
-    reduced_linear = zeros(k)
+    #reduced_linear = zeros(k)
     for i in 1:k
-        reduced_linear[i] = dot(atoms[i], gradient)
+        #reduced_linear[i] = dot(atoms[i], gradient)
         vertex_matrix[:, i] .= atoms[i]
     end
     reduced_hessian = transpose(vertex_matrix) * hessian * vertex_matrix
@@ -428,15 +471,26 @@ function build_reduced_problem(atoms::AbstractVector{<:SparseArrays.AbstractSpar
     return reduced_hessian, reduced_linear
 end
 
-#General case where the active set contains normal Julia arrays
-function build_reduced_problem(atoms::AbstractVector{<:Array}, hessian, weights, gradient)
+"""
+build_reduced_problem
+
+Same as the two function above, but for the case where the active 
+set is formed by normal Julia Arrays.
+"""
+function build_reduced_problem(atoms::AbstractVector{<:Array}, hessian, weights, gradient, tolerance)
     n = length(atoms[1])
     k = length(atoms)
+
+    reduced_linear = [fast_dot(gradient, a) for a in atoms]
+    if Strong_Frank_Wolfe_gap(reduced_linear) <= tolerance
+        return nothing, nothing
+    end
+
     #Construct the matrix of vertices.
     vertex_matrix = zeros(n, k)
-    reduced_linear = zeros(k)
+    #reduced_linear = zeros(k)
     for i in 1:k
-        reduced_linear[i] = dot(atoms[i], gradient)
+        #reduced_linear[i] = dot(atoms[i], gradient)
         vertex_matrix[:, i] .= atoms[i]
     end
     reduced_hessian = transpose(vertex_matrix) * hessian * vertex_matrix
@@ -444,6 +498,31 @@ function build_reduced_problem(atoms::AbstractVector{<:Array}, hessian, weights,
     return reduced_hessian, reduced_linear
 end
 
+"""
+Checks the strong-Wolfe gap for the reduced problem.
+"""
+function Strong_Frank_Wolfe_gap(gradient)
+    val_min = Inf
+    val_max = -Inf
+    for i in 1:length(gradient)
+        temp_val = gradient[i]
+        if temp_val < val_min
+            val_min = temp_val
+        end
+        if temp_val > val_max
+            val_max = temp_val
+        end
+    end
+    return val_max - val_min
+end
+
+"""
+accelerated_simplex_gradient_descent_over_probability_simplex
+
+Minimizes an objective function over the unit probability simplex 
+until the Strong-Wolfe gap is below tolerance using Nesterov's 
+accelerated gradient descent.
+"""
 function accelerated_simplex_gradient_descent_over_probability_simplex(
     initial_point,
     reduced_f,
@@ -468,34 +547,29 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
     d = similar(x)
     reduced_grad!(gradient_x, x)
     reduced_grad!(gradient_y, x)
-    strong_wolfe_gap = Strong_Frank_Wolfe_gap_probability_simplex(gradient_x)
+    strong_wolfe_gap = Strong_Frank_Wolfe_gap_probability_simplex(gradient_x, x)
     q = mu / L
     # If the problem is close to convex, simply use the accelerated algorithm for convex objective functions.
     if mu < 1.0e-3
         alpha = 0.0
+        alpha_old = 0.0
     else
-        alpha = sqrt(q)
+        gamma = (1 - sqrt(q))/(1 + sqrt(q))
     end
-    alpha_old = 0.0
     while strong_wolfe_gap > tolerance
         @. x_old =   x
         reduced_grad!(gradient_y, y)
-        @. d =   y - gradient_y/L
         x = projection_simplex_sort(y .- gradient_y/L)
         if mu < 1.0e-3
-            alpha_old = alpha_old
+            alpha_old = alpha
             alpha = 0.5 * (1 + sqrt(1 + 4 * alpha^2))
             gamma = (alpha_old - 1.0) / alpha
-        else
-            alpha_old = alpha
-            alpha = return_bounded_root_of_square(1, alpha^2 - q, -alpha^2)
-            gamma = alpha_old * (1 - alpha_old) / (alpha_old^2 - alpha)
         end
         @. y =  x + gamma*(x - x_old)
         number_of_steps = number_of_steps + 1
         primal = reduced_f(x)
         reduced_grad!(gradient_x, x)
-        strong_wolfe_gap = Strong_Frank_Wolfe_gap_probability_simplex(gradient_x)
+        strong_wolfe_gap = Strong_Frank_Wolfe_gap_probability_simplex(gradient_x, x)
         if trajectory
             push!(
                 traj_data,
@@ -531,25 +605,16 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
     return x, number_of_steps
 end
 
-function return_bounded_root_of_square(a,b,c)
-    root1 = (-b+sqrt(b^2 - 4*a*c))/(2*a)
-    if root1 >= 0 && root1 < 1.0
-        return root1
-    else
-        root2 = (-b - sqrt(b^2 - 4*a*c))/(2*a)
-        if root2 >= 0 && root2 < 1.0
-            return root2
-        else
-            print("\n TODO, introduce assert. Roots are: ", root1, " ", root2,"\n")
-        end
-    end
-end
+"""
+simplex_gradient_descent_over_probability_simplex
 
+Minimizes an objective function over the unit probability simplex 
+until the Strong-Wolfe gap is below tolerance using gradient descent.
+"""
 function simplex_gradient_descent_over_probability_simplex(
     initial_point,
     reduced_f,
     reduced_grad!,
-    reduced_linesearch,
     tolerance,
     t,
     trajectory,
@@ -565,16 +630,13 @@ function simplex_gradient_descent_over_probability_simplex(
     gradient = similar(x)
     d = similar(x)
     reduced_grad!(gradient, x)
-    strong_wolfe_gap = Strong_Frank_Wolfe_gap_probability_simplex(gradient)
+    strong_wolfe_gap = Strong_Frank_Wolfe_gap_probability_simplex(gradient, x)
     while strong_wolfe_gap > tolerance
-        y = projection_simplex_sort(x .- gradient/L)
-        @. d =   y - x
-        gamma = min(1.0, reduced_linesearch(gradient, d))
-        @. x =  x + gamma*d
+        x = projection_simplex_sort(x .- gradient/L)
         number_of_steps = number_of_steps + 1
         primal = reduced_f(x)
         reduced_grad!(gradient, x)
-        strong_wolfe_gap = Strong_Frank_Wolfe_gap_probability_simplex(gradient)
+        strong_wolfe_gap = Strong_Frank_Wolfe_gap_probability_simplex(gradient, x)
         if trajectory
             push!(
                 traj_data,
@@ -612,7 +674,12 @@ end
 
 
 
-# Sort projection for the simplex.
+"""
+projection_simplex_sort
+
+Perform a projection onto the unit probability simplex using 
+a sorting algorithm.
+"""
 function projection_simplex_sort(x)
     n = length(x)
     if sum(x) == 1.0 && all(>=(0.0), x)
@@ -627,23 +694,37 @@ function projection_simplex_sort(x)
     return w
 end
 
-function Strong_Frank_Wolfe_gap_probability_simplex(gradient)
-    val_min = gradient[1]
-    val_max = gradient[1]
-    for i in 2:length(gradient)
-        temp_val = gradient[i]
-        if temp_val < val_min
-            val_min = temp_val
-        else
+"""
+Strong_Frank_Wolfe_gap_probability_simplex
+
+Compute the Strong-Wolfe gap over the unit probability simplex 
+given a gradient.
+"""
+function Strong_Frank_Wolfe_gap_probability_simplex(gradient, x)
+    val_min = Inf
+    val_max = -Inf
+    for i in 1:length(gradient)
+        if x[i] > 0 
+            temp_val = gradient[i]
+            if temp_val < val_min
+                val_min = temp_val
+            end
             if temp_val > val_max
                 val_max = temp_val
             end
         end
-
     end
     return val_max - val_min
 end
 
+
+"""
+simplex_gradient_descent_over_convex_hull
+
+Minimizes an objective function over the convex hull of the active set
+until the Strong-Wolfe gap is below tolerance using simplex gradient
+descent.
+"""
 function simplex_gradient_descent_over_convex_hull(
     f,
     grad!,
@@ -684,7 +765,7 @@ function simplex_gradient_descent_over_convex_hull(
             a0 = active_set.atoms[1]
             empty!(active_set)
             push!(active_set, (1, a0))
-            return false
+            return number_of_steps
         end
         # NOTE: sometimes the direction is non-improving
         # usual suspects are floating-point errors when multiplying atoms with near-zero weights
@@ -695,7 +776,7 @@ function simplex_gradient_descent_over_convex_hull(
             If higher accuracy is required, consider using Double64 (still quite fast) and if that does not help BigFloat (slower) as type for the numbers.
             Alternatively, consider using AFW (with lazy = true) instead."
             println(fast_dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), gradient))
-            return true
+            return number_of_steps
         end
 
         η = eltype(d)(Inf)
@@ -721,7 +802,7 @@ function simplex_gradient_descent_over_convex_hull(
             linesearch_method = L === nothing || !isfinite(L) ? backtracking : shortstep
             if linesearch_method == backtracking
                 gamma, _ =
-                backtrackingLS(f, direction, x, x - y, 1.0, linesearch_tol=linesearch_tol, step_lim=step_lim)
+                backtrackingLS(f, gradient, x, x - y, 1.0, linesearch_tol=linesearch_tol, step_lim=step_lim)
             else # == shortstep, just two methods here for now
                 gamma = fast_dot(gradient, x - y) / (L * norm(x - y)^2)
             end
