@@ -5,9 +5,8 @@ using DoubleFloats
 using FrankWolfe
 using SparseArrays
 
-n = Int(1e4)
-#n = Int(1e3)
-k = 100
+n = Int(5e2)
+k = 1000
 
 s = rand(1:100)
 @info "Seed $s"
@@ -57,7 +56,7 @@ function cgrad!(storage, x, xp)
 end
 
 # this LMO might produce numerical instabilities do demonstrate the recovery feature
-const lmo = FrankWolfe.KSparseLMO(100, 1.0)
+const lmo = FrankWolfe.KSparseLMO(50, 1.0)
 
 # full upgrade of the lmo (and hence optimization) to Double64.
 # the same lmo with Double64 is much more numerically robust. costs relatively little in speed.
@@ -87,13 +86,13 @@ FrankWolfe.benchmark_oracles(x -> cf(x, xp), (str, x) -> cgrad!(str, x, xp), ()-
 # as we do multiple runs from the same initial point we do not want this here.
 
 x0 = deepcopy(x00)
-x, v, primal, dual_gap, trajectoryBCG = FrankWolfe.bcg(
+x, v, primal, dual_gap, trajectoryBCG_accel_simplex = FrankWolfe.bcg(
     f,
     grad!,
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.adaptive,
+   line_search=FrankWolfe.adaptive,
     print_iter=k / 10,
     hessian = hessian,
     emphasis=FrankWolfe.memory,
@@ -106,7 +105,26 @@ x, v, primal, dual_gap, trajectoryBCG = FrankWolfe.bcg(
 )
 
 x0 = deepcopy(x00)
-x, v, primal, dual_gap, trajectoryBCG2 = FrankWolfe.bcg(
+x, v, primal, dual_gap, trajectoryBCG_simplex = FrankWolfe.bcg(
+    f,
+    grad!,
+    lmo,
+    x0,
+    max_iteration=k,
+    line_search=FrankWolfe.adaptive,
+    print_iter=k / 10,
+    hessian = hessian,
+    emphasis=FrankWolfe.memory,
+    L=L,
+    accelerated = false,
+    verbose=true,
+    trajectory=true,
+    Ktolerance=1.00,
+    weight_purge_threshold=1e-10,
+)
+
+x0 = deepcopy(x00)
+x, v, primal, dual_gap, trajectoryBCG_convex = FrankWolfe.bcg(
     f,
     grad!,
     lmo,
@@ -122,26 +140,27 @@ x, v, primal, dual_gap, trajectoryBCG2 = FrankWolfe.bcg(
     weight_purge_threshold=1e-10,
 )
 
-#x, v, primal, dual_gap, trajectoryBCG_backup = FrankWolfe.bcg_backup(
-#    f,
-#    grad!,
-#    lmo,
-#    x0,
-#    max_iteration=k,
-#    line_search=FrankWolfe.adaptive,
-#    print_iter=k / 10,
-#    emphasis=FrankWolfe.memory,
-#    L=L,
-#    verbose=true,
-#    trajectory=true,
-#    Ktolerance=1.00,
-#    goodstep_tolerance=0.95,
-#    weight_purge_threshold=1e-10,
-#)
+x0 = deepcopy(x00)
+x, v, primal, dual_gap, trajectoryBCG_convex_backup = FrankWolfe.bcg_backup(
+    f,
+    grad!,
+    lmo,
+    x0,
+    max_iteration=k,
+    line_search=FrankWolfe.adaptive,
+    print_iter=k / 10,
+    emphasis=FrankWolfe.memory,
+    L=L,
+    verbose=true,
+    trajectory=true,
+    Ktolerance=1.00,
+    goodstep_tolerance=0.95,
+    weight_purge_threshold=1e-10,
+)
 
-#data = [trajectoryBCG, trajectoryBCG2, trajectoryBCG_backup]
-#label = ["BCG", "BCG old", "BCG backup"]
-#FrankWolfe.plot_trajectories(data, label, filename="output_results.png")
+data = [trajectoryBCG_accel_simplex, trajectoryBCG_simplex, trajectoryBCG_convex, trajectoryBCG_convex_backup]
+label = ["BCG (accel simplex)", "BCG (simplex)", "BCG (convex)", "BCG (convex backup)"]
+FrankWolfe.plot_trajectories(data, label, filename="output_results.png")
 
 #x0 = deepcopy(x00)
 #@time x, v, primal, dual_gap, trajectoryAda = FrankWolfe.afw(
