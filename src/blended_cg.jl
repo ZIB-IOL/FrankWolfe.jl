@@ -475,7 +475,7 @@ end
     build_reduced_problem(atoms::AbstractVector{<:Array}, hessian, weights, gradient, tolerance)
 
 Same as the two function above, but for the case where the active 
-set is formed by normal Julia Arrays.
+set is formed by dense Arrays.
 """
 function build_reduced_problem(atoms::AbstractVector{<:Array}, hessian, weights, gradient, tolerance)
     n = length(atoms[1])
