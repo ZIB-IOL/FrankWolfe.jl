@@ -346,7 +346,7 @@ function minimize_over_convex_hull(
         #Rewrite as problem over the simplex
         M, b = build_reduced_problem(active_set.atoms, hessian, active_set.weights, gradient, tolerance)
         #Early exit if we have detected that the strong-Wolfe gap is below the desired tolerance while building the reduced problem.
-        if isnothing(M) && isnothing(b)
+        if isnothing(M)
             return 0
         end
         #In case the matrices are DoubleFloats we need to cast them as Float64, because LinearAlgebra does not work with them.
