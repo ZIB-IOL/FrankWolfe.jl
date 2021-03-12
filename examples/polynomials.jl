@@ -51,34 +51,12 @@ function f(coefficients)
     end
 end
 
-# faster version of the objective
-function f2(coefficients)
-    res = 0.0
-    @inbounds for (x, y) in training_data
-        yhat = 0.0
-        for midx in eachindex(var_monomials)
-            m = var_monomials[midx]
-            c = coefficients[midx]
-            if c > 0
-                r = c
-                for j in eachindex(m.z)
-                    r *= x[j]^m.z[j]
-                end
-                yhat += r
-            end
-        end
-        res += (yhat - y)^2
-    end
-    return res * 0.5 / length(training_data)
-end
-
 # extended version, much faster (memory intense)
 function f3(coefficients)
     return 0.5 / length(extended_training_data) * sum(extended_training_data) do (x, y)
         (dot(coefficients, x) - y)^2
     end
 end
-
 
 function grad!(storage, coefficients)
     storage .= 0
