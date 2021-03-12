@@ -5,7 +5,7 @@ using DoubleFloats
 using FrankWolfe
 using SparseArrays
 
-n = Int(1000)
+n = 1000
 k = 10000
 
 s = rand(1:100)
