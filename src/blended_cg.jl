@@ -557,7 +557,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
         gamma = (1 - sqrt(q))/(1 + sqrt(q))
     end
     while strong_wolfe_gap > tolerance
-        @. x_old =   x
+        @. x_old = x
         reduced_grad!(gradient_y, y)
         x = projection_simplex_sort(y .- gradient_y/L)
         if mu < 1.0e-3
