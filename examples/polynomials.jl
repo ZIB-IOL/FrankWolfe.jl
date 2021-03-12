@@ -72,6 +72,7 @@ function f2(coefficients)
     return res * 0.5 / length(training_data)
 end
 
+# extended version, much faster (memory intense)
 function f3(coefficients)
     return 0.5 / length(extended_training_data) * sum(extended_training_data) do (x, y)
         (dot(coefficients, x) - y)^2
@@ -111,7 +112,7 @@ x0 = deepcopy(x00)
 
 # vanilla FW
 @time x, v, primal, dual_gap, trajectoryFw = FrankWolfe.fw(
-    f,
+    f3,
     grad!,
     lmo,
     x0,
@@ -128,7 +129,7 @@ x0 = deepcopy(x00)
 x0 = deepcopy(x00)
 
 @time x, v, primal, dual_gap, trajectoryFw = FrankWolfe.afw(
-    f,
+    f3,
     grad!,
     lmo,
     x0,
@@ -146,7 +147,7 @@ x0 = deepcopy(x00)
 
 
 @time x, v, primal, dual_gap, trajectoryBCG = FrankWolfe.bcg(
-    f,
+    f3,
     grad!,
     lmo,
     x0,
