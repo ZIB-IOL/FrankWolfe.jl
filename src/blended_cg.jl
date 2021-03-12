@@ -499,7 +499,7 @@ function build_reduced_problem(atoms::AbstractVector{<:Array}, hessian, weights,
 end
 
 """
-Checks the strong-Wolfe gap for the reduced problem.
+Checks the strong Frank-Wolfe gap for the reduced problem.
 """
 function Strong_Frank_Wolfe_gap(gradient)
     val_min = Inf
