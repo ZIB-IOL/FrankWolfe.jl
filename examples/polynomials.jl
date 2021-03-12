@@ -90,6 +90,9 @@ function grad!(storage, coefficients)
     return nothing
 end
 
+#Check the gradient using finite differences just in case
+check_gradients(grad!, f3, gradient)
+
 # gradient descent
 gradient = similar(all_coeffs)
 xgd = rand(length(all_coeffs))
