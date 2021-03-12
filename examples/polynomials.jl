@@ -68,8 +68,11 @@ function grad!(storage, coefficients)
     return nothing
 end
 
-# gradient descent
+#Check the gradient using finite differences just in case
 gradient = similar(all_coeffs)
+FrankWolfe.check_gradients(grad!, f3, gradient)
+
+# gradient descent
 xgd = rand(length(all_coeffs))
 for iter in 1:2000
     global xgd
