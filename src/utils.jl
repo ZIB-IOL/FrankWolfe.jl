@@ -1,3 +1,4 @@
+using FiniteDifferences
 
 """
 line search wrapper to clean up functions
