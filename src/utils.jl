@@ -609,3 +609,17 @@ function fast_dot(A::Matrix{T1}, B::SparseArrays.SparseMatrixCSC{T2}) where {T1,
     end
     return s
 end
+
+"""
+Check if the gradient using finite differences matches the grad! provided.
+"""
+function check_gradients(grad!, f, gradient, num_tests = 10)
+    for i in 1:num_tests
+        random_point = rand(length(gradient))
+        grad!(gradient, random_point)
+        if norm(grad(central_fdm(5, 1), f, random_point)[1] - gradient) > 1.0e-5
+            @warn "There is a noticeable difference between the gradient provided and
+            the gradient computed using finite differences."
+        end
+    end
+end
