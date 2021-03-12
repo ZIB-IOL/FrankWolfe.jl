@@ -15,7 +15,7 @@ s = rand(1:100)
 s = 41
 Random.seed!(s)
 
-"""
+
 matrix = rand(n,n)
 hessian = transpose(matrix) * matrix
 linear = rand(n)
@@ -87,7 +87,7 @@ x, v, primal, dual_gap, trajectoryBCG_convex = FrankWolfe.bcg(
 data = [trajectoryBCG_accel_simplex, trajectoryBCG_simplex, trajectoryBCG_convex]
 label = ["BCG (accel simplex)", "BCG (simplex)", "BCG (convex)"]
 FrankWolfe.plot_trajectories(data, label)
-"""
+
 
 
 matrix = rand(n,n)

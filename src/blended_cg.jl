@@ -148,7 +148,7 @@ function bcg(
     while t <= max_iteration && phi ≥ epsilon
         # TODO replace with single call interface from function_gradient.jl
         #Mininize over the convex hull until strong Wolfe gap is below a given tolerance.
-        num_simplex_descent_steps = minimize_over_convex_hull(
+        num_simplex_descent_steps = minimize_over_convex_hull!(
             f,
             grad!,
             gradient,
@@ -280,7 +280,7 @@ end
 
 
 """
-minimize_over_convex_hull
+minimize_over_convex_hull!
 
 Given a function f with gradient grad! and an active set 
 active_set this function will minimize the function over 
@@ -294,7 +294,7 @@ probability simplex using gradient descent or Nesterov's
 accelerated gradient descent.
 """
 
-function minimize_over_convex_hull(
+function minimize_over_convex_hull!(
     f,
     grad!,
     gradient,
@@ -422,6 +422,11 @@ active set. If λ are the barycentric coordinates of dimension
 equal to the cardinality of the active set, the objective 
 function is:
     f(λ) = reduced_linear^T λ + 0.5 * λ^T reduced_hessian λ
+
+In the case where we find that the current iterate has a strong-Wolfe 
+gap over the convex hull of the active set that is below the tolerance 
+we return nothing (as there is nothing to do).
+
 """
 function build_reduced_problem(atoms::AbstractVector{<:FrankWolfe.MaybeHotVector}, hessian, weights, gradient, tolerance)
     n = atoms[1].len
@@ -461,9 +466,7 @@ function build_reduced_problem(atoms::AbstractVector{<:SparseArrays.AbstractSpar
 
     #Construct the matrix of vertices.
     vertex_matrix = zeros(n, k)
-    #reduced_linear = zeros(k)
     for i in 1:k
-        #reduced_linear[i] = dot(atoms[i], gradient)
         vertex_matrix[:, i] .= atoms[i]
     end
     reduced_hessian = transpose(vertex_matrix) * hessian * vertex_matrix
@@ -488,9 +491,7 @@ function build_reduced_problem(atoms::AbstractVector{<:Array}, hessian, weights,
 
     #Construct the matrix of vertices.
     vertex_matrix = zeros(n, k)
-    #reduced_linear = zeros(k)
     for i in 1:k
-        #reduced_linear[i] = dot(atoms[i], gradient)
         vertex_matrix[:, i] .= atoms[i]
     end
     reduced_hessian = transpose(vertex_matrix) * hessian * vertex_matrix
