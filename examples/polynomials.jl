@@ -7,6 +7,7 @@ using MultivariatePolynomials
 using DynamicPolynomials
 
 import ReverseDiff
+using FiniteDifferences
 
 const N = 9
 
@@ -19,7 +20,7 @@ const var_monomials = MultivariatePolynomials.monomials(X, 0:max_degree)
 Random.seed!(42)
 const all_coeffs = map(var_monomials) do m
     d = MultivariatePolynomials.degree(m)
-    10 * rand() .* (rand() .> 0.3 * d / max_degree)
+    10 * rand() .* (rand() .> 0.6 * d / max_degree)
 end
 
 const true_poly = dot(all_coeffs, var_monomials)
@@ -36,6 +37,12 @@ const training_data = map(1:1000) do _
     y = MultivariatePolynomials.subs(true_poly, Pair(X, x)) + 2 * randn()
     (x, y.a[1])
 end
+
+const extended_training_data = map(training_data) do (x, y)
+    x_ext = getproperty.(MultivariatePolynomials.subs.(var_monomials, X=>x), :α)
+    (x_ext, y)
+end
+
 
 function f(coefficients)
     poly = evaluate_poly(coefficients)
@@ -65,29 +72,18 @@ function f2(coefficients)
     return res * 0.5 / length(training_data)
 end
 
-function grad!(storage, p_coefficients)
+function f3(coefficients)
+    return 0.5 / length(extended_training_data) * sum(extended_training_data) do (x, y)
+        (dot(coefficients, x) - y)^2
+    end
+end
+
+
+function grad!(storage, coefficients)
     storage .= 0
-    for (x, y) in training_data
-        p_i = zero(eltype(p_coefficients))
-        for midx in eachindex(var_monomials)
-            m = var_monomials[midx]
-            c = p_coefficients[midx]
-            if c > 0
-                r = c
-                for j in eachindex(m.z)
-                    r *= x[j]^m.z[j]
-                end
-                p_i += r
-            end
-        end
-        for midx in eachindex(p_coefficients)
-            m = var_monomials[midx]
-            r = one(eltype(p_coefficients))
-            for j in eachindex(m.z)
-                r *= x[j]^m.z[j]
-            end
-            storage[midx] += r *  (p_i - y)
-        end
+    for (x, y) in extended_training_data
+        p_i = dot(coefficients, x) - y
+        @. storage += x * p_i
     end
     storage ./= length(training_data)
     return nothing
@@ -97,9 +93,6 @@ end
 gradient = similar(all_coeffs)
 xgd = rand(length(all_coeffs))
 for iter in 1:2000
-    if mod(iter, 50) == 0
-        @info f2(xgd)
-    end
     global xgd
     grad!(gradient, xgd)
     @. xgd -= 0.00001 * gradient
