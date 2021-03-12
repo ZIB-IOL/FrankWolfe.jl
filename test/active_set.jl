@@ -93,18 +93,19 @@ end
     x = FrankWolfe.compute_active_set_iterate(active_set)
     @test x ≈ [0, 0.5]
     f(x) = (x[1] - 1)^2 + (x[2] - 1)^2
-    ∇f(x) = [2 * (x[1] - 1), 2 * (x[2] - 1)]
-    gradient_dir = ∇f([0, 0.5])
-    FrankWolfe.update_simplex_gradient_descent!(active_set, gradient_dir, f)
+
+    gradient = similar(x)
+    function grad!(storage, x)
+        storage .= [2 * (x[1] - 1), 2 * (x[2] - 1)]
+    end
+    FrankWolfe.simplex_gradient_descent_over_convex_hull(f, grad!, gradient, active_set, 1.0e-3, 1, false, [], 0.0, 0)
     @test length(active_set) == 2
     @test [1, 0] ∈ active_set.atoms
     @test [0, 1] ∈ active_set.atoms
-
     active_set2 = ActiveSet([(0.5, [0, 0]), (0.0, [0, 1]), (0.5, [1, 0])])
     x2 = FrankWolfe.compute_active_set_iterate(active_set2)
     @test x2 ≈ [0.5, 0]
-    gradient_dir = ∇f(FrankWolfe.compute_active_set_iterate(active_set2))
-    FrankWolfe.update_simplex_gradient_descent!(active_set2, gradient_dir, f, L=4.0)
+    FrankWolfe.simplex_gradient_descent_over_convex_hull(f, grad!, gradient, active_set2, 1.0e-3, 1, false, [], 0.0, 0)
     @test length(active_set) == 2
     @test [1, 0] ∈ active_set.atoms
     @test [0, 1] ∈ active_set.atoms
@@ -112,9 +113,8 @@ end
     # updating again (at optimum) triggers the active set emptying
     for as in (active_set, active_set2)
         x = FrankWolfe.compute_active_set_iterate(as)
-        gradient_dir = ∇f(x)
-        FrankWolfe.update_simplex_gradient_descent!(as, gradient_dir, f)
-        @test length(active_set) == 1
+        number_of_steps = FrankWolfe.simplex_gradient_descent_over_convex_hull(f, grad!, gradient, as, 1.0e-3, 1, false, [], 0.0, 0)
+        @test number_of_steps == 0
     end
 end
 
