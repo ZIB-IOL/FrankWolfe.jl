@@ -1,3 +1,45 @@
+import Arpack
+using DoubleFloats
+
+function print_header(data)
+    @printf(
+        "\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
+    )
+    @printf(
+        "%6s %13s %14s %14s %14s %14s %14s %14s\n",
+        data[1],
+        data[2],
+        data[3],
+        data[4],
+        data[5],
+        data[6],
+        data[7],
+        data[8],
+    )
+    @printf(
+        "────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
+    )
+end
+
+function print_footer()
+    @printf(
+        "────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n\n"
+    )
+end
+
+function print_iter_func(data)
+    @printf(
+        "%6s %13s %14e %14e %14e %14e %14i %14i\n",
+        st[Symbol(data[1])],
+        data[2],
+        Float64(data[3]),
+        Float64(data[4]),
+        Float64(data[5]),
+        data[6],
+        data[7],
+        data[8],
+    )
+end
 
 function bcg(
     f,
@@ -7,6 +49,7 @@ function bcg(
     line_search::LineSearchMethod=adaptive,
     L=Inf,
     gamma0=0,
+    hessian = nothing,
     step_lim=20,
     epsilon=1e-7,
     max_iteration=10000,
@@ -15,55 +58,13 @@ function bcg(
     verbose=false,
     linesearch_tol=1e-7,
     emphasis=nothing,
+    accelerated = false,
     Ktolerance=1.0,
-    goodstep_tolerance=1.0,
     weight_purge_threshold=1e-9,
     gradient=nothing,
     direction_storage=nothing,
     lmo_kwargs...,
 )
-    function print_header(data)
-        @printf(
-            "\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
-        )
-        @printf(
-            "%6s %13s %14s %14s %14s %14s %14s %14s %14s\n",
-            data[1],
-            data[2],
-            data[3],
-            data[4],
-            data[5],
-            data[6],
-            data[7],
-            data[8],
-            data[9],
-        )
-        @printf(
-            "────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
-        )
-    end
-
-    function print_footer()
-        @printf(
-            "────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n\n"
-        )
-    end
-
-    function print_iter_func(data)
-        @printf(
-            "%6s %13s %14e %14e %14e %14e %14i %14i %14i\n",
-            st[Symbol(data[1])],
-            data[2],
-            Float64(data[3]),
-            Float64(data[4]),
-            Float64(data[5]),
-            data[6],
-            data[7],
-            data[8],
-            data[9],
-        )
-    end
-
     t = 0
     primal = Inf
     dual_gap = Inf
@@ -72,10 +73,12 @@ function bcg(
     if gradient === nothing
         gradient = similar(x0, float(eltype(x0)))
     end
+    primal = f(x)
     grad!(gradient, x)
     # initial gap estimate computation
     vmax = compute_extreme_point(lmo, gradient)
     phi = fast_dot(gradient, x0 - vmax) / 2
+    dual_gap = phi
     traj_data = []
     tt = regular
     time_start = time_ns()
@@ -118,66 +121,84 @@ function bcg(
         )
         print_header(headers)
     end
-
     if !isa(x, Union{Array, SparseVector})
-            x = convert(Array{float(eltype(x))}, x)
+        x = convert(Array{float(eltype(x))}, x)
     end
     non_simplex_iter = 0
     nforced_fw = 0
     force_fw_step = false
+    if verbose && mod(t, print_iter) == 0
+        if t == 0
+            tt = initial
+        end
+        rep = (
+            tt,
+            string(t),
+            primal,
+            primal - dual_gap,
+            dual_gap,
+            (time_ns() - time_start) / 1.0e9,
+            length(active_set),
+            non_simplex_iter,
+        )
+        print_iter_func(rep)
+        flush(stdout)
+    end
 
     while t <= max_iteration && phi ≥ epsilon
         # TODO replace with single call interface from function_gradient.jl
+        #Mininize over the convex hull until strong Wolfe gap is below a given tolerance.
+        num_simplex_descent_steps = minimize_over_convex_hull!(
+            f,
+            grad!,
+            gradient,
+            active_set::ActiveSet,
+            phi,
+            t,
+            trajectory,
+            traj_data,
+            time_start,
+            non_simplex_iter,
+            verbose = verbose,
+            print_iter=print_iter,
+            hessian = hessian,
+            L=L,
+            accelerated = accelerated,
+        )
+        t = t + num_simplex_descent_steps
+        #Take a FW step.
+        x  = compute_active_set_iterate(active_set)
         primal = f(x)
         grad!(gradient, x)
-        if !force_fw_step
-            (idx_fw, idx_as, good_progress) = find_minmax_directions(
-                active_set, gradient, phi, goodstep_tolerance=goodstep_tolerance,
-            )
-        end
-        if !force_fw_step && good_progress
-            tt = simplex_descent
-            force_fw_step = update_simplex_gradient_descent!(
-                active_set,
-                gradient,
-                f,
-                L=nothing, #don't use the same L as we transform the function
-                linesearch_tol=linesearch_tol,
-                weight_purge_threshold=weight_purge_threshold,
-                storage=direction_storage,
-            )
-            nforced_fw += force_fw_step
+        # compute new atom
+        (v, value) = lp_separation_oracle(
+            lmo,
+            active_set,
+            gradient,
+            phi,
+            Ktolerance;
+            inplace_loop=(emphasis == memory),
+            force_fw_step=force_fw_step,
+            lmo_kwargs...,
+        )
+        force_fw_step = false
+        xval = fast_dot(x, gradient)
+        if value > xval - phi/Ktolerance
+            tt = dualstep
+            # setting gap estimate as ∇f(x) (x - v_FW) / 2
+            phi = (xval - value) / 2
         else
-            non_simplex_iter += 1
-            # compute new atom
-            (v, value) = lp_separation_oracle(
-                lmo,
-                active_set,
-                gradient,
-                phi,
-                Ktolerance;
-                inplace_loop=(emphasis == memory),
-                force_fw_step=force_fw_step,
-                lmo_kwargs...,
-            )
+            tt = regular
+            gamma, L = line_search_wrapper(line_search, t, f, grad!, x, x - v, gradient, dual_gap, L, gamma0, linesearch_tol, step_lim, 1.0)
 
-            force_fw_step = false
-            xval = fast_dot(x, gradient)
-            if value > xval - phi/Ktolerance
-                tt = dualstep
-                # setting gap estimate as ∇f(x) (x - v_FW) / 2
-                phi = (xval - value) / 2
+            if gamma == 1.0
+                active_set_initialize!(active_set, v)
             else
-                tt = regular
-                gamma, L = line_search_wrapper(line_search,t,f,grad!,x,x - v,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim, 1.0)
-
-                if gamma == 1.0
-                    active_set_initialize!(active_set, v)
-                else
-                    active_set_update!(active_set, gamma, v)
-                end
+                active_set_update!(active_set, gamma, v)
             end
         end
+        t = t + 1
+        non_simplex_iter += 1
         x  = compute_active_set_iterate(active_set)
         dual_gap = phi
         if trajectory
@@ -207,12 +228,10 @@ function bcg(
                 (time_ns() - time_start) / 1.0e9,
                 length(active_set),
                 non_simplex_iter,
-                nforced_fw,
             )
             print_iter_func(rep)
             flush(stdout)
         end
-        t = t + 1
     end
     if verbose
         x = compute_active_set_iterate(active_set)
@@ -229,7 +248,6 @@ function bcg(
             (time_ns() - time_start) / 1.0e9,
             length(active_set),
             non_simplex_iter,
-            nforced_fw,
         )
         print_iter_func(rep)
         flush(stdout)
@@ -252,7 +270,6 @@ function bcg(
             (time_ns() - time_start) / 1.0e9,
             length(active_set),
             non_simplex_iter,
-            nforced_fw,
         )
         print_iter_func(rep)
         print_footer()
@@ -263,117 +280,578 @@ end
 
 
 """
-    update_simplex_gradient_descent!(active_set::ActiveSet, direction, f)
+minimize_over_convex_hull!
 
-Performs a Simplex Gradient Descent step and modifies `active_set` inplace.
+Given a function f with gradient grad! and an active set 
+active_set this function will minimize the function over 
+the convex hull of the active set until the strong-wolfe 
+gap over the active set is below tolerance.
 
-Returns boolean flag -> whether next step must be a FW step (if numerical instability).
-
-Algorithm reference and notation taken from:
-Blended Conditional Gradients:The Unconditioning of Conditional Gradients
-https://arxiv.org/abs/1805.07311
+It will either directly minimize over the convex hull using
+simplex gradient descent, or it will transform the problem 
+to barycentric coordinates and minimize over the unit 
+probability simplex using gradient descent or Nesterov's 
+accelerated gradient descent.
 """
-function update_simplex_gradient_descent!(
+
+function minimize_over_convex_hull!(
+    f,
+    grad!,
+    gradient,
     active_set::ActiveSet,
-    direction,
-    f;
+    tolerance,
+    t,
+    trajectory,
+    traj_data,
+    time_start,
+    non_simplex_iter;
+    verbose = true,
+    print_iter=1000,
+    hessian = nothing,
     L=nothing,
     linesearch_tol=10e-10,
     step_lim=100,
     weight_purge_threshold=1e-12,
     storage=nothing,
+    accelerated = false,
 )
-    c = if storage === nothing
-        [fast_dot(direction, a) for a in active_set.atoms]
+    #No hessian is known, use simplex gradient descent.
+    if isnothing(hessian)
+        number_of_steps = simplex_gradient_descent_over_convex_hull(
+            f,
+            grad!,
+            gradient,
+            active_set::ActiveSet,
+            tolerance,
+            t,
+            trajectory,
+            traj_data,
+            time_start,
+            non_simplex_iter,
+            verbose = verbose,
+            print_iter=print_iter,
+            L=nothing,
+            linesearch_tol=linesearch_tol,
+            step_lim=step_lim,
+            weight_purge_threshold=weight_purge_threshold,
+        )
     else
-        if length(storage) == length(active_set)
-            for (idx, a) in enumerate(active_set.atoms)
-                storage[idx] = fast_dot(direction, a)
-            end
-            storage
-        elseif length(storage) > length(active_set)
-            for (idx, a) in enumerate(active_set.atoms)
-                storage[idx] = fast_dot(direction, a)
-            end
-            storage[1:length(active_set)]
+        x = compute_active_set_iterate(active_set)
+        grad!(gradient, x)
+        #c = [fast_dot(gradient, a) for a in active_set.atoms]
+        #if maximum(c) - minimum(c) <= tolerance
+        #    return 0
+        #end
+
+        #Rewrite as problem over the simplex
+        M, b = build_reduced_problem(active_set.atoms, hessian, active_set.weights, gradient, tolerance)
+        #Early exit if we have detected that the strong-Wolfe gap is below the desired tolerance while building the reduced problem.
+        if isnothing(M)
+            return 0
+        end
+        #In case the matrices are DoubleFloats we need to cast them as Float64, because LinearAlgebra does not work with them.
+        if eltype(M) === Double64
+            converted_matrix = convert(Array{Float64}, M)
+            L_reduced = eigmax(converted_matrix)
         else
-            for idx in 1:length(storage)
-                storage[idx] = fast_dot(direction, active_set.atoms[idx])
-            end
-            for idx in (length(storage)+1):length(active_set)
-                push!(storage, fast_dot(direction, active_set.atoms[idx]))
-            end
-            storage
+            L_reduced = eigmax(M)
+            #L_reduced = Arpack.eigs(M, nev=1, which=:LM)
         end
-    end
-    k = length(active_set)
-    c .-= (sum(c) / k)
-    # name change to stay consistent with the paper, c is actually updated in-place
-    d = c
-    if norm(d) <= 1e-8
-        @info "Resetting active set."
-        # resetting active set to singleton
-        a0 = active_set.atoms[1]
-        active_set_initialize!(active_set, a0)
-        return false
-    end
-    # NOTE: sometimes the direction is non-improving
-    # usual suspects are floating-point errors when multiplying atoms with near-zero weights
-    @inbounds if fast_dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), direction) < 0
-        defect = fast_dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), direction)
-        @warn "Non-improving d ($defect) due to numerical instability. Temporarily upgrading precision to BigFloat for the current iteration. 
-        If the numerical instability is persistent try to run the whole algorithm with Double64 (still quite fast) or BigFloat (slower)."
-        bdir = big.(direction)
-        c = [fast_dot(bdir, a) for a in active_set.atoms]
-        c .-= sum(c) / k
-        d = c
-        @inbounds if fast_dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), direction) < 0
-            @warn "d non-improving in large precision, forcing FW"
-            @warn "dot value: $(fast_dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), direction))"
-            return true
+        reduced_f(y) = f(x) - dot(gradient, x) + 0.5*transpose(x) * hessian * x + dot(b, y) + 0.5*transpose(y) * M * y
+        function reduced_grad!(storage, x)
+            storage .= b + M*x
         end
-    end
-
-    η = eltype(d)(Inf)
-    rem_idx = -1
-    @inbounds for idx in eachindex(d)
-        if d[idx] > 0
-            max_val = active_set.weights[idx] / d[idx]
-            if η > max_val
-                η = max_val
-                rem_idx = idx
+        #Solve using Nesterov's AGD
+        if accelerated 
+            if eltype(M) === Double64
+                mu_reduced = eigmin(converted_matrix)
+            else
+                mu_reduced = eigmin(M)
+            end
+            if L_reduced / mu_reduced > 1.0
+                new_weights, number_of_steps = accelerated_simplex_gradient_descent_over_probability_simplex(
+                    active_set.weights, 
+                    reduced_f, 
+                    reduced_grad!,
+                    tolerance,
+                    t, 
+                    trajectory, 
+                    traj_data, 
+                    time_start, 
+                    non_simplex_iter, 
+                    verbose = verbose, 
+                    print_iter=print_iter, 
+                    L = L_reduced,
+                    mu = mu_reduced,
+                    )  
+                @. active_set.weights = new_weights
             end
         end
+        #Solve using gradient descent.
+        if !accelerated || L_reduced / mu_reduced == 1.0
+            new_weights, number_of_steps = simplex_gradient_descent_over_probability_simplex(
+                active_set.weights, 
+                reduced_f, 
+                reduced_grad!, 
+                tolerance,
+                t, 
+                trajectory, 
+                traj_data, 
+                time_start, 
+                non_simplex_iter, 
+                verbose = verbose, 
+                print_iter=print_iter, 
+                L = L_reduced,
+                )   
+            @. active_set.weights = new_weights
+        end
+    end
+    number_elements = length(active_set.atoms)
+    active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
+    return number_of_steps
+end
+
+"""
+    build_reduced_problem(atoms::AbstractVector{<:FrankWolfe.MaybeHotVector}, hessian, weights, gradient, tolerance)
+
+Given an active set formed by MaybeHotVector, a (constant)
+Hessian and a gradient constructs a quadratic problem 
+over the unit probability simplex that is equivalent to 
+minimizing the original function over the convex hull of the
+active set. If λ are the barycentric coordinates of dimension
+equal to the cardinality of the active set, the objective 
+function is:
+    f(λ) = reduced_linear^T λ + 0.5 * λ^T reduced_hessian λ
+
+In the case where we find that the current iterate has a strong-Wolfe 
+gap over the convex hull of the active set that is below the tolerance 
+we return nothing (as there is nothing to do).
+
+"""
+function build_reduced_problem(atoms::AbstractVector{<:FrankWolfe.MaybeHotVector}, hessian, weights, gradient, tolerance)
+    n = atoms[1].len
+    k = length(atoms)
+    reduced_linear = [fast_dot(gradient, a) for a in atoms]
+    if Strong_Frank_Wolfe_gap(reduced_linear) <= tolerance
+        return nothing, nothing
+    end
+    aux_matrix = zeros(eltype(atoms[1].active_val), n, k)
+    #Compute the intermediate matrix.
+    for i in 1:k
+        aux_matrix[:,i] .= atoms[i].active_val*hessian[atoms[i].val_idx, :] 
+    end
+    #Compute the final matrix.
+    reduced_hessian = zeros(eltype(atoms[1].active_val), k, k)
+    for i in 1:k
+        reduced_hessian[:,i] .= atoms[i].active_val*aux_matrix[atoms[i].val_idx,:]
+    end
+    reduced_linear .-=  reduced_hessian * weights
+    return reduced_hessian, reduced_linear
+end
+
+"""
+build_reduced_problem
+
+Same as the function above, but for the case where the active 
+set is formed by Sparse Arrays.
+"""
+function build_reduced_problem(atoms::AbstractVector{<:SparseArrays.AbstractSparseArray}, hessian, weights, gradient, tolerance)
+    n = length(atoms[1])
+    k = length(atoms)
+
+    reduced_linear = [fast_dot(gradient, a) for a in atoms]
+    if Strong_Frank_Wolfe_gap(reduced_linear) <= tolerance
+        return nothing, nothing
     end
 
-
-
-    # TODO at some point avoid materializing both x and y
-    x = copy(active_set.x)
-    η = max(0, η)
-    @. active_set.weights -= η * d
-    y = copy(update_active_set_iterate!(active_set))
-    if f(x) ≥ f(y)
-        active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
-        return false
+    #Construct the matrix of vertices.
+    vertex_matrix = zeros(n, k)
+    for i in 1:k
+        vertex_matrix[:, i] .= atoms[i]
     end
-    linesearch_method = L === nothing || !isfinite(L) ? backtracking : shortstep
-    if linesearch_method == backtracking
-        gamma, _ =
-            backtrackingLS(f, direction, x, x - y, 1.0, linesearch_tol=linesearch_tol, step_lim=step_lim)
-    else # == shortstep, just two methods here for now
-        gamma = fast_dot(direction, x - y) / (L * norm(x - y)^2)
+    reduced_hessian = transpose(vertex_matrix) * hessian * vertex_matrix
+    reduced_linear .-= reduced_hessian * weights
+    return reduced_hessian, reduced_linear
+end
+
+"""
+    build_reduced_problem(atoms::AbstractVector{<:Array}, hessian, weights, gradient, tolerance)
+
+Same as the two function above, but for the case where the active 
+set is formed by dense Arrays.
+"""
+function build_reduced_problem(atoms::AbstractVector{<:Array}, hessian, weights, gradient, tolerance)
+    n = length(atoms[1])
+    k = length(atoms)
+
+    reduced_linear = [fast_dot(gradient, a) for a in atoms]
+    if Strong_Frank_Wolfe_gap(reduced_linear) <= tolerance
+        return nothing, nothing
     end
-    gamma = min(1.0, gamma)
-    # step back from y to x by (1 - γ) η d
-    # new point is x - γ η d
-    if gamma == 1.0
-        active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
+
+    #Construct the matrix of vertices.
+    vertex_matrix = zeros(n, k)
+    for i in 1:k
+        vertex_matrix[:, i] .= atoms[i]
+    end
+    reduced_hessian = transpose(vertex_matrix) * hessian * vertex_matrix
+    reduced_linear .-= reduced_hessian * weights
+    return reduced_hessian, reduced_linear
+end
+
+"""
+Checks the strong Frank-Wolfe gap for the reduced problem.
+"""
+function Strong_Frank_Wolfe_gap(gradient)
+    val_min = Inf
+    val_max = -Inf
+    for i in 1:length(gradient)
+        temp_val = gradient[i]
+        if temp_val < val_min
+            val_min = temp_val
+        end
+        if temp_val > val_max
+            val_max = temp_val
+        end
+    end
+    return val_max - val_min
+end
+
+"""
+accelerated_simplex_gradient_descent_over_probability_simplex
+
+Minimizes an objective function over the unit probability simplex 
+until the Strong-Wolfe gap is below tolerance using Nesterov's 
+accelerated gradient descent.
+"""
+function accelerated_simplex_gradient_descent_over_probability_simplex(
+    initial_point,
+    reduced_f,
+    reduced_grad!,
+    tolerance,
+    t,
+    trajectory,
+    traj_data,
+    time_start,
+    non_simplex_iter;
+    verbose = verbose,
+    print_iter=print_iter,
+    L = 1.0,
+    mu = 1.0,
+)
+    number_of_steps = 0
+    x = deepcopy(initial_point)
+    x_old = deepcopy(initial_point)
+    y = deepcopy(initial_point)
+    gradient_x = similar(x)
+    gradient_y = similar(x)
+    d = similar(x)
+    reduced_grad!(gradient_x, x)
+    reduced_grad!(gradient_y, x)
+    strong_wolfe_gap = Strong_Frank_Wolfe_gap_probability_simplex(gradient_x, x)
+    q = mu / L
+    # If the problem is close to convex, simply use the accelerated algorithm for convex objective functions.
+    if mu < 1.0e-3
+        alpha = 0.0
+        alpha_old = 0.0
     else
-        @. active_set.weights += η * (1 - gamma) * d
-        @. active_set.x =  x + gamma * (y - x)
+        gamma = (1 - sqrt(q))/(1 + sqrt(q))
     end
-    return false
+    while strong_wolfe_gap > tolerance
+        @. x_old = x
+        reduced_grad!(gradient_y, y)
+        x = projection_simplex_sort(y .- gradient_y/L)
+        if mu < 1.0e-3
+            alpha_old = alpha
+            alpha = 0.5 * (1 + sqrt(1 + 4 * alpha^2))
+            gamma = (alpha_old - 1.0) / alpha
+        end
+        @. y =  x + gamma*(x - x_old)
+        number_of_steps = number_of_steps + 1
+        primal = reduced_f(x)
+        reduced_grad!(gradient_x, x)
+        strong_wolfe_gap = Strong_Frank_Wolfe_gap_probability_simplex(gradient_x, x)
+        if trajectory
+            push!(
+                traj_data,
+                (
+                    t + number_of_steps,
+                    primal,
+                    primal - tolerance,
+                    tolerance,
+                    (time_ns() - time_start) / 1e9,
+                    length(initial_point),
+                ),
+            )
+        end
+        tt = simplex_descent
+        if verbose && mod(t + number_of_steps, print_iter) == 0
+            if t == 0
+                tt = initial
+            end
+            rep = (
+                tt,
+                string(t+ number_of_steps),
+                primal,
+                primal - tolerance,
+                tolerance,
+                (time_ns() - time_start) / 1.0e9,
+                length(initial_point),
+                non_simplex_iter,
+            )
+            print_iter_func(rep)
+            flush(stdout)
+        end
+    end
+    return x, number_of_steps
+end
+
+"""
+simplex_gradient_descent_over_probability_simplex
+
+Minimizes an objective function over the unit probability simplex 
+until the Strong-Wolfe gap is below tolerance using gradient descent.
+"""
+function simplex_gradient_descent_over_probability_simplex(
+    initial_point,
+    reduced_f,
+    reduced_grad!,
+    tolerance,
+    t,
+    trajectory,
+    traj_data,
+    time_start,
+    non_simplex_iter;
+    verbose = verbose,
+    print_iter=print_iter,
+    L = 1.0,
+)
+    number_of_steps = 0
+    x = deepcopy(initial_point)
+    gradient = similar(x)
+    d = similar(x)
+    reduced_grad!(gradient, x)
+    strong_wolfe_gap = Strong_Frank_Wolfe_gap_probability_simplex(gradient, x)
+    while strong_wolfe_gap > tolerance
+        x = projection_simplex_sort(x .- gradient/L)
+        number_of_steps = number_of_steps + 1
+        primal = reduced_f(x)
+        reduced_grad!(gradient, x)
+        strong_wolfe_gap = Strong_Frank_Wolfe_gap_probability_simplex(gradient, x)
+        if trajectory
+            push!(
+                traj_data,
+                (
+                    t + number_of_steps,
+                    primal,
+                    primal - tolerance,
+                    tolerance,
+                    (time_ns() - time_start) / 1.0e9,
+                    length(initial_point),
+                ),
+            )
+        end
+        tt = simplex_descent
+        if verbose && mod(t + number_of_steps, print_iter) == 0
+            if t == 0
+                tt = initial
+            end
+            rep = (
+                tt,
+                string(t+ number_of_steps),
+                primal,
+                primal - tolerance,
+                tolerance,
+                (time_ns() - time_start) / 1.0e9,
+                length(initial_point),
+                non_simplex_iter,
+            )
+            print_iter_func(rep)
+            flush(stdout)
+        end
+    end
+    return x, number_of_steps
+end
+
+
+
+"""
+projection_simplex_sort
+
+Perform a projection onto the unit probability simplex using 
+a sorting algorithm.
+"""
+function projection_simplex_sort(x)
+    n = length(x)
+    if sum(x) == 1.0 && all(>=(0.0), x)
+        return x
+    end
+    v = x .- maximum(x)
+    u = sort(v, rev=true)
+    cssv = cumsum(u)
+    rho = sum(u .* collect(1:1:n).>(cssv .- 1.0)) - 1
+    theta = (cssv[rho + 1] - 1.0) / (rho + 1)
+    w = clamp.(v .- theta, 0.0, Inf)
+    return w
+end
+
+"""
+Strong_Frank_Wolfe_gap_probability_simplex
+
+Compute the Strong-Wolfe gap over the unit probability simplex 
+given a gradient.
+"""
+function Strong_Frank_Wolfe_gap_probability_simplex(gradient, x)
+    val_min = Inf
+    val_max = -Inf
+    for i in 1:length(gradient)
+        if x[i] > 0 
+            temp_val = gradient[i]
+            if temp_val < val_min
+                val_min = temp_val
+            end
+            if temp_val > val_max
+                val_max = temp_val
+            end
+        end
+    end
+    return val_max - val_min
+end
+
+
+"""
+simplex_gradient_descent_over_convex_hull
+
+Minimizes an objective function over the convex hull of the active set
+until the Strong-Wolfe gap is below tolerance using simplex gradient
+descent.
+"""
+function simplex_gradient_descent_over_convex_hull(
+    f,
+    grad!,
+    gradient,
+    active_set::ActiveSet,
+    tolerance,
+    t,
+    trajectory,
+    traj_data,
+    time_start,
+    non_simplex_iter;
+    verbose = true,
+    print_iter=1000,
+    hessian = nothing,
+    L=nothing,
+    linesearch_tol=10e-10,
+    step_lim=100,
+    weight_purge_threshold=1e-12,
+)
+    number_of_steps = 0
+    x  = compute_active_set_iterate(active_set)
+    while true
+        grad!(gradient, x)
+        #Check if strong Wolfe gap over the convex hull is small enough.
+        c = [fast_dot(gradient, a) for a in active_set.atoms]
+        if maximum(c) - minimum(c) <= tolerance
+            return number_of_steps
+        end
+        #Otherwise perform simplex steps until we get there.
+        k = length(active_set)
+        csum = sum(c)
+        c .-= (csum / k)
+        # name change to stay consistent with the paper, c is actually updated in-place
+        d = c
+        if norm(d) <= 1e-8
+            @info "Resetting active set."
+            # resetting active set to singleton
+            a0 = active_set.atoms[1]
+            empty!(active_set)
+            push!(active_set, (1, a0))
+            return number_of_steps
+        end
+        # NOTE: sometimes the direction is non-improving
+        # usual suspects are floating-point errors when multiplying atoms with near-zero weights
+        # in that case, inverting the sense of d
+        @inbounds if fast_dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), gradient) < 0
+            @warn "Non-improving d, aborting simplex descent. We likely reached the limits of the numerical accuracy. 
+            The solution is still valid but we might not be able to converge further from here onwards. 
+            If higher accuracy is required, consider using Double64 (still quite fast) and if that does not help BigFloat (slower) as type for the numbers.
+            Alternatively, consider using AFW (with lazy = true) instead."
+            println(fast_dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), gradient))
+            return number_of_steps
+        end
+
+        η = eltype(d)(Inf)
+        rem_idx = -1
+        @inbounds for idx in eachindex(d)
+            if d[idx] > 0
+                max_val = active_set.weights[idx] / d[idx]
+                if η > max_val
+                    η = max_val
+                    rem_idx = idx
+                end
+            end
+        end
+        # TODO at some point avoid materializing both x and y
+        x = copy(active_set.x)
+        η = max(0, η)
+        @. active_set.weights -= η * d
+        y = copy(update_active_set_iterate!(active_set))
+        number_of_steps = number_of_steps + 1
+        if f(x) ≥ f(y)
+            active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
+        else
+            linesearch_method = L === nothing || !isfinite(L) ? backtracking : shortstep
+            if linesearch_method == backtracking
+                gamma, _ =
+                backtrackingLS(f, gradient, x, x - y, 1.0, linesearch_tol=linesearch_tol, step_lim=step_lim)
+            else # == shortstep, just two methods here for now
+                gamma = fast_dot(gradient, x - y) / (L * norm(x - y)^2)
+            end
+            gamma = min(1.0, gamma)
+            # step back from y to x by (1 - γ) η d
+            # new point is x - γ η d
+            if gamma == 1.0
+                active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
+            else
+                @. active_set.weights += η * (1 - gamma) * d
+                @. active_set.x =  x + gamma * (y - x)
+            end
+        end
+        x  = compute_active_set_iterate(active_set)
+        primal = f(x)
+        dual_gap = tolerance
+        if trajectory
+            push!(
+                traj_data,
+                (
+                    t + number_of_steps,
+                    primal,
+                    primal - dual_gap,
+                    dual_gap,
+                    (time_ns() - time_start) / 1.0e9,
+                    length(active_set),
+                ),
+            )
+        end
+        tt = simplex_descent
+        if verbose && mod(t + number_of_steps, print_iter) == 0
+            if t == 0
+                tt = initial
+            end
+            rep = (
+                tt,
+                string(t + number_of_steps),
+                primal,
+                primal - dual_gap,
+                dual_gap,
+                (time_ns() - time_start) / 1.0e9,
+                length(active_set),
+                non_simplex_iter,
+            )
+            print_iter_func(rep)
+            flush(stdout)
+        end
+    end
 end
 
 """
