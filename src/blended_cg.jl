@@ -357,7 +357,7 @@ function minimize_over_convex_hull(
             L_reduced = eigmax(M)
             #L_reduced = Arpack.eigs(M, nev=1, which=:LM)
         end
-        reduced_f(y) =  f(x) - dot(gradient, x) + 0.5*transpose(x) * hessian * x + dot(b, y) + 0.5*transpose(y) * M * y
+        reduced_f(y) = f(x) - dot(gradient, x) + 0.5*transpose(x) * hessian * x + dot(b, y) + 0.5*transpose(y) * M * y
         function reduced_grad!(storage, x)
             storage .= b + M*x
         end
