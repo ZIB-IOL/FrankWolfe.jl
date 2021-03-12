@@ -412,7 +412,7 @@ function minimize_over_convex_hull(
 end
 
 """
-build_reduced_problem
+    build_reduced_problem(atoms::AbstractVector{<:FrankWolfe.MaybeHotVector}, hessian, weights, gradient, tolerance)
 
 Given an active set formed by MaybeHotVector, a (constant)
 Hessian and a gradient constructs a quadratic problem 
