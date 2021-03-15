@@ -172,6 +172,7 @@ function bcg(
             print_iter=print_iter,
             hessian = hessian,
             accelerated = accelerated,
+            max_iteration = max_iteration
         )
         t = t + num_simplex_descent_steps
         #Take a FW step.
@@ -322,6 +323,7 @@ function minimize_over_convex_hull!(
     weight_purge_threshold=1e-12,
     storage=nothing,
     accelerated = false,
+    max_iteration = 1000
 )
     #No hessian is known, use simplex gradient descent.
     if isnothing(hessian)
@@ -342,6 +344,7 @@ function minimize_over_convex_hull!(
             linesearch_tol=linesearch_tol,
             step_lim=step_lim,
             weight_purge_threshold=weight_purge_threshold,
+            max_iteration = max_iteration,
         )
     else
         x = compute_active_set_iterate(active_set)
@@ -386,6 +389,7 @@ function minimize_over_convex_hull!(
                     print_iter=print_iter, 
                     L = L_reduced,
                     mu = mu_reduced,
+                    max_iteration = max_iteration,
                     )  
                 @. active_set.weights = new_weights
             end
@@ -405,6 +409,7 @@ function minimize_over_convex_hull!(
                 verbose = verbose, 
                 print_iter=print_iter, 
                 L = L_reduced,
+                max_iteration = max_iteration,
                 )   
             @. active_set.weights = new_weights
         end
@@ -541,6 +546,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
     print_iter=print_iter,
     L = 1.0,
     mu = 1.0,
+    max_iteration = 1000,
 )
     number_of_steps = 0
     x = deepcopy(initial_point)
@@ -560,7 +566,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
     else
         gamma = (1 - sqrt(q))/(1 + sqrt(q))
     end
-    while strong_wolfe_gap > tolerance
+    while strong_wolfe_gap > tolerance && max_iteration <= t + number_of_steps
         @. x_old = x
         reduced_grad!(gradient_y, y)
         x = projection_simplex_sort(y .- gradient_y/L)
@@ -628,6 +634,7 @@ function simplex_gradient_descent_over_probability_simplex(
     verbose = verbose,
     print_iter=print_iter,
     L = 1.0,
+    max_iteration = 1000,
 )
     number_of_steps = 0
     x = deepcopy(initial_point)
@@ -635,7 +642,7 @@ function simplex_gradient_descent_over_probability_simplex(
     d = similar(x)
     reduced_grad!(gradient, x)
     strong_wolfe_gap = Strong_Frank_Wolfe_gap_probability_simplex(gradient, x)
-    while strong_wolfe_gap > tolerance
+    while strong_wolfe_gap > tolerance && max_iteration <= t + number_of_steps
         x = projection_simplex_sort(x .- gradient/L)
         number_of_steps = number_of_steps + 1
         primal = reduced_f(x)
@@ -747,6 +754,7 @@ function simplex_gradient_descent_over_convex_hull(
     linesearch_tol=10e-10,
     step_lim=100,
     weight_purge_threshold=1e-12,
+    max_iteration = 1000,
 )
     number_of_steps = 0
     L_inner=nothing
@@ -755,7 +763,7 @@ function simplex_gradient_descent_over_convex_hull(
         grad!(gradient, x)
         #Check if strong Wolfe gap over the convex hull is small enough.
         c = [fast_dot(gradient, a) for a in active_set.atoms]
-        if maximum(c) - minimum(c) <= tolerance
+        if maximum(c) - minimum(c) <= tolerance || max_iteration > t + number_of_steps
             return number_of_steps
         end
         #Otherwise perform simplex steps until we get there.
