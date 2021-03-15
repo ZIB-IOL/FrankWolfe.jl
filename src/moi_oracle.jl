@@ -5,16 +5,15 @@
 Linear minimization oracle with feasible space defined through a MathOptInterface.Optimizer.
 The oracle call sets the direction and reruns the optimizer.
 
-
-The `direction` vector has to be set in the same order of variables as the `MathOptInterface.ListOfVariableIndices()` getter.
+The `direction` vector has to be set in the same order of variables as the `MOI.ListOfVariableIndices()` getter.
 """
 struct MathOptLMO{OT <: MOI.AbstractOptimizer} <: LinearMinimizationOracle
     o::OT
 end
 
 function compute_extreme_point(lmo::MathOptLMO{OT}, direction::AbstractVector{T}) where {OT, T <: Real}
-    variables = MOI.get(lmo.o, MathOptInterface.ListOfVariableIndices())
-    obj = MathOptInterface.ScalarAffineFunction(
+    variables = MOI.get(lmo.o, MOI.ListOfVariableIndices())
+    obj = MOI.ScalarAffineFunction(
         MOI.ScalarAffineTerm.(direction, variables),
         zero(T),
     )
@@ -25,7 +24,7 @@ end
 
 function compute_extreme_point(lmo::MathOptLMO{OT}, direction::AbstractVector{MOI.ScalarAffineTerm{T}}) where {OT, T}
     variables = [term.variable_index for term in direction]
-    obj = MathOptInterface.ScalarAffineFunction(
+    obj = MOI.ScalarAffineFunction(
         direction,
         zero(T),
     )
@@ -36,12 +35,12 @@ end
 
 function _optimize_and_return(lmo, variables)
     MOI.optimize!(lmo.o)
-    term_st = MOI.get(lmo.o, MathOptInterface.TerminationStatus())
-    if term_st ∉ (MOI.OPTIMAL, MathOptInterface.ALMOST_OPTIMAL)
+    term_st = MOI.get(lmo.o, MOI.TerminationStatus())
+    if term_st ∉ (MOI.OPTIMAL, MOI.ALMOST_OPTIMAL)
         @error "Unexpected termionation: $term_st"
         return nothing
     end
-    return MOI.get.(lmo.o, MathOptInterface.VariablePrimal(), variables)
+    return MOI.get.(lmo.o, MOI.VariablePrimal(), variables)
 end
 
 """
