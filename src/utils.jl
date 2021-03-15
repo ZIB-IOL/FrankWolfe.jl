@@ -1,13 +1,12 @@
 using FiniteDifferences
 
 """
-line search wrapper to clean up functions
-NOTE: The stepsize is defined as x - gamma*d
+line search wrapper
+NOTE: The stepsize is defined as x - gamma * d
 
+Returns the step size gamma and the Lipschitz estimate L
 """
-
 function line_search_wrapper(line_search,t,f,grad!,x,d,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim, gamma_max)
-
     if line_search == agnostic
         gamma = 2 // (2 + t)
     elseif line_search == goldenratio # FIX for general d

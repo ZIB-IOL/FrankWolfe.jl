@@ -17,6 +17,9 @@ using Plots
 # for Birkhoff polytope LMO
 import Hungarian
 
+import Arpack
+using DoubleFloats
+
 include("defs.jl")
 include("simplex_matrix.jl")
 
@@ -162,6 +165,9 @@ function fw(
     while t <= max_iteration && dual_gap >= max(epsilon, eps())
         if momentum === nothing || first_iter
             grad!(gradient, x)
+            if momentum !== nothing
+                gtemp .= gradient
+            end
         else
             grad!(gtemp, x)
             @emphasis(emphasis, gradient = (momentum * gradient) + (1 - momentum) * gtemp)
@@ -169,7 +175,7 @@ function fw(
         first_iter = false
         
         # build-in NEP here
-        if nep === true
+        if nep
             # argmin_v v^T(1-2y)
             # y = x_t - 1/L * (t+1)/2 * gradient
             # check whether emphasis works
@@ -177,7 +183,6 @@ function fw(
         end
 
         v = compute_extreme_point(lmo, gradient)
-
         # go easy on the memory - only compute if really needed
         if (
             (mod(t, print_iter) == 0 && verbose) ||
@@ -194,7 +199,6 @@ function fw(
                 (t, primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9),
             )
         end
-        
         @emphasis(emphasis, d = x - v)
         
         if isnothing(momentum)
