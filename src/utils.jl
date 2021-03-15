@@ -241,7 +241,7 @@ end
 ##############################
 
 function plot_trajectories(data, label; filename=nothing)
-    theme(:dark)
+    # theme(:dark)
     # theme(:vibrant)
     gr()
 
@@ -342,7 +342,7 @@ function plot_trajectories(data, label; filename=nothing)
 end
 
 function plot_sparsity(data, label; filename=nothing)
-    theme(:dark)
+    # theme(:dark)
     # theme(:vibrant)
     gr()
 

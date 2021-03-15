@@ -28,10 +28,10 @@ function afw(
 )
     function print_header(data)
         @printf(
-            "\n───────────────────────────────────────────────────────────────────────────────────────────────\n"
+            "\n───────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
         )
         @printf(
-            "%6s %13s %14s %14s %14s %14s %14s\n",
+            "%6s %13s %14s %14s %14s %14s %14s %14s\n",
             data[1],
             data[2],
             data[3],
@@ -39,21 +39,22 @@ function afw(
             data[5],
             data[6],
             data[7],
+            data[8],
         )
         @printf(
-            "───────────────────────────────────────────────────────────────────────────────────────────────\n"
+            "───────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
         )
     end
 
     function print_footer()
         @printf(
-            "───────────────────────────────────────────────────────────────────────────────────────────────\n\n"
+            "───────────────────────────────────────────────────────────────────────────────────────────────────────────────\n\n"
         )
     end
 
     function print_iter_func(data)
         @printf(
-            "%6s %13s %14e %14e %14e %14e %14i\n",
+            "%6s %13s %14e %14e %14e %14e %14e %14i\n",
             st[Symbol(data[1])],
             data[2],
             Float64(data[3]),
@@ -61,6 +62,7 @@ function afw(
             Float64(data[5]),
             data[6],
             data[7],
+            data[8],
         )
     end
 
@@ -93,7 +95,7 @@ function afw(
         if emphasis == memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
         end
-        headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "#ActiveSet")
+        headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "#ActiveSet")
         print_header(headers)
     end
 
@@ -204,6 +206,7 @@ function afw(
                 primal - dual_gap,
                 dual_gap,
                 (time_ns() - time_start) / 1.0e9,
+                t / ( (time_ns() - time_start) / 1.0e9 ),
                 length(active_set),
             )
             print_iter_func(rep)
@@ -231,6 +234,7 @@ function afw(
             primal - dual_gap,
             dual_gap,
             (time_ns() - time_start) / 1.0e9,
+            t / ( (time_ns() - time_start) / 1.0e9 ),
             length(active_set),
         )
         print_iter_func(rep)
@@ -253,6 +257,7 @@ function afw(
             primal - dual_gap,
             dual_gap,
             (time_ns() - time_start) / 1.0e9,
+            t / ( (time_ns() - time_start) / 1.0e9 ),
             length(active_set),
         )
         print_iter_func(rep)
