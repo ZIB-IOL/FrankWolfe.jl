@@ -1,5 +1,3 @@
-import Arpack
-using DoubleFloats
 
 function print_header(data)
     @printf(
@@ -159,13 +157,14 @@ function bcg(
             traj_data,
             time_start,
             non_simplex_iter,
-            verbose = verbose,
+            verbose=verbose,
             print_iter=print_iter,
-            hessian = hessian,
+            hessian=hessian,
             L=L,
-            accelerated = accelerated,
+            accelerated=accelerated,
+            max_iteration=max_iteration,
         )
-        t = t + num_simplex_descent_steps
+        t += num_simplex_descent_steps
         #Take a FW step.
         x  = compute_active_set_iterate(active_set)
         primal = f(x)
@@ -293,7 +292,6 @@ to barycentric coordinates and minimize over the unit
 probability simplex using gradient descent or Nesterov's 
 accelerated gradient descent.
 """
-
 function minimize_over_convex_hull!(
     f,
     grad!,
@@ -314,9 +312,10 @@ function minimize_over_convex_hull!(
     weight_purge_threshold=1e-12,
     storage=nothing,
     accelerated = false,
+    max_iteration=max_iteration,
 )
     #No hessian is known, use simplex gradient descent.
-    if isnothing(hessian)
+    if hessian === nothing
         number_of_steps = simplex_gradient_descent_over_convex_hull(
             f,
             grad!,
@@ -334,6 +333,7 @@ function minimize_over_convex_hull!(
             linesearch_tol=linesearch_tol,
             step_lim=step_lim,
             weight_purge_threshold=weight_purge_threshold,
+            max_iteration=max_iteration,
         )
     else
         x = compute_active_set_iterate(active_set)
@@ -383,12 +383,13 @@ function minimize_over_convex_hull!(
                     print_iter=print_iter, 
                     L = L_reduced,
                     mu = mu_reduced,
-                    )  
+                    max_iteration=max_iteration,
+                )
                 @. active_set.weights = new_weights
             end
         end
-        #Solve using gradient descent.
         if !accelerated || L_reduced / mu_reduced == 1.0
+        #Solve using gradient descent.
             new_weights, number_of_steps = simplex_gradient_descent_over_probability_simplex(
                 active_set.weights, 
                 reduced_f, 
@@ -402,7 +403,8 @@ function minimize_over_convex_hull!(
                 verbose = verbose, 
                 print_iter=print_iter, 
                 L = L_reduced,
-                )   
+                max_iteration=max_iteration,
+            )
             @. active_set.weights = new_weights
         end
     end
@@ -538,6 +540,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
     print_iter=print_iter,
     L = 1.0,
     mu = 1.0,
+    max_iteration,
 )
     number_of_steps = 0
     x = deepcopy(initial_point)
@@ -557,7 +560,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
     else
         gamma = (1 - sqrt(q))/(1 + sqrt(q))
     end
-    while strong_wolfe_gap > tolerance
+    while t ≤ max_iteration && strong_wolfe_gap > tolerance
         @. x_old = x
         reduced_grad!(gradient_y, y)
         x = projection_simplex_sort(y .- gradient_y/L)
@@ -625,6 +628,7 @@ function simplex_gradient_descent_over_probability_simplex(
     verbose = verbose,
     print_iter=print_iter,
     L = 1.0,
+    max_iteration=max_iteration,
 )
     number_of_steps = 0
     x = deepcopy(initial_point)
@@ -632,7 +636,7 @@ function simplex_gradient_descent_over_probability_simplex(
     d = similar(x)
     reduced_grad!(gradient, x)
     strong_wolfe_gap = Strong_Frank_Wolfe_gap_probability_simplex(gradient, x)
-    while strong_wolfe_gap > tolerance
+    while t ≤ max_iteration && strong_wolfe_gap > tolerance
         x = projection_simplex_sort(x .- gradient/L)
         number_of_steps = number_of_steps + 1
         primal = reduced_f(x)
@@ -744,10 +748,11 @@ function simplex_gradient_descent_over_convex_hull(
     linesearch_tol=10e-10,
     step_lim=100,
     weight_purge_threshold=1e-12,
+    max_iteration=max_iteration,
 )
     number_of_steps = 0
     x  = compute_active_set_iterate(active_set)
-    while true
+    while t + number_of_steps ≤ max_iteration
         grad!(gradient, x)
         #Check if strong Wolfe gap over the convex hull is small enough.
         c = [fast_dot(gradient, a) for a in active_set.atoms]
@@ -796,7 +801,7 @@ function simplex_gradient_descent_over_convex_hull(
         η = max(0, η)
         @. active_set.weights -= η * d
         y = copy(update_active_set_iterate!(active_set))
-        number_of_steps = number_of_steps + 1
+        number_of_steps += 1
         if f(x) ≥ f(y)
             active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
         else
@@ -852,6 +857,7 @@ function simplex_gradient_descent_over_convex_hull(
             flush(stdout)
         end
     end
+    return number_of_steps
 end
 
 """
