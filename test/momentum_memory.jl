@@ -35,7 +35,7 @@ x0 = FrankWolfe.compute_extreme_point(lmo, rand(n))
 @time xmem, _ = FrankWolfe.fw(
     f,grad!,lmo,x0,max_iteration=k,
     line_search=FrankWolfe.shortstep,L=2,
-    emphasis=FrankWolfe.memory, verbose=false, trajectory=false, momentum=0.9
+    emphasis=FrankWolfe.memory, verbose=true, trajectory=true, momentum=0.9
 )
 
 @test f(xblas) ≈ f(xmem)
