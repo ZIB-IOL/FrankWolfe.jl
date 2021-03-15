@@ -157,11 +157,11 @@ function bcg(
             traj_data,
             time_start,
             non_simplex_iter,
-            verbose = verbose,
+            verbose=verbose,
             print_iter=print_iter,
-            hessian = hessian,
+            hessian=hessian,
             L=L,
-            accelerated = accelerated,
+            accelerated=accelerated,
             max_iteration=max_iteration,
         )
         t += num_simplex_descent_steps
@@ -857,6 +857,7 @@ function simplex_gradient_descent_over_convex_hull(
             flush(stdout)
         end
     end
+    return number_of_steps
 end
 
 """
