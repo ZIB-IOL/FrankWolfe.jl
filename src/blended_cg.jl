@@ -47,6 +47,7 @@ function bcg(
     lmo,
     x0;
     line_search::LineSearchMethod=adaptive,
+    line_search_inner::LineSearchMethod=adaptive,
     L=Inf,
     gamma0=0,
     hessian = nothing,
@@ -144,11 +145,11 @@ function bcg(
         print_iter_func(rep)
         flush(stdout)
     end
-
+    L_inner = nothing
     while t <= max_iteration && phi ≥ epsilon
         # TODO replace with single call interface from function_gradient.jl
         #Mininize over the convex hull until strong Wolfe gap is below a given tolerance.
-        num_simplex_descent_steps = minimize_over_convex_hull!(
+        num_simplex_descent_steps, L_inner = minimize_over_convex_hull!(
             f,
             grad!,
             gradient,
@@ -159,10 +160,11 @@ function bcg(
             traj_data,
             time_start,
             non_simplex_iter,
+            line_search_inner = line_search_inner,
             verbose = verbose,
             print_iter=print_iter,
             hessian = hessian,
-            L=L,
+            L_inner = L_inner,
             accelerated = accelerated,
         )
         t = t + num_simplex_descent_steps
@@ -233,6 +235,8 @@ function bcg(
             flush(stdout)
         end
     end
+    print("\nFinal round", t, " ", max_iteration, " ", phi,  " ",epsilon, "\n")
+
     if verbose
         x = compute_active_set_iterate(active_set)
         grad!(gradient, x)
@@ -305,10 +309,11 @@ function minimize_over_convex_hull!(
     traj_data,
     time_start,
     non_simplex_iter;
+    line_search_inner = adaptive,
     verbose = true,
     print_iter=1000,
     hessian = nothing,
-    L=nothing,
+    L_inner=nothing,
     linesearch_tol=10e-10,
     step_lim=100,
     weight_purge_threshold=1e-12,
@@ -317,7 +322,7 @@ function minimize_over_convex_hull!(
 )
     #No hessian is known, use simplex gradient descent.
     if isnothing(hessian)
-        number_of_steps = simplex_gradient_descent_over_convex_hull(
+        number_of_steps, L_inner = simplex_gradient_descent_over_convex_hull(
             f,
             grad!,
             gradient,
@@ -328,9 +333,10 @@ function minimize_over_convex_hull!(
             traj_data,
             time_start,
             non_simplex_iter,
+            line_search_inner = line_search_inner,
             verbose = verbose,
             print_iter=print_iter,
-            L=nothing,
+            L_inner=L_inner,
             linesearch_tol=linesearch_tol,
             step_lim=step_lim,
             weight_purge_threshold=weight_purge_threshold,
@@ -338,16 +344,11 @@ function minimize_over_convex_hull!(
     else
         x = compute_active_set_iterate(active_set)
         grad!(gradient, x)
-        #c = [fast_dot(gradient, a) for a in active_set.atoms]
-        #if maximum(c) - minimum(c) <= tolerance
-        #    return 0
-        #end
-
         #Rewrite as problem over the simplex
         M, b = build_reduced_problem(active_set.atoms, hessian, active_set.weights, gradient, tolerance)
         #Early exit if we have detected that the strong-Wolfe gap is below the desired tolerance while building the reduced problem.
         if isnothing(M)
-            return 0
+            return 0, L_inner
         end
         #In case the matrices are DoubleFloats we need to cast them as Float64, because LinearAlgebra does not work with them.
         if eltype(M) === Double64
@@ -408,7 +409,7 @@ function minimize_over_convex_hull!(
     end
     number_elements = length(active_set.atoms)
     active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
-    return number_of_steps
+    return number_of_steps, L_inner
 end
 
 """
@@ -737,10 +738,11 @@ function simplex_gradient_descent_over_convex_hull(
     traj_data,
     time_start,
     non_simplex_iter;
+    line_search_inner = adaptive,
     verbose = true,
     print_iter=1000,
     hessian = nothing,
-    L=nothing,
+    L_inner=nothing,
     linesearch_tol=10e-10,
     step_lim=100,
     weight_purge_threshold=1e-12,
@@ -752,7 +754,7 @@ function simplex_gradient_descent_over_convex_hull(
         #Check if strong Wolfe gap over the convex hull is small enough.
         c = [fast_dot(gradient, a) for a in active_set.atoms]
         if maximum(c) - minimum(c) <= tolerance
-            return number_of_steps
+            return number_of_steps, L_inner
         end
         #Otherwise perform simplex steps until we get there.
         k = length(active_set)
@@ -766,7 +768,7 @@ function simplex_gradient_descent_over_convex_hull(
             a0 = active_set.atoms[1]
             empty!(active_set)
             push!(active_set, (1, a0))
-            return number_of_steps
+            return number_of_steps, L_inner
         end
         # NOTE: sometimes the direction is non-improving
         # usual suspects are floating-point errors when multiplying atoms with near-zero weights
@@ -777,7 +779,7 @@ function simplex_gradient_descent_over_convex_hull(
             If higher accuracy is required, consider using Double64 (still quite fast) and if that does not help BigFloat (slower) as type for the numbers.
             Alternatively, consider using AFW (with lazy = true) instead."
             println(fast_dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), gradient))
-            return number_of_steps
+            return number_of_steps, L_inner
         end
 
         η = eltype(d)(Inf)
@@ -796,16 +798,22 @@ function simplex_gradient_descent_over_convex_hull(
         η = max(0, η)
         @. active_set.weights -= η * d
         y = copy(update_active_set_iterate!(active_set))
+        #Provide an initial value of the smoothness parameter if none exists yet for the adaptive stepsize
+        if isnothing(L_inner)  && line_search_inner == adaptive 
+            epsilon_step = 1.0e-3
+            gradient_stepsize_estimation = similar(gradient)
+            grad!(gradient_stepsize_estimation, x - epsilon_step*(x - y))
+            L_inner = norm(gradient - gradient_stepsize_estimation)/(epsilon_step*norm(x - y))
+        end
         number_of_steps = number_of_steps + 1
         if f(x) ≥ f(y)
             active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
         else
-            linesearch_method = L === nothing || !isfinite(L) ? backtracking : shortstep
-            if linesearch_method == backtracking
+            if line_search_inner == adaptive
+                gamma, L_inner = adaptive_step_size(f, gradient, x, x - y, L_inner, gamma_max = 1.0)
+            else
                 gamma, _ =
                 backtrackingLS(f, gradient, x, x - y, 1.0, linesearch_tol=linesearch_tol, step_lim=step_lim)
-            else # == shortstep, just two methods here for now
-                gamma = fast_dot(gradient, x - y) / (L * norm(x - y)^2)
             end
             gamma = min(1.0, gamma)
             # step back from y to x by (1 - γ) η d
