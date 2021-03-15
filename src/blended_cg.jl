@@ -6,7 +6,7 @@ function print_header(data)
         "\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
     )
     @printf(
-        "%6s %13s %14s %14s %14s %14s %14s %14s\n",
+        "%6s %13s %14s %14s %14s %14s %14s %14s %14s\n",
         data[1],
         data[2],
         data[3],
@@ -15,6 +15,7 @@ function print_header(data)
         data[6],
         data[7],
         data[8],
+        data[9],
     )
     @printf(
         "────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
@@ -29,7 +30,7 @@ end
 
 function print_iter_func(data)
     @printf(
-        "%6s %13s %14e %14e %14e %14e %14i %14i\n",
+        "%6s %13s %14e %14e %14e %14e %14e %14i %14i\n",
         st[Symbol(data[1])],
         data[2],
         Float64(data[3]),
@@ -38,6 +39,7 @@ function print_iter_func(data)
         data[6],
         data[7],
         data[8],
+        data[9],
     )
 end
 
@@ -124,6 +126,7 @@ function bcg(
             "Dual",
             "Dual Gap",
             "Time",
+            "It/sec",
             "#ActiveSet",
             "#non-simplex",
             "#forced FW",
@@ -147,6 +150,7 @@ function bcg(
             primal - dual_gap,
             dual_gap,
             (time_ns() - time_start) / 1.0e9,
+            t / ( (time_ns() - time_start) / 1.0e9 ),
             length(active_set),
             non_simplex_iter,
         )
@@ -235,6 +239,7 @@ function bcg(
                 primal - dual_gap,
                 dual_gap,
                 (time_ns() - time_start) / 1.0e9,
+                t / ( (time_ns() - time_start) / 1.0e9 ),
                 length(active_set),
                 non_simplex_iter,
             )
@@ -255,6 +260,7 @@ function bcg(
             primal - dual_gap,
             dual_gap,
             (time_ns() - time_start) / 1.0e9,
+            t / ( (time_ns() - time_start) / 1.0e9 ),
             length(active_set),
             non_simplex_iter,
         )
@@ -277,6 +283,7 @@ function bcg(
             primal - dual_gap,
             dual_gap,
             (time_ns() - time_start) / 1.0e9,
+            t / ( (time_ns() - time_start) / 1.0e9 ),
             length(active_set),
             non_simplex_iter,
         )
@@ -673,6 +680,7 @@ function simplex_gradient_descent_over_probability_simplex(
                 primal - tolerance,
                 tolerance,
                 (time_ns() - time_start) / 1.0e9,
+                t / ( (time_ns() - time_start) / 1.0e9 ),
                 length(initial_point),
                 non_simplex_iter,
             )
@@ -863,6 +871,7 @@ function simplex_gradient_descent_over_convex_hull(
                 primal - dual_gap,
                 dual_gap,
                 (time_ns() - time_start) / 1.0e9,
+                t / ( (time_ns() - time_start) / 1.0e9 ),
                 length(active_set),
                 non_simplex_iter,
             )
