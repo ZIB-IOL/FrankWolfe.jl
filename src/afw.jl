@@ -112,6 +112,14 @@ function afw(
     v = compute_extreme_point(lmo, gradient)
     phi_value = fast_dot(x, gradient) - fast_dot(v, gradient)
 
+    if  line_search === adaptive && L == Inf
+        #Provide an initial value of the smoothness parameter if none exists yet for the adaptive stepsize
+        epsilon_step = 1.0e-3
+        gradient_stepsize_estimation = similar(x)
+        grad!(gradient_stepsize_estimation, x - epsilon_step*(x - v))
+        L = norm(gradient - gradient_stepsize_estimation)/(epsilon_step*norm(x - v))
+    end
+
     while t <= max_iteration && dual_gap >= max(epsilon, eps())
 
         # compute current iterate from active set
@@ -155,9 +163,9 @@ function afw(
             renorm = mod(t, 1000) == 0
 
             if away_step_taken 
-                active_set_update!(active_set, -gamma, vertex, true)
+                active_set_update!(active_set, -gamma, vertex, true, index)
             else
-                active_set_update!(active_set, gamma, vertex, renorm)
+                active_set_update!(active_set, gamma, vertex, renorm, index)
             end
         end
 

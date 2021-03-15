@@ -145,11 +145,10 @@ function bcg(
         print_iter_func(rep)
         flush(stdout)
     end
-    L_inner = nothing
     while t <= max_iteration && phi ≥ epsilon
         # TODO replace with single call interface from function_gradient.jl
         #Mininize over the convex hull until strong Wolfe gap is below a given tolerance.
-        num_simplex_descent_steps, L_inner = minimize_over_convex_hull!(
+        num_simplex_descent_steps = minimize_over_convex_hull!(
             f,
             grad!,
             gradient,
@@ -164,7 +163,6 @@ function bcg(
             verbose = verbose,
             print_iter=print_iter,
             hessian = hessian,
-            L_inner = L_inner,
             accelerated = accelerated,
         )
         t = t + num_simplex_descent_steps
@@ -235,8 +233,6 @@ function bcg(
             flush(stdout)
         end
     end
-    print("\nFinal round", t, " ", max_iteration, " ", phi,  " ",epsilon, "\n")
-
     if verbose
         x = compute_active_set_iterate(active_set)
         grad!(gradient, x)
@@ -313,7 +309,6 @@ function minimize_over_convex_hull!(
     verbose = true,
     print_iter=1000,
     hessian = nothing,
-    L_inner=nothing,
     linesearch_tol=10e-10,
     step_lim=100,
     weight_purge_threshold=1e-12,
@@ -322,7 +317,7 @@ function minimize_over_convex_hull!(
 )
     #No hessian is known, use simplex gradient descent.
     if isnothing(hessian)
-        number_of_steps, L_inner = simplex_gradient_descent_over_convex_hull(
+        number_of_steps = simplex_gradient_descent_over_convex_hull(
             f,
             grad!,
             gradient,
@@ -336,7 +331,6 @@ function minimize_over_convex_hull!(
             line_search_inner = line_search_inner,
             verbose = verbose,
             print_iter=print_iter,
-            L_inner=L_inner,
             linesearch_tol=linesearch_tol,
             step_lim=step_lim,
             weight_purge_threshold=weight_purge_threshold,
@@ -348,7 +342,7 @@ function minimize_over_convex_hull!(
         M, b = build_reduced_problem(active_set.atoms, hessian, active_set.weights, gradient, tolerance)
         #Early exit if we have detected that the strong-Wolfe gap is below the desired tolerance while building the reduced problem.
         if isnothing(M)
-            return 0, L_inner
+            return 0
         end
         #In case the matrices are DoubleFloats we need to cast them as Float64, because LinearAlgebra does not work with them.
         if eltype(M) === Double64
@@ -409,7 +403,7 @@ function minimize_over_convex_hull!(
     end
     number_elements = length(active_set.atoms)
     active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
-    return number_of_steps, L_inner
+    return number_of_steps
 end
 
 """
@@ -742,19 +736,19 @@ function simplex_gradient_descent_over_convex_hull(
     verbose = true,
     print_iter=1000,
     hessian = nothing,
-    L_inner=nothing,
     linesearch_tol=10e-10,
     step_lim=100,
     weight_purge_threshold=1e-12,
 )
     number_of_steps = 0
+    L_inner=nothing
     x  = compute_active_set_iterate(active_set)
     while true
         grad!(gradient, x)
         #Check if strong Wolfe gap over the convex hull is small enough.
         c = [fast_dot(gradient, a) for a in active_set.atoms]
         if maximum(c) - minimum(c) <= tolerance
-            return number_of_steps, L_inner
+            return number_of_steps
         end
         #Otherwise perform simplex steps until we get there.
         k = length(active_set)
@@ -768,7 +762,7 @@ function simplex_gradient_descent_over_convex_hull(
             a0 = active_set.atoms[1]
             empty!(active_set)
             push!(active_set, (1, a0))
-            return number_of_steps, L_inner
+            return number_of_steps
         end
         # NOTE: sometimes the direction is non-improving
         # usual suspects are floating-point errors when multiplying atoms with near-zero weights
@@ -779,7 +773,7 @@ function simplex_gradient_descent_over_convex_hull(
             If higher accuracy is required, consider using Double64 (still quite fast) and if that does not help BigFloat (slower) as type for the numbers.
             Alternatively, consider using AFW (with lazy = true) instead."
             println(fast_dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), gradient))
-            return number_of_steps, L_inner
+            return number_of_steps
         end
 
         η = eltype(d)(Inf)
