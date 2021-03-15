@@ -44,7 +44,7 @@ function fw(
     grad!,
     lmo,
     x0;
-    line_search::LineSearchMethod=agnostic,
+    line_search::LineSearchMethod=adaptive,
     L=Inf,
     gamma0=0,
     step_lim=20,
@@ -105,7 +105,7 @@ function fw(
     trajData = []
     time_start = time_ns()
 
-    if line_search === shortstep && L == Inf
+    if line_search === shortstep && !isfinite(L)
         println("FATAL: Lipschitz constant not set. Prepare to blow up spectacularly.")
     end
 
@@ -144,7 +144,7 @@ function fw(
     # container for direction
     d = similar(x)
 
-    if  line_search === adaptive && L == Inf
+    if  line_search === adaptive && !isfinite(L)
         #Provide an initial value of the smoothness parameter if none exists yet for the adaptive stepsize
         epsilon_step = 1.0e-3
         grad!(gradient, x)
@@ -258,7 +258,7 @@ function lcg(
     grad!,
     lmo_base,
     x0;
-    line_search::LineSearchMethod=agnostic,
+    line_search::LineSearchMethod=adaptive,
     L=Inf,
     gamma0=0,
     phiFactor=2,
@@ -332,7 +332,7 @@ function lcg(
     tt = regular
     time_start = time_ns()
 
-    if line_search == shortstep && L == Inf
+    if line_search == shortstep && !isfinite(L)
         println("FATAL: Lipschitz constant not set. Prepare to blow up spectacularly.")
     end
 
@@ -365,7 +365,7 @@ function lcg(
     # container for direction
     d = similar(x)
 
-    if  line_search === adaptive && L == Inf
+    if  line_search === adaptive && !isfinite(L)
         #Provide an initial value of the smoothness parameter if none exists yet for the adaptive stepsize
         epsilon_step = 1.0e-3
         grad!(gradient, x)

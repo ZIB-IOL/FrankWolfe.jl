@@ -112,7 +112,7 @@ function afw(
     v = compute_extreme_point(lmo, gradient)
     phi_value = fast_dot(x, gradient) - fast_dot(v, gradient)
 
-    if  line_search === adaptive && L == Inf
+    if  line_search === adaptive && !isfinite(L)
         #Provide an initial value of the smoothness parameter if none exists yet for the adaptive stepsize
         epsilon_step = 1.0e-3
         gradient_stepsize_estimation = similar(x)
