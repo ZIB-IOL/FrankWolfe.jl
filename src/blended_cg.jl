@@ -89,6 +89,14 @@ function bcg(
         Base.sizehint!(direction_storage, 100)
     end
 
+    if  line_search === adaptive && !isfinite(L)
+        #Provide an initial value of the smoothness parameter if none exists yet for the adaptive stepsize
+        epsilon_step = 1.0e-3
+        gradient_stepsize_estimation = similar(x)
+        grad!(gradient_stepsize_estimation, x - epsilon_step*(x - vmax))
+        L = norm(gradient - gradient_stepsize_estimation)/(epsilon_step*norm(x - vmax))
+    end
+
     if line_search == shortstep && !isfinite(L)
         @error("Lipschitz constant not set to a finite value. Prepare to blow up spectacularly.")
     end
@@ -99,8 +107,8 @@ function bcg(
 
     if line_search == fixed && gamma0 == 0
         println("WARNING: gamma0 not set. We are not going to move a single bit.")
-    end
-
+    end    
+    
     if verbose
         println("\nBlended Conditional Gradients Algorithm.")
         numType = eltype(x0)
