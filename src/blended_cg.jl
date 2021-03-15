@@ -164,7 +164,7 @@ function bcg(
             accelerated = accelerated,
             max_iteration=max_iteration,
         )
-        t = t + num_simplex_descent_steps
+        t += num_simplex_descent_steps
         #Take a FW step.
         x  = compute_active_set_iterate(active_set)
         primal = f(x)
@@ -387,6 +387,7 @@ function minimize_over_convex_hull!(
                 )
                 @. active_set.weights = new_weights
             end
+        end
         if !accelerated || L_reduced / mu_reduced == 1.0
         #Solve using gradient descent.
             new_weights, number_of_steps = simplex_gradient_descent_over_probability_simplex(
@@ -751,7 +752,7 @@ function simplex_gradient_descent_over_convex_hull(
 )
     number_of_steps = 0
     x  = compute_active_set_iterate(active_set)
-    while t + number_elements ≤ max_iteration
+    while t + number_of_steps ≤ max_iteration
         grad!(gradient, x)
         #Check if strong Wolfe gap over the convex hull is small enough.
         c = [fast_dot(gradient, a) for a in active_set.atoms]
