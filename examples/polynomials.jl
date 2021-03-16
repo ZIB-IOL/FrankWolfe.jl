@@ -113,7 +113,7 @@ lmo = FrankWolfe.KSparseLMO(
 
 x00 = FrankWolfe.compute_extreme_point(lmo, rand(length(all_coeffs)))
 
-k = 1000
+k = 3e6
 
 x0 = deepcopy(x00)
 
@@ -150,6 +150,7 @@ x0 = deepcopy(x00)
     print_iter=k / 50,
     emphasis=FrankWolfe.memory,
     verbose=true,
+    lazy=true,
     trajectory=false,
     gradient=gradient,
 );
@@ -164,7 +165,7 @@ x0 = deepcopy(x00)
     grad!,
     lmo,
     x0,
-    max_iteration=1000,
+    max_iteration=k,
     line_search=FrankWolfe.backtracking,
     print_iter=k / 10,
     emphasis=FrankWolfe.memory,
@@ -172,7 +173,6 @@ x0 = deepcopy(x00)
     verbose=true,
     trajectory=false,
     Ktolerance=0.95,
-    goodstep_tolerance=0.95,
     weight_purge_threshold=1e-10,
 )
 
