@@ -20,6 +20,9 @@ import Hungarian
 import Arpack
 using DoubleFloats
 
+export frank_wolfe, lazified_conditional_gradient, away_frank_wolfe
+export blended_conditional_gradient, compute_extreme_point
+
 include("defs.jl")
 include("simplex_matrix.jl")
 
@@ -32,14 +35,8 @@ include("moi_oracle.jl")
 include("function_gradient.jl")
 include("active_set.jl")
 
-# move advanced variants etc to their own files to prevent excessive clutter
-
 include("blended_cg.jl")
 include("afw.jl")
 include("fw_algorithms.jl")
-
-##############################################################
-# Vanilla FW
-##############################################################
 
 end
