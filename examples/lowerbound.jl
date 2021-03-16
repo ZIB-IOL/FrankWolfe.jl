@@ -6,7 +6,7 @@ import LinearAlgebra
 n = Int(1e2)
 k = Int(1e4)
 
-xpi = zeros(n);
+xpi = 1/n * ones(n);
 total = sum(xpi);
 const xp = xpi # ./ total;
 
