@@ -204,6 +204,8 @@ end
         cost = rand(n, n)
         res = FrankWolfe.compute_extreme_point(lmo, cost)
         _is_doubly_stochastic(res)
+        res2 = FrankWolfe.compute_extreme_point(lmo, vec(cost))
+        @test res ≈ res2
     end
     cost_mat = [
         2 3 3
