@@ -34,14 +34,20 @@ x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
 # print(x0)
 
 gradient = similar(x00)
-FrankWolfe.benchmark_oracles(x -> cf(x, xp), x -> cgrad(gradient, x, xp), () -> randn(n), lmo; k=100)
+FrankWolfe.benchmark_oracles(
+    x -> cf(x, xp),
+    x -> cgrad(gradient, x, xp),
+    () -> randn(n),
+    lmo;
+    k=100,
+)
 
 # 1/t *can be* better than short step
 
 println("\n==> Short Step rule - if you know L.\n")
 
 x0 = copy(x00)
-@time x, v, primal, dual_gap, trajectorySs = FrankWolfe.fw(
+@time x, v, primal, dual_gap, trajectorySs = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -59,7 +65,7 @@ println("\n==> Short Step rule with momentum - if you know L.\n")
 
 x0 = copy(x00)
 
-@time x, v, primal, dual_gap, trajectoryM = FrankWolfe.fw(
+@time x, v, primal, dual_gap, trajectoryM = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -78,7 +84,7 @@ println("\n==> Adaptive if you do not know L.\n")
 
 x0 = copy(x00)
 
-@time x, v, primal, dual_gap, trajectoryAda = FrankWolfe.fw(
+@time x, v, primal, dual_gap, trajectoryAda = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -96,7 +102,7 @@ println("\n==> Agnostic if function is too expensive for adaptive.\n")
 
 x0 = copy(x00)
 
-@time x, v, primal, dual_gap, trajectoryAg = FrankWolfe.fw(
+@time x, v, primal, dual_gap, trajectoryAg = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,

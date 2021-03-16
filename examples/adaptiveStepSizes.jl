@@ -25,25 +25,25 @@ println("\n==> Short Step rule - if you know L.\n")
 
 x0 = deepcopy(x00)
 
-@time x, v, primal, dual_gap, trajectorySs = FrankWolfe.fw(
+@time x, v, primal, dual_gap, trajectorySs = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
     x0,
     max_iteration=k,
     line_search=FrankWolfe.shortstep,
-    L=2*rescale,
+    L=2 * rescale,
     print_iter=k / 10,
     emphasis=FrankWolfe.memory,
     verbose=true,
-    trajectory=true
+    trajectory=true,
 );
 
 println("\n==> Adaptive if you do not know L.\n")
 
 x0 = deepcopy(x00)
 
-@time x, v, primal, dual_gap, trajectoryAda = FrankWolfe.fw(
+@time x, v, primal, dual_gap, trajectoryAda = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -54,28 +54,28 @@ x0 = deepcopy(x00)
     print_iter=k / 10,
     emphasis=FrankWolfe.memory,
     verbose=true,
-    trajectory=true
+    trajectory=true,
 );
 
-@time x, v, primal, dual_gap, trajectoryAdaL = FrankWolfe.fw(
+@time x, v, primal, dual_gap, trajectoryAdaL = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
     x0,
     max_iteration=k,
     line_search=FrankWolfe.adaptive,
-    L=10*rescale,
+    L=10 * rescale,
     print_iter=k / 10,
     emphasis=FrankWolfe.memory,
     verbose=true,
-    trajectory=true
+    trajectory=true,
 );
 
 println("\n==> Agnostic if function is too expensive for adaptive.\n")
 
 x0 = deepcopy(x00)
 
-@time x, v, primal, dual_gap, trajectoryAg = FrankWolfe.fw(
+@time x, v, primal, dual_gap, trajectoryAg = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -85,7 +85,7 @@ x0 = deepcopy(x00)
     print_iter=k / 10,
     emphasis=FrankWolfe.memory,
     verbose=true,
-    trajectory=true
+    trajectory=true,
 );
 
 data = [trajectorySs, trajectoryAda, trajectoryAdaL, trajectoryAg]
