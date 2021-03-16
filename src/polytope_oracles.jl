@@ -101,6 +101,12 @@ function compute_extreme_point(::BirkhoffPolytopeLMO, direction::AbstractMatrix{
     return m
 end
 
+function compute_extreme_point(lmo::BirkhoffPolytopeLMO, direction::AbstractVector{T}; kwargs...) where {T}
+    nsq = length(direction)
+    n = isqrt(nsq)
+    return compute_extreme_point(lmo, reshape(direction, n, n); kwargs...)
+end
+
 function convert_mathopt(::BirkhoffPolytopeLMO, optimizer::OT; dimension::Integer, kwargs...) where {OT}
     n = dimension
     MOI.empty!(optimizer)

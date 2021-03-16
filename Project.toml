@@ -5,10 +5,8 @@ version = "0.1.0"
 
 [deps]
 Arpack = "7d9fca2a-8960-54d3-9f78-7d1dccf2cb97"
-Clp = "e2554f3b-3117-50c0-817c-e040a3ddf72d"
 DoubleFloats = "497a8b3b-efae-58df-a0af-a86822472b78"
 FiniteDifferences = "26cc04aa-876d-5657-8c51-4c34ba976000"
-GLPK = "60bf3e95-4087-53dc-ae20-288a0d20c6a6"
 Hungarian = "e91730f6-4275-51fb-a7a0-7064cfbd3b39"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MathOptInterface = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"
