@@ -233,7 +233,7 @@ end
         2 3 3
     ]
     res = FrankWolfe.compute_extreme_point(lmo, cost_mat)
-    @test sum(cost_mat .* res) == 6
+    @test dot(cost_mat, res) == 6
     @test res == Bool[
         0 1 0
         0 0 1
@@ -498,6 +498,8 @@ end
             v_moi_mat = reshape(v_moi, n, n)
             v_bfk = FrankWolfe.compute_extreme_point(lmo_bkf, direction_mat)
             @test all(isapprox.(v_moi_mat, v_bfk, atol=1e-4))
+            v_moi_mat2 = FrankWolfe.compute_extreme_point(lmo_moi, direction_mat)
+            @test all(isapprox.(v_moi_mat2, v_moi_mat))
         end
     end
 end
