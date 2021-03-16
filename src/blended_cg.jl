@@ -4,7 +4,7 @@ function print_header(data)
         "\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
     )
     @printf(
-        "%6s %13s %14s %14s %14s %14s %14s %14s\n",
+        "%6s %13s %14s %14s %14s %14s %14s %14s %14s\n",
         data[1],
         data[2],
         data[3],
@@ -13,6 +13,7 @@ function print_header(data)
         data[6],
         data[7],
         data[8],
+        data[9],
     )
     @printf(
         "────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
@@ -27,7 +28,7 @@ end
 
 function print_iter_func(data)
     @printf(
-        "%6s %13s %14e %14e %14e %14e %14i %14i\n",
+        "%6s %13s %14e %14e %14e %14e %14e %14i %14i\n",
         st[Symbol(data[1])],
         data[2],
         Float64(data[3]),
@@ -36,6 +37,7 @@ function print_iter_func(data)
         data[6],
         data[7],
         data[8],
+        data[9],
     )
 end
 
@@ -45,6 +47,7 @@ function bcg(
     lmo,
     x0;
     line_search::LineSearchMethod=adaptive,
+    line_search_inner::LineSearchMethod=adaptive,
     L=Inf,
     gamma0=0,
     hessian = nothing,
@@ -86,6 +89,14 @@ function bcg(
         Base.sizehint!(direction_storage, 100)
     end
 
+    if  line_search === adaptive && !isfinite(L)
+        #Provide an initial value of the smoothness parameter if none exists yet for the adaptive stepsize
+        epsilon_step = 1.0e-3
+        gradient_stepsize_estimation = similar(x)
+        grad!(gradient_stepsize_estimation, x - epsilon_step*(x - vmax))
+        L = norm(gradient - gradient_stepsize_estimation)/(epsilon_step*norm(x - vmax))
+    end
+
     if line_search == shortstep && !isfinite(L)
         @error("Lipschitz constant not set to a finite value. Prepare to blow up spectacularly.")
     end
@@ -96,8 +107,8 @@ function bcg(
 
     if line_search == fixed && gamma0 == 0
         println("WARNING: gamma0 not set. We are not going to move a single bit.")
-    end
-
+    end    
+    
     if verbose
         println("\nBlended Conditional Gradients Algorithm.")
         numType = eltype(x0)
@@ -113,6 +124,7 @@ function bcg(
             "Dual",
             "Dual Gap",
             "Time",
+            "It/sec",
             "#ActiveSet",
             "#non-simplex",
             "#forced FW",
@@ -136,13 +148,13 @@ function bcg(
             primal - dual_gap,
             dual_gap,
             (time_ns() - time_start) / 1.0e9,
+            t / ( (time_ns() - time_start) / 1.0e9 ),
             length(active_set),
             non_simplex_iter,
         )
         print_iter_func(rep)
         flush(stdout)
     end
-
     while t <= max_iteration && phi ≥ epsilon
         # TODO replace with single call interface from function_gradient.jl
         #Mininize over the convex hull until strong Wolfe gap is below a given tolerance.
@@ -157,10 +169,10 @@ function bcg(
             traj_data,
             time_start,
             non_simplex_iter,
+            line_search_inner = line_search_inner,
             verbose=verbose,
             print_iter=print_iter,
             hessian=hessian,
-            L=L,
             accelerated=accelerated,
             max_iteration=max_iteration,
         )
@@ -225,6 +237,7 @@ function bcg(
                 primal - dual_gap,
                 dual_gap,
                 (time_ns() - time_start) / 1.0e9,
+                t / ( (time_ns() - time_start) / 1.0e9 ),
                 length(active_set),
                 non_simplex_iter,
             )
@@ -245,6 +258,7 @@ function bcg(
             primal - dual_gap,
             dual_gap,
             (time_ns() - time_start) / 1.0e9,
+            t / ( (time_ns() - time_start) / 1.0e9 ),
             length(active_set),
             non_simplex_iter,
         )
@@ -267,6 +281,7 @@ function bcg(
             primal - dual_gap,
             dual_gap,
             (time_ns() - time_start) / 1.0e9,
+            t / ( (time_ns() - time_start) / 1.0e9 ),
             length(active_set),
             non_simplex_iter,
         )
@@ -303,16 +318,16 @@ function minimize_over_convex_hull!(
     traj_data,
     time_start,
     non_simplex_iter;
+    line_search_inner = adaptive,
     verbose = true,
     print_iter=1000,
     hessian = nothing,
-    L=nothing,
     linesearch_tol=10e-10,
     step_lim=100,
     weight_purge_threshold=1e-12,
     storage=nothing,
     accelerated = false,
-    max_iteration=max_iteration,
+    max_iteration,
 )
     #No hessian is known, use simplex gradient descent.
     if hessian === nothing
@@ -327,9 +342,9 @@ function minimize_over_convex_hull!(
             traj_data,
             time_start,
             non_simplex_iter,
+            line_search_inner = line_search_inner,
             verbose = verbose,
             print_iter=print_iter,
-            L=nothing,
             linesearch_tol=linesearch_tol,
             step_lim=step_lim,
             weight_purge_threshold=weight_purge_threshold,
@@ -338,11 +353,6 @@ function minimize_over_convex_hull!(
     else
         x = compute_active_set_iterate(active_set)
         grad!(gradient, x)
-        #c = [fast_dot(gradient, a) for a in active_set.atoms]
-        #if maximum(c) - minimum(c) <= tolerance
-        #    return 0
-        #end
-
         #Rewrite as problem over the simplex
         M, b = build_reduced_problem(active_set.atoms, hessian, active_set.weights, gradient, tolerance)
         #Early exit if we have detected that the strong-Wolfe gap is below the desired tolerance while building the reduced problem.
@@ -558,19 +568,19 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
         alpha = 0.0
         alpha_old = 0.0
     else
-        gamma = (1 - sqrt(q))/(1 + sqrt(q))
+        gamma = (1 - sqrt(q)) / (1 + sqrt(q))
     end
-    while t ≤ max_iteration && strong_wolfe_gap > tolerance
+    while strong_wolfe_gap > tolerance && t + number_of_steps <= max_iteration
         @. x_old = x
         reduced_grad!(gradient_y, y)
-        x = projection_simplex_sort(y .- gradient_y/L)
+        x = projection_simplex_sort(y .- gradient_y / L)
         if mu < 1.0e-3
             alpha_old = alpha
             alpha = 0.5 * (1 + sqrt(1 + 4 * alpha^2))
             gamma = (alpha_old - 1.0) / alpha
         end
-        @. y =  x + gamma*(x - x_old)
-        number_of_steps = number_of_steps + 1
+        @. y =  x + gamma * (x - x_old)
+        number_of_steps += 1
         primal = reduced_f(x)
         reduced_grad!(gradient_x, x)
         strong_wolfe_gap = Strong_Frank_Wolfe_gap_probability_simplex(gradient_x, x)
@@ -628,7 +638,7 @@ function simplex_gradient_descent_over_probability_simplex(
     verbose = verbose,
     print_iter=print_iter,
     L = 1.0,
-    max_iteration=max_iteration,
+    max_iteration,
 )
     number_of_steps = 0
     x = deepcopy(initial_point)
@@ -636,7 +646,7 @@ function simplex_gradient_descent_over_probability_simplex(
     d = similar(x)
     reduced_grad!(gradient, x)
     strong_wolfe_gap = Strong_Frank_Wolfe_gap_probability_simplex(gradient, x)
-    while t ≤ max_iteration && strong_wolfe_gap > tolerance
+    while strong_wolfe_gap > tolerance && t + number_of_steps <= max_iteration
         x = projection_simplex_sort(x .- gradient/L)
         number_of_steps = number_of_steps + 1
         primal = reduced_f(x)
@@ -667,6 +677,7 @@ function simplex_gradient_descent_over_probability_simplex(
                 primal - tolerance,
                 tolerance,
                 (time_ns() - time_start) / 1.0e9,
+                t / ( (time_ns() - time_start) / 1.0e9 ),
                 length(initial_point),
                 non_simplex_iter,
             )
@@ -741,22 +752,23 @@ function simplex_gradient_descent_over_convex_hull(
     traj_data,
     time_start,
     non_simplex_iter;
+    line_search_inner = adaptive,
     verbose = true,
     print_iter=1000,
     hessian = nothing,
-    L=nothing,
     linesearch_tol=10e-10,
     step_lim=100,
     weight_purge_threshold=1e-12,
-    max_iteration=max_iteration,
+    max_iteration,
 )
     number_of_steps = 0
+    L_inner=nothing
     x  = compute_active_set_iterate(active_set)
     while t + number_of_steps ≤ max_iteration
         grad!(gradient, x)
         #Check if strong Wolfe gap over the convex hull is small enough.
         c = [fast_dot(gradient, a) for a in active_set.atoms]
-        if maximum(c) - minimum(c) <= tolerance
+        if maximum(c) - minimum(c) <= tolerance || t + number_of_steps ≥ max_iteration
             return number_of_steps
         end
         #Otherwise perform simplex steps until we get there.
@@ -801,16 +813,22 @@ function simplex_gradient_descent_over_convex_hull(
         η = max(0, η)
         @. active_set.weights -= η * d
         y = copy(update_active_set_iterate!(active_set))
+        #Provide an initial value of the smoothness parameter if none exists yet for the adaptive stepsize
+        if isnothing(L_inner)  && line_search_inner == adaptive 
+            epsilon_step = 1.0e-3
+            gradient_stepsize_estimation = similar(gradient)
+            grad!(gradient_stepsize_estimation, x - epsilon_step*(x - y))
+            L_inner = norm(gradient - gradient_stepsize_estimation)/(epsilon_step*norm(x - y))
+        end
         number_of_steps += 1
         if f(x) ≥ f(y)
             active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
         else
-            linesearch_method = L === nothing || !isfinite(L) ? backtracking : shortstep
-            if linesearch_method == backtracking
+            if line_search_inner == adaptive
+                gamma, L_inner = adaptive_step_size(f, gradient, x, x - y, L_inner, gamma_max = 1.0)
+            else
                 gamma, _ =
                 backtrackingLS(f, gradient, x, x - y, 1.0, linesearch_tol=linesearch_tol, step_lim=step_lim)
-            else # == shortstep, just two methods here for now
-                gamma = fast_dot(gradient, x - y) / (L * norm(x - y)^2)
             end
             gamma = min(1.0, gamma)
             # step back from y to x by (1 - γ) η d
@@ -850,6 +868,7 @@ function simplex_gradient_descent_over_convex_hull(
                 primal - dual_gap,
                 dual_gap,
                 (time_ns() - time_start) / 1.0e9,
+                t / ( (time_ns() - time_start) / 1.0e9 ),
                 length(active_set),
                 non_simplex_iter,
             )

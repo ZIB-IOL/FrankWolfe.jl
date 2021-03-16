@@ -80,11 +80,13 @@ end
 
 Adds the atom to the active set with weight lambda or adds lambda to existing atom.
 """
-function active_set_update!(active_set::ActiveSet, lambda, atom, renorm=true)
+function active_set_update!(active_set::ActiveSet, lambda, atom, renorm=true, idx = nothing)
     # rescale active set
     active_set.weights .*= (1 - lambda)
     # add value for new atom
-    idx = find_atom(active_set, atom)
+    if isnothing(idx)
+        idx = find_atom(active_set, atom)
+    end
     updating = false
     if idx > 0
         @inbounds active_set.weights[idx] = active_set.weights[idx] + lambda
