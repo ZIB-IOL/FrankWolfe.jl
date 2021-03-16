@@ -239,7 +239,7 @@ end
 ### Visualization etc
 ##############################
 
-function plot_trajectories(data, label; filename=nothing)
+function plot_trajectories(data, label; filename=nothing,xscalelog=false)
     # theme(:dark)
     # theme(:vibrant)
     gr()
@@ -251,6 +251,11 @@ function plot_trajectories(data, label; filename=nothing)
     dit = nothing
     dti = nothing
     offset = 2
+    if xscalelog
+        xscale = :log
+    else
+        xscale = :identity
+    end
     for i in 1:length(data)
         trajectory = data[i]
         x = [trajectory[j][1] for j in offset:length(trajectory)]
@@ -260,7 +265,7 @@ function plot_trajectories(data, label; filename=nothing)
                 x,
                 y,
                 label=label[i],
-                #xaxis=:log,
+                xaxis=xscale,
                 yaxis=:log,
                 ylabel="Primal",
                 legend=:topright,
@@ -282,7 +287,7 @@ function plot_trajectories(data, label; filename=nothing)
                 y,
                 label=label[i],
                 legend=false,
-                #xaxis=:log,
+                xaxis=xscale,
                 yaxis=:log,
                 yguidefontsize=8,
                 xguidefontsize=8,
@@ -301,7 +306,7 @@ function plot_trajectories(data, label; filename=nothing)
                 y,
                 label=label[i],
                 legend=false,
-                #xaxis=:log,
+                xaxis=xscale,
                 yaxis=:log,
                 ylabel="Dual Gap",
                 xlabel="Iterations",
@@ -322,7 +327,7 @@ function plot_trajectories(data, label; filename=nothing)
                 y,
                 label=label[i],
                 legend=false,
-                #xaxis=:log,
+                xaxis=xscale,
                 yaxis=:log,
                 xlabel="Time",
                 yguidefontsize=8,
