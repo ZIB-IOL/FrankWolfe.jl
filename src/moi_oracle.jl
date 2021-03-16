@@ -7,33 +7,30 @@ The oracle call sets the direction and reruns the optimizer.
 
 The `direction` vector has to be set in the same order of variables as the `MOI.ListOfVariableIndices()` getter.
 """
-struct MathOptLMO{OT <: MOI.AbstractOptimizer} <: LinearMinimizationOracle
+struct MathOptLMO{OT<:MOI.AbstractOptimizer} <: LinearMinimizationOracle
     o::OT
 end
 
-function compute_extreme_point(lmo::MathOptLMO{OT}, direction::AbstractVector{T}) where {OT, T <: Real}
+function compute_extreme_point(lmo::MathOptLMO{OT}, direction::AbstractVector{T}) where {OT,T<:Real}
     variables = MOI.get(lmo.o, MOI.ListOfVariableIndices())
-    obj = MOI.ScalarAffineFunction(
-        MOI.ScalarAffineTerm.(direction, variables),
-        zero(T),
-    )
+    obj = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(direction, variables), zero(T))
     MOI.set(lmo.o, MOI.ObjectiveFunction{typeof(obj)}(), obj)
     MOI.set(lmo.o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
     return _optimize_and_return(lmo, variables)
 end
 
-function compute_extreme_point(lmo::MathOptLMO{OT}, direction::AbstractMatrix{T}) where {OT, T <: Real}
+function compute_extreme_point(lmo::MathOptLMO{OT}, direction::AbstractMatrix{T}) where {OT,T<:Real}
     n = size(direction, 1)
     v = compute_extreme_point(lmo, vec(direction))
     return reshape(v, n, n)
 end
 
-function compute_extreme_point(lmo::MathOptLMO{OT}, direction::AbstractVector{MOI.ScalarAffineTerm{T}}) where {OT, T}
+function compute_extreme_point(
+    lmo::MathOptLMO{OT},
+    direction::AbstractVector{MOI.ScalarAffineTerm{T}},
+) where {OT,T}
     variables = [term.variable_index for term in direction]
-    obj = MOI.ScalarAffineFunction(
-        direction,
-        zero(T),
-    )
+    obj = MOI.ScalarAffineFunction(direction, zero(T))
     MOI.set(lmo.o, MOI.ObjectiveFunction{typeof(obj)}(), obj)
     MOI.set(lmo.o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
     return _optimize_and_return(lmo, variables)

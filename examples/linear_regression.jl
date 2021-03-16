@@ -131,7 +131,7 @@ k = 10000
 
 const ff = x -> compute_value(f_stoch_noisy, x, full_evaluation=true)
 const gradf = x -> compute_gradient(f_stoch_noisy, x, full_evaluation=true)
-@time x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
+@time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
     ff,
     gradf,
     lmo,

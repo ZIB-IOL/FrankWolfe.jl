@@ -37,7 +37,7 @@ const x00 = FrankWolfe.compute_extreme_point(lmo, rand(n))
 FrankWolfe.benchmark_oracles(f, grad!, () -> randn(n), lmo; k=100)
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, trajectorySs = FrankWolfe.fw(
+@time x, v, primal, dual_gap, trajectorySs = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -52,8 +52,8 @@ x0 = deepcopy(x00)
 );
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, trajectoryAda = FrankWolfe.afw(
-f,
+@time x, v, primal, dual_gap, trajectoryAda = FrankWolfe.away_frank_wolfe(
+    f,
     grad!,
     lmo,
     x0,
@@ -70,7 +70,7 @@ f,
 println("\n==> Localized AFW.\n")
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, trajectoryAdaLoc = FrankWolfe.afw(
+@time x, v, primal, dual_gap, trajectoryAdaLoc = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
@@ -88,7 +88,7 @@ x0 = deepcopy(x00)
 
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, trajectoryAdaLoc5 = FrankWolfe.afw(
+@time x, v, primal, dual_gap, trajectoryAdaLoc5 = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
@@ -105,7 +105,7 @@ x0 = deepcopy(x00)
 );
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, trajectoryAdaLoc25 = FrankWolfe.afw(
+@time x, v, primal, dual_gap, trajectoryAdaLoc25 = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
@@ -122,7 +122,7 @@ x0 = deepcopy(x00)
 );
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, trajectoryAdaLoc1 = FrankWolfe.afw(
+@time x, v, primal, dual_gap, trajectoryAdaLoc1 = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
@@ -147,7 +147,8 @@ label = ["short step", "AFW", "AFW-Loc"]
 
 # FrankWolfe.plot_trajectories(data, label, filename="convergence.pdf")
 
-dataSparsity = [trajectoryAda, trajectoryAdaLoc, trajectoryAdaLoc5, trajectoryAdaLoc25, trajectoryAdaLoc1]
-labelSparsity = ["AFW", "AFW-Loc066", "AFW-Loc05", "AFW-Loc025", "AFW-Loc01" ]
+dataSparsity =
+    [trajectoryAda, trajectoryAdaLoc, trajectoryAdaLoc5, trajectoryAdaLoc25, trajectoryAdaLoc1]
+labelSparsity = ["AFW", "AFW-Loc066", "AFW-Loc05", "AFW-Loc025", "AFW-Loc01"]
 
-FrankWolfe.plot_sparsity(dataSparsity, labelSparsity,filename="sparse.pdf")
+FrankWolfe.plot_sparsity(dataSparsity, labelSparsity, filename="sparse.pdf")

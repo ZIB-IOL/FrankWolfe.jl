@@ -3,7 +3,7 @@ import LinearAlgebra
 
 # n = Int(1e1)
 n = Int(1e4)
-k = 5*Int(1e3)
+k = 5 * Int(1e3)
 number_nonzero = 40
 
 xpi = rand(n);
@@ -20,7 +20,7 @@ lmo = FrankWolfe.KSparseLMO(number_nonzero, 1.0);
 # lmo = FrankWolfe.ProbabilitySimplexOracle(1)
 x0 = FrankWolfe.compute_extreme_point(lmo, ones(n));
 
-@time x, v, primal, dual_gap, trajectorylazy, active_set = FrankWolfe.afw(
+@time x, v, primal, dual_gap, trajectorylazy, active_set = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
@@ -32,10 +32,10 @@ x0 = FrankWolfe.compute_extreme_point(lmo, ones(n));
     emphasis=FrankWolfe.memory,
     verbose=true,
     trajectory=true,
-    lazy = true,
+    lazy=true,
 );
 
-@time x, v, primal, dual_gap, trajectoryAFW, active_set = FrankWolfe.afw(
+@time x, v, primal, dual_gap, trajectoryAFW, active_set = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
@@ -50,7 +50,7 @@ x0 = FrankWolfe.compute_extreme_point(lmo, ones(n));
     trajectory=true,
 );
 
-@time x, v, primal, dual_gap, trajectoryFW = FrankWolfe.afw(
+@time x, v, primal, dual_gap, trajectoryFW = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
@@ -62,7 +62,7 @@ x0 = FrankWolfe.compute_extreme_point(lmo, ones(n));
     verbose=true,
     epsilon=1e-5,
     trajectory=true,
-    awaySteps = false,
+    awaySteps=false,
 );
 
 data = [trajectorylazy, trajectoryAFW, trajectoryFW]

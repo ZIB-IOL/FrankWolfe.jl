@@ -20,63 +20,63 @@ const var_monomials = MultivariatePolynomials.monomials(X, 0:max_degree)
 Random.seed!(42)
 const all_coeffs = map(var_monomials) do m
     d = MultivariatePolynomials.degree(m)
-    10 * rand() .* (rand() .> 0.6 * d / max_degree)
+    return 10 * rand() .* (rand() .> 0.6 * d / max_degree)
 end
 
 const true_poly = dot(all_coeffs, var_monomials)
 
 function evaluate_poly(coefficients)
     poly = dot(coefficients, var_monomials)
-    function p(x)
-        MultivariatePolynomials.subs(poly, Pair(X, x)).a[1]
+    return function p(x)
+        return MultivariatePolynomials.subs(poly, Pair(X, x)).a[1]
     end
 end
 
 const training_data = map(1:1000) do _
     x = 3 * randn(N)
     y = MultivariatePolynomials.subs(true_poly, Pair(X, x)) + 2 * randn()
-    (x, y.a[1])
+    return (x, y.a[1])
 end
 
 const extended_training_data = map(training_data) do (x, y)
-    x_ext = getproperty.(MultivariatePolynomials.subs.(var_monomials, X=>x), :α)
-    (x_ext, y)
+    x_ext = getproperty.(MultivariatePolynomials.subs.(var_monomials, X => x), :α)
+    return (x_ext, y)
 end
 
 const test_data = map(1:1000) do _
     x = 3 * randn(N)
     y = MultivariatePolynomials.subs(true_poly, Pair(X, x)) + 2 * randn()
-    (x, y.a[1])
+    return (x, y.a[1])
 end
 
 const extended_test_data = map(test_data) do (x, y)
-    x_ext = getproperty.(MultivariatePolynomials.subs.(var_monomials, X=>x), :α)
-    (x_ext, y)
+    x_ext = getproperty.(MultivariatePolynomials.subs.(var_monomials, X => x), :α)
+    return (x_ext, y)
 end
 
 function f(coefficients)
     poly = evaluate_poly(coefficients)
     return 0.5 / length(training_data) * sum(training_data) do (x, y)
-        (poly(x) - y)^2 
+        return (poly(x) - y)^2
     end
 end
 
 # extended version, much faster (memory intense)
 function f3(coefficients)
     return 0.5 / length(extended_training_data) * sum(extended_training_data) do (x, y)
-        (dot(coefficients, x) - y)^2
+        return (dot(coefficients, x) - y)^2
     end
 end
 
 function f_test(coefficients)
     return 0.5 / length(extended_test_data) * sum(extended_test_data) do (x, y)
-        (dot(coefficients, x) - y)^2
+        return (dot(coefficients, x) - y)^2
     end
 end
 
 function matching_zeros(coeffs)
     return count(eachindex(all_coeffs)) do idx
-        all_coeffs[idx] ≈ 0 && coeffs[idx] ≈ 0
+        return all_coeffs[idx] ≈ 0 && coeffs[idx] ≈ 0
     end
 end
 
@@ -106,10 +106,7 @@ end
 @info "Gradient descent test loss $(f_test(xgd))"
 @info "Matching zeros $(matching_zeros(xgd))"
 
-lmo = FrankWolfe.KSparseLMO(
-    round(Int, length(all_coeffs) / 4),
-    1.1 * maximum(all_coeffs)
-)
+lmo = FrankWolfe.KSparseLMO(round(Int, length(all_coeffs) / 4), 1.1 * maximum(all_coeffs))
 
 x00 = FrankWolfe.compute_extreme_point(lmo, rand(length(all_coeffs)))
 
@@ -118,7 +115,7 @@ k = 3e6
 x0 = deepcopy(x00)
 
 # vanilla FW
-@time x, v, primal, dual_gap, trajectoryFw = FrankWolfe.fw(
+@time x, v, primal, dual_gap, trajectoryFw = FrankWolfe.frank_wolfe(
     f3,
     grad!,
     lmo,
@@ -126,7 +123,7 @@ x0 = deepcopy(x00)
     max_iteration=k,
     line_search=FrankWolfe.adaptive,
     L=2,
-    print_iter=k/50,
+    print_iter=k / 50,
     emphasis=FrankWolfe.memory,
     verbose=true,
     trajectory=false,
@@ -139,7 +136,7 @@ x0 = deepcopy(x00)
 
 x0 = deepcopy(x00)
 
-@time x, v, primal, dual_gap, trajectoryFw = FrankWolfe.afw(
+@time x, v, primal, dual_gap, trajectoryFw = FrankWolfe.away_frank_wolfe(
     f3,
     grad!,
     lmo,
@@ -160,7 +157,7 @@ x0 = deepcopy(x00)
 @info "Matching zeros $(matching_zeros(x))"
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, trajectoryBCG = FrankWolfe.bcg(
+@time x, v, primal, dual_gap, trajectoryBCG = FrankWolfe.blended_conditional_gradient(
     f3,
     grad!,
     lmo,

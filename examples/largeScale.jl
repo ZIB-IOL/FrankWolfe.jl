@@ -26,9 +26,15 @@ end
 lmo = FrankWolfe.ProbabilitySimplexOracle(1);
 x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
-FrankWolfe.benchmark_oracles(x -> cf(x, xp), (str, x) -> cgrad!(str, x, xp), () -> randn(n), lmo; k=100)
+FrankWolfe.benchmark_oracles(
+    x -> cf(x, xp),
+    (str, x) -> cgrad!(str, x, xp),
+    () -> randn(n),
+    lmo;
+    k=100,
+)
 
-@time x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
+@time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
     x -> cf(x, xp),
     (str, x) -> cgrad!(str, x, xp),
     lmo,

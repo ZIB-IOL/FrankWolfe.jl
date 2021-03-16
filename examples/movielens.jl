@@ -26,8 +26,8 @@ ratings_frame = CSV.read(ratings_file, DataFrame)
 # we construct a new matrix with users as rows and all ratings as columns
 # we use missing for non-present movies
 
-users = unique(ratings_frame[:,:userId])
-movies = unique(ratings_frame[:,:movieId])
+users = unique(ratings_frame[:, :userId])
+movies = unique(ratings_frame[:, :movieId])
 
 const rating_matrix = spzeros(length(users), length(movies))
 @showprogress 1 "Extracting user and movie indices... " for row in eachrow(ratings_frame)
@@ -39,12 +39,12 @@ end
 missing_rate = 0.05
 
 const missing_ratings = unique!([
-    Tuple(idx) for idx in eachindex(rating_matrix)
-    if rating_matrix[idx] > 0 && rand() <= missing_rate
+    Tuple(idx) for
+    idx in eachindex(rating_matrix) if rating_matrix[idx] > 0 && rand() <= missing_rate
 ])
 const present_ratings = [
-    Tuple(idx) for idx in eachindex(rating_matrix)
-    if rating_matrix[idx] > 0 && Tuple(idx) ∉ missing_ratings
+    Tuple(idx) for
+    idx in eachindex(rating_matrix) if rating_matrix[idx] > 0 && Tuple(idx) ∉ missing_ratings
 ]
 
 
@@ -53,7 +53,7 @@ function f(X)
     # since it is sparse unlike X
     r = 0.0
     for (i, j) in present_ratings
-        r += 0.5 * (X[i,j] - rating_matrix[i,j])^2
+        r += 0.5 * (X[i, j] - rating_matrix[i, j])^2
     end
     return r
 end
@@ -61,7 +61,7 @@ end
 function grad!(storage, X)
     storage .= 0
     for (i, j) in present_ratings
-        storage[i,j] = X[i,j] - rating_matrix[i,j]
+        storage[i, j] = X[i, j] - rating_matrix[i, j]
     end
     return nothing
 end
@@ -69,7 +69,7 @@ end
 function test_loss(X)
     r = 0.0
     for (i, j) in missing_ratings
-        r += 0.5 * (X[i,j] - rating_matrix[i,j])^2
+        r += 0.5 * (X[i, j] - rating_matrix[i, j])^2
     end
     return r
 end
@@ -96,14 +96,14 @@ end
 
 const k = 1000
 
-xfin, vmin, _, _, traj_data = FrankWolfe.fw(
+xfin, vmin, _, _, traj_data = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
     x0;
     epsilon=1e-9,
     max_iteration=k,
-    print_iter=k/10,
+    print_iter=k / 10,
     trajectory=false,
     verbose=true,
     linesearch_tol=1e-7,

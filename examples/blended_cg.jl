@@ -16,12 +16,12 @@ s = 41
 Random.seed!(s)
 
 
-matrix = rand(n,n)
+matrix = rand(n, n)
 hessian = transpose(matrix) * matrix
 linear = rand(n)
-f(x) = dot(linear, x) + 0.5*transpose(x) * hessian * x
+f(x) = dot(linear, x) + 0.5 * transpose(x) * hessian * x
 function grad!(storage, x)
-    storage .= linear + hessian * x
+    return storage .= linear + hessian * x
 end
 L = eigmax(hessian)
 
@@ -30,26 +30,7 @@ lmo = FrankWolfe.ProbabilitySimplexOracle(1.0);
 x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
 
 x0 = deepcopy(x00)
-x, v, primal, dual_gap, trajectoryBCG_accel_simplex = FrankWolfe.bcg(
-    f,
-    grad!,
-    lmo,
-    x0,
-    max_iteration=k,
-   line_search=FrankWolfe.adaptive,
-    print_iter=k / 10,
-    hessian = hessian,
-    emphasis=FrankWolfe.memory,
-    L=L,
-    accelerated = true,
-    verbose=true,
-    trajectory=true,
-    Ktolerance=1.00,
-    weight_purge_threshold=1e-10,
-)
-
-x0 = deepcopy(x00)
-x, v, primal, dual_gap, trajectoryBCG_simplex = FrankWolfe.bcg(
+x, v, primal, dual_gap, trajectoryBCG_accel_simplex = FrankWolfe.blended_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -57,10 +38,10 @@ x, v, primal, dual_gap, trajectoryBCG_simplex = FrankWolfe.bcg(
     max_iteration=k,
     line_search=FrankWolfe.adaptive,
     print_iter=k / 10,
-    hessian = hessian,
+    hessian=hessian,
     emphasis=FrankWolfe.memory,
     L=L,
-    accelerated = false,
+    accelerated=true,
     verbose=true,
     trajectory=true,
     Ktolerance=1.00,
@@ -68,7 +49,26 @@ x, v, primal, dual_gap, trajectoryBCG_simplex = FrankWolfe.bcg(
 )
 
 x0 = deepcopy(x00)
-x, v, primal, dual_gap, trajectoryBCG_convex = FrankWolfe.bcg(
+x, v, primal, dual_gap, trajectoryBCG_simplex = FrankWolfe.blended_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    x0,
+    max_iteration=k,
+    line_search=FrankWolfe.adaptive,
+    print_iter=k / 10,
+    hessian=hessian,
+    emphasis=FrankWolfe.memory,
+    L=L,
+    accelerated=false,
+    verbose=true,
+    trajectory=true,
+    Ktolerance=1.00,
+    weight_purge_threshold=1e-10,
+)
+
+x0 = deepcopy(x00)
+x, v, primal, dual_gap, trajectoryBCG_convex = FrankWolfe.blended_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -90,12 +90,12 @@ FrankWolfe.plot_trajectories(data, label)
 
 
 
-matrix = rand(n,n)
+matrix = rand(n, n)
 hessian = transpose(matrix) * matrix
 linear = rand(n)
-f(x) = dot(linear, x) + 0.5*transpose(x) * hessian * x
+f(x) = dot(linear, x) + 0.5 * transpose(x) * hessian * x
 function grad!(storage, x)
-    storage .= linear + hessian * x
+    return storage .= linear + hessian * x
 end
 L = eigmax(hessian)
 
@@ -104,26 +104,7 @@ lmo = FrankWolfe.KSparseLMO(100, 100.0)
 x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
 
 x0 = deepcopy(x00)
-x, v, primal, dual_gap, trajectoryBCG_accel_simplex = FrankWolfe.bcg(
-    f,
-    grad!,
-    lmo,
-    x0,
-    max_iteration=k,
-   line_search=FrankWolfe.adaptive,
-    print_iter=k / 10,
-    hessian = hessian,
-    emphasis=FrankWolfe.memory,
-    L=L,
-    accelerated = true,
-    verbose=true,
-    trajectory=true,
-    Ktolerance=1.00,
-    weight_purge_threshold=1e-10,
-)
-
-x0 = deepcopy(x00)
-x, v, primal, dual_gap, trajectoryBCG_simplex = FrankWolfe.bcg(
+x, v, primal, dual_gap, trajectoryBCG_accel_simplex = FrankWolfe.blended_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -131,10 +112,10 @@ x, v, primal, dual_gap, trajectoryBCG_simplex = FrankWolfe.bcg(
     max_iteration=k,
     line_search=FrankWolfe.adaptive,
     print_iter=k / 10,
-    hessian = hessian,
+    hessian=hessian,
     emphasis=FrankWolfe.memory,
     L=L,
-    accelerated = false,
+    accelerated=true,
     verbose=true,
     trajectory=true,
     Ktolerance=1.00,
@@ -142,7 +123,26 @@ x, v, primal, dual_gap, trajectoryBCG_simplex = FrankWolfe.bcg(
 )
 
 x0 = deepcopy(x00)
-x, v, primal, dual_gap, trajectoryBCG_convex = FrankWolfe.bcg(
+x, v, primal, dual_gap, trajectoryBCG_simplex = FrankWolfe.blended_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    x0,
+    max_iteration=k,
+    line_search=FrankWolfe.adaptive,
+    print_iter=k / 10,
+    hessian=hessian,
+    emphasis=FrankWolfe.memory,
+    L=L,
+    accelerated=false,
+    verbose=true,
+    trajectory=true,
+    Ktolerance=1.00,
+    weight_purge_threshold=1e-10,
+)
+
+x0 = deepcopy(x00)
+x, v, primal, dual_gap, trajectoryBCG_convex = FrankWolfe.blended_conditional_gradient(
     f,
     grad!,
     lmo,
