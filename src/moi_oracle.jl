@@ -19,7 +19,13 @@ function compute_extreme_point(lmo::MathOptLMO{OT}, direction::AbstractVector{T}
     )
     MOI.set(lmo.o, MOI.ObjectiveFunction{typeof(obj)}(), obj)
     MOI.set(lmo.o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
-    _optimize_and_return(lmo, variables)
+    return _optimize_and_return(lmo, variables)
+end
+
+function compute_extreme_point(lmo::MathOptLMO{OT}, direction::AbstractMatrix{T}) where {OT, T <: Real}
+    n = size(direction, 1)
+    v = compute_extreme_point(lmo, vec(direction))
+    return reshape(v, n, n)
 end
 
 function compute_extreme_point(lmo::MathOptLMO{OT}, direction::AbstractVector{MOI.ScalarAffineTerm{T}}) where {OT, T}
