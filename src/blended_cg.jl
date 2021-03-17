@@ -836,7 +836,7 @@ function simplex_gradient_descent_over_convex_hull(
             The solution is still valid but we might not be able to converge further from here onwards. 
             If higher accuracy is required, consider using Double64 (still quite fast) and if that does not help BigFloat (slower) as type for the numbers.
             Alternatively, consider using AFW (with lazy = true) instead. "
-            println(descent_direction_product)
+            println("Descent direction product: $descent_direction_product")
             return number_of_steps
         end
 
