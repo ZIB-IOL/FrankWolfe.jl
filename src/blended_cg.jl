@@ -652,6 +652,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
                 primal - tolerance,
                 tolerance,
                 (time_ns() - time_start) / 1.0e9,
+                t / ((time_ns() - time_start) / 1.0e9),
                 length(initial_point),
                 non_simplex_iter,
             )
@@ -835,13 +836,21 @@ function simplex_gradient_descent_over_convex_hull(
             sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)),
             gradient,
         ) < 0
-            @warn "Non-improving d, aborting simplex descent. We likely reached the limits of the numerical accuracy. 
-            The solution is still valid but we might not be able to converge further from here onwards. 
-            If higher accuracy is required, consider using Double64 (still quite fast) and if that does not help BigFloat (slower) as type for the numbers.
-            Alternatively, consider using AFW (with lazy = true) instead."
-            println(
-                fast_dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), gradient),
-            )
+            defect = fast_dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), gradient)
+            @warn "Non-improving d ($defect) due to numerical instability. Temporarily upgrading precision to BigFloat for the current iteration."
+            # extended warning - we can discuss what to integrate
+            # If higher accuracy is required, consider using Double64 (still quite fast) and if that does not help BigFloat (slower) as type for the numbers.
+            # Alternatively, consider using AFW (with lazy = true) instead."
+            # println(fast_dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), direction))
+            bdir = big.(gradient)
+            c = [fast_dot(bdir, a) for a in active_set.atoms]
+            c .-= sum(c) / k
+            d = c
+            @inbounds if fast_dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), gradient) < 0
+                @warn "d non-improving in large precision, forcing FW"
+                @warn "dot value: $(fast_dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), gradient))"
+                return true
+            end
             return number_of_steps
         end
 

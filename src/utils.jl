@@ -69,10 +69,15 @@ norm(gradient, direction) > 0
 TODO: 
 - make emphasis aware and optimize
 """
-function adaptive_step_size(f, gradient, x, direction, L_est; eta=0.9, tau=2, gamma_max=1)
+function adaptive_step_size(f, gradient, x, direction, L_est; eta=0.9, tau=2, gamma_max=1, upgrade_accuracy=false)
     M = eta * L_est
-    dot_dir = fast_dot(gradient, direction)
-    ndir2 = norm(direction)^2
+    if ! upgrade_accuracy
+        dot_dir = fast_dot(gradient, direction)
+        ndir2 = norm(direction)^2
+    else
+        dot_dir = Double64(fast_dot(big.(gradient), big.(direction)))
+        ndir2 = Double64(norm(big.(direction)))^2
+    end
 
     # alternative via broadcast -> not faster
     # dot_dir = sum(gradient .* gradient)
