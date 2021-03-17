@@ -824,11 +824,21 @@ function simplex_gradient_descent_over_convex_hull(
         # in that case, inverting the sense of d
         descent_direction_product = fast_dot(d, d) + (csum / k)*sum(d)
         @inbounds if descent_direction_product < 0
-            @warn "Non-improving d, aborting simplex descent. We likely reached the limits of the numerical accuracy. 
-            The solution is still valid but we might not be able to converge further from here onwards. 
-            If higher accuracy is required, consider using Double64 (still quite fast) and if that does not help BigFloat (slower) as type for the numbers.
-            Alternatively, consider using AFW (with lazy = true) instead. "
-            println("Descent direction product: $descent_direction_product")
+            @warn "Non-improving d ($descent_direction_product) due to numerical instability. Temporarily upgrading precision to BigFloat for the current iteration."
+            # extended warning - we can discuss what to integrate
+            # If higher accuracy is required, consider using Double64 (still quite fast) and if that does not help BigFloat (slower) as type for the numbers.
+            # Alternatively, consider using AFW (with lazy = true) instead."
+            bdir = big.(gradient)
+            c = [fast_dot(bdir, a) for a in active_set.atoms]
+            csum = sum(c)
+            c .-= csum / k
+            d = c
+            descent_direction_product_inner = fast_dot(d, d) + (csum / k)*sum(d)
+            @inbounds if descent_direction_product_inner < 0
+                @warn "d non-improving in large precision, forcing FW"
+                @warn "dot value: $descent_direction_product_inner"
+                return true
+            end
             return number_of_steps
         end
 
