@@ -29,7 +29,7 @@ end
             R = FrankWolfe.RankOneMatrix(u, v)
             for i in 1:2n
                 for j in 1:n
-                    @test M[i,j] ≈ R[i,j]
+                    @test M[i, j] ≈ R[i, j]
                 end
             end
             @testset "Right- left-mul" for _ in 1:5
@@ -41,7 +41,7 @@ end
             @testset "Add and sub" begin
                 @test M + R ≈ R + R
                 @test M - R ≈ R - R
-            end            
+            end
         end
     end
 end

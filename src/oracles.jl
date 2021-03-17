@@ -82,7 +82,8 @@ Cache for a LMO storing up to `N` vertices in the cache, removed in FIFO style.
 `oldest_idx` keeps track of the oldest index in the tuple, i.e. to replace next.
 `VT`, if provided, must be the type of vertices returned by `LMO`
 """
-mutable struct MultiCacheLMO{N,LMO<:LinearMinimizationOracle,VT<:AbstractVector} <: CachedLinearMinimizationOracle{LMO}
+mutable struct MultiCacheLMO{N,LMO<:LinearMinimizationOracle,VT<:AbstractVector} <:
+               CachedLinearMinimizationOracle{LMO}
     vertices::NTuple{N,Union{VT,Nothing}}
     inner::LMO
     oldest_idx::Int
@@ -181,12 +182,13 @@ end
 Cache for a LMO storing an unbounded number of vertices of type `VT` in the cache.
 `VT`, if provided, must be the type of vertices returned by `LMO`
 """
-mutable struct VectorCacheLMO{LMO<:LinearMinimizationOracle,VT} <: CachedLinearMinimizationOracle{LMO}
+mutable struct VectorCacheLMO{LMO<:LinearMinimizationOracle,VT} <:
+               CachedLinearMinimizationOracle{LMO}
     vertices::Vector{VT}
     inner::LMO
 end
 
-function VectorCacheLMO{LMO, VT}(lmo::LMO) where {VT,LMO<:LinearMinimizationOracle}
+function VectorCacheLMO{LMO,VT}(lmo::LMO) where {VT,LMO<:LinearMinimizationOracle}
     return VectorCacheLMO{LMO,VT}(VT[], lmo)
 end
 
@@ -257,15 +259,15 @@ end
 
 Linear minimization oracle over the Cartesian product of multiple LMOs.
 """
-struct ProductLMO{N, TL <: NTuple{N, LinearMinimizationOracle}} <: LinearMinimizationOracle
+struct ProductLMO{N,TL<:NTuple{N,LinearMinimizationOracle}} <: LinearMinimizationOracle
     lmos::TL
 end
 
-function ProductLMO{N}(lmos::TL) where {N, TL <: NTuple{N, LinearMinimizationOracle}}
-    return ProductLMO{N, TL}(lmos)
+function ProductLMO{N}(lmos::TL) where {N,TL<:NTuple{N,LinearMinimizationOracle}}
+    return ProductLMO{N,TL}(lmos)
 end
 
-function ProductLMO(lmos::Vararg{LinearMinimizationOracle, N}) where {N}
+function ProductLMO(lmos::Vararg{LinearMinimizationOracle,N}) where {N}
     return ProductLMO{N}(lmos)
 end
 
@@ -288,9 +290,16 @@ The result is stored in the optional `storage` container.
 
 All keyword arguments are passed to all LMOs.
 """
-function compute_extreme_point(lmo::ProductLMO{N}, direction::AbstractArray; storage=similar(direction), direction_indices, kwargs...) where {N}
+function compute_extreme_point(
+    lmo::ProductLMO{N},
+    direction::AbstractArray;
+    storage=similar(direction),
+    direction_indices,
+    kwargs...,
+) where {N}
     for idx in 1:N
-        storage[direction_indices[idx]] .= compute_extreme_point(lmo.lmos[idx], direction[direction_indices[idx]]; kwargs...)
+        storage[direction_indices[idx]] .=
+            compute_extreme_point(lmo.lmos[idx], direction[direction_indices[idx]]; kwargs...)
     end
     return storage
 end

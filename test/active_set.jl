@@ -96,9 +96,21 @@ end
 
     gradient = similar(x)
     function grad!(storage, x)
-        storage .= [2 * (x[1] - 1), 2 * (x[2] - 1)]
+        return storage .= [2 * (x[1] - 1), 2 * (x[2] - 1)]
     end
-    FrankWolfe.simplex_gradient_descent_over_convex_hull(f, grad!, gradient, active_set, 1e-3, 1, false, [], 0.0, 0, max_iteration=1000)
+    FrankWolfe.simplex_gradient_descent_over_convex_hull(
+        f,
+        grad!,
+        gradient,
+        active_set,
+        1e-3,
+        1,
+        false,
+        [],
+        0.0,
+        0,
+        max_iteration=1000,
+    )
     FrankWolfe.active_set_cleanup!(active_set)
     @test length(active_set) == 2
     @test [1, 0] ∈ active_set.atoms
@@ -106,7 +118,19 @@ end
     active_set2 = ActiveSet([(0.5, [0, 0]), (0.0, [0, 1]), (0.5, [1, 0])])
     x2 = FrankWolfe.compute_active_set_iterate(active_set2)
     @test x2 ≈ [0.5, 0]
-    FrankWolfe.simplex_gradient_descent_over_convex_hull(f, grad!, gradient, active_set2, 1e-3, 1, false, [], 0.0, 0, max_iteration=1000)
+    FrankWolfe.simplex_gradient_descent_over_convex_hull(
+        f,
+        grad!,
+        gradient,
+        active_set2,
+        1e-3,
+        1,
+        false,
+        [],
+        0.0,
+        0,
+        max_iteration=1000,
+    )
     @test length(active_set) == 2
     @test [1, 0] ∈ active_set.atoms
     @test [0, 1] ∈ active_set.atoms
@@ -114,7 +138,19 @@ end
     # updating again (at optimum) triggers the active set emptying
     for as in (active_set, active_set2)
         x = FrankWolfe.compute_active_set_iterate(as)
-        number_of_steps = FrankWolfe.simplex_gradient_descent_over_convex_hull(f, grad!, gradient, as, 1.0e-3, 1, false, [], 0.0, 0, max_iteration=1000)
+        number_of_steps = FrankWolfe.simplex_gradient_descent_over_convex_hull(
+            f,
+            grad!,
+            gradient,
+            as,
+            1.0e-3,
+            1,
+            false,
+            [],
+            0.0,
+            0,
+            max_iteration=1000,
+        )
         @test number_of_steps == 0
     end
 end
@@ -141,7 +177,8 @@ end
     gradient_dir = ∇f(x)
     (y, _) = FrankWolfe.lp_separation_oracle(lmo, active_set, gradient_dir, 0.5, 1)
     @test y ∈ active_set.atoms
-    (y2, _) = FrankWolfe.lp_separation_oracle(lmo, active_set, gradient_dir, 3 + dot(x, gradient_dir), 1)
+    (y2, _) =
+        FrankWolfe.lp_separation_oracle(lmo, active_set, gradient_dir, 3 + dot(x, gradient_dir), 1)
     # found new vertex not in active set
     @test y2 ∉ active_set.atoms
 
@@ -157,7 +194,8 @@ end
 
 @testset "Argminmax" begin
     active_set = FrankWolfe.ActiveSet([(0.6, [-1, -1]), (0.2, [0, 1]), (0.2, [1, 0])])
-    (λ_min, a_min, i_min, λ_max, a_max, i_max) = FrankWolfe.active_set_argminmax(active_set::ActiveSet, [1, 1.5])
+    (λ_min, a_min, i_min, λ_max, a_max, i_max) =
+        FrankWolfe.active_set_argminmax(active_set::ActiveSet, [1, 1.5])
     @test i_min == 1
     @test i_max == 2
 end
@@ -180,5 +218,3 @@ end
         inplace_loop=true,
     )
 end
-
- 
