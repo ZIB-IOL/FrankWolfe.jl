@@ -81,10 +81,6 @@ function adaptive_step_size(f, gradient, x, direction, L_est; eta=0.9, tau=2, ga
         ndir2 = norm(direction)^2
     end
 
-    # alternative via broadcast -> not faster
-    # dot_dir = sum(gradient .* gradient)
-    # ndir2 = sum(direction .* direction)
-
     gamma = min(max(dot_dir / (M * ndir2), 0.0), gamma_max)
     while f(x - gamma * direction) - f(x) > -gamma * dot_dir + gamma^2 * ndir2 * M / 2
         M *= tau
@@ -278,7 +274,7 @@ end
 ### Visualization etc
 ##############################
 
-function plot_trajectories(data, label; filename=nothing,xscalelog=false,legendPosition=:topright)
+function plot_trajectories(data, label; filename=nothing,xscalelog=false,legend_position=:topright)
     # theme(:dark)
     # theme(:vibrant)
     gr()
@@ -307,7 +303,7 @@ function plot_trajectories(data, label; filename=nothing,xscalelog=false,legendP
                 xaxis=xscale,
                 yaxis=:log,
                 ylabel="Primal",
-                legend=legendPosition,
+                legend=legend_position,
                 yguidefontsize=8,
                 xguidefontsize=8,
                 legendfontsize=8,
