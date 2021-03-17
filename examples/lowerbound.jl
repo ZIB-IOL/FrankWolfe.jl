@@ -113,4 +113,4 @@ end
 data = [trajectory, trajectoryAFW, trajectoryBCG,trajLowerbound]
 label = ["FW", "AFW", "BCG", "Lowerbound"]
 
-FrankWolfe.plot_trajectories(data, label, xscalelog=true,legendPosition=:bottomleft)
+FrankWolfe.plot_trajectories(data, label, xscalelog=true,legend_position=:bottomleft)
