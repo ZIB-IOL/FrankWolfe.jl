@@ -20,9 +20,9 @@ lmo = FrankWolfe.KSparseLMO(40, 1.0);
 # lmo = FrankWolfe.ProbabilitySimplexOracle(1)
 x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
-FrankWolfe.benchmark_oracles(f, grad!, ()-> rand(n), lmo; k=100)
+FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo; k=100)
 
-@time x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
+@time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -37,7 +37,7 @@ FrankWolfe.benchmark_oracles(f, grad!, ()-> rand(n), lmo; k=100)
     trajectory=true,
 );
 
-@time x, v, primal, dual_gap, trajectoryA, active_set = FrankWolfe.afw(
+@time x, v, primal, dual_gap, trajectoryA, active_set = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
@@ -53,7 +53,7 @@ FrankWolfe.benchmark_oracles(f, grad!, ()-> rand(n), lmo; k=100)
     trajectory=true,
 );
 
-@time x, v, primal, dual_gap, trajectoryAM, active_set = FrankWolfe.afw(
+@time x, v, primal, dual_gap, trajectoryAM, active_set = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,

@@ -23,7 +23,7 @@ lmo = FrankWolfe.KSparseLMO(100, 1.0)
 
 x0 = FrankWolfe.compute_extreme_point(lmo, spzeros(size(xp)...))
 
-x, v, primal, dual_gap, _ = FrankWolfe.bcg(
+x, v, primal, dual_gap, _ = FrankWolfe.blended_conditional_gradient(
     f,
     grad!,
     lmo,
