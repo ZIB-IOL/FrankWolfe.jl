@@ -650,7 +650,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
                 primal - tolerance,
                 tolerance,
                 (time_ns() - time_start) / 1.0e9,
-                t / ((time_ns() - time_start) / 1.0e9),
+                t / ((time_ns() - time_start) / 1e9),
                 length(initial_point),
                 non_simplex_iter,
             )
