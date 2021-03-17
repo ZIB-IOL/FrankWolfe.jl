@@ -25,7 +25,7 @@ function grad!(storage, x)
 end
 L = eigmax(hessian)
 
-#Run over the probability simplex
+#Run over the probability simplex and call LMO to get initial feasible point
 lmo = FrankWolfe.ProbabilitySimplexOracle(1.0);
 x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
 
