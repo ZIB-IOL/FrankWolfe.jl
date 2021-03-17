@@ -28,4 +28,11 @@ x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n));
 
 FrankWolfe.benchmarkOracles(f, grad!, lmo_prob, n; k=100, T=Float64)
 
-FrankWolfe.benchmarkOracles(x -> cf(x, xp), (storage, x) -> cgrad(storage, x, xp), lmo_prob, n; k=100, T=Float64)
+FrankWolfe.benchmarkOracles(
+    x -> cf(x, xp),
+    (storage, x) -> cgrad(storage, x, xp),
+    lmo_prob,
+    n;
+    k=100,
+    T=Float64,
+)

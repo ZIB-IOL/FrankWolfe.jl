@@ -42,7 +42,7 @@ function ActiveSet{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}) 
         atoms[idx] = tuple_values[idx][2]
         x .+= weights[idx] * atoms[idx]
     end
-    return ActiveSet{AT,R, typeof(x)}(weights, atoms, x)
+    return ActiveSet{AT,R,typeof(x)}(weights, atoms, x)
 end
 
 Base.getindex(as::ActiveSet, i) = (as.weights[i], as.atoms[i])
@@ -80,7 +80,7 @@ end
 
 Adds the atom to the active set with weight lambda or adds lambda to existing atom.
 """
-function active_set_update!(active_set::ActiveSet, lambda, atom, renorm=true, idx = nothing)
+function active_set_update!(active_set::ActiveSet, lambda, atom, renorm=true, idx=nothing)
     # rescale active set
     active_set.weights .*= (1 - lambda)
     # add value for new atom
@@ -228,7 +228,7 @@ function find_minmax_directions(active_set::ActiveSet, direction, Φ; goodstep_t
     return (idx_fw, idx_as, v_as - v_fw ≥ Φ)
 end
 
-function active_set_initialize!(as::ActiveSet{AT, R}, v) where {AT, R}
+function active_set_initialize!(as::ActiveSet{AT,R}, v) where {AT,R}
     empty!(as)
     push!(as, (one(R), v))
     @. as.x = one(R) * v

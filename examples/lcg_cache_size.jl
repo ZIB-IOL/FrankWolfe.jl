@@ -28,13 +28,19 @@ end
 lmo = FrankWolfe.KSparseLMO(100, 1.0)
 x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
-FrankWolfe.benchmark_oracles(x -> cf(x, xp), (str, x) -> cgrad!(str, x, xp), () -> randn(n), lmo; k=100)
+FrankWolfe.benchmark_oracles(
+    x -> cf(x, xp),
+    (str, x) -> cgrad!(str, x, xp),
+    () -> randn(n),
+    lmo;
+    k=100,
+)
 
 # arbitrary cache
 
 x0 = deepcopy(x00)
 
-@time x, v, primal, dual_gap, trajectory = FrankWolfe.lcg(
+@time x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
     x -> cf(x, xp),
     (str, x) -> cgrad!(str, x, xp),
     lmo,
@@ -52,7 +58,7 @@ x0 = deepcopy(x00)
 
 x0 = deepcopy(x00)
 
-@time x, v, primal, dual_gap, trajectory = FrankWolfe.lcg(
+@time x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
     x -> cf(x, xp),
     (str, x) -> cgrad!(str, x, xp),
     lmo,
