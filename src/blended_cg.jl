@@ -805,6 +805,7 @@ function simplex_gradient_descent_over_convex_hull(
 )
     number_of_steps = 0
     L_inner = nothing
+    upgrade_accuracy_flag=false
     x = compute_active_set_iterate(active_set)
     while t + number_of_steps ≤ max_iteration
         grad!(gradient, x)
@@ -824,7 +825,8 @@ function simplex_gradient_descent_over_convex_hull(
         # in that case, inverting the sense of d
         descent_direction_product = fast_dot(d, d) + (csum / k)*sum(d)
         @inbounds if descent_direction_product < 0
-            @warn "Non-improving d ($descent_direction_product) due to numerical instability. Temporarily upgrading precision to BigFloat for the current iteration."
+            current_iteration = t + number_of_steps
+            @warn "Non-improving d ($descent_direction_product) due to numerical instability in iteration $current_iteration. Temporarily upgrading precision to BigFloat for the current iteration."
             # extended warning - we can discuss what to integrate
             # If higher accuracy is required, consider using Double64 (still quite fast) and if that does not help BigFloat (slower) as type for the numbers.
             # Alternatively, consider using AFW (with lazy = true) instead."
@@ -837,9 +839,8 @@ function simplex_gradient_descent_over_convex_hull(
             @inbounds if descent_direction_product_inner < 0
                 @warn "d non-improving in large precision, forcing FW"
                 @warn "dot value: $descent_direction_product_inner"
-                return true
+                return number_of_steps
             end
-            return number_of_steps
         end
 
         η = eltype(d)(Inf)
@@ -870,7 +871,19 @@ function simplex_gradient_descent_over_convex_hull(
             active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
         else
             if line_search_inner == adaptive
-                gamma, L_inner = adaptive_step_size(f, gradient, x, x - y, L_inner, gamma_max=1.0)
+                gamma, L_inner = adaptive_step_size(f, gradient, x, x - y, L_inner, gamma_max=1.0, upgrade_accuracy=upgrade_accuracy_flag)
+                if gamma < eps()
+                    #@warn "Upgrading the accuracy of the adaptive line search."
+                    L_inner = nothing
+                    upgrade_accuracy_flag=true
+                    if isnothing(L_inner) && line_search_inner == adaptive
+                        epsilon_step = 1.0e-3
+                        gradient_stepsize_estimation = similar(gradient)
+                        grad!(gradient_stepsize_estimation, x - epsilon_step * (x - y))
+                        L_inner = norm(gradient - gradient_stepsize_estimation) / (epsilon_step * norm(x - y))
+                    end
+                    gamma, L_inner = adaptive_step_size(f, gradient, x, x - y, L_inner, gamma_max=1.0, upgrade_accuracy=upgrade_accuracy_flag)
+                end
             else
                 gamma, _ = backtrackingLS(
                     f,
