@@ -271,7 +271,7 @@ end
 ### Visualization etc
 ##############################
 
-function plot_trajectories(data, label; filename=nothing,xscalelog=false)
+function plot_trajectories(data, label; filename=nothing,xscalelog=false,legendPosition=:topright)
     # theme(:dark)
     # theme(:vibrant)
     gr()
@@ -300,7 +300,7 @@ function plot_trajectories(data, label; filename=nothing,xscalelog=false)
                 xaxis=xscale,
                 yaxis=:log,
                 ylabel="Primal",
-                legend=:topright,
+                legend=legendPosition,
                 yguidefontsize=8,
                 xguidefontsize=8,
                 legendfontsize=8,
@@ -366,7 +366,7 @@ function plot_trajectories(data, label; filename=nothing,xscalelog=false)
                 xguidefontsize=8,
             )
         else
-            plot!(x, y, label=label[i], legend=:topright)
+            plot!(x, y, label=label[i])
         end
     end
     fp = plot(pit, pti, dit, dti, layout=(2, 2)) # layout = @layout([A{0.01h}; [B C; D E]]))
