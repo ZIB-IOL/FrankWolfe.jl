@@ -75,8 +75,8 @@ function adaptive_step_size(f, gradient, x, direction, L_est; eta=0.9, tau=2, ga
         dot_dir = fast_dot(gradient, direction)
         ndir2 = norm(direction)^2
     else
-        dot_dir = Double64(fast_dot(big.(gradient), big.(direction)))
-        ndir2 = Double64(norm(big.(direction)))^2
+        dot_dir = fast_dot(big.(gradient), big.(direction))
+        ndir2 = norm(big.(direction))^2
     end
 
     # alternative via broadcast -> not faster
