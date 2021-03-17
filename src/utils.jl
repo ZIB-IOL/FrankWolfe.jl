@@ -69,10 +69,15 @@ norm(gradient, direction) > 0
 TODO: 
 - make emphasis aware and optimize
 """
-function adaptive_step_size(f, gradient, x, direction, L_est; eta=0.9, tau=2, gamma_max=1)
+function adaptive_step_size(f, gradient, x, direction, L_est; eta=0.9, tau=2, gamma_max=1, upgrade_accuracy=false)
     M = eta * L_est
-    dot_dir = fast_dot(gradient, direction)
-    ndir2 = norm(direction)^2
+    if ! upgrade_accuracy
+        dot_dir = fast_dot(gradient, direction)
+        ndir2 = norm(direction)^2
+    else
+        dot_dir = fast_dot(big.(gradient), big.(direction))
+        ndir2 = norm(big.(direction))^2
+    end
 
     # alternative via broadcast -> not faster
     # dot_dir = sum(gradient .* gradient)
@@ -271,7 +276,7 @@ end
 ### Visualization etc
 ##############################
 
-function plot_trajectories(data, label; filename=nothing)
+function plot_trajectories(data, label; filename=nothing,xscalelog=false,legendPosition=:topright)
     # theme(:dark)
     # theme(:vibrant)
     gr()
@@ -283,6 +288,11 @@ function plot_trajectories(data, label; filename=nothing)
     dit = nothing
     dti = nothing
     offset = 2
+    if xscalelog
+        xscale = :log
+    else
+        xscale = :identity
+    end
     for i in 1:length(data)
         trajectory = data[i]
         x = [trajectory[j][1] for j in offset:length(trajectory)]
@@ -292,10 +302,10 @@ function plot_trajectories(data, label; filename=nothing)
                 x,
                 y,
                 label=label[i],
-                #xaxis=:log,
+                xaxis=xscale,
                 yaxis=:log,
                 ylabel="Primal",
-                legend=:topright,
+                legend=legendPosition,
                 yguidefontsize=8,
                 xguidefontsize=8,
                 legendfontsize=8,
@@ -314,7 +324,7 @@ function plot_trajectories(data, label; filename=nothing)
                 y,
                 label=label[i],
                 legend=false,
-                #xaxis=:log,
+                xaxis=xscale,
                 yaxis=:log,
                 yguidefontsize=8,
                 xguidefontsize=8,
@@ -333,7 +343,7 @@ function plot_trajectories(data, label; filename=nothing)
                 y,
                 label=label[i],
                 legend=false,
-                #xaxis=:log,
+                xaxis=xscale,
                 yaxis=:log,
                 ylabel="Dual Gap",
                 xlabel="Iterations",
@@ -354,14 +364,14 @@ function plot_trajectories(data, label; filename=nothing)
                 y,
                 label=label[i],
                 legend=false,
-                #xaxis=:log,
+                xaxis=xscale,
                 yaxis=:log,
                 xlabel="Time",
                 yguidefontsize=8,
                 xguidefontsize=8,
             )
         else
-            plot!(x, y, label=label[i], legend=:topright)
+            plot!(x, y, label=label[i])
         end
     end
     fp = plot(pit, pti, dit, dti, layout=(2, 2)) # layout = @layout([A{0.01h}; [B C; D E]]))
