@@ -6,25 +6,54 @@ NOTE: The stepsize is defined as x - gamma * d
 
 Returns the step size gamma and the Lipschitz estimate L
 """
-function line_search_wrapper(line_search,t,f,grad!,x,d,gradient,dual_gap,L,gamma0,linesearch_tol,step_lim, gamma_max)
+function line_search_wrapper(
+    line_search,
+    t,
+    f,
+    grad!,
+    x,
+    d,
+    gradient,
+    dual_gap,
+    L,
+    gamma0,
+    linesearch_tol,
+    step_lim,
+    gamma_max,
+)
     if line_search == agnostic
         gamma = 2 // (2 + t)
     elseif line_search == goldenratio # FIX for general d
-        gamma, _ = segment_search(f, grad!, x, d, gamma_max, linesearch_tol=linesearch_tol, inplace_gradient=true)
+        gamma, _ = segment_search(
+            f,
+            grad!,
+            x,
+            d,
+            gamma_max,
+            linesearch_tol=linesearch_tol,
+            inplace_gradient=true,
+        )
     elseif line_search == backtracking # FIX for general d
-        gamma, _ =
-            backtrackingLS(f, gradient, x, d, gamma_max, linesearch_tol=linesearch_tol, step_lim=step_lim)
+        gamma, _ = backtrackingLS(
+            f,
+            gradient,
+            x,
+            d,
+            gamma_max,
+            linesearch_tol=linesearch_tol,
+            step_lim=step_lim,
+        )
     elseif line_search == nonconvex
         gamma = 1 / sqrt(t + 1)
     elseif line_search == shortstep
         gamma = min(max(fast_dot(gradient, d) / (L * norm(d)^2), 0.0), gamma_max)
     elseif line_search == rationalshortstep
         rat_dual_gap = sum((d) .* gradient)
-        gamma = min(max(rat_dual_gap // (L * sum((d) .^ 2)), 0.0), gamma_max) 
+        gamma = min(max(rat_dual_gap // (L * sum((d) .^ 2)), 0.0), gamma_max)
     elseif line_search == fixed
         gamma = min(gamma0, gamma_max)
     elseif line_search == adaptive
-        gamma, L = adaptive_step_size(f, gradient, x, d, L, gamma_max = gamma_max)
+        gamma, L = adaptive_step_size(f, gradient, x, d, L, gamma_max=gamma_max)
     end
     return gamma, L
 end
@@ -49,16 +78,10 @@ function adaptive_step_size(f, gradient, x, direction, L_est; eta=0.9, tau=2, ga
     # dot_dir = sum(gradient .* gradient)
     # ndir2 = sum(direction .* direction)
 
-    gamma = min(
-        max(dot_dir / (M * ndir2), 0.0),
-        gamma_max,
-    )
+    gamma = min(max(dot_dir / (M * ndir2), 0.0), gamma_max)
     while f(x - gamma * direction) - f(x) > -gamma * dot_dir + gamma^2 * ndir2 * M / 2
         M *= tau
-        gamma = min(
-            max(dot_dir / (M * ndir2), 0.0),
-            gamma_max,
-        )
+        gamma = min(max(dot_dir / (M * ndir2), 0.0), gamma_max)
     end
     return gamma, M
 end
@@ -110,9 +133,18 @@ end
 # - code needs optimization.
 # In particular, passing a gradient container instead of allocating
 
-function segment_search(f, grad, x, d, gamma_max; line_search=true, linesearch_tol=1e-10, inplace_gradient=true)
+function segment_search(
+    f,
+    grad,
+    x,
+    d,
+    gamma_max;
+    line_search=true,
+    linesearch_tol=1e-10,
+    inplace_gradient=true,
+)
     # restrict segment of search to [x, y]
-    y = x - gamma_max*d
+    y = x - gamma_max * d
     left, right = copy(x), copy(y)
 
     if inplace_gradient
@@ -127,7 +159,7 @@ function segment_search(f, grad, x, d, gamma_max; line_search=true, linesearch_t
         gradient = grad(y)
         dgy = fast_dot(d, gradient)
     end
-    
+
     # if the minimum is at an endpoint
     if dgx * dgy >= 0
         if f(y) <= f(x)
@@ -396,8 +428,8 @@ function plot_sparsity(data, label; filename=nothing)
             plot!(x, y, label=label[i])
         end
     end
-    
-    fp = plot(ps,ds, layout=(1, 2)) # layout = @layout([A{0.01h}; [B C; D E]]))
+
+    fp = plot(ps, ds, layout=(1, 2)) # layout = @layout([A{0.01h}; [B C; D E]]))
     plot!(size=(600, 200))
     if filename !== nothing
         savefig(fp, filename)
@@ -498,14 +530,14 @@ _unsafe_equal(a, b) = isequal(a, b)
 Represents a rank-one matrix `R = u * vt'`.
 Composes like a charm.
 """
-struct RankOneMatrix{T, UT <: AbstractVector, VT <: AbstractVector} <: AbstractMatrix{T}
+struct RankOneMatrix{T,UT<:AbstractVector,VT<:AbstractVector} <: AbstractMatrix{T}
     u::UT
     v::VT
 end
 
-function RankOneMatrix(u::UT, v::VT) where {UT, VT}
+function RankOneMatrix(u::UT, v::VT) where {UT,VT}
     T = promote_type(eltype(u), eltype(v))
-    return RankOneMatrix{T, UT, VT}(u, v)
+    return RankOneMatrix{T,UT,VT}(u, v)
 end
 
 # not checking indices
@@ -534,18 +566,16 @@ end
 Base.Matrix(R::RankOneMatrix) = R.u * R.v'
 Base.collect(R::RankOneMatrix) = Matrix(R)
 Base.copymutable(R::RankOneMatrix) = Matrix(R)
-Base.copy(R::RankOneMatrix) = RankOneMatrix(
-    copy(R.u), copy(R.v),
-)
+Base.copy(R::RankOneMatrix) = RankOneMatrix(copy(R.u), copy(R.v))
 
-function Base.convert(::Type{<:RankOneMatrix{T, Vector{T}, Vector{T}}}, R::RankOneMatrix) where {T}
-    return RankOneMatrix(
-        convert(Vector{T}, R.u),
-        convert(Vector{T}, R.v),
-    )
+function Base.convert(::Type{<:RankOneMatrix{T,Vector{T},Vector{T}}}, R::RankOneMatrix) where {T}
+    return RankOneMatrix(convert(Vector{T}, R.u), convert(Vector{T}, R.v))
 end
 
-function LinearAlgebra.dot(R::RankOneMatrix{T1}, S::SparseArrays.AbstractSparseMatrixCSC{T2}) where {T1 <: Real, T2 <: Real}
+function LinearAlgebra.dot(
+    R::RankOneMatrix{T1},
+    S::SparseArrays.AbstractSparseMatrixCSC{T2},
+) where {T1<:Real,T2<:Real}
     (m, n) = size(R)
     T = promote_type(T1, T2)
     if (m, n) != size(S)
@@ -572,7 +602,7 @@ Base.@propagate_inbounds function Base.:-(a::RankOneMatrix, b::RankOneMatrix)
     r = similar(a)
     @inbounds for j in 1:size(a, 2)
         for i in 1:size(a, 1)
-            r[i,j] = a.u[i] * a.v[j] - b.u[i] * b.v[j]
+            r[i, j] = a.u[i] * a.v[j] - b.u[i] * b.v[j]
         end
     end
     return r
@@ -583,7 +613,7 @@ Base.@propagate_inbounds function Base.:+(a::RankOneMatrix, b::RankOneMatrix)
     r = similar(a)
     @inbounds for j in 1:size(a, 2)
         for i in 1:size(a, 1)
-            r[i,j] = a.u[i] * a.v[j] + b.u[i] * b.v[j]
+            r[i, j] = a.u[i] * a.v[j] + b.u[i] * b.v[j]
         end
     end
     return r
@@ -593,7 +623,7 @@ fast_dot(A, B) = dot(A, B)
 
 fast_dot(B::SparseArrays.SparseMatrixCSC, A::Matrix) = fast_dot(A, B)
 
-function fast_dot(A::Matrix{T1}, B::SparseArrays.SparseMatrixCSC{T2}) where {T1, T2}
+function fast_dot(A::Matrix{T1}, B::SparseArrays.SparseMatrixCSC{T2}) where {T1,T2}
     T = promote_type(T1, T2)
     (m, n) = size(A)
     if (m, n) != size(B)
@@ -609,7 +639,7 @@ function fast_dot(A::Matrix{T1}, B::SparseArrays.SparseMatrixCSC{T2}) where {T1,
         for ridx in SparseArrays.nzrange(B, j)
             i = rows[ridx]
             v = vals[ridx]
-            s += v * A[i,j]
+            s += v * A[i, j]
         end
     end
     return s
@@ -618,7 +648,7 @@ end
 """
 Check if the gradient using finite differences matches the grad! provided.
 """
-function check_gradients(grad!, f, gradient, num_tests = 10, tolerance = 1.0e-5)
+function check_gradients(grad!, f, gradient, num_tests=10, tolerance=1.0e-5)
     for i in 1:num_tests
         random_point = rand(length(gradient))
         grad!(gradient, random_point)

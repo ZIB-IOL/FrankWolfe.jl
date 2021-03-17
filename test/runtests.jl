@@ -12,7 +12,7 @@ include("utils.jl")
     a = [-1.0, -1.0, -1.0]
     b = [1.0, 1.0, 1.0]
     function grad!(storage, x)
-        storage .= 2x
+        return storage .= 2x
     end
     f(x) = norm(x)^2
     gradient = similar(a)
@@ -25,12 +25,12 @@ end
     @testset "Testing vanilla Frank-Wolfe with various step size and momentum strategies" begin
         f(x) = norm(x)^2
         function grad!(storage, x)
-            storage .= 2x
+            return storage .= 2x
         end
         lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
         x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(5))
         @test abs(
-            FrankWolfe.fw(
+            FrankWolfe.frank_wolfe(
                 f,
                 grad!,
                 lmo_prob,
@@ -41,7 +41,7 @@ end
             )[3] - 0.2,
         ) < 1.0e-5
         @test abs(
-            FrankWolfe.fw(
+            FrankWolfe.frank_wolfe(
                 f,
                 grad!,
                 lmo_prob,
@@ -49,11 +49,11 @@ end
                 max_iteration=1000,
                 line_search=FrankWolfe.agnostic,
                 verbose=false,
-                gradient = collect(similar(x0))
+                gradient=collect(similar(x0)),
             )[3] - 0.2,
         ) < 1.0e-5
         @test abs(
-            FrankWolfe.fw(
+            FrankWolfe.frank_wolfe(
                 f,
                 grad!,
                 lmo_prob,
@@ -64,7 +64,7 @@ end
             )[3] - 0.2,
         ) < 1.0e-5
         @test abs(
-            FrankWolfe.fw(
+            FrankWolfe.frank_wolfe(
                 f,
                 grad!,
                 lmo_prob,
@@ -75,7 +75,7 @@ end
             )[3] - 0.2,
         ) < 1.0e-5
         @test abs(
-            FrankWolfe.fw(
+            FrankWolfe.frank_wolfe(
                 f,
                 grad!,
                 lmo_prob,
@@ -85,7 +85,7 @@ end
                 verbose=false,
             )[3] - 0.2,
         ) < 1.0e-2
-        @test FrankWolfe.fw(
+        @test FrankWolfe.frank_wolfe(
             f,
             grad!,
             lmo_prob,
@@ -96,7 +96,7 @@ end
             verbose=false,
         )[3] ≈ 0.2
         @test abs(
-            FrankWolfe.fw(
+            FrankWolfe.frank_wolfe(
                 f,
                 grad!,
                 lmo_prob,
@@ -107,7 +107,7 @@ end
             )[3] - 0.2,
         ) < 1.0e-2
         @test abs(
-            FrankWolfe.fw(
+            FrankWolfe.frank_wolfe(
                 f,
                 grad!,
                 lmo_prob,
@@ -119,7 +119,7 @@ end
             )[3] - 0.2,
         ) < 1.0e-3
         @test abs(
-            FrankWolfe.fw(
+            FrankWolfe.frank_wolfe(
                 f,
                 grad!,
                 lmo_prob,
@@ -131,7 +131,7 @@ end
             )[3] - 0.2,
         ) < 1.0e-3
         @test abs(
-            FrankWolfe.fw(
+            FrankWolfe.frank_wolfe(
                 f,
                 grad!,
                 lmo_prob,
@@ -144,7 +144,7 @@ end
             )[3] - 0.2,
         ) < 1.0e-3
         @test abs(
-            FrankWolfe.fw(
+            FrankWolfe.frank_wolfe(
                 f,
                 grad!,
                 lmo_prob,
@@ -157,7 +157,7 @@ end
             )[3] - 0.2,
         ) < 1.0e-3
         @test abs(
-            FrankWolfe.fw(
+            FrankWolfe.frank_wolfe(
                 f,
                 grad!,
                 lmo_prob,
@@ -170,7 +170,7 @@ end
             )[3] - 0.2,
         ) < 1.0e-3
         @test abs(
-            FrankWolfe.fw(
+            FrankWolfe.frank_wolfe(
                 f,
                 grad!,
                 lmo_prob,
@@ -197,7 +197,7 @@ end
         lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
         x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(5))
         @test abs(
-            FrankWolfe.lcg(
+            FrankWolfe.lazified_conditional_gradient(
                 f,
                 grad!,
                 lmo_prob,
@@ -208,7 +208,7 @@ end
             )[3] - 0.2,
         ) < 1.0e-5
         @test abs(
-            FrankWolfe.lcg(
+            FrankWolfe.lazified_conditional_gradient(
                 f,
                 grad!,
                 lmo_prob,
@@ -219,7 +219,7 @@ end
             )[3] - 0.2,
         ) < 1.0e-5
         @test abs(
-            FrankWolfe.lcg(
+            FrankWolfe.lazified_conditional_gradient(
                 f,
                 grad!,
                 lmo_prob,
@@ -246,7 +246,7 @@ end
         lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
         x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n))
 
-        @time x, v, primal, dual_gap, trajectory = FrankWolfe.lcg(
+        @time x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
             f,
             grad!,
             lmo_prob,
@@ -259,7 +259,7 @@ end
 
         @test primal - 1 // n <= bound
 
-        @time x, v, primal, dual_gap, trajectory = FrankWolfe.lcg(
+        @time x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
             f,
             grad!,
             lmo_prob,
@@ -273,7 +273,7 @@ end
 
         @test primal - 1 // n <= bound
 
-        @time x, v, primal, dual_gap, trajectory = FrankWolfe.lcg(
+        @time x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
             f,
             grad!,
             lmo_prob,
@@ -304,7 +304,7 @@ end
             lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1.0)
             x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n))
 
-            x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
+            x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
                 f,
                 grad!,
                 lmo_prob,
@@ -318,7 +318,7 @@ end
 
             @test x !== nothing
 
-            x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
+            x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
                 f,
                 grad!,
                 lmo_prob,
@@ -336,7 +336,7 @@ end
             lmo_prob = FrankWolfe.L1ballDense{Float64}(1)
             x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n))
 
-            x, _ = FrankWolfe.fw(
+            x, _ = FrankWolfe.frank_wolfe(
                 f,
                 grad!,
                 lmo_prob,
@@ -350,7 +350,7 @@ end
 
             @test x !== nothing
 
-            x, _ = FrankWolfe.fw(
+            x, _ = FrankWolfe.frank_wolfe(
                 f,
                 grad!,
                 lmo_prob,
@@ -383,7 +383,7 @@ end
         direction = rand(n)
         x0 = FrankWolfe.compute_extreme_point(lmo, direction)
 
-        @time x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
+        @time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
             f,
             grad!,
             lmo,
@@ -397,7 +397,7 @@ end
 
         @test eltype(x0) == Rational{BigInt}
 
-        @time x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
+        @time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
             f,
             grad!,
             lmo,
@@ -433,7 +433,7 @@ end
             direction = rand(n)
             x0 = FrankWolfe.compute_extreme_point(lmo, direction)
 
-            @time x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
+            @time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
                 f,
                 grad!,
                 lmo,
@@ -448,7 +448,7 @@ end
             @test eltype(x0) == T
             @test primal - 1 // n <= bound
 
-            @time x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
+            @time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
                 f,
                 grad!,
                 lmo,
@@ -518,7 +518,7 @@ end
         k = 1000
 
         # compute reference from vanilla FW
-        xref, _ = FrankWolfe.fw(
+        xref, _ = FrankWolfe.frank_wolfe(
             f,
             grad!,
             lmo_prob,
@@ -529,7 +529,7 @@ end
             emphasis=FrankWolfe.blas,
         )
 
-        x, v, primal, dual_gap, trajectory = FrankWolfe.afw(
+        x, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
             f,
             grad!,
             lmo_prob,
@@ -544,7 +544,7 @@ end
         @test x !== nothing
         @test xref ≈ x atol = (1e-3 / length(x))
 
-        x, v, primal, dual_gap, trajectory = FrankWolfe.afw(
+        x, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
             f,
             grad!,
             lmo_prob,
@@ -571,7 +571,7 @@ end
     k = 1000
 
     # compute reference from vanilla FW
-    xref, _ = FrankWolfe.fw(
+    xref, _ = FrankWolfe.frank_wolfe(
         f,
         grad!,
         lmo_prob,
@@ -582,7 +582,7 @@ end
         emphasis=FrankWolfe.blas,
     )
 
-    x, v, primal, dual_gap, trajectory = FrankWolfe.bcg(
+    x, v, primal, dual_gap, trajectory = FrankWolfe.blended_conditional_gradient(
         f,
         grad!,
         lmo_prob,

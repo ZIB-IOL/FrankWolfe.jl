@@ -25,7 +25,7 @@ x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 # benchmarking Oracles
 FrankWolfe.benchmark_oracles(f, grad!, () -> randn(n), lmo; k=100)
 
-@time x, v, primal, dual_gap, trajectory = FrankWolfe.fw(
+@time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,

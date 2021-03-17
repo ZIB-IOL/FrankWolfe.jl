@@ -101,7 +101,7 @@ end
 
 function compute_extreme_point(lmo::KNormBallLMO{T}, direction; kwargs...) where {T}
     K = max(min(lmo.K, length(direction)), 1)
-    
+
     oinf = zero(eltype(direction))
     idx_l1 = 0
     val_l1 = -one(eltype(direction))
@@ -147,17 +147,20 @@ Warning: this does not work (yet) with all number types, BigFloat and Float16 fa
 """
 function compute_extreme_point(lmo::NuclearNormLMO, direction::AbstractMatrix; tol=1e-8, kwargs...)
     Z = Arpack.svds(direction, nsv=1, tol=tol)[1]
-    u = - lmo.radius * view(Z.U, :)
-    return FrankWolfe.RankOneMatrix(
-        u,
-        Z.V[:],
-    )
+    u = -lmo.radius * view(Z.U, :)
+    return FrankWolfe.RankOneMatrix(u, Z.V[:])
 end
 
-function convert_mathopt(lmo::NuclearNormLMO, optimizer::OT; row_dimension::Integer, col_dimension::Integer, kwargs...) where {OT}
+function convert_mathopt(
+    lmo::NuclearNormLMO,
+    optimizer::OT;
+    row_dimension::Integer,
+    col_dimension::Integer,
+    kwargs...,
+) where {OT}
     MOI.empty!(optimizer)
     x = MOI.add_variables(optimizer, row_dimension * col_dimension)
     (t, _) = MOI.add_constrained_variable(optimizer, MOI.LessThan(lmo.radius))
-    MOI.add_constraint(optimizer, [t;x], MOI.NormNuclearCone(row_dimension, col_dimension))
+    MOI.add_constraint(optimizer, [t; x], MOI.NormNuclearCone(row_dimension, col_dimension))
     return MathOptLMO(optimizer)
 end
