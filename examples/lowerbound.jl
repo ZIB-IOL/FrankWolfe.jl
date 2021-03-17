@@ -17,6 +17,11 @@ primal value by 1/k.
 Here: slightly rewritten to consider || x - (1/n, ..., 1/n) ||^2 so that the function value becomes directly the 
 primal gap (squared)
 
+Three runs are compared:
+1. Frank-Wolfe with traditional step-size rule
+2. Away-step Frank-Wolfe with adaptive step-size rule
+3. Blended Conditional Gradients with adaptive step-size rule
+
 NOTE:
 1. ignore the timing graphs 
 2. as the primal gap lower bounds the dual gap we also plot the primal gap lower bound in the dual gap graph
@@ -36,14 +41,19 @@ k = Int(1e3)
 
 xp = 1/n * ones(n);
 
+# definition of objective
 f(x) = LinearAlgebra.norm(x - xp)^2
+
+# definition of gradient 
 function grad!(storage, x)
     @. storage = 2 * (x - xp)
 end
 
+# define LMO and do initial call to obtain starting point
 lmo = FrankWolfe.ProbabilitySimplexOracle(1)
 x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
+# simple benchmarking of oracles to get an idea how expensive each component is
 FrankWolfe.benchmark_oracles(f, grad!, ()-> rand(n), lmo; k=100)
 
 @time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
@@ -68,7 +78,6 @@ FrankWolfe.benchmark_oracles(f, grad!, ()-> rand(n), lmo; k=100)
     x0,
     max_iteration=k,
     line_search=FrankWolfe.adaptive,
-    L=2,
     print_iter=k / 10,
     emphasis=FrankWolfe.memory,
     verbose=true,
@@ -83,7 +92,6 @@ FrankWolfe.benchmark_oracles(f, grad!, ()-> rand(n), lmo; k=100)
     x0,
     max_iteration=k,
     line_search=FrankWolfe.adaptive,
-    L=2,
     print_iter=k / 10,
     emphasis=FrankWolfe.memory,
     verbose=true,
