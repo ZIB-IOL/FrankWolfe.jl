@@ -86,14 +86,14 @@ x, v, primal, dual_gap, trajectoryBCG_convex = FrankWolfe.blended_conditional_gr
 
 data = [trajectoryBCG_accel_simplex, trajectoryBCG_simplex, trajectoryBCG_convex]
 label = ["BCG (accel simplex)", "BCG (simplex)", "BCG (convex)"]
-FrankWolfe.plot_trajectories(data, label)
+FrankWolfe.plot_trajectories(data, label, xscalelog=true)
 
 
 
 matrix = rand(n, n)
 hessian = transpose(matrix) * matrix
 linear = rand(n)
-f(x) = dot(linear, x) + 0.5 * transpose(x) * hessian * x
+f(x) = dot(linear, x) + 0.5 * transpose(x) * hessian * x + 10
 function grad!(storage, x)
     return storage .= linear + hessian * x
 end
@@ -160,4 +160,4 @@ x, v, primal, dual_gap, trajectoryBCG_convex = FrankWolfe.blended_conditional_gr
 
 data = [trajectoryBCG_accel_simplex, trajectoryBCG_simplex, trajectoryBCG_convex]
 label = ["BCG (accel simplex)", "BCG (simplex)", "BCG (convex)"]
-FrankWolfe.plot_trajectories(data, label)
+FrankWolfe.plot_trajectories(data, label, xscalelog=true)
