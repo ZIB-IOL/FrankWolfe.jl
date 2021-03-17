@@ -27,6 +27,7 @@ MathOptInterface = "0.9.19"
 PlotThemes = "2"
 Plots = "1.10"
 ProgressMeter = "1.4"
+ReverseDiff = "1.7"
 TimerOutputs = "0.5"
 julia = "1"
 
