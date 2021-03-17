@@ -127,7 +127,6 @@ function blended_conditional_gradient(
             "It/sec",
             "#ActiveSet",
             "#non-simplex",
-            "#forced FW",
         )
         print_header(headers)
     end
@@ -135,7 +134,6 @@ function blended_conditional_gradient(
         x = convert(Array{float(eltype(x))}, x)
     end
     non_simplex_iter = 0
-    nforced_fw = 0
     force_fw_step = false
     if verbose && mod(t, print_iter) == 0
         if t == 0
@@ -652,6 +650,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
                 primal - tolerance,
                 tolerance,
                 (time_ns() - time_start) / 1.0e9,
+                t / ((time_ns() - time_start) / 1.0e9),
                 length(initial_point),
                 non_simplex_iter,
             )
@@ -831,17 +830,13 @@ function simplex_gradient_descent_over_convex_hull(
         # NOTE: sometimes the direction is non-improving
         # usual suspects are floating-point errors when multiplying atoms with near-zero weights
         # in that case, inverting the sense of d
-        @inbounds if fast_dot(
-            sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)),
-            gradient,
-        ) < 0
+        descent_direction_product = fast_dot(d, d) + (csum / k)*sum(d)
+        @inbounds if descent_direction_product < 0
             @warn "Non-improving d, aborting simplex descent. We likely reached the limits of the numerical accuracy. 
             The solution is still valid but we might not be able to converge further from here onwards. 
             If higher accuracy is required, consider using Double64 (still quite fast) and if that does not help BigFloat (slower) as type for the numbers.
-            Alternatively, consider using AFW (with lazy = true) instead."
-            println(
-                fast_dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), gradient),
-            )
+            Alternatively, consider using AFW (with lazy = true) instead. "
+            println(descent_direction_product)
             return number_of_steps
         end
 
