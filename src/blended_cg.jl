@@ -819,14 +819,6 @@ function simplex_gradient_descent_over_convex_hull(
         c .-= (csum / k)
         # name change to stay consistent with the paper, c is actually updated in-place
         d = c
-        if norm(d) <= 1e-8
-            @info "Resetting active set."
-            # resetting active set to singleton
-            a0 = active_set.atoms[1]
-            empty!(active_set)
-            push!(active_set, (1, a0))
-            return number_of_steps
-        end
         # NOTE: sometimes the direction is non-improving
         # usual suspects are floating-point errors when multiplying atoms with near-zero weights
         # in that case, inverting the sense of d
