@@ -53,7 +53,7 @@ function line_search_wrapper(
     elseif line_search == fixed
         gamma = min(gamma0, gamma_max)
     elseif line_search == adaptive
-        gamma, L = adaptive_step_size(f, gradient, x, d, L, gamma_max=gamma_max)
+        gamma, L = adaptive_step_size(f, grad!, gradient, x, d, L, gamma_max=gamma_max)
     end
     return gamma, L
 end
@@ -69,9 +69,17 @@ norm(gradient, direction) > 0
 TODO: 
 - make emphasis aware and optimize
 """
-function adaptive_step_size(f, gradient, x, direction, L_est; eta=0.9, tau=2, gamma_max=1, upgrade_accuracy=false)
+function adaptive_step_size(f, grad!, gradient, x, direction, L_est; eta=0.9, tau=2, gamma_max=1, upgrade_accuracy=false)
+    #If there is no initial smoothness estimate
+    #try to build one from the definition.
+    if isnothing(L_est) || !isfinite(L_est)
+        epsilon_step = min(1.0e-3, gamma_max)
+        gradient_stepsize_estimation = similar(gradient)
+        grad!(gradient_stepsize_estimation, x - epsilon_step * direction)
+        L_est = norm(gradient - gradient_stepsize_estimation) / (epsilon_step * norm(direction))
+    end
     M = eta * L_est
-    if ! upgrade_accuracy
+    if !upgrade_accuracy
         dot_dir = fast_dot(gradient, direction)
         ndir2 = norm(direction)^2
     else
