@@ -79,7 +79,7 @@ function adaptive_step_size(f, grad!, gradient, x, direction, L_est; eta=0.9, ta
         L_est = norm(gradient - gradient_stepsize_estimation) / (epsilon_step * norm(direction))
     end
     M = eta * L_est
-    if ! upgrade_accuracy
+    if !upgrade_accuracy
         dot_dir = fast_dot(gradient, direction)
         ndir2 = norm(direction)^2
     else
