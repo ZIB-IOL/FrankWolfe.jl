@@ -815,6 +815,8 @@ function simplex_gradient_descent_over_convex_hull(
         # NOTE: sometimes the direction is non-improving
         # usual suspects are floating-point errors when multiplying atoms with near-zero weights
         # in that case, inverting the sense of d
+        # Computing the quantity below is the same as computing the <-\nabla f(x), direction>.
+        # If <-\nabla f(x), direction>  >= 0 the direction is a descent direction.
         descent_direction_product = fast_dot(d, d) + (csum / k)*sum(d)
         @inbounds if descent_direction_product < 0
             current_iteration = t + number_of_steps
