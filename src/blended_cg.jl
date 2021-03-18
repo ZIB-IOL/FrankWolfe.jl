@@ -864,8 +864,7 @@ function simplex_gradient_descent_over_convex_hull(
                 if gamma < eps()
                     #@warn "Upgrading the accuracy of the adaptive line search."
                     L_inner = nothing
-                    upgrade_accuracy_flag=true
-                    gamma, L_inner = adaptive_step_size(f, grad!, gradient, x, x - y, L_inner, gamma_max=1.0, upgrade_accuracy=upgrade_accuracy_flag)
+                    gamma, L_inner = adaptive_step_size(f, grad!, gradient, x, x - y, L_inner, gamma_max=1.0, upgrade_accuracy=true)
                 end
             else
                 gamma, _ = backtrackingLS(
