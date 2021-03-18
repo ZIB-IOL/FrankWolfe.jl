@@ -107,17 +107,6 @@ function frank_wolfe(
 
     # container for direction
     d = similar(x)
-
-    #if line_search === adaptive && !isfinite(L)
-    #    #Provide an initial value of the smoothness parameter if none exists yet for the adaptive stepsize
-    #    epsilon_step = 1.0e-3
-    #    grad!(gradient, x)
-    #    v = compute_extreme_point(lmo, gradient)
-    #    gradient_stepsize_estimation = similar(x)
-    #    grad!(gradient_stepsize_estimation, x - epsilon_step * (x - v))
-    #    L = norm(gradient - gradient_stepsize_estimation) / (epsilon_step * norm(x - v))
-    #end
-
     gtemp = if momentum === nothing
         nothing
     else
