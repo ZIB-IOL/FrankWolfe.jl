@@ -16,8 +16,6 @@ lmo = FrankWolfe.ProbabilitySimplexOracle{Rational{BigInt}}(1); # radius needs t
 # compute some initial vertex
 x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
-# verify that the output is really rational
-println("Output type of LMO: ", eltype(x0))
 
 # benchmarking Oracles
 FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo; k=100)
@@ -35,6 +33,19 @@ FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo; k=100)
     print_iter=k / 10,
     verbose=true,
 );
+
+@time xmem, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+    f,
+    grad!,
+    lmo,
+    x0,
+    max_iteration=k,
+    line_search=FrankWolfe.agnostic,
+    print_iter=k / 10,
+    verbose=true,
+    emphasis=FrankWolfe.memory,
+);
+
 
 println("\nOutput type of solution: ", eltype(x))
 
