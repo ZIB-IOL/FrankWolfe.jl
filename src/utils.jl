@@ -73,13 +73,12 @@ function adaptive_step_size(f, grad!, gradient, x, direction, L_est; eta=0.9, ta
     #If there is no initial smoothness estimate
     #try to build one from the definition.
     if isnothing(L_est) || !isfinite(L_est)
-        epsilon_step = min(1e-3, gamma_max)
+        epsilon_step = min(1.0e-3, gamma_max)
         gradient_stepsize_estimation = similar(gradient)
         grad!(gradient_stepsize_estimation, x - epsilon_step * direction)
         L_est = norm(gradient - gradient_stepsize_estimation) / (epsilon_step * norm(direction))
     end
     M = eta * L_est
-    T = promote_type(eltype(gradient), eltype(direction))
     if !upgrade_accuracy
         dot_dir = fast_dot(gradient, direction)
         ndir2 = norm(direction)^2
@@ -90,12 +89,16 @@ function adaptive_step_size(f, grad!, gradient, x, direction, L_est; eta=0.9, ta
         ndir2 = norm(direction)^2
     end
 
-    gamma = min(max(dot_dir / (M * ndir2), 0), gamma_max)
+    # alternative via broadcast -> not faster
+    # dot_dir = sum(gradient .* gradient)
+    # ndir2 = sum(direction .* direction)
+
+    gamma = min(max(dot_dir / (M * ndir2), 0.0), gamma_max)
     while f(x - gamma * direction) - f(x) > -gamma * dot_dir + gamma^2 * ndir2 * M / 2
         M *= tau
-        gamma = min(max(dot_dir / (M * ndir2), 0), gamma_max)
+        gamma = min(max(dot_dir / (M * ndir2), 0.0), gamma_max)
     end
-    return convert(T, gamma), M
+    return gamma, M
 end
 
 # simple backtracking line search (not optimized)
