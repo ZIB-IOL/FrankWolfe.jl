@@ -381,7 +381,7 @@ function minimize_over_convex_hull!(
             f(x) - fast_dot(gradient, x) +
             0.5 * transpose(x) * hessian * x +
             fast_dot(b, y) +
-            0.5 * transpose(y) * M * y
+            0.5 * dot(y, M, y)
         function reduced_grad!(storage, x)
             return storage .= b + M * x
         end
