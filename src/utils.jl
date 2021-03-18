@@ -294,11 +294,7 @@ function plot_trajectories(data, label; filename=nothing,xscalelog=false,legend_
     dit = nothing
     dti = nothing
     offset = 2
-    if xscalelog
-        xscale = :log
-    else
-        xscale = :identity
-    end
+    xscale = xscalelog ? :log : :identity
     for i in 1:length(data)
         trajectory = data[i]
         x = [trajectory[j][1] for j in offset:length(trajectory)]
