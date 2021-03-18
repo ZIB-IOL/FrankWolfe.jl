@@ -283,7 +283,7 @@ end
 ### Visualization etc
 ##############################
 
-function plot_trajectories(data, label; filename=nothing,xscalelog=false,legendPosition=:topright)
+function plot_trajectories(data, label; filename=nothing,xscalelog=false,legend_position=:topright)
     # theme(:dark)
     # theme(:vibrant)
     gr()
@@ -312,7 +312,7 @@ function plot_trajectories(data, label; filename=nothing,xscalelog=false,legendP
                 xaxis=xscale,
                 yaxis=:log,
                 ylabel="Primal",
-                legend=legendPosition,
+                legend=legend_position,
                 yguidefontsize=8,
                 xguidefontsize=8,
                 legendfontsize=8,
