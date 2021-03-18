@@ -36,7 +36,6 @@ x, v, primal, dual_gap, _ = FrankWolfe.blended_conditional_gradient(
     verbose=true,
     trajectory=false,
     K=1.00,
-    goodstep_tolerance=0.95,
     weight_purge_threshold=1e-10,
     epsilon=1e-9,
 )
