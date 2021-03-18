@@ -312,9 +312,9 @@ end
 
 @testset "MOI oracle consistency" begin
     Random.seed!(42)
+    o = GLPK.Optimizer()
+    MOI.set(o, MOI.Silent(), true)
     @testset "MOI oracle consistent with unit simplex" for n in (1, 2, 10)
-        o = GLPK.Optimizer()
-        MOI.set(o, MOI.Silent(), true)
         x = MOI.add_variables(o, n)
         for xi in x
             MOI.add_constraint(o, xi, MOI.Interval(0.0, 1.0))
@@ -338,8 +338,7 @@ end
         end
     end
     @testset "MOI consistent probability simplex" for n in (1, 2, 10)
-        o = GLPK.Optimizer()
-        MOI.set(o, MOI.Silent(), true)
+        MOI.empty!(o)
         x = MOI.add_variables(o, n)
         for xi in x
             MOI.add_constraint(o, xi, MOI.Interval(0.0, 1.0))
@@ -364,8 +363,7 @@ end
     end
     @testset "Direction with coefficients" begin
         n = 5
-        o = GLPK.Optimizer()
-        MOI.set(o, MOI.Silent(), true)
+        MOI.empty!(o)
         x = MOI.add_variables(o, n)
         for xi in x
             MOI.add_constraint(o, xi, MOI.Interval(0.0, 1.0))
