@@ -60,7 +60,7 @@ function blended_conditional_gradient(
     linesearch_tol=1e-7,
     emphasis=nothing,
     accelerated=false,
-    Ktolerance=1.0,
+    K=2.0,
     weight_purge_threshold=1e-9,
     gradient=nothing,
     direction_storage=nothing,
@@ -107,7 +107,7 @@ function blended_conditional_gradient(
         println(
             "EMPHASIS: $memory STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $numType",
         )
-        println("K: $Ktolerance")
+        println("K: $K")
         println("WARNING: In memory emphasis mode iterates are written back into x0!")
         headers = (
             "Type",
@@ -177,14 +177,14 @@ function blended_conditional_gradient(
             active_set,
             gradient,
             phi,
-            Ktolerance;
+            K;
             inplace_loop=(emphasis == memory),
             force_fw_step=force_fw_step,
             lmo_kwargs...,
         )
         force_fw_step = false
         xval = fast_dot(x, gradient)
-        if value > xval - phi / Ktolerance
+        if value > xval - phi / K
             tt = dualstep
             # setting gap estimate as ∇f(x) (x - v_FW) / 2
             phi = (xval - value) / 2
@@ -378,9 +378,9 @@ function minimize_over_convex_hull!(
             #L_reduced = Arpack.eigs(M, nev=1, which=:LM)
         end
         reduced_f(y) =
-            f(x) - dot(gradient, x) +
+            f(x) - fast_dot(gradient, x) +
             0.5 * transpose(x) * hessian * x +
-            dot(b, y) +
+            fast_dot(b, y) +
             0.5 * transpose(y) * M * y
         function reduced_grad!(storage, x)
             return storage .= b + M * x
@@ -938,7 +938,7 @@ function lp_separation_oracle(
     active_set::ActiveSet,
     direction,
     min_gap,
-    Ktolerance;
+    K;
     inplace_loop=false,
     force_fw_step::Bool=false,
     kwargs...,
@@ -971,7 +971,7 @@ function lp_separation_oracle(
             end
         end
         xval = fast_dot(direction, x)
-        if xval - val_best ≥ min_gap / Ktolerance
+        if xval - val_best ≥ min_gap / K
             return (ybest, val_best)
         end
     end
