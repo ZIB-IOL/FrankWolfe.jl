@@ -7,7 +7,19 @@ include("lmo.jl")
 include("function_gradient.jl")
 include("active_set.jl")
 include("utils.jl")
-include("line_search.jl")
+
+@testset "Line Search methods" begin
+    a = [-1.0, -1.0, -1.0]
+    b = [1.0, 1.0, 1.0]
+    function grad!(storage, x)
+        return storage .= 2x
+    end
+    f(x) = norm(x)^2
+    gradient = similar(a)
+    grad!(gradient, a)
+    @test FrankWolfe.backtrackingLS(f, gradient, a, a - b, 1.0) == (0.5, 1)
+    @test abs(FrankWolfe.segment_search(f, grad!, a, a - b, 1.0)[1] - 0.5) < 0.0001
+end
 
 @testset "FrankWolfe.jl" begin
     @testset "Testing vanilla Frank-Wolfe with various step size and momentum strategies" begin

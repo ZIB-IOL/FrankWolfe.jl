@@ -123,8 +123,6 @@ end
 
 """
     compute_active_set_iterate(active_set)
-
-Return the current iterate of the active set (does not recompute it from atoms).
 """
 function compute_active_set_iterate(active_set)
     return active_set.x
