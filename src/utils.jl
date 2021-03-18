@@ -48,8 +48,10 @@ function line_search_wrapper(
     elseif line_search == shortstep
         gamma = min(max(fast_dot(gradient, d) / (L * norm(d)^2), 0.0), gamma_max)
     elseif line_search == rationalshortstep
-        rat_dual_gap = sum((d) .* gradient)
-        gamma = min(max(rat_dual_gap // (L * sum((d) .^ 2)), 0.0), gamma_max)
+        # rat_dual_gap = sum((d) .* gradient)
+        # gamma = min(max(rat_dual_gap // (L * sum((d) .^ 2)), 0), 1) # DO NOT PUT IN gamma_max as it is a float
+        rat_dual_gap = fast_dot(d, gradient)
+        gamma = min(max(rat_dual_gap // (L * fast_dot(d,d)), 0), 1) # DO NOT PUT IN gamma_max as it is a float
     elseif line_search == fixed
         gamma = min(gamma0, gamma_max)
     elseif line_search == adaptive

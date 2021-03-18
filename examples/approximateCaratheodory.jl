@@ -34,6 +34,7 @@ FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo; k=100)
     line_search=FrankWolfe.agnostic,
     print_iter=k / 10,
     verbose=true,
+    emphasis=FrankWolfe.memory
 );
 
 println("\nOutput type of solution: ", eltype(x))
@@ -51,6 +52,7 @@ println("\nOutput type of solution: ", eltype(x))
     L=2,
     print_iter=k / 10,
     verbose=true,
+    emphasis=FrankWolfe.memory
 );
 
 println("\nOutput type of solution: ", eltype(x))

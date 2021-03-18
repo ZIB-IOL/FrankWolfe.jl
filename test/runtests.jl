@@ -397,6 +397,8 @@ end
 
         @test eltype(x0) == Rational{BigInt}
 
+        x0 = FrankWolfe.compute_extreme_point(lmo, direction)
+
         @time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
             f,
             grad!,
@@ -404,6 +406,40 @@ end
             x0,
             max_iteration=k,
             line_search=FrankWolfe.agnostic,
+            print_iter=k / 10,
+            emphasis=FrankWolfe.memory,
+            verbose=true,
+        )
+        @test eltype(x0) == Rational{BigInt}
+
+
+        x0 = FrankWolfe.compute_extreme_point(lmo, direction)
+
+        @time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+            f,
+            grad!,
+            lmo,
+            x0,
+            max_iteration=k,
+            line_search=FrankWolfe.rationalshortstep,
+            L=2,
+            print_iter=k / 10,
+            emphasis=FrankWolfe.blas,
+            verbose=true,
+        )
+
+        @test eltype(x0) == Rational{BigInt}
+
+        x0 = FrankWolfe.compute_extreme_point(lmo, direction)
+
+        @time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+            f,
+            grad!,
+            lmo,
+            x0,
+            max_iteration=k,
+            line_search=FrankWolfe.rationalshortstep,
+            L=2,
             print_iter=k / 10,
             emphasis=FrankWolfe.memory,
             verbose=true,
