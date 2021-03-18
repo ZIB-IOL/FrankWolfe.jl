@@ -610,6 +610,13 @@ using Test
 end
 end
 
+module RationalTest
+using Test
+@testset "Rational test and shortstep" begin
+    include("rational_test.jl")
+end
+end
+
 if get(ENV, "FW_TEST", nothing) == "full"
     @testset "Running examples" begin
         # TODO test smaller examples to be sure they are up to date
