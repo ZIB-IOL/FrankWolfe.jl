@@ -89,14 +89,6 @@ function blended_conditional_gradient(
         Base.sizehint!(direction_storage, 100)
     end
 
-    if line_search === adaptive && !isfinite(L)
-        #Provide an initial value of the smoothness parameter if none exists yet for the adaptive stepsize
-        epsilon_step = 1.0e-3
-        gradient_stepsize_estimation = similar(x)
-        grad!(gradient_stepsize_estimation, x - epsilon_step * (x - vmax))
-        L = norm(gradient - gradient_stepsize_estimation) / (epsilon_step * norm(x - vmax))
-    end
-
     if line_search == shortstep && !isfinite(L)
         @error("Lipschitz constant not set to a finite value. Prepare to blow up spectacularly.")
     end
@@ -859,30 +851,19 @@ function simplex_gradient_descent_over_convex_hull(
         η = max(0, η)
         @. active_set.weights -= η * d
         y = copy(update_active_set_iterate!(active_set))
-        #Provide an initial value of the smoothness parameter if none exists yet for the adaptive stepsize
-        if isnothing(L_inner) && line_search_inner == adaptive
-            epsilon_step = 1.0e-3
-            gradient_stepsize_estimation = similar(gradient)
-            grad!(gradient_stepsize_estimation, x - epsilon_step * (x - y))
-            L_inner = norm(gradient - gradient_stepsize_estimation) / (epsilon_step * norm(x - y))
-        end
         number_of_steps += 1
         if f(x) ≥ f(y)
             active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
         else
             if line_search_inner == adaptive
-                gamma, L_inner = adaptive_step_size(f, gradient, x, x - y, L_inner, gamma_max=1.0, upgrade_accuracy=upgrade_accuracy_flag)
+                gamma, L_inner = adaptive_step_size(f, grad!, gradient, x, x - y, L_inner, gamma_max=1.0, upgrade_accuracy=upgrade_accuracy_flag)
+                #If the stepsize is that small we probably need to increase the accuracy of 
+                #the types we are using.
                 if gamma < eps()
                     #@warn "Upgrading the accuracy of the adaptive line search."
                     L_inner = nothing
                     upgrade_accuracy_flag=true
-                    if isnothing(L_inner) && line_search_inner == adaptive
-                        epsilon_step = 1.0e-3
-                        gradient_stepsize_estimation = similar(gradient)
-                        grad!(gradient_stepsize_estimation, x - epsilon_step * (x - y))
-                        L_inner = norm(gradient - gradient_stepsize_estimation) / (epsilon_step * norm(x - y))
-                    end
-                    gamma, L_inner = adaptive_step_size(f, gradient, x, x - y, L_inner, gamma_max=1.0, upgrade_accuracy=upgrade_accuracy_flag)
+                    gamma, L_inner = adaptive_step_size(f, grad!, gradient, x, x - y, L_inner, gamma_max=1.0, upgrade_accuracy=upgrade_accuracy_flag)
                 end
             else
                 gamma, _ = backtrackingLS(
