@@ -814,11 +814,13 @@ function simplex_gradient_descent_over_convex_hull(
         d = c
         # NOTE: sometimes the direction is non-improving
         # usual suspects are floating-point errors when multiplying atoms with near-zero weights
-        # in that case, inverting the sense of d
         descent_direction_product = fast_dot(d, d) + (csum / k)*sum(d)
         @inbounds if descent_direction_product < 0
             current_iteration = t + number_of_steps
-            @warn "Non-improving d ($descent_direction_product) due to numerical instability in iteration $current_iteration. Temporarily upgrading precision to BigFloat for the current iteration."
+            @warn """
+            Non-improving d ($descent_direction_product) due to numerical instability in iteration $current_iteration.
+            Temporarily upgrading precision to BigFloat for the current iteration.
+            """
             # extended warning - we can discuss what to integrate
             # If higher accuracy is required, consider using Double64 (still quite fast) and if that does not help BigFloat (slower) as type for the numbers.
             # Alternatively, consider using AFW (with lazy = true) instead."
@@ -876,7 +878,7 @@ function simplex_gradient_descent_over_convex_hull(
                     step_lim=step_lim,
                 )
             end
-            gamma = min(1.0, gamma)
+            gamma = min(1, gamma)
             # step back from y to x by (1 - γ) η d
             # new point is x - γ η d
             if gamma == 1.0
