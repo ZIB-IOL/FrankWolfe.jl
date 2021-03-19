@@ -315,6 +315,7 @@ end
     o = GLPK.Optimizer()
     MOI.set(o, MOI.Silent(), true)
     @testset "MOI oracle consistent with unit simplex" for n in (1, 2, 10)
+        MOI.empty!(o)
         x = MOI.add_variables(o, n)
         for xi in x
             MOI.add_constraint(o, xi, MOI.Interval(0.0, 1.0))
@@ -328,7 +329,7 @@ end
         lmo_ref = FrankWolfe.UnitSimplexOracle(1.0)
         lmo_moi_ref = FrankWolfe.convert_mathopt(lmo_ref, GLPK.Optimizer(), dimension=n)
         direction = Vector{Float64}(undef, n)
-        for _ in 1:10
+        for _ in 1:5
             Random.randn!(direction)
             vref = compute_extreme_point(lmo_ref, direction)
             v = compute_extreme_point(lmo, direction)
@@ -352,7 +353,7 @@ end
         lmo_ref = FrankWolfe.ProbabilitySimplexOracle(1.0)
         lmo_moi_ref = FrankWolfe.convert_mathopt(lmo_ref, GLPK.Optimizer(), dimension=n)
         direction = Vector{Float64}(undef, n)
-        for _ in 1:10
+        for _ in 1:5
             Random.randn!(direction)
             vref = compute_extreme_point(lmo_ref, direction)
             v = compute_extreme_point(lmo, direction)
@@ -397,7 +398,7 @@ end
         lmo = FrankWolfe.MathOptLMO(o)
         lmo_ref = FrankWolfe.ProbabilitySimplexOracle(1.0)
         direction = Vector{Float64}(undef, n)
-        for _ in 1:10
+        for _ in 1:5
             Random.randn!(direction)
             vref = compute_extreme_point(lmo_ref, direction)
             v = compute_extreme_point(lmo, direction)
@@ -405,9 +406,11 @@ end
         end
     end
     @testset "Nuclear norm" for n in (5, 10)
+        o = Hypatia.Optimizer()
+        MOI.set(o, MOI.Silent(), true)
         optimizer = MOI.Utilities.CachingOptimizer(
             MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
-            Hypatia.Optimizer(),
+            o,
         )
         MOI.set(optimizer, MOI.Silent(), true)
         nrows = 3n

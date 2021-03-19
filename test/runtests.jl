@@ -257,7 +257,7 @@ end
             verbose=true,
         )
 
-        @test primal - 1 // n <= bound
+        @test primal - 1 / n <= bound
 
         @time x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
             f,
@@ -271,7 +271,7 @@ end
             verbose=false,
         )
 
-        @test primal - 1 // n <= bound
+        @test primal - 1 / n <= bound
 
         @time x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
             f,
@@ -286,7 +286,7 @@ end
             verbose=false,
         )
 
-        @test primal - 1 // n <= bound
+        @test primal - 1 / n <= bound
     end
 
     @testset "Testing emphasis blas vs memory" begin
@@ -367,12 +367,12 @@ end
     end
     @testset "Testing rational variant" begin
         rhs = 1
-        n = 100
+        n = 40
         k = 1000
 
-        xpi = rand(n)
+        xpi = rand(big(1):big(100), n)
         total = sum(xpi)
-        xp = xpi ./ total
+        xp = xpi .// total
 
         f(x) = norm(x - xp)^2
         function grad!(storage, x)
@@ -382,6 +382,7 @@ end
         lmo = FrankWolfe.ProbabilitySimplexOracle{Rational{BigInt}}(rhs)
         direction = rand(n)
         x0 = FrankWolfe.compute_extreme_point(lmo, direction)
+        @test eltype(x0) == Rational{BigInt}
 
         @time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
             f,
@@ -392,7 +393,7 @@ end
             line_search=FrankWolfe.agnostic,
             print_iter=k / 10,
             emphasis=FrankWolfe.blas,
-            verbose=true,
+            verbose=false,
         )
 
         @test eltype(x0) == Rational{BigInt}
@@ -408,8 +409,38 @@ end
             emphasis=FrankWolfe.memory,
             verbose=true,
         )
-        @test eltype(x0) == Rational{BigInt}
+        @test eltype(x0) == eltype(x) == Rational{BigInt}
+        @test f(x) <= 1e-4
 
+        # very slow computation, explodes quickly
+        x0 = collect(FrankWolfe.compute_extreme_point(lmo, direction))
+        @time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+            f,
+            grad!,
+            lmo,
+            x0,
+            max_iteration=15,
+            line_search=FrankWolfe.rationalshortstep,
+            L=2,
+            print_iter=k / 100,
+            emphasis=FrankWolfe.memory,
+            verbose=true,
+        )
+
+        x0 = FrankWolfe.compute_extreme_point(lmo, direction)
+        @time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+            f,
+            grad!,
+            lmo,
+            x0,
+            max_iteration=15,
+            line_search=FrankWolfe.rationalshortstep,
+            L=2,
+            print_iter=k / 10,
+            emphasis=FrankWolfe.memory,
+            verbose=true,
+        )
+        @test eltype(x) == Rational{BigInt}
     end
     @testset "Multi-precision tests" begin
         rhs = 1
@@ -446,7 +477,7 @@ end
             )
 
             @test eltype(x0) == T
-            @test primal - 1 // n <= bound
+            @test primal - 1 / n <= bound
 
             @time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
                 f,

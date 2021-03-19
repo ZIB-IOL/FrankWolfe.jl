@@ -46,10 +46,9 @@ function line_search_wrapper(
     elseif line_search == nonconvex
         gamma = 1 / sqrt(t + 1)
     elseif line_search == shortstep
-        gamma = min(max(fast_dot(gradient, d) / (L * norm(d)^2), 0.0), gamma_max)
+        gamma = min(max(fast_dot(gradient, d) * inv(L * norm(d)^2), 0), gamma_max)
     elseif line_search == rationalshortstep
-        rat_dual_gap = sum((d) .* gradient)
-        gamma = min(max(rat_dual_gap // (L * sum((d) .^ 2)), 0.0), gamma_max)
+        gamma = min(max(fast_dot(gradient, d) * inv(L * fast_dot(d, d)), 0), gamma_max)
     elseif line_search == fixed
         gamma = min(gamma0, gamma_max)
     elseif line_search == adaptive
@@ -230,7 +229,11 @@ function LinearAlgebra.dot(v1::MaybeHotVector, v2::AbstractVector)
     return v1.active_val * v2[v1.val_idx]
 end
 
-LinearAlgebra.dot(v1::AbstractVector, v2::MaybeHotVector) = fast_dot(v2, v1)
+function LinearAlgebra.dot(v1::MaybeHotVector{<:Number}, v2::SparseArrays.SparseVector{<:Number})
+    return v1.active_val * v2[v1.val_idx]
+end
+
+LinearAlgebra.dot(v1::AbstractVector, v2::MaybeHotVector) = dot(v2, v1)
 
 # warning, no bound check
 function LinearAlgebra.dot(v1::MaybeHotVector, v2::MaybeHotVector)
@@ -245,6 +248,38 @@ function Base.:*(v::MaybeHotVector, x::Number)
 end
 
 Base.:*(x::Number, v::MaybeHotVector) = v * x
+
+function Base.:+(x::MaybeHotVector, y::AbstractVector)
+    if length(x) != length(y)
+        throw(DimensionMismatch())
+    end
+    yc = Base.copymutable(y)
+    @inbounds yc[x.val_idx] += x.active_val
+    return yc
+end
+
+Base.:+(y::AbstractVector, x::MaybeHotVector) = x + y
+
+function Base.:+(x::FrankWolfe.MaybeHotVector{T1}, y::FrankWolfe.MaybeHotVector{T2}) where {T1, T2}
+    n = length(x)
+    T = promote_type(T1, T2)
+    if n != length(y)
+        throw(DimensionMismatch())
+    end
+    res = spzeros(T, n)
+    @inbounds res[x.val_idx] = x.active_val
+    @inbounds res[y.val_idx] = y.active_val
+    return res
+end
+
+Base.:-(x::MaybeHotVector{T}) where {T} = MaybeHotVector{T}(-x.active_val, x.val_idx, x.len)
+
+Base.:-(x::AbstractVector, y::MaybeHotVector) = +(x, -y)
+Base.:-(x::MaybeHotVector, y::AbstractVector) = +(x, -y)
+
+Base.:-(x::MaybeHotVector, y::MaybeHotVector) = +(x, -y)
+
+Base.similar(v::MaybeHotVector{T}) where {T} = spzeros(T, length(v))
 
 function Base.convert(::Type{Vector{T}}, v::MaybeHotVector) where {T}
     vc = zeros(T, v.len)

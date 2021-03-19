@@ -177,7 +177,7 @@ function frank_wolfe(
                 gamma0,
                 linesearch_tol,
                 step_lim,
-                1.0,
+                one(eltype(x)),
             )
         else
             gamma, L = line_search_wrapper(
@@ -193,7 +193,7 @@ function frank_wolfe(
                 gamma0,
                 linesearch_tol,
                 step_lim,
-                1.0,
+                one(eltype(x)),
             )
         end
 
