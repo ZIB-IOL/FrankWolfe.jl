@@ -29,12 +29,15 @@ L = eigmax(hessian)
 lmo = FrankWolfe.ProbabilitySimplexOracle(1.0);
 x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
 
+target_tolerance = 1e-5
+
 x0 = deepcopy(x00)
 x, v, primal, dual_gap, trajectoryBCG_accel_simplex = FrankWolfe.blended_conditional_gradient(
     f,
     grad!,
     lmo,
     x0,
+    epsilon = target_tolerance,
     max_iteration=k,
     line_search=FrankWolfe.adaptive,
     print_iter=k / 10,
@@ -44,7 +47,7 @@ x, v, primal, dual_gap, trajectoryBCG_accel_simplex = FrankWolfe.blended_conditi
     accelerated=true,
     verbose=true,
     trajectory=true,
-    Ktolerance=1.00,
+    K=1.00,
     weight_purge_threshold=1e-10,
 )
 
@@ -54,6 +57,7 @@ x, v, primal, dual_gap, trajectoryBCG_simplex = FrankWolfe.blended_conditional_g
     grad!,
     lmo,
     x0,
+    epsilon = target_tolerance,
     max_iteration=k,
     line_search=FrankWolfe.adaptive,
     print_iter=k / 10,
@@ -63,7 +67,7 @@ x, v, primal, dual_gap, trajectoryBCG_simplex = FrankWolfe.blended_conditional_g
     accelerated=false,
     verbose=true,
     trajectory=true,
-    Ktolerance=1.00,
+    K=1.00,
     weight_purge_threshold=1e-10,
 )
 
@@ -73,6 +77,7 @@ x, v, primal, dual_gap, trajectoryBCG_convex = FrankWolfe.blended_conditional_gr
     grad!,
     lmo,
     x0,
+    epsilon = target_tolerance,
     max_iteration=k,
     line_search=FrankWolfe.adaptive,
     print_iter=k / 10,
@@ -80,7 +85,7 @@ x, v, primal, dual_gap, trajectoryBCG_convex = FrankWolfe.blended_conditional_gr
     L=L,
     verbose=true,
     trajectory=true,
-    Ktolerance=1.00,
+    K=1.00,
     weight_purge_threshold=1e-10,
 )
 
@@ -109,6 +114,7 @@ x, v, primal, dual_gap, trajectoryBCG_accel_simplex = FrankWolfe.blended_conditi
     grad!,
     lmo,
     x0,
+    epsilon = target_tolerance,
     max_iteration=k,
     line_search=FrankWolfe.adaptive,
     print_iter=k / 10,
@@ -118,7 +124,7 @@ x, v, primal, dual_gap, trajectoryBCG_accel_simplex = FrankWolfe.blended_conditi
     accelerated=true,
     verbose=true,
     trajectory=true,
-    Ktolerance=1.00,
+    K=1.00,
     weight_purge_threshold=1e-10,
 )
 
@@ -128,6 +134,7 @@ x, v, primal, dual_gap, trajectoryBCG_simplex = FrankWolfe.blended_conditional_g
     grad!,
     lmo,
     x0,
+    epsilon = target_tolerance,
     max_iteration=k,
     line_search=FrankWolfe.adaptive,
     print_iter=k / 10,
@@ -137,7 +144,7 @@ x, v, primal, dual_gap, trajectoryBCG_simplex = FrankWolfe.blended_conditional_g
     accelerated=false,
     verbose=true,
     trajectory=true,
-    Ktolerance=1.00,
+    K=1.00,
     weight_purge_threshold=1e-10,
 )
 
@@ -147,6 +154,7 @@ x, v, primal, dual_gap, trajectoryBCG_convex = FrankWolfe.blended_conditional_gr
     grad!,
     lmo,
     x0,
+    epsilon = target_tolerance,
     max_iteration=k,
     line_search=FrankWolfe.adaptive,
     print_iter=k / 10,
@@ -154,7 +162,7 @@ x, v, primal, dual_gap, trajectoryBCG_convex = FrankWolfe.blended_conditional_gr
     L=L,
     verbose=true,
     trajectory=true,
-    Ktolerance=1.00,
+    K=1.00,
     weight_purge_threshold=1e-10,
 )
 
