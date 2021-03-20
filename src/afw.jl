@@ -115,14 +115,6 @@ function away_frank_wolfe(
     v = compute_extreme_point(lmo, gradient)
     phi_value = fast_dot(x, gradient) - fast_dot(v, gradient)
 
-    if line_search === adaptive && !isfinite(L)
-        #Provide an initial value of the smoothness parameter if none exists yet for the adaptive stepsize
-        epsilon_step = 1.0e-3
-        gradient_stepsize_estimation = similar(x)
-        grad!(gradient_stepsize_estimation, x - epsilon_step * (x - v))
-        L = norm(gradient - gradient_stepsize_estimation) / (epsilon_step * norm(x - v))
-    end
-
     while t <= max_iteration && dual_gap >= max(epsilon, eps())
 
         # compute current iterate from active set
