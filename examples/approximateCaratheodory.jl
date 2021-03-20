@@ -32,18 +32,7 @@ FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo; k=100)
     line_search=FrankWolfe.agnostic,
     print_iter=k / 10,
     verbose=true,
-);
-
-@time xmem, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
-    f,
-    grad!,
-    lmo,
-    x0,
-    max_iteration=k,
-    line_search=FrankWolfe.agnostic,
-    print_iter=k / 10,
-    verbose=true,
-    emphasis=FrankWolfe.memory,
+    emphasis=FrankWolfe.blas,
 );
 
 println("\nOutput type of solution: ", eltype(x))
@@ -73,15 +62,39 @@ println(
 )
 println("x = $x")
 
+
+####################################################################################################################
+### APPRROXIMATE CARATHEODORY WITH PLANTED SOLUTION
+####################################################################################################################
+
+
+rhs = 1
+n = 40
+k = 1e5
+
+xpi = rand(big(1):big(100), n)
+total = sum(xpi)
+xp = xpi .// total
+
+f(x) = norm(x - xp)^2
+function grad!(storage, x)
+    @. storage = 2 * (x - xp)
+end
+
+lmo = FrankWolfe.ProbabilitySimplexOracle{Rational{BigInt}}(rhs)
+direction = rand(n)
+x0 = FrankWolfe.compute_extreme_point(lmo, direction)
+
 @time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
-    copy(x0),
+    x0,
     max_iteration=k,
-    line_search=FrankWolfe.rationalshortstep,
-    L=2,
+    line_search=FrankWolfe.agnostic,
     print_iter=k / 10,
-    verbose=true,
     emphasis=FrankWolfe.memory,
-);
+    verbose=true,
+)
+println("\nOutput type of solution: ", eltype(x))
+
