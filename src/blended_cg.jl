@@ -60,7 +60,7 @@ function blended_conditional_gradient(
     linesearch_tol=1e-7,
     emphasis=nothing,
     accelerated=false,
-    Ktolerance=1.0,
+    K=2.0,
     weight_purge_threshold=1e-9,
     gradient=nothing,
     direction_storage=nothing,
@@ -89,14 +89,6 @@ function blended_conditional_gradient(
         Base.sizehint!(direction_storage, 100)
     end
 
-    if line_search === adaptive && !isfinite(L)
-        #Provide an initial value of the smoothness parameter if none exists yet for the adaptive stepsize
-        epsilon_step = 1.0e-3
-        gradient_stepsize_estimation = similar(x)
-        grad!(gradient_stepsize_estimation, x - epsilon_step * (x - vmax))
-        L = norm(gradient - gradient_stepsize_estimation) / (epsilon_step * norm(x - vmax))
-    end
-
     if line_search == shortstep && !isfinite(L)
         @error("Lipschitz constant not set to a finite value. Prepare to blow up spectacularly.")
     end
@@ -115,7 +107,7 @@ function blended_conditional_gradient(
         println(
             "EMPHASIS: $memory STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $numType",
         )
-        println("K: $Ktolerance")
+        println("K: $K")
         println("WARNING: In memory emphasis mode iterates are written back into x0!")
         headers = (
             "Type",
@@ -127,7 +119,6 @@ function blended_conditional_gradient(
             "It/sec",
             "#ActiveSet",
             "#non-simplex",
-            "#forced FW",
         )
         print_header(headers)
     end
@@ -135,7 +126,6 @@ function blended_conditional_gradient(
         x = convert(Array{float(eltype(x))}, x)
     end
     non_simplex_iter = 0
-    nforced_fw = 0
     force_fw_step = false
     if verbose && mod(t, print_iter) == 0
         if t == 0
@@ -187,14 +177,14 @@ function blended_conditional_gradient(
             active_set,
             gradient,
             phi,
-            Ktolerance;
+            K;
             inplace_loop=(emphasis == memory),
             force_fw_step=force_fw_step,
             lmo_kwargs...,
         )
         force_fw_step = false
         xval = fast_dot(x, gradient)
-        if value > xval - phi / Ktolerance
+        if value > xval - phi / K
             tt = dualstep
             # setting gap estimate as ∇f(x) (x - v_FW) / 2
             phi = (xval - value) / 2
@@ -388,10 +378,10 @@ function minimize_over_convex_hull!(
             #L_reduced = Arpack.eigs(M, nev=1, which=:LM)
         end
         reduced_f(y) =
-            f(x) - dot(gradient, x) +
+            f(x) - fast_dot(gradient, x) +
             0.5 * transpose(x) * hessian * x +
-            dot(b, y) +
-            0.5 * transpose(y) * M * y
+            fast_dot(b, y) +
+            0.5 * dot(y, M, y)
         function reduced_grad!(storage, x)
             return storage .= b + M * x
         end
@@ -652,6 +642,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
                 primal - tolerance,
                 tolerance,
                 (time_ns() - time_start) / 1.0e9,
+                t / ((time_ns() - time_start) / 1e9),
                 length(initial_point),
                 non_simplex_iter,
             )
@@ -806,6 +797,7 @@ function simplex_gradient_descent_over_convex_hull(
 )
     number_of_steps = 0
     L_inner = nothing
+    upgrade_accuracy_flag=false
     x = compute_active_set_iterate(active_set)
     while t + number_of_steps ≤ max_iteration
         grad!(gradient, x)
@@ -820,29 +812,29 @@ function simplex_gradient_descent_over_convex_hull(
         c .-= (csum / k)
         # name change to stay consistent with the paper, c is actually updated in-place
         d = c
-        if norm(d) <= 1e-8
-            @info "Resetting active set."
-            # resetting active set to singleton
-            a0 = active_set.atoms[1]
-            empty!(active_set)
-            push!(active_set, (1, a0))
-            return number_of_steps
-        end
         # NOTE: sometimes the direction is non-improving
         # usual suspects are floating-point errors when multiplying atoms with near-zero weights
         # in that case, inverting the sense of d
-        @inbounds if fast_dot(
-            sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)),
-            gradient,
-        ) < 0
-            @warn "Non-improving d, aborting simplex descent. We likely reached the limits of the numerical accuracy. 
-            The solution is still valid but we might not be able to converge further from here onwards. 
-            If higher accuracy is required, consider using Double64 (still quite fast) and if that does not help BigFloat (slower) as type for the numbers.
-            Alternatively, consider using AFW (with lazy = true) instead."
-            println(
-                fast_dot(sum(d[i] * active_set.atoms[i] for i in eachindex(active_set)), gradient),
-            )
-            return number_of_steps
+        # Computing the quantity below is the same as computing the <-\nabla f(x), direction>.
+        # If <-\nabla f(x), direction>  >= 0 the direction is a descent direction.
+        descent_direction_product = fast_dot(d, d) + (csum / k)*sum(d)
+        @inbounds if descent_direction_product < 0
+            current_iteration = t + number_of_steps
+            @warn "Non-improving d ($descent_direction_product) due to numerical instability in iteration $current_iteration. Temporarily upgrading precision to BigFloat for the current iteration."
+            # extended warning - we can discuss what to integrate
+            # If higher accuracy is required, consider using Double64 (still quite fast) and if that does not help BigFloat (slower) as type for the numbers.
+            # Alternatively, consider using AFW (with lazy = true) instead."
+            bdir = big.(gradient)
+            c = [fast_dot(bdir, a) for a in active_set.atoms]
+            csum = sum(c)
+            c .-= csum / k
+            d = c
+            descent_direction_product_inner = fast_dot(d, d) + (csum / k)*sum(d)
+            @inbounds if descent_direction_product_inner < 0
+                @warn "d non-improving in large precision, forcing FW"
+                @warn "dot value: $descent_direction_product_inner"
+                return number_of_steps
+            end
         end
 
         η = eltype(d)(Inf)
@@ -861,19 +853,19 @@ function simplex_gradient_descent_over_convex_hull(
         η = max(0, η)
         @. active_set.weights -= η * d
         y = copy(update_active_set_iterate!(active_set))
-        #Provide an initial value of the smoothness parameter if none exists yet for the adaptive stepsize
-        if isnothing(L_inner) && line_search_inner == adaptive
-            epsilon_step = 1.0e-3
-            gradient_stepsize_estimation = similar(gradient)
-            grad!(gradient_stepsize_estimation, x - epsilon_step * (x - y))
-            L_inner = norm(gradient - gradient_stepsize_estimation) / (epsilon_step * norm(x - y))
-        end
         number_of_steps += 1
         if f(x) ≥ f(y)
             active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
         else
             if line_search_inner == adaptive
-                gamma, L_inner = adaptive_step_size(f, gradient, x, x - y, L_inner, gamma_max=1.0)
+                gamma, L_inner = adaptive_step_size(f, grad!, gradient, x, x - y, L_inner, gamma_max=1.0, upgrade_accuracy=upgrade_accuracy_flag)
+                #If the stepsize is that small we probably need to increase the accuracy of 
+                #the types we are using.
+                if gamma < eps()
+                    #@warn "Upgrading the accuracy of the adaptive line search."
+                    L_inner = nothing
+                    gamma, L_inner = adaptive_step_size(f, grad!, gradient, x, x - y, L_inner, gamma_max=1.0, upgrade_accuracy=true)
+                end
             else
                 gamma, _ = backtrackingLS(
                     f,
@@ -947,7 +939,7 @@ function lp_separation_oracle(
     active_set::ActiveSet,
     direction,
     min_gap,
-    Ktolerance;
+    K;
     inplace_loop=false,
     force_fw_step::Bool=false,
     kwargs...,
@@ -980,7 +972,7 @@ function lp_separation_oracle(
             end
         end
         xval = fast_dot(direction, x)
-        if xval - val_best ≥ min_gap / Ktolerance
+        if xval - val_best ≥ min_gap / K
             return (ybest, val_best)
         end
     end

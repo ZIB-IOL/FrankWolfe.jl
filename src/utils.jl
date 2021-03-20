@@ -52,7 +52,7 @@ function line_search_wrapper(
     elseif line_search == fixed
         gamma = min(gamma0, gamma_max)
     elseif line_search == adaptive
-        gamma, L = adaptive_step_size(f, gradient, x, d, L, gamma_max=gamma_max)
+        gamma, L = adaptive_step_size(f, grad!, gradient, x, d, L, gamma_max=gamma_max)
     end
     return gamma, L
 end
@@ -68,14 +68,25 @@ norm(gradient, direction) > 0
 TODO: 
 - make emphasis aware and optimize
 """
-function adaptive_step_size(f, gradient, x, direction, L_est; eta=0.9, tau=2, gamma_max=1)
+function adaptive_step_size(f, grad!, gradient, x, direction, L_est; eta=0.9, tau=2, gamma_max=1, upgrade_accuracy=false)
+    #If there is no initial smoothness estimate
+    #try to build one from the definition.
+    if isnothing(L_est) || !isfinite(L_est)
+        epsilon_step = min(1.0e-3, gamma_max)
+        gradient_stepsize_estimation = similar(gradient)
+        grad!(gradient_stepsize_estimation, x - epsilon_step * direction)
+        L_est = norm(gradient - gradient_stepsize_estimation) / (epsilon_step * norm(direction))
+    end
     M = eta * L_est
-    dot_dir = fast_dot(gradient, direction)
-    ndir2 = norm(direction)^2
-
-    # alternative via broadcast -> not faster
-    # dot_dir = sum(gradient .* gradient)
-    # ndir2 = sum(direction .* direction)
+    if !upgrade_accuracy
+        dot_dir = fast_dot(gradient, direction)
+        ndir2 = norm(direction)^2
+    else
+        direction = big.(direction)
+        x = big.(x)
+        dot_dir = fast_dot(big.(gradient), direction)
+        ndir2 = norm(direction)^2
+    end
 
     gamma = min(max(dot_dir / (M * ndir2), 0.0), gamma_max)
     while f(x - gamma * direction) - f(x) > -gamma * dot_dir + gamma^2 * ndir2 * M / 2
@@ -306,7 +317,7 @@ end
 ### Visualization etc
 ##############################
 
-function plot_trajectories(data, label; filename=nothing)
+function plot_trajectories(data, label; filename=nothing,xscalelog=false,legend_position=:topright)
     # theme(:dark)
     # theme(:vibrant)
     gr()
@@ -318,6 +329,7 @@ function plot_trajectories(data, label; filename=nothing)
     dit = nothing
     dti = nothing
     offset = 2
+    xscale = xscalelog ? :log : :identity
     for i in 1:length(data)
         trajectory = data[i]
         x = [trajectory[j][1] for j in offset:length(trajectory)]
@@ -327,10 +339,10 @@ function plot_trajectories(data, label; filename=nothing)
                 x,
                 y,
                 label=label[i],
-                #xaxis=:log,
+                xaxis=xscale,
                 yaxis=:log,
                 ylabel="Primal",
-                legend=:topright,
+                legend=legend_position,
                 yguidefontsize=8,
                 xguidefontsize=8,
                 legendfontsize=8,
@@ -349,7 +361,7 @@ function plot_trajectories(data, label; filename=nothing)
                 y,
                 label=label[i],
                 legend=false,
-                #xaxis=:log,
+                xaxis=xscale,
                 yaxis=:log,
                 yguidefontsize=8,
                 xguidefontsize=8,
@@ -368,7 +380,7 @@ function plot_trajectories(data, label; filename=nothing)
                 y,
                 label=label[i],
                 legend=false,
-                #xaxis=:log,
+                xaxis=xscale,
                 yaxis=:log,
                 ylabel="Dual Gap",
                 xlabel="Iterations",
@@ -389,14 +401,14 @@ function plot_trajectories(data, label; filename=nothing)
                 y,
                 label=label[i],
                 legend=false,
-                #xaxis=:log,
+                xaxis=xscale,
                 yaxis=:log,
                 xlabel="Time",
                 yguidefontsize=8,
                 xguidefontsize=8,
             )
         else
-            plot!(x, y, label=label[i], legend=:topright)
+            plot!(x, y, label=label[i])
         end
     end
     fp = plot(pit, pti, dit, dti, layout=(2, 2)) # layout = @layout([A{0.01h}; [B C; D E]]))

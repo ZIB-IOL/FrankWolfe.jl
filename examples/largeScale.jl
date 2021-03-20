@@ -1,3 +1,15 @@
+#= 
+
+Running a very large-scale example with 1e9 variables (note this requires a lot of RAM).
+
+Problem is quite simple: minimize || x - p ||^2 over the probability simplex
+
+NOTE.
+1. running standard FW with agnostic step-size here as overhead from line searches etc is quite substantial
+2. observe that the memory consummption is sub-linear in the number of iterations
+
+=#
+
 import FrankWolfe
 using LinearAlgebra
 

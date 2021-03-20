@@ -25,9 +25,11 @@ function grad!(storage, x)
 end
 L = eigmax(hessian)
 
-#Run over the probability simplex
+#Run over the probability simplex and call LMO to get initial feasible point
 lmo = FrankWolfe.ProbabilitySimplexOracle(1.0);
 x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
+
+target_tolerance = 1e-5
 
 x0 = deepcopy(x00)
 x, v, primal, dual_gap, trajectoryBCG_accel_simplex = FrankWolfe.blended_conditional_gradient(
@@ -35,6 +37,7 @@ x, v, primal, dual_gap, trajectoryBCG_accel_simplex = FrankWolfe.blended_conditi
     grad!,
     lmo,
     x0,
+    epsilon = target_tolerance,
     max_iteration=k,
     line_search=FrankWolfe.adaptive,
     print_iter=k / 10,
@@ -44,7 +47,7 @@ x, v, primal, dual_gap, trajectoryBCG_accel_simplex = FrankWolfe.blended_conditi
     accelerated=true,
     verbose=true,
     trajectory=true,
-    Ktolerance=1.00,
+    K=1.00,
     weight_purge_threshold=1e-10,
 )
 
@@ -54,6 +57,7 @@ x, v, primal, dual_gap, trajectoryBCG_simplex = FrankWolfe.blended_conditional_g
     grad!,
     lmo,
     x0,
+    epsilon = target_tolerance,
     max_iteration=k,
     line_search=FrankWolfe.adaptive,
     print_iter=k / 10,
@@ -63,7 +67,7 @@ x, v, primal, dual_gap, trajectoryBCG_simplex = FrankWolfe.blended_conditional_g
     accelerated=false,
     verbose=true,
     trajectory=true,
-    Ktolerance=1.00,
+    K=1.00,
     weight_purge_threshold=1e-10,
 )
 
@@ -73,6 +77,7 @@ x, v, primal, dual_gap, trajectoryBCG_convex = FrankWolfe.blended_conditional_gr
     grad!,
     lmo,
     x0,
+    epsilon = target_tolerance,
     max_iteration=k,
     line_search=FrankWolfe.adaptive,
     print_iter=k / 10,
@@ -80,20 +85,20 @@ x, v, primal, dual_gap, trajectoryBCG_convex = FrankWolfe.blended_conditional_gr
     L=L,
     verbose=true,
     trajectory=true,
-    Ktolerance=1.00,
+    K=1.00,
     weight_purge_threshold=1e-10,
 )
 
 data = [trajectoryBCG_accel_simplex, trajectoryBCG_simplex, trajectoryBCG_convex]
 label = ["BCG (accel simplex)", "BCG (simplex)", "BCG (convex)"]
-FrankWolfe.plot_trajectories(data, label)
+FrankWolfe.plot_trajectories(data, label, xscalelog=true)
 
 
 
 matrix = rand(n, n)
 hessian = transpose(matrix) * matrix
 linear = rand(n)
-f(x) = dot(linear, x) + 0.5 * transpose(x) * hessian * x
+f(x) = dot(linear, x) + 0.5 * transpose(x) * hessian * x + 10
 function grad!(storage, x)
     return storage .= linear + hessian * x
 end
@@ -109,6 +114,7 @@ x, v, primal, dual_gap, trajectoryBCG_accel_simplex = FrankWolfe.blended_conditi
     grad!,
     lmo,
     x0,
+    epsilon = target_tolerance,
     max_iteration=k,
     line_search=FrankWolfe.adaptive,
     print_iter=k / 10,
@@ -118,7 +124,7 @@ x, v, primal, dual_gap, trajectoryBCG_accel_simplex = FrankWolfe.blended_conditi
     accelerated=true,
     verbose=true,
     trajectory=true,
-    Ktolerance=1.00,
+    K=1.00,
     weight_purge_threshold=1e-10,
 )
 
@@ -128,6 +134,7 @@ x, v, primal, dual_gap, trajectoryBCG_simplex = FrankWolfe.blended_conditional_g
     grad!,
     lmo,
     x0,
+    epsilon = target_tolerance,
     max_iteration=k,
     line_search=FrankWolfe.adaptive,
     print_iter=k / 10,
@@ -137,7 +144,7 @@ x, v, primal, dual_gap, trajectoryBCG_simplex = FrankWolfe.blended_conditional_g
     accelerated=false,
     verbose=true,
     trajectory=true,
-    Ktolerance=1.00,
+    K=1.00,
     weight_purge_threshold=1e-10,
 )
 
@@ -147,6 +154,7 @@ x, v, primal, dual_gap, trajectoryBCG_convex = FrankWolfe.blended_conditional_gr
     grad!,
     lmo,
     x0,
+    epsilon = target_tolerance,
     max_iteration=k,
     line_search=FrankWolfe.adaptive,
     print_iter=k / 10,
@@ -154,10 +162,10 @@ x, v, primal, dual_gap, trajectoryBCG_convex = FrankWolfe.blended_conditional_gr
     L=L,
     verbose=true,
     trajectory=true,
-    Ktolerance=1.00,
+    K=1.00,
     weight_purge_threshold=1e-10,
 )
 
 data = [trajectoryBCG_accel_simplex, trajectoryBCG_simplex, trajectoryBCG_convex]
 label = ["BCG (accel simplex)", "BCG (simplex)", "BCG (convex)"]
-FrankWolfe.plot_trajectories(data, label)
+FrankWolfe.plot_trajectories(data, label, xscalelog=true)
