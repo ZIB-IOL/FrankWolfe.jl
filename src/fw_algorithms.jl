@@ -96,8 +96,13 @@ function frank_wolfe(
         print_header(headers)
     end
 
-    if emphasis === memory && !isa(x, Array)
-        x = convert(Array{promote_type(eltype(x), Float64)}, x)
+    if emphasis == memory && !isa(x, Union{Array, SparseArrays.AbstractSparseArray})
+        # if integer, convert element type to most appropriate float
+        if eltype(x) <: Integer
+            x = convert(Array{float(eltype(x))}, x)
+        else
+            x = convert(Array{eltype(x)}, x)
+        end
     end
     first_iter = true
     # instanciating container for gradient
@@ -172,7 +177,7 @@ function frank_wolfe(
                 gamma0,
                 linesearch_tol,
                 step_lim,
-                1.0,
+                one(eltype(x)),
             )
         else
             gamma, L = line_search_wrapper(
@@ -188,7 +193,7 @@ function frank_wolfe(
                 gamma0,
                 linesearch_tol,
                 step_lim,
-                1.0,
+                one(eltype(x)),
             )
         end
 
