@@ -1,7 +1,6 @@
 import FrankWolfe
 using LinearAlgebra
 using Random
-import GLPK
 
 s = rand(1:100)
 s = 98
