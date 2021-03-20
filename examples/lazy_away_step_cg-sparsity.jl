@@ -2,8 +2,8 @@ import FrankWolfe
 using LinearAlgebra
 using Random
 
-n = Int(1e5)
-k = 10000
+n = Int(1e4)
+k = 1000
 
 s = rand(1:100)
 @info "Seed $s"
@@ -59,7 +59,6 @@ x0 = deepcopy(x00)
     x0,
     max_iteration=k,
     line_search=FrankWolfe.adaptive,
-    L=100,
     print_iter=k / 10,
     emphasis=FrankWolfe.memory,
     verbose=true,
@@ -67,7 +66,7 @@ x0 = deepcopy(x00)
 );
 
 
-println("\n==> Localized AFW.\n")
+println("\n==> Lazy AFW.\n")
 
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, trajectoryAdaLoc = FrankWolfe.away_frank_wolfe(
@@ -76,13 +75,12 @@ x0 = deepcopy(x00)
     lmo,
     x0,
     max_iteration=k,
-    localized=true,
-    localizedFactor=0.66, # 66,
     line_search=FrankWolfe.adaptive,
-    L=100,
     print_iter=k / 10,
     emphasis=FrankWolfe.memory,
     verbose=true,
+    lazy=true,
+    K=1.5,
     trajectory=true,
 );
 
@@ -94,13 +92,12 @@ x0 = deepcopy(x00)
     lmo,
     x0,
     max_iteration=k,
-    localized=true,
-    localizedFactor=0.5, # 66,
     line_search=FrankWolfe.adaptive,
-    L=100,
     print_iter=k / 10,
     emphasis=FrankWolfe.memory,
     verbose=true,
+    lazy=true,
+    K=2.0,
     trajectory=true,
 );
 
@@ -111,13 +108,12 @@ x0 = deepcopy(x00)
     lmo,
     x0,
     max_iteration=k,
-    localized=true,
-    localizedFactor=0.25, # 66,
     line_search=FrankWolfe.adaptive,
-    L=100,
     print_iter=k / 10,
     emphasis=FrankWolfe.memory,
     verbose=true,
+    K=4.0,
+    lazy=true,
     trajectory=true,
 );
 
@@ -128,12 +124,11 @@ x0 = deepcopy(x00)
     lmo,
     x0,
     max_iteration=k,
-    localized=true,
-    localizedFactor=0.1, # 66,
     line_search=FrankWolfe.adaptive,
-    L=100,
     print_iter=k / 10,
     emphasis=FrankWolfe.memory,
+    lazy=true,
+    K=10.0,
     verbose=true,
     trajectory=true,
 );
@@ -149,6 +144,6 @@ label = ["short step", "AFW", "AFW-Loc"]
 
 dataSparsity =
     [trajectoryAda, trajectoryAdaLoc, trajectoryAdaLoc5, trajectoryAdaLoc25, trajectoryAdaLoc1]
-labelSparsity = ["AFW", "AFW-Loc066", "AFW-Loc05", "AFW-Loc025", "AFW-Loc01"]
+labelSparsity = ["AFW", "LAFW-K066", "LAFW-K05", "LAFW-K025", "LAFW-K01"]
 
 FrankWolfe.plot_sparsity(dataSparsity, labelSparsity, filename="sparse.pdf")
