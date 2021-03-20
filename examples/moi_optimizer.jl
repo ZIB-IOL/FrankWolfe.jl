@@ -1,0 +1,132 @@
+# This example highlights the use of a linear minimization oracle
+# using an LP solver defined in MathOptInterface
+# we compare the performance of the two LMOs, in- and out of place
+
+include("activate.jl")
+using LinearAlgebra
+
+using JuMP
+const MOI = JuMP.MOI
+
+import GLPK
+
+n = Int(1e3)
+k = 10000
+
+xpi = rand(n);
+total = sum(xpi);
+const xp = xpi ./ total;
+
+f(x) = norm(x - xp)^2
+function grad!(storage, x)
+    @. storage = 2 * (x - xp)
+    return nothing
+end
+
+lmo_radius = 2.5
+lmo = FrankWolfe.LpNormLMO{Float64,1}(lmo_radius)
+
+x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
+gradient = collect(x00)
+
+x_lmo, v, primal, dual_gap, trajectory_lmo = FrankWolfe.frank_wolfe(
+    f,
+    grad!,
+    lmo,
+    collect(copy(x00)),
+    max_iteration=k,
+    line_search=FrankWolfe.shortstep,
+    L=2,
+    print_iter=k / 10,
+    emphasis=FrankWolfe.memory,
+    verbose=true,
+    trajectory=true,
+);
+
+# create a MathOptInterface Optimizer and build the same linear constraints
+o = GLPK.Optimizer()
+x = MOI.add_variables(o, n)
+
+# x_i ≥ 0
+for xi in x
+    MOI.add_constraint(o, xi, MOI.GreaterThan(0.0))
+end
+# ∑ x_i == 1
+MOI.add_constraint(
+    o,
+    MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, x), 0.0),
+    MOI.EqualTo(lmo_radius),
+)
+
+lmo_moi = FrankWolfe.MathOptLMO(o)
+
+@time x, v, primal, dual_gap, trajectory_moi = FrankWolfe.frank_wolfe(
+    f,
+    grad!,
+    lmo_moi,
+    collect(copy(x00)),
+    max_iteration=k,
+    line_search=FrankWolfe.shortstep,
+    L=2,
+    print_iter=k / 10,
+    emphasis=FrankWolfe.memory,
+    verbose=true,
+    trajectory=true,
+);
+
+# formulate the LP using JuMP
+m = JuMP.Model(GLPK.Optimizer)
+@variable(m, y[1:n] ≥ 0)
+# ∑ x_i == 1
+@constraint(m, sum(y) == lmo_radius)
+
+lmo_jump = FrankWolfe.MathOptLMO(m.moi_backend)
+
+@time x, v, primal, dual_gap, trajectory_jump = FrankWolfe.frank_wolfe(
+    f,
+    grad!,
+    lmo_jump,
+    collect(copy(x00)),
+    max_iteration=k,
+    line_search=FrankWolfe.shortstep,
+    L=2,
+    print_iter=k / 10,
+    emphasis=FrankWolfe.memory,
+    verbose=true,
+    trajectory=true,
+);
+
+x_lmo, v, primal, dual_gap, trajectory_lmo_blas = FrankWolfe.frank_wolfe(
+    f,
+    grad!,
+    lmo,
+    x00,
+    max_iteration=k,
+    line_search=FrankWolfe.shortstep,
+    L=2,
+    print_iter=k / 10,
+    emphasis=FrankWolfe.blas,
+    verbose=true,
+    trajectory=true,
+);
+
+@time x, v, primal, dual_gap, trajectory_jump_blas = FrankWolfe.frank_wolfe(
+    f,
+    grad!,
+    lmo_jump,
+    x00,
+    max_iteration=k,
+    line_search=FrankWolfe.shortstep,
+    L=2,
+    print_iter=k / 10,
+    emphasis=FrankWolfe.blas,
+    verbose=true,
+    trajectory=true,
+);
+
+data = [trajectory_lmo, trajectory_moi, trajectory_lmo_blas, trajectory_jump_blas]
+label = ["Closed-form LMO", "MOI LMO", "LMO Blas", "MOI Blas"]
+
+FrankWolfe.plot_trajectories(data, label)
+
+
