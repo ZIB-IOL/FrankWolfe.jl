@@ -16,8 +16,6 @@ lmo = FrankWolfe.ProbabilitySimplexOracle{Rational{BigInt}}(1); # radius needs t
 # compute some initial vertex
 x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
-# verify that the output is really rational
-println("Output type of LMO: ", eltype(x0))
 
 # benchmarking Oracles
 FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo; k=100)
@@ -36,6 +34,18 @@ FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo; k=100)
     verbose=true,
 );
 
+@time xmem, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+    f,
+    grad!,
+    lmo,
+    x0,
+    max_iteration=k,
+    line_search=FrankWolfe.agnostic,
+    print_iter=k / 10,
+    verbose=true,
+    emphasis=FrankWolfe.memory,
+);
+
 println("\nOutput type of solution: ", eltype(x))
 
 # you can even run everything in rational arithmetic using the shortstep rule
@@ -51,6 +61,7 @@ println("\nOutput type of solution: ", eltype(x))
     L=2,
     print_iter=k / 10,
     verbose=true,
+    emphasis=FrankWolfe.blas,
 );
 
 println("\nOutput type of solution: ", eltype(x))
@@ -61,3 +72,16 @@ println(
     "We have *exactly* computed the optimal solution with with the $fract * (1, ..., 1) vector.\n",
 )
 println("x = $x")
+
+@time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+    f,
+    grad!,
+    lmo,
+    copy(x0),
+    max_iteration=k,
+    line_search=FrankWolfe.rationalshortstep,
+    L=2,
+    print_iter=k / 10,
+    verbose=true,
+    emphasis=FrankWolfe.memory,
+);
