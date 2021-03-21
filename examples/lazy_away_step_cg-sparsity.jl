@@ -1,3 +1,12 @@
+#= 
+
+Example demonstrating sparsity control by means of the "K"-factor passed to the lazy AFW variant
+
+A larger K >= 1 favors sparsity by favoring optimization over the current active set rather than
+adding a new FW vertex.
+
+=#
+
 import FrankWolfe
 using LinearAlgebra
 using Random
@@ -20,14 +29,16 @@ end
 
 const lmo = FrankWolfe.KSparseLMO(100, 1.0)
 
-# const lmo_big = FrankWolfe.KSparseLMO(100, big"1.0")
-# const lmo = FrankWolfe.LpNormLMO{Float64,5}(1.0)
+## other LMOs to try
+# lmo_big = FrankWolfe.KSparseLMO(100, big"1.0")
+# lmo = FrankWolfe.LpNormLMO{Float64,5}(1.0)
 # lmo = FrankWolfe.ProbabilitySimplexOracle(1.0);
 # lmo = FrankWolfe.UnitSimplexOracle(1.0);
 
-# 5 lpnorm issue with zero gradient 
 const x00 = FrankWolfe.compute_extreme_point(lmo, rand(n))
 
+
+## example with BirkhoffPolytopeLMO - uses square matrix. 
 # const lmo = FrankWolfe.BirkhoffPolytopeLMO()
 # cost = rand(n, n)
 # const x00 = FrankWolfe.compute_extreme_point(lmo, cost)
