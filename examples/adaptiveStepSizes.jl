@@ -4,22 +4,27 @@ import LinearAlgebra
 
 n = Int(1e5)
 k = 1000
-rescale = 400
 
 xpi = rand(n);
 total = sum(xpi);
 const xp = xpi ./ total;
 
-f(x) = rescale * LinearAlgebra.norm(x - xp)^2
+f(x) = LinearAlgebra.norm(x - xp)^2
 
 function grad!(storage, x)
-    @. storage = rescale * 2 * (x - xp)
+    @. storage = 2 * (x - xp)
 end
 
-lmo = FrankWolfe.KSparseLMO(40, 1);
+lmo = FrankWolfe.KSparseLMO(40, 1.0);
 x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
-FrankWolfe.benchmark_oracles(f, grad!, lmo, n; k=100, T=Float64)
+FrankWolfe.benchmark_oracles(
+    x -> f(x),
+    (str, x) -> grad!(str, x),
+    () -> randn(n),
+    lmo;
+    k=100,
+)
 
 println("\n==> Short Step rule - if you know L.\n")
 
@@ -32,7 +37,7 @@ x0 = deepcopy(x00)
     x0,
     max_iteration=k,
     line_search=FrankWolfe.shortstep,
-    L=2 * rescale,
+    L=2 ,
     print_iter=k / 10,
     emphasis=FrankWolfe.memory,
     verbose=true,
@@ -50,21 +55,6 @@ x0 = deepcopy(x00)
     x0,
     max_iteration=k,
     line_search=FrankWolfe.adaptive,
-    L=2,
-    print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
-    verbose=true,
-    trajectory=true,
-);
-
-@time x, v, primal, dual_gap, trajectoryAdaL = FrankWolfe.frank_wolfe(
-    f,
-    grad!,
-    lmo,
-    x0,
-    max_iteration=k,
-    line_search=FrankWolfe.adaptive,
-    L=10 * rescale,
     print_iter=k / 10,
     emphasis=FrankWolfe.memory,
     verbose=true,
@@ -88,8 +78,8 @@ x0 = deepcopy(x00)
     trajectory=true,
 );
 
-data = [trajectorySs, trajectoryAda, trajectoryAdaL, trajectoryAg]
-label = ["short step", "adaptive", "adaptiveL", "agnostic"]
+data = [trajectorySs, trajectoryAda, trajectoryAg]
+label = ["short step", "adaptive", "agnostic"]
 
 
-FrankWolfe.plot_trajectories(data, label)
+FrankWolfe.plot_trajectories(data, label, xscalelog=true)
