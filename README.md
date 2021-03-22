@@ -30,7 +30,7 @@ over the set LMO represents.
   - works both for convex and non-convex function (use step size rule `FrankWolfe.nonconvex`)
 - Stochastic Frank-Wolfe 
 - Away-Step Frank-Wolfe (see <https://arxiv.org/abs/1511.05932> for an overview)
-- (to come:) Pairwise Conditional Gradients (see <https://arxiv.org/abs/1511.05932> for an overview)
+- Pairwise Conditional Gradients (see <https://arxiv.org/abs/1511.05932> for an overview)
 - Blended Conditional Gradients (see <https://arxiv.org/abs/1805.07311>)
   - build-in stability feature that temporarily increases accuracy
 
@@ -45,8 +45,6 @@ Several common LMOs are available out-of-the-box
 - K-norm ball
 - L_p-norm ball
 - Birkhoff polytope
-- (to come:) Permutahedron
-- (to come:) Flow Polytope
 
 See <https://arxiv.org/pdf/2010.07243.pdf> and <https://arxiv.org/abs/2101.10040> for details
 
