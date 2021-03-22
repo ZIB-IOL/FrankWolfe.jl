@@ -108,7 +108,6 @@ xfin, vmin, _, _, traj_data = FrankWolfe.frank_wolfe(
     verbose=true,
     linesearch_tol=1e-7,
     line_search=FrankWolfe.adaptive,
-    L=100,
     emphasis=FrankWolfe.memory,
     gradient=gradient,
 )
