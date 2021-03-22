@@ -169,7 +169,6 @@ x0 = deepcopy(x00)
     L=2,
     verbose=true,
     trajectory=false,
-    Ktolerance=0.95,
     weight_purge_threshold=1e-10,
 )
 
