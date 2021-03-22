@@ -419,7 +419,7 @@ function plot_trajectories(data, label; filename=nothing,xscalelog=false,legend_
     return fp
 end
 
-function plot_sparsity(data, label; filename=nothing)
+function plot_sparsity(data, label; filename=nothing, xscalelog=false, legend_position=:topright)
     # theme(:dark)
     # theme(:vibrant)
     gr()
@@ -429,6 +429,7 @@ function plot_sparsity(data, label; filename=nothing)
     ps = nothing
     ds = nothing
     offset = 2
+    xscale = xscalelog ? :log : :identity
     for i in 1:length(data)
         trajectory = data[i]
         x = [trajectory[j][6] for j in offset:length(trajectory)]
@@ -438,10 +439,10 @@ function plot_sparsity(data, label; filename=nothing)
                 x,
                 y,
                 label=label[i],
-                xaxis=:log,
+                xaxis=xscale,
                 yaxis=:log,
                 ylabel="Primal",
-                legend=:topright,
+                legend=legend_position,
                 yguidefontsize=8,
                 xguidefontsize=8,
                 legendfontsize=8,
@@ -460,7 +461,7 @@ function plot_sparsity(data, label; filename=nothing)
                 y,
                 label=label[i],
                 legend=false,
-                xaxis=:log,
+                xaxis=xscale,
                 yaxis=:log,
                 ylabel="Dual",
                 yguidefontsize=8,
