@@ -98,3 +98,4 @@ x0 = FrankWolfe.compute_extreme_point(lmo, direction)
 )
 println("\nOutput type of solution: ", eltype(x))
 
+println("Computed solution: x = $x")
