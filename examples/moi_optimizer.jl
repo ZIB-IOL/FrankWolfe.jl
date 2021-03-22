@@ -1,6 +1,9 @@
 # This example highlights the use of a linear minimization oracle
 # using an LP solver defined in MathOptInterface
 # we compare the performance of the two LMOs, in- and out of place
+#
+# to get accurate timings it is important to run twice so that the compile time of Julia for the first run
+# is not tainting the results
 
 include("activate.jl")
 using LinearAlgebra

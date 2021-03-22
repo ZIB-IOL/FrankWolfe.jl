@@ -55,7 +55,6 @@ x0 = deepcopy(x00)
     lmo,
     x0,
     max_iteration=k,
-    L=100,
     line_search=FrankWolfe.adaptive,
     print_iter=k / 10,
     emphasis=FrankWolfe.memory,
@@ -74,7 +73,6 @@ x0 = deepcopy(x00)
     lmo,
     x0,
     max_iteration=k,
-    L=100,
     line_search=FrankWolfe.adaptive,
     print_iter=k / 10,
     emphasis=FrankWolfe.memory,
@@ -88,13 +86,14 @@ x0 = deepcopy(x00)
 
 # x0 = deepcopy(x00)
 
+## @matbesancon this requires fixing -> some issue with the structure of the cache
+#
 # @time x, v, primal, dual_gap, trajectoryBLCG = FrankWolfe.lazified_conditional_gradient(
 #     x -> cf(x, xp),
 #     (str, x) -> cgrad!(str, x, xp),
 #     lmo,
 #     x0,
 #     max_iteration=k,
-#     L=100,
 #     line_search=FrankWolfe.adaptive,
 #     print_iter=k / 10,
 #     emphasis=FrankWolfe.memory,
@@ -114,7 +113,6 @@ x0 = deepcopy(x00)
     lmo,
     x0,
     max_iteration=k,
-    L=100,
     line_search=FrankWolfe.adaptive,
     print_iter=k / 10,
     linesearch_tol=1e-9,
@@ -127,4 +125,4 @@ x0 = deepcopy(x00)
 data = [trajectoryFW, trajectoryLCG, trajectoryBCG]
 label = ["FW" "LCG" "BCG"]
 
-FrankWolfe.plot_trajectories(data, label)
+FrankWolfe.plot_trajectories(data, label, xscalelog=true)
