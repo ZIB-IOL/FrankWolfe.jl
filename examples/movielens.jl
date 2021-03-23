@@ -1,11 +1,9 @@
 include(joinpath(@__DIR__, "activate.jl"))
 
-
 # download movielens data
 using ZipFile, DataFrames, CSV
 
 using Random
-using ProgressMeter
 
 using Profile
 
