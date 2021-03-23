@@ -1,17 +1,15 @@
 include(joinpath(@__DIR__, "activate.jl"))
 
-
 # download movielens data
 using ZipFile, DataFrames, CSV
 
 using Random
-using ProgressMeter
 
 using Profile
 
 using SparseArrays, LinearAlgebra
-temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest-small.zip")
-# temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest.zip")
+# temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest-small.zip")
+temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest.zip")
 
 zarchive = ZipFile.Reader(temp_zipfile)
 
@@ -29,24 +27,28 @@ ratings_frame = CSV.read(ratings_file, DataFrame)
 users = unique(ratings_frame[:, :userId])
 movies = unique(ratings_frame[:, :movieId])
 
-const rating_matrix = spzeros(length(users), length(movies))
-@showprogress 1 "Extracting user and movie indices... " for row in eachrow(ratings_frame)
-    user_idx = findfirst(==(row.userId), users)
-    movie_idx = findfirst(==(row.movieId), movies)
-    rating_matrix[user_idx, movie_idx] = row.rating
+@assert users == eachindex(users)
+movies_revert = zeros(Int, maximum(movies))
+for (idx, m) in enumerate(movies)
+    movies_revert[m] = idx
 end
+movies_indices = [movies_revert[idx] for idx in ratings_frame[:, :movieId]]
+
+const rating_matrix = sparse(ratings_frame[:, :userId], movies_indices, ratings_frame[:, :rating], length(users), length(movies))
 
 missing_rate = 0.05
 
-const missing_ratings = unique!([
-    Tuple(idx) for
-    idx in eachindex(rating_matrix) if rating_matrix[idx] > 0 && rand() <= missing_rate
-])
-const present_ratings = [
-    Tuple(idx) for
-    idx in eachindex(rating_matrix) if rating_matrix[idx] > 0 && Tuple(idx) ∉ missing_ratings
-]
-
+const missing_ratings = Tuple{Int,Int}[]
+const present_ratings = Tuple{Int,Int}[]
+for idx in eachindex(rating_matrix)
+    if rating_matrix[idx] > 0
+        if rand() <= missing_rate
+            push!(missing_ratings, Tuple(idx))
+        else
+            push!(present_ratings, Tuple(idx))
+        end
+    end
+end
 
 function f(X)
     # note: we iterate over the rating_matrix indices,
@@ -76,12 +78,10 @@ end
 
 norm_estimation = sum(svdvals(collect(rating_matrix))[1:400])
 
-
 const lmo = FrankWolfe.NuclearNormLMO(norm_estimation)
 const x0 = FrankWolfe.compute_extreme_point(lmo, zero(rating_matrix))
 
 # FrankWolfe.benchmark_oracles(f, (str, x) -> grad!(str, x), () -> randn(size(rating_matrix)), lmo; k=100)
-
 
 gradient = spzeros(size(x0)...)
 xgd = Matrix(x0)
