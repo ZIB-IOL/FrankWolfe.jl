@@ -9,7 +9,8 @@ using Profile
 
 using SparseArrays, LinearAlgebra
 # temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest-small.zip")
-temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest.zip")
+# temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest.zip")
+temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-100k.zip")
 
 zarchive = ZipFile.Reader(temp_zipfile)
 
@@ -76,6 +77,15 @@ function test_loss(X)
     return r
 end
 
+function project_nuclear_norm_ball(X; radius = 1.0)
+    U, sing_val, Vt = svd(X)
+    if(sum(sing_val)<=radius)
+        return X
+    end
+    sing_val = projection_simplex_sort(sing_val, s = radius)
+    return U * Diagonal(sing_val) * Vt'
+end
+
 norm_estimation = sum(svdvals(collect(rating_matrix))[1:400])
 
 const lmo = FrankWolfe.NuclearNormLMO(norm_estimation)
@@ -89,6 +99,7 @@ for _ in 1:5000
     @info f(xgd)
     grad!(gradient, xgd)
     xgd .-= 0.01 * gradient
+    xgd = project_nuclear_norm_ball(xgd, radius = norm_estimation)
     if norm(gradient) ≤ sqrt(eps())
         break
     end
