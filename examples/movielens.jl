@@ -9,7 +9,7 @@ using Profile
 
 using SparseArrays, LinearAlgebra
 temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest-small.zip")
-# temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest.zip")
+temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest.zip")
 
 zarchive = ZipFile.Reader(temp_zipfile)
 
@@ -89,22 +89,22 @@ norm_estimation = sum(svdvals(collect(rating_matrix))[1:400])
 
 const lmo = FrankWolfe.NuclearNormLMO(norm_estimation)
 const x0 = FrankWolfe.compute_extreme_point(lmo, zero(rating_matrix))
+const k = 5000
 
 # FrankWolfe.benchmark_oracles(f, (str, x) -> grad!(str, x), () -> randn(size(rating_matrix)), lmo; k=100)
-
+L_estimate = 0.01
 gradient = spzeros(size(x0)...)
 xgd = Matrix(x0)
-for _ in 1:5000
+for _ in 1:k
     @info f(xgd)
     grad!(gradient, xgd)
-    xgd .-= 0.01 * gradient
-    xgd = project_nuclear_norm_ball(xgd, radius = norm_estimation)
+    xgd_new = project_nuclear_norm_ball(xgd - 1/L_estimate*gradient, radius = norm_estimation)
+    gamma, _ = FrankWolfe.backtrackingLS(f, gradient, xgd, xgd - xgd_new, 1.0)
+    xgd .-= gamma*(xgd - xgd_new)
     if norm(gradient) ≤ sqrt(eps())
         break
     end
 end
-
-const k = 1000
 
 xfin, vmin, _, _, traj_data = FrankWolfe.frank_wolfe(
     f,
@@ -117,8 +117,7 @@ xfin, vmin, _, _, traj_data = FrankWolfe.frank_wolfe(
     trajectory=false,
     verbose=true,
     linesearch_tol=1e-7,
-    line_search=FrankWolfe.adaptive,
-    L=100,
+    line_search=FrankWolfe.backtracking,
     emphasis=FrankWolfe.memory,
     gradient=gradient,
 )
