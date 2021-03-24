@@ -540,7 +540,7 @@ function stochastic_frank_wolfe(
     end
 
     if emphasis == memory && !isa(x, Array)
-        x = convert(Vector{promote_type(eltype(x), Float64)}, x)
+        x = convert(Array{promote_type(eltype(x), Float64)}, x)
     end
     first_iter = true
     gradient = 0

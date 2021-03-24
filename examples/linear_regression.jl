@@ -20,13 +20,21 @@ function simple_reg_loss(θ, data_point)
     return (pred - yi)^2 / 2
 end
 
+function ∇simple_reg_loss(θ, data_point)
+    (xi, yi) = data_point
+    (a, b) = (θ[1:end-1], θ[end])
+    pred = a ⋅ xi + b
+    storage = [xi * (pred - yi); pred - yi]
+    return storage
+end
+
 function ∇simple_reg_loss(storage, θ, data_point)
     (xi, yi) = data_point
     (a, b) = (θ[1:end-1], θ[end])
     pred = a ⋅ xi + b
-    @. storage[1:end-1] = xi * (pred - yi)
-    storage[end] = pred - yi
-    return nothing
+    @. storage[1:end-1] += xi * (pred - yi)
+    storage[end] += pred - yi
+    return storage
 end
 
 xs = [10 * randn(5) for i in 1:20000]
@@ -40,10 +48,10 @@ f_stoch = FrankWolfe.StochasticObjective(simple_reg_loss, ∇simple_reg_loss, da
 @test compute_value(f_stoch, params) > compute_value(f_stoch, params_perfect)
 
 # Vanilla Stochastic Gradient Descent with reshuffling
-storage = similar(params)
+storage = 0 * similar(params)
 for idx in 1:1000
     for data_point in shuffle!(data_perfect)
-        params .-= 0.05 * ∇simple_reg_loss(storage, params, data_point) / length(data_perfect)
+        params .-= 0.05 * ∇simple_reg_loss(params, data_point) / length(data_perfect)
     end
 end
 
@@ -127,10 +135,14 @@ k = 10000
 )
 
 
-
-
 const ff = x -> compute_value(f_stoch_noisy, x, full_evaluation=true)
-const gradf = x -> compute_gradient(f_stoch_noisy, x, full_evaluation=true)
+function gradf(storage, x)
+    storage .= 0
+    for dp in data_noisy
+        ∇simple_reg_loss(storage, x, dp)
+    end
+end
+
 @time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
     ff,
     gradf,
@@ -145,6 +157,6 @@ const gradf = x -> compute_gradient(f_stoch_noisy, x, full_evaluation=true)
 )
 
 data = [trajectory, trajectoryS, trajectory09, trajectory099]
-label = ["exact" "stochastic" "stochM 0.9" "stochM 0.99"]
+label = ["exact", "stochastic", "stochM 0.9", "stochM 0.99"]
 
 FrankWolfe.plot_trajectories(data, label)
