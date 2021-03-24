@@ -112,7 +112,7 @@ for _ in 1:k
         break
     end
     """
-    xgd_new, vertex = project_nuclear_norm_ball(xgd - 1/L_estimate*gradient, radius = norm_estimation)
+    xgd_new, vertex = project_nuclear_norm_ball(xgd - gradient, radius = norm_estimation)
     gamma, _ = FrankWolfe.backtrackingLS(f, gradient, xgd, xgd - xgd_new, 1.0)
     xgd .-= gamma*(xgd - xgd_new)
 end
@@ -128,7 +128,7 @@ xfin, vmin, _, _, traj_data = FrankWolfe.frank_wolfe(
     trajectory=true,
     verbose=true,
     linesearch_tol=1e-7,
-    line_search=FrankWolfe.adaptive,
+    line_search=FrankWolfe.backtracking,
     emphasis=FrankWolfe.memory,
     gradient=gradient,
 )
