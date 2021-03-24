@@ -4,7 +4,7 @@ using LinearAlgebra
 using Random
 import GLPK
 
-n = Int(1e2)
+n = 200
 k = 3000
 
 xpi = rand(n * n);
@@ -33,7 +33,7 @@ x00 = FrankWolfe.compute_extreme_point(lmo, direction_mat)
 
 # modify to GLPK variant
 # o = GLPK.Optimizer()
-# lmo = FrankWolfe.convert_mathopt(lmo, o, dimension=n)
+# lmo_moi = FrankWolfe.convert_mathopt(lmo, o, dimension=n)
 # x00 = FrankWolfe.compute_extreme_point(lmo, direction_vec)
 
 FrankWolfe.benchmark_oracles(
@@ -84,23 +84,23 @@ x0 = deepcopy(x00)
 # fixed cache size
 # TODO/Question: does not work with sparse structure as the memory allocation is not clear?
 
-# x0 = deepcopy(x00)
+x0 = deepcopy(x00)
 
 ## @matbesancon this requires fixing -> some issue with the structure of the cache
-#
-# @time x, v, primal, dual_gap, trajectoryBLCG = FrankWolfe.lazified_conditional_gradient(
-#     x -> cf(x, xp),
-#     (str, x) -> cgrad!(str, x, xp),
-#     lmo,
-#     x0,
-#     max_iteration=k,
-#     line_search=FrankWolfe.adaptive,
-#     print_iter=k / 10,
-#     emphasis=FrankWolfe.memory,
-#     trajectory=true,
-#     cache_size=500,
-#     verbose=true,
-# );
+
+x, v, primal, dual_gap, trajectoryBLCG = FrankWolfe.lazified_conditional_gradient(
+    x -> cf(x, xp),
+    (str, x) -> cgrad!(str, x, xp),
+    lmo,
+    x0,
+    max_iteration=k,
+    line_search=FrankWolfe.adaptive,
+    print_iter=k / 10,
+    emphasis=FrankWolfe.memory,
+    trajectory=true,
+    cache_size=500,
+    verbose=true,
+);
 
 
 # BCG run
@@ -122,7 +122,7 @@ x0 = deepcopy(x00)
 );
 
 
-data = [trajectoryFW, trajectoryLCG, trajectoryBCG]
-label = ["FW" "LCG" "BCG"]
+data = [trajectoryFW, trajectoryLCG, trajectoryBCG, trajectoryBLCG]
+label = ["FW", "LCG", "BCG", "BLCG"]
 
 FrankWolfe.plot_trajectories(data, label, xscalelog=true)
