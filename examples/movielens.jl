@@ -173,4 +173,4 @@ plot!(
     label="GD",
     yaxis=:log,
 )
-savefig(pit, "objective_func_vs_time.png")
+savefig(pit, "objective_func_vs_time.pdf")
