@@ -9,7 +9,7 @@ using Profile
 
 using SparseArrays, LinearAlgebra
 temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest-small.zip")
-temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest.zip")
+#temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest.zip")
 
 zarchive = ZipFile.Reader(temp_zipfile)
 
@@ -79,31 +79,42 @@ end
 function project_nuclear_norm_ball(X; radius = 1.0)
     U, sing_val, Vt = svd(X)
     if(sum(sing_val)<=radius)
-        return X
+        return X, -norm_estimation*U[:,1] * Vt[:,1]'
     end
     sing_val = FrankWolfe.projection_simplex_sort(sing_val, s = radius)
-    return U * Diagonal(sing_val) * Vt'
+    return U * Diagonal(sing_val) * Vt', -norm_estimation*U[:,1] * Vt[:,1]'
 end
 
-norm_estimation = sum(svdvals(collect(rating_matrix))[1:400])
+#norm_estimation = sum(svdvals(collect(rating_matrix))[1:400])
+norm_estimation = 10000
 
 const lmo = FrankWolfe.NuclearNormLMO(norm_estimation)
 const x0 = FrankWolfe.compute_extreme_point(lmo, zero(rating_matrix))
-const k = 5000
+const k = 100
 
 # FrankWolfe.benchmark_oracles(f, (str, x) -> grad!(str, x), () -> randn(size(rating_matrix)), lmo; k=100)
 L_estimate = 0.01
 gradient = spzeros(size(x0)...)
 xgd = Matrix(x0)
+function_values = []
+timing_values = []
+time_start = time_ns()
 for _ in 1:k
-    @info f(xgd)
+    f_val = f(xgd)
+    append!(function_values, f_val)
+    append!(timing_values, (time_ns() - time_start) / 1.0e9)
+    @info f_val
     grad!(gradient, xgd)
-    xgd_new = project_nuclear_norm_ball(xgd - 1/L_estimate*gradient, radius = norm_estimation)
-    gamma, _ = FrankWolfe.backtrackingLS(f, gradient, xgd, xgd - xgd_new, 1.0)
-    xgd .-= gamma*(xgd - xgd_new)
-    if norm(gradient) ≤ sqrt(eps())
+    """
+    v = compute_extreme_point(lmo, gradient)
+    dual_gap = fast_dot(xgd, gradient) - fast_dot(vertex, gradient)
+    if dual_gap ≤ 1.0e-6
         break
     end
+    """
+    xgd_new, vertex = project_nuclear_norm_ball(xgd - 1/L_estimate*gradient, radius = norm_estimation)
+    gamma, _ = FrankWolfe.backtrackingLS(f, gradient, xgd, xgd - xgd_new, 1.0)
+    xgd .-= gamma*(xgd - xgd_new)
 end
 
 xfin, vmin, _, _, traj_data = FrankWolfe.frank_wolfe(
@@ -114,13 +125,52 @@ xfin, vmin, _, _, traj_data = FrankWolfe.frank_wolfe(
     epsilon=1e-9,
     max_iteration=k,
     print_iter=k / 10,
-    trajectory=false,
+    trajectory=true,
     verbose=true,
     linesearch_tol=1e-7,
-    line_search=FrankWolfe.backtracking,
+    line_search=FrankWolfe.adaptive,
     emphasis=FrankWolfe.memory,
     gradient=gradient,
 )
 
 @info "Gdescent test loss: $(test_loss(xgd))"
 @info "FW test loss: $(test_loss(xfin))"
+
+#Plot results w.r.t. iteration count
+gr()
+pit = plot(
+    [traj_data[j][1] for j in 1:length(traj_data)],
+    [traj_data[j][2] for j in 1:length(traj_data)],
+    label="FW",
+    ylabel="Objective function",
+    yaxis=:log,
+    yguidefontsize=8,
+    xguidefontsize=8,
+    legendfontsize=8,
+)
+plot!(
+    range(1,length(function_values),step=1) |> collect,
+    function_values,
+    yaxis=:log,
+    label="GD",
+)
+savefig(pit, "objective_func_vs_iteration.png")
+
+#Plot results w.r.t. time
+pit = plot(
+    [traj_data[j][5] for j in 1:length(traj_data)],
+    [traj_data[j][2] for j in 1:length(traj_data)],
+    label="FW",
+    ylabel="Objective function",
+    yaxis=:log,
+    yguidefontsize=8,
+    xguidefontsize=8,
+    legendfontsize=8,
+)
+plot!(
+    timing_values,
+    function_values,
+    label="GD",
+    yaxis=:log,
+)
+savefig(pit, "objective_func_vs_time.png")
