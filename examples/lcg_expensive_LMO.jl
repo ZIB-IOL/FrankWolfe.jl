@@ -99,6 +99,25 @@ x, v, primal, dual_gap, trajectoryBLCG = FrankWolfe.lazified_conditional_gradien
     verbose=true,
 );
 
+# AFW run
+
+x0 = copy(x00)
+
+x, v, primal, dual_gap, trajectoryLAFW = FrankWolfe.away_frank_wolfe(
+    x -> cf(x, xp),
+    (str, x) -> cgrad!(str, x, xp),
+    lmo,
+    x0,
+    max_iteration=k,
+    line_search=FrankWolfe.adaptive,
+    print_iter=k / 10,
+    linesearch_tol=1e-9,
+    emphasis=FrankWolfe.memory,
+    lazy=true,    
+    trajectory=true,
+    verbose=true,
+);
+
 
 # BCG run
 
@@ -119,7 +138,7 @@ x, v, primal, dual_gap, trajectoryBCG = FrankWolfe.blended_conditional_gradient(
 );
 
 
-data = [trajectoryFW, trajectoryLCG, trajectoryBCG, trajectoryBLCG]
-label = ["FW", "LCG", "BCG", "BLCG"]
+data = [trajectoryFW, trajectoryLCG, trajectoryBLCG, trajectoryLAFW, trajectoryBCG]
+label = ["FW", "L-CG", "BL-CG", "L-AFW", "BCG"]
 
 FrankWolfe.plot_trajectories(data, label, xscalelog=true)
