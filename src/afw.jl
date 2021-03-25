@@ -25,7 +25,7 @@ function away_frank_wolfe(
     linesearch_tol=1e-7,
     emphasis::Emphasis=memory,
     gradient=nothing,
-    safe_mode = renorm,
+    safe_mode = false,
 )
     function print_header(data)
         @printf(
@@ -162,7 +162,11 @@ function away_frank_wolfe(
             renorm = mod(t, 1000) == 0
 
             if away_step_taken
-                active_set_update!(active_set, -gamma, vertex, safe_mode, index)
+                if safe_mode
+                    active_set_update!(active_set, -gamma, vertex, true, index)
+                else
+                    active_set_update!(active_set, -gamma, vertex, renorm, index)
+                end
             else
                 active_set_update!(active_set, gamma, vertex, renorm, index)
             end
