@@ -244,7 +244,7 @@ function lazified_conditional_gradient(
     line_search::LineSearchMethod=adaptive,
     L=Inf,
     gamma0=0,
-    phiFactor=2,
+    K=2.0,
     cache_size=Inf,
     greedy_lazy=false,
     epsilon=1e-7,
@@ -327,9 +327,9 @@ function lazified_conditional_gradient(
         println("\nLazified Conditional Gradients (Frank-Wolfe + Lazification).")
         numType = eltype(x0)
         println(
-            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration PHIFACTOR: $phiFactor TYPE: $numType",
+            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration K: $K TYPE: $numType",
         )
-        println("cache_size $cache_size GREEDYCACHE: $greedy_lazy")
+        println("CACHESIZE $cache_size GREEDYCACHE: $greedy_lazy")
         if emphasis == memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
         end
@@ -353,7 +353,7 @@ function lazified_conditional_gradient(
 
         grad!(gradient, x)
 
-        threshold = fast_dot(x, gradient) - phi
+        threshold = fast_dot(x, gradient) - phi/K
 
         # go easy on the memory - only compute if really needed
         if ((mod(t, print_iter) == 0 && verbose) || trajectory)
@@ -365,7 +365,7 @@ function lazified_conditional_gradient(
         if fast_dot(v, gradient) > threshold
             tt = dualstep
             dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
-            phi = dual_gap / 2
+            phi = min(dual_gap, phi / 2)
         end
 
         if trajectory
@@ -540,7 +540,7 @@ function stochastic_frank_wolfe(
     end
 
     if emphasis == memory && !isa(x, Array)
-        x = convert(Vector{promote_type(eltype(x), Float64)}, x)
+        x = convert(Array{promote_type(eltype(x), Float64)}, x)
     end
     first_iter = true
     gradient = 0

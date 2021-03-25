@@ -5,6 +5,8 @@ Example demonstrating sparsity control by means of the "K"-factor passed to the 
 A larger K >= 1 favors sparsity by favoring optimization over the current active set rather than
 adding a new FW vertex.
 
+The default for AFW is K = 2.0
+
 =#
 
 import FrankWolfe
@@ -20,6 +22,10 @@ Random.seed!(s)
 
 xpi = rand(n);
 total = sum(xpi);
+
+# here the optimal solution lies in the interior if you want an optimal solution on a face and not the interior use:
+# const xp = xpi;
+
 const xp = xpi ./ total;
 
 f(x) = norm(x - xp)^2
@@ -80,7 +86,7 @@ x0 = deepcopy(x00)
 println("\n==> Lazy AFW.\n")
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, trajectoryAdaLoc = FrankWolfe.away_frank_wolfe(
+@time x, v, primal, dual_gap, trajectoryAdaLoc15 = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
@@ -97,7 +103,7 @@ x0 = deepcopy(x00)
 
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, trajectoryAdaLoc5 = FrankWolfe.away_frank_wolfe(
+@time x, v, primal, dual_gap, trajectoryAdaLoc2 = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
@@ -113,7 +119,7 @@ x0 = deepcopy(x00)
 );
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, trajectoryAdaLoc25 = FrankWolfe.away_frank_wolfe(
+@time x, v, primal, dual_gap, trajectoryAdaLoc4 = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
@@ -129,7 +135,7 @@ x0 = deepcopy(x00)
 );
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, trajectoryAdaLoc1 = FrankWolfe.away_frank_wolfe(
+@time x, v, primal, dual_gap, trajectoryAdaLoc10 = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
@@ -145,16 +151,10 @@ x0 = deepcopy(x00)
 );
 
 
-# data = [trajectorySs, trajectoryAda, trajectoryBCG]
-# label = ["short step", "AFW", "BCG"]
-
-data = [trajectorySs, trajectoryAda, trajectoryAdaLoc]
-label = ["short step", "AFW", "AFW-Loc"]
-
-# FrankWolfe.plot_trajectories(data, label, filename="convergence.pdf")
+# Reduction primal/dual error vs. sparsity of solution
 
 dataSparsity =
-    [trajectoryAda, trajectoryAdaLoc, trajectoryAdaLoc5, trajectoryAdaLoc25, trajectoryAdaLoc1]
-labelSparsity = ["AFW", "LAFW-K066", "LAFW-K05", "LAFW-K025", "LAFW-K01"]
+    [trajectoryAda, trajectoryAdaLoc15, trajectoryAdaLoc2, trajectoryAdaLoc4, trajectoryAdaLoc10]
+labelSparsity = ["AFW", "LAFW-K-1.5", "LAFW-K-2.0", "LAFW-K-4.0", "LAFW-K-10.0"]
 
-FrankWolfe.plot_sparsity(dataSparsity, labelSparsity, filename="sparse.pdf")
+FrankWolfe.plot_sparsity(dataSparsity, labelSparsity, legend_position=:topright) 
