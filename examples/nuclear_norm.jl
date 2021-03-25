@@ -4,7 +4,7 @@ using FrankWolfe
 using Test
 using Plots
 
-const nfeat = 100
+const nfeat = 100 * 5
 const nobs = 500
 
 # rank of the real data
@@ -61,21 +61,20 @@ grad!(gradient, x0)
 v0 = FrankWolfe.compute_extreme_point(lmo, gradient)
 @test dot(v0 - x0, gradient) < 0
 
-const k = 1000
+const k = 500
 
 xfin, vmin, _, _, traj_data = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
     x0;
-    epsilon=1e-9,
+    epsilon=1e7,
     max_iteration=k,
     print_iter=k / 10,
     trajectory=true,
     verbose=true,
     linesearch_tol=1e-7,
     line_search=FrankWolfe.adaptive,
-    L=100,
     emphasis=FrankWolfe.memory,
     gradient=spzeros(size(x0)...),
 )
@@ -86,22 +85,36 @@ xfinAFW, vmin, _, _, traj_data = FrankWolfe.away_frank_wolfe(
     grad!,
     lmo,
     x0;
-    epsilon=1e-9,
+    epsilon=1e7,
     max_iteration=k,
     print_iter=k / 10,
     trajectory=true,
     verbose=true,
     linesearch_tol=1e-7,
-    localized=true,
-    localizedFactor=0.5,
+    lazy = true,
     line_search=FrankWolfe.adaptive,
-    L=100,
     emphasis=FrankWolfe.memory,#,
 )
 
 
+xfinBCG, vmin, _, _, traj_data = FrankWolfe.blended_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    x0;
+    epsilon=1e7,
+    max_iteration=k,
+    print_iter=k / 10,
+    trajectory=true,
+    verbose=true,
+    linesearch_tol=1e-7,
+    line_search=FrankWolfe.adaptive,
+    emphasis=FrankWolfe.memory,#,
+)
+
 plot(svdvals(xfin), label="FW", width=3, yaxis=:log)
 plot!(svdvals(xfinAFW), label="AFW", width=3, yaxis=:log)
+plot!(svdvals(xfinBCG), label="BCG", width=3, yaxis=:log)
 plot!(svdvals(xgd), label="Gradient descent", width=3, yaxis=:log)
 plot!(svdvals(Xreal), label="Real matrix", linestyle=:dash, width=3, color=:black)
 title!("Singular values")
