@@ -92,9 +92,12 @@ const lmo = FrankWolfe.NuclearNormLMO(norm_estimation)
 const x0 = FrankWolfe.compute_extreme_point(lmo, zero(rating_matrix))
 const k = 100
 
-# FrankWolfe.benchmark_oracles(f, (str, x) -> grad!(str, x), () -> randn(size(rating_matrix)), lmo; k=100)
+# benchmark the oracles
+FrankWolfe.benchmark_oracles(f, (str, x) -> grad!(str, x), () -> randn(size(rating_matrix)), lmo; k=100)
+
 gradient = spzeros(size(x0)...)
 gradient_aux = spzeros(size(x0)...)
+
 #Estimate the smoothness constant.
 num_pairs = 1000
 L_estimate = - Inf
@@ -108,6 +111,9 @@ for i in 1:num_pairs
         L_estimate = new_L
     end
 end
+
+# PGD steps
+
 xgd = Matrix(x0)
 function_values = []
 timing_values = []
@@ -141,7 +147,7 @@ xfin, vmin, _, _, traj_data = FrankWolfe.frank_wolfe(
     trajectory=true,
     verbose=true,
     linesearch_tol=1e-7,
-    line_search=FrankWolfe.adaptive,
+    line_search=FrankWolfe.backtracking,
     emphasis=FrankWolfe.memory,
     gradient=gradient,
 )
@@ -167,7 +173,7 @@ plot!(
     yaxis=:log,
     label="GD",
 )
-savefig(pit, "objective_func_vs_iteration.png")
+savefig(pit, "objective_func_vs_iteration.pdf")
 
 #Plot results w.r.t. time
 pit = plot(
