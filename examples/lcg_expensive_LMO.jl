@@ -47,9 +47,9 @@ FrankWolfe.benchmark_oracles(
 
 # vanllia FW
 
-x0 = deepcopy(x00)
+x0 = copy(x00)
 
-@time x, v, primal, dual_gap, trajectoryFW = FrankWolfe.frank_wolfe(
+x, v, primal, dual_gap, trajectoryFW = FrankWolfe.frank_wolfe(
     x -> cf(x, xp),
     (str, x) -> cgrad!(str, x, xp),
     lmo,
@@ -65,9 +65,9 @@ x0 = deepcopy(x00)
 
 # arbitrary cache
 
-x0 = deepcopy(x00)
+x0 = copy(x00)
 
-@time x, v, primal, dual_gap, trajectoryLCG = FrankWolfe.lazified_conditional_gradient(
+x, v, primal, dual_gap, trajectoryLCG = FrankWolfe.lazified_conditional_gradient(
     x -> cf(x, xp),
     (str, x) -> cgrad!(str, x, xp),
     lmo,
@@ -82,11 +82,8 @@ x0 = deepcopy(x00)
 
 
 # fixed cache size
-# TODO/Question: does not work with sparse structure as the memory allocation is not clear?
 
-x0 = deepcopy(x00)
-
-## @matbesancon this requires fixing -> some issue with the structure of the cache
+x0 = copy(x00)
 
 x, v, primal, dual_gap, trajectoryBLCG = FrankWolfe.lazified_conditional_gradient(
     x -> cf(x, xp),
@@ -105,9 +102,9 @@ x, v, primal, dual_gap, trajectoryBLCG = FrankWolfe.lazified_conditional_gradien
 
 # BCG run
 
-x0 = deepcopy(x00)
+x0 = copy(x00)
 
-@time x, v, primal, dual_gap, trajectoryBCG = FrankWolfe.blended_conditional_gradient(
+x, v, primal, dual_gap, trajectoryBCG = FrankWolfe.blended_conditional_gradient(
     x -> cf(x, xp),
     (str, x) -> cgrad!(str, x, xp),
     lmo,
