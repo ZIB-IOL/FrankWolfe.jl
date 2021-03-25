@@ -244,7 +244,7 @@ function lazified_conditional_gradient(
     line_search::LineSearchMethod=adaptive,
     L=Inf,
     gamma0=0,
-    phiFactor=2,
+    K=2.0,
     cache_size=Inf,
     greedy_lazy=false,
     epsilon=1e-7,
@@ -327,9 +327,9 @@ function lazified_conditional_gradient(
         println("\nLazified Conditional Gradients (Frank-Wolfe + Lazification).")
         numType = eltype(x0)
         println(
-            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration PHIFACTOR: $phiFactor TYPE: $numType",
+            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration K: $K TYPE: $numType",
         )
-        println("cache_size $cache_size GREEDYCACHE: $greedy_lazy")
+        println("CACHESIZE $cache_size GREEDYCACHE: $greedy_lazy")
         if emphasis == memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
         end
@@ -353,6 +353,7 @@ function lazified_conditional_gradient(
 
         grad!(gradient, x)
 
+        # TODO: @alejandro-carderera the "K" needs to be included here
         threshold = fast_dot(x, gradient) - phi
 
         # go easy on the memory - only compute if really needed

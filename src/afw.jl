@@ -91,7 +91,7 @@ function away_frank_wolfe(
         println(
             "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $numType",
         )
-        println("LAZY: $lazy MOMENTUM: $momentum AWAYSTEPS: $awaySteps")
+        println("LAZY: $lazy K: $K MOMENTUM: $momentum AWAYSTEPS: $awaySteps")
         if emphasis == memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
         end
