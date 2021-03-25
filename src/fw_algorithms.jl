@@ -353,8 +353,7 @@ function lazified_conditional_gradient(
 
         grad!(gradient, x)
 
-        # TODO: @alejandro-carderera the "K" needs to be included here
-        threshold = fast_dot(x, gradient) - phi
+        threshold = fast_dot(x, gradient) - phi/K
 
         # go easy on the memory - only compute if really needed
         if ((mod(t, print_iter) == 0 && verbose) || trajectory)
@@ -366,7 +365,7 @@ function lazified_conditional_gradient(
         if fast_dot(v, gradient) > threshold
             tt = dualstep
             dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
-            phi = dual_gap / 2
+            phi = min(dual_gap, phi / 2)
         end
 
         if trajectory
