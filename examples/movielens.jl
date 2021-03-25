@@ -3,7 +3,7 @@ include(joinpath(@__DIR__, "activate.jl"))
 # download movielens data
 using ZipFile, DataFrames, CSV
 
-using Random
+using Random, Plots
 
 using Profile
 
