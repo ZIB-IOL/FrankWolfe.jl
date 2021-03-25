@@ -317,7 +317,7 @@ end
 ### Visualization etc
 ##############################
 
-function plot_trajectories(data, label; filename=nothing,xscalelog=false,legend_position=:topright)
+function plot_trajectories(data, label; filename=nothing,xscalelog=false,legend_position=:topright,lstyle=fill(:solid,length(data)))
     # theme(:dark)
     # theme(:vibrant)
     gr()
@@ -346,9 +346,14 @@ function plot_trajectories(data, label; filename=nothing,xscalelog=false,legend_
                 yguidefontsize=8,
                 xguidefontsize=8,
                 legendfontsize=8,
+                width=1.3,
+                linestyle=lstyle[i],
             )
         else
-            plot!(x, y, label=label[i])
+            plot!(x, y, label=label[i],
+                width=1.3,
+                linestyle=lstyle[i],
+            )
         end
     end
     for i in 1:length(data)
@@ -365,9 +370,14 @@ function plot_trajectories(data, label; filename=nothing,xscalelog=false,legend_
                 yaxis=:log,
                 yguidefontsize=8,
                 xguidefontsize=8,
+                width=1.3,
+                linestyle=lstyle[i],
             )
         else
-            plot!(x, y, label=label[i])
+            plot!(x, y, label=label[i],
+                width=1.3,
+                linestyle=lstyle[i],
+            )
         end
     end
     for i in 1:length(data)
@@ -386,9 +396,14 @@ function plot_trajectories(data, label; filename=nothing,xscalelog=false,legend_
                 xlabel="Iterations",
                 yguidefontsize=8,
                 xguidefontsize=8,
+                width=1.3,
+                linestyle=lstyle[i],
             )
         else
-            plot!(x, y, label=label[i])
+            plot!(x, y, label=label[i],
+                width=1.3,
+                linestyle=lstyle[i],
+            )
         end
     end
     for i in 1:length(data)
@@ -406,9 +421,14 @@ function plot_trajectories(data, label; filename=nothing,xscalelog=false,legend_
                 xlabel="Time",
                 yguidefontsize=8,
                 xguidefontsize=8,
+                width=1.3,
+                linestyle=lstyle[i],
             )
         else
-            plot!(x, y, label=label[i])
+            plot!(x, y, label=label[i],
+                width=1.3,
+                linestyle=lstyle[i],
+            )
         end
     end
     fp = plot(pit, pti, dit, dti, layout=(2, 2)) # layout = @layout([A{0.01h}; [B C; D E]]))
