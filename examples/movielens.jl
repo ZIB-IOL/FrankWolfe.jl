@@ -93,8 +93,21 @@ const x0 = FrankWolfe.compute_extreme_point(lmo, zero(rating_matrix))
 const k = 100
 
 # FrankWolfe.benchmark_oracles(f, (str, x) -> grad!(str, x), () -> randn(size(rating_matrix)), lmo; k=100)
-L_estimate = 0.01
 gradient = spzeros(size(x0)...)
+gradient_aux = spzeros(size(x0)...)
+#Estimate the smoothness constant.
+num_pairs = 1000
+L_estimate = - Inf
+for i in 1:num_pairs
+    x = compute_extreme_point(lmo, rand(size(x0)[1], size(x0)[2]))
+    y = compute_extreme_point(lmo, rand(size(x0)[1], size(x0)[2]))
+    grad!(gradient, x)
+    grad!(gradient_aux, y)
+    new_L = norm(gradient - gradient_aux)/norm(x - y)
+    if new_L > L_estimate
+        L_estimate = new_L
+    end
+end
 xgd = Matrix(x0)
 function_values = []
 timing_values = []
