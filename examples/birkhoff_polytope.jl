@@ -36,7 +36,7 @@ direction_mat = reshape(direction_vec, n, n)
 lmo_native = FrankWolfe.BirkhoffPolytopeLMO()
 
 # BirkhoffPolytopeLMO realized via LP solver
-lmo_moi = FrankWolfe.convert_mathopt(lmo, GLPK.Optimizer(), dimension=n)
+lmo_moi = FrankWolfe.convert_mathopt(lmo_native, GLPK.Optimizer(), dimension=n)
 
 # choose between lmo_native (= Hungarian Method) and lmo_moi (= LP formulation solved with GLPK)
 lmo = lmo_native
