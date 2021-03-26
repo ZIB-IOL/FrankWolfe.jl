@@ -24,9 +24,9 @@ there exists an improving direction.
 function compute_extreme_point(lmo::UnitSimplexOracle{T}, direction) where {T}
     idx = argmin(direction)
     if direction[idx] < 0
-        return MaybeHotVector(lmo.right_side, idx, length(direction))
+        return ScaledHotVector(lmo.right_side, idx, length(direction))
     end
-    return MaybeHotVector(zero(T), idx, length(direction))
+    return ScaledHotVector(zero(T), idx, length(direction))
 end
 
 function convert_mathopt(
@@ -85,7 +85,7 @@ most improving (or least degrading) direction.
 """
 function compute_extreme_point(lmo::ProbabilitySimplexOracle{T}, direction; kwargs...) where {T}
     idx = argmin(direction)
-    return MaybeHotVector(lmo.right_side, idx, length(direction))
+    return ScaledHotVector(lmo.right_side, idx, length(direction))
 end
 
 function convert_mathopt(

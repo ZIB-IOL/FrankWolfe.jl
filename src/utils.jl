@@ -212,19 +212,19 @@ function segment_search(
 end
 
 """
-    MaybeHotVector{T}
+    ScaledHotVector{T}
 
 Represents a vector of at most one value different from 0.
 """
-struct MaybeHotVector{T} <: AbstractVector{T}
+struct ScaledHotVector{T} <: AbstractVector{T}
     active_val::T
     val_idx::Int
     len::Int
 end
 
-Base.size(v::MaybeHotVector) = (v.len,)
+Base.size(v::ScaledHotVector) = (v.len,)
 
-@inline function Base.getindex(v::MaybeHotVector{T}, idx::Integer) where {T}
+@inline function Base.getindex(v::ScaledHotVector{T}, idx::Integer) where {T}
     @boundscheck if !(1 ≤ idx ≤ length(v))
         throw(BoundsError(v, idx))
     end
@@ -234,33 +234,33 @@ Base.size(v::MaybeHotVector) = (v.len,)
     return v.active_val
 end
 
-Base.sum(v::MaybeHotVector) = v.active_val
+Base.sum(v::ScaledHotVector) = v.active_val
 
-function LinearAlgebra.dot(v1::MaybeHotVector, v2::AbstractVector)
+function LinearAlgebra.dot(v1::ScaledHotVector, v2::AbstractVector)
     return v1.active_val * v2[v1.val_idx]
 end
 
-function LinearAlgebra.dot(v1::MaybeHotVector{<:Number}, v2::SparseArrays.SparseVector{<:Number})
+function LinearAlgebra.dot(v1::ScaledHotVector{<:Number}, v2::SparseArrays.SparseVector{<:Number})
     return v1.active_val * v2[v1.val_idx]
 end
 
-LinearAlgebra.dot(v1::AbstractVector, v2::MaybeHotVector) = dot(v2, v1)
+LinearAlgebra.dot(v1::AbstractVector, v2::ScaledHotVector) = dot(v2, v1)
 
 # warning, no bound check
-function LinearAlgebra.dot(v1::MaybeHotVector, v2::MaybeHotVector)
+function LinearAlgebra.dot(v1::ScaledHotVector, v2::ScaledHotVector)
     if length(v1) != length(v2)
         throw(DimensionMismatch("v1 and v2 do not have matching sizes"))
     end
     return v1.active_val * v2.active_val * (v1.val_idx == v2.val_idx)
 end
 
-function Base.:*(v::MaybeHotVector, x::Number)
-    return MaybeHotVector(v.active_val * x, v.val_idx, v.len)
+function Base.:*(v::ScaledHotVector, x::Number)
+    return ScaledHotVector(v.active_val * x, v.val_idx, v.len)
 end
 
-Base.:*(x::Number, v::MaybeHotVector) = v * x
+Base.:*(x::Number, v::ScaledHotVector) = v * x
 
-function Base.:+(x::MaybeHotVector, y::AbstractVector)
+function Base.:+(x::ScaledHotVector, y::AbstractVector)
     if length(x) != length(y)
         throw(DimensionMismatch())
     end
@@ -269,9 +269,9 @@ function Base.:+(x::MaybeHotVector, y::AbstractVector)
     return yc
 end
 
-Base.:+(y::AbstractVector, x::MaybeHotVector) = x + y
+Base.:+(y::AbstractVector, x::ScaledHotVector) = x + y
 
-function Base.:+(x::FrankWolfe.MaybeHotVector{T1}, y::FrankWolfe.MaybeHotVector{T2}) where {T1, T2}
+function Base.:+(x::FrankWolfe.ScaledHotVector{T1}, y::FrankWolfe.ScaledHotVector{T2}) where {T1, T2}
     n = length(x)
     T = promote_type(T1, T2)
     if n != length(y)
@@ -283,16 +283,16 @@ function Base.:+(x::FrankWolfe.MaybeHotVector{T1}, y::FrankWolfe.MaybeHotVector{
     return res
 end
 
-Base.:-(x::MaybeHotVector{T}) where {T} = MaybeHotVector{T}(-x.active_val, x.val_idx, x.len)
+Base.:-(x::ScaledHotVector{T}) where {T} = ScaledHotVector{T}(-x.active_val, x.val_idx, x.len)
 
-Base.:-(x::AbstractVector, y::MaybeHotVector) = +(x, -y)
-Base.:-(x::MaybeHotVector, y::AbstractVector) = +(x, -y)
+Base.:-(x::AbstractVector, y::ScaledHotVector) = +(x, -y)
+Base.:-(x::ScaledHotVector, y::AbstractVector) = +(x, -y)
 
-Base.:-(x::MaybeHotVector, y::MaybeHotVector) = +(x, -y)
+Base.:-(x::ScaledHotVector, y::ScaledHotVector) = +(x, -y)
 
-Base.similar(v::MaybeHotVector{T}) where {T} = spzeros(T, length(v))
+Base.similar(v::ScaledHotVector{T}) where {T} = spzeros(T, length(v))
 
-function Base.convert(::Type{Vector{T}}, v::MaybeHotVector) where {T}
+function Base.convert(::Type{Vector{T}}, v::ScaledHotVector) where {T}
     vc = zeros(T, v.len)
     vc[v.val_idx] = v.active_val
     return vc
@@ -548,7 +548,7 @@ function benchmark_oracles(f, grad!, x_gen, lmo; k=100, nocache=true)
         grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
         gamma = 1 / 2
-        # TODO: to be updated to broadcast version once data structure MaybeHotVector allows for it
+        # TODO: to be updated to broadcast version once data structure ScaledHotVector allows for it
         @timeit to "update (memory)" @emphasis(memory, x = (1 - gamma) * x + gamma * v)
     end
     if !nocache
