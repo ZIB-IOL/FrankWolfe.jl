@@ -107,7 +107,8 @@ function blended_conditional_gradient(
         println(
             "EMPHASIS: $memory STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $numType",
         )
-        println("K: $K")
+        grad_type = typeof(gradient)
+        println("GRADIENTTYPE: $grad_type K: $K")
         println("WARNING: In memory emphasis mode iterates are written back into x0!")
         headers = (
             "Type",

@@ -329,7 +329,8 @@ function lazified_conditional_gradient(
         println(
             "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration K: $K TYPE: $numType",
         )
-        println("CACHESIZE $cache_size GREEDYCACHE: $greedy_lazy")
+        grad_type = typeof(gradient)
+        println("GRADIENTTYPE: $grad_type CACHESIZE $cache_size GREEDYCACHE: $greedy_lazy")
         if emphasis == memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
         end
@@ -531,7 +532,8 @@ function stochastic_frank_wolfe(
         println(
             "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration TYPE: $numType",
         )
-        println("MOMENTUM: $momentum BATCHSIZE: $batch_size ")
+        grad_type = typeof(gradient)       
+        println("GRADIENTTYPE: $grad_type MOMENTUM: $momentum BATCHSIZE: $batch_size ")
         if emphasis == memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
         end
