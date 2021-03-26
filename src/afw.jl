@@ -156,13 +156,13 @@ function away_frank_wolfe(
                 gamma_max,
             )
 
-            # cleanup and renormalize every x iterations
+            # cleanup and renormalize every x iterations. Only for the fw steps.
             renorm = mod(t, 1000) == 0
 
             if away_step_taken
                 active_set_update!(active_set, -gamma, vertex, true, index)
             else
-                active_set_update!(active_set, gamma, vertex, true, index)
+                active_set_update!(active_set, gamma, vertex, renorm, index)
             end
         end
 
