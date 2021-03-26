@@ -439,9 +439,9 @@ function minimize_over_convex_hull!(
 end
 
 """
-    build_reduced_problem(atoms::AbstractVector{<:FrankWolfe.MaybeHotVector}, hessian, weights, gradient, tolerance)
+    build_reduced_problem(atoms::AbstractVector{<:FrankWolfe.ScaledHotVector}, hessian, weights, gradient, tolerance)
 
-Given an active set formed by MaybeHotVector, a (constant)
+Given an active set formed by ScaledHotVector, a (constant)
 Hessian and a gradient constructs a quadratic problem 
 over the unit probability simplex that is equivalent to 
 minimizing the original function over the convex hull of the
@@ -456,7 +456,7 @@ we return nothing (as there is nothing to do).
 
 """
 function build_reduced_problem(
-    atoms::AbstractVector{<:FrankWolfe.MaybeHotVector},
+    atoms::AbstractVector{<:FrankWolfe.ScaledHotVector},
     hessian,
     weights,
     gradient,

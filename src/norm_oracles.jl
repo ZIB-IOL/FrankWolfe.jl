@@ -40,7 +40,7 @@ function compute_extreme_point(lmo::LpNormLMO{T,1}, direction; kwargs...) where 
             idx = i
         end
     end
-    return MaybeHotVector(-lmo.right_hand_side * sign(direction[idx]), idx, length(direction))
+    return ScaledHotVector(-lmo.right_hand_side * sign(direction[idx]), idx, length(direction))
 end
 
 function compute_extreme_point(lmo::LpNormLMO{T,p}, direction; kwargs...) where {T,p}
@@ -118,7 +118,7 @@ function compute_extreme_point(lmo::KNormBallLMO{T}, direction; kwargs...) where
         end
     end
 
-    v1 = MaybeHotVector(-lmo.right_hand_side * sign(direction[idx_l1]), idx_l1, length(direction))
+    v1 = ScaledHotVector(-lmo.right_hand_side * sign(direction[idx_l1]), idx_l1, length(direction))
     o1 = dot(v1, direction)
     if o1 < oinf
         v .= v1
