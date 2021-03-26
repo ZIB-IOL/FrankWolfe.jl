@@ -1,12 +1,15 @@
-# Frank-Wolfe and Conditional Gradients : a Julia package
+# Frank-Wolfe and Conditional Gradient algorithms
 
-This package defines a generic interface and several implementations for the
+This package defines a generic interface and several implementations for
 Frank-Wolfe algorithms.
-The main entry point is the `fw` function running the algorithm.
+The main entry point is the `frank_wolfe` function running the algorithm.
 
 ```julia
-FrankWolfe.frank_wolfe(f,grad!,lmo,x0,max_iteration=1000,line_search=FrankWolfe.agnostic,verbose=true)
+FrankWolfe.frank_wolfe(f, grad!, lmo, x0, max_iteration=1000, line_search=FrankWolfe.agnostic, verbose=true)
 ```
+
+where `f(x)` is the objective function, `grad!(storage, x)` is the inplace gradient.
+`lmo` is a structure implementing the Lineae Minimization Oracle interface presented below.
 
 ## LMO
 
