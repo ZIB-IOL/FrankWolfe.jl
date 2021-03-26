@@ -11,4 +11,3 @@ after.pdf
 *.pdf
 prof.txt
 workspace.code-workspace
-examples/test.jl
