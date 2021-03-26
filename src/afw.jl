@@ -3,7 +3,7 @@
 # support: fw with tracking of decomposition, afw, pfw over "abstract" functions
 # decide in the whether we can lazify that version -> likely possible but will require careful checking. 
 # keep lazy variant separate but can be based off of afw
-
+# If safe_mode is set to true, the current iterate will be recomputed from the active set everytime an away step is taken.
 function away_frank_wolfe(
     f,
     grad!,
@@ -25,6 +25,7 @@ function away_frank_wolfe(
     linesearch_tol=1e-7,
     emphasis::Emphasis=memory,
     gradient=nothing,
+    safe_mode = false,
 )
     function print_header(data)
         @printf(
@@ -161,7 +162,11 @@ function away_frank_wolfe(
             renorm = mod(t, 1000) == 0
 
             if away_step_taken
-                active_set_update!(active_set, -gamma, vertex, true, index)
+                if safe_mode
+                    active_set_update!(active_set, -gamma, vertex, true, index)
+                else
+                    active_set_update!(active_set, -gamma, vertex, renorm, index)
+                end
             else
                 active_set_update!(active_set, gamma, vertex, renorm, index)
             end

@@ -730,16 +730,16 @@ projection_simplex_sort
 Perform a projection onto the unit probability simplex using 
 a sorting algorithm.
 """
-function projection_simplex_sort(x)
+function projection_simplex_sort(x; s = 1.0)
     n = length(x)
-    if sum(x) == 1.0 && all(>=(0.0), x)
+    if sum(x) == s && all(>=(0.0), x)
         return x
     end
     v = x .- maximum(x)
     u = sort(v, rev=true)
     cssv = cumsum(u)
-    rho = sum(u .* collect(1:1:n) .> (cssv .- 1.0)) - 1
-    theta = (cssv[rho+1] - 1.0) / (rho + 1)
+    rho = sum(u .* collect(1:1:n) .> (cssv .- s)) - 1
+    theta = (cssv[rho+1] - s) / (rho + 1)
     w = clamp.(v .- theta, 0.0, Inf)
     return w
 end
