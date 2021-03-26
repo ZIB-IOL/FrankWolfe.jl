@@ -102,6 +102,7 @@ gradient_aux = spzeros(size(x0)...)
 num_pairs = 1000
 L_estimate = - Inf
 for i in 1:num_pairs
+    global L_estimate
     x = compute_extreme_point(lmo, rand(size(x0)[1], size(x0)[2]))
     y = compute_extreme_point(lmo, rand(size(x0)[1], size(x0)[2]))
     grad!(gradient, x)
