@@ -120,8 +120,8 @@ timing_values = []
 time_start = time_ns()
 for _ in 1:k
     f_val = f(xgd)
-    append!(function_values, f_val)
-    append!(timing_values, (time_ns() - time_start) / 1.0e9)
+    push!(function_values, f_val)
+    push!(timing_values, (time_ns() - time_start) / 1.0e9)
     @info f_val
     grad!(gradient, xgd)
     """
