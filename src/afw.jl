@@ -24,6 +24,7 @@ function away_frank_wolfe(
     linesearch_tol=1e-7,
     emphasis::Emphasis=memory,
     gradient=nothing,
+    renorm_interval=1000,
 )
     function print_header(data)
         @printf(
@@ -157,7 +158,7 @@ function away_frank_wolfe(
             )
 
             # cleanup and renormalize every x iterations. Only for the fw steps.
-            renorm = mod(t, 1000) == 0
+            renorm = mod(t, renorm_interval) == 0
 
             if away_step_taken
                 active_set_update!(active_set, -gamma, vertex, true, index)
