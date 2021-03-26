@@ -124,16 +124,9 @@ for _ in 1:k
     push!(timing_values, (time_ns() - time_start) / 1.0e9)
     @info f_val
     grad!(gradient, xgd)
-    """
-    v = compute_extreme_point(lmo, gradient)
-    dual_gap = fast_dot(xgd, gradient) - fast_dot(vertex, gradient)
-    if dual_gap ≤ 1.0e-6
-        break
-    end
-    """
     xgd_new, vertex = project_nuclear_norm_ball(xgd - gradient/L_estimate, radius = norm_estimation)
     gamma, _ = FrankWolfe.backtrackingLS(f, gradient, xgd, xgd - xgd_new, 1.0)
-    xgd .-= gamma*(xgd - xgd_new)
+    @. xgd -= gamma*(xgd - xgd_new)
 end
 
 xfin, vmin, _, _, traj_data = FrankWolfe.frank_wolfe(
