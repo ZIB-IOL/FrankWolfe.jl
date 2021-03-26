@@ -9,8 +9,6 @@ using Profile
 
 using SparseArrays, LinearAlgebra
 
-import PROPACK # used for nuclear norm estimation
-
 temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest-small.zip")
 #temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest.zip")
 
@@ -88,7 +86,7 @@ function project_nuclear_norm_ball(X; radius = 1.0)
     return U * Diagonal(sing_val) * Vt', -norm_estimation*U[:,1] * Vt[:,1]'
 end
 
-norm_estimation = sum(PROPACK.tsvdvals(rating_matrix,400)[1])
+norm_estimation = sum(Arpack.svds(rating_matrix, nsv=400, ritzvec=false)[1].S)
 
 const lmo = FrankWolfe.NuclearNormLMO(norm_estimation)
 const x0 = FrankWolfe.compute_extreme_point(lmo, zero(rating_matrix))

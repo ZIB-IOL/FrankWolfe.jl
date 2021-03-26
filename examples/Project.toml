@@ -7,7 +7,6 @@ ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 GLPK = "60bf3e95-4087-53dc-ae20-288a0d20c6a6"
 JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
 MultivariatePolynomials = "102ac46a-7ee4-5c85-9060-abc95bfdeaa3"
-PROPACK = "b169e327-5944-5131-97a6-5d3d3f0a476a"
 ReverseDiff = "37e2e3b7-166d-5795-8a7a-e32c996b4267"
 ZipFile = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
 
