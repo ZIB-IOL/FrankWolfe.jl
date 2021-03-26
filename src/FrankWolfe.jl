@@ -24,7 +24,6 @@ export frank_wolfe, lazified_conditional_gradient, away_frank_wolfe
 export blended_conditional_gradient, compute_extreme_point
 
 include("defs.jl")
-include("simplex_matrix.jl")
 
 include("utils.jl")
 include("oracles.jl")
