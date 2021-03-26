@@ -135,7 +135,7 @@ k = 10000
 )
 
 
-const ff = x -> compute_value(f_stoch_noisy, x, full_evaluation=true)
+ff(x) = sum(simple_reg_loss(x, data_point) for data_point in data_noisy)
 function gradf(storage, x)
     storage .= 0
     for dp in data_noisy
