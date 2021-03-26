@@ -160,9 +160,9 @@ function away_frank_wolfe(
             renorm = mod(t, 1000) == 0
 
             if away_step_taken
-                active_set_update!(active_set, -gamma, vertex, renorm, index)
+                active_set_update!(active_set, -gamma, vertex, true, index)
             else
-                active_set_update!(active_set, gamma, vertex, renorm, index)
+                active_set_update!(active_set, gamma, vertex, true, index)
             end
         end
 
