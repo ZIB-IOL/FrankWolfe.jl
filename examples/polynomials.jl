@@ -110,7 +110,7 @@ lmo = FrankWolfe.KSparseLMO(round(Int, length(all_coeffs) / 4), 1.1 * maximum(al
 
 x00 = FrankWolfe.compute_extreme_point(lmo, rand(length(all_coeffs)))
 
-k = 3e6
+k = 1e5
 
 x0 = deepcopy(x00)
 
@@ -122,8 +122,7 @@ x0 = deepcopy(x00)
     x0,
     max_iteration=k,
     line_search=FrankWolfe.adaptive,
-    L=2,
-    print_iter=k / 50,
+    print_iter=k / 10,
     emphasis=FrankWolfe.memory,
     verbose=true,
     trajectory=false,
@@ -143,8 +142,7 @@ x0 = deepcopy(x00)
     x0,
     max_iteration=k,
     line_search=FrankWolfe.adaptive,
-    L=2,
-    print_iter=k / 50,
+    print_iter=k / 10,
     emphasis=FrankWolfe.memory,
     verbose=true,
     lazy=true,
@@ -163,13 +161,11 @@ x0 = deepcopy(x00)
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.backtracking,
+    line_search=FrankWolfe.adaptive,
     print_iter=k / 10,
     emphasis=FrankWolfe.memory,
-    L=2,
     verbose=true,
     trajectory=false,
-    Ktolerance=0.95,
     weight_purge_threshold=1e-10,
 )
 

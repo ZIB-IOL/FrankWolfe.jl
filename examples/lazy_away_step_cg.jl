@@ -15,8 +15,8 @@ function grad!(storage, x)
     @. storage = 2 * (x - xp)
 end
 
-# problem with active set updates and the ksparselmo
 lmo = FrankWolfe.KSparseLMO(number_nonzero, 1.0);
+## alternative lmo
 # lmo = FrankWolfe.ProbabilitySimplexOracle(1)
 x0 = FrankWolfe.compute_extreme_point(lmo, ones(n));
 
@@ -68,4 +68,4 @@ x0 = FrankWolfe.compute_extreme_point(lmo, ones(n));
 data = [trajectorylazy, trajectoryAFW, trajectoryFW]
 label = ["LAFW" "AFW" "FW"]
 
-FrankWolfe.plot_trajectories(data, label)
+FrankWolfe.plot_trajectories(data, label,xscalelog=true)

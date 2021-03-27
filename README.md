@@ -1,12 +1,15 @@
-# Frank-Wolfe and Conditional Gradients : a Julia package
+# Frank-Wolfe and Conditional Gradient algorithms
 
-This package defines a generic interface and several implementations for the
+This package defines a generic interface and several implementations for
 Frank-Wolfe algorithms.
-The main entry point is the `fw` function running the algorithm.
+The main entry point is the `frank_wolfe` function running the algorithm.
 
 ```julia
-FrankWolfe.frank_wolfe(f,grad!,lmo,x0,max_iteration=1000,line_search=FrankWolfe.agnostic,verbose=true)
+FrankWolfe.frank_wolfe(f, grad!, lmo, x0, max_iteration=1000, line_search=FrankWolfe.agnostic, verbose=true)
 ```
+
+where `f(x)` is the objective function, `grad!(storage, x)` is the inplace gradient.
+`lmo` is a structure implementing the Linear Minimization Oracle interface presented below.
 
 ## LMO
 
@@ -17,12 +20,10 @@ and implement the method:
 compute_extreme_point(lmo::LMO, direction; kwargs...) -> v
 ```
 
-which takes a minimization direction and returns the point minimizing in the direction
-over the set LMO represents.
+which takes a minimization direction and returns the point `v` minimizing in the direction
+over the set represented by the LMO.
 
 ## Implemented Methods
-
-*** mention survey once done as general reference ***
 
 ### Conditional Gradient algorithms
 
@@ -30,11 +31,11 @@ over the set LMO represents.
   - works both for convex and non-convex function (use step size rule `FrankWolfe.nonconvex`)
 - Stochastic Frank-Wolfe 
 - Away-Step Frank-Wolfe (see <https://arxiv.org/abs/1511.05932> for an overview)
-- Pairwise Conditional Gradients (see <https://arxiv.org/abs/1511.05932> for an overview)
 - Blended Conditional Gradients (see <https://arxiv.org/abs/1805.07311>)
   - build-in stability feature that temporarily increases accuracy
+- Pairwise Conditional Gradients to come (see <https://arxiv.org/abs/1511.05932> for an overview)
 
-- most algorithms also have a lazified version (see <https://arxiv.org/abs/1610.05120>)
+- Most algorithms also have a lazified version (see <https://arxiv.org/abs/1610.05120>)
 
 ### LMOs
 

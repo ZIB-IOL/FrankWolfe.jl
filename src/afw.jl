@@ -3,7 +3,6 @@
 # support: fw with tracking of decomposition, afw, pfw over "abstract" functions
 # decide in the whether we can lazify that version -> likely possible but will require careful checking. 
 # keep lazy variant separate but can be based off of afw
-
 function away_frank_wolfe(
     f,
     grad!,
@@ -25,6 +24,7 @@ function away_frank_wolfe(
     linesearch_tol=1e-7,
     emphasis::Emphasis=memory,
     gradient=nothing,
+    renorm_interval=1000,
 )
     function print_header(data)
         @printf(
@@ -91,7 +91,8 @@ function away_frank_wolfe(
         println(
             "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $numType",
         )
-        println("LAZY: $lazy MOMENTUM: $momentum AWAYSTEPS: $awaySteps")
+        grad_type = typeof(gradient)
+        println("GRADIENTTYPE: $grad_type LAZY: $lazy K: $K MOMENTUM: $momentum AWAYSTEPS: $awaySteps")
         if emphasis == memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
         end
@@ -157,8 +158,8 @@ function away_frank_wolfe(
                 gamma_max,
             )
 
-            # cleanup and renormalize every x iterations
-            renorm = mod(t, 1000) == 0
+            # cleanup and renormalize every x iterations. Only for the fw steps.
+            renorm = mod(t, renorm_interval) == 0
 
             if away_step_taken
                 active_set_update!(active_set, -gamma, vertex, true, index)
