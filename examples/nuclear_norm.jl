@@ -91,7 +91,7 @@ xfinAFW, vmin, _, _, traj_data = FrankWolfe.away_frank_wolfe(
     trajectory=true,
     verbose=true,
     linesearch_tol=1e-7,
-    lazy = true,
+    lazy=true,
     line_search=FrankWolfe.adaptive,
     emphasis=FrankWolfe.memory,#,
 )

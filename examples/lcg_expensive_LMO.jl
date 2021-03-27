@@ -113,7 +113,7 @@ x, v, primal, dual_gap, trajectoryLAFW = FrankWolfe.away_frank_wolfe(
     print_iter=k / 10,
     linesearch_tol=1e-9,
     emphasis=FrankWolfe.memory,
-    lazy=true,    
+    lazy=true,
     trajectory=true,
     verbose=true,
 );
