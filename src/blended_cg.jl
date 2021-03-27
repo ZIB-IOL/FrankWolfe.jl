@@ -109,7 +109,8 @@ function blended_conditional_gradient(
         println(
             "EMPHASIS: $memory STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $numType",
         )
-        println("K: $K")
+        grad_type = typeof(gradient)
+        println("GRADIENTTYPE: $grad_type K: $K")
         println("WARNING: In memory emphasis mode iterates are written back into x0!")
         headers = (
             "Type",
@@ -441,9 +442,9 @@ function minimize_over_convex_hull!(
 end
 
 """
-    build_reduced_problem(atoms::AbstractVector{<:FrankWolfe.MaybeHotVector}, hessian, weights, gradient, tolerance)
+    build_reduced_problem(atoms::AbstractVector{<:FrankWolfe.ScaledHotVector}, hessian, weights, gradient, tolerance)
 
-Given an active set formed by MaybeHotVector, a (constant)
+Given an active set formed by ScaledHotVector, a (constant)
 Hessian and a gradient constructs a quadratic problem 
 over the unit probability simplex that is equivalent to 
 minimizing the original function over the convex hull of the
@@ -458,7 +459,7 @@ we return nothing (as there is nothing to do).
 
 """
 function build_reduced_problem(
-    atoms::AbstractVector{<:FrankWolfe.MaybeHotVector},
+    atoms::AbstractVector{<:FrankWolfe.ScaledHotVector},
     hessian,
     weights,
     gradient,
@@ -732,16 +733,16 @@ projection_simplex_sort
 Perform a projection onto the unit probability simplex using 
 a sorting algorithm.
 """
-function projection_simplex_sort(x)
+function projection_simplex_sort(x; s = 1.0)
     n = length(x)
-    if sum(x) == 1.0 && all(>=(0.0), x)
+    if sum(x) == s && all(>=(0.0), x)
         return x
     end
     v = x .- maximum(x)
     u = sort(v, rev=true)
     cssv = cumsum(u)
-    rho = sum(u .* collect(1:1:n) .> (cssv .- 1.0)) - 1
-    theta = (cssv[rho+1] - 1.0) / (rho + 1)
+    rho = sum(u .* collect(1:1:n) .> (cssv .- s)) - 1
+    theta = (cssv[rho+1] - s) / (rho + 1)
     w = clamp.(v .- theta, 0.0, Inf)
     return w
 end

@@ -5,7 +5,7 @@ using LinearAlgebra
 
 
 n = Int(1e3);
-k = 10000
+k = 1e5
 
 xpi = rand(n);
 total = sum(xpi);
@@ -35,3 +35,4 @@ FrankWolfe.benchmark_oracles(f, grad!, () -> randn(n), lmo; k=100)
     print_iter=k / 10,
     verbose=true,
 );
+

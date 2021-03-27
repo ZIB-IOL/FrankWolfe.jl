@@ -200,10 +200,10 @@ end
     @test i_max == 2
 end
 
-@testset "LPseparationWithMaybeHotVector" begin
-    v1 = FrankWolfe.MaybeHotVector(1, 1, 2)
-    v2 = FrankWolfe.MaybeHotVector(1, 2, 2)
-    v3 = FrankWolfe.MaybeHotVector(0, 2, 2)
+@testset "LPseparationWithScaledHotVector" begin
+    v1 = FrankWolfe.ScaledHotVector(1, 1, 2)
+    v2 = FrankWolfe.ScaledHotVector(1, 2, 2)
+    v3 = FrankWolfe.ScaledHotVector(0, 2, 2)
     active_set = FrankWolfe.ActiveSet([(0.6, v1), (0.2, v2), (0.2, v3)])
     lmo = FrankWolfe.LpNormLMO{Float64,1}(1.0)
     direction = ones(2)

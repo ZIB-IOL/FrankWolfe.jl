@@ -1,17 +1,16 @@
 include(joinpath(@__DIR__, "activate.jl"))
 
-
 # download movielens data
 using ZipFile, DataFrames, CSV
 
 using Random
-using ProgressMeter
 
 using Profile
 
 using SparseArrays, LinearAlgebra
+
 temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest-small.zip")
-# temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest.zip")
+#temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest.zip")
 
 zarchive = ZipFile.Reader(temp_zipfile)
 
@@ -29,24 +28,28 @@ ratings_frame = CSV.read(ratings_file, DataFrame)
 users = unique(ratings_frame[:, :userId])
 movies = unique(ratings_frame[:, :movieId])
 
-const rating_matrix = spzeros(length(users), length(movies))
-@showprogress 1 "Extracting user and movie indices... " for row in eachrow(ratings_frame)
-    user_idx = findfirst(==(row.userId), users)
-    movie_idx = findfirst(==(row.movieId), movies)
-    rating_matrix[user_idx, movie_idx] = row.rating
+@assert users == eachindex(users)
+movies_revert = zeros(Int, maximum(movies))
+for (idx, m) in enumerate(movies)
+    movies_revert[m] = idx
 end
+movies_indices = [movies_revert[idx] for idx in ratings_frame[:, :movieId]]
+
+const rating_matrix = sparse(ratings_frame[:, :userId], movies_indices, ratings_frame[:, :rating], length(users), length(movies))
 
 missing_rate = 0.05
 
-const missing_ratings = unique!([
-    Tuple(idx) for
-    idx in eachindex(rating_matrix) if rating_matrix[idx] > 0 && rand() <= missing_rate
-])
-const present_ratings = [
-    Tuple(idx) for
-    idx in eachindex(rating_matrix) if rating_matrix[idx] > 0 && Tuple(idx) ∉ missing_ratings
-]
-
+const missing_ratings = Tuple{Int,Int}[]
+const present_ratings = Tuple{Int,Int}[]
+for idx in eachindex(rating_matrix)
+    if rating_matrix[idx] > 0
+        if rand() <= missing_rate
+            push!(missing_ratings, Tuple(idx))
+        else
+            push!(present_ratings, Tuple(idx))
+        end
+    end
+end
 
 function f(X)
     # note: we iterate over the rating_matrix indices,
@@ -74,27 +77,58 @@ function test_loss(X)
     return r
 end
 
-norm_estimation = sum(svdvals(collect(rating_matrix))[1:400])
+function project_nuclear_norm_ball(X; radius = 1.0)
+    U, sing_val, Vt = svd(X)
+    if(sum(sing_val)<=radius)
+        return X, -norm_estimation*U[:,1] * Vt[:,1]'
+    end
+    sing_val = FrankWolfe.projection_simplex_sort(sing_val, s = radius)
+    return U * Diagonal(sing_val) * Vt', -norm_estimation*U[:,1] * Vt[:,1]'
+end
 
+norm_estimation = sum(Arpack.svds(rating_matrix, nsv=400, ritzvec=false)[1].S)
 
 const lmo = FrankWolfe.NuclearNormLMO(norm_estimation)
 const x0 = FrankWolfe.compute_extreme_point(lmo, zero(rating_matrix))
+const k = 100
 
-# FrankWolfe.benchmark_oracles(f, (str, x) -> grad!(str, x), () -> randn(size(rating_matrix)), lmo; k=100)
-
+# benchmark the oracles
+FrankWolfe.benchmark_oracles(f, (str, x) -> grad!(str, x), () -> randn(size(rating_matrix)), lmo; k=100)
 
 gradient = spzeros(size(x0)...)
-xgd = Matrix(x0)
-for _ in 1:5000
-    @info f(xgd)
-    grad!(gradient, xgd)
-    xgd .-= 0.01 * gradient
-    if norm(gradient) ≤ sqrt(eps())
-        break
+gradient_aux = spzeros(size(x0)...)
+
+#Estimate the smoothness constant.
+num_pairs = 1000
+L_estimate = - Inf
+for i in 1:num_pairs
+    global L_estimate
+    x = compute_extreme_point(lmo, rand(size(x0)[1], size(x0)[2]))
+    y = compute_extreme_point(lmo, rand(size(x0)[1], size(x0)[2]))
+    grad!(gradient, x)
+    grad!(gradient_aux, y)
+    new_L = norm(gradient - gradient_aux)/norm(x - y)
+    if new_L > L_estimate
+        L_estimate = new_L
     end
 end
 
-const k = 1000
+# PGD steps
+
+xgd = Matrix(x0)
+function_values = []
+timing_values = []
+time_start = time_ns()
+for _ in 1:k
+    f_val = f(xgd)
+    push!(function_values, f_val)
+    push!(timing_values, (time_ns() - time_start) / 1.0e9)
+    @info f_val
+    grad!(gradient, xgd)
+    xgd_new, vertex = project_nuclear_norm_ball(xgd - gradient/L_estimate, radius = norm_estimation)
+    gamma, _ = FrankWolfe.backtrackingLS(f, gradient, xgd, xgd - xgd_new, 1.0)
+    @. xgd -= gamma*(xgd - xgd_new)
+end
 
 xfin, vmin, _, _, traj_data = FrankWolfe.frank_wolfe(
     f,
@@ -104,14 +138,52 @@ xfin, vmin, _, _, traj_data = FrankWolfe.frank_wolfe(
     epsilon=1e-9,
     max_iteration=k,
     print_iter=k / 10,
-    trajectory=false,
+    trajectory=true,
     verbose=true,
     linesearch_tol=1e-7,
-    line_search=FrankWolfe.adaptive,
-    L=100,
+    line_search=FrankWolfe.backtracking,
     emphasis=FrankWolfe.memory,
     gradient=gradient,
 )
 
 @info "Gdescent test loss: $(test_loss(xgd))"
 @info "FW test loss: $(test_loss(xfin))"
+
+#Plot results w.r.t. iteration count
+gr()
+pit = plot(
+    [traj_data[j][1] for j in 1:length(traj_data)],
+    [traj_data[j][2] for j in 1:length(traj_data)],
+    label="FW",
+    ylabel="Objective function",
+    yaxis=:log,
+    yguidefontsize=8,
+    xguidefontsize=8,
+    legendfontsize=8,
+)
+plot!(
+    range(1,length(function_values),step=1) |> collect,
+    function_values,
+    yaxis=:log,
+    label="GD",
+)
+savefig(pit, "objective_func_vs_iteration.pdf")
+
+#Plot results w.r.t. time
+pit = plot(
+    [traj_data[j][5] for j in 1:length(traj_data)],
+    [traj_data[j][2] for j in 1:length(traj_data)],
+    label="FW",
+    ylabel="Objective function",
+    yaxis=:log,
+    yguidefontsize=8,
+    xguidefontsize=8,
+    legendfontsize=8,
+)
+plot!(
+    timing_values,
+    function_values,
+    label="GD",
+    yaxis=:log,
+)
+savefig(pit, "objective_func_vs_time.pdf")

@@ -1,6 +1,7 @@
 import FrankWolfe
 using LinearAlgebra
 using Random
+import GLPK
 
 s = rand(1:100)
 s = 98
@@ -13,7 +14,6 @@ k = 3000
 
 xpi = rand(n * n);
 total = sum(xpi);
-# next line needs to be commented out if we use the GLPK variants
 xpi = reshape(xpi, n, n)
 const xp = xpi # ./ total;
 
@@ -32,7 +32,15 @@ direction_vec = Vector{Float64}(undef, n * n)
 randn!(direction_vec)
 direction_mat = reshape(direction_vec, n, n)
 
-lmo = FrankWolfe.BirkhoffPolytopeLMO()
+# BirkhoffPolytopeLMO via Hungarian Method
+lmo_native = FrankWolfe.BirkhoffPolytopeLMO()
+
+# BirkhoffPolytopeLMO realized via LP solver
+lmo_moi = FrankWolfe.convert_mathopt(lmo_native, GLPK.Optimizer(), dimension=n)
+
+# choose between lmo_native (= Hungarian Method) and lmo_moi (= LP formulation solved with GLPK)
+lmo = lmo_native
+
 x00 = FrankWolfe.compute_extreme_point(lmo, direction_mat)
 
 FrankWolfe.benchmark_oracles(
