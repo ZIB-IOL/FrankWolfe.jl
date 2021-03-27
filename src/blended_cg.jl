@@ -1,5 +1,45 @@
 
+function print_header(data)
+    @printf(
+        "\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
+    )
+    @printf(
+        "%6s %13s %14s %14s %14s %14s %14s %14s %14s\n",
+        data[1],
+        data[2],
+        data[3],
+        data[4],
+        data[5],
+        data[6],
+        data[7],
+        data[8],
+        data[9],
+    )
+    @printf(
+        "────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
+    )
+end
 
+function print_footer()
+    @printf(
+        "────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n\n"
+    )
+end
+
+function print_iter_func(data)
+    @printf(
+        "%6s %13s %14e %14e %14e %14e %14e %14i %14i\n",
+        st[Symbol(data[1])],
+        data[2],
+        Float64(data[3]),
+        Float64(data[4]),
+        Float64(data[5]),
+        data[6],
+        data[7],
+        data[8],
+        data[9],
+    )
+end
 
 function blended_conditional_gradient(
     f,
@@ -26,48 +66,6 @@ function blended_conditional_gradient(
     direction_storage=nothing,
     lmo_kwargs...,
 )
-    function print_header(data)
-        @printf(
-            "\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
-        )
-        @printf(
-            "%6s %13s %14s %14s %14s %14s %14s %14s %14s\n",
-            data[1],
-            data[2],
-            data[3],
-            data[4],
-            data[5],
-            data[6],
-            data[7],
-            data[8],
-            data[9],
-        )
-        @printf(
-            "────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
-        )
-    end
-
-    function print_footer()
-        @printf(
-            "────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n\n"
-        )
-    end
-
-    function print_iter_func(data)
-        @printf(
-            "%6s %13s %14e %14e %14e %14e %14e %14i %14i\n",
-            st[Symbol(data[1])],
-            data[2],
-            Float64(data[3]),
-            Float64(data[4]),
-            Float64(data[5]),
-            data[6],
-            data[7],
-            data[8],
-            data[9],
-        )
-    end
-    
     t = 0
     primal = Inf
     dual_gap = Inf
