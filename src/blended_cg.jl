@@ -731,7 +731,7 @@ projection_simplex_sort
 Perform a projection onto the unit probability simplex using 
 a sorting algorithm.
 """
-function projection_simplex_sort(x; s = 1.0)
+function projection_simplex_sort(x; s=1.0)
     n = length(x)
     if sum(x) == s && all(>=(0.0), x)
         return x
@@ -798,7 +798,7 @@ function simplex_gradient_descent_over_convex_hull(
 )
     number_of_steps = 0
     L_inner = nothing
-    upgrade_accuracy_flag=false
+    upgrade_accuracy_flag = false
     x = compute_active_set_iterate(active_set)
     while t + number_of_steps ≤ max_iteration
         grad!(gradient, x)
@@ -818,7 +818,7 @@ function simplex_gradient_descent_over_convex_hull(
         # in that case, inverting the sense of d
         # Computing the quantity below is the same as computing the <-\nabla f(x), direction>.
         # If <-\nabla f(x), direction>  >= 0 the direction is a descent direction.
-        descent_direction_product = fast_dot(d, d) + (csum / k)*sum(d)
+        descent_direction_product = fast_dot(d, d) + (csum / k) * sum(d)
         @inbounds if descent_direction_product < 0
             current_iteration = t + number_of_steps
             @warn "Non-improving d ($descent_direction_product) due to numerical instability in iteration $current_iteration. Temporarily upgrading precision to BigFloat for the current iteration."
@@ -830,7 +830,7 @@ function simplex_gradient_descent_over_convex_hull(
             csum = sum(c)
             c .-= csum / k
             d = c
-            descent_direction_product_inner = fast_dot(d, d) + (csum / k)*sum(d)
+            descent_direction_product_inner = fast_dot(d, d) + (csum / k) * sum(d)
             @inbounds if descent_direction_product_inner < 0
                 @warn "d non-improving in large precision, forcing FW"
                 @warn "dot value: $descent_direction_product_inner"
@@ -859,13 +859,31 @@ function simplex_gradient_descent_over_convex_hull(
             active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
         else
             if line_search_inner == adaptive
-                gamma, L_inner = adaptive_step_size(f, grad!, gradient, x, x - y, L_inner, gamma_max=1.0, upgrade_accuracy=upgrade_accuracy_flag)
+                gamma, L_inner = adaptive_step_size(
+                    f,
+                    grad!,
+                    gradient,
+                    x,
+                    x - y,
+                    L_inner,
+                    gamma_max=1.0,
+                    upgrade_accuracy=upgrade_accuracy_flag,
+                )
                 #If the stepsize is that small we probably need to increase the accuracy of 
                 #the types we are using.
                 if gamma < eps()
                     #@warn "Upgrading the accuracy of the adaptive line search."
                     L_inner = nothing
-                    gamma, L_inner = adaptive_step_size(f, grad!, gradient, x, x - y, L_inner, gamma_max=1.0, upgrade_accuracy=true)
+                    gamma, L_inner = adaptive_step_size(
+                        f,
+                        grad!,
+                        gradient,
+                        x,
+                        x - y,
+                        L_inner,
+                        gamma_max=1.0,
+                        upgrade_accuracy=true,
+                    )
                 end
             else
                 gamma, _ = backtrackingLS(

@@ -535,7 +535,7 @@ end
             batch_size=length(f_stoch.xs) ÷ 100,
             trajectory=false,
         )
-        @test norm(θ - params_perfect) ≤ 0.02 * length(θ)
+        @test norm(θ - params_perfect) ≤ 0.025 * length(θ)
     end
 
     @testset "Away-step FW" begin

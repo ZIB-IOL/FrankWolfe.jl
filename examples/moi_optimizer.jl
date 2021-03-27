@@ -131,5 +131,3 @@ data = [trajectory_lmo, trajectory_moi, trajectory_lmo_blas, trajectory_jump_bla
 label = ["Closed-form LMO", "MOI LMO", "LMO Blas", "MOI Blas"]
 
 FrankWolfe.plot_trajectories(data, label)
-
-

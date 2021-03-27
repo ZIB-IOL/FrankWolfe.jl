@@ -96,7 +96,7 @@ function frank_wolfe(
         print_header(headers)
     end
 
-    if emphasis == memory && !isa(x, Union{Array, SparseArrays.AbstractSparseArray})
+    if emphasis == memory && !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
         # if integer, convert element type to most appropriate float
         if eltype(x) <: Integer
             x = convert(Array{float(eltype(x))}, x)
@@ -354,7 +354,7 @@ function lazified_conditional_gradient(
 
         grad!(gradient, x)
 
-        threshold = fast_dot(x, gradient) - phi/K
+        threshold = fast_dot(x, gradient) - phi / K
 
         # go easy on the memory - only compute if really needed
         if ((mod(t, print_iter) == 0 && verbose) || trajectory)
@@ -532,7 +532,7 @@ function stochastic_frank_wolfe(
         println(
             "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration TYPE: $numType",
         )
-        grad_type = typeof(gradient)       
+        grad_type = typeof(gradient)
         println("GRADIENTTYPE: $grad_type MOMENTUM: $momentum BATCHSIZE: $batch_size ")
         if emphasis == memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")

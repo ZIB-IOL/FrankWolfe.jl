@@ -35,7 +35,13 @@ for (idx, m) in enumerate(movies)
 end
 movies_indices = [movies_revert[idx] for idx in ratings_frame[:, :movieId]]
 
-const rating_matrix = sparse(ratings_frame[:, :userId], movies_indices, ratings_frame[:, :rating], length(users), length(movies))
+const rating_matrix = sparse(
+    ratings_frame[:, :userId],
+    movies_indices,
+    ratings_frame[:, :rating],
+    length(users),
+    length(movies),
+)
 
 missing_rate = 0.05
 
@@ -77,13 +83,13 @@ function test_loss(X)
     return r
 end
 
-function project_nuclear_norm_ball(X; radius = 1.0)
+function project_nuclear_norm_ball(X; radius=1.0)
     U, sing_val, Vt = svd(X)
-    if(sum(sing_val)<=radius)
-        return X, -norm_estimation*U[:,1] * Vt[:,1]'
+    if (sum(sing_val) <= radius)
+        return X, -norm_estimation * U[:, 1] * Vt[:, 1]'
     end
-    sing_val = FrankWolfe.projection_simplex_sort(sing_val, s = radius)
-    return U * Diagonal(sing_val) * Vt', -norm_estimation*U[:,1] * Vt[:,1]'
+    sing_val = FrankWolfe.projection_simplex_sort(sing_val, s=radius)
+    return U * Diagonal(sing_val) * Vt', -norm_estimation * U[:, 1] * Vt[:, 1]'
 end
 
 norm_estimation = sum(Arpack.svds(rating_matrix, nsv=400, ritzvec=false)[1].S)
@@ -93,21 +99,27 @@ const x0 = FrankWolfe.compute_extreme_point(lmo, zero(rating_matrix))
 const k = 100
 
 # benchmark the oracles
-FrankWolfe.benchmark_oracles(f, (str, x) -> grad!(str, x), () -> randn(size(rating_matrix)), lmo; k=100)
+FrankWolfe.benchmark_oracles(
+    f,
+    (str, x) -> grad!(str, x),
+    () -> randn(size(rating_matrix)),
+    lmo;
+    k=100,
+)
 
 gradient = spzeros(size(x0)...)
 gradient_aux = spzeros(size(x0)...)
 
 #Estimate the smoothness constant.
 num_pairs = 1000
-L_estimate = - Inf
+L_estimate = -Inf
 for i in 1:num_pairs
     global L_estimate
     x = compute_extreme_point(lmo, rand(size(x0)[1], size(x0)[2]))
     y = compute_extreme_point(lmo, rand(size(x0)[1], size(x0)[2]))
     grad!(gradient, x)
     grad!(gradient_aux, y)
-    new_L = norm(gradient - gradient_aux)/norm(x - y)
+    new_L = norm(gradient - gradient_aux) / norm(x - y)
     if new_L > L_estimate
         L_estimate = new_L
     end
@@ -125,9 +137,9 @@ for _ in 1:k
     push!(timing_values, (time_ns() - time_start) / 1.0e9)
     @info f_val
     grad!(gradient, xgd)
-    xgd_new, vertex = project_nuclear_norm_ball(xgd - gradient/L_estimate, radius = norm_estimation)
+    xgd_new, vertex = project_nuclear_norm_ball(xgd - gradient / L_estimate, radius=norm_estimation)
     gamma, _ = FrankWolfe.backtrackingLS(f, gradient, xgd, xgd - xgd_new, 1.0)
-    @. xgd -= gamma*(xgd - xgd_new)
+    @. xgd -= gamma * (xgd - xgd_new)
 end
 
 xfin, vmin, _, _, traj_data = FrankWolfe.frank_wolfe(
@@ -161,12 +173,7 @@ pit = plot(
     xguidefontsize=8,
     legendfontsize=8,
 )
-plot!(
-    range(1,length(function_values),step=1) |> collect,
-    function_values,
-    yaxis=:log,
-    label="GD",
-)
+plot!(range(1, length(function_values), step=1) |> collect, function_values, yaxis=:log, label="GD")
 savefig(pit, "objective_func_vs_iteration.pdf")
 
 #Plot results w.r.t. time
@@ -180,10 +187,5 @@ pit = plot(
     xguidefontsize=8,
     legendfontsize=8,
 )
-plot!(
-    timing_values,
-    function_values,
-    label="GD",
-    yaxis=:log,
-)
+plot!(timing_values, function_values, label="GD", yaxis=:log)
 savefig(pit, "objective_func_vs_time.pdf")

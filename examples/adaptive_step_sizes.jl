@@ -18,13 +18,7 @@ end
 lmo = FrankWolfe.KSparseLMO(40, 1.0);
 x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
-FrankWolfe.benchmark_oracles(
-    x -> f(x),
-    (str, x) -> grad!(str, x),
-    () -> randn(n),
-    lmo;
-    k=100,
-)
+FrankWolfe.benchmark_oracles(x -> f(x), (str, x) -> grad!(str, x), () -> randn(n), lmo; k=100)
 
 println("\n==> Short Step rule - if you know L.\n")
 
@@ -37,7 +31,7 @@ x0 = deepcopy(x00)
     x0,
     max_iteration=k,
     line_search=FrankWolfe.shortstep,
-    L=2 ,
+    L=2,
     print_iter=k / 10,
     emphasis=FrankWolfe.memory,
     verbose=true,

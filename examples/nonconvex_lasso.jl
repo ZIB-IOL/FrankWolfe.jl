@@ -35,4 +35,3 @@ FrankWolfe.benchmark_oracles(f, grad!, () -> randn(n), lmo; k=100)
     print_iter=k / 10,
     verbose=true,
 );
-

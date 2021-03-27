@@ -1,5 +1,8 @@
 # Frank-Wolfe and Conditional Gradient algorithms
 
+[![Build Status](https://github.com/ZIB-IOL/FrankWolfe.jl/workflows/CI/badge.svg)](https://github.com/ZIB-IOL/FrankWolfe.jl/actions)
+[![Coverage](https://codecov.io/gh/ZIB-IOL/FrankWolfe.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/ZIB-IOL/FrankWolfe.jl)
+
 This package defines a generic interface and several implementations for
 Frank-Wolfe algorithms.
 The main entry point is the `frank_wolfe` function running the algorithm.

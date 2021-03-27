@@ -39,7 +39,7 @@ import LinearAlgebra
 n = Int(1e2)
 k = Int(1e3)
 
-xp = 1/n * ones(n);
+xp = 1 / n * ones(n);
 
 # definition of objective
 f(x) = LinearAlgebra.norm(x - xp)^2
@@ -54,7 +54,7 @@ lmo = FrankWolfe.ProbabilitySimplexOracle(1)
 x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
 # simple benchmarking of oracles to get an idea how expensive each component is
-FrankWolfe.benchmark_oracles(f, grad!, ()-> rand(n), lmo; k=100)
+FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo; k=100)
 
 @time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
     f,
@@ -103,15 +103,12 @@ FrankWolfe.benchmark_oracles(f, grad!, ()-> rand(n), lmo; k=100)
 
 trajLowerbound = []
 for i in 1:n-1
-    push!(
-        trajLowerbound,
-        (i, 1/i - 1/n, NaN, 1/i - 1/n, NaN),
-    )
+    push!(trajLowerbound, (i, 1 / i - 1 / n, NaN, 1 / i - 1 / n, NaN))
 end
 
 
-data = [trajectory, trajectoryAFW, trajectoryBCG,trajLowerbound]
+data = [trajectory, trajectoryAFW, trajectoryBCG, trajLowerbound]
 label = ["FW", "AFW", "BCG", "Lowerbound"]
 
 # ignore the timing plots - they are not relevant for this example
-FrankWolfe.plot_trajectories(data, label, xscalelog=true,legend_position=:bottomleft)
+FrankWolfe.plot_trajectories(data, label, xscalelog=true, legend_position=:bottomleft)
