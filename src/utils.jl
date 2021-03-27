@@ -68,7 +68,18 @@ norm(gradient, direction) > 0
 TODO: 
 - make emphasis aware and optimize
 """
-function adaptive_step_size(f, grad!, gradient, x, direction, L_est; eta=0.9, tau=2, gamma_max=1, upgrade_accuracy=false)
+function adaptive_step_size(
+    f,
+    grad!,
+    gradient,
+    x,
+    direction,
+    L_est;
+    eta=0.9,
+    tau=2,
+    gamma_max=1,
+    upgrade_accuracy=false,
+)
     #If there is no initial smoothness estimate
     #try to build one from the definition.
     if isnothing(L_est) || !isfinite(L_est)
@@ -271,7 +282,7 @@ end
 
 Base.:+(y::AbstractVector, x::ScaledHotVector) = x + y
 
-function Base.:+(x::FrankWolfe.ScaledHotVector{T1}, y::FrankWolfe.ScaledHotVector{T2}) where {T1, T2}
+function Base.:+(x::FrankWolfe.ScaledHotVector{T1}, y::FrankWolfe.ScaledHotVector{T2}) where {T1,T2}
     n = length(x)
     T = promote_type(T1, T2)
     if n != length(y)
@@ -317,7 +328,14 @@ end
 ### Visualization etc
 ##############################
 
-function plot_trajectories(data, label; filename=nothing,xscalelog=false,legend_position=:topright,lstyle=fill(:solid,length(data)))
+function plot_trajectories(
+    data,
+    label;
+    filename=nothing,
+    xscalelog=false,
+    legend_position=:topright,
+    lstyle=fill(:solid, length(data)),
+)
     # theme(:dark)
     # theme(:vibrant)
     gr()
@@ -350,10 +368,7 @@ function plot_trajectories(data, label; filename=nothing,xscalelog=false,legend_
                 linestyle=lstyle[i],
             )
         else
-            plot!(x, y, label=label[i],
-                width=1.3,
-                linestyle=lstyle[i],
-            )
+            plot!(x, y, label=label[i], width=1.3, linestyle=lstyle[i])
         end
     end
     for i in 1:length(data)
@@ -374,10 +389,7 @@ function plot_trajectories(data, label; filename=nothing,xscalelog=false,legend_
                 linestyle=lstyle[i],
             )
         else
-            plot!(x, y, label=label[i],
-                width=1.3,
-                linestyle=lstyle[i],
-            )
+            plot!(x, y, label=label[i], width=1.3, linestyle=lstyle[i])
         end
     end
     for i in 1:length(data)
@@ -400,10 +412,7 @@ function plot_trajectories(data, label; filename=nothing,xscalelog=false,legend_
                 linestyle=lstyle[i],
             )
         else
-            plot!(x, y, label=label[i],
-                width=1.3,
-                linestyle=lstyle[i],
-            )
+            plot!(x, y, label=label[i], width=1.3, linestyle=lstyle[i])
         end
     end
     for i in 1:length(data)
@@ -425,10 +434,7 @@ function plot_trajectories(data, label; filename=nothing,xscalelog=false,legend_
                 linestyle=lstyle[i],
             )
         else
-            plot!(x, y, label=label[i],
-                width=1.3,
-                linestyle=lstyle[i],
-            )
+            plot!(x, y, label=label[i], width=1.3, linestyle=lstyle[i])
         end
     end
     fp = plot(pit, pti, dit, dti, layout=(2, 2)) # layout = @layout([A{0.01h}; [B C; D E]]))
