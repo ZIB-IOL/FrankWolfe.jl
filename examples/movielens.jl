@@ -199,7 +199,7 @@ xlazy, _, _, _, traj_data_lazy = FrankWolfe.lazified_conditional_gradient(
 @info "FW test loss: $(test_loss(xfin))"
 @info "LCG test loss: $(test_loss(xlazy))"
 
-open("movielens_result.json", "w") do f
+open(joinpath(@__DIR__, "movielens_result.json"), "w") do f
     data = JSON.json(
         (
         svals_gd=svdvals(xgd),
