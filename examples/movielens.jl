@@ -47,6 +47,8 @@ const rating_matrix = sparse(
 
 missing_rate = 0.05
 
+Random.seed!(42)
+
 const missing_ratings = Tuple{Int,Int}[]
 const present_ratings = Tuple{Int,Int}[]
 let
