@@ -97,7 +97,7 @@ function away_frank_wolfe(
         )
         grad_type = typeof(gradient)
         println(
-            "GRADIENTTYPE: $grad_type LAZY: $lazy K: $K MOMENTUM: $momentum away_steps: $away_steps",
+            "GRADIENTTYPE: $grad_type LAZY: $lazy K: $K MOMENTUM: $momentum AWAYSTEPS: $away_steps",
         )
         if emphasis == memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
