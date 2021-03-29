@@ -10,10 +10,11 @@ using Profile
 using SparseArrays, LinearAlgebra
 
 temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest-small.zip")
+
+# temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-25m.zip")
 #temp_zipfile = download("http://files.grouplens.org/datasets/movielens/ml-latest.zip")
 
 zarchive = ZipFile.Reader(temp_zipfile)
-
 
 movies_file = zarchive.files[findfirst(f -> occursin("movies", f.name), zarchive.files)]
 movies_frame = CSV.read(movies_file, DataFrame)
@@ -47,12 +48,15 @@ missing_rate = 0.05
 
 const missing_ratings = Tuple{Int,Int}[]
 const present_ratings = Tuple{Int,Int}[]
-for idx in eachindex(rating_matrix)
-    if rating_matrix[idx] > 0
-        if rand() <= missing_rate
-            push!(missing_ratings, Tuple(idx))
-        else
-            push!(present_ratings, Tuple(idx))
+let
+    (I, J, V) = SparseArrays.findnz(rating_matrix)
+    for idx in eachindex(I)
+        if V[idx] > 0
+            if rand() <= missing_rate
+                push!(missing_ratings, (I[idx], J[idx]))
+            else
+                push!(present_ratings, (I[idx], J[idx]))
+            end
         end
     end
 end
@@ -92,7 +96,7 @@ function project_nuclear_norm_ball(X; radius=1.0)
     return U * Diagonal(sing_val) * Vt', -norm_estimation * U[:, 1] * Vt[:, 1]'
 end
 
-norm_estimation = sum(Arpack.svds(rating_matrix, nsv=400, ritzvec=false)[1].S)
+norm_estimation = 400 * Arpack.svds(rating_matrix, nsv=1, ritzvec=false)[1].S[1]
 
 const lmo = FrankWolfe.NuclearNormLMO(norm_estimation)
 const x0 = FrankWolfe.compute_extreme_point(lmo, zero(rating_matrix))
@@ -115,8 +119,19 @@ num_pairs = 1000
 L_estimate = -Inf
 for i in 1:num_pairs
     global L_estimate
-    x = compute_extreme_point(lmo, rand(size(x0)[1], size(x0)[2]))
-    y = compute_extreme_point(lmo, rand(size(x0)[1], size(x0)[2]))
+    # computing random rank-one matrices
+    u1 = rand(size(x0, 1))
+    u1 ./= sum(u1)
+    u1 .*= norm_estimation
+    v1 = rand(size(x0, 2))
+    v1 ./= sum(v1)
+    x = FrankWolfe.RankOneMatrix(u1, v1)
+    u2 = rand(size(x0, 1))
+    u2 ./= sum(u2)
+    u2 .*= norm_estimation
+    v2 = rand(size(x0, 2))
+    v2 ./= sum(v2)
+    y = FrankWolfe.RankOneMatrix(u2, v2)
     grad!(gradient, x)
     grad!(gradient_aux, y)
     new_L = norm(gradient - gradient_aux) / norm(x - y)
@@ -128,13 +143,16 @@ end
 # PGD steps
 
 xgd = Matrix(x0)
-function_values = []
-timing_values = []
+function_values = Float64[]
+timing_values = Float64[]
+function_test_values = Float64[]
+
 time_start = time_ns()
 for _ in 1:k
     f_val = f(xgd)
     push!(function_values, f_val)
-    push!(timing_values, (time_ns() - time_start) / 1.0e9)
+    push!(function_test_values, test_loss(xgd))
+    push!(timing_values, (time_ns() - time_start) / 1e9)
     @info f_val
     grad!(gradient, xgd)
     xgd_new, vertex = project_nuclear_norm_ball(xgd - gradient / L_estimate, radius=norm_estimation)
@@ -142,7 +160,7 @@ for _ in 1:k
     @. xgd -= gamma * (xgd - xgd_new)
 end
 
-xfin, vmin, _, _, traj_data = FrankWolfe.frank_wolfe(
+xfin, _, _, _, traj_data = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -152,7 +170,23 @@ xfin, vmin, _, _, traj_data = FrankWolfe.frank_wolfe(
     print_iter=k / 10,
     trajectory=true,
     verbose=true,
-    linesearch_tol=1e-7,
+    linesearch_tol=1e-8,
+    line_search=FrankWolfe.backtracking,
+    emphasis=FrankWolfe.memory,
+    gradient=gradient,
+)
+
+xlazy, _, _, _, traj_data_lazy = FrankWolfe.lazified_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    x0;
+    epsilon=1e-9,
+    max_iteration=k,
+    print_iter=k / 10,
+    trajectory=true,
+    verbose=true,
+    linesearch_tol=1e-8,
     line_search=FrankWolfe.backtracking,
     emphasis=FrankWolfe.memory,
     gradient=gradient,
@@ -160,6 +194,26 @@ xfin, vmin, _, _, traj_data = FrankWolfe.frank_wolfe(
 
 @info "Gdescent test loss: $(test_loss(xgd))"
 @info "FW test loss: $(test_loss(xfin))"
+@info "LCG test loss: $(test_loss(xlazy))"
+
+open("movielens_result.json", "w") do f
+    data = JSON.json(
+        (
+        svals_gd=svdvals(xgd),
+        svals_fw=svdvals(xfin),
+        svals_lcg=svdvals(xlazy),
+        test_loss_fw=test_loss(xlazy),
+        test_loss_lcg=test_loss(xfin),
+        test_loss_gd=test_loss(xgd),
+        traj_data_fw=traj_data,
+        traj_data_lcg=traj_data_lazy,
+        function_values_gd=function_values,
+        function_values_test_gd=function_test_values,
+        timing_values_gd=timing_values,
+        )
+    )
+    write(f, data)
+end
 
 #Plot results w.r.t. iteration count
 gr()
@@ -167,13 +221,21 @@ pit = plot(
     [traj_data[j][1] for j in 1:length(traj_data)],
     [traj_data[j][2] for j in 1:length(traj_data)],
     label="FW",
+    xlabel="iterations",
     ylabel="Objective function",
     yaxis=:log,
     yguidefontsize=8,
     xguidefontsize=8,
     legendfontsize=8,
+    legend=:bottomleft,
 )
-plot!(range(1, length(function_values), step=1) |> collect, function_values, yaxis=:log, label="GD")
+plot!(
+    [traj_data_lazy[j][1] for j in eachindex(traj_data_lazy)],
+    [traj_data_lazy[j][2] for j in eachindex(traj_data_lazy)],
+    label="LCG",
+)
+plot!(eachindex(function_values), function_values, yaxis=:log, label="GD")
+plot!(eachindex(function_test_values), function_test_values, label="GD_test")
 savefig(pit, "objective_func_vs_iteration.pdf")
 
 #Plot results w.r.t. time
@@ -183,9 +245,19 @@ pit = plot(
     label="FW",
     ylabel="Objective function",
     yaxis=:log,
+    xlabel="time (s)",
     yguidefontsize=8,
     xguidefontsize=8,
     legendfontsize=8,
+    legend=:bottomleft,
+)
+
+plot!(
+    [traj_data_lazy[j][5] for j in eachindex(traj_data_lazy)],
+    [traj_data_lazy[j][2] for j in eachindex(traj_data_lazy)],
+    label="LCG",
 )
 plot!(timing_values, function_values, label="GD", yaxis=:log)
+plot!(timing_values, function_test_values, label="GD_test")
+
 savefig(pit, "objective_func_vs_time.pdf")
