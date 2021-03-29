@@ -14,7 +14,7 @@ function away_frank_wolfe(
     K=2.0,
     step_lim=20,
     epsilon=1e-7,
-    awaySteps=true,
+    away_steps=true,
     lazy=false,
     momentum=nothing,
     max_iteration=10000,
@@ -25,6 +25,7 @@ function away_frank_wolfe(
     emphasis::Emphasis=memory,
     gradient=nothing,
     renorm_interval=1000,
+    callback=nothing,
 )
     function print_header(data)
         @printf(
@@ -72,7 +73,10 @@ function away_frank_wolfe(
     x = x0
     active_set = ActiveSet([(1.0, x0)]) # add the first vertex to active set from initialization
     tt = regular
-    trajData = []
+    traj_data = []
+    if trajectory && callback === nothing
+        callback = trajectory_callback(traj_data)
+    end
     time_start = time_ns()
 
     d = similar(x)
@@ -93,7 +97,7 @@ function away_frank_wolfe(
         )
         grad_type = typeof(gradient)
         println(
-            "GRADIENTTYPE: $grad_type LAZY: $lazy K: $K MOMENTUM: $momentum AWAYSTEPS: $awaySteps",
+            "GRADIENTTYPE: $grad_type LAZY: $lazy K: $K MOMENTUM: $momentum away_steps: $away_steps",
         )
         if emphasis == memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
@@ -129,7 +133,7 @@ function away_frank_wolfe(
             @emphasis(emphasis, gradient = (momentum * gradient) + (1 - momentum) * gtemp)
         end
 
-        if awaySteps
+        if away_steps
             if lazy
                 d, vertex, index, gamma_max, phi_value, away_step_taken, fw_step_taken, tt =
                     lazy_afw_step(x, gradient, lmo, active_set, phi_value; K=K)
@@ -179,17 +183,14 @@ function away_frank_wolfe(
             dual_gap = phi_value
         end
 
-        if trajectory
-            push!(
-                trajData,
-                (
-                    t,
-                    primal,
-                    primal - dual_gap,
-                    phi_value,
-                    (time_ns() - time_start) / 1.0e9,
-                    length(active_set),
-                ),
+        if callback !== nothing
+            callback(
+                t,
+                primal,
+                primal - dual_gap,
+                phi_value,
+                (time_ns() - time_start) / 1.0e9,
+                length(active_set),
             )
         end
 
@@ -264,7 +265,7 @@ function away_frank_wolfe(
         flush(stdout)
     end
 
-    return x, v, primal, dual_gap, trajData, active_set
+    return x, v, primal, dual_gap, traj_data, active_set
 end
 
 function lazy_afw_step(x, gradient, lmo, active_set, phi; K=2.0)

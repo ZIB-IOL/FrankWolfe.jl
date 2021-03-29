@@ -18,6 +18,7 @@ function frank_wolfe(
     emphasis::Emphasis=memory,
     nep=false,
     gradient=nothing,
+    callback=nothing,
 )
     function print_header(data)
         @printf(
@@ -63,19 +64,22 @@ function frank_wolfe(
     v = []
     x = x0
     tt = regular
-    trajData = []
+    traj_data = []
+    if trajectory && callback === nothing
+        callback = trajectory_callback(traj_data)
+    end
     time_start = time_ns()
 
-    if line_search === shortstep && !isfinite(L)
+    if line_search == shortstep && !isfinite(L)
         println("FATAL: Lipschitz constant not set. Prepare to blow up spectacularly.")
     end
 
-    if line_search === fixed && gamma0 == 0
+    if line_search == fixed && gamma0 == 0
         println("FATAL: gamma0 not set. We are not going to move a single bit.")
     end
 
     if !isnothing(momentum) &&
-       (line_search === shortstep || line_search === adaptive || line_search === rationalshortstep)
+       (line_search == shortstep || line_search == adaptive || line_search == rationalshortstep)
         println(
             "WARNING: Momentum-averaged gradients should usually be used with agnostic stepsize rules.",
         )
@@ -144,11 +148,8 @@ function frank_wolfe(
             dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         end
 
-        if trajectory
-            push!(
-                trajData,
-                (t, primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9),
-            )
+        if callback !== nothing
+            callback(t, primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1e9)
         end
         @emphasis(emphasis, d = x - v)
 
@@ -229,7 +230,7 @@ function frank_wolfe(
         print_footer()
         flush(stdout)
     end
-    return x, v, primal, dual_gap, trajData
+    return x, v, primal, dual_gap, traj_data
 end
 
 ##############################################################
@@ -257,6 +258,7 @@ function lazified_conditional_gradient(
     emphasis::Emphasis=memory,
     gradient=nothing,
     VType=typeof(x0),
+    callback=nothing,
 )
 
     if isfinite(cache_size)
@@ -311,7 +313,10 @@ function lazified_conditional_gradient(
     v = []
     x = x0
     phi = Inf
-    trajData = []
+    traj_data = []
+    if trajectory && callback === nothing
+        callback = trajectory_callback(traj_data)
+    end
     tt = regular
     time_start = time_ns()
 
@@ -369,17 +374,10 @@ function lazified_conditional_gradient(
             phi = min(dual_gap, phi / 2)
         end
 
-        if trajectory
-            push!(
-                trajData,
-                (
-                    t,
-                    primal,
-                    primal - dual_gap,
-                    dual_gap,
-                    (time_ns() - time_start) / 1.0e9,
-                    length(lmo),
-                ),
+        if callback !== nothing
+            callback(
+                t, primal, primal - dual_gap,
+                dual_gap, (time_ns() - time_start) / 1e9, length(lmo),
             )
         end
 
@@ -447,7 +445,7 @@ function lazified_conditional_gradient(
         print_footer()
         flush(stdout)
     end
-    return x, v, primal, dual_gap, trajData
+    return x, v, primal, dual_gap, traj_data
 end
 
 function stochastic_frank_wolfe(
@@ -469,6 +467,7 @@ function stochastic_frank_wolfe(
     rng=Random.GLOBAL_RNG,
     batch_size=length(f.xs) ÷ 10 + 1,
     full_evaluation=false,
+    callback=nothing,
 )
     function print_header(data)
         @printf(
@@ -514,7 +513,10 @@ function stochastic_frank_wolfe(
     v = []
     x = x0
     tt = regular
-    trajData = []
+    traj_data = []
+    if trajectory && callback === nothing
+        callback = trajectory_callback(traj_data)
+    end
     dx = similar(x0) # Array{eltype(x0)}(undef, length(x0))
     time_start = time_ns()
 
@@ -582,11 +584,8 @@ function stochastic_frank_wolfe(
             dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         end
 
-        if trajectory
-            push!(
-                trajData,
-                (t, primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9),
-            )
+        if callback !== nothing
+            callback(t, primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9)
         end
 
         if line_search == agnostic
@@ -647,5 +646,5 @@ function stochastic_frank_wolfe(
         print_footer()
         flush(stdout)
     end
-    return x, v, primal, dual_gap, trajData
+    return x, v, primal, dual_gap, traj_data
 end

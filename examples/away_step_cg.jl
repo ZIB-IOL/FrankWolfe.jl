@@ -49,7 +49,7 @@ FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo; k=100)
     epsilon=1e-5,
     emphasis=FrankWolfe.memory,
     verbose=true,
-    awaySteps=true,
+    away_steps=true,
     trajectory=true,
 );
 
@@ -66,7 +66,7 @@ FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo; k=100)
     momentum=0.9,
     emphasis=FrankWolfe.blas,
     verbose=true,
-    awaySteps=true,
+    away_steps=true,
     trajectory=true,
 );
 
