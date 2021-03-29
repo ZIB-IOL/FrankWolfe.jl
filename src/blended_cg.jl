@@ -299,7 +299,7 @@ end
 
 
 """
-minimize_over_convex_hull!
+    minimize_over_convex_hull!
 
 Given a function f with gradient grad! and an active set 
 active_set this function will minimize the function over 

@@ -12,3 +12,4 @@ after.pdf
 prof.txt
 workspace.code-workspace
 examples/test.jl
+examples/*.json
