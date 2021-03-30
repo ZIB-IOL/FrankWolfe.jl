@@ -46,7 +46,7 @@ x0 = FrankWolfe.compute_extreme_point(lmo, ones(n));
     epsilon=1e-5,
     emphasis=FrankWolfe.memory,
     verbose=true,
-    awaySteps=true,
+    away_steps=true,
     trajectory=true,
 );
 
@@ -62,7 +62,7 @@ x0 = FrankWolfe.compute_extreme_point(lmo, ones(n));
     verbose=true,
     epsilon=1e-5,
     trajectory=true,
-    awaySteps=false,
+    away_steps=false,
 );
 
 data = [trajectorylazy, trajectoryAFW, trajectoryFW]
