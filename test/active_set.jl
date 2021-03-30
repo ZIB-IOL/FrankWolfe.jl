@@ -105,11 +105,10 @@ end
         active_set,
         1e-3,
         1,
-        false,
-        [],
         0.0,
         0,
         max_iteration=1000,
+        callback=nothing,
     )
     FrankWolfe.active_set_cleanup!(active_set)
     @test length(active_set) == 2
@@ -125,11 +124,10 @@ end
         active_set2,
         1e-3,
         1,
-        false,
-        [],
         0.0,
         0,
         max_iteration=1000,
+        callback=nothing,
     )
     @test length(active_set) == 2
     @test [1, 0] ∈ active_set.atoms
@@ -145,11 +143,10 @@ end
             as,
             1.0e-3,
             1,
-            false,
-            [],
             0.0,
             0,
             max_iteration=1000,
+            callback=nothing,
         )
         @test number_of_steps == 0
     end

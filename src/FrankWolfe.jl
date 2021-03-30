@@ -26,6 +26,7 @@ export blended_conditional_gradient, compute_extreme_point
 include("defs.jl")
 
 include("utils.jl")
+include("types.jl")
 include("oracles.jl")
 include("simplex_oracles.jl")
 include("norm_oracles.jl")

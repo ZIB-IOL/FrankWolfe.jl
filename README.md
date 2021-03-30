@@ -73,7 +73,29 @@ Most common strategies and some more particular ones:
 - Golden ratio linesearch
 - Backtracking line search
 - Rational Short-step rule: some as short-step rule but all computations are kept rational if inputs are rational. useful for the rational variants
-- adaptive FW: starts with an estimate for L and then refine it dynamically (see <https://arxiv.org/pdf/1806.05123.pdf> and also the survey *** to be added *** )
+- Adaptive FW: starts with an estimate for L and then refine it dynamically (see <https://arxiv.org/pdf/1806.05123.pdf> and also the survey *** to be added *** )
+
+#### Callbacks
+
+All top-level algorithms can take an optional `callback` argument, which must be a function
+taking a named tuple as argument of the form:
+```julia
+state = (
+    t = t,
+    primal = primal,
+    dual = primal - dual_gap,
+    dual_gap = phi_value,
+    time = (time_ns() - time_start) / 1e9,
+    x = x,
+    v = vertex,
+    active_set_length = active_set_length,
+)
+```
+
+Some fields of the named tuple can vary, but the 6 first are always present in this order.
+The callback can be used to log additional information or store some values of interest in an external array.
+If a callback is passed, the `trajectory` keyword is ignored since it is a special case of callback pushing the 5 first elements of the
+state to an array returned from the algorithm.
 
 #### Other 
 
