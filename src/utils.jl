@@ -377,6 +377,8 @@ function plot_results(
     line_width = 2.0
     marker_size = 5.0
     transparency_markers = 0.45
+    font_size_axis = 12
+    font_size_legend = 9
     gr()
     plt = nothing
     list_plots = Plots.Plot{Plots.GRBackend}[]
@@ -408,9 +410,9 @@ function plot_results(
                     ylabel=list_axis_y[i],
                     xlabel=list_axis_x[i],
                     legend=position_legend,
-                    yguidefontsize=8,
-                    xguidefontsize=8,
-                    legendfontsize=8,
+                    yguidefontsize=font_size_axis,
+                    xguidefontsize=font_size_axis,
+                    legendfontsize=font_size_legend,
                     width=line_width,
                     linestyle=list_style[j],
                     color= list_color[j],
