@@ -549,10 +549,12 @@ end
 """
     trajectory_callback(storage)
 
-Callback pushing the state at each iteration to the passed storage
+Callback pushing the state at each iteration to the passed storage.
+The state data is only the 5 first fields, usually:
+`(t,primal,dual,dual_gap,time)`
 """
 function trajectory_callback(storage)
-    function push_trajectory!(data...)
-        push!(storage, data)
+    function push_trajectory!(data)
+        push!(storage, Tuple(data)[1:5])
     end
 end

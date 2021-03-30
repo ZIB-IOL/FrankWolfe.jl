@@ -176,7 +176,7 @@ function away_frank_wolfe(
 
         if (
             (mod(t, print_iter) == 0 && verbose) ||
-            trajectory ||
+            callback !== nothing ||
             !(line_search == agnostic || line_search == nonconvex || line_search == fixed)
         )
             primal = f(x)
@@ -184,14 +184,17 @@ function away_frank_wolfe(
         end
 
         if callback !== nothing
-            callback(
-                t,
-                primal,
-                primal - dual_gap,
-                phi_value,
-                (time_ns() - time_start) / 1.0e9,
-                length(active_set),
+            state = (
+                t = t,
+                primal = primal,
+                dual = primal - dual_gap,
+                dual_gap = phi_value,
+                time = (time_ns() - time_start) / 1e9,
+                x = x,
+                v = vertex,
+                active_set_length = length(active_set),
             )
+            callback(state)
         end
 
 
@@ -354,12 +357,9 @@ end
 
 function fw_step(x, gradient, lmo)
     vertex = compute_extreme_point(lmo, gradient)
-    return x - vertex,
-    vertex,
-    nothing,
-    1,
-    fast_dot(x, gradient) - fast_dot(vertex, gradient),
-    false,
-    true,
-    regular
+    return (
+        x - vertex, vertex, nothing, 1,
+        fast_dot(x, gradient) - fast_dot(vertex, gradient),
+        false, true, regular
+    )
 end

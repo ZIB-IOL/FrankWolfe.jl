@@ -143,17 +143,28 @@ function frank_wolfe(
 
         v = compute_extreme_point(lmo, gradient)
         # go easy on the memory - only compute if really needed
-        if ((mod(t, print_iter) == 0 && verbose) || trajectory || line_search == shortstep)
+        if (
+            (mod(t, print_iter) == 0 && verbose) ||
+            callback !== nothing || line_search == shortstep
+        )
             primal = f(x)
             dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         end
 
         if callback !== nothing
-            callback(t, primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1e9)
+            state = (
+                t=t, primal=primal,
+                dual=primal - dual_gap,
+                dual_gap=dual_gap,
+                time=(time_ns() - time_start) / 1e9,
+                x=x,
+                v=v,
+            )
+            callback(state)
         end
         @emphasis(emphasis, d = x - v)
 
-        if isnothing(momentum)
+        if momentum === nothing
             gamma, L = line_search_wrapper(
                 line_search,
                 t,
@@ -200,8 +211,8 @@ function frank_wolfe(
                 primal,
                 primal - dual_gap,
                 dual_gap,
-                (time_ns() - time_start) / 1.0e9,
-                t / ((time_ns() - time_start) / 1.0e9),
+                (time_ns() - time_start) / 1e9,
+                t / ((time_ns() - time_start) / 1e9),
             )
             print_iter_func(rep)
             flush(stdout)
@@ -362,7 +373,7 @@ function lazified_conditional_gradient(
         threshold = fast_dot(x, gradient) - phi / K
 
         # go easy on the memory - only compute if really needed
-        if ((mod(t, print_iter) == 0 && verbose) || trajectory)
+        if ((mod(t, print_iter) == 0 && verbose) || callback !== nothing)
             primal = f(x)
         end
 
@@ -375,10 +386,16 @@ function lazified_conditional_gradient(
         end
 
         if callback !== nothing
-            callback(
-                t, primal, primal - dual_gap,
-                dual_gap, (time_ns() - time_start) / 1e9, length(lmo),
+            state = (
+                t=t, primal=primal,
+                dual=primal - dual_gap,
+                dual_gap=dual_gap,
+                time=(time_ns() - time_start) / 1e9,
+                cache_size=length(lmo),
+                x=x,
+                v=v,
             )
+            callback(state)
         end
 
         @emphasis(emphasis, d = x - v)
@@ -578,14 +595,22 @@ function stochastic_frank_wolfe(
 
         # go easy on the memory - only compute if really needed
         if (mod(t, print_iter) == 0 && verbose) ||
-           trajectory ||
+           callback !== nothing ||
            !(line_search == agnostic || line_search == nonconvex || line_search == fixed)
             primal = compute_value(f, x, full_evaluation=true)
             dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         end
 
         if callback !== nothing
-            callback(t, primal, primal - dual_gap, dual_gap, (time_ns() - time_start) / 1.0e9)
+            state = (
+                t=t, primal=primal,
+                dual=primal - dual_gap,
+                dual_gap=dual_gap,
+                time=(time_ns() - time_start) / 1e9,
+                x=x,
+                v=v,
+            )
+            callback(state)
         end
 
         if line_search == agnostic
@@ -622,7 +647,7 @@ function stochastic_frank_wolfe(
         end
         t = t + 1
     end
-    # recompute everything once for final verfication / do not record to trajectory though for now!
+    # recompute everything once for final verfication / no additional callback call
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
     # hence the final computation.
     # last computation done with full evaluation for exact gradient

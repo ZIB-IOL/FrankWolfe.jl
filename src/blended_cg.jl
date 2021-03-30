@@ -160,7 +160,6 @@ function blended_conditional_gradient(
             active_set::ActiveSet,
             phi,
             t,
-            trajectory,
             time_start,
             non_simplex_iter,
             line_search_inner=line_search_inner,
@@ -222,14 +221,17 @@ function blended_conditional_gradient(
         x = compute_active_set_iterate(active_set)
         dual_gap = phi
         if callback !== nothing
-            callback(
-                t,
-                primal,
-                primal - dual_gap,
-                dual_gap,
-                (time_ns() - time_start) / 1e9,
-                length(active_set),
+            state = (
+                t=t, primal=primal,
+                dual=primal - dual_gap,
+                dual_gap=dual_gap,
+                time=(time_ns() - time_start) / 1e9,
+                x=x,
+                v=v,
+                active_set_length=length(active_set),
+                non_simplex_iter=non_simplex_iter,
             )
+            callback(state)
         end
 
         if verbose && mod(t, print_iter) == 0
@@ -320,7 +322,6 @@ function minimize_over_convex_hull!(
     active_set::ActiveSet,
     tolerance,
     t,
-    trajectory,
     time_start,
     non_simplex_iter;
     line_search_inner=adaptive,
@@ -401,8 +402,6 @@ function minimize_over_convex_hull!(
                         reduced_grad!,
                         tolerance,
                         t,
-                        trajectory,
-                        traj_data,
                         time_start,
                         non_simplex_iter,
                         verbose=verbose,
@@ -410,6 +409,7 @@ function minimize_over_convex_hull!(
                         L=L_reduced,
                         mu=mu_reduced,
                         max_iteration=max_iteration,
+                        callback=callback,
                     )
                 @. active_set.weights = new_weights
             end
@@ -422,14 +422,13 @@ function minimize_over_convex_hull!(
                 reduced_grad!,
                 tolerance,
                 t,
-                trajectory,
-                traj_data,
                 time_start,
                 non_simplex_iter,
                 verbose=verbose,
                 print_iter=print_iter,
                 L=L_reduced,
                 max_iteration=max_iteration,
+                callback=callback,
             )
             @. active_set.weights = new_weights
         end
@@ -564,7 +563,7 @@ function Strong_Frank_Wolfe_gap(gradient)
 end
 
 """
-accelerated_simplex_gradient_descent_over_probability_simplex
+    accelerated_simplex_gradient_descent_over_probability_simplex
 
 Minimizes an objective function over the unit probability simplex 
 until the Strong-Wolfe gap is below tolerance using Nesterov's 
@@ -576,8 +575,6 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
     reduced_grad!,
     tolerance,
     t,
-    trajectory,
-    traj_data,
     time_start,
     non_simplex_iter;
     verbose=verbose,
@@ -585,6 +582,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
     L=1.0,
     mu=1.0,
     max_iteration,
+    callback,
 )
     number_of_steps = 0
     x = deepcopy(initial_point)
@@ -618,18 +616,16 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
         primal = reduced_f(x)
         reduced_grad!(gradient_x, x)
         strong_wolfe_gap = Strong_Frank_Wolfe_gap_probability_simplex(gradient_x, x)
-        if trajectory
-            push!(
-                traj_data,
-                (
-                    t + number_of_steps,
-                    primal,
-                    primal - tolerance,
-                    tolerance,
-                    (time_ns() - time_start) / 1e9,
-                    length(initial_point),
-                ),
+        if callback !== nothing
+            state = (
+                t = t + number_of_steps,
+                primal=primal,
+                dual=primal - tolerance,
+                dual_gap=tolerance,
+                time=(time_ns() - time_start) / 1e9,
+                x=x,
             )
+            callback(state)
         end
         tt = simplex_descent
         if verbose && mod(t + number_of_steps, print_iter) == 0
@@ -666,14 +662,13 @@ function simplex_gradient_descent_over_probability_simplex(
     reduced_grad!,
     tolerance,
     t,
-    trajectory,
-    traj_data,
     time_start,
     non_simplex_iter;
     verbose=verbose,
     print_iter=print_iter,
     L=1.0,
     max_iteration,
+    callback,
 )
     number_of_steps = 0
     x = deepcopy(initial_point)
@@ -687,18 +682,16 @@ function simplex_gradient_descent_over_probability_simplex(
         primal = reduced_f(x)
         reduced_grad!(gradient, x)
         strong_wolfe_gap = Strong_Frank_Wolfe_gap_probability_simplex(gradient, x)
-        if trajectory
-            push!(
-                traj_data,
-                (
-                    t + number_of_steps,
-                    primal,
-                    primal - tolerance,
-                    tolerance,
-                    (time_ns() - time_start) / 1.0e9,
-                    length(initial_point),
-                ),
+        if callback !== nothing
+            state = (
+                t = t + number_of_steps,
+                primal = primal,
+                dual = primal - tolerance,
+                dual_gap = tolerance,
+                time = (time_ns() - time_start) / 1e9,
+                x=x
             )
+            callback(state)
         end
         tt = simplex_descent
         if verbose && mod(t + number_of_steps, print_iter) == 0
@@ -909,14 +902,16 @@ function simplex_gradient_descent_over_convex_hull(
         primal = f(x)
         dual_gap = tolerance
         if callback !== nothing
-            callback(
-                t + number_of_steps,
-                primal,
-                primal - dual_gap,
-                dual_gap,
-                (time_ns() - time_start) / 1.0e9,
-                length(active_set),
+            state = (
+                t=t, primal=primal,
+                dual=primal - dual_gap,
+                dual_gap=dual_gap,
+                time=(time_ns() - time_start) / 1e9,
+                x=x,
+                active_set_length=length(active_set),
+                non_simplex_iter=non_simplex_iter,
             )
+            callback(state)
         end
         tt = simplex_descent
         if verbose && mod(t + number_of_steps, print_iter) == 0
