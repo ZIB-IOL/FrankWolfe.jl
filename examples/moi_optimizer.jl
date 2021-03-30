@@ -7,6 +7,7 @@
 
 include("activate.jl")
 using LinearAlgebra
+using LaTeXStrings
 
 using JuMP
 const MOI = JuMP.MOI
@@ -127,7 +128,25 @@ x_lmo, v, primal, dual_gap, trajectory_lmo_blas = FrankWolfe.frank_wolfe(
     trajectory=true,
 );
 
-data = [trajectory_lmo, trajectory_moi, trajectory_lmo_blas, trajectory_jump_blas]
-label = ["Closed-form LMO", "MOI LMO", "LMO Blas", "MOI Blas"]
+# Defined the x-axis for the series, when plotting in terms of iterations.
+iteration_list = [[x[1] + 1 for x in trajectory_lmo], [x[1] + 1 for x in trajectory_moi]]
+# Defined the x-axis for the series, when plotting in terms of time.
+time_list = [[x[5] for x in trajectory_lmo], [x[5] for x in trajectory_moi]]
+# Defined the y-axis for the series, when plotting the primal gap.
+primal_gap_list = [[x[2] for x in trajectory_lmo], [x[2] for x in trajectory_moi]]
+# Defined the y-axis for the series, when plotting the dual gap.
+dual_gap_list = [[x[4] for x in trajectory_lmo], [x[4] for x in trajectory_moi]]
+# Defined the labels for the series using latex rendering.
+label = [L"\textrm{Closed-form LMO}", L"\textrm{MOI LMO}"]
 
-FrankWolfe.plot_trajectories(data, label)
+FrankWolfe.plot_results(
+    [primal_gap_list, primal_gap_list, dual_gap_list, dual_gap_list],
+    [iteration_list, time_list, iteration_list, time_list],
+    label,
+    [L"\textrm{Iteration}", L"\textrm{Time}", L"\textrm{Iteration}", L"\textrm{Time}"],
+    [L"\textrm{Primal Gap}", L"\textrm{Primal Gap}", L"\textrm{Dual Gap}", L"\textrm{Dual Gap}"],
+    xscalelog = [:log, :identity, :log, :identity],
+    yscalelog = [:log, :log, :log, :log],
+    legend_position = [:bottomleft, :topright, :bottomleft, :topright],
+    filename="moi_compare.pdf",
+)
