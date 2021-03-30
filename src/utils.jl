@@ -328,6 +328,101 @@ end
 ### Visualization etc
 ##############################
 
+
+function plot_results(
+    list_data_y,
+    list_data_x,
+    list_label,
+    list_axis_x,
+    list_axis_y;
+    filename=nothing,
+    xscalelog= nothing,
+    legend_position=:topright,
+    list_style=fill(:solid, length(list_label)),
+    list_color=get_color_palette(:auto, plot_color(:white)),
+    list_markers = [:circle, :rect, :utriangle, :diamond, :+, :x, :star5, :hexagon, :cross, :xcross, :dtriangle, :rtriangle, :ltriangle, :pentagon, :heptagon, :octagon, :star4, :star6, :star7, :star8, :vline, :hline],
+    number_markers_per_line = 10,
+)
+
+    gr()
+
+    x = []
+    y = []
+    plt = nothing
+    list_plots = Plots.Plot{Plots.GRBackend}[]
+    #Plot an appropiate number of plots
+    for i in 1:length(list_data_x)
+        for j in 1:length(list_data_x[i])
+            if isnothing(xscalelog)
+                xscale = :identity
+            else
+                xscale = xscalelog[i]
+            end
+            if j == 1
+                plt = plot(
+                    list_data_x[i][j],
+                    list_data_y[i][j],
+                    label=list_label[j],
+                    xaxis=xscale,
+                    yaxis=:log,
+                    ylabel=list_axis_y[i],
+                    xlabel=list_axis_x[i],
+                    legend=legend_position,
+                    yguidefontsize=8,
+                    xguidefontsize=8,
+                    legendfontsize=8,
+                    width=1.3,
+                    linestyle=list_style[j],
+                    color= list_color[j],
+                )
+            else
+                plot!(
+                    list_data_x[i][j],
+                    list_data_y[i][j],
+                    label=list_label[j],
+                    width=1.3,
+                    linestyle=list_style[j],
+                    color= list_color[j],
+                    xaxis=xscale,
+                    yaxis=:log,
+                )
+            end
+            if xscale == :log 
+                indices = round.(Int, log.(range(list_data_x[i][j][1],list_data_x[i][j][end],length=number_markers_per_line)))
+                plot!(
+                    list_data_x[i][j][indices],
+                    list_data_y[i][j][indices],
+                    line = false,
+                    markershape = list_markers[j],
+                    markercolor = list_color[j],
+                    markersize = 5,
+                    markeralpha = 0.2,
+                    label = "",
+                )
+            else
+                plot!(
+                    view(list_data_x[i][j],1:length(list_data_x[i][j])÷number_markers_per_line:length(list_data_x[i][j])),
+                    view(list_data_y[i][j], 1:length(list_data_y[i][j])÷number_markers_per_line:length(list_data_y[i][j])),
+                    line = false,
+                    markershape = list_markers[j],
+                    markercolor = list_color[j],
+                    markersize = 5,
+                    markeralpha = 0.45,
+                    label = "",
+                )
+            end
+        end
+        push!(list_plots, plt)
+    end
+    fp = plot(list_plots..., layout=length(list_plots))
+    plot!(size=(600, 400))
+    if filename !== nothing
+        savefig(fp, filename)
+    end
+    return fp
+end
+
+
 function plot_trajectories(
     data,
     label;
