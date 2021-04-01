@@ -117,6 +117,17 @@ FrankWolfe.benchmark_oracles(
 gradient = spzeros(size(x0)...)
 gradient_aux = spzeros(size(x0)...)
 
+# pushes to the trajectory the first 5 elements of the trajectory and the test value at the current iterate
+function build_callback(trajectory_arr)
+    function callback(state)
+        push!(
+            trajectory_arr,
+            (Tuple(state)[1:5]..., test_loss(state.x))
+        )
+    end
+end
+
+
 #Estimate the smoothness constant.
 num_pairs = 1000
 L_estimate = -Inf
@@ -163,6 +174,8 @@ for _ in 1:k
     @. xgd -= gamma * (xgd - xgd_new)
 end
 
+trajectory_arr_fw = Vector{Tuple{Int64, Float64, Float64, Float64, Float64, Float64}}()
+callback = build_callback(trajectory_arr_fw)
 xfin, _, _, _, traj_data = FrankWolfe.frank_wolfe(
     f,
     grad!,
@@ -171,15 +184,17 @@ xfin, _, _, _, traj_data = FrankWolfe.frank_wolfe(
     epsilon=1e-9,
     max_iteration=k,
     print_iter=k / 10,
-    trajectory=true,
     verbose=true,
     linesearch_tol=1e-8,
     line_search=FrankWolfe.backtracking,
     emphasis=FrankWolfe.memory,
     gradient=gradient,
+    callback=callback,
 )
 
-xlazy, _, _, _, traj_data_lazy = FrankWolfe.lazified_conditional_gradient(
+trajectory_arr_lazy = Vector{Tuple{Int64, Float64, Float64, Float64, Float64, Float64}}()
+callback = build_callback(trajectory_arr_lazy)
+xlazy, _, _, _, _ = FrankWolfe.lazified_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -187,17 +202,21 @@ xlazy, _, _, _, traj_data_lazy = FrankWolfe.lazified_conditional_gradient(
     epsilon=1e-9,
     max_iteration=k,
     print_iter=k / 10,
-    trajectory=true,
     verbose=true,
     linesearch_tol=1e-8,
     line_search=FrankWolfe.backtracking,
     emphasis=FrankWolfe.memory,
     gradient=gradient,
+    callback=callback,
 )
 
 @info "Gdescent test loss: $(test_loss(xgd))"
 @info "FW test loss: $(test_loss(xfin))"
 @info "LCG test loss: $(test_loss(xlazy))"
+
+fw_test_values = getindex.(trajectory_arr_fw, 6)
+lazy_test_values = getindex.(trajectory_arr_lazy, 6)
+
 
 open(joinpath(@__DIR__, "movielens_result.json"), "w") do f
     data = JSON.json(
@@ -205,11 +224,10 @@ open(joinpath(@__DIR__, "movielens_result.json"), "w") do f
         svals_gd=svdvals(xgd),
         svals_fw=svdvals(xfin),
         svals_lcg=svdvals(xlazy),
-        test_loss_fw=test_loss(xlazy),
-        test_loss_lcg=test_loss(xfin),
-        test_loss_gd=test_loss(xgd),
-        traj_data_fw=traj_data,
-        traj_data_lcg=traj_data_lazy,
+        fw_test_values=fw_test_values,
+        lazy_test_values=lazy_test_values,
+        trajectory_arr_fw=trajectory_arr_fw,
+        trajectory_arr_lazy=trajectory_arr_lazy,
         function_values_gd=function_values,
         function_values_test_gd=function_test_values,
         timing_values_gd=timing_values,
@@ -221,8 +239,8 @@ end
 #Plot results w.r.t. iteration count
 gr()
 pit = plot(
-    [traj_data[j][1] for j in 1:length(traj_data)],
-    [traj_data[j][2] for j in 1:length(traj_data)],
+    getindex.(trajectory_arr_fw, 1),
+    getindex.(trajectory_arr_fw, 2),
     label="FW",
     xlabel="iterations",
     ylabel="Objective function",
@@ -233,18 +251,28 @@ pit = plot(
     legend=:bottomleft,
 )
 plot!(
-    [traj_data_lazy[j][1] for j in eachindex(traj_data_lazy)],
-    [traj_data_lazy[j][2] for j in eachindex(traj_data_lazy)],
+    getindex.(trajectory_arr_lazy, 1),
+    getindex.(trajectory_arr_lazy, 2),
     label="LCG",
 )
 plot!(eachindex(function_values), function_values, yaxis=:log, label="GD")
 plot!(eachindex(function_test_values), function_test_values, label="GD_test")
+plot!(
+    getindex.(trajectory_arr_fw, 1),
+    getindex.(trajectory_arr_fw, 6),
+    label="FW_T",
+)
+plot!(
+    getindex.(trajectory_arr_lazy, 1),
+    getindex.(trajectory_arr_lazy, 6),
+    label="LCG_T",
+)
 savefig(pit, "objective_func_vs_iteration.pdf")
 
 #Plot results w.r.t. time
 pit = plot(
-    [traj_data[j][5] for j in 1:length(traj_data)],
-    [traj_data[j][2] for j in 1:length(traj_data)],
+    getindex.(trajectory_arr_fw, 5),
+    getindex.(trajectory_arr_fw, 2),
     label="FW",
     ylabel="Objective function",
     yaxis=:log,
@@ -256,10 +284,21 @@ pit = plot(
 )
 
 plot!(
-    [traj_data_lazy[j][5] for j in eachindex(traj_data_lazy)],
-    [traj_data_lazy[j][2] for j in eachindex(traj_data_lazy)],
+    getindex.(trajectory_arr_lazy, 5),
+    getindex.(trajectory_arr_lazy, 2),
     label="LCG",
 )
+plot!(
+    getindex.(trajectory_arr_lazy, 5),
+    getindex.(trajectory_arr_lazy, 6),
+    label="LCG_T",
+)
+plot!(
+    getindex.(trajectory_arr_fw, 5),
+    getindex.(trajectory_arr_fw, 6),
+    label="FW_T",
+)
+
 plot!(timing_values, function_values, label="GD", yaxis=:log)
 plot!(timing_values, function_test_values, label="GD_test")
 
