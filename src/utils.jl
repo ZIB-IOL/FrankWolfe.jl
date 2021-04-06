@@ -282,6 +282,7 @@ function plot_results(
     xscalelog= nothing,
     yscalelog= nothing,
     legend_position=nothing,
+    #legend_display = nothing,
     list_style=fill(:solid, length(list_label)),
     list_color=get_color_palette(:auto, plot_color(:white)),
     list_markers = [:circle, :rect, :utriangle, :diamond, :+, :x, :star5, :hexagon, :cross, :xcross, :dtriangle, :rtriangle, :ltriangle, :pentagon, :heptagon, :octagon, :star4, :star6, :star7, :star8, :vline, :hline],
@@ -310,37 +311,72 @@ function plot_results(
             end
             if isnothing(legend_position)
                 position_legend = :best
+                legend_display = true
             else
                 position_legend = legend_position[i]
+                if isnothing(position_legend)
+                    legend_display = false
+                else
+                    legend_display = true
+                end
             end
             if j == 1
-                plt = plot(
-                    list_data_x[i][j],
-                    list_data_y[i][j],
-                    label=list_label[j],
-                    xaxis=xscale,
-                    yaxis=yscale,
-                    ylabel=list_axis_y[i],
-                    xlabel=list_axis_x[i],
-                    legend=position_legend,
-                    yguidefontsize=font_size_axis,
-                    xguidefontsize=font_size_axis,
-                    legendfontsize=font_size_legend,
-                    width=line_width,
-                    linestyle=list_style[j],
-                    color= list_color[j],
-                    grid = true,
-                )
+                if legend_display
+                    plt = plot(
+                        list_data_x[i][j],
+                        list_data_y[i][j],
+                        label=list_label[j],
+                        xaxis=xscale,
+                        yaxis=yscale,
+                        ylabel=list_axis_y[i],
+                        xlabel=list_axis_x[i],
+                        legend=position_legend,
+                        yguidefontsize=font_size_axis,
+                        xguidefontsize=font_size_axis,
+                        legendfontsize=font_size_legend,
+                        width=line_width,
+                        linestyle=list_style[j],
+                        color= list_color[j],
+                        grid = true,
+                    )
+                else
+                    plt = plot(
+                        list_data_x[i][j],
+                        list_data_y[i][j],
+                        label="",
+                        xaxis=xscale,
+                        yaxis=yscale,
+                        ylabel=list_axis_y[i],
+                        xlabel=list_axis_x[i],
+                        yguidefontsize=font_size_axis,
+                        xguidefontsize=font_size_axis,
+                        width=line_width,
+                        linestyle=list_style[j],
+                        color= list_color[j],
+                        grid = true,
+                    )
+                end
             else
-                plot!(
-                    list_data_x[i][j],
-                    list_data_y[i][j],
-                    label=list_label[j],
-                    width=line_width,
-                    linestyle=list_style[j],
-                    color= list_color[j],
-                    legend=position_legend,
-                )
+                if legend_display
+                    plot!(
+                        list_data_x[i][j],
+                        list_data_y[i][j],
+                        label=list_label[j],
+                        width=line_width,
+                        linestyle=list_style[j],
+                        color= list_color[j],
+                        legend=position_legend,
+                    )
+                else
+                    plot!(
+                        list_data_x[i][j],
+                        list_data_y[i][j],
+                        label="",
+                        width=line_width,
+                        linestyle=list_style[j],
+                        color= list_color[j],
+                    )
+                end
             end
             if xscale == :log 
                 indices = round.(Int, 10 .^ (range(log10(1),log10(length(list_data_x[i][j])),length=number_markers_per_line)))
