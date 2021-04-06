@@ -169,4 +169,6 @@ open("lcg_expensive_data.json", "w") do f
     write(f, JSON.json((FW=trajectoryFW, LCG=trajectoryLCG, BLCG = trajectoryBLCG, LAFW = trajectoryLAFW, BCG = trajectoryBCG, reference_BCG_primal = primal)))
 end
 
+data = [trajectoryFW, trajectoryLCG, trajectoryBLCG, trajectoryLAFW, trajectoryBCG]
+label = ["FW", "L-CG", "BL-CG", "L-AFW", "BCG"]
 FrankWolfe.plot_trajectories(data, label, xscalelog=true)
