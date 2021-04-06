@@ -282,13 +282,12 @@ function plot_results(
     xscalelog= nothing,
     yscalelog= nothing,
     legend_position=nothing,
-    #legend_display = nothing,
     list_style=fill(:solid, length(list_label)),
     list_color=get_color_palette(:auto, plot_color(:white)),
-    list_markers = [:circle, :rect, :utriangle, :diamond, :+, :x, :star5, :hexagon, :cross, :xcross, :dtriangle, :rtriangle, :ltriangle, :pentagon, :heptagon, :octagon, :star4, :star6, :star7, :star8, :vline, :hline],
+    list_markers = [:circle, :rect, :utriangle, :diamond, :hexagon, :+, :x, :star5, :cross, :xcross, :dtriangle, :rtriangle, :ltriangle, :pentagon, :heptagon, :octagon, :star4, :star6, :star7, :star8, :vline, :hline],
     number_markers_per_line = 10,
 )
-    line_width = 2.0
+    line_width = 3.0
     marker_size = 5.0
     transparency_markers = 0.45
     font_size_axis = 12
