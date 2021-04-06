@@ -324,7 +324,7 @@ function plot_results(
                     plt = plot(
                         list_data_x[i][j],
                         list_data_y[i][j],
-                        label=list_label[j],
+                        label="",
                         xaxis=xscale,
                         yaxis=yscale,
                         ylabel=list_axis_y[i],
@@ -360,7 +360,7 @@ function plot_results(
                     plot!(
                         list_data_x[i][j],
                         list_data_y[i][j],
-                        label=list_label[j],
+                        label="",
                         width=line_width,
                         linestyle=list_style[j],
                         color= list_color[j],
@@ -386,7 +386,8 @@ function plot_results(
                     markercolor = list_color[j],
                     markersize = marker_size,
                     markeralpha = transparency_markers,
-                    label = "",
+                    label = list_label[j],
+                    legend=position_legend,
                 )
             else
                 scatter!(
@@ -396,7 +397,8 @@ function plot_results(
                     markercolor = list_color[j],
                     markersize = marker_size,
                     markeralpha = transparency_markers,
-                    label = "",
+                    label = list_label[j],
+                    legend=position_legend,
                 )
             end
         end

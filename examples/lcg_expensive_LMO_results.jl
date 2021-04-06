@@ -2,8 +2,8 @@
 # using an LP solver defined in MathOptInterface
 # we compare the performance of the two LMOs, in- and out of place
 #
-# to get accurate timings it is important to run twice so that the compile time of Julia for the first run
-# is not tainting the results
+# to get accurate timings it is important to run twice so that the
+# compile time of Julia for the first run is not tainting the results
 
 include("activate.jl")
 
@@ -27,5 +27,5 @@ FrankWolfe.plot_results(
     [L"\textrm{Primal Gap}", L"\textrm{Primal Gap}", L"\textrm{Dual Gap}", L"\textrm{Dual Gap}"],
     xscalelog = [:log, :identity, :log, :identity],
     legend_position = [:bottomleft, nothing, nothing, nothing],
-    #filename="lcg_expensive.pdf",
+    filename="lcg_expensive.pdf",
 )
