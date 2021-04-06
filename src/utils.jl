@@ -241,6 +241,141 @@ end
 ### Visualization etc
 ##############################
 
+"""
+plot_results
+
+Given a series of list, generate subplots.
+list_data_y -> contains a list of a list of lists (where each list refers to a subplot, and a list of lists refers to the y-values of the series inside a subplot).
+list_data_x -> contains a list of a list of lists (where each list refers to a subplot, and a list of lists refers to the x-values of the series inside a subplot).
+So if we have one plot with two series, these might look like:
+    list_data_y = [[[1, 2, 3, 4, 5, 6], [1, 2, 3, 4, 5, 6]]]
+    list_data_x = [[[1, 2, 3, 4, 5, 6], [1, 2, 3, 4, 5, 6]]]
+
+And if we have two plots, each with two series, these might look like:
+    list_data_y = [[[1, 2, 3, 4, 5, 6], [1, 2, 3, 4, 5, 6]], [[7, 8, 9, 10, 11, 12], [7, 8, 9, 10, 11, 12]]]
+    list_data_x = [[[1, 2, 3, 4, 5, 6], [1, 2, 3, 4, 5, 6]], [[7, 8, 9, 10, 11, 12], [7, 8, 9, 10, 11, 12]]]
+
+list_label -> contains the labels for the series that will be plotted,
+which has to have a length equal to the number of series that are being plotted:
+    list_label = ["Series 1", "Series 2"]
+
+list_axis_x -> contains the labels for the x-axis that will be plotted, 
+which has to have a length equal to the number of subplots: 
+    list_axis_x = ["x-axis plot 1", "x-axis plot 1"]
+
+list_axis_y -> Same as list_axis_x but for the y-axis
+
+xscalelog -> A list of values indicating the type of axes to use in each subplot,
+must be equal to the number of subplots:
+    xscalelog = [:log, :identity]
+
+yscalelog -> Same as xscalelog but for the y-axis
+
+"""
+function plot_results(
+    list_data_y,
+    list_data_x,
+    list_label,
+    list_axis_x,
+    list_axis_y;
+    filename=nothing,
+    xscalelog= nothing,
+    yscalelog= nothing,
+    legend_position=nothing,
+    list_style=fill(:solid, length(list_label)),
+    list_color=get_color_palette(:auto, plot_color(:white)),
+    list_markers = [:circle, :rect, :utriangle, :diamond, :+, :x, :star5, :hexagon, :cross, :xcross, :dtriangle, :rtriangle, :ltriangle, :pentagon, :heptagon, :octagon, :star4, :star6, :star7, :star8, :vline, :hline],
+    number_markers_per_line = 10,
+)
+    line_width = 2.0
+    marker_size = 5.0
+    transparency_markers = 0.45
+    font_size_axis = 12
+    font_size_legend = 9
+    gr()
+    plt = nothing
+    list_plots = Plots.Plot{Plots.GRBackend}[]
+    #Plot an appropiate number of plots
+    for i in 1:length(list_data_x)
+        for j in 1:length(list_data_x[i])
+            if isnothing(xscalelog)
+                xscale = :identity
+            else
+                xscale = xscalelog[i]
+            end
+            if isnothing(yscalelog)
+                yscale = :log
+            else
+                yscale = yscalelog[i]
+            end
+            if isnothing(legend_position)
+                position_legend = :best
+            else
+                position_legend = legend_position[i]
+            end
+            if j == 1
+                plt = plot(
+                    list_data_x[i][j],
+                    list_data_y[i][j],
+                    label=list_label[j],
+                    xaxis=xscale,
+                    yaxis=yscale,
+                    ylabel=list_axis_y[i],
+                    xlabel=list_axis_x[i],
+                    legend=position_legend,
+                    yguidefontsize=font_size_axis,
+                    xguidefontsize=font_size_axis,
+                    legendfontsize=font_size_legend,
+                    width=line_width,
+                    linestyle=list_style[j],
+                    color= list_color[j],
+                    grid = true,
+                )
+            else
+                plot!(
+                    list_data_x[i][j],
+                    list_data_y[i][j],
+                    label=list_label[j],
+                    width=line_width,
+                    linestyle=list_style[j],
+                    color= list_color[j],
+                    legend=position_legend,
+                )
+            end
+            if xscale == :log 
+                indices = round.(Int, 10 .^ (range(log10(1),log10(length(list_data_x[i][j])),length=number_markers_per_line)))
+                scatter!(
+                    list_data_x[i][j][indices],
+                    list_data_y[i][j][indices],
+                    markershape = list_markers[j],
+                    markercolor = list_color[j],
+                    markersize = marker_size,
+                    markeralpha = transparency_markers,
+                    label = "",
+                )
+            else
+                scatter!(
+                    view(list_data_x[i][j],1:length(list_data_x[i][j])÷number_markers_per_line:length(list_data_x[i][j])),
+                    view(list_data_y[i][j], 1:length(list_data_y[i][j])÷number_markers_per_line:length(list_data_y[i][j])),
+                    markershape = list_markers[j],
+                    markercolor = list_color[j],
+                    markersize = marker_size,
+                    markeralpha = transparency_markers,
+                    label = "",
+                )
+            end
+        end
+        push!(list_plots, plt)
+    end
+    fp = plot(list_plots..., layout=length(list_plots))
+    plot!(size=(600, 400))
+    if filename !== nothing
+        savefig(fp, filename)
+    end
+    return fp
+end
+
+
 function plot_trajectories(
     data,
     label;
