@@ -55,14 +55,6 @@ const extended_test_data = map(test_data) do (x, y)
 end
 
 function f(coefficients)
-    poly = evaluate_poly(coefficients)
-    return 0.5 / length(training_data) * sum(training_data) do (x, y)
-        return (poly(x) - y)^2
-    end
-end
-
-# extended version, much faster (memory intense)
-function f3(coefficients)
     return 0.5 / length(extended_training_data) * sum(extended_training_data) do (x, y)
         return (dot(coefficients, x) - y)^2
     end
@@ -92,31 +84,31 @@ end
 
 #Check the gradient using finite differences just in case
 gradient = similar(all_coeffs)
-FrankWolfe.check_gradients(grad!, f3, gradient)
+FrankWolfe.check_gradients(grad!, f, gradient)
 
 # gradient descent
 xgd = rand(length(all_coeffs))
-for iter in 1:3000
+for iter in 1:10_000
     global xgd
     grad!(gradient, xgd)
     @. xgd -= 0.00001 * gradient
 end
 
-@info "Gradient descent training loss $(f3(xgd))"
+@info "Gradient descent training loss $(f(xgd))"
 @info "Gradient descent test loss $(f_test(xgd))"
 @info "Matching zeros $(matching_zeros(xgd))"
 
-lmo = FrankWolfe.KSparseLMO(round(Int, length(all_coeffs) / 4), 1.1 * maximum(all_coeffs))
+lmo = FrankWolfe.KSparseLMO(length(all_coeffs) ÷ 4, 1.1 * maximum(all_coeffs))
 
 x00 = FrankWolfe.compute_extreme_point(lmo, rand(length(all_coeffs)))
 
-k = 1e5
+k = 10_000
 
 x0 = deepcopy(x00)
 
 # vanilla FW
 @time x, v, primal, dual_gap, trajectoryFw = FrankWolfe.frank_wolfe(
-    f3,
+    f,
     grad!,
     lmo,
     x0,
@@ -129,14 +121,14 @@ x0 = deepcopy(x00)
     gradient=gradient,
 );
 
-@info "Vanilla training loss $(f3(x))"
+@info "Vanilla training loss $(f(x))"
 @info "Test loss $(f_test(x))"
 @info "Matching zeros $(matching_zeros(x))"
 
 x0 = deepcopy(x00)
 
 @time x, v, primal, dual_gap, trajectoryFw = FrankWolfe.away_frank_wolfe(
-    f3,
+    f,
     grad!,
     lmo,
     x0,
@@ -150,13 +142,13 @@ x0 = deepcopy(x00)
     gradient=gradient,
 );
 
-@info "AFW training loss $(f3(x))"
+@info "AFW training loss $(f(x))"
 @info "Test loss $(f_test(x))"
 @info "Matching zeros $(matching_zeros(x))"
 
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, trajectoryBCG = FrankWolfe.blended_conditional_gradient(
-    f3,
+    f,
     grad!,
     lmo,
     x0,
@@ -169,6 +161,6 @@ x0 = deepcopy(x00)
     weight_purge_threshold=1e-10,
 )
 
-@info "BCG training loss $(f3(x))"
+@info "BCG training loss $(f(x))"
 @info "Test loss $(f_test(x))"
 @info "Matching zeros $(matching_zeros(x))"
