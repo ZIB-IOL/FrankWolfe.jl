@@ -3,9 +3,11 @@ include("activate.jl")
 using LinearAlgebra
 using Random
 import GLPK
+using JSON
 
 n = 200
 k = 3000
+#k = 500
 
 xpi = rand(n * n);
 total = sum(xpi);
@@ -30,6 +32,7 @@ direction_mat = reshape(direction_vec, n, n)
 
 lmo = FrankWolfe.BirkhoffPolytopeLMO()
 x00 = FrankWolfe.compute_extreme_point(lmo, direction_mat)
+target_accuracy = 1e-7
 
 # modify to GLPK variant
 # o = GLPK.Optimizer()
@@ -57,6 +60,7 @@ x, v, primal, dual_gap, trajectoryFW = FrankWolfe.frank_wolfe(
     max_iteration=k,
     line_search=FrankWolfe.adaptive,
     print_iter=k / 10,
+    epsilon=target_accuracy,
     emphasis=FrankWolfe.memory,
     trajectory=true,
     verbose=true,
@@ -73,6 +77,7 @@ x, v, primal, dual_gap, trajectoryLCG = FrankWolfe.lazified_conditional_gradient
     lmo,
     x0,
     max_iteration=k,
+    epsilon=target_accuracy,
     line_search=FrankWolfe.adaptive,
     print_iter=k / 10,
     emphasis=FrankWolfe.memory,
@@ -93,6 +98,7 @@ x, v, primal, dual_gap, trajectoryBLCG = FrankWolfe.lazified_conditional_gradien
     max_iteration=k,
     line_search=FrankWolfe.adaptive,
     print_iter=k / 10,
+    epsilon=target_accuracy,
     emphasis=FrankWolfe.memory,
     trajectory=true,
     cache_size=500,
@@ -112,6 +118,7 @@ x, v, primal, dual_gap, trajectoryLAFW = FrankWolfe.away_frank_wolfe(
     line_search=FrankWolfe.adaptive,
     print_iter=k / 10,
     linesearch_tol=1e-9,
+    epsilon=target_accuracy,
     emphasis=FrankWolfe.memory,
     lazy=true,
     trajectory=true,
@@ -132,13 +139,36 @@ x, v, primal, dual_gap, trajectoryBCG = FrankWolfe.blended_conditional_gradient(
     line_search=FrankWolfe.adaptive,
     print_iter=k / 10,
     linesearch_tol=1e-9,
+    epsilon=target_accuracy,
     emphasis=FrankWolfe.memory,
     trajectory=true,
     verbose=true,
 );
 
 
+# BCG run (reference optimum)
+
+x0 = copy(x00)
+
+x, v, primal, dual_gap, trajectoryBCG_ref = FrankWolfe.blended_conditional_gradient(
+    x -> cf(x, xp),
+    (str, x) -> cgrad!(str, x, xp),
+    lmo,
+    x0,
+    max_iteration= 2 * k,
+    line_search=FrankWolfe.adaptive,
+    print_iter=k / 10,
+    epsilon=target_accuracy / 10.0,
+    linesearch_tol=1e-9,
+    emphasis=FrankWolfe.memory,
+    trajectory=true,
+    verbose=true,
+);
+
+open("lcg_expensive_data.json", "w") do f
+    write(f, JSON.json((FW=trajectoryFW, LCG=trajectoryLCG, BLCG = trajectoryBLCG, LAFW = trajectoryLAFW, BCG = trajectoryBCG, reference_BCG_primal = primal)))
+end
+
 data = [trajectoryFW, trajectoryLCG, trajectoryBLCG, trajectoryLAFW, trajectoryBCG]
 label = ["FW", "L-CG", "BL-CG", "L-AFW", "BCG"]
-
 FrankWolfe.plot_trajectories(data, label, xscalelog=true)
