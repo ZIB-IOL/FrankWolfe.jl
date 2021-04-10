@@ -98,6 +98,27 @@ FrankWolfe.check_gradients(grad!, f, gradient)
 
 max_iter = 50_000
 
+xgd = rand(length(all_coeffs))
+
+
+lmo = FrankWolfe.LpNormLMO{1}(norm(all_coeffs))
+
+# L estimate
+num_pairs = 10000
+L_estimate = -Inf
+gradient_aux = similar(gradient)
+for i in 1:num_pairs
+    global L_estimate
+    x = compute_extreme_point(lmo, randn(size(xgd)))
+    y = compute_extreme_point(lmo, randn(size(xgd)))
+    grad!(gradient, x)
+    grad!(gradient_aux, y)
+    new_L = norm(gradient - gradient_aux) / norm(x - y)
+    if new_L > L_estimate
+        L_estimate = new_L
+    end
+end
+
 # gradient descent
 
 xgd = rand(length(all_coeffs))
@@ -109,7 +130,7 @@ gd_times = Float64[]
 for iter in 1:max_iter
     global xgd
     grad!(gradient, xgd)
-    @. xgd -= 0.00001 * gradient
+    @. xgd -= gradient / L_estimate
     push!(training_gd, f(xgd))
     push!(test_gd, f_test(xgd))
     push!(coeff_error, coefficient_errors(xgd))
@@ -120,7 +141,6 @@ end
 @info "Gradient descent test loss $(f_test(xgd))"
 @info "Coefficient error $(coefficient_errors(xgd))"
 
-lmo = FrankWolfe.LpNormLMO{1}(norm(all_coeffs))
 
 x00 = FrankWolfe.compute_extreme_point(lmo, rand(length(all_coeffs)))
 
