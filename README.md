@@ -73,7 +73,7 @@ Most common strategies and some more particular ones:
 - Golden ratio linesearch
 - Backtracking line search
 - Rational Short-step rule: some as short-step rule but all computations are kept rational if inputs are rational. useful for the rational variants
-- Adaptive FW: starts with an estimate for L and then refine it dynamically (see <https://arxiv.org/pdf/1806.05123.pdf> and also the survey *** to be added *** )
+- Adaptive FW: starts with an estimate for L and then refine it dynamically (see <https://arxiv.org/pdf/1806.05123.pdf> and also the survey (forthcoming))
 
 #### Callbacks
 
