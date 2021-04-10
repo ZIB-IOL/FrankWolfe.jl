@@ -23,14 +23,3 @@ FrankWolfe.plot_results(
     legend_position = [:bottomleft, nothing, nothing, nothing],
     filename="polynomial_result.pdf",
 )
-
-FrankWolfe.plot_results(
-    [coefficient_error_values, coefficient_error_values],
-    [iteration_list, time_list],
-    label,
-    [L"\textrm{Iteration}", L"\textrm{Time}"],
-    [L"\textrm{Coefficient error}", L"\textrm{Coefficient error}"],
-    xscalelog = [:log, :identity],
-    legend_position = [:bottomleft, nothing],
-    filename="polynomial_coefficients.pdf",
-)

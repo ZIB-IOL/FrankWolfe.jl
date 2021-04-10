@@ -10,11 +10,11 @@ import ReverseDiff
 using FiniteDifferences
 import JSON
 
-const N = 9
+const N = 15
 
-DynamicPolynomials.@polyvar X[1:9]
+DynamicPolynomials.@polyvar X[1:15]
 
-const max_degree = 3
+const max_degree = 4
 
 const var_monomials = MultivariatePolynomials.monomials(X, 0:max_degree)
 
@@ -34,7 +34,7 @@ function evaluate_poly(coefficients)
 end
 
 const training_data = map(1:500) do _
-    x = 3 * randn(N)
+    x = 0.1 * randn(N)
     y = MultivariatePolynomials.subs(true_poly, Pair(X, x)) + 2 * randn()
     return (x, y.a[1])
 end
@@ -44,8 +44,8 @@ const extended_training_data = map(training_data) do (x, y)
     return (x_ext, y)
 end
 
-const test_data = map(1:5000) do _
-    x = 3 * randn(N)
+const test_data = map(1:1000) do _
+    x = 0.4 * randn(N)
     y = MultivariatePolynomials.subs(true_poly, Pair(X, x)) + 2 * randn()
     return (x, y.a[1])
 end
@@ -96,7 +96,7 @@ end
 gradient = similar(all_coeffs)
 FrankWolfe.check_gradients(grad!, f, gradient)
 
-max_iter = 10_000
+max_iter = 50_000
 
 # gradient descent
 
@@ -120,11 +120,11 @@ end
 @info "Gradient descent test loss $(f_test(xgd))"
 @info "Coefficient error $(coefficient_errors(xgd))"
 
-lmo = FrankWolfe.KSparseLMO(2 * length(all_coeffs) ÷ 3, 1.1 * maximum(all_coeffs))
+lmo = FrankWolfe.LpNormLMO{1}(norm(all_coeffs))
 
 x00 = FrankWolfe.compute_extreme_point(lmo, rand(length(all_coeffs)))
 
-x0 = collect(x00)
+x0 = deepcopy(x00)
 
 # vanilla FW
 trajectory_fw = []
