@@ -3,6 +3,7 @@ include("activate.jl")
 
 using JSON
 using LaTeXStrings
+
 results = JSON.Parser.parsefile(joinpath(@__DIR__, "polynomial_result.json"))
 
 iteration_list = [[x[1] + 1 for x in results["trajectory_arr_fw"]], [x[1] + 1 for x in results["trajectory_arr_bcg"]], collect(eachindex(results["function_values_gd"]))]

@@ -96,12 +96,10 @@ end
 gradient = similar(all_coeffs)
 FrankWolfe.check_gradients(grad!, f, gradient)
 
-max_iter = 50_000
-
-xgd = rand(length(all_coeffs))
+max_iter = 10_000
 
 
-lmo = FrankWolfe.LpNormLMO{1}(norm(all_coeffs))
+lmo = FrankWolfe.LpNormLMO{1}(100 * maximum(all_coeffs))
 
 # L estimate
 num_pairs = 10000
@@ -109,14 +107,46 @@ L_estimate = -Inf
 gradient_aux = similar(gradient)
 for i in 1:num_pairs
     global L_estimate
-    x = compute_extreme_point(lmo, randn(size(xgd)))
-    y = compute_extreme_point(lmo, randn(size(xgd)))
+    x = compute_extreme_point(lmo, randn(size(all_coeffs)))
+    y = compute_extreme_point(lmo, randn(size(all_coeffs)))
     grad!(gradient, x)
     grad!(gradient_aux, y)
     new_L = norm(gradient - gradient_aux) / norm(x - y)
     if new_L > L_estimate
         L_estimate = new_L
     end
+end
+
+# L1 projection
+# inspired by https://github.com/MPF-Optimization-Laboratory/ProjSplx.jl
+function projnorm1(x, τ)
+    n = length(x)
+    if norm(x, 1) ≤ τ
+        return x
+    end
+    u = abs.(x)
+    # simplex projection
+    bget = false
+    s_indices = sortperm(u, rev=true)
+    tsum = zero(τ)
+
+    @inbounds for i in 1:n-1
+        tsum += u[s_indices[i]]
+        tmax = (tsum - τ) / i
+        if tmax ≥ u[s_indices[i+1]]
+            bget = true
+            break
+        end
+    end
+    if !bget
+        tmax = (tsum + u[s_indices[n]] - τ) / n
+    end
+
+    @inbounds for i in 1:n
+        u[i] = max(u[i] - tmax, 0)
+        u[i] *= sign(x[i])
+    end
+    return u
 end
 
 # gradient descent
@@ -130,7 +160,7 @@ gd_times = Float64[]
 for iter in 1:max_iter
     global xgd
     grad!(gradient, xgd)
-    @. xgd -= gradient / L_estimate
+    xgd = projnorm1(xgd - gradient / L_estimate, lmo.right_hand_side)
     push!(training_gd, f(xgd))
     push!(test_gd, f_test(xgd))
     push!(coeff_error, coefficient_errors(xgd))
@@ -161,6 +191,7 @@ callback = build_callback(trajectory_fw)
     verbose=true,
     gradient=gradient,
     callback=callback,
+    L=L_estimate,
 );
 
 @info "Vanilla training loss $(f(x_fw))"
@@ -183,6 +214,7 @@ x0 = deepcopy(x00)
     verbose=true,
     weight_purge_threshold=1e-10,
     callback=callback,
+    L=L_estimate,
 )
 
 @info "BCG training loss $(f(x_bcg))"
@@ -202,3 +234,8 @@ open(joinpath(@__DIR__, "polynomial_result.json"), "w") do f
     )
     write(f, data)
 end
+
+@info count(≈(0), all_coeffs) # 2546
+@info count(≈(0), xgd) # 0
+@info count(≈(0), x_fw) # 3852
+@info count(≈(0), x_bcg) # 3845
