@@ -259,14 +259,14 @@ open(joinpath(@__DIR__, "polynomial_result.json"), "w") do f
 end
 
 #Count missing\extra terms
-print("\n Number of missing terms in GD: ", sum((all_coeffs .== 0).*(xgd .!= 0)))
-print("\n Number of extra terms in GD: ", sum((all_coeffs .!= 0).*(xgd .== 0)))
+print("\n Number of extra terms in GD: ", sum((all_coeffs .== 0).*(xgd .!= 0)))
+print("\n Number of missing terms in GD: ", sum((all_coeffs .!= 0).*(xgd .== 0)))
 
-print("\n Number of missing terms in BCG: ", sum((all_coeffs .== 0).*(x_bcg .!= 0)))
-print("\n Number of extra terms in BCG: ", sum((all_coeffs .!= 0).*(x_bcg .== 0)))
+print("\n Number of extra terms in BCG: ", sum((all_coeffs .== 0).*(x_bcg .!= 0)))
+print("\n Number of missing terms in BCG: ", sum((all_coeffs .!= 0).*(x_bcg .== 0)))
 
-print("\n Number of missing terms in FW: ", sum((all_coeffs .== 0).*(x_fw .!= 0)))
-print("\n Number of extra terms in FW: ", sum((all_coeffs .!= 0).*(x_fw .== 0)))
+print("\n Number of extra terms in FW: ", sum((all_coeffs .== 0).*(x_fw .!= 0)))
+print("\n Number of missing terms in FW: ", sum((all_coeffs .!= 0).*(x_fw .== 0)))
 
 print("\n Number of missing terms in Lazy AFW: ", sum((all_coeffs .== 0).*(x_lafw .!= 0)))
 print("\n Number of extra terms in Lazy AFW: ", sum((all_coeffs .!= 0).*(x_lafw .== 0)))
