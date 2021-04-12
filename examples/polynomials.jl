@@ -198,6 +198,29 @@ callback = build_callback(trajectory_fw)
 @info "Test loss $(f_test(x_fw))"
 @info "Coefficient error $(coefficient_errors(x_fw))"
 
+# lazy AFW
+trajectory_fw = []
+callback = build_callback(trajectory_fw)
+@time x_lafw, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
+    f,
+    grad!,
+    lmo,
+    x0,
+    max_iteration=max_iter,
+    line_search=FrankWolfe.adaptive,
+    print_iter=max_iter ÷ 10,
+    emphasis=FrankWolfe.memory,
+    verbose=true,
+    lazy=true,
+    gradient=gradient,
+    callback=callback,
+    L=L_estimate,
+);
+
+@info "Lazy AFW training loss $(f(x_lafw))"
+@info "Test loss $(f_test(x_lafw))"
+@info "Coefficient error $(coefficient_errors(x_lafw))"
+
 trajectory_bcg = []
 callback = build_callback(trajectory_bcg)
 
@@ -235,7 +258,16 @@ open(joinpath(@__DIR__, "polynomial_result.json"), "w") do f
     write(f, data)
 end
 
-@info count(≈(0), all_coeffs) # 2546
-@info count(≈(0), xgd) # 0
-@info count(≈(0), x_fw) # 3852
-@info count(≈(0), x_bcg) # 3845
+#Count missing\extra terms
+print("\n Number of missing terms in GD: ", sum((all_coeffs .== 0).*(xgd .!= 0)))
+print("\n Number of extra terms in GD: ", sum((all_coeffs .!= 0).*(xgd .== 0)))
+
+print("\n Number of missing terms in BCG: ", sum((all_coeffs .== 0).*(x_bcg .!= 0)))
+print("\n Number of extra terms in BCG: ", sum((all_coeffs .!= 0).*(x_bcg .== 0)))
+
+print("\n Number of missing terms in FW: ", sum((all_coeffs .== 0).*(x_fw .!= 0)))
+print("\n Number of extra terms in FW: ", sum((all_coeffs .!= 0).*(x_fw .== 0)))
+
+print("\n Number of missing terms in Lazy AFW: ", sum((all_coeffs .== 0).*(x_lafw .!= 0)))
+print("\n Number of extra terms in Lazy AFW: ", sum((all_coeffs .!= 0).*(x_lafw .== 0)))
+
