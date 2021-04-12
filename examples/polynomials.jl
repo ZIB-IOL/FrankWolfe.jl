@@ -15,13 +15,15 @@ const N = 15
 DynamicPolynomials.@polyvar X[1:15]
 
 const max_degree = 4
+coefficient_magnitude = 10
+noise_magnitude = 1
 
 const var_monomials = MultivariatePolynomials.monomials(X, 0:max_degree)
 
 Random.seed!(42)
 const all_coeffs = map(var_monomials) do m
     d = MultivariatePolynomials.degree(m)
-    return 10 * rand() .* (rand() .> 0.7 * d / max_degree)
+    return coefficient_magnitude * rand() .* (rand() .> 0.95 * d / max_degree)
 end
 
 const true_poly = dot(all_coeffs, var_monomials)
@@ -35,7 +37,7 @@ end
 
 const training_data = map(1:500) do _
     x = 0.1 * randn(N)
-    y = MultivariatePolynomials.subs(true_poly, Pair(X, x)) + 2 * randn()
+    y = MultivariatePolynomials.subs(true_poly, Pair(X, x)) + noise_magnitude * randn()
     return (x, y.a[1])
 end
 
@@ -46,7 +48,7 @@ end
 
 const test_data = map(1:1000) do _
     x = 0.4 * randn(N)
-    y = MultivariatePolynomials.subs(true_poly, Pair(X, x)) + 2 * randn()
+    y = MultivariatePolynomials.subs(true_poly, Pair(X, x)) + noise_magnitude * randn()
     return (x, y.a[1])
 end
 
@@ -94,12 +96,16 @@ end
 
 #Check the gradient using finite differences just in case
 gradient = similar(all_coeffs)
+
+#Disable for now.
 FrankWolfe.check_gradients(grad!, f, gradient)
 
-max_iter = 10_000
+max_iter = 100_000
+random_initialization_vector = rand(length(all_coeffs))
 
+#lmo = FrankWolfe.LpNormLMO{1}(100 * maximum(all_coeffs))
 
-lmo = FrankWolfe.LpNormLMO{1}(100 * maximum(all_coeffs))
+lmo = FrankWolfe.LpNormLMO{1}(0.95*norm(all_coeffs, 1))
 
 # L estimate
 num_pairs = 10000
@@ -151,7 +157,7 @@ end
 
 # gradient descent
 
-xgd = rand(length(all_coeffs))
+xgd = FrankWolfe.compute_extreme_point(lmo, random_initialization_vector)
 training_gd = Float64[]
 test_gd = Float64[]
 coeff_error = Float64[]
@@ -172,35 +178,12 @@ end
 @info "Coefficient error $(coefficient_errors(xgd))"
 
 
-x00 = FrankWolfe.compute_extreme_point(lmo, rand(length(all_coeffs)))
-
+x00 = FrankWolfe.compute_extreme_point(lmo, random_initialization_vector)
 x0 = deepcopy(x00)
 
-# vanilla FW
-trajectory_fw = []
-callback = build_callback(trajectory_fw)
-@time x_fw, v, primal, dual_gap, _ = FrankWolfe.frank_wolfe(
-    f,
-    grad!,
-    lmo,
-    x0,
-    max_iteration=max_iter,
-    line_search=FrankWolfe.adaptive,
-    print_iter=max_iter ÷ 10,
-    emphasis=FrankWolfe.memory,
-    verbose=true,
-    gradient=gradient,
-    callback=callback,
-    L=L_estimate,
-);
-
-@info "Vanilla training loss $(f(x_fw))"
-@info "Test loss $(f_test(x_fw))"
-@info "Coefficient error $(coefficient_errors(x_fw))"
-
 # lazy AFW
-trajectory_fw = []
-callback = build_callback(trajectory_fw)
+trajectory_lafw = []
+callback = build_callback(trajectory_lafw)
 @time x_lafw, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
@@ -244,15 +227,38 @@ x0 = deepcopy(x00)
 @info "Test loss $(f_test(x_bcg))"
 @info "Coefficient error $(coefficient_errors(x_bcg))"
 
+
+x0 = deepcopy(x00)
+
+#  compute reference solution using lazy AFW
+trajectory_lafw_ref = []
+callback = build_callback(trajectory_lafw_ref)
+@time _, _, primal_ref, _, _ = FrankWolfe.away_frank_wolfe(
+    f,
+    grad!,
+    lmo,
+    x0,
+    max_iteration=2*max_iter,
+    line_search=FrankWolfe.adaptive,
+    print_iter=max_iter ÷ 10,
+    emphasis=FrankWolfe.memory,
+    verbose=true,
+    lazy=true,
+    gradient=gradient,
+    callback=callback,
+    L=L_estimate,
+);
+
 open(joinpath(@__DIR__, "polynomial_result.json"), "w") do f
     data = JSON.json(
         (
-            trajectory_arr_fw=trajectory_fw,
+            trajectory_arr_lafw=trajectory_lafw,
             trajectory_arr_bcg=trajectory_bcg,
             function_values_gd=training_gd,
             function_values_test_gd=test_gd,
             coefficient_error_gd=coeff_error,
             gd_times=gd_times,
+            ref_primal_value=primal_ref,
         )
     )
     write(f, data)
@@ -265,9 +271,5 @@ print("\n Number of missing terms in GD: ", sum((all_coeffs .!= 0).*(xgd .== 0))
 print("\n Number of extra terms in BCG: ", sum((all_coeffs .== 0).*(x_bcg .!= 0)))
 print("\n Number of missing terms in BCG: ", sum((all_coeffs .!= 0).*(x_bcg .== 0)))
 
-print("\n Number of extra terms in FW: ", sum((all_coeffs .== 0).*(x_fw .!= 0)))
-print("\n Number of missing terms in FW: ", sum((all_coeffs .!= 0).*(x_fw .== 0)))
-
 print("\n Number of missing terms in Lazy AFW: ", sum((all_coeffs .== 0).*(x_lafw .!= 0)))
 print("\n Number of extra terms in Lazy AFW: ", sum((all_coeffs .!= 0).*(x_lafw .== 0)))
-
