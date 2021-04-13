@@ -99,7 +99,8 @@ function project_nuclear_norm_ball(X; radius=1.0)
     return U * Diagonal(sing_val) * Vt', -norm_estimation * U[:, 1] * Vt[:, 1]'
 end
 
-norm_estimation = 400 * Arpack.svds(rating_matrix, nsv=1, ritzvec=false)[1].S[1]
+#norm_estimation = 400 * Arpack.svds(rating_matrix, nsv=1, ritzvec=false)[1].S[1]
+norm_estimation = 10 * Arpack.svds(rating_matrix, nsv=1, ritzvec=false)[1].S[1]
 
 const lmo = FrankWolfe.NuclearNormLMO(norm_estimation)
 const x0 = FrankWolfe.compute_extreme_point(lmo, zero(rating_matrix))
@@ -182,11 +183,11 @@ xfin, _, _, _, traj_data = FrankWolfe.frank_wolfe(
     lmo,
     x0;
     epsilon=1e-9,
-    max_iteration=k,
+    max_iteration=10*k,
     print_iter=k / 10,
     verbose=true,
     linesearch_tol=1e-8,
-    line_search=FrankWolfe.backtracking,
+    line_search=FrankWolfe.adaptive,
     emphasis=FrankWolfe.memory,
     gradient=gradient,
     callback=callback,
@@ -200,11 +201,30 @@ xlazy, _, _, _, _ = FrankWolfe.lazified_conditional_gradient(
     lmo,
     x0;
     epsilon=1e-9,
-    max_iteration=k,
+    max_iteration=10*k,
     print_iter=k / 10,
     verbose=true,
     linesearch_tol=1e-8,
-    line_search=FrankWolfe.backtracking,
+    line_search=FrankWolfe.adaptive,
+    emphasis=FrankWolfe.memory,
+    gradient=gradient,
+    callback=callback,
+)
+
+
+trajectory_arr_lazy_ref = Vector{Tuple{Int64, Float64, Float64, Float64, Float64, Float64}}()
+callback = build_callback(trajectory_arr_lazy_ref)
+xlazy, _, _, _, _ = FrankWolfe.lazified_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    x0;
+    epsilon=1e-9,
+    max_iteration=50*k,
+    print_iter=k / 10,
+    verbose=true,
+    linesearch_tol=1e-8,
+    line_search=FrankWolfe.adaptive,
     emphasis=FrankWolfe.memory,
     gradient=gradient,
     callback=callback,
@@ -231,6 +251,7 @@ open(joinpath(@__DIR__, "movielens_result.json"), "w") do f
         function_values_gd=function_values,
         function_values_test_gd=function_test_values,
         timing_values_gd=timing_values,
+        trajectory_arr_lazy_ref=trajectory_arr_lazy_ref,
         )
     )
     write(f, data)

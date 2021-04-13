@@ -147,6 +147,6 @@ FrankWolfe.plot_results(
     [L"\textrm{Primal Gap}", "", L"\textrm{Dual Gap}", ""],
     xscalelog = [:log, :identity, :log, :identity],
     yscalelog = [:log, :log, :log, :log],
-    legend_position = [:bottomleft, :topright, :bottomleft, :topright],
+    legend_position = [:bottomleft, nothing, nothing, nothing],
     filename="moi_compare.pdf",
 )
