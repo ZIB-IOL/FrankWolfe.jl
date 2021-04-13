@@ -120,11 +120,8 @@ gradient_aux = spzeros(size(x0)...)
 
 # pushes to the trajectory the first 5 elements of the trajectory and the test value at the current iterate
 function build_callback(trajectory_arr)
-    function callback(state)
-        push!(
-            trajectory_arr,
-            (Tuple(state)[1:5]..., test_loss(state.x))
-        )
+    return function callback(state)
+        return push!(trajectory_arr, (Tuple(state)[1:5]..., test_loss(state.x)))
     end
 end
 
@@ -175,7 +172,7 @@ for _ in 1:k
     @. xgd -= gamma * (xgd - xgd_new)
 end
 
-trajectory_arr_fw = Vector{Tuple{Int64, Float64, Float64, Float64, Float64, Float64}}()
+trajectory_arr_fw = Vector{Tuple{Int64,Float64,Float64,Float64,Float64,Float64}}()
 callback = build_callback(trajectory_arr_fw)
 xfin, _, _, _, traj_data = FrankWolfe.frank_wolfe(
     f,
@@ -183,7 +180,7 @@ xfin, _, _, _, traj_data = FrankWolfe.frank_wolfe(
     lmo,
     x0;
     epsilon=1e-9,
-    max_iteration=10*k,
+    max_iteration=10 * k,
     print_iter=k / 10,
     verbose=true,
     linesearch_tol=1e-8,
@@ -193,7 +190,7 @@ xfin, _, _, _, traj_data = FrankWolfe.frank_wolfe(
     callback=callback,
 )
 
-trajectory_arr_lazy = Vector{Tuple{Int64, Float64, Float64, Float64, Float64, Float64}}()
+trajectory_arr_lazy = Vector{Tuple{Int64,Float64,Float64,Float64,Float64,Float64}}()
 callback = build_callback(trajectory_arr_lazy)
 xlazy, _, _, _, _ = FrankWolfe.lazified_conditional_gradient(
     f,
@@ -201,7 +198,7 @@ xlazy, _, _, _, _ = FrankWolfe.lazified_conditional_gradient(
     lmo,
     x0;
     epsilon=1e-9,
-    max_iteration=10*k,
+    max_iteration=10 * k,
     print_iter=k / 10,
     verbose=true,
     linesearch_tol=1e-8,
@@ -212,7 +209,7 @@ xlazy, _, _, _, _ = FrankWolfe.lazified_conditional_gradient(
 )
 
 
-trajectory_arr_lazy_ref = Vector{Tuple{Int64, Float64, Float64, Float64, Float64, Float64}}()
+trajectory_arr_lazy_ref = Vector{Tuple{Int64,Float64,Float64,Float64,Float64,Float64}}()
 callback = build_callback(trajectory_arr_lazy_ref)
 xlazy, _, _, _, _ = FrankWolfe.lazified_conditional_gradient(
     f,
@@ -220,7 +217,7 @@ xlazy, _, _, _, _ = FrankWolfe.lazified_conditional_gradient(
     lmo,
     x0;
     epsilon=1e-9,
-    max_iteration=50*k,
+    max_iteration=50 * k,
     print_iter=k / 10,
     verbose=true,
     linesearch_tol=1e-8,
@@ -239,8 +236,7 @@ lazy_test_values = getindex.(trajectory_arr_lazy, 6)
 
 
 open(joinpath(@__DIR__, "movielens_result.json"), "w") do f
-    data = JSON.json(
-        (
+    data = JSON.json((
         svals_gd=svdvals(xgd),
         svals_fw=svdvals(xfin),
         svals_lcg=svdvals(xlazy),
@@ -252,9 +248,8 @@ open(joinpath(@__DIR__, "movielens_result.json"), "w") do f
         function_values_test_gd=function_test_values,
         timing_values_gd=timing_values,
         trajectory_arr_lazy_ref=trajectory_arr_lazy_ref,
-        )
-    )
-    write(f, data)
+    ))
+    return write(f, data)
 end
 
 #Plot results w.r.t. iteration count
@@ -271,23 +266,11 @@ pit = plot(
     legendfontsize=8,
     legend=:bottomleft,
 )
-plot!(
-    getindex.(trajectory_arr_lazy, 1),
-    getindex.(trajectory_arr_lazy, 2),
-    label="LCG",
-)
+plot!(getindex.(trajectory_arr_lazy, 1), getindex.(trajectory_arr_lazy, 2), label="LCG")
 plot!(eachindex(function_values), function_values, yaxis=:log, label="GD")
 plot!(eachindex(function_test_values), function_test_values, label="GD_test")
-plot!(
-    getindex.(trajectory_arr_fw, 1),
-    getindex.(trajectory_arr_fw, 6),
-    label="FW_T",
-)
-plot!(
-    getindex.(trajectory_arr_lazy, 1),
-    getindex.(trajectory_arr_lazy, 6),
-    label="LCG_T",
-)
+plot!(getindex.(trajectory_arr_fw, 1), getindex.(trajectory_arr_fw, 6), label="FW_T")
+plot!(getindex.(trajectory_arr_lazy, 1), getindex.(trajectory_arr_lazy, 6), label="LCG_T")
 savefig(pit, "objective_func_vs_iteration.pdf")
 
 #Plot results w.r.t. time
@@ -304,21 +287,9 @@ pit = plot(
     legend=:bottomleft,
 )
 
-plot!(
-    getindex.(trajectory_arr_lazy, 5),
-    getindex.(trajectory_arr_lazy, 2),
-    label="LCG",
-)
-plot!(
-    getindex.(trajectory_arr_lazy, 5),
-    getindex.(trajectory_arr_lazy, 6),
-    label="LCG_T",
-)
-plot!(
-    getindex.(trajectory_arr_fw, 5),
-    getindex.(trajectory_arr_fw, 6),
-    label="FW_T",
-)
+plot!(getindex.(trajectory_arr_lazy, 5), getindex.(trajectory_arr_lazy, 2), label="LCG")
+plot!(getindex.(trajectory_arr_lazy, 5), getindex.(trajectory_arr_lazy, 6), label="LCG_T")
+plot!(getindex.(trajectory_arr_fw, 5), getindex.(trajectory_arr_fw, 6), label="FW_T")
 
 plot!(timing_values, function_values, label="GD", yaxis=:log)
 plot!(timing_values, function_test_values, label="GD_test")

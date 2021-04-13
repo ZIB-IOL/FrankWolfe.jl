@@ -222,7 +222,8 @@ function blended_conditional_gradient(
         dual_gap = phi
         if callback !== nothing
             state = (
-                t=t, primal=primal,
+                t=t,
+                primal=primal,
                 dual=primal - dual_gap,
                 dual_gap=dual_gap,
                 time=(time_ns() - time_start) / 1e9,
@@ -618,7 +619,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
         strong_wolfe_gap = Strong_Frank_Wolfe_gap_probability_simplex(gradient_x, x)
         if callback !== nothing
             state = (
-                t = t + number_of_steps,
+                t=t + number_of_steps,
                 primal=primal,
                 dual=primal - tolerance,
                 dual_gap=tolerance,
@@ -684,12 +685,12 @@ function simplex_gradient_descent_over_probability_simplex(
         strong_wolfe_gap = Strong_Frank_Wolfe_gap_probability_simplex(gradient, x)
         if callback !== nothing
             state = (
-                t = t + number_of_steps,
-                primal = primal,
-                dual = primal - tolerance,
-                dual_gap = tolerance,
-                time = (time_ns() - time_start) / 1e9,
-                x=x
+                t=t + number_of_steps,
+                primal=primal,
+                dual=primal - tolerance,
+                dual_gap=tolerance,
+                time=(time_ns() - time_start) / 1e9,
+                x=x,
             )
             callback(state)
         end
@@ -903,7 +904,8 @@ function simplex_gradient_descent_over_convex_hull(
         dual_gap = tolerance
         if callback !== nothing
             state = (
-                t=t, primal=primal,
+                t=t,
+                primal=primal,
                 dual=primal - dual_gap,
                 dual_gap=dual_gap,
                 time=(time_ns() - time_start) / 1e9,

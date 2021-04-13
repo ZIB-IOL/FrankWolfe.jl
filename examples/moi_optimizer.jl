@@ -145,8 +145,8 @@ FrankWolfe.plot_results(
     label,
     ["", "", L"\textrm{Iteration}", L"\textrm{Time}"],
     [L"\textrm{Primal Gap}", "", L"\textrm{Dual Gap}", ""],
-    xscalelog = [:log, :identity, :log, :identity],
-    yscalelog = [:log, :log, :log, :log],
-    legend_position = [:bottomleft, nothing, nothing, nothing],
+    xscalelog=[:log, :identity, :log, :identity],
+    yscalelog=[:log, :log, :log, :log],
+    legend_position=[:bottomleft, nothing, nothing, nothing],
     filename="moi_compare.pdf",
 )

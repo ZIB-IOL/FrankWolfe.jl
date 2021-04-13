@@ -71,7 +71,7 @@ end
 
 function coefficient_errors(coeffs)
     return 0.5 * sum(eachindex(all_coeffs)) do idx
-        (all_coeffs[idx] - coeffs[idx])^2
+        return (all_coeffs[idx] - coeffs[idx])^2
     end
 end
 
@@ -86,10 +86,10 @@ function grad!(storage, coefficients)
 end
 
 function build_callback(trajectory_arr)
-    function callback(state)
-        push!(
+    return function callback(state)
+        return push!(
             trajectory_arr,
-            (Tuple(state)[1:5]..., f_test(state.x), coefficient_errors(state.x))
+            (Tuple(state)[1:5]..., f_test(state.x), coefficient_errors(state.x)),
         )
     end
 end
@@ -105,7 +105,7 @@ random_initialization_vector = rand(length(all_coeffs))
 
 #lmo = FrankWolfe.LpNormLMO{1}(100 * maximum(all_coeffs))
 
-lmo = FrankWolfe.LpNormLMO{1}(0.95*norm(all_coeffs, 1))
+lmo = FrankWolfe.LpNormLMO{1}(0.95 * norm(all_coeffs, 1))
 
 # L estimate
 num_pairs = 10000
@@ -238,7 +238,7 @@ callback = build_callback(trajectory_lafw_ref)
     grad!,
     lmo,
     x0,
-    max_iteration=2*max_iter,
+    max_iteration=2 * max_iter,
     line_search=FrankWolfe.Adaptive(),
     print_iter=max_iter ÷ 10,
     emphasis=FrankWolfe.memory,
@@ -250,26 +250,24 @@ callback = build_callback(trajectory_lafw_ref)
 );
 
 open(joinpath(@__DIR__, "polynomial_result.json"), "w") do f
-    data = JSON.json(
-        (
-            trajectory_arr_lafw=trajectory_lafw,
-            trajectory_arr_bcg=trajectory_bcg,
-            function_values_gd=training_gd,
-            function_values_test_gd=test_gd,
-            coefficient_error_gd=coeff_error,
-            gd_times=gd_times,
-            ref_primal_value=primal_ref,
-        )
-    )
-    write(f, data)
+    data = JSON.json((
+        trajectory_arr_lafw=trajectory_lafw,
+        trajectory_arr_bcg=trajectory_bcg,
+        function_values_gd=training_gd,
+        function_values_test_gd=test_gd,
+        coefficient_error_gd=coeff_error,
+        gd_times=gd_times,
+        ref_primal_value=primal_ref,
+    ))
+    return write(f, data)
 end
 
 #Count missing\extra terms
-print("\n Number of extra terms in GD: ", sum((all_coeffs .== 0).*(xgd .!= 0)))
-print("\n Number of missing terms in GD: ", sum((all_coeffs .!= 0).*(xgd .== 0)))
+print("\n Number of extra terms in GD: ", sum((all_coeffs .== 0) .* (xgd .!= 0)))
+print("\n Number of missing terms in GD: ", sum((all_coeffs .!= 0) .* (xgd .== 0)))
 
-print("\n Number of extra terms in BCG: ", sum((all_coeffs .== 0).*(x_bcg .!= 0)))
-print("\n Number of missing terms in BCG: ", sum((all_coeffs .!= 0).*(x_bcg .== 0)))
+print("\n Number of extra terms in BCG: ", sum((all_coeffs .== 0) .* (x_bcg .!= 0)))
+print("\n Number of missing terms in BCG: ", sum((all_coeffs .!= 0) .* (x_bcg .== 0)))
 
-print("\n Number of missing terms in Lazy AFW: ", sum((all_coeffs .== 0).*(x_lafw .!= 0)))
-print("\n Number of extra terms in Lazy AFW: ", sum((all_coeffs .!= 0).*(x_lafw .== 0)))
+print("\n Number of missing terms in Lazy AFW: ", sum((all_coeffs .== 0) .* (x_lafw .!= 0)))
+print("\n Number of extra terms in Lazy AFW: ", sum((all_coeffs .!= 0) .* (x_lafw .== 0)))

@@ -6,12 +6,32 @@ using LaTeXStrings
 
 results = JSON.Parser.parsefile(joinpath(@__DIR__, "polynomial_result.json"))
 
-iteration_list = [[x[1] + 1 for x in results["trajectory_arr_lafw"]], [x[1] + 1 for x in results["trajectory_arr_bcg"]], collect(eachindex(results["function_values_gd"]))]
-time_list = [[x[5] for x in results["trajectory_arr_lafw"]],[x[5] for x in results["trajectory_arr_bcg"]], results["gd_times"]]
-primal_list = [[x[2] - results["ref_primal_value"] for x in results["trajectory_arr_lafw"]], [x[2] - results["ref_primal_value"] for x in results["trajectory_arr_bcg"]], [x - results["ref_primal_value"] for x in results["function_values_gd"]]]
-test_list = [[x[6] for x in results["trajectory_arr_lafw"]],[x[6] for x in results["trajectory_arr_bcg"]], results["function_values_test_gd"]]
+iteration_list = [
+    [x[1] + 1 for x in results["trajectory_arr_lafw"]],
+    [x[1] + 1 for x in results["trajectory_arr_bcg"]],
+    collect(eachindex(results["function_values_gd"])),
+]
+time_list = [
+    [x[5] for x in results["trajectory_arr_lafw"]],
+    [x[5] for x in results["trajectory_arr_bcg"]],
+    results["gd_times"],
+]
+primal_list = [
+    [x[2] - results["ref_primal_value"] for x in results["trajectory_arr_lafw"]],
+    [x[2] - results["ref_primal_value"] for x in results["trajectory_arr_bcg"]],
+    [x - results["ref_primal_value"] for x in results["function_values_gd"]],
+]
+test_list = [
+    [x[6] for x in results["trajectory_arr_lafw"]],
+    [x[6] for x in results["trajectory_arr_bcg"]],
+    results["function_values_test_gd"],
+]
 label = [L"\textrm{L-AFW}", L"\textrm{BCG}", L"\textrm{GD}"]
-coefficient_error_values = [[x[7] for x in results["trajectory_arr_lafw"]], [x[7] for x in results["trajectory_arr_bcg"]], results["coefficient_error_gd"]]
+coefficient_error_values = [
+    [x[7] for x in results["trajectory_arr_lafw"]],
+    [x[7] for x in results["trajectory_arr_bcg"]],
+    results["coefficient_error_gd"],
+]
 
 
 FrankWolfe.plot_results(
@@ -20,7 +40,7 @@ FrankWolfe.plot_results(
     label,
     [L"\textrm{Iteration}", L"\textrm{Time}", L"\textrm{Iteration}", L"\textrm{Time}"],
     [L"\textrm{Primal Gap}", L"\textrm{Primal Gap}", L"\textrm{Test loss}", L"\textrm{Test loss}"],
-    xscalelog = [:log, :identity, :log, :identity],
-    legend_position = [:bottomleft, nothing, nothing, nothing],
+    xscalelog=[:log, :identity, :log, :identity],
+    legend_position=[:bottomleft, nothing, nothing, nothing],
     filename="polynomial_result.pdf",
 )

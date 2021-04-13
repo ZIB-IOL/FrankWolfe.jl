@@ -78,10 +78,7 @@ function frank_wolfe(
         println("FATAL: gamma0 not set. We are not going to move a single bit.")
     end
 
-    if (
-        !isnothing(momentum) &&
-       line_search isa Union{Shortstep, Adaptive, RationalShortstep}
-    )
+    if (!isnothing(momentum) && line_search isa Union{Shortstep,Adaptive,RationalShortstep})
         println(
             "WARNING: Momentum-averaged gradients should usually be used with agnostic stepsize rules.",
         )
@@ -147,7 +144,8 @@ function frank_wolfe(
         # go easy on the memory - only compute if really needed
         if (
             (mod(t, print_iter) == 0 && verbose) ||
-            callback !== nothing || line_search isa Shortstep
+            callback !== nothing ||
+            line_search isa Shortstep
         )
             primal = f(x)
             dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
@@ -155,7 +153,8 @@ function frank_wolfe(
 
         if callback !== nothing
             state = (
-                t=t, primal=primal,
+                t=t,
+                primal=primal,
                 dual=primal - dual_gap,
                 dual_gap=dual_gap,
                 time=(time_ns() - time_start) / 1e9,
@@ -389,7 +388,8 @@ function lazified_conditional_gradient(
 
         if callback !== nothing
             state = (
-                t=t, primal=primal,
+                t=t,
+                primal=primal,
                 dual=primal - dual_gap,
                 dual_gap=dual_gap,
                 time=(time_ns() - time_start) / 1e9,
@@ -605,7 +605,8 @@ function stochastic_frank_wolfe(
 
         if callback !== nothing
             state = (
-                t=t, primal=primal,
+                t=t,
+                primal=primal,
                 dual=primal - dual_gap,
                 dual_gap=dual_gap,
                 time=(time_ns() - time_start) / 1e9,

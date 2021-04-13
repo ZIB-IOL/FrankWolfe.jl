@@ -155,7 +155,7 @@ x, v, primal, dual_gap, trajectoryBCG_ref = FrankWolfe.blended_conditional_gradi
     (str, x) -> cgrad!(str, x, xp),
     lmo,
     x0,
-    max_iteration= 2 * k,
+    max_iteration=2 * k,
     line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
     epsilon=target_accuracy / 10.0,
@@ -166,7 +166,17 @@ x, v, primal, dual_gap, trajectoryBCG_ref = FrankWolfe.blended_conditional_gradi
 );
 
 open("lcg_expensive_data.json", "w") do f
-    write(f, JSON.json((FW=trajectoryFW, LCG=trajectoryLCG, BLCG = trajectoryBLCG, LAFW = trajectoryLAFW, BCG = trajectoryBCG, reference_BCG_primal = primal)))
+    return write(
+        f,
+        JSON.json((
+            FW=trajectoryFW,
+            LCG=trajectoryLCG,
+            BLCG=trajectoryBLCG,
+            LAFW=trajectoryLAFW,
+            BCG=trajectoryBCG,
+            reference_BCG_primal=primal,
+        )),
+    )
 end
 
 data = [trajectoryFW, trajectoryLCG, trajectoryBLCG, trajectoryLAFW, trajectoryBCG]
