@@ -31,7 +31,7 @@ FrankWolfe.benchmark_oracles(f, grad!, () -> randn(n), lmo; k=100)
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.nonconvex,
+    line_search=FrankWolfe.Nonconvex(),
     print_iter=k / 10,
     verbose=true,
 );

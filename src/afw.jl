@@ -8,7 +8,7 @@ function away_frank_wolfe(
     grad!,
     lmo,
     x0;
-    line_search::LineSearchMethod=adaptive,
+    line_search::LineSearchMethod=Adaptive(),
     L=Inf,
     gamma0=0,
     K=2.0,
@@ -81,11 +81,11 @@ function away_frank_wolfe(
 
     d = similar(x)
 
-    if line_search == shortstep && L == Inf
+    if line_search isa Shortstep && L == Inf
         println("WARNING: Lipschitz constant not set. Prepare to blow up spectacularly.")
     end
 
-    if line_search == fixed && gamma0 == 0
+    if line_search isa FixedStep && gamma0 == 0
         println("WARNING: gamma0 not set. We are not going to move a single bit.")
     end
 
@@ -177,7 +177,7 @@ function away_frank_wolfe(
         if (
             (mod(t, print_iter) == 0 && verbose) ||
             callback !== nothing ||
-            !(line_search == agnostic || line_search == nonconvex || line_search == fixed)
+            !(line_search isa Agnostic || line_search isa Nonconvex || line_search isa FixedStep)
         )
             primal = f(x)
             dual_gap = phi_value

@@ -63,7 +63,7 @@ x0 = deepcopy(x00)
     x0,
     max_iteration=k,
     L=100,
-    line_search=FrankWolfe.adaptive,
+    line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
     linesearch_tol=1e-7,
     emphasis=FrankWolfe.memory,

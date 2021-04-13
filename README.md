@@ -8,7 +8,7 @@ Frank-Wolfe algorithms.
 The main entry point is the `frank_wolfe` function running the algorithm.
 
 ```julia
-FrankWolfe.frank_wolfe(f, grad!, lmo, x0, max_iteration=1000, line_search=FrankWolfe.agnostic, verbose=true)
+FrankWolfe.frank_wolfe(f, grad!, lmo, x0, max_iteration=1000, line_search=FrankWolfe.Agnostic(), verbose=true)
 ```
 
 where `f(x)` is the objective function, `grad!(storage, x)` is the inplace gradient.
@@ -31,7 +31,7 @@ over the set represented by the LMO.
 ### Conditional Gradient algorithms
 
 - Basic Frank-Wolfe Algorithm (see <http://proceedings.mlr.press/v28/jaggi13.html> for an overview)
-  - works both for convex and non-convex function (use step size rule `FrankWolfe.nonconvex`)
+  - works both for convex and non-convex function (use step size rule `FrankWolfe.Nonconvex()`)
 - Stochastic Frank-Wolfe 
 - Away-Step Frank-Wolfe (see <https://arxiv.org/abs/1511.05932> for an overview)
 - Blended Conditional Gradients (see <https://arxiv.org/abs/1805.07311>)
