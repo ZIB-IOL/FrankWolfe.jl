@@ -46,8 +46,8 @@ function blended_conditional_gradient(
     grad!,
     lmo,
     x0;
-    line_search::LineSearchMethod=adaptive,
-    line_search_inner::LineSearchMethod=adaptive,
+    line_search::LineSearchMethod=Adaptive(),
+    line_search_inner::LineSearchMethod=Adaptive(),
     L=Inf,
     gamma0=0,
     hessian=nothing,
@@ -93,15 +93,15 @@ function blended_conditional_gradient(
         Base.sizehint!(direction_storage, 100)
     end
 
-    if line_search == shortstep && !isfinite(L)
+    if line_search isa Shortstep && !isfinite(L)
         @error("Lipschitz constant not set to a finite value. Prepare to blow up spectacularly.")
     end
 
-    if line_search == agnostic || line_search == nonconvex
+    if line_search isa Agnostic || line_search isa Nonconvex
         @error("Lazification is not known to converge with open-loop step size strategies.")
     end
 
-    if line_search == fixed && gamma0 == 0
+    if line_search isa FixedStep && gamma0 == 0
         println("WARNING: gamma0 not set. We are not going to move a single bit.")
     end
 
@@ -222,7 +222,8 @@ function blended_conditional_gradient(
         dual_gap = phi
         if callback !== nothing
             state = (
-                t=t, primal=primal,
+                t=t,
+                primal=primal,
                 dual=primal - dual_gap,
                 dual_gap=dual_gap,
                 time=(time_ns() - time_start) / 1e9,
@@ -324,7 +325,7 @@ function minimize_over_convex_hull!(
     t,
     time_start,
     non_simplex_iter;
-    line_search_inner=adaptive,
+    line_search_inner=Adaptive(),
     verbose=true,
     print_iter=1000,
     hessian=nothing,
@@ -618,7 +619,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
         strong_wolfe_gap = Strong_Frank_Wolfe_gap_probability_simplex(gradient_x, x)
         if callback !== nothing
             state = (
-                t = t + number_of_steps,
+                t=t + number_of_steps,
                 primal=primal,
                 dual=primal - tolerance,
                 dual_gap=tolerance,
@@ -684,12 +685,12 @@ function simplex_gradient_descent_over_probability_simplex(
         strong_wolfe_gap = Strong_Frank_Wolfe_gap_probability_simplex(gradient, x)
         if callback !== nothing
             state = (
-                t = t + number_of_steps,
-                primal = primal,
-                dual = primal - tolerance,
-                dual_gap = tolerance,
-                time = (time_ns() - time_start) / 1e9,
-                x=x
+                t=t + number_of_steps,
+                primal=primal,
+                dual=primal - tolerance,
+                dual_gap=tolerance,
+                time=(time_ns() - time_start) / 1e9,
+                x=x,
             )
             callback(state)
         end
@@ -778,7 +779,7 @@ function simplex_gradient_descent_over_convex_hull(
     t,
     time_start,
     non_simplex_iter;
-    line_search_inner=adaptive,
+    line_search_inner=Adaptive(),
     verbose=true,
     print_iter=1000,
     hessian=nothing,
@@ -850,7 +851,7 @@ function simplex_gradient_descent_over_convex_hull(
         if f(x) ≥ f(y)
             active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
         else
-            if line_search_inner == adaptive
+            if line_search_inner isa Adaptive
                 gamma, L_inner = adaptive_step_size(
                     f,
                     grad!,
@@ -903,7 +904,8 @@ function simplex_gradient_descent_over_convex_hull(
         dual_gap = tolerance
         if callback !== nothing
             state = (
-                t=t, primal=primal,
+                t=t,
+                primal=primal,
                 dual=primal - dual_gap,
                 dual_gap=dual_gap,
                 time=(time_ns() - time_start) / 1e9,

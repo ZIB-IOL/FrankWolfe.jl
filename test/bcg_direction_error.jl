@@ -29,7 +29,7 @@ x, v, primal, dual_gap, _ = FrankWolfe.blended_conditional_gradient(
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.adaptive,
+    line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
     emphasis=FrankWolfe.memory,
     L=2,

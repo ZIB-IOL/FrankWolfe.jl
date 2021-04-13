@@ -8,7 +8,7 @@ function away_frank_wolfe(
     grad!,
     lmo,
     x0;
-    line_search::LineSearchMethod=adaptive,
+    line_search::LineSearchMethod=Adaptive(),
     L=Inf,
     gamma0=0,
     K=2.0,
@@ -81,11 +81,11 @@ function away_frank_wolfe(
 
     d = similar(x)
 
-    if line_search == shortstep && L == Inf
+    if line_search isa Shortstep && L == Inf
         println("WARNING: Lipschitz constant not set. Prepare to blow up spectacularly.")
     end
 
-    if line_search == fixed && gamma0 == 0
+    if line_search isa FixedStep && gamma0 == 0
         println("WARNING: gamma0 not set. We are not going to move a single bit.")
     end
 
@@ -177,7 +177,7 @@ function away_frank_wolfe(
         if (
             (mod(t, print_iter) == 0 && verbose) ||
             callback !== nothing ||
-            !(line_search == agnostic || line_search == nonconvex || line_search == fixed)
+            !(line_search isa Agnostic || line_search isa Nonconvex || line_search isa FixedStep)
         )
             primal = f(x)
             dual_gap = phi_value
@@ -185,14 +185,14 @@ function away_frank_wolfe(
 
         if callback !== nothing
             state = (
-                t = t,
-                primal = primal,
-                dual = primal - dual_gap,
-                dual_gap = phi_value,
-                time = (time_ns() - time_start) / 1e9,
-                x = x,
-                v = vertex,
-                active_set_length = length(active_set),
+                t=t,
+                primal=primal,
+                dual=primal - dual_gap,
+                dual_gap=phi_value,
+                time=(time_ns() - time_start) / 1e9,
+                x=x,
+                v=vertex,
+                active_set_length=length(active_set),
             )
             callback(state)
         end
@@ -358,8 +358,13 @@ end
 function fw_step(x, gradient, lmo)
     vertex = compute_extreme_point(lmo, gradient)
     return (
-        x - vertex, vertex, nothing, 1,
+        x - vertex,
+        vertex,
+        nothing,
+        1,
         fast_dot(x, gradient) - fast_dot(vertex, gradient),
-        false, true, regular
+        false,
+        true,
+        regular,
     )
 end

@@ -74,7 +74,7 @@ xfin, vmin, _, _, traj_data = FrankWolfe.frank_wolfe(
     trajectory=true,
     verbose=true,
     linesearch_tol=1e-7,
-    line_search=FrankWolfe.adaptive,
+    line_search=FrankWolfe.Adaptive(),
     emphasis=FrankWolfe.memory,
     gradient=spzeros(size(x0)...),
 )
@@ -92,7 +92,7 @@ xfinAFW, vmin, _, _, traj_data = FrankWolfe.away_frank_wolfe(
     verbose=true,
     linesearch_tol=1e-7,
     lazy=true,
-    line_search=FrankWolfe.adaptive,
+    line_search=FrankWolfe.Adaptive(),
     emphasis=FrankWolfe.memory,#,
 )
 
@@ -108,7 +108,7 @@ xfinBCG, vmin, _, _, traj_data = FrankWolfe.blended_conditional_gradient(
     trajectory=true,
     verbose=true,
     linesearch_tol=1e-7,
-    line_search=FrankWolfe.adaptive,
+    line_search=FrankWolfe.Adaptive(),
     emphasis=FrankWolfe.memory,#,
 )
 
