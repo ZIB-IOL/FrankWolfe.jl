@@ -4,7 +4,7 @@ function frank_wolfe(
     grad!,
     lmo,
     x0;
-    line_search::LineSearchMethod=adaptive,
+    line_search::LineSearchMethod=Adaptive(),
     L=Inf,
     gamma0=0,
     step_lim=20,
@@ -70,16 +70,15 @@ function frank_wolfe(
     end
     time_start = time_ns()
 
-    if line_search == shortstep && !isfinite(L)
+    if line_search isa Shortstep && !isfinite(L)
         println("FATAL: Lipschitz constant not set. Prepare to blow up spectacularly.")
     end
 
-    if line_search == fixed && gamma0 == 0
+    if line_search isa FixedStep && gamma0 == 0
         println("FATAL: gamma0 not set. We are not going to move a single bit.")
     end
 
-    if !isnothing(momentum) &&
-       (line_search == shortstep || line_search == adaptive || line_search == rationalshortstep)
+    if (!isnothing(momentum) && line_search isa Union{Shortstep,Adaptive,RationalShortstep})
         println(
             "WARNING: Momentum-averaged gradients should usually be used with agnostic stepsize rules.",
         )
@@ -145,7 +144,8 @@ function frank_wolfe(
         # go easy on the memory - only compute if really needed
         if (
             (mod(t, print_iter) == 0 && verbose) ||
-            callback !== nothing || line_search == shortstep
+            callback !== nothing ||
+            line_search isa Shortstep
         )
             primal = f(x)
             dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
@@ -153,7 +153,8 @@ function frank_wolfe(
 
         if callback !== nothing
             state = (
-                t=t, primal=primal,
+                t=t,
+                primal=primal,
                 dual=primal - dual_gap,
                 dual_gap=dual_gap,
                 time=(time_ns() - time_start) / 1e9,
@@ -253,7 +254,7 @@ function lazified_conditional_gradient(
     grad!,
     lmo_base,
     x0;
-    line_search::LineSearchMethod=adaptive,
+    line_search::LineSearchMethod=Adaptive(),
     L=Inf,
     gamma0=0,
     K=2.0,
@@ -331,11 +332,11 @@ function lazified_conditional_gradient(
     tt = regular
     time_start = time_ns()
 
-    if line_search == shortstep && !isfinite(L)
+    if line_search isa Shortstep && !isfinite(L)
         println("FATAL: Lipschitz constant not set. Prepare to blow up spectacularly.")
     end
 
-    if line_search == agnostic || line_search == nonconvex
+    if line_search isa Agnostic || line_search isa Nonconvex
         println("FATAL: Lazification is not known to converge with open-loop step size strategies.")
     end
 
@@ -387,7 +388,8 @@ function lazified_conditional_gradient(
 
         if callback !== nothing
             state = (
-                t=t, primal=primal,
+                t=t,
+                primal=primal,
                 dual=primal - dual_gap,
                 dual_gap=dual_gap,
                 time=(time_ns() - time_start) / 1e9,
@@ -537,11 +539,11 @@ function stochastic_frank_wolfe(
     dx = similar(x0) # Array{eltype(x0)}(undef, length(x0))
     time_start = time_ns()
 
-    if line_search == shortstep && L == Inf
+    if line_search == Shortstep && L == Inf
         println("FATAL: Lipschitz constant not set. Prepare to blow up spectacularly.")
     end
 
-    if line_search == fixed && gamma0 == 0
+    if line_search == FixedStep && gamma0 == 0
         println("FATAL: gamma0 not set. We are not going to move a single bit.")
     end
 
@@ -596,14 +598,15 @@ function stochastic_frank_wolfe(
         # go easy on the memory - only compute if really needed
         if (mod(t, print_iter) == 0 && verbose) ||
            callback !== nothing ||
-           !(line_search == agnostic || line_search == nonconvex || line_search == fixed)
+           !(line_search isa Agnostic || line_search isa Nonconvex || line_search isa FixedStep)
             primal = compute_value(f, x, full_evaluation=true)
             dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         end
 
         if callback !== nothing
             state = (
-                t=t, primal=primal,
+                t=t,
+                primal=primal,
                 dual=primal - dual_gap,
                 dual_gap=dual_gap,
                 time=(time_ns() - time_start) / 1e9,
@@ -613,16 +616,16 @@ function stochastic_frank_wolfe(
             callback(state)
         end
 
-        if line_search == agnostic
+        if line_search isa Agnostic
             gamma = 2 // (2 + t)
-        elseif line_search == nonconvex
+        elseif line_search isa Nonconvex
             gamma = 1 / sqrt(t + 1)
-        elseif line_search == shortstep
+        elseif line_search isa Shortstep
             gamma = dual_gap / (L * norm(x - v)^2)
-        elseif line_search == rationalshortstep
+        elseif line_search isa RationalShortstep
             rat_dual_gap = sum((x - v) .* gradient)
             gamma = rat_dual_gap // (L * sum((x - v) .^ 2))
-        elseif line_search == fixed
+        elseif line_search isa FixedStep
             gamma = gamma0
         end
 

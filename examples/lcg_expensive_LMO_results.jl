@@ -13,10 +13,34 @@ results = JSON.Parser.parsefile("lcg_expensive_data.json")
 
 ref_optimum = results["reference_BCG_primal"]
 
-iteration_list = [[x[1] + 1 for x in results["FW"]], [x[1] + 1 for x in results["LCG"]], [x[1] + 1 for x in results["BLCG"]], [x[1] + 1 for x in results["LAFW"]], [x[1] + 1 for x in results["BCG"]]]
-time_list = [[x[5] for x in results["FW"]], [x[5] for x in results["LCG"]], [x[5] for x in results["BLCG"]], [x[5] for x in results["LAFW"]], [x[5] for x in results["BCG"]]]
-primal_gap_list = [[x[2] - ref_optimum for x in results["FW"]], [x[2] - ref_optimum for x in results["LCG"]], [x[2] - ref_optimum for x in results["BLCG"]], [x[2] - ref_optimum for x in results["LAFW"]], [x[2] - ref_optimum for x in results["BCG"]]]
-dual_gap_list = [[x[4] for x in results["FW"]], [x[4] for x in results["LCG"]], [x[4] for x in results["BLCG"]], [x[4] for x in results["LAFW"]], [x[4] for x in results["BCG"]]]
+iteration_list = [
+    [x[1] + 1 for x in results["FW"]],
+    [x[1] + 1 for x in results["LCG"]],
+    [x[1] + 1 for x in results["BLCG"]],
+    [x[1] + 1 for x in results["LAFW"]],
+    [x[1] + 1 for x in results["BCG"]],
+]
+time_list = [
+    [x[5] for x in results["FW"]],
+    [x[5] for x in results["LCG"]],
+    [x[5] for x in results["BLCG"]],
+    [x[5] for x in results["LAFW"]],
+    [x[5] for x in results["BCG"]],
+]
+primal_gap_list = [
+    [x[2] - ref_optimum for x in results["FW"]],
+    [x[2] - ref_optimum for x in results["LCG"]],
+    [x[2] - ref_optimum for x in results["BLCG"]],
+    [x[2] - ref_optimum for x in results["LAFW"]],
+    [x[2] - ref_optimum for x in results["BCG"]],
+]
+dual_gap_list = [
+    [x[4] for x in results["FW"]],
+    [x[4] for x in results["LCG"]],
+    [x[4] for x in results["BLCG"]],
+    [x[4] for x in results["LAFW"]],
+    [x[4] for x in results["BCG"]],
+]
 label = [L"\textrm{FW}", L"\textrm{L-CG}", L"\textrm{BL-CG}", L"\textrm{L-AFW}", L"\textrm{BCG}"]
 
 FrankWolfe.plot_results(
@@ -25,7 +49,7 @@ FrankWolfe.plot_results(
     label,
     [L"\textrm{Iteration}", L"\textrm{Time}", L"\textrm{Iteration}", L"\textrm{Time}"],
     [L"\textrm{Primal Gap}", L"\textrm{Primal Gap}", L"\textrm{Dual Gap}", L"\textrm{Dual Gap}"],
-    xscalelog = [:log, :identity, :log, :identity],
-    legend_position = [:bottomleft, nothing, nothing, nothing],
+    xscalelog=[:log, :identity, :log, :identity],
+    legend_position=[:bottomleft, nothing, nothing, nothing],
     filename="lcg_expensive.pdf",
 )

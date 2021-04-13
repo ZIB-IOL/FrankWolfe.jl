@@ -52,7 +52,7 @@ FrankWolfe.benchmark_oracles(
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.agnostic,
+    line_search=FrankWolfe.Agnostic(),
     print_iter=k / 10,
     emphasis=FrankWolfe.memory,
     verbose=true,

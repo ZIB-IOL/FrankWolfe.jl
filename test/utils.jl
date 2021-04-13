@@ -45,3 +45,32 @@ end
         end
     end
 end
+
+@testset "Line Search methods" begin
+    a = [-1.0, -1.0, -1.0]
+    b = [1.0, 1.0, 1.0]
+    function grad!(storage, x)
+        return storage .= 2x
+    end
+    f(x) = norm(x)^2
+    gradient = similar(a)
+    grad!(gradient, a)
+    @test FrankWolfe.backtrackingLS(f, gradient, a, a - b, 1.0) == (0.5, 1)
+    @test abs(FrankWolfe.segment_search(f, grad!, a, a - b, 1.0)[1] - 0.5) < 0.0001
+
+    @inferred FrankWolfe.line_search_wrapper(
+        FrankWolfe.Agnostic(),
+        3,
+        identity,
+        nothing,
+        [0.3, 0.2],
+        ones(2),
+        ones(3),
+        0.0,
+        3,
+        nothing,
+        1e-6,
+        1e-6,
+        0.9,
+    )
+end

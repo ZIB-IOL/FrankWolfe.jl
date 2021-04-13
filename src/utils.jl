@@ -21,9 +21,9 @@ function line_search_wrapper(
     step_lim,
     gamma_max,
 )
-    if line_search == agnostic
+    if line_search isa Agnostic
         gamma = 2 // (2 + t)
-    elseif line_search == goldenratio # FIX for general d
+    elseif line_search isa Goldenratio # FIX for general d
         gamma, _ = segment_search(
             f,
             grad!,
@@ -33,7 +33,7 @@ function line_search_wrapper(
             linesearch_tol=linesearch_tol,
             inplace_gradient=true,
         )
-    elseif line_search == backtracking # FIX for general d
+    elseif line_search isa Backtracking # FIX for general d
         gamma, _ = backtrackingLS(
             f,
             gradient,
@@ -43,20 +43,19 @@ function line_search_wrapper(
             linesearch_tol=linesearch_tol,
             step_lim=step_lim,
         )
-    elseif line_search == nonconvex
+    elseif line_search isa Nonconvex
         gamma = 1 / sqrt(t + 1)
-    elseif line_search == shortstep
+    elseif line_search isa Shortstep
         gamma = min(max(fast_dot(gradient, d) * inv(L * norm(d)^2), 0), gamma_max)
-    elseif line_search == rationalshortstep
+    elseif line_search isa RationalShortstep
         gamma = min(max(fast_dot(gradient, d) * inv(L * fast_dot(d, d)), 0), gamma_max)
-    elseif line_search == fixed
+    elseif line_search isa FixedStep
         gamma = min(gamma0, gamma_max)
-    elseif line_search == adaptive
+    elseif line_search isa Adaptive
         gamma, L = adaptive_step_size(f, grad!, gradient, x, d, L, gamma_max=gamma_max)
     end
     return gamma, L
 end
-
 
 
 """
@@ -279,13 +278,36 @@ function plot_results(
     list_axis_x,
     list_axis_y;
     filename=nothing,
-    xscalelog= nothing,
-    yscalelog= nothing,
+    xscalelog=nothing,
+    yscalelog=nothing,
     legend_position=nothing,
     list_style=fill(:solid, length(list_label)),
     list_color=get_color_palette(:auto, plot_color(:white)),
-    list_markers = [:circle, :rect, :utriangle, :diamond, :hexagon, :+, :x, :star5, :cross, :xcross, :dtriangle, :rtriangle, :ltriangle, :pentagon, :heptagon, :octagon, :star4, :star6, :star7, :star8, :vline, :hline],
-    number_markers_per_line = 10,
+    list_markers=[
+        :circle,
+        :rect,
+        :utriangle,
+        :diamond,
+        :hexagon,
+        :+,
+        :x,
+        :star5,
+        :cross,
+        :xcross,
+        :dtriangle,
+        :rtriangle,
+        :ltriangle,
+        :pentagon,
+        :heptagon,
+        :octagon,
+        :star4,
+        :star6,
+        :star7,
+        :star8,
+        :vline,
+        :hline,
+    ],
+    number_markers_per_line=10,
 )
     line_width = 3.0
     marker_size = 5.0
@@ -335,8 +357,8 @@ function plot_results(
                         legendfontsize=font_size_legend,
                         width=line_width,
                         linestyle=list_style[j],
-                        color= list_color[j],
-                        grid = true,
+                        color=list_color[j],
+                        grid=true,
                     )
                 else
                     plt = plot(
@@ -351,8 +373,8 @@ function plot_results(
                         xguidefontsize=font_size_axis,
                         width=line_width,
                         linestyle=list_style[j],
-                        color= list_color[j],
-                        grid = true,
+                        color=list_color[j],
+                        grid=true,
                     )
                 end
             else
@@ -363,7 +385,7 @@ function plot_results(
                         label="",
                         width=line_width,
                         linestyle=list_style[j],
-                        color= list_color[j],
+                        color=list_color[j],
                         legend=position_legend,
                     )
                 else
@@ -373,31 +395,49 @@ function plot_results(
                         label="",
                         width=line_width,
                         linestyle=list_style[j],
-                        color= list_color[j],
+                        color=list_color[j],
                     )
                 end
             end
-            if xscale == :log 
-                indices = round.(Int, 10 .^ (range(log10(1),log10(length(list_data_x[i][j])),length=number_markers_per_line)))
+            if xscale == :log
+                indices =
+                    round.(
+                        Int,
+                        10 .^ (range(
+                            log10(1),
+                            log10(length(list_data_x[i][j])),
+                            length=number_markers_per_line,
+                        )),
+                    )
                 scatter!(
                     list_data_x[i][j][indices],
                     list_data_y[i][j][indices],
-                    markershape = list_markers[j],
-                    markercolor = list_color[j],
-                    markersize = marker_size,
-                    markeralpha = transparency_markers,
-                    label = list_label[j],
+                    markershape=list_markers[j],
+                    markercolor=list_color[j],
+                    markersize=marker_size,
+                    markeralpha=transparency_markers,
+                    label=list_label[j],
                     legend=position_legend,
                 )
             else
                 scatter!(
-                    view(list_data_x[i][j],1:length(list_data_x[i][j])÷number_markers_per_line:length(list_data_x[i][j])),
-                    view(list_data_y[i][j], 1:length(list_data_y[i][j])÷number_markers_per_line:length(list_data_y[i][j])),
-                    markershape = list_markers[j],
-                    markercolor = list_color[j],
-                    markersize = marker_size,
-                    markeralpha = transparency_markers,
-                    label = list_label[j],
+                    view(
+                        list_data_x[i][j],
+                        1:length(list_data_x[i][j])÷number_markers_per_line:length(
+                            list_data_x[i][j],
+                        ),
+                    ),
+                    view(
+                        list_data_y[i][j],
+                        1:length(list_data_y[i][j])÷number_markers_per_line:length(
+                            list_data_y[i][j],
+                        ),
+                    ),
+                    markershape=list_markers[j],
+                    markercolor=list_color[j],
+                    markersize=marker_size,
+                    markeralpha=transparency_markers,
+                    label=list_label[j],
                     legend=position_legend,
                 )
             end
@@ -726,7 +766,7 @@ The state data is only the 5 first fields, usually:
 `(t,primal,dual,dual_gap,time)`
 """
 function trajectory_callback(storage)
-    function push_trajectory!(data)
-        push!(storage, Tuple(data)[1:5])
+    return function push_trajectory!(data)
+        return push!(storage, Tuple(data)[1:5])
     end
 end

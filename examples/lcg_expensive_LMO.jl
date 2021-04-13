@@ -58,7 +58,7 @@ x, v, primal, dual_gap, trajectoryFW = FrankWolfe.frank_wolfe(
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.adaptive,
+    line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
     epsilon=target_accuracy,
     emphasis=FrankWolfe.memory,
@@ -78,7 +78,7 @@ x, v, primal, dual_gap, trajectoryLCG = FrankWolfe.lazified_conditional_gradient
     x0,
     max_iteration=k,
     epsilon=target_accuracy,
-    line_search=FrankWolfe.adaptive,
+    line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
     emphasis=FrankWolfe.memory,
     trajectory=true,
@@ -96,7 +96,7 @@ x, v, primal, dual_gap, trajectoryBLCG = FrankWolfe.lazified_conditional_gradien
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.adaptive,
+    line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
     epsilon=target_accuracy,
     emphasis=FrankWolfe.memory,
@@ -115,7 +115,7 @@ x, v, primal, dual_gap, trajectoryLAFW = FrankWolfe.away_frank_wolfe(
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.adaptive,
+    line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
     linesearch_tol=1e-9,
     epsilon=target_accuracy,
@@ -136,7 +136,7 @@ x, v, primal, dual_gap, trajectoryBCG = FrankWolfe.blended_conditional_gradient(
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.adaptive,
+    line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
     linesearch_tol=1e-9,
     epsilon=target_accuracy,
@@ -155,8 +155,8 @@ x, v, primal, dual_gap, trajectoryBCG_ref = FrankWolfe.blended_conditional_gradi
     (str, x) -> cgrad!(str, x, xp),
     lmo,
     x0,
-    max_iteration= 2 * k,
-    line_search=FrankWolfe.adaptive,
+    max_iteration=2 * k,
+    line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
     epsilon=target_accuracy / 10.0,
     linesearch_tol=1e-9,
@@ -166,7 +166,17 @@ x, v, primal, dual_gap, trajectoryBCG_ref = FrankWolfe.blended_conditional_gradi
 );
 
 open("lcg_expensive_data.json", "w") do f
-    write(f, JSON.json((FW=trajectoryFW, LCG=trajectoryLCG, BLCG = trajectoryBLCG, LAFW = trajectoryLAFW, BCG = trajectoryBCG, reference_BCG_primal = primal)))
+    return write(
+        f,
+        JSON.json((
+            FW=trajectoryFW,
+            LCG=trajectoryLCG,
+            BLCG=trajectoryBLCG,
+            LAFW=trajectoryLAFW,
+            BCG=trajectoryBCG,
+            reference_BCG_primal=primal,
+        )),
+    )
 end
 
 data = [trajectoryFW, trajectoryLCG, trajectoryBLCG, trajectoryLAFW, trajectoryBCG]
