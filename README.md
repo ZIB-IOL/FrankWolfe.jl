@@ -150,15 +150,15 @@ x = Rational{BigInt}[1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//
 
 ### Large-Scale problems
 
-Example: `examples/largeScale.jl`
+Example: `examples/large_scale.jl`
 
-The package is build to scale well, for those conditional gradients variants that can scale well. For exampple, Away-Step Frank-Wolfe and Pairwise Conditional Gradients do in most cases *not scale well* because they need to maintain active sets and maintaining them can be very expensive. Similarly, line search methods might become prohibitive at large sizes. However if we consider scale-friendly variants, e.g., the vanilla Frank-Wolfe algorithm with the agnostic step size rule or short step rule, then these algorithms can scale well to extreme sizes esentially only limited by the amount of memory that you have available. However even for these methods that tend to scale well, allocation of memory itself can be very slow when you need to allocate gigabytes of memory for a single gradient computation. 
+The package is built to scale well, for those conditional gradients variants that can scale well. For exampple, Away-Step Frank-Wolfe and Pairwise Conditional Gradients do in most cases *not scale well* because they need to maintain active sets and maintaining them can be very expensive. Similarly, line search methods might become prohibitive at large sizes. However if we consider scale-friendly variants, e.g., the vanilla Frank-Wolfe algorithm with the agnostic step size rule or short step rule, then these algorithms can scale well to extreme sizes esentially only limited by the amount of memory available. However even for these methods that tend to scale well, allocation of memory itself can be very slow when you need to allocate gigabytes of memory for a single gradient computation. 
 
-The package is build to support extreme sizes with a special memory efficient emphasis `Emphasis=FrankWolfe.memory`, which minimizes very expensive allocation memory and performs as many operations as possible in-place. 
+The package is build to support extreme sizes with a special memory efficient emphasis `emphasis=FrankWolfe.memory`, which minimizes very expensive allocation memory and performs as many operations as possible in-place. 
 
-Here is an example of a run with 1e9 variables (that is *one billion* variables). Each gradient is around 7.5 GB in size. Here is the output of the run broken down into pieces:
+Here is an example of a run with 1e9 variables. Each gradient is around 7.5 GB in size. Here is the output of the run broken down into pieces:
 
-````
+```
 Size of single vector (Float64): 7629.39453125 MB                                                                                                                                    
 Testing f... 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████| Time: 0:00:23
 Testing grad... 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████| Time: 0:00:23
@@ -180,11 +180,11 @@ Testing update... (Emphasis: memory) 100%|████████████�
  update (memory)       10    5.00s  5.72%   500ms     0.00B  0.00%    0.00B
  dual gap              10    2.40s  2.75%   240ms     0.00B  0.00%    0.00B
  ──────────────────────────────────────────────────────────────────────────
-````
+```
 
 The above is the optional benchmarking of the oracles that we provide to understand how fast crucial parts of the algorithms are, mostly notably oracle evaluations, the update of the iterate and the computation of the dual gap. As you can see if you compare `update (blas)` vs. `update (memory)`, the normal update when we use BLAS requires an additional 14.9GB of memory on top of the gradient etc whereas the `update (memory)` (the memory emphasis mode) does not consume any extra memory. This is also reflected in the computational times: the BLAS version requires 3.61 seconds on average to update the iterate, while the memory emphasis version requires only 500ms. In fact none of the crucial components in the algorithm consume any memory when run in memory efficient mode. Now let us look at the actual footprint of the whole algorithm:
 
-````
+```
 Vanilla Frank-Wolfe Algorithm.
 EMPHASIS: memory STEPSIZE: agnostic EPSILON: 1.0e-7 MAXITERATION: 1000 TYPE: Float64
 MOMENTUM: nothing GRADIENTTYPE: Nothing
@@ -208,10 +208,12 @@ WARNING: In memory emphasis mode iterates are written back into x0!
 ─────────────────────────────────────────────────────────────────────────────────────────────────
 
 4560.661203 seconds (7.41 M allocations: 112.121 GiB, 0.01% gc time)
-````
+```
 
 As you can see the algorithm ran for about 4600 secs (single-thread run) allocating 112.121 GiB of memory throughout. So how does this average out to the per-iteration cost in terms of memory: `112.121 / 7.45 / 1000 = 0.0151` so about 15.1MiB per iteration which is much less than the size of the gradient and in fact only stems from the reporting here. 
 
 **NB.** This example highlights also one of the great features of first-order methods and conditional gradients in particular: We have dimension-independent convergence rates. In fact, we contract the primal gap as `2LD^2 / (t+2)` (for the simple agnostic rule) and, e.g., if the feasible region is the probability simplex with `D = sqrt(2)` and the function has bounded Lipschitzness, e.g., the function `|| x - xp ||^2` has `L = 2`, then the convergence rate is completely independent of the input size. The only thing that limits scaling is how much memory you have available and whether you can stomach the (linear) per-iteration cost.
 
+## Citing
 
+See the CITATION.bib BibTeX entry.
