@@ -720,10 +720,10 @@ end
 
 
 """
-projection_simplex_sort
+    projection_simplex_sort(x; s=1.0)
 
-Perform a projection onto the unit probability simplex using 
-a sorting algorithm.
+Perform a projection onto the probability simplex of radius `s`
+using a sorting algorithm.
 """
 function projection_simplex_sort(x; s=1.0)
     n = length(x)
