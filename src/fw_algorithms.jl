@@ -165,39 +165,21 @@ function frank_wolfe(
         end
         @emphasis(emphasis, d = x - v)
 
-        if momentum === nothing
-            gamma, L = line_search_wrapper(
-                line_search,
-                t,
-                f,
-                grad!,
-                x,
-                d,
-                gradient,
-                dual_gap,
-                L,
-                gamma0,
-                linesearch_tol,
-                step_lim,
-                one(eltype(x)),
-            )
-        else
-            gamma, L = line_search_wrapper(
-                line_search,
-                t,
-                f,
-                grad!,
-                x,
-                d,
-                gtemp,
-                dual_gap,
-                L,
-                gamma0,
-                linesearch_tol,
-                step_lim,
-                one(eltype(x)),
-            )
-        end
+        gamma, L = line_search_wrapper(
+            line_search,
+            t,
+            f,
+            grad!,
+            x,
+            d,
+            momentum === nothing ? gradient : gtemp, # use appropriate storage
+            dual_gap,
+            L,
+            gamma0,
+            linesearch_tol,
+            step_lim,
+            one(eltype(x)),
+        )
 
         @emphasis(emphasis, x = x - gamma * d)
 
