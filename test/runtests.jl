@@ -326,7 +326,7 @@ end
             f,
             grad!,
             lmo_prob,
-            x0,
+            copy(x0),
             max_iteration=k,
             line_search=FrankWolfe.Backtracking(),
             print_iter=k / 10,
@@ -340,7 +340,7 @@ end
             f,
             grad!,
             lmo_prob,
-            x0,
+            copy(x0),
             max_iteration=k,
             line_search=FrankWolfe.Backtracking(),
             print_iter=k / 10,
@@ -349,6 +349,31 @@ end
         )
 
         @test x !== nothing
+
+        x, _, primal_conv, _ = FrankWolfe.frank_wolfe(
+            f,
+            grad!,
+            lmo_prob,
+            copy(x0),
+            max_iteration=k,
+            line_search=FrankWolfe.MonotonousStepSize(),
+            print_iter=k / 10,
+            verbose=false,
+            emphasis=FrankWolfe.memory,
+        )
+
+        x, _, primal_nonconv, _ = FrankWolfe.frank_wolfe(
+            f,
+            grad!,
+            lmo_prob,
+            copy(x0),
+            max_iteration=k,
+            line_search=FrankWolfe.MonotonousNonConvexStepSize(),
+            print_iter=k / 10,
+            verbose=false,
+            emphasis=FrankWolfe.memory,
+        )
+        @test primal_conv < primal_nonconv
     end
 end
 @testset "Testing rational variant" begin
