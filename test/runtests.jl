@@ -350,30 +350,33 @@ end
 
         @test x !== nothing
 
+        line_search = FrankWolfe.MonotonousStepSize()
         x, _, primal_conv, _ = FrankWolfe.frank_wolfe(
             f,
             grad!,
             lmo_prob,
             copy(x0),
             max_iteration=k,
-            line_search=FrankWolfe.MonotonousStepSize(),
+            line_search=line_search,
             print_iter=k / 10,
             verbose=false,
             emphasis=FrankWolfe.memory,
         )
+        @test line_search.factor < 20
 
+        line_search = FrankWolfe.MonotonousNonConvexStepSize()
         x, _, primal_nonconv, _ = FrankWolfe.frank_wolfe(
             f,
             grad!,
             lmo_prob,
             copy(x0),
             max_iteration=k,
-            line_search=FrankWolfe.MonotonousNonConvexStepSize(),
+            line_search=line_search,
             print_iter=k / 10,
             verbose=false,
             emphasis=FrankWolfe.memory,
         )
-        @test primal_conv < primal_nonconv
+        @test line_search.factor < 20
     end
 end
 @testset "Testing rational variant" begin
