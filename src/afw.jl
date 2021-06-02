@@ -26,6 +26,7 @@ function away_frank_wolfe(
     gradient=nothing,
     renorm_interval=1000,
     callback=nothing,
+    timeout=Inf,
 )
     function print_header(data)
         @printf(
@@ -181,6 +182,16 @@ function away_frank_wolfe(
         )
             primal = f(x)
             dual_gap = phi_value
+        end
+
+        if timeout < Inf
+            tot_time = (time_ns() - time_start) / 1e9
+            if tot_time ≥ timeout
+                if verbose
+                    @info "Time limit reached"
+                end
+                break
+            end
         end
 
         if callback !== nothing
