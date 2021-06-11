@@ -1,8 +1,12 @@
 
 # currently just a copy of fw to be adjusted
 # support: fw with tracking of decomposition, afw, pfw over "abstract" functions
-# decide in the whether we can lazify that version -> likely possible but will require careful checking. 
+# decide in the whether we can lazify that version -> likely possible but will require careful checking.
 # keep lazy variant separate but can be based off of afw
+"""
+    away_frank_wolfe
+missing docstring.
+"""
 function away_frank_wolfe(
     f,
     grad!,
@@ -218,7 +222,7 @@ function away_frank_wolfe(
         t = t + 1
     end
 
-    # recompute everything once more for final verfication / do not record to trajectory though for now! 
+    # recompute everything once more for final verfication / do not record to trajectory though for now!
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
     # hence the final computation.
     # do also cleanup of active_set due to many operations on the same set

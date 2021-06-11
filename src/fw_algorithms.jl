@@ -1,4 +1,7 @@
-
+"""
+    frank_wolfe
+missing docstring.
+"""
 function frank_wolfe(
     f,
     grad!,
@@ -202,7 +205,7 @@ function frank_wolfe(
         end
         t = t + 1
     end
-    # recompute everything once for final verfication / do not record to trajectory though for now! 
+    # recompute everything once for final verfication / do not record to trajectory though for now!
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
     # hence the final computation.
     grad!(gradient, x)
@@ -230,7 +233,10 @@ end
 ##############################################################
 # Lazified Vanilla FW
 ##############################################################
-
+"""
+    lazified_conditional_gradient
+missing docstring.
+"""
 function lazified_conditional_gradient(
     f,
     grad!,
@@ -422,7 +428,7 @@ function lazified_conditional_gradient(
         t += 1
     end
 
-    # recompute everything once for final verfication / do not record to trajectory though for now! 
+    # recompute everything once for final verfication / do not record to trajectory though for now!
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
     # hence the final computation.
     grad!(gradient, x)

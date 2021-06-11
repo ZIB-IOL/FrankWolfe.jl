@@ -41,6 +41,10 @@ function print_iter_func(data)
     )
 end
 
+"""
+    blended_conditional_gradient
+missing docstring.
+"""
 function blended_conditional_gradient(
     f,
     grad!,
@@ -305,15 +309,15 @@ end
 """
     minimize_over_convex_hull!
 
-Given a function f with gradient grad! and an active set 
-active_set this function will minimize the function over 
-the convex hull of the active set until the strong-wolfe 
+Given a function f with gradient grad! and an active set
+active_set this function will minimize the function over
+the convex hull of the active set until the strong-wolfe
 gap over the active set is below tolerance.
 
 It will either directly minimize over the convex hull using
-simplex gradient descent, or it will transform the problem 
-to barycentric coordinates and minimize over the unit 
-probability simplex using gradient descent or Nesterov's 
+simplex gradient descent, or it will transform the problem
+to barycentric coordinates and minimize over the unit
+probability simplex using gradient descent or Nesterov's
 accelerated gradient descent.
 """
 function minimize_over_convex_hull!(
@@ -443,16 +447,16 @@ end
     build_reduced_problem(atoms::AbstractVector{<:FrankWolfe.ScaledHotVector}, hessian, weights, gradient, tolerance)
 
 Given an active set formed by ScaledHotVector, a (constant)
-Hessian and a gradient constructs a quadratic problem 
-over the unit probability simplex that is equivalent to 
+Hessian and a gradient constructs a quadratic problem
+over the unit probability simplex that is equivalent to
 minimizing the original function over the convex hull of the
 active set. If λ are the barycentric coordinates of dimension
-equal to the cardinality of the active set, the objective 
+equal to the cardinality of the active set, the objective
 function is:
     f(λ) = reduced_linear^T λ + 0.5 * λ^T reduced_hessian λ
 
-In the case where we find that the current iterate has a strong-Wolfe 
-gap over the convex hull of the active set that is below the tolerance 
+In the case where we find that the current iterate has a strong-Wolfe
+gap over the convex hull of the active set that is below the tolerance
 we return nothing (as there is nothing to do).
 
 """
@@ -484,9 +488,9 @@ function build_reduced_problem(
 end
 
 """
-build_reduced_problem
+    build_reduced_problem
 
-Same as the function above, but for the case where the active 
+Same as the function above, but for the case where the active
 set is formed by Sparse Arrays.
 """
 function build_reduced_problem(
@@ -517,7 +521,7 @@ end
 """
     build_reduced_problem(atoms::AbstractVector{<:Array}, hessian, weights, gradient, tolerance)
 
-Same as the two function above, but for the case where the active 
+Same as the two function above, but for the case where the active
 set is formed by dense Arrays.
 """
 function build_reduced_problem(
@@ -566,8 +570,8 @@ end
 """
     accelerated_simplex_gradient_descent_over_probability_simplex
 
-Minimizes an objective function over the unit probability simplex 
-until the Strong-Wolfe gap is below tolerance using Nesterov's 
+Minimizes an objective function over the unit probability simplex
+until the Strong-Wolfe gap is below tolerance using Nesterov's
 accelerated gradient descent.
 """
 function accelerated_simplex_gradient_descent_over_probability_simplex(
@@ -654,7 +658,7 @@ end
 """
 simplex_gradient_descent_over_probability_simplex
 
-Minimizes an objective function over the unit probability simplex 
+Minimizes an objective function over the unit probability simplex
 until the Strong-Wolfe gap is below tolerance using gradient descent.
 """
 function simplex_gradient_descent_over_probability_simplex(
@@ -742,7 +746,7 @@ end
 """
 Strong_Frank_Wolfe_gap_probability_simplex
 
-Compute the Strong-Wolfe gap over the unit probability simplex 
+Compute the Strong-Wolfe gap over the unit probability simplex
 given a gradient.
 """
 function Strong_Frank_Wolfe_gap_probability_simplex(gradient, x)
@@ -862,7 +866,7 @@ function simplex_gradient_descent_over_convex_hull(
                     gamma_max=1.0,
                     upgrade_accuracy=upgrade_accuracy_flag,
                 )
-                #If the stepsize is that small we probably need to increase the accuracy of 
+                #If the stepsize is that small we probably need to increase the accuracy of
                 #the types we are using.
                 if gamma < eps()
                     #@warn "Upgrading the accuracy of the adaptive line search."
