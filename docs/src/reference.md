@@ -14,7 +14,7 @@ blended_conditional_gradient
 
 # LMOs
 
-The Linear Minimization Oracle (LMO) is an integral part of the iterative step in the FW algorithm. Given $d\in \mathcal{X}$, it returns:
+The Linear Minimization Oracle (LMO) is an integral part of the iterative step in the FW algorithm. Given ``d\in \mathcal{X}``, it returns:
 ```math
 v\in \argmin_{x\in \mathcal{C}} \langle d,x \rangle.
 ```
