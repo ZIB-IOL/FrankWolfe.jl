@@ -6,5 +6,5 @@ makedocs(
     modules=[FrankWolfe],
     sitename="FrankWolfe.jl",
     format=Documenter.HTML(prettyurls = get(ENV, "CI", nothing) == "true"),
-    pages=["Home"=>"index.md","Examples"=>"examples2.md","Reference"=>"reference.md",
+    pages=["Home"=>"index.md","Examples"=>"examples2.md","References"=>"reference.md",
             "Index"=>"indexlist.md"])

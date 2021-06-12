@@ -5,12 +5,10 @@ This section contains all algorithms of the [`FrankWolfe.jl`](https://github.com
 ## Functions
 
 ```@docs
-blended_conditional_gradient
-compute_extreme_point
 frank_wolfe
 lazified_conditional_gradient
 away_frank_wolfe
-
+blended_conditional_gradient
 ```
 
 
@@ -29,7 +27,10 @@ v\in \argmin_{x\in \mathcal{C}} \langle d,x \rangle.
 - ``L^p``-norm ball: [`FrankWolfe.LpNormLMO`](@ref)
 - Birkhoff polytope: [`FrankWolfe.BirkhoffPolytopeLMO`](@ref)
 
-All of them are subtypes of [`FrankWolfe.LinearMinimizationOracle`](@ref) and implement the [`compute_extreme_point`](@ref) method.
+All of them are subtypes of [`FrankWolfe.LinearMinimizationOracle`](@ref) and implement the following method:
+```@docs
+compute_extreme_point
+```
 
 ## Functions and Structures
 
