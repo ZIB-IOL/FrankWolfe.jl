@@ -1,4 +1,15 @@
 
+"""
+    frank_wolfe(f, grad!, lmo, x0; ...)
+
+Simplest form of the Frank-Wolfe algorithm.
+Returns a tuple `(x, v, primal, dual_gap, traj_data)` with:
+- `x` final iterate
+- `v` last vertex from the LMO
+- `primal` primal value `f(x)`
+- `dual_gap` final Frank-Wolfe gap
+- `traj_data` vector of trajectory information.
+"""
 function frank_wolfe(
     f,
     grad!,
@@ -16,7 +27,6 @@ function frank_wolfe(
     verbose=false,
     linesearch_tol=1e-7,
     emphasis::Emphasis=memory,
-    nep=false,
     gradient=nothing,
     callback=nothing,
 )
@@ -131,14 +141,6 @@ function frank_wolfe(
             @emphasis(emphasis, gradient = (momentum * gradient) + (1 - momentum) * gtemp)
         end
         first_iter = false
-
-        # build-in NEP here
-        if nep
-            # argmin_v v^T(1-2y)
-            # y = x_t - 1/L * (t+1)/2 * gradient
-            # check whether emphasis works
-            @emphasis(emphasis, gradient = 1 - 2 * (x - 1 / L * (t + 1) / 2 * gradient))
-        end
 
         v = compute_extreme_point(lmo, gradient)
         # go easy on the memory - only compute if really needed
