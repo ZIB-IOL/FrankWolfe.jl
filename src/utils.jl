@@ -770,3 +770,85 @@ function trajectory_callback(storage)
         return push!(storage, Tuple(data)[1:5])
     end
 end
+
+"""
+    MonotonousStepSize{F}
+
+Represents a monotonous open-loop step size.
+Contains a halving factor `N` increased at each iteration until there is primal progress
+`gamma = 2 / (t + 2) * 2^(-N)`
+"""
+mutable struct MonotonousStepSize{F} <: LineSearchMethod
+    domain_oracle::F
+    factor::Int
+end
+
+MonotonousStepSize(f::F) where {F <: Function} = MonotonousStepSize{F}(f, 0)
+MonotonousStepSize() = MonotonousStepSize(x -> true)
+
+function line_search_wrapper(
+    line_search::MonotonousStepSize,
+    t,
+    f,
+    grad!,
+    x,
+    d,
+    gradient,
+    dual_gap,
+    L,
+    gamma0,
+    linesearch_tol,
+    step_lim,
+    gamma_max,
+)
+    gamma = 2.0^(1-line_search.factor) / (2 + t)
+    xnew = x - gamma * d
+    f0 = f(x)
+    while !line_search.domain_oracle(xnew) || f(xnew) > f0
+        line_search.factor += 1
+        gamma = 2.0^(1-line_search.factor) / (2 + t)
+        @. xnew = x - gamma * d
+    end
+    return gamma, L
+end
+
+"""
+    MonotonousNonConvexStepSize{F}
+
+Represents a monotonous open-loop non-convex step size.
+Contains a halving factor `N` increased at each iteration until there is primal progress
+`gamma = 1 / sqrt(t + 1) * 2^(-N)`
+"""
+mutable struct MonotonousNonConvexStepSize{F} <: LineSearchMethod
+    domain_oracle::F
+    factor::Int
+end
+
+MonotonousNonConvexStepSize(f::F) where {F <: Function} = MonotonousNonConvexStepSize{F}(f, 0)
+MonotonousNonConvexStepSize() = MonotonousNonConvexStepSize(x -> true)
+
+function line_search_wrapper(
+    line_search::MonotonousNonConvexStepSize,
+    t,
+    f,
+    grad!,
+    x,
+    d,
+    gradient,
+    dual_gap,
+    L,
+    gamma0,
+    linesearch_tol,
+    step_lim,
+    gamma_max,
+)
+    gamma = 2.0^(-line_search.factor) / sqrt(1 + t)
+    xnew = x - gamma * d
+    f0 = f(x)
+    while !line_search.domain_oracle(xnew) || f(xnew) > f0
+        line_search.factor += 1
+        gamma = 2.0^(-line_search.factor) / sqrt(1 + t)
+        @. xnew = x - gamma * d
+    end
+    return gamma, L
+end
