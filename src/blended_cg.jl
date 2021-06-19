@@ -42,8 +42,14 @@ function print_iter_func(data)
 end
 
 """
-    blended_conditional_gradient
-missing docstring.
+    blended_conditional_gradient(f, grad!, lmo, x0)
+
+Entry point for the Blended Conditional Gradient algorithm.
+See Braun, Gábor, et al. "Blended conditonal gradients" ICML 2019.
+The method works on an active set like [`FrankWolfe.away_frank_wolfe`](@ref),
+performing gradient descent over the convex hull of active vertices,
+removing vertices when their weight drops to 0 and adding new vertices
+by calling the linear oracle in a lazy fashion.
 """
 function blended_conditional_gradient(
     f,
@@ -140,14 +146,15 @@ function blended_conditional_gradient(
         if t == 0
             tt = initial
         end
+        Δt = (time_ns() - time_start) / 1.0e9
         rep = (
             tt,
             string(t),
             primal,
             primal - dual_gap,
             dual_gap,
-            (time_ns() - time_start) / 1.0e9,
-            t / ((time_ns() - time_start) / 1.0e9),
+            Δt,
+            t / Δt,
             length(active_set),
             non_simplex_iter,
         )
@@ -438,17 +445,16 @@ function minimize_over_convex_hull!(
             @. active_set.weights = new_weights
         end
     end
-    number_elements = length(active_set.atoms)
     active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
     return number_of_steps
 end
 
 """
-    build_reduced_problem(atoms::AbstractVector{<:FrankWolfe.ScaledHotVector}, hessian, weights, gradient, tolerance)
+    build_reduced_problem(atoms::AbstractVector{<:AbstractVector}, hessian, weights, gradient, tolerance)
 
-Given an active set formed by ScaledHotVector, a (constant)
-Hessian and a gradient constructs a quadratic problem
-over the unit probability simplex that is equivalent to
+Given an active set formed by vectors , a (constant)
+Hessian and a gradient constructs a quadratic problem 
+over the unit probability simplex that is equivalent to 
 minimizing the original function over the convex hull of the
 active set. If λ are the barycentric coordinates of dimension
 equal to the cardinality of the active set, the objective
@@ -470,7 +476,7 @@ function build_reduced_problem(
     n = atoms[1].len
     k = length(atoms)
     reduced_linear = [fast_dot(gradient, a) for a in atoms]
-    if Strong_Frank_Wolfe_gap(reduced_linear) <= tolerance
+    if strong_frankwolfe_gap(reduced_linear) <= tolerance
         return nothing, nothing
     end
     aux_matrix = zeros(eltype(atoms[1].active_val), n, k)
@@ -487,12 +493,7 @@ function build_reduced_problem(
     return reduced_hessian, reduced_linear
 end
 
-"""
-    build_reduced_problem
 
-Same as the function above, but for the case where the active
-set is formed by Sparse Arrays.
-"""
 function build_reduced_problem(
     atoms::AbstractVector{<:SparseArrays.AbstractSparseArray},
     hessian,
@@ -504,12 +505,12 @@ function build_reduced_problem(
     k = length(atoms)
 
     reduced_linear = [fast_dot(gradient, a) for a in atoms]
-    if Strong_Frank_Wolfe_gap(reduced_linear) <= tolerance
+    if strong_frankwolfe_gap(reduced_linear) <= tolerance
         return nothing, nothing
     end
 
     #Construct the matrix of vertices.
-    vertex_matrix = zeros(n, k)
+    vertex_matrix = spzeros(n, k)
     for i in 1:k
         vertex_matrix[:, i] .= atoms[i]
     end
@@ -518,14 +519,9 @@ function build_reduced_problem(
     return reduced_hessian, reduced_linear
 end
 
-"""
-    build_reduced_problem(atoms::AbstractVector{<:Array}, hessian, weights, gradient, tolerance)
 
-Same as the two function above, but for the case where the active
-set is formed by dense Arrays.
-"""
 function build_reduced_problem(
-    atoms::AbstractVector{<:Array},
+    atoms::AbstractVector{<:AbstractVector},
     hessian,
     weights,
     gradient,
@@ -535,7 +531,7 @@ function build_reduced_problem(
     k = length(atoms)
 
     reduced_linear = [fast_dot(gradient, a) for a in atoms]
-    if Strong_Frank_Wolfe_gap(reduced_linear) <= tolerance
+    if strong_frankwolfe_gap(reduced_linear) <= tolerance
         return nothing, nothing
     end
 
@@ -552,7 +548,7 @@ end
 """
 Checks the strong Frank-Wolfe gap for the reduced problem.
 """
-function Strong_Frank_Wolfe_gap(gradient)
+function strong_frankwolfe_gap(gradient)
     val_min = Inf
     val_max = -Inf
     for i in 1:length(gradient)
@@ -598,7 +594,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
     d = similar(x)
     reduced_grad!(gradient_x, x)
     reduced_grad!(gradient_y, x)
-    strong_wolfe_gap = Strong_Frank_Wolfe_gap_probability_simplex(gradient_x, x)
+    strong_wolfe_gap = strong_frankwolfe_gap_probability_simplex(gradient_x, x)
     q = mu / L
     # If the problem is close to convex, simply use the accelerated algorithm for convex objective functions.
     if mu < 1.0e-3
@@ -620,7 +616,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
         number_of_steps += 1
         primal = reduced_f(x)
         reduced_grad!(gradient_x, x)
-        strong_wolfe_gap = Strong_Frank_Wolfe_gap_probability_simplex(gradient_x, x)
+        strong_wolfe_gap = strong_frankwolfe_gap_probability_simplex(gradient_x, x)
         if callback !== nothing
             state = (
                 t=t + number_of_steps,
@@ -656,7 +652,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
 end
 
 """
-simplex_gradient_descent_over_probability_simplex
+    simplex_gradient_descent_over_probability_simplex
 
 Minimizes an objective function over the unit probability simplex
 until the Strong-Wolfe gap is below tolerance using gradient descent.
@@ -680,13 +676,13 @@ function simplex_gradient_descent_over_probability_simplex(
     gradient = similar(x)
     d = similar(x)
     reduced_grad!(gradient, x)
-    strong_wolfe_gap = Strong_Frank_Wolfe_gap_probability_simplex(gradient, x)
+    strong_wolfe_gap = strong_frankwolfe_gap_probability_simplex(gradient, x)
     while strong_wolfe_gap > tolerance && t + number_of_steps <= max_iteration
         x = projection_simplex_sort(x .- gradient / L)
         number_of_steps = number_of_steps + 1
         primal = reduced_f(x)
         reduced_grad!(gradient, x)
-        strong_wolfe_gap = Strong_Frank_Wolfe_gap_probability_simplex(gradient, x)
+        strong_wolfe_gap = strong_frankwolfe_gap_probability_simplex(gradient, x)
         if callback !== nothing
             state = (
                 t=t + number_of_steps,
@@ -744,12 +740,12 @@ function projection_simplex_sort(x; s=1.0)
 end
 
 """
-Strong_Frank_Wolfe_gap_probability_simplex
+    strong_frankwolfe_gap_probability_simplex
 
 Compute the Strong-Wolfe gap over the unit probability simplex
 given a gradient.
 """
-function Strong_Frank_Wolfe_gap_probability_simplex(gradient, x)
+function strong_frankwolfe_gap_probability_simplex(gradient, x)
     val_min = Inf
     val_max = -Inf
     for i in 1:length(gradient)
@@ -768,7 +764,7 @@ end
 
 
 """
-simplex_gradient_descent_over_convex_hull
+    simplex_gradient_descent_over_convex_hull(f, grad!, gradient, active_set, tolerance, t, time_start, non_simplex_iter)
 
 Minimizes an objective function over the convex hull of the active set
 until the Strong-Wolfe gap is below tolerance using simplex gradient
