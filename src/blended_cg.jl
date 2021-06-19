@@ -75,6 +75,7 @@ function blended_conditional_gradient(
     gradient=nothing,
     direction_storage=nothing,
     callback=nothing,
+    timeout=Inf,
     lmo_kwargs...,
 )
     t = 0
@@ -180,6 +181,7 @@ function blended_conditional_gradient(
             accelerated=accelerated,
             max_iteration=max_iteration,
             callback=callback,
+            timeout=timeout,
         )
         t += num_simplex_descent_steps
         #Take a FW step.
@@ -231,6 +233,15 @@ function blended_conditional_gradient(
         non_simplex_iter += 1
         x = compute_active_set_iterate(active_set)
         dual_gap = phi
+        if timeout < Inf
+            tot_time = (time_ns() - time_start) / 1e9
+            if tot_time ≥ timeout
+                if verbose
+                    @info "Time limit reached"
+                end
+                break
+            end
+        end
         if callback !== nothing
             state = (
                 t=t,
@@ -347,6 +358,7 @@ function minimize_over_convex_hull!(
     accelerated=false,
     max_iteration,
     callback,
+    timeout=Inf,
 )
     #No hessian is known, use simplex gradient descent.
     if hessian === nothing
@@ -367,6 +379,7 @@ function minimize_over_convex_hull!(
             weight_purge_threshold=weight_purge_threshold,
             max_iteration=max_iteration,
             callback=callback,
+            timeout=timeout,
         )
     else
         x = compute_active_set_iterate(active_set)
@@ -422,6 +435,7 @@ function minimize_over_convex_hull!(
                         mu=mu_reduced,
                         max_iteration=max_iteration,
                         callback=callback,
+                        timeout=timeout,
                     )
                 @. active_set.weights = new_weights
             end
@@ -441,6 +455,7 @@ function minimize_over_convex_hull!(
                 L=L_reduced,
                 max_iteration=max_iteration,
                 callback=callback,
+                timeout=timeout,
             )
             @. active_set.weights = new_weights
         end
@@ -582,6 +597,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
     mu=1.0,
     max_iteration,
     callback,
+    timeout=Inf,
 )
     number_of_steps = 0
     x = deepcopy(initial_point)
@@ -615,6 +631,17 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
         primal = reduced_f(x)
         reduced_grad!(gradient_x, x)
         strong_wolfe_gap = strong_frankwolfe_gap_probability_simplex(gradient_x, x)
+
+        if timeout < Inf
+            tot_time = (time_ns() - time_start) / 1e9
+            if tot_time ≥ timeout
+                if verbose
+                    @info "Time limit reached"
+                end
+                break
+            end
+        end
+
         if callback !== nothing
             state = (
                 t=t + number_of_steps,
@@ -668,6 +695,7 @@ function simplex_gradient_descent_over_probability_simplex(
     L=1.0,
     max_iteration,
     callback,
+    timeout=Inf,
 )
     number_of_steps = 0
     x = deepcopy(initial_point)
@@ -681,6 +709,16 @@ function simplex_gradient_descent_over_probability_simplex(
         primal = reduced_f(x)
         reduced_grad!(gradient, x)
         strong_wolfe_gap = strong_frankwolfe_gap_probability_simplex(gradient, x)
+        if timeout < Inf
+            tot_time = (time_ns() - time_start) / 1e9
+            if tot_time ≥ timeout
+                if verbose
+                    @info "Time limit reached"
+                end
+                break
+            end
+        end
+
         if callback !== nothing
             state = (
                 t=t + number_of_steps,
@@ -786,6 +824,7 @@ function simplex_gradient_descent_over_convex_hull(
     weight_purge_threshold=1e-12,
     max_iteration,
     callback,
+    timeout=Inf,
 )
     number_of_steps = 0
     L_inner = nothing
@@ -900,6 +939,17 @@ function simplex_gradient_descent_over_convex_hull(
         x = compute_active_set_iterate(active_set)
         primal = f(x)
         dual_gap = tolerance
+
+        if timeout < Inf
+            tot_time = (time_ns() - time_start) / 1e9
+            if tot_time ≥ timeout
+                if verbose
+                    @info "Time limit reached"
+                end
+                break
+            end
+        end
+
         if callback !== nothing
             state = (
                 t=t,

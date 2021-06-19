@@ -42,3 +42,25 @@ x, v, primal, dual_gap, _ = FrankWolfe.blended_conditional_gradient(
 
 @test dual_gap ≤ 5e-4
 @test f(x0) - f(x) ≥ 180
+
+x0 = FrankWolfe.compute_extreme_point(lmo, spzeros(size(xp)...))
+
+x, v, primal_cut, dual_gap, _ = FrankWolfe.blended_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    x0,
+    max_iteration=k,
+    line_search=FrankWolfe.Adaptive(),
+    print_iter=k / 10,
+    emphasis=FrankWolfe.memory,
+    L=2,
+    verbose=true,
+    trajectory=false,
+    K=1.00,
+    weight_purge_threshold=1e-10,
+    epsilon=1e-9,
+    timeout=3.0,
+)
+
+@test primal ≤ primal_cut

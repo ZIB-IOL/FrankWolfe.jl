@@ -29,6 +29,7 @@ function frank_wolfe(
     emphasis::Emphasis=memory,
     gradient=nothing,
     callback=nothing,
+    timeout=Inf,
 )
     function print_header(data)
         @printf(
@@ -184,8 +185,17 @@ function frank_wolfe(
         )
 
         @emphasis(emphasis, x = x - gamma * d)
-
-        if mod(t, print_iter) == 0 && verbose
+        if timeout < Inf
+            tot_time = (time_ns() - time_start) / 1e9
+            if tot_time ≥ timeout
+                if verbose
+                    @info "Time limit reached"
+                end
+                break
+            end
+        end
+        if (mod(t, print_iter) == 0 && verbose)
+            tot_time = (time_ns() - time_start) / 1e9
             tt = regular
             if t == 0
                 tt = initial
@@ -196,8 +206,8 @@ function frank_wolfe(
                 primal,
                 primal - dual_gap,
                 dual_gap,
-                (time_ns() - time_start) / 1e9,
-                t / ((time_ns() - time_start) / 1e9),
+                tot_time,
+                t / tot_time,
             )
             print_iter_func(rep)
             flush(stdout)
@@ -255,6 +265,7 @@ function lazified_conditional_gradient(
     gradient=nothing,
     VType=typeof(x0),
     callback=nothing,
+    timeout=Inf,
 )
 
     if isfinite(cache_size)
@@ -370,6 +381,16 @@ function lazified_conditional_gradient(
             phi = min(dual_gap, phi / 2)
         end
 
+        if timeout < Inf
+            tot_time = (time_ns() - time_start) / 1e9
+            if tot_time ≥ timeout
+                if verbose
+                    @info "Time limit reached"
+                end
+                break
+            end
+        end
+
         if callback !== nothing
             state = (
                 t=t,
@@ -471,6 +492,7 @@ function stochastic_frank_wolfe(
     batch_size=length(f.xs) ÷ 10 + 1,
     full_evaluation=false,
     callback=nothing,
+    timeout=Inf,
 )
     function print_header(data)
         @printf(
@@ -585,6 +607,16 @@ function stochastic_frank_wolfe(
            !(line_search isa Agnostic || line_search isa Nonconvex || line_search isa FixedStep)
             primal = compute_value(f, x, full_evaluation=true)
             dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
+        end
+
+        if timeout < Inf
+            tot_time = (time_ns() - time_start) / 1e9
+            if tot_time ≥ timeout
+                if verbose
+                    @info "Time limit reached"
+                end
+                break
+            end
         end
 
         if callback !== nothing
