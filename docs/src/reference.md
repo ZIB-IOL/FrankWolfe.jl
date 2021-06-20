@@ -1,6 +1,6 @@
 # Algorithms
 
-This section contains all algorithms of the [`FrankWolfe.jl`](https://github.com/ZIB-IOL/FrankWolfe.jl) package.
+This section contains all main algorithms of the [`FrankWolfe.jl`](https://github.com/ZIB-IOL/FrankWolfe.jl) package. These are the ones typical users will call.
 
 ## Functions
 
@@ -14,7 +14,7 @@ blended_conditional_gradient
 
 # LMOs
 
-The Linear Minimization Oracle (LMO) is an integral part of the iterative step in the FW algorithm. Given ``d\in \mathcal{X}``, it returns:
+The Linear Minimization Oracle (LMO) is a key component called at each iteration of the FW algorithm. Given ``d\in \mathcal{X}``, it returns a vertex of the feasible set:
 ```math
 v\in \argmin_{x\in \mathcal{C}} \langle d,x \rangle.
 ```
@@ -62,7 +62,7 @@ FrankWolfe.convert_mathopt
 
 # Components
 
-This section gathers all additional relevant components of the [`FrankWolfe.jl`](https://github.com/ZIB-IOL/FrankWolfe.jl) package.
+This section gathers all additional relevant components of the package.
 
 ## Functions and Structures
 
