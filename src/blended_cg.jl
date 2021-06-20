@@ -233,15 +233,6 @@ function blended_conditional_gradient(
         non_simplex_iter += 1
         x = compute_active_set_iterate(active_set)
         dual_gap = phi
-        if timeout < Inf
-            tot_time = (time_ns() - time_start) / 1e9
-            if tot_time ≥ timeout
-                if verbose
-                    @info "Time limit reached"
-                end
-                break
-            end
-        end
         if callback !== nothing
             state = (
                 t=t,
@@ -261,19 +252,29 @@ function blended_conditional_gradient(
             if t == 0
                 tt = initial
             end
+            tot_time = (time_ns() - time_start) / 1.0e9
             rep = (
                 tt,
                 string(t),
                 primal,
                 primal - dual_gap,
                 dual_gap,
-                (time_ns() - time_start) / 1.0e9,
-                t / ((time_ns() - time_start) / 1.0e9),
+                tot_time,
+                t / tot_time,
                 length(active_set),
                 non_simplex_iter,
             )
             print_iter_func(rep)
             flush(stdout)
+        end
+        if timeout < Inf
+            tot_time = (time_ns() - time_start) / 1e9
+            if tot_time ≥ timeout
+                if verbose
+                    @info "Time limit reached"
+                end
+                break
+            end
         end
     end
     if verbose
@@ -282,14 +283,15 @@ function blended_conditional_gradient(
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
         dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
+        tot_time = (time_ns() - time_start) / 1e9
         rep = (
             last,
             string(t - 1),
             primal,
             primal - dual_gap,
             dual_gap,
-            (time_ns() - time_start) / 1e9,
-            t / ((time_ns() - time_start) / 1e9),
+            tot_time,
+            t / tot_time,
             length(active_set),
             non_simplex_iter,
         )
@@ -632,16 +634,6 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
         reduced_grad!(gradient_x, x)
         strong_wolfe_gap = strong_frankwolfe_gap_probability_simplex(gradient_x, x)
 
-        if timeout < Inf
-            tot_time = (time_ns() - time_start) / 1e9
-            if tot_time ≥ timeout
-                if verbose
-                    @info "Time limit reached"
-                end
-                break
-            end
-        end
-
         if callback !== nothing
             state = (
                 t=t + number_of_steps,
@@ -658,19 +650,29 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
             if t == 0
                 tt = initial
             end
+            tot_time = (time_ns() - time_start) / 1.0e9
             rep = (
                 tt,
                 string(t + number_of_steps),
                 primal,
                 primal - tolerance,
                 tolerance,
-                (time_ns() - time_start) / 1.0e9,
-                t / ((time_ns() - time_start) / 1e9),
+                tot_time,
+                t / tot_time,
                 length(initial_point),
                 non_simplex_iter,
             )
             print_iter_func(rep)
             flush(stdout)
+        end
+        if timeout < Inf
+            tot_time = (time_ns() - time_start) / 1e9
+            if tot_time ≥ timeout
+                if verbose
+                    @info "Time limit reached"
+                end
+                break
+            end
         end
     end
     return x, number_of_steps
@@ -709,15 +711,6 @@ function simplex_gradient_descent_over_probability_simplex(
         primal = reduced_f(x)
         reduced_grad!(gradient, x)
         strong_wolfe_gap = strong_frankwolfe_gap_probability_simplex(gradient, x)
-        if timeout < Inf
-            tot_time = (time_ns() - time_start) / 1e9
-            if tot_time ≥ timeout
-                if verbose
-                    @info "Time limit reached"
-                end
-                break
-            end
-        end
 
         if callback !== nothing
             state = (
@@ -735,19 +728,29 @@ function simplex_gradient_descent_over_probability_simplex(
             if t == 0
                 tt = initial
             end
+            tot_time = (time_ns() - time_start) / 1.0e9
             rep = (
                 tt,
                 string(t + number_of_steps),
                 primal,
                 primal - tolerance,
                 tolerance,
-                (time_ns() - time_start) / 1.0e9,
-                t / ((time_ns() - time_start) / 1.0e9),
+                tot_time,
+                t / tot_time,
                 length(initial_point),
                 non_simplex_iter,
             )
             print_iter_func(rep)
             flush(stdout)
+        end
+        if timeout < Inf
+            tot_time = (time_ns() - time_start) / 1e9
+            if tot_time ≥ timeout
+                if verbose
+                    @info "Time limit reached"
+                end
+                break
+            end
         end
     end
     return x, number_of_steps
@@ -940,16 +943,6 @@ function simplex_gradient_descent_over_convex_hull(
         primal = f(x)
         dual_gap = tolerance
 
-        if timeout < Inf
-            tot_time = (time_ns() - time_start) / 1e9
-            if tot_time ≥ timeout
-                if verbose
-                    @info "Time limit reached"
-                end
-                break
-            end
-        end
-
         if callback !== nothing
             state = (
                 t=t,
@@ -968,20 +961,31 @@ function simplex_gradient_descent_over_convex_hull(
             if t == 0
                 tt = initial
             end
+            tot_time = (time_ns() - time_start) / 1.0e9
             rep = (
                 tt,
                 string(t + number_of_steps),
                 primal,
                 primal - dual_gap,
                 dual_gap,
-                (time_ns() - time_start) / 1.0e9,
-                t / ((time_ns() - time_start) / 1.0e9),
+                tot_time,
+                t / tot_time,
                 length(active_set),
                 non_simplex_iter,
             )
             print_iter_func(rep)
             flush(stdout)
         end
+        if timeout < Inf
+            tot_time = (time_ns() - time_start) / 1e9
+            if tot_time ≥ timeout
+                if verbose
+                    @info "Time limit reached"
+                end
+                break
+            end
+        end
+
     end
     return number_of_steps
 end
