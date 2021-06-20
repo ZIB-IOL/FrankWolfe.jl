@@ -188,16 +188,6 @@ function away_frank_wolfe(
             dual_gap = phi_value
         end
 
-        if timeout < Inf
-            tot_time = (time_ns() - time_start) / 1e9
-            if tot_time ≥ timeout
-                if verbose
-                    @info "Time limit reached"
-                end
-                break
-            end
-        end
-
         if callback !== nothing
             state = (
                 t=t,
@@ -212,25 +202,34 @@ function away_frank_wolfe(
             callback(state)
         end
 
-
         if verbose && (mod(t, print_iter) == 0 || tt == dualstep)
             if t == 0
                 tt = initial
             end
+            tot_time = (time_ns() - time_start) / 1.0e9
             rep = (
                 tt,
                 string(t),
                 primal,
                 primal - dual_gap,
                 dual_gap,
-                (time_ns() - time_start) / 1.0e9,
-                t / ((time_ns() - time_start) / 1.0e9),
+                tot_time,
+                t / tot_time,
                 length(active_set),
             )
             print_iter_func(rep)
             flush(stdout)
         end
-        t = t + 1
+        t += 1
+        if timeout < Inf
+            tot_time = (time_ns() - time_start) / 1e9
+            if tot_time ≥ timeout
+                if verbose
+                    @info "Time limit reached"
+                end
+                break
+            end
+        end
     end
 
     # recompute everything once more for final verfication / do not record to trajectory though for now!
