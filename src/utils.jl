@@ -771,6 +771,9 @@ function trajectory_callback(storage)
     end
 end
 
+# default printing for LineSearchMethod is just showing the type
+Base.print(io::IO, ls::LineSearchMethod) = print(io, split(string(typeof(ls)), ".")[end])
+
 """
     MonotonousStepSize{F}
 
@@ -785,6 +788,8 @@ end
 
 MonotonousStepSize(f::F) where {F <: Function} = MonotonousStepSize{F}(f, 0)
 MonotonousStepSize() = MonotonousStepSize(x -> true)
+
+Base.print(io::IO, ::MonotonousStepSize) = print(io, "MonotonousStepSize")
 
 function line_search_wrapper(
     line_search::MonotonousStepSize,
@@ -826,6 +831,8 @@ end
 
 MonotonousNonConvexStepSize(f::F) where {F <: Function} = MonotonousNonConvexStepSize{F}(f, 0)
 MonotonousNonConvexStepSize() = MonotonousNonConvexStepSize(x -> true)
+
+Base.print(io::IO, ::MonotonousNonConvexStepSize) = print(io, "MonotonousNonConvexStepSize")
 
 function line_search_wrapper(
     line_search::MonotonousNonConvexStepSize,
