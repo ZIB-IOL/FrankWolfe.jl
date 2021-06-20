@@ -46,7 +46,7 @@ end
 
 Entry point for the Blended Conditional Gradient algorithm.
 See Braun, Gábor, et al. "Blended conditonal gradients" ICML 2019.
-The method works on an active set like [`FrankWolfe.away_frank_wolfe`](@ref),
+The method works on an active set like [`away_frank_wolfe`](@ref),
 performing gradient descent over the convex hull of active vertices,
 removing vertices when their weight drops to 0 and adding new vertices
 by calling the linear oracle in a lazy fashion.
@@ -470,8 +470,8 @@ end
     build_reduced_problem(atoms::AbstractVector{<:AbstractVector}, hessian, weights, gradient, tolerance)
 
 Given an active set formed by vectors , a (constant)
-Hessian and a gradient constructs a quadratic problem 
-over the unit probability simplex that is equivalent to 
+Hessian and a gradient constructs a quadratic problem
+over the unit probability simplex that is equivalent to
 minimizing the original function over the convex hull of the
 active set. If λ are the barycentric coordinates of dimension
 equal to the cardinality of the active set, the objective

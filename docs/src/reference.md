@@ -67,6 +67,7 @@ This section gathers all additional relevant components of the package.
 ## Functions and Structures
 
 ```@docs
+FrankWolfe.stochastic_frank_wolfe
 FrankWolfe.ActiveSet
 FrankWolfe.active_set_update!
 FrankWolfe.compute_active_set_iterate

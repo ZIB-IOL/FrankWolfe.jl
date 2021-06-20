@@ -244,9 +244,9 @@ end
 """
     lazified_conditional_gradient
 
-Similar to [frank_wolfe](@ref) but lazyfying the LMO:
+Similar to [`frank_wolfe`](@ref) but lazyfying the LMO:
 each call is stored in a cache, which is looked up first for a good-enough direction.
-The cache used is a [FrankWolfe.MultiCacheLMO](@ref) or a [FrankWolfe.VectorCacheLMO](@ref)
+The cache used is a [`FrankWolfe.MultiCacheLMO`](@ref) or a [`FrankWolfe.VectorCacheLMO`](@ref)
 depending on whether the provided `cache_size` option is finite.
 """
 function lazified_conditional_gradient(
@@ -482,7 +482,7 @@ end
     stochastic_frank_wolfe(f::StochasticObjective, lmo, x0; ...)
 
 Stochastic version of Frank-Wolfe, evaluates the objective and gradient stochastically,
-implemented through the [FrankWolfwe.StochasticObjective](@ref) interface.
+implemented through the [FrankWolfe.StochasticObjective](@ref) interface.
 """
 function stochastic_frank_wolfe(
     f::StochasticObjective,
