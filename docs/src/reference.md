@@ -62,7 +62,7 @@ FrankWolfe.convert_mathopt
 
 # Components
 
-This section gathers all additional relevant components of the [`FrankWolfe.jl`](https://github.com/ZIB-IOL/FrankWolfe.jl) package.
+This section gathers all additional relevant components of the package.
 
 ## Functions and Structures
 
