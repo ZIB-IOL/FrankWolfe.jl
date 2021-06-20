@@ -185,21 +185,12 @@ function frank_wolfe(
         )
 
         @emphasis(emphasis, x = x - gamma * d)
-        if timeout < Inf
-            tot_time = (time_ns() - time_start) / 1e9
-            if tot_time ≥ timeout
-                if verbose
-                    @info "Time limit reached"
-                end
-                break
-            end
-        end
         if (mod(t, print_iter) == 0 && verbose)
-            tot_time = (time_ns() - time_start) / 1e9
             tt = regular
             if t == 0
                 tt = initial
             end
+            tot_time = (time_ns() - time_start) / 1e9
             rep = (
                 tt,
                 string(t),
@@ -213,6 +204,15 @@ function frank_wolfe(
             flush(stdout)
         end
         t = t + 1
+        if timeout < Inf
+            tot_time = (time_ns() - time_start) / 1e9
+            if tot_time ≥ timeout
+                if verbose
+                    @info "Time limit reached"
+                end
+                break
+            end
+        end
     end
     # recompute everything once for final verfication / do not record to trajectory though for now! 
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
@@ -223,14 +223,15 @@ function frank_wolfe(
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
     if verbose
         tt = last
+        tot_time = (time_ns() - time_start) / 1.0e9
         rep = (
             tt,
             string(t - 1),
             primal,
             primal - dual_gap,
             dual_gap,
-            (time_ns() - time_start) / 1.0e9,
-            t / ((time_ns() - time_start) / 1.0e9),
+            tot_time,
+            t / tot_time,
         )
         print_iter_func(rep)
         print_footer()
@@ -381,16 +382,6 @@ function lazified_conditional_gradient(
             phi = min(dual_gap, phi / 2)
         end
 
-        if timeout < Inf
-            tot_time = (time_ns() - time_start) / 1e9
-            if tot_time ≥ timeout
-                if verbose
-                    @info "Time limit reached"
-                end
-                break
-            end
-        end
-
         if callback !== nothing
             state = (
                 t=t,
@@ -429,20 +420,30 @@ function lazified_conditional_gradient(
             if t == 0
                 tt = initial
             end
+            tot_time = (time_ns() - time_start) / 1.0e9
             rep = (
                 tt,
                 string(t),
                 primal,
                 primal - dual_gap,
                 dual_gap,
-                (time_ns() - time_start) / 1.0e9,
-                t / ((time_ns() - time_start) / 1.0e9),
+                tot_time,
+                t / tot_time,
                 length(lmo),
             )
             print_iter_func(rep)
             flush(stdout)
         end
         t += 1
+        if timeout < Inf
+            tot_time = (time_ns() - time_start) / 1e9
+            if tot_time ≥ timeout
+                if verbose
+                    @info "Time limit reached"
+                end
+                break
+            end
+        end
     end
 
     # recompute everything once for final verfication / do not record to trajectory though for now! 
@@ -609,16 +610,6 @@ function stochastic_frank_wolfe(
             dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         end
 
-        if timeout < Inf
-            tot_time = (time_ns() - time_start) / 1e9
-            if tot_time ≥ timeout
-                if verbose
-                    @info "Time limit reached"
-                end
-                break
-            end
-        end
-
         if callback !== nothing
             state = (
                 t=t,
@@ -652,19 +643,29 @@ function stochastic_frank_wolfe(
             if t == 0
                 tt = initial
             end
+            tot_time = (time_ns() - time_start) / 1.0e9
             rep = (
                 tt,
                 string(t),
                 primal,
                 primal - dual_gap,
                 dual_gap,
-                (time_ns() - time_start) / 1.0e9,
-                t / ((time_ns() - time_start) / 1.0e9),
+                tot_time,
+                t / tot_time,
             )
             print_iter_func(rep)
             flush(stdout)
         end
-        t = t + 1
+        t += 1
+        if timeout < Inf
+            tot_time = (time_ns() - time_start) / 1e9
+            if tot_time ≥ timeout
+                if verbose
+                    @info "Time limit reached"
+                end
+                break
+            end
+        end
     end
     # recompute everything once for final verfication / no additional callback call
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
@@ -677,14 +678,15 @@ function stochastic_frank_wolfe(
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
     if verbose
         tt = last
+        tot_time = (time_ns() - time_start) / 1.0e9
         rep = (
             tt,
             string(t - 1),
             primal,
             primal - dual_gap,
             dual_gap,
-            (time_ns() - time_start) / 1.0e9,
-            t / ((time_ns() - time_start) / 1.0e9),
+            tot_time,
+            t / tot_time,
         )
         print_iter_func(rep)
         print_footer()
