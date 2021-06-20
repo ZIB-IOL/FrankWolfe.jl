@@ -1,6 +1,6 @@
 # Algorithms
 
-This section contains all algorithms of the [`FrankWolfe.jl`](https://github.com/ZIB-IOL/FrankWolfe.jl) package.
+This section contains all main algorithms of the [`FrankWolfe.jl`](https://github.com/ZIB-IOL/FrankWolfe.jl) package. These are the ones typical users will call.
 
 ## Functions
 
