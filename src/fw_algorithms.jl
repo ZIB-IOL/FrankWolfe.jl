@@ -29,6 +29,7 @@ function frank_wolfe(
     emphasis::Emphasis=memory,
     gradient=nothing,
     callback=nothing,
+    timeout=Inf,
 )
     function print_header(data)
         @printf(
@@ -184,25 +185,34 @@ function frank_wolfe(
         )
 
         @emphasis(emphasis, x = x - gamma * d)
-
-        if mod(t, print_iter) == 0 && verbose
+        if (mod(t, print_iter) == 0 && verbose)
             tt = regular
             if t == 0
                 tt = initial
             end
+            tot_time = (time_ns() - time_start) / 1e9
             rep = (
                 tt,
                 string(t),
                 primal,
                 primal - dual_gap,
                 dual_gap,
-                (time_ns() - time_start) / 1e9,
-                t / ((time_ns() - time_start) / 1e9),
+                tot_time,
+                t / tot_time,
             )
             print_iter_func(rep)
             flush(stdout)
         end
         t = t + 1
+        if timeout < Inf
+            tot_time = (time_ns() - time_start) / 1e9
+            if tot_time ≥ timeout
+                if verbose
+                    @info "Time limit reached"
+                end
+                break
+            end
+        end
     end
     # recompute everything once for final verfication / do not record to trajectory though for now!
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
@@ -213,14 +223,15 @@ function frank_wolfe(
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
     if verbose
         tt = last
+        tot_time = (time_ns() - time_start) / 1.0e9
         rep = (
             tt,
             string(t - 1),
             primal,
             primal - dual_gap,
             dual_gap,
-            (time_ns() - time_start) / 1.0e9,
-            t / ((time_ns() - time_start) / 1.0e9),
+            tot_time,
+            t / tot_time,
         )
         print_iter_func(rep)
         print_footer()
@@ -229,12 +240,14 @@ function frank_wolfe(
     return x, v, primal, dual_gap, traj_data
 end
 
-##############################################################
-# Lazified Vanilla FW
-##############################################################
+
 """
     lazified_conditional_gradient
-missing docstring.
+
+Similar to [frank_wolfe](@ref) but lazyfying the LMO:
+each call is stored in a cache, which is looked up first for a good-enough direction.
+The cache used is a [FrankWolfe.MultiCacheLMO](@ref) or a [FrankWolfe.VectorCacheLMO](@ref)
+depending on whether the provided `cache_size` option is finite.
 """
 function lazified_conditional_gradient(
     f,
@@ -258,6 +271,7 @@ function lazified_conditional_gradient(
     gradient=nothing,
     VType=typeof(x0),
     callback=nothing,
+    timeout=Inf,
 )
 
     if isfinite(cache_size)
@@ -411,20 +425,30 @@ function lazified_conditional_gradient(
             if t == 0
                 tt = initial
             end
+            tot_time = (time_ns() - time_start) / 1.0e9
             rep = (
                 tt,
                 string(t),
                 primal,
                 primal - dual_gap,
                 dual_gap,
-                (time_ns() - time_start) / 1.0e9,
-                t / ((time_ns() - time_start) / 1.0e9),
+                tot_time,
+                t / tot_time,
                 length(lmo),
             )
             print_iter_func(rep)
             flush(stdout)
         end
         t += 1
+        if timeout < Inf
+            tot_time = (time_ns() - time_start) / 1e9
+            if tot_time ≥ timeout
+                if verbose
+                    @info "Time limit reached"
+                end
+                break
+            end
+        end
     end
 
     # recompute everything once for final verfication / do not record to trajectory though for now!
@@ -454,6 +478,12 @@ function lazified_conditional_gradient(
     return x, v, primal, dual_gap, traj_data
 end
 
+"""
+    stochastic_frank_wolfe(f::StochasticObjective, lmo, x0; ...)
+
+Stochastic version of Frank-Wolfe, evaluates the objective and gradient stochastically,
+implemented through the [FrankWolfwe.StochasticObjective](@ref) interface.
+"""
 function stochastic_frank_wolfe(
     f::StochasticObjective,
     lmo,
@@ -474,6 +504,7 @@ function stochastic_frank_wolfe(
     batch_size=length(f.xs) ÷ 10 + 1,
     full_evaluation=false,
     callback=nothing,
+    timeout=Inf,
 )
     function print_header(data)
         @printf(
@@ -623,19 +654,29 @@ function stochastic_frank_wolfe(
             if t == 0
                 tt = initial
             end
+            tot_time = (time_ns() - time_start) / 1.0e9
             rep = (
                 tt,
                 string(t),
                 primal,
                 primal - dual_gap,
                 dual_gap,
-                (time_ns() - time_start) / 1.0e9,
-                t / ((time_ns() - time_start) / 1.0e9),
+                tot_time,
+                t / tot_time,
             )
             print_iter_func(rep)
             flush(stdout)
         end
-        t = t + 1
+        t += 1
+        if timeout < Inf
+            tot_time = (time_ns() - time_start) / 1e9
+            if tot_time ≥ timeout
+                if verbose
+                    @info "Time limit reached"
+                end
+                break
+            end
+        end
     end
     # recompute everything once for final verfication / no additional callback call
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
@@ -648,14 +689,15 @@ function stochastic_frank_wolfe(
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
     if verbose
         tt = last
+        tot_time = (time_ns() - time_start) / 1.0e9
         rep = (
             tt,
             string(t - 1),
             primal,
             primal - dual_gap,
             dual_gap,
-            (time_ns() - time_start) / 1.0e9,
-            t / ((time_ns() - time_start) / 1.0e9),
+            tot_time,
+            t / tot_time,
         )
         print_iter_func(rep)
         print_footer()
