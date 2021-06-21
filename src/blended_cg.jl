@@ -300,6 +300,9 @@ function blended_conditional_gradient(
         non_simplex_iter += 1
 
     end
+    
+    # post-processing and cleanup after loop
+
     if verbose
         x = compute_active_set_iterate(active_set)
         grad!(gradient, x)
