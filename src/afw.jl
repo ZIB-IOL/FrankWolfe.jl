@@ -232,7 +232,7 @@ function away_frank_wolfe(
         end
     end
 
-    # recompute everything once more for final verfication / do not record to trajectory though for now! 
+    # recompute everything once more for final verfication / do not record to trajectory though for now!
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
     # hence the final computation.
     # do also cleanup of active_set due to many operations on the same set

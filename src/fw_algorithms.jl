@@ -214,7 +214,7 @@ function frank_wolfe(
             end
         end
     end
-    # recompute everything once for final verfication / do not record to trajectory though for now! 
+    # recompute everything once for final verfication / do not record to trajectory though for now!
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
     # hence the final computation.
     grad!(gradient, x)
@@ -240,12 +240,13 @@ function frank_wolfe(
     return x, v, primal, dual_gap, traj_data
 end
 
+
 """
     lazified_conditional_gradient
 
-Similar to [frank_wolfe](@ref) but lazyfying the LMO:
+Similar to [`frank_wolfe`](@ref) but lazyfying the LMO:
 each call is stored in a cache, which is looked up first for a good-enough direction.
-The cache used is a [FrankWolfe.MultiCacheLMO](@ref) or a [FrankWolfe.VectorCacheLMO](@ref)
+The cache used is a [`FrankWolfe.MultiCacheLMO`](@ref) or a [`FrankWolfe.VectorCacheLMO`](@ref)
 depending on whether the provided `cache_size` option is finite.
 """
 function lazified_conditional_gradient(
@@ -450,7 +451,7 @@ function lazified_conditional_gradient(
         end
     end
 
-    # recompute everything once for final verfication / do not record to trajectory though for now! 
+    # recompute everything once for final verfication / do not record to trajectory though for now!
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
     # hence the final computation.
     grad!(gradient, x)
@@ -481,7 +482,7 @@ end
     stochastic_frank_wolfe(f::StochasticObjective, lmo, x0; ...)
 
 Stochastic version of Frank-Wolfe, evaluates the objective and gradient stochastically,
-implemented through the [FrankWolfwe.StochasticObjective](@ref) interface.
+implemented through the [FrankWolfe.StochasticObjective](@ref) interface.
 """
 function stochastic_frank_wolfe(
     f::StochasticObjective,

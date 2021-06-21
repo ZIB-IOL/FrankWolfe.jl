@@ -13,3 +13,4 @@ prof.txt
 workspace.code-workspace
 examples/test.jl
 examples/*.json
+docs/build/
