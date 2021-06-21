@@ -78,11 +78,11 @@ FrankWolfe.minimize_over_convex_hull!
 FrankWolfe.build_reduced_problem(atoms::AbstractVector{<:FrankWolfe.ScaledHotVector},hessian,weights,gradient,tolerance)
 FrankWolfe.build_reduced_problem(atoms::AbstractVector{<:SparseArrays.AbstractSparseArray},hessian,weights,gradient,tolerance)
 FrankWolfe.build_reduced_problem(atoms::AbstractVector{<:Array},hessian,weights,gradient,tolerance)
-FrankWolfe.Strong_Frank_Wolfe_gap
+FrankWolfe.strong_frankwolfe_gap
 FrankWolfe.accelerated_simplex_gradient_descent_over_probability_simplex
 FrankWolfe.simplex_gradient_descent_over_probability_simplex
 FrankWolfe.projection_simplex_sort
-FrankWolfe.Strong_Frank_Wolfe_gap_probability_simplex
+FrankWolfe.strong_frankwolfe_gap_probability_simplex
 FrankWolfe.simplex_gradient_descent_over_convex_hull
 FrankWolfe.lp_separation_oracle
 FrankWolfe.LineSearchMethod
