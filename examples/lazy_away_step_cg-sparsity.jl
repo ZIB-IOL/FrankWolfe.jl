@@ -9,7 +9,8 @@ The default for AFW is K = 2.0
 
 =#
 
-import FrankWolfe
+include("activate.jl")
+
 using LinearAlgebra
 using Random
 
