@@ -144,31 +144,6 @@ function blended_conditional_gradient(
     non_simplex_iter = 0
     force_fw_step = false
 
-    # time_at_loop = time_ns()
-    # if t == 0
-    #     time_start = time_at_loop
-    # end
-    # tot_time = (time_at_loop - time_start) / 1e9
-
-    # if verbose && mod(t, print_iter) == 0
-    #     if t == 0
-    #         tt = initial
-    #     end
-    #     rep = (
-    #         tt,
-    #         string(t),
-    #         primal,
-    #         primal - dual_gap,
-    #         dual_gap,
-    #         tot_time,
-    #         t / tot_time,
-    #         length(active_set),
-    #         non_simplex_iter,
-    #     )
-    #     print_iter_func(rep)
-    #     flush(stdout)
-    # end
-
     while t <= max_iteration && phi ≥ epsilon
 
         #####################
@@ -301,8 +276,9 @@ function blended_conditional_gradient(
 
     end
     
-    # post-processing and cleanup after loop
+    ## post-processing and cleanup after loop
 
+    # report last iteration
     if verbose
         x = compute_active_set_iterate(active_set)
         grad!(gradient, x)
@@ -324,6 +300,8 @@ function blended_conditional_gradient(
         print_iter_func(rep)
         flush(stdout)
     end
+
+    # cleanup the active set, renormalize, and recompute values
     active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
     active_set_renormalize!(active_set)
     x = compute_active_set_iterate(active_set)
@@ -332,6 +310,8 @@ function blended_conditional_gradient(
     primal = f(x)
     #dual_gap = 2phi
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
+
+    # report post-processed iteration
     if verbose
         tot_time = (time_ns() - time_start) / 1e9
         rep = (
