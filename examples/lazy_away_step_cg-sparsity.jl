@@ -9,7 +9,8 @@ The default for AFW is K = 2.0
 
 =#
 
-import FrankWolfe
+include("activate.jl")
+
 using LinearAlgebra
 using Random
 
@@ -50,6 +51,13 @@ const x00 = FrankWolfe.compute_extreme_point(lmo, rand(n))
 # const x00 = FrankWolfe.compute_extreme_point(lmo, cost)
 
 
+function build_callback(trajectory_arr)
+    return function callback(state)
+        return push!(trajectory_arr, (Tuple(state)[1:5]..., state.active_set_length))
+    end
+end
+
+
 
 FrankWolfe.benchmark_oracles(f, grad!, () -> randn(n), lmo; k=100)
 
@@ -68,8 +76,12 @@ x0 = deepcopy(x00)
     trajectory=true,
 );
 
+
+trajectoryAda = []
+callback = build_callback(trajectoryAda)
+
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, trajectoryAda = FrankWolfe.away_frank_wolfe(
+@time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
@@ -80,13 +92,17 @@ x0 = deepcopy(x00)
     emphasis=FrankWolfe.memory,
     verbose=true,
     trajectory=true,
-);
+    callback=callback
+    );
 
 
 println("\n==> Lazy AFW.\n")
 
+trajectoryAdaLoc15 = []
+callback = build_callback(trajectoryAdaLoc15)
+
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, trajectoryAdaLoc15 = FrankWolfe.away_frank_wolfe(
+@time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
@@ -99,8 +115,12 @@ x0 = deepcopy(x00)
     lazy=true,
     K=1.5,
     trajectory=true,
+    callback=callback
 );
 
+
+trajectoryAdaLoc2 = []
+callback = build_callback(trajectoryAdaLoc2)
 
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, trajectoryAdaLoc2 = FrankWolfe.away_frank_wolfe(
@@ -116,10 +136,15 @@ x0 = deepcopy(x00)
     lazy=true,
     K=2.0,
     trajectory=true,
+    callback=callback
 );
 
+
+trajectoryAdaLoc4 = []
+callback = build_callback(trajectoryAdaLoc4)
+
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, trajectoryAdaLoc4 = FrankWolfe.away_frank_wolfe(
+@time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
@@ -132,10 +157,14 @@ x0 = deepcopy(x00)
     K=4.0,
     lazy=true,
     trajectory=true,
+    callback=callback
 );
 
+trajectoryAdaLoc10 = []
+callback = build_callback(trajectoryAdaLoc10)
+
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, trajectoryAdaLoc10 = FrankWolfe.away_frank_wolfe(
+@time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
@@ -148,6 +177,7 @@ x0 = deepcopy(x00)
     K=10.0,
     verbose=true,
     trajectory=true,
+    callback=callback
 );
 
 

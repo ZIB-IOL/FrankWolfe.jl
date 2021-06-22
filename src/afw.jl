@@ -129,6 +129,27 @@ function away_frank_wolfe(
 
     while t <= max_iteration && dual_gap >= max(epsilon, eps())
 
+        #####################
+        # managing time and Ctrl-C
+        #####################
+        time_at_loop = time_ns()
+        if t == 0
+            time_start = time_at_loop
+        end
+        # time is measured at beginning of loop for consistency throughout all algorithms
+        tot_time = (time_at_loop - time_start) / 1e9
+
+        if timeout < Inf
+            if tot_time ≥ timeout
+                if verbose
+                    @info "Time limit reached"
+                end
+                break
+            end
+        end
+
+        #####################
+        
         # compute current iterate from active set
         x = compute_active_set_iterate(active_set)
         if isnothing(momentum)
@@ -194,7 +215,7 @@ function away_frank_wolfe(
                 primal=primal,
                 dual=primal - dual_gap,
                 dual_gap=phi_value,
-                time=(time_ns() - time_start) / 1e9,
+                time=tot_time,
                 x=x,
                 v=vertex,
                 active_set_length=length(active_set),
@@ -206,7 +227,6 @@ function away_frank_wolfe(
             if t == 0
                 tt = initial
             end
-            tot_time = (time_ns() - time_start) / 1.0e9
             rep = (
                 tt,
                 string(t),
@@ -221,15 +241,6 @@ function away_frank_wolfe(
             flush(stdout)
         end
         t += 1
-        if timeout < Inf
-            tot_time = (time_ns() - time_start) / 1e9
-            if tot_time ≥ timeout
-                if verbose
-                    @info "Time limit reached"
-                end
-                break
-            end
-        end
     end
 
     # recompute everything once more for final verfication / do not record to trajectory though for now!
