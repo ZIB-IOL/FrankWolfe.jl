@@ -1,4 +1,5 @@
-import FrankWolfe
+include("activate.jl")
+
 import LinearAlgebra
 
 # n = Int(1e1)

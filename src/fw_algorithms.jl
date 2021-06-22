@@ -259,7 +259,7 @@ function lazified_conditional_gradient(
 )
 
      # format string for output of the algorithm
-     format_string = "%6s %13s %14e %14e %14e %14e %14e %14s\n"
+     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
      
     if isfinite(cache_size)
         lmo = MultiCacheLMO{cache_size,typeof(lmo_base),VType}(lmo_base)
@@ -401,7 +401,7 @@ function lazified_conditional_gradient(
                 Float64(dual_gap),
                 (time_ns() - time_start) / 1.0e9,
                 t / ((time_ns() - time_start) / 1.0e9),
-                string(length(lmo)),
+                length(lmo),
             )
             print_callback(rep,format_string)
             flush(stdout)
@@ -427,7 +427,7 @@ function lazified_conditional_gradient(
             Float64(dual_gap),
             (time_ns() - time_start) / 1.0e9,
             t / ((time_ns() - time_start) / 1.0e9),
-            string(length(lmo)),
+            length(lmo),
         )
         print_callback(rep,format_string)
         print_callback(nothing,format_string,print_footer=true)
