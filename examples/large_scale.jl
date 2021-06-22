@@ -10,7 +10,8 @@ NOTE.
 
 =#
 
-import FrankWolfe
+include("activate.jl")
+
 using LinearAlgebra
 
 n = Int(1e7)
