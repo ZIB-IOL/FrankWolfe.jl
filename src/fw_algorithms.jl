@@ -132,6 +132,29 @@ function frank_wolfe(
         similar(x)
     end
     while t <= max_iteration && dual_gap >= max(epsilon, eps())
+
+        #####################
+        # managing time and Ctrl-C
+        #####################
+        time_at_loop = time_ns()
+        if t == 0
+            time_start = time_at_loop
+        end
+        # time is measured at beginning of loop for consistency throughout all algorithms
+        tot_time = (time_at_loop - time_start) / 1e9
+
+        if timeout < Inf
+            if tot_time ≥ timeout
+                if verbose
+                    @info "Time limit reached"
+                end
+                break
+            end
+        end
+
+        #####################
+
+
         if momentum === nothing || first_iter
             grad!(gradient, x)
             if momentum !== nothing
@@ -160,7 +183,7 @@ function frank_wolfe(
                 primal=primal,
                 dual=primal - dual_gap,
                 dual_gap=dual_gap,
-                time=(time_ns() - time_start) / 1e9,
+                time=tot_time,
                 x=x,
                 v=v,
             )
@@ -184,13 +207,14 @@ function frank_wolfe(
             one(eltype(x)),
         )
 
-        @emphasis(emphasis, x = x - gamma * d)
+        @emphasis(emphasis, x = x - gamma * d)        
+
         if (mod(t, print_iter) == 0 && verbose)
             tt = regular
             if t == 0
                 tt = initial
             end
-            tot_time = (time_ns() - time_start) / 1e9
+            
             rep = (
                 tt,
                 string(t),
@@ -204,19 +228,11 @@ function frank_wolfe(
             flush(stdout)
         end
         t = t + 1
-        if timeout < Inf
-            tot_time = (time_ns() - time_start) / 1e9
-            if tot_time ≥ timeout
-                if verbose
-                    @info "Time limit reached"
-                end
-                break
-            end
-        end
     end
     # recompute everything once for final verfication / do not record to trajectory though for now!
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
     # hence the final computation.
+
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
@@ -370,6 +386,27 @@ function lazified_conditional_gradient(
 
     while t <= max_iteration && dual_gap >= max(epsilon, eps())
 
+        #####################
+        # managing time and Ctrl-C
+        #####################
+        time_at_loop = time_ns()
+        if t == 0
+            time_start = time_at_loop
+        end
+        # time is measured at beginning of loop for consistency throughout all algorithms
+        tot_time = (time_at_loop - time_start) / 1e9
+
+        if timeout < Inf
+            if tot_time ≥ timeout
+                if verbose
+                    @info "Time limit reached"
+                end
+                break
+            end
+        end
+
+        #####################
+
         grad!(gradient, x)
 
         threshold = fast_dot(x, gradient) - phi / K
@@ -393,7 +430,7 @@ function lazified_conditional_gradient(
                 primal=primal,
                 dual=primal - dual_gap,
                 dual_gap=dual_gap,
-                time=(time_ns() - time_start) / 1e9,
+                time=tot_time,
                 cache_size=length(lmo),
                 x=x,
                 v=v,
@@ -425,7 +462,6 @@ function lazified_conditional_gradient(
             if t == 0
                 tt = initial
             end
-            tot_time = (time_ns() - time_start) / 1.0e9
             rep = (
                 tt,
                 string(t),
@@ -440,15 +476,6 @@ function lazified_conditional_gradient(
             flush(stdout)
         end
         t += 1
-        if timeout < Inf
-            tot_time = (time_ns() - time_start) / 1e9
-            if tot_time ≥ timeout
-                if verbose
-                    @info "Time limit reached"
-                end
-                break
-            end
-        end
     end
 
     # recompute everything once for final verfication / do not record to trajectory though for now!
@@ -587,6 +614,27 @@ function stochastic_frank_wolfe(
     gradient = 0
     while t <= max_iteration && dual_gap >= max(epsilon, eps())
 
+        #####################
+        # managing time and Ctrl-C
+        #####################
+        time_at_loop = time_ns()
+        if t == 0
+            time_start = time_at_loop
+        end
+        # time is measured at beginning of loop for consistency throughout all algorithms
+        tot_time = (time_at_loop - time_start) / 1e9
+
+        if timeout < Inf
+            if tot_time ≥ timeout
+                if verbose
+                    @info "Time limit reached"
+                end
+                break
+            end
+        end
+
+        #####################
+
         if momentum === nothing || first_iter
             gradient = compute_gradient(
                 f,
@@ -627,7 +675,7 @@ function stochastic_frank_wolfe(
                 primal=primal,
                 dual=primal - dual_gap,
                 dual_gap=dual_gap,
-                time=(time_ns() - time_start) / 1e9,
+                time=tot_time,
                 x=x,
                 v=v,
             )
@@ -654,7 +702,6 @@ function stochastic_frank_wolfe(
             if t == 0
                 tt = initial
             end
-            tot_time = (time_ns() - time_start) / 1.0e9
             rep = (
                 tt,
                 string(t),
@@ -668,15 +715,6 @@ function stochastic_frank_wolfe(
             flush(stdout)
         end
         t += 1
-        if timeout < Inf
-            tot_time = (time_ns() - time_start) / 1e9
-            if tot_time ≥ timeout
-                if verbose
-                    @info "Time limit reached"
-                end
-                break
-            end
-        end
     end
     # recompute everything once for final verfication / no additional callback call
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
