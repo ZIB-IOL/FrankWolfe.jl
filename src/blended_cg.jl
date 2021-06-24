@@ -34,12 +34,12 @@ function blended_conditional_gradient(
     direction_storage=nothing,
     callback=nothing,
     timeout=Inf,
-    print_callback=FrankWolfe.print_callback,    
+    print_callback=FrankWolfe.print_callback,
     lmo_kwargs...,
 )
-    
-     # format string for output of the algorithm
-     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i %14i\n"
+
+    # format string for output of the algorithm
+    format_string = "%6s %13s %14e %14e %14e %14e %14e %14i %14i\n"
 
     t = 0
     primal = Inf
@@ -99,7 +99,7 @@ function blended_conditional_gradient(
             "#ActiveSet",
             "#non-simplex",
         )
-        print_callback(headers,format_string,print_header=true)
+        print_callback(headers, format_string, print_header=true)
     end
     if !isa(x, Union{Array,SparseVector})
         x = convert(Array{float(eltype(x))}, x)
@@ -151,7 +151,7 @@ function blended_conditional_gradient(
             callback=callback,
             timeout=timeout,
             print_callback=print_callback,
-            format_string=format_string
+            format_string=format_string,
         )
         t += num_simplex_descent_steps
         #Take a FW step.
@@ -231,8 +231,8 @@ function blended_conditional_gradient(
                 t / tot_time,
                 length(active_set),
                 non_simplex_iter,
-            )    
-            print_callback(rep,format_string)
+            )
+            print_callback(rep, format_string)
             flush(stdout)
         end
 
@@ -240,7 +240,7 @@ function blended_conditional_gradient(
         non_simplex_iter += 1
 
     end
-    
+
     ## post-processing and cleanup after loop
 
     # report last iteration
@@ -262,7 +262,7 @@ function blended_conditional_gradient(
             length(active_set),
             non_simplex_iter,
         )
-        print_callback(rep,format_string)
+        print_callback(rep, format_string)
         flush(stdout)
     end
 
@@ -290,8 +290,8 @@ function blended_conditional_gradient(
             length(active_set),
             non_simplex_iter,
         )
-        print_callback(rep,format_string)
-        print_callback(nothing,format_string,print_footer=true)
+        print_callback(rep, format_string)
+        print_callback(nothing, format_string, print_footer=true)
         flush(stdout)
     end
     return x, v, primal, dual_gap, traj_data
@@ -334,7 +334,7 @@ function minimize_over_convex_hull!(
     callback,
     timeout=Inf,
     print_callback=nothing,
-    format_string=nothing
+    format_string=nothing,
 )
     #No hessian is known, use simplex gradient descent.
     if hessian === nothing
@@ -357,7 +357,7 @@ function minimize_over_convex_hull!(
             callback=callback,
             timeout=timeout,
             print_callback=print_callback,
-            format_string=format_string
+            format_string=format_string,
         )
     else
         x = compute_active_set_iterate(active_set)
@@ -415,7 +415,7 @@ function minimize_over_convex_hull!(
                         callback=callback,
                         timeout=timeout,
                         print_callback=print_callback,
-                        format_string=format_string
+                        format_string=format_string,
                     )
                 @. active_set.weights = new_weights
             end
@@ -437,7 +437,7 @@ function minimize_over_convex_hull!(
                 callback=callback,
                 timeout=timeout,
                 print_callback=print_callback,
-                format_string=format_string    
+                format_string=format_string,
             )
             @. active_set.weights = new_weights
         end
@@ -583,7 +583,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
     callback,
     timeout=Inf,
     print_callback=nothing,
-    format_string=nothing
+    format_string=nothing,
 )
     number_of_steps = 0
     x = deepcopy(initial_point)
@@ -646,7 +646,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
                 length(initial_point),
                 non_simplex_iter,
             )
-            print_callback(rep,format_string)
+            print_callback(rep, format_string)
             flush(stdout)
         end
         if timeout < Inf
@@ -683,7 +683,7 @@ function simplex_gradient_descent_over_probability_simplex(
     callback,
     timeout=Inf,
     print_callback=nothing,
-    format_string=nothing
+    format_string=nothing,
 )
     number_of_steps = 0
     x = deepcopy(initial_point)
@@ -726,7 +726,7 @@ function simplex_gradient_descent_over_probability_simplex(
                 length(initial_point),
                 non_simplex_iter,
             )
-            print_callback(rep,format_string)
+            print_callback(rep, format_string)
             flush(stdout)
         end
         if timeout < Inf
@@ -815,7 +815,7 @@ function simplex_gradient_descent_over_convex_hull(
     callback,
     timeout=Inf,
     print_callback=nothing,
-    format_string=nothing
+    format_string=nothing,
 )
     number_of_steps = 0
     L_inner = nothing
@@ -961,7 +961,7 @@ function simplex_gradient_descent_over_convex_hull(
                 length(active_set),
                 non_simplex_iter,
             )
-            print_callback(rep,format_string)
+            print_callback(rep, format_string)
             flush(stdout)
         end
         if timeout < Inf
