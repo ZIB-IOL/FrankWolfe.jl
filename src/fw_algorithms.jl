@@ -30,45 +30,11 @@ function frank_wolfe(
     gradient=nothing,
     callback=nothing,
     timeout=Inf,
+    print_callback=FrankWolfe.print_callback
 )
-    function print_header(data)
-        @printf(
-            "\n─────────────────────────────────────────────────────────────────────────────────────────────────\n"
-        )
-        @printf(
-            "%6s %13s %14s %14s %14s %14s %14s\n",
-            data[1],
-            data[2],
-            data[3],
-            data[4],
-            data[5],
-            data[6],
-            data[7]
-        )
-        @printf(
-            "─────────────────────────────────────────────────────────────────────────────────────────────────\n"
-        )
-    end
 
-    function print_footer()
-        @printf(
-            "─────────────────────────────────────────────────────────────────────────────────────────────────\n\n"
-        )
-    end
-
-    function print_iter_func(data)
-        @printf(
-            "%6s %13s %14e %14e %14e %14e %14e\n",
-            st[Symbol(data[1])],
-            data[2],
-            Float64(data[3]),
-            Float64(data[4]),
-            Float64(data[5]),
-            data[6],
-            data[7]
-        )
-    end
-
+    # format string for output of the algorithm
+    format_string = "%6s %13s %14e %14e %14e %14e %14e\n"
     t = 0
     dual_gap = Inf
     primal = Inf
@@ -107,7 +73,7 @@ function frank_wolfe(
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
         end
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec"]
-        print_header(headers)
+        print_callback(headers,format_string,print_header=true)
     end
 
     if emphasis == memory && !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
@@ -216,15 +182,16 @@ function frank_wolfe(
             end
             
             rep = (
-                tt,
+                st[Symbol(tt)],
                 string(t),
-                primal,
-                primal - dual_gap,
-                dual_gap,
+                Float64(primal),
+                Float64(primal - dual_gap),
+                Float64(dual_gap),
                 tot_time,
                 t / tot_time,
             )
-            print_iter_func(rep)
+            print_callback(rep,format_string)
+
             flush(stdout)
         end
         t = t + 1
@@ -241,16 +208,16 @@ function frank_wolfe(
         tt = last
         tot_time = (time_ns() - time_start) / 1.0e9
         rep = (
-            tt,
+            st[Symbol(tt)],
             string(t - 1),
-            primal,
-            primal - dual_gap,
-            dual_gap,
+            Float64(primal),
+            Float64(primal - dual_gap),
+            Float64(dual_gap),
             tot_time,
             t / tot_time,
         )
-        print_iter_func(rep)
-        print_footer()
+        print_callback(rep,format_string)
+        print_callback(nothing,format_string,print_footer=true)
         flush(stdout)
     end
     return x, v, primal, dual_gap, traj_data
@@ -288,52 +255,16 @@ function lazified_conditional_gradient(
     VType=typeof(x0),
     callback=nothing,
     timeout=Inf,
+    print_callback=FrankWolfe.print_callback
 )
 
+     # format string for output of the algorithm
+     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
+     
     if isfinite(cache_size)
         lmo = MultiCacheLMO{cache_size,typeof(lmo_base),VType}(lmo_base)
     else
         lmo = VectorCacheLMO{typeof(lmo_base),VType}(lmo_base)
-    end
-
-    function print_header(data)
-        @printf(
-            "\n───────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
-        )
-        @printf(
-            "%6s %13s %14s %14s %14s %14s %14s %14s\n",
-            data[1],
-            data[2],
-            data[3],
-            data[4],
-            data[5],
-            data[6],
-            data[7],
-            data[8]
-        )
-        @printf(
-            "───────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
-        )
-    end
-
-    function print_footer()
-        @printf(
-            "───────────────────────────────────────────────────────────────────────────────────────────────────────────────\n\n"
-        )
-    end
-
-    function print_iter_func(data)
-        @printf(
-            "%6s %13s %14e %14e %14e %14e %14e %14s\n",
-            st[Symbol(data[1])],
-            data[2],
-            data[3],
-            data[4],
-            data[5],
-            data[6],
-            data[7],
-            data[8]
-        )
     end
 
     t = 0
@@ -370,7 +301,7 @@ function lazified_conditional_gradient(
         end
         headers =
             ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "Cache Size"]
-        print_header(headers)
+            print_callback(headers,format_string,print_header=true)
     end
 
     if emphasis == memory && !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
@@ -463,16 +394,16 @@ function lazified_conditional_gradient(
                 tt = initial
             end
             rep = (
-                tt,
+                st[Symbol(tt)],
                 string(t),
-                primal,
-                primal - dual_gap,
-                dual_gap,
-                tot_time,
-                t / tot_time,
+                Float64(primal),
+                Float64(primal - dual_gap),
+                Float64(dual_gap),
+                (time_ns() - time_start) / 1.0e9,
+                t / ((time_ns() - time_start) / 1.0e9),
                 length(lmo),
             )
-            print_iter_func(rep)
+            print_callback(rep,format_string)
             flush(stdout)
         end
         t += 1
@@ -489,17 +420,17 @@ function lazified_conditional_gradient(
     if verbose
         tt = last
         rep = (
-            tt,
+            st[Symbol(tt)],
             string(t - 1),
-            primal,
-            primal - dual_gap,
-            dual_gap,
+            Float64(primal),
+            Float64(primal - dual_gap),
+            Float64(dual_gap),
             (time_ns() - time_start) / 1.0e9,
             t / ((time_ns() - time_start) / 1.0e9),
             length(lmo),
         )
-        print_iter_func(rep)
-        print_footer()
+        print_callback(rep,format_string)
+        print_callback(nothing,format_string,print_footer=true)
         flush(stdout)
     end
     return x, v, primal, dual_gap, traj_data
@@ -532,44 +463,11 @@ function stochastic_frank_wolfe(
     full_evaluation=false,
     callback=nothing,
     timeout=Inf,
+    print_callback=FrankWolfe.print_callback
 )
-    function print_header(data)
-        @printf(
-            "\n─────────────────────────────────────────────────────────────────────────────────────────────────\n"
-        )
-        @printf(
-            "%6s %13s %14s %14s %14s %14s %14s\n",
-            data[1],
-            data[2],
-            data[3],
-            data[4],
-            data[5],
-            data[6],
-            data[7]
-        )
-        @printf(
-            "─────────────────────────────────────────────────────────────────────────────────────────────────\n"
-        )
-    end
 
-    function print_footer()
-        @printf(
-            "─────────────────────────────────────────────────────────────────────────────────────────────────\n\n"
-        )
-    end
-
-    function print_iter_func(data)
-        @printf(
-            "%6s %13s %14e %14e %14e %14e %14e\n",
-            st[Symbol(data[1])],
-            data[2],
-            Float64(data[3]),
-            Float64(data[4]),
-            Float64(data[5]),
-            data[6],
-            data[7]
-        )
-    end
+    # format string for output of the algorithm
+    format_string = "%6s %13s %14e %14e %14e %14e %14e\n"
 
     t = 0
     dual_gap = Inf
@@ -598,13 +496,14 @@ function stochastic_frank_wolfe(
         println(
             "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration TYPE: $numType",
         )
-        grad_type = typeof(gradient)
+        # TODO: needs to fix
+        grad_type = typeof(nothing)
         println("GRADIENTTYPE: $grad_type MOMENTUM: $momentum BATCHSIZE: $batch_size ")
         if emphasis == memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
         end
         headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec")
-        print_header(headers)
+        print_callback(headers,format_string,print_header=true)
     end
 
     if emphasis == memory && !isa(x, Array)
@@ -703,15 +602,15 @@ function stochastic_frank_wolfe(
                 tt = initial
             end
             rep = (
-                tt,
+                st[Symbol(tt)],
                 string(t),
-                primal,
-                primal - dual_gap,
-                dual_gap,
+                Float64(primal),
+                Float64(primal - dual_gap),
+                Float64(dual_gap),
                 tot_time,
                 t / tot_time,
             )
-            print_iter_func(rep)
+            print_callback(rep,format_string)
             flush(stdout)
         end
         t += 1
@@ -729,16 +628,16 @@ function stochastic_frank_wolfe(
         tt = last
         tot_time = (time_ns() - time_start) / 1.0e9
         rep = (
-            tt,
-            string(t - 1),
-            primal,
-            primal - dual_gap,
-            dual_gap,
+            st[Symbol(tt)],
+            string(t-1),
+            Float64(primal),
+            Float64(primal - dual_gap),
+            Float64(dual_gap),
             tot_time,
             t / tot_time,
         )
-        print_iter_func(rep)
-        print_footer()
+        print_callback(rep,format_string)
+        print_callback(nothing,format_string,print_footer=true)
         flush(stdout)
     end
     return x, v, primal, dual_gap, traj_data
