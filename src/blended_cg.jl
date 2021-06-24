@@ -1,46 +1,4 @@
 
-function print_header(data)
-    @printf(
-        "\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
-    )
-    @printf(
-        "%6s %13s %14s %14s %14s %14s %14s %14s %14s\n",
-        data[1],
-        data[2],
-        data[3],
-        data[4],
-        data[5],
-        data[6],
-        data[7],
-        data[8],
-        data[9],
-    )
-    @printf(
-        "────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
-    )
-end
-
-function print_footer()
-    @printf(
-        "────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n\n"
-    )
-end
-
-function print_iter_func(data)
-    @printf(
-        "%6s %13s %14e %14e %14e %14e %14e %14i %14i\n",
-        st[Symbol(data[1])],
-        data[2],
-        Float64(data[3]),
-        Float64(data[4]),
-        Float64(data[5]),
-        data[6],
-        data[7],
-        data[8],
-        data[9],
-    )
-end
-
 """
     blended_conditional_gradient(f, grad!, lmo, x0)
 
@@ -76,8 +34,13 @@ function blended_conditional_gradient(
     direction_storage=nothing,
     callback=nothing,
     timeout=Inf,
+    print_callback=FrankWolfe.print_callback,    
     lmo_kwargs...,
 )
+    
+     # format string for output of the algorithm
+     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i %14i\n"
+
     t = 0
     primal = Inf
     dual_gap = Inf
@@ -136,7 +99,7 @@ function blended_conditional_gradient(
             "#ActiveSet",
             "#non-simplex",
         )
-        print_header(headers)
+        print_callback(headers,format_string,print_header=true)
     end
     if !isa(x, Union{Array,SparseVector})
         x = convert(Array{float(eltype(x))}, x)
@@ -187,6 +150,8 @@ function blended_conditional_gradient(
             max_iteration=max_iteration,
             callback=callback,
             timeout=timeout,
+            print_callback=print_callback,
+            format_string=format_string
         )
         t += num_simplex_descent_steps
         #Take a FW step.
@@ -257,17 +222,17 @@ function blended_conditional_gradient(
                 tt = initial
             end
             rep = (
-                tt,
+                st[Symbol(tt)],
                 string(t),
-                primal,
-                primal - dual_gap,
-                dual_gap,
+                Float64(primal),
+                Float64(primal - dual_gap),
+                Float64(dual_gap),
                 tot_time,
                 t / tot_time,
                 length(active_set),
                 non_simplex_iter,
-            )
-            print_iter_func(rep)
+            )    
+            print_callback(rep,format_string)
             flush(stdout)
         end
 
@@ -287,17 +252,17 @@ function blended_conditional_gradient(
         dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         tot_time = (time_ns() - time_start) / 1e9
         rep = (
-            last,
+            st[Symbol(last)],
             string(t - 1),
-            primal,
-            primal - dual_gap,
-            dual_gap,
+            Float64(primal),
+            Float64(primal - dual_gap),
+            Float64(dual_gap),
             tot_time,
             t / tot_time,
             length(active_set),
             non_simplex_iter,
         )
-        print_iter_func(rep)
+        print_callback(rep,format_string)
         flush(stdout)
     end
 
@@ -315,18 +280,18 @@ function blended_conditional_gradient(
     if verbose
         tot_time = (time_ns() - time_start) / 1e9
         rep = (
-            pp,
+            st[Symbol(pp)],
             string(t - 1),
-            primal,
-            primal - dual_gap,
-            dual_gap,
+            Float64(primal),
+            Float64(primal - dual_gap),
+            Float64(dual_gap),
             tot_time,
             t / tot_time,
             length(active_set),
             non_simplex_iter,
         )
-        print_iter_func(rep)
-        print_footer()
+        print_callback(rep,format_string)
+        print_callback(nothing,format_string,print_footer=true)
         flush(stdout)
     end
     return x, v, primal, dual_gap, traj_data
@@ -368,6 +333,8 @@ function minimize_over_convex_hull!(
     max_iteration,
     callback,
     timeout=Inf,
+    print_callback=nothing,
+    format_string=nothing
 )
     #No hessian is known, use simplex gradient descent.
     if hessian === nothing
@@ -389,6 +356,8 @@ function minimize_over_convex_hull!(
             max_iteration=max_iteration,
             callback=callback,
             timeout=timeout,
+            print_callback=print_callback,
+            format_string=format_string
         )
     else
         x = compute_active_set_iterate(active_set)
@@ -445,6 +414,8 @@ function minimize_over_convex_hull!(
                         max_iteration=max_iteration,
                         callback=callback,
                         timeout=timeout,
+                        print_callback=print_callback,
+                        format_string=format_string
                     )
                 @. active_set.weights = new_weights
             end
@@ -465,6 +436,8 @@ function minimize_over_convex_hull!(
                 max_iteration=max_iteration,
                 callback=callback,
                 timeout=timeout,
+                print_callback=print_callback,
+                format_string=format_string    
             )
             @. active_set.weights = new_weights
         end
@@ -609,6 +582,8 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
     max_iteration,
     callback,
     timeout=Inf,
+    print_callback=nothing,
+    format_string=nothing
 )
     number_of_steps = 0
     x = deepcopy(initial_point)
@@ -661,17 +636,17 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
             end
             tot_time = (time_ns() - time_start) / 1.0e9
             rep = (
-                tt,
+                st[Symbol(tt)],
                 string(t + number_of_steps),
-                primal,
-                primal - tolerance,
-                tolerance,
+                Float64(primal),
+                Float64(primal - tolerance),
+                Float64(tolerance),
                 tot_time,
                 t / tot_time,
                 length(initial_point),
                 non_simplex_iter,
             )
-            print_iter_func(rep)
+            print_callback(rep,format_string)
             flush(stdout)
         end
         if timeout < Inf
@@ -707,6 +682,8 @@ function simplex_gradient_descent_over_probability_simplex(
     max_iteration,
     callback,
     timeout=Inf,
+    print_callback=nothing,
+    format_string=nothing
 )
     number_of_steps = 0
     x = deepcopy(initial_point)
@@ -739,17 +716,17 @@ function simplex_gradient_descent_over_probability_simplex(
             end
             tot_time = (time_ns() - time_start) / 1.0e9
             rep = (
-                tt,
+                st[Symbol(tt)],
                 string(t + number_of_steps),
-                primal,
-                primal - tolerance,
-                tolerance,
+                Float64(primal),
+                Float64(primal - tolerance),
+                Float64(tolerance),
                 tot_time,
                 t / tot_time,
                 length(initial_point),
                 non_simplex_iter,
             )
-            print_iter_func(rep)
+            print_callback(rep,format_string)
             flush(stdout)
         end
         if timeout < Inf
@@ -837,6 +814,8 @@ function simplex_gradient_descent_over_convex_hull(
     max_iteration,
     callback,
     timeout=Inf,
+    print_callback=nothing,
+    format_string=nothing
 )
     number_of_steps = 0
     L_inner = nothing
@@ -972,17 +951,17 @@ function simplex_gradient_descent_over_convex_hull(
             end
             tot_time = (time_ns() - time_start) / 1.0e9
             rep = (
-                tt,
+                st[Symbol(tt)],
                 string(t + number_of_steps),
-                primal,
-                primal - dual_gap,
-                dual_gap,
+                Float64(primal),
+                Float64(primal - dual_gap),
+                Float64(dual_gap),
                 tot_time,
                 t / tot_time,
                 length(active_set),
                 non_simplex_iter,
             )
-            print_iter_func(rep)
+            print_callback(rep,format_string)
             flush(stdout)
         end
         if timeout < Inf

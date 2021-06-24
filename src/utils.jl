@@ -859,3 +859,35 @@ function line_search_wrapper(
     end
     return gamma, L
 end
+
+
+function print_callback(data,format_string;print_header=false,print_footer=false)
+    print_formatted(fmt, args...) = @eval @printf($fmt, $(args...))
+    if print_header || print_footer
+        temp = strip(format_string, ['\n'])
+        temp = replace(temp, "%" => "")
+        temp = replace(temp, "e" => "")
+        temp = replace(temp, "i" => "")
+        temp = replace(temp, "s" => "")
+        temp = split(temp, " ")
+        len = 0
+        for i in temp
+            len = len + parse(Int, i)
+        end
+        lenHeaderFooter = len + 2 + length(temp)-1
+        if print_footer
+            line = "-"^lenHeaderFooter 
+            @printf("%s\n\n",line)
+        end
+        if print_header
+            line = "-"^lenHeaderFooter 
+            @printf("\n%s\n",line)
+            s_format_string = replace(format_string, "e" => "s")
+            s_format_string = replace(s_format_string, "i" => "s")
+            print_formatted(s_format_string, data...)
+            @printf("%s\n",line)
+        end
+    else
+        print_formatted(format_string, data...)
+    end
+end
