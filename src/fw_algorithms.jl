@@ -30,7 +30,7 @@ function frank_wolfe(
     gradient=nothing,
     callback=nothing,
     timeout=Inf,
-    print_callback=FrankWolfe.print_callback
+    print_callback=FrankWolfe.print_callback,
 )
 
     # format string for output of the algorithm
@@ -73,7 +73,7 @@ function frank_wolfe(
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
         end
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec"]
-        print_callback(headers,format_string,print_header=true)
+        print_callback(headers, format_string, print_header=true)
     end
 
     if emphasis == memory && !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
@@ -173,14 +173,14 @@ function frank_wolfe(
             one(eltype(x)),
         )
 
-        @emphasis(emphasis, x = x - gamma * d)        
+        @emphasis(emphasis, x = x - gamma * d)
 
         if (mod(t, print_iter) == 0 && verbose)
             tt = regular
             if t == 0
                 tt = initial
             end
-            
+
             rep = (
                 st[Symbol(tt)],
                 string(t),
@@ -190,7 +190,7 @@ function frank_wolfe(
                 tot_time,
                 t / tot_time,
             )
-            print_callback(rep,format_string)
+            print_callback(rep, format_string)
 
             flush(stdout)
         end
@@ -216,8 +216,8 @@ function frank_wolfe(
             tot_time,
             t / tot_time,
         )
-        print_callback(rep,format_string)
-        print_callback(nothing,format_string,print_footer=true)
+        print_callback(rep, format_string)
+        print_callback(nothing, format_string, print_footer=true)
         flush(stdout)
     end
     return x, v, primal, dual_gap, traj_data
@@ -255,12 +255,12 @@ function lazified_conditional_gradient(
     VType=typeof(x0),
     callback=nothing,
     timeout=Inf,
-    print_callback=FrankWolfe.print_callback
+    print_callback=FrankWolfe.print_callback,
 )
 
-     # format string for output of the algorithm
-     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
-     
+    # format string for output of the algorithm
+    format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
+
     if isfinite(cache_size)
         lmo = MultiCacheLMO{cache_size,typeof(lmo_base),VType}(lmo_base)
     else
@@ -301,7 +301,7 @@ function lazified_conditional_gradient(
         end
         headers =
             ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "Cache Size"]
-            print_callback(headers,format_string,print_header=true)
+        print_callback(headers, format_string, print_header=true)
     end
 
     if emphasis == memory && !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
@@ -403,7 +403,7 @@ function lazified_conditional_gradient(
                 t / ((time_ns() - time_start) / 1.0e9),
                 length(lmo),
             )
-            print_callback(rep,format_string)
+            print_callback(rep, format_string)
             flush(stdout)
         end
         t += 1
@@ -429,8 +429,8 @@ function lazified_conditional_gradient(
             t / ((time_ns() - time_start) / 1.0e9),
             length(lmo),
         )
-        print_callback(rep,format_string)
-        print_callback(nothing,format_string,print_footer=true)
+        print_callback(rep, format_string)
+        print_callback(nothing, format_string, print_footer=true)
         flush(stdout)
     end
     return x, v, primal, dual_gap, traj_data
@@ -463,7 +463,7 @@ function stochastic_frank_wolfe(
     full_evaluation=false,
     callback=nothing,
     timeout=Inf,
-    print_callback=FrankWolfe.print_callback
+    print_callback=FrankWolfe.print_callback,
 )
 
     # format string for output of the algorithm
@@ -503,7 +503,7 @@ function stochastic_frank_wolfe(
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
         end
         headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec")
-        print_callback(headers,format_string,print_header=true)
+        print_callback(headers, format_string, print_header=true)
     end
 
     if emphasis == memory && !isa(x, Array)
@@ -610,7 +610,7 @@ function stochastic_frank_wolfe(
                 tot_time,
                 t / tot_time,
             )
-            print_callback(rep,format_string)
+            print_callback(rep, format_string)
             flush(stdout)
         end
         t += 1
@@ -629,15 +629,15 @@ function stochastic_frank_wolfe(
         tot_time = (time_ns() - time_start) / 1.0e9
         rep = (
             st[Symbol(tt)],
-            string(t-1),
+            string(t - 1),
             Float64(primal),
             Float64(primal - dual_gap),
             Float64(dual_gap),
             tot_time,
             t / tot_time,
         )
-        print_callback(rep,format_string)
-        print_callback(nothing,format_string,print_footer=true)
+        print_callback(rep, format_string)
+        print_callback(nothing, format_string, print_footer=true)
         flush(stdout)
     end
     return x, v, primal, dual_gap, traj_data
