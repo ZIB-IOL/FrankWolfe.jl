@@ -31,11 +31,11 @@ function away_frank_wolfe(
     renorm_interval=1000,
     callback=nothing,
     timeout=Inf,
-    print_callback=FrankWolfe.print_callback    
+    print_callback=FrankWolfe.print_callback,
 )
-    
-     # format string for output of the algorithm
-     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
+
+    # format string for output of the algorithm
+    format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
 
     t = 0
     dual_gap = Inf
@@ -74,7 +74,7 @@ function away_frank_wolfe(
         end
         headers =
             ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "#ActiveSet")
-        print_callback(headers,format_string,print_header=true)
+        print_callback(headers, format_string, print_header=true)
     end
 
     # likely not needed anymore as now the iterates are provided directly via the active set
@@ -114,7 +114,7 @@ function away_frank_wolfe(
         end
 
         #####################
-        
+
         # compute current iterate from active set
         x = compute_active_set_iterate(active_set)
         if isnothing(momentum)
@@ -202,7 +202,7 @@ function away_frank_wolfe(
                 t / tot_time,
                 length(active_set),
             )
-            print_callback(rep,format_string)
+            print_callback(rep, format_string)
             flush(stdout)
         end
         t += 1
@@ -230,7 +230,7 @@ function away_frank_wolfe(
             t / ((time_ns() - time_start) / 1.0e9),
             length(active_set),
         )
-        print_callback(rep,format_string)
+        print_callback(rep, format_string)
         flush(stdout)
     end
 
@@ -253,8 +253,8 @@ function away_frank_wolfe(
             t / ((time_ns() - time_start) / 1.0e9),
             length(active_set),
         )
-        print_callback(rep,format_string)
-        print_callback(nothing,format_string,print_footer=true)
+        print_callback(rep, format_string)
+        print_callback(nothing, format_string, print_footer=true)
         flush(stdout)
     end
 

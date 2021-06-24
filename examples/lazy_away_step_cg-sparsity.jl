@@ -92,8 +92,8 @@ x0 = deepcopy(x00)
     emphasis=FrankWolfe.memory,
     verbose=true,
     trajectory=true,
-    callback=callback
-    );
+    callback=callback,
+);
 
 
 println("\n==> Lazy AFW.\n")
@@ -115,7 +115,7 @@ x0 = deepcopy(x00)
     lazy=true,
     K=1.5,
     trajectory=true,
-    callback=callback
+    callback=callback,
 );
 
 
@@ -136,7 +136,7 @@ x0 = deepcopy(x00)
     lazy=true,
     K=2.0,
     trajectory=true,
-    callback=callback
+    callback=callback,
 );
 
 
@@ -157,7 +157,7 @@ x0 = deepcopy(x00)
     K=4.0,
     lazy=true,
     trajectory=true,
-    callback=callback
+    callback=callback,
 );
 
 trajectoryAdaLoc10 = []
@@ -177,7 +177,7 @@ x0 = deepcopy(x00)
     K=10.0,
     verbose=true,
     trajectory=true,
-    callback=callback
+    callback=callback,
 );
 
 

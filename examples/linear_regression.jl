@@ -70,7 +70,8 @@ params = rand(6) .- 1 # start params in (-1,0)
       norm(FrankWolfe.compute_gradient(f_stoch_noisy, params))
 
 # test that error at true parameters is lower than at randomly initialized ones
-@test FrankWolfe.compute_value(f_stoch_noisy, params) > FrankWolfe.compute_value(f_stoch_noisy, params_perfect)
+@test FrankWolfe.compute_value(f_stoch_noisy, params) >
+      FrankWolfe.compute_value(f_stoch_noisy, params_perfect)
 
 # Vanilla Stochastic Gradient Descent with reshuffling
 for idx in 1:1000
