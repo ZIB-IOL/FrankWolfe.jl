@@ -1,7 +1,5 @@
 #!/usr/bin/env bats
 
-JULIA=/home/spokutta/Downloads/julia/julia-1.6.1/bin/julia
-
 @test "adaptive_step_sizes.jl" {
     $JULIA adaptive_step_sizes.jl
 }
