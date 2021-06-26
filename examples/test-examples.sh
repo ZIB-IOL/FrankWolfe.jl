@@ -1,5 +1,7 @@
 #!/usr/bin/env bats
 
+# export the julia binary as $JULIA
+
 @test "adaptive_step_sizes.jl" {
     $JULIA adaptive_step_sizes.jl
 }

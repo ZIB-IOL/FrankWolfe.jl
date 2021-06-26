@@ -1,4 +1,5 @@
-import FrankWolfe
+include("activate.jl")
+
 using LinearAlgebra
 using Random
 import GLPK
