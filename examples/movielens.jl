@@ -1,4 +1,4 @@
-include(joinpath(@__DIR__, "activate.jl"))
+include("activate.jl")
 
 # download movielens data
 using ZipFile, DataFrames, CSV

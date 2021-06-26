@@ -1,5 +1,5 @@
 
-include(joinpath(@__DIR__, "activate.jl"))
+include("activate.jl")
 
 using LinearAlgebra
 
