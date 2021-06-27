@@ -15,4 +15,6 @@ examples/test.jl
 examples/*.json
 docs/build/
 lcg_expensive_data.json
-examples/run-exa-tests.sh
+examples/precompile_fw.jl
+examples/precompile_fw_clean.jl
+examples/precompile_fw_clean_uniq.jl
