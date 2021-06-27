@@ -40,8 +40,10 @@ include("afw.jl")
 include("fw_algorithms.jl")
 
 # collecting most common data types etc and precompile 
-println("Precompiling common signatures. This might take a while but should happen only once...")
-include("precompile.jl")
-
+# min version req set to 1.5 to prevent stalling of julia 1
+@static if VERSION >= v"1.5"   
+    println("Precompiling common signatures. This might take a while but should when dependencies have changed...")
+    include("precompile.jl")
+end
 
 end
