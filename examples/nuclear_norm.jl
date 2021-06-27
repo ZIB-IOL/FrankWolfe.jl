@@ -1,6 +1,7 @@
+include("activate.jl")
+
 import Random
 using SparseArrays, LinearAlgebra
-using FrankWolfe
 using Test
 using Plots
 
