@@ -39,4 +39,9 @@ include("blended_cg.jl")
 include("afw.jl")
 include("fw_algorithms.jl")
 
+# collecting most common data types etc and precompile 
+println("Precompiling common signatures. This might take a while but should happen only once...")
+include("precompile.jl")
+
+
 end
