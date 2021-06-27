@@ -1,4 +1,5 @@
-import FrankWolfe
+include("activate.jl")
+
 import LinearAlgebra
 
 
@@ -9,7 +10,8 @@ xpi = rand(n);
 total = sum(xpi);
 const xp = xpi ./ total;
 
-f(x) = norm(x - xp)^2
+f(x) = LinearAlgebra.norm(x - xp)^2
+
 function grad!(storage, x)
     storage .= 2 * (x - xp)
     return nothing
@@ -18,12 +20,7 @@ end
 # better for memory consumption as we do coordinate-wise ops
 
 function cf(x, xp)
-    return @. norm(x - xp)^2
-end
-
-function cgrad(storage, x, xp)
-    @. storage = 2 * (x - xp)
-    return nothing
+    return @. LinearAlgebra.norm(x - xp)^2
 end
 
 # lmo = FrankWolfe.KSparseLMO(100, 1.0)
@@ -34,9 +31,10 @@ x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
 # print(x0)
 
 gradient = similar(x00)
+
 FrankWolfe.benchmark_oracles(
-    x -> cf(x, xp),
-    x -> cgrad(gradient, x, xp),
+    f,
+    grad!,
     () -> randn(n),
     lmo;
     k=100,

@@ -1,5 +1,6 @@
 
-using FrankWolfe
+include("activate.jl")
+
 using LinearAlgebra
 
 n = Int(1e2);
