@@ -3,11 +3,10 @@ Example of a L1-constrained linearized regression
 using the stochastic version of Frank Wolfe.
 """
 
-using FrankWolfe
+include("activate.jl")
+
 using Random
 using LinearAlgebra
-
-import FrankWolfe: compute_gradient, compute_value, compute_value_gradient
 
 using Test
 
@@ -45,7 +44,7 @@ params_perfect = [1:5; bias]
 data_perfect = [(x, x ⋅ (1:5) + bias) for x in xs]
 f_stoch = FrankWolfe.StochasticObjective(simple_reg_loss, ∇simple_reg_loss, data_perfect)
 
-@test compute_value(f_stoch, params) > compute_value(f_stoch, params_perfect)
+@test FrankWolfe.compute_value(f_stoch, params) > FrankWolfe.compute_value(f_stoch, params_perfect)
 
 # Vanilla Stochastic Gradient Descent with reshuffling
 storage = 0 * similar(params)
@@ -64,14 +63,15 @@ f_stoch_noisy = FrankWolfe.StochasticObjective(simple_reg_loss, ∇simple_reg_lo
 params = rand(6) .- 1 # start params in (-1,0)
 
 # test that the true parameters yield a good error
-@test norm(compute_gradient(f_stoch_noisy, params_perfect)) <= length(data_noisy) * 0.05
+@test norm(FrankWolfe.compute_gradient(f_stoch_noisy, params_perfect)) <= length(data_noisy) * 0.05
 
 # test that gradient at true parameters has lower norm than at randomly initialized ones
-@test norm(compute_gradient(f_stoch_noisy, params_perfect)) <
-      norm(compute_gradient(f_stoch_noisy, params))
+@test norm(FrankWolfe.compute_gradient(f_stoch_noisy, params_perfect)) <
+      norm(FrankWolfe.compute_gradient(f_stoch_noisy, params))
 
 # test that error at true parameters is lower than at randomly initialized ones
-@test compute_value(f_stoch_noisy, params) > compute_value(f_stoch_noisy, params_perfect)
+@test FrankWolfe.compute_value(f_stoch_noisy, params) >
+      FrankWolfe.compute_value(f_stoch_noisy, params_perfect)
 
 # Vanilla Stochastic Gradient Descent with reshuffling
 for idx in 1:1000

@@ -31,46 +31,11 @@ function away_frank_wolfe(
     renorm_interval=1000,
     callback=nothing,
     timeout=Inf,
+    print_callback=FrankWolfe.print_callback,
 )
-    function print_header(data)
-        @printf(
-            "\n───────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
-        )
-        @printf(
-            "%6s %13s %14s %14s %14s %14s %14s %14s\n",
-            data[1],
-            data[2],
-            data[3],
-            data[4],
-            data[5],
-            data[6],
-            data[7],
-            data[8],
-        )
-        @printf(
-            "───────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
-        )
-    end
 
-    function print_footer()
-        @printf(
-            "───────────────────────────────────────────────────────────────────────────────────────────────────────────────\n\n"
-        )
-    end
-
-    function print_iter_func(data)
-        @printf(
-            "%6s %13s %14e %14e %14e %14e %14e %14i\n",
-            st[Symbol(data[1])],
-            data[2],
-            Float64(data[3]),
-            Float64(data[4]),
-            Float64(data[5]),
-            data[6],
-            data[7],
-            data[8],
-        )
-    end
+    # format string for output of the algorithm
+    format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
 
     t = 0
     dual_gap = Inf
@@ -109,7 +74,7 @@ function away_frank_wolfe(
         end
         headers =
             ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "#ActiveSet")
-        print_header(headers)
+        print_callback(headers, format_string, print_header=true)
     end
 
     # likely not needed anymore as now the iterates are provided directly via the active set
@@ -128,6 +93,27 @@ function away_frank_wolfe(
     phi_value = fast_dot(x, gradient) - fast_dot(v, gradient)
 
     while t <= max_iteration && dual_gap >= max(epsilon, eps())
+
+        #####################
+        # managing time and Ctrl-C
+        #####################
+        time_at_loop = time_ns()
+        if t == 0
+            time_start = time_at_loop
+        end
+        # time is measured at beginning of loop for consistency throughout all algorithms
+        tot_time = (time_at_loop - time_start) / 1e9
+
+        if timeout < Inf
+            if tot_time ≥ timeout
+                if verbose
+                    @info "Time limit reached"
+                end
+                break
+            end
+        end
+
+        #####################
 
         # compute current iterate from active set
         x = compute_active_set_iterate(active_set)
@@ -194,7 +180,7 @@ function away_frank_wolfe(
                 primal=primal,
                 dual=primal - dual_gap,
                 dual_gap=phi_value,
-                time=(time_ns() - time_start) / 1e9,
+                time=tot_time,
                 x=x,
                 v=vertex,
                 active_set_length=length(active_set),
@@ -206,30 +192,20 @@ function away_frank_wolfe(
             if t == 0
                 tt = initial
             end
-            tot_time = (time_ns() - time_start) / 1.0e9
             rep = (
-                tt,
+                st[Symbol(tt)],
                 string(t),
-                primal,
-                primal - dual_gap,
-                dual_gap,
+                Float64(primal),
+                Float64(primal - dual_gap),
+                Float64(dual_gap),
                 tot_time,
                 t / tot_time,
                 length(active_set),
             )
-            print_iter_func(rep)
+            print_callback(rep, format_string)
             flush(stdout)
         end
         t += 1
-        if timeout < Inf
-            tot_time = (time_ns() - time_start) / 1e9
-            if tot_time ≥ timeout
-                if verbose
-                    @info "Time limit reached"
-                end
-                break
-            end
-        end
     end
 
     # recompute everything once more for final verfication / do not record to trajectory though for now!
@@ -245,16 +221,16 @@ function away_frank_wolfe(
         dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         tt = last
         rep = (
-            tt,
+            st[Symbol(tt)],
             string(t - 1),
-            primal,
-            primal - dual_gap,
-            dual_gap,
+            Float64(primal),
+            Float64(primal - dual_gap),
+            Float64(dual_gap),
             (time_ns() - time_start) / 1.0e9,
             t / ((time_ns() - time_start) / 1.0e9),
             length(active_set),
         )
-        print_iter_func(rep)
+        print_callback(rep, format_string)
         flush(stdout)
     end
 
@@ -268,17 +244,17 @@ function away_frank_wolfe(
     if verbose
         tt = pp
         rep = (
-            tt,
+            st[Symbol(tt)],
             string(t - 1),
-            primal,
-            primal - dual_gap,
-            dual_gap,
+            Float64(primal),
+            Float64(primal - dual_gap),
+            Float64(dual_gap),
             (time_ns() - time_start) / 1.0e9,
             t / ((time_ns() - time_start) / 1.0e9),
             length(active_set),
         )
-        print_iter_func(rep)
-        print_footer()
+        print_callback(rep, format_string)
+        print_callback(nothing, format_string, print_footer=true)
         flush(stdout)
     end
 

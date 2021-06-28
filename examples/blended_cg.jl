@@ -1,8 +1,8 @@
-import FrankWolfe
+include("activate.jl")
+
 using LinearAlgebra
 using Random
 using DoubleFloats
-using FrankWolfe
 using SparseArrays
 
 n = 1000

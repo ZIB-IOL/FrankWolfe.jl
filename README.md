@@ -1,6 +1,7 @@
 # Frank-Wolfe and Conditional Gradient algorithms
 
 [![Build Status](https://github.com/ZIB-IOL/FrankWolfe.jl/workflows/CI/badge.svg)](https://github.com/ZIB-IOL/FrankWolfe.jl/actions)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://zib-iol.github.io/FrankWolfe.jl/dev/)
 [![Coverage](https://codecov.io/gh/ZIB-IOL/FrankWolfe.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/ZIB-IOL/FrankWolfe.jl)
 
 This package defines a generic interface and several implementations for
@@ -35,7 +36,7 @@ over the set represented by the LMO.
 - Stochastic Frank-Wolfe 
 - Away-Step Frank-Wolfe (see <https://arxiv.org/abs/1511.05932> for an overview)
 - Blended Conditional Gradients (see <https://arxiv.org/abs/1805.07311>)
-  - build-in stability feature that temporarily increases accuracy
+  - built-in stability feature that temporarily increases accuracy
 - Pairwise Conditional Gradients to come (see <https://arxiv.org/abs/1511.05932> for an overview)
 
 - Most algorithms also have a lazified version (see <https://arxiv.org/abs/1610.05120>)

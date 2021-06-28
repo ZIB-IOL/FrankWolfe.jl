@@ -1,6 +1,6 @@
 # Algorithms
 
-This section contains all algorithms of the [`FrankWolfe.jl`](https://github.com/ZIB-IOL/FrankWolfe.jl) package.
+This section contains all main algorithms of the [`FrankWolfe.jl`](https://github.com/ZIB-IOL/FrankWolfe.jl) package. These are the ones typical users will call.
 
 ## Functions
 
@@ -14,7 +14,7 @@ blended_conditional_gradient
 
 # LMOs
 
-The Linear Minimization Oracle (LMO) is an integral part of the iterative step in the FW algorithm. Given ``d\in \mathcal{X}``, it returns:
+The Linear Minimization Oracle (LMO) is a key component called at each iteration of the FW algorithm. Given ``d\in \mathcal{X}``, it returns a vertex of the feasible set:
 ```math
 v\in \argmin_{x\in \mathcal{C}} \langle d,x \rangle.
 ```
@@ -62,11 +62,12 @@ FrankWolfe.convert_mathopt
 
 # Components
 
-This section gathers all additional relevant components of the [`FrankWolfe.jl`](https://github.com/ZIB-IOL/FrankWolfe.jl) package.
+This section gathers all additional relevant components of the package.
 
 ## Functions and Structures
 
 ```@docs
+FrankWolfe.stochastic_frank_wolfe
 FrankWolfe.ActiveSet
 FrankWolfe.active_set_update!
 FrankWolfe.compute_active_set_iterate
@@ -77,11 +78,11 @@ FrankWolfe.minimize_over_convex_hull!
 FrankWolfe.build_reduced_problem(atoms::AbstractVector{<:FrankWolfe.ScaledHotVector},hessian,weights,gradient,tolerance)
 FrankWolfe.build_reduced_problem(atoms::AbstractVector{<:SparseArrays.AbstractSparseArray},hessian,weights,gradient,tolerance)
 FrankWolfe.build_reduced_problem(atoms::AbstractVector{<:Array},hessian,weights,gradient,tolerance)
-FrankWolfe.Strong_Frank_Wolfe_gap
+FrankWolfe.strong_frankwolfe_gap
 FrankWolfe.accelerated_simplex_gradient_descent_over_probability_simplex
 FrankWolfe.simplex_gradient_descent_over_probability_simplex
 FrankWolfe.projection_simplex_sort
-FrankWolfe.Strong_Frank_Wolfe_gap_probability_simplex
+FrankWolfe.strong_frankwolfe_gap_probability_simplex
 FrankWolfe.simplex_gradient_descent_over_convex_hull
 FrankWolfe.lp_separation_oracle
 FrankWolfe.LineSearchMethod

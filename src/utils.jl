@@ -786,7 +786,7 @@ mutable struct MonotonousStepSize{F} <: LineSearchMethod
     factor::Int
 end
 
-MonotonousStepSize(f::F) where {F <: Function} = MonotonousStepSize{F}(f, 0)
+MonotonousStepSize(f::F) where {F<:Function} = MonotonousStepSize{F}(f, 0)
 MonotonousStepSize() = MonotonousStepSize(x -> true)
 
 Base.print(io::IO, ::MonotonousStepSize) = print(io, "MonotonousStepSize")
@@ -806,12 +806,12 @@ function line_search_wrapper(
     step_lim,
     gamma_max,
 )
-    gamma = 2.0^(1-line_search.factor) / (2 + t)
+    gamma = 2.0^(1 - line_search.factor) / (2 + t)
     xnew = x - gamma * d
     f0 = f(x)
     while !line_search.domain_oracle(xnew) || f(xnew) > f0
         line_search.factor += 1
-        gamma = 2.0^(1-line_search.factor) / (2 + t)
+        gamma = 2.0^(1 - line_search.factor) / (2 + t)
         @. xnew = x - gamma * d
     end
     return gamma, L
@@ -829,7 +829,7 @@ mutable struct MonotonousNonConvexStepSize{F} <: LineSearchMethod
     factor::Int
 end
 
-MonotonousNonConvexStepSize(f::F) where {F <: Function} = MonotonousNonConvexStepSize{F}(f, 0)
+MonotonousNonConvexStepSize(f::F) where {F<:Function} = MonotonousNonConvexStepSize{F}(f, 0)
 MonotonousNonConvexStepSize() = MonotonousNonConvexStepSize(x -> true)
 
 Base.print(io::IO, ::MonotonousNonConvexStepSize) = print(io, "MonotonousNonConvexStepSize")
@@ -858,4 +858,36 @@ function line_search_wrapper(
         @. xnew = x - gamma * d
     end
     return gamma, L
+end
+
+
+function print_callback(data, format_string; print_header=false, print_footer=false)
+    print_formatted(fmt, args...) = @eval @printf($fmt, $(args...))
+    if print_header || print_footer
+        temp = strip(format_string, ['\n'])
+        temp = replace(temp, "%" => "")
+        temp = replace(temp, "e" => "")
+        temp = replace(temp, "i" => "")
+        temp = replace(temp, "s" => "")
+        temp = split(temp, " ")
+        len = 0
+        for i in temp
+            len = len + parse(Int, i)
+        end
+        lenHeaderFooter = len + 2 + length(temp) - 1
+        if print_footer
+            line = "-"^lenHeaderFooter
+            @printf("%s\n\n", line)
+        end
+        if print_header
+            line = "-"^lenHeaderFooter
+            @printf("\n%s\n", line)
+            s_format_string = replace(format_string, "e" => "s")
+            s_format_string = replace(s_format_string, "i" => "s")
+            print_formatted(s_format_string, data...)
+            @printf("%s\n", line)
+        end
+    else
+        print_formatted(format_string, data...)
+    end
 end
