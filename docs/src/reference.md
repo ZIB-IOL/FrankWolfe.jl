@@ -74,8 +74,6 @@ FrankWolfe.active_set_argminmax
 FrankWolfe.find_minmax_directions
 FrankWolfe.minimize_over_convex_hull!
 FrankWolfe.build_reduced_problem(atoms::AbstractVector{<:FrankWolfe.ScaledHotVector},hessian,weights,gradient,tolerance)
-FrankWolfe.build_reduced_problem(atoms::AbstractVector{<:SparseArrays.AbstractSparseArray},hessian,weights,gradient,tolerance)
-FrankWolfe.build_reduced_problem(atoms::AbstractVector{<:Array},hessian,weights,gradient,tolerance)
 FrankWolfe.strong_frankwolfe_gap
 FrankWolfe.accelerated_simplex_gradient_descent_over_probability_simplex
 FrankWolfe.simplex_gradient_descent_over_probability_simplex
