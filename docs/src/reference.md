@@ -2,8 +2,6 @@
 
 This section contains all main algorithms of the [`FrankWolfe.jl`](https://github.com/ZIB-IOL/FrankWolfe.jl) package. These are the ones typical users will call.
 
-## Functions
-
 ```@docs
 frank_wolfe
 lazified_conditional_gradient
