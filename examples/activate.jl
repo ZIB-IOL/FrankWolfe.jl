@@ -4,6 +4,8 @@ using FrankWolfe
 using ProgressMeter
 using Arpack
 using Plots
+using DoubleFloats
+
 Pkg.activate(@__DIR__)
 Pkg.instantiate()
 using ReverseDiff
