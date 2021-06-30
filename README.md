@@ -15,6 +15,24 @@ FrankWolfe.frank_wolfe(f, grad!, lmo, x0, max_iteration=1000, line_search=FrankW
 where `f(x)` is the objective function, `grad!(storage, x)` is the inplace gradient.
 `lmo` is a structure implementing the Linear Minimization Oracle interface presented below.
 
+## Installation
+
+The most recent release is available via the julia package manager, e.g., with
+
+```julia
+using Pkg
+Pkg.add("FrankWolfe")
+```
+
+If you want the bleeding edge you can simply clone directly from github
+
+```julia
+using Pkg
+Pkg.add("https://github.com/ZIB-IOL/FrankWolfe.jl")
+```
+
+Alternatively you can also use the build-in package manager via `]`.
+
 ## LMO
 
 Several oracles are implemented, all are subtypes of `LinearMinimizationOracle`
