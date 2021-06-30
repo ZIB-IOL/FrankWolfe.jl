@@ -9,7 +9,7 @@ Frank-Wolfe algorithms.
 The main entry point is the `frank_wolfe` function running the algorithm.
 
 ```julia
-FrankWolfe.frank_wolfe(f, grad!, lmo, x0, max_iteration=1000, line_search=FrankWolfe.Agnostic(), verbose=true)
+FrankWolfe.frank_wolfe(f, grad!, lmo, x0, max_iteration=1000, verbose=true)
 ```
 
 where `f(x)` is the objective function, `grad!(storage, x)` is the inplace gradient.
