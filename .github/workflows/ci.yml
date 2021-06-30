@@ -78,4 +78,5 @@ jobs:
         with:
           version: '1'
       - shell: bash
+        run: julia --project -e 'import Pkg; Pkg.instantiate(); Pkg.activate("examples"); Pkg.instantiate()'
         run: cd examples; julia run_all_examples.jl
