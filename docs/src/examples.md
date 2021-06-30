@@ -5,14 +5,15 @@
 In this example, we project a random point onto a ``l_1``-norm ball with the basic Frank-Wolfe algorithm using
 either the specialized LMO defined in the package or a generic LP formulation using MathOptInterface.jl and
 GLPK as underlying LP solver.
-To get accurate timings it is important to run twice so that the compile time of Julia for the first run is not tainting the results.
-
+It can be found as example 4.4 [here](https://arxiv.org/pdf/2104.06675.pdf).
 
 ```@example 1
 using FrankWolfe
 
 using LinearAlgebra
 using LaTeXStrings
+
+using Plots
 
 using JuMP
 const MOI = JuMP.MOI
@@ -51,8 +52,9 @@ x_lmo, v, primal, dual_gap, trajectory_lmo = FrankWolfe.frank_wolfe(
     verbose=true,
     trajectory=true,
 );
-
-# create a MathOptInterface Optimizer and build the same linear constraints
+```
+Create a MathOptInterface Optimizer and build the same linear constraints:
+```@example 1
 o = GLPK.Optimizer()
 x = MOI.add_variables(o, n)
 
@@ -82,8 +84,9 @@ lmo_moi = FrankWolfe.MathOptLMO(o)
     verbose=true,
     trajectory=true,
 );
-
-# formulate the LP using JuMP
+```
+Formulate the LP using JuMP:
+```@example 1
 m = JuMP.Model(GLPK.Optimizer)
 @variable(m, y[1:n] ≥ 0)
 # ∑ x_i == 1
@@ -152,7 +155,7 @@ FrankWolfe.plot_results(
     [L"\textrm{Primal Gap}", "", L"\textrm{Dual Gap}", ""],
     xscalelog=[:log, :identity, :log, :identity],
     yscalelog=[:log, :log, :log, :log],
-    legend_position=[:bottomleft, nothing, nothing, nothing],
-    filename="moi_compare.pdf",
+    legend_position=[:bottomleft, nothing, nothing, nothing]
 )
+plot!(size=(3000, 2000),legendfontsize=30)
 ```
