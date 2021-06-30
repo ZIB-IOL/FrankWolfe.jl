@@ -70,7 +70,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
   examples:
-    Name: Examples
+    name: Examples
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
