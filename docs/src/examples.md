@@ -71,7 +71,7 @@ MOI.add_constraint(
 
 lmo_moi = FrankWolfe.MathOptLMO(o)
 
-@time x, v, primal, dual_gap, trajectory_moi = FrankWolfe.frank_wolfe(
+x, v, primal, dual_gap, trajectory_moi = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo_moi,
@@ -94,7 +94,7 @@ m = JuMP.Model(GLPK.Optimizer)
 
 lmo_jump = FrankWolfe.MathOptLMO(m.moi_backend)
 
-@time x, v, primal, dual_gap, trajectory_jump = FrankWolfe.frank_wolfe(
+x, v, primal, dual_gap, trajectory_jump = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo_jump,
@@ -122,7 +122,7 @@ x_lmo, v, primal, dual_gap, trajectory_lmo_blas = FrankWolfe.frank_wolfe(
     trajectory=true,
 );
 
-@time x, v, primal, dual_gap, trajectory_jump_blas = FrankWolfe.frank_wolfe(
+x, v, primal, dual_gap, trajectory_jump_blas = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo_jump,
