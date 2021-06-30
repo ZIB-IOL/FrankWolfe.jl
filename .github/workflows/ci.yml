@@ -17,6 +17,9 @@ jobs:
             os: ubuntu-latest
             arch: x64
           - version: '1'
+            os: ubuntu-latest
+            arch: x64
+          - version: '1.5'
             os: windows-latest
             arch: x64
           - version: '1'
@@ -66,3 +69,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
+  examples:
+    Name: Examples
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: julia-actions/setup-julia@v1
+        with:
+          version: '1'
+      - shell: bash
+        run: cd examples; julia run_all_examples.jl
