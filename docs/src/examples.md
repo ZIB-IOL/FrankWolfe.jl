@@ -58,11 +58,10 @@ Create a MathOptInterface Optimizer and build the same linear constraints:
 o = GLPK.Optimizer()
 x = MOI.add_variables(o, n)
 
-# x_i ≥ 0
 for xi in x
     MOI.add_constraint(o, xi, MOI.GreaterThan(0.0))
 end
-# ∑ x_i == 1
+
 MOI.add_constraint(
     o,
     MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, x), 0.0),
@@ -89,7 +88,7 @@ Alternatively, we can use one of the modelling interfaces based on MOI to formul
 ```@example 1
 m = JuMP.Model(GLPK.Optimizer)
 @variable(m, y[1:n] ≥ 0)
-# ∑ x_i == 1
+
 @constraint(m, sum(y) == lmo_radius)
 
 lmo_jump = FrankWolfe.MathOptLMO(m.moi_backend)
@@ -136,15 +135,15 @@ x, v, primal, dual_gap, trajectory_jump_blas = FrankWolfe.frank_wolfe(
     trajectory=true,
 );
 
-# Defined the x-axis for the series, when plotting in terms of iterations.
+
 iteration_list = [[x[1] + 1 for x in trajectory_lmo], [x[1] + 1 for x in trajectory_moi]]
-# Defined the x-axis for the series, when plotting in terms of time.
+
 time_list = [[x[5] for x in trajectory_lmo], [x[5] for x in trajectory_moi]]
-# Defined the y-axis for the series, when plotting the primal gap.
+
 primal_gap_list = [[x[2] for x in trajectory_lmo], [x[2] for x in trajectory_moi]]
-# Defined the y-axis for the series, when plotting the dual gap.
+
 dual_gap_list = [[x[4] for x in trajectory_lmo], [x[4] for x in trajectory_moi]]
-# Defined the labels for the series using latex rendering.
+
 label = [L"\textrm{Closed-form LMO}", L"\textrm{MOI LMO}"]
 
 FrankWolfe.plot_results(
