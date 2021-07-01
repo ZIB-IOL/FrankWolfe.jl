@@ -3,8 +3,8 @@
 
 
 In this example, we project a random point onto a probability simplex with the Frank-Wolfe algorithm using
-either the specialized LMO defined in the package or a generic LP formulation using MathOptInterface.jl (MOI) and
-GLPK as underlying LP solver.
+either the specialized LMO defined in the package or a generic LP formulation using `MathOptInterface.jl` (MOI) and
+`GLPK` as underlying LP solver.
 It can be found as Example 4.4 [in the paper](https://arxiv.org/abs/2104.06675).
 
 ```@example 1
