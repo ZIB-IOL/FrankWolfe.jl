@@ -137,11 +137,8 @@ x, v, primal, dual_gap, trajectory_jump_blas = FrankWolfe.frank_wolfe(
 
 
 iteration_list = [[x[1] + 1 for x in trajectory_lmo], [x[1] + 1 for x in trajectory_moi]]
-
 time_list = [[x[5] for x in trajectory_lmo], [x[5] for x in trajectory_moi]]
-
 primal_gap_list = [[x[2] for x in trajectory_lmo], [x[2] for x in trajectory_moi]]
-
 dual_gap_list = [[x[4] for x in trajectory_lmo], [x[4] for x in trajectory_moi]]
 
 label = [L"\textrm{Closed-form LMO}", L"\textrm{MOI LMO}"]
