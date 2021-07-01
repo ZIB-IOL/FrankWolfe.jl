@@ -84,7 +84,7 @@ x, v, primal, dual_gap, trajectory_moi = FrankWolfe.frank_wolfe(
     trajectory=true,
 );
 ```
-Alternatively, we can use one of the modelling interfaces based on MOI to formulate the LP. The following example builds the same set of constraints using JuMP:
+Alternatively, we can use one of the modelling interfaces based on `MOI` to formulate the LP. The following example builds the same set of constraints using `JuMP`:
 ```@example 1
 m = JuMP.Model(GLPK.Optimizer)
 @variable(m, y[1:n] ≥ 0)
