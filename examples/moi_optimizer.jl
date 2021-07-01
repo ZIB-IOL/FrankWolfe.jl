@@ -29,7 +29,7 @@ function grad!(storage, x)
 end
 
 lmo_radius = 2.5
-lmo = FrankWolfe.LpNormLMO{Float64,1}(lmo_radius)
+lmo = FrankWolfe.FrankWolfe.ProbabilitySimplexOracle(lmo_radius)
 
 x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
 gradient = collect(x00)
@@ -46,7 +46,7 @@ x_lmo, v, primal, dual_gap, trajectory_lmo = FrankWolfe.frank_wolfe(
     emphasis=FrankWolfe.memory,
     verbose=true,
     trajectory=true,
-);
+)
 
 # create a MathOptInterface Optimizer and build the same linear constraints
 o = GLPK.Optimizer()
@@ -65,7 +65,7 @@ MOI.add_constraint(
 
 lmo_moi = FrankWolfe.MathOptLMO(o)
 
-@time x, v, primal, dual_gap, trajectory_moi = FrankWolfe.frank_wolfe(
+x, v, primal, dual_gap, trajectory_moi = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo_moi,
@@ -77,7 +77,7 @@ lmo_moi = FrankWolfe.MathOptLMO(o)
     emphasis=FrankWolfe.memory,
     verbose=true,
     trajectory=true,
-);
+)
 
 # formulate the LP using JuMP
 m = JuMP.Model(GLPK.Optimizer)
@@ -87,7 +87,7 @@ m = JuMP.Model(GLPK.Optimizer)
 
 lmo_jump = FrankWolfe.MathOptLMO(m.moi_backend)
 
-@time x, v, primal, dual_gap, trajectory_jump = FrankWolfe.frank_wolfe(
+x, v, primal, dual_gap, trajectory_jump = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo_jump,
@@ -99,7 +99,7 @@ lmo_jump = FrankWolfe.MathOptLMO(m.moi_backend)
     emphasis=FrankWolfe.memory,
     verbose=true,
     trajectory=true,
-);
+)
 
 x_lmo, v, primal, dual_gap, trajectory_lmo_blas = FrankWolfe.frank_wolfe(
     f,
@@ -113,9 +113,9 @@ x_lmo, v, primal, dual_gap, trajectory_lmo_blas = FrankWolfe.frank_wolfe(
     emphasis=FrankWolfe.blas,
     verbose=true,
     trajectory=true,
-);
+)
 
-@time x, v, primal, dual_gap, trajectory_jump_blas = FrankWolfe.frank_wolfe(
+x, v, primal, dual_gap, trajectory_jump_blas = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo_jump,
@@ -127,7 +127,7 @@ x_lmo, v, primal, dual_gap, trajectory_lmo_blas = FrankWolfe.frank_wolfe(
     emphasis=FrankWolfe.blas,
     verbose=true,
     trajectory=true,
-);
+)
 
 # Defined the x-axis for the series, when plotting in terms of iterations.
 iteration_list = [[x[1] + 1 for x in trajectory_lmo], [x[1] + 1 for x in trajectory_moi]]
