@@ -399,8 +399,8 @@ function lazified_conditional_gradient(
                 Float64(primal),
                 Float64(primal - dual_gap),
                 Float64(dual_gap),
-                (time_ns() - time_start) / 1.0e9,
-                t / ((time_ns() - time_start) / 1.0e9),
+                tot_time,
+                t / tot_time,
                 length(lmo),
             )
             print_callback(rep, format_string)
@@ -419,14 +419,15 @@ function lazified_conditional_gradient(
 
     if verbose
         tt = last
+        tot_time = (time_ns() - time_start) / 1.0e9
         rep = (
             st[Symbol(tt)],
             string(t - 1),
             Float64(primal),
             Float64(primal - dual_gap),
             Float64(dual_gap),
-            (time_ns() - time_start) / 1.0e9,
-            t / ((time_ns() - time_start) / 1.0e9),
+            tot_time,
+            t / tot_time,
             length(lmo),
         )
         print_callback(rep, format_string)
