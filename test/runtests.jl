@@ -507,6 +507,39 @@ end
 
         @test eltype(x0) == T
         @test primal - 1 // n <= bound
+
+        @time x, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
+            f,
+            grad!,
+            lmo,
+            x0,
+            max_iteration=k,
+            line_search=FrankWolfe.Adaptive(),
+            print_iter=k / 10,
+            emphasis=FrankWolfe.memory,
+            verbose=true,
+        )
+
+        @test eltype(x0) == T
+        @test primal - 1 // n <= bound
+
+        @time x, v, primal, dual_gap, trajectory = FrankWolfe.blended_conditional_gradient(
+            f,
+            grad!,
+            lmo,
+            x0,
+            max_iteration=k,
+            line_search=FrankWolfe.Adaptive(),
+            print_iter=k / 10,
+            emphasis=FrankWolfe.memory,
+            verbose=true,
+        )
+
+        @test eltype(x0) == T
+        @test primal - 1 // n <= bound
+
+
+
     end
 end
 
