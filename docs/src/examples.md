@@ -1,6 +1,6 @@
 # Examples
 
-##Comparison with MathOptInterface on a Probability Simplex
+## Comparison with MathOptInterface on a Probability Simplex
 
 In this example, we project a random point onto a probability simplex with the Frank-Wolfe algorithm using
 either the specialized LMO defined in the package or a generic LP formulation using `MathOptInterface.jl` (MOI) and
