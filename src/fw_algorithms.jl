@@ -248,6 +248,7 @@ function lazified_conditional_gradient(
     print_iter=1000,
     trajectory=false,
     verbose=false,
+    verbose_it=false,
     linesearch_tol=1e-7,
     step_lim=20,
     emphasis::Emphasis=memory,
@@ -343,7 +344,7 @@ function lazified_conditional_gradient(
         threshold = fast_dot(x, gradient) - phi / K
 
         # go easy on the memory - only compute if really needed
-        if ((mod(t, print_iter) == 0 && verbose) || callback !== nothing)
+        if ((mod(t, print_iter) == 0 && (verbose || verbose_it) ) || callback !== nothing)
             primal = f(x)
         end
 
@@ -389,7 +390,7 @@ function lazified_conditional_gradient(
 
         @emphasis(emphasis, x = x - gamma * d)
 
-        if verbose && (mod(t, print_iter) == 0 || tt == dualstep)
+        if (verbose  || verbose_it) && (mod(t, print_iter) == 0 || tt == dualstep)
             if t == 0
                 tt = initial
             end
@@ -399,8 +400,8 @@ function lazified_conditional_gradient(
                 Float64(primal),
                 Float64(primal - dual_gap),
                 Float64(dual_gap),
-                (time_ns() - time_start) / 1.0e9,
-                t / ((time_ns() - time_start) / 1.0e9),
+                tot_time,
+                t / tot_time,
                 length(lmo),
             )
             print_callback(rep, format_string)
@@ -417,20 +418,23 @@ function lazified_conditional_gradient(
     primal = f(x)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
 
-    if verbose
+    if verbose  || verbose_it
         tt = last
+        tot_time = (time_ns() - time_start) / 1.0e9
         rep = (
             st[Symbol(tt)],
             string(t - 1),
             Float64(primal),
             Float64(primal - dual_gap),
             Float64(dual_gap),
-            (time_ns() - time_start) / 1.0e9,
-            t / ((time_ns() - time_start) / 1.0e9),
+            tot_time,
+            t / tot_time,
             length(lmo),
         )
         print_callback(rep, format_string)
-        print_callback(nothing, format_string, print_footer=true)
+        if verbose
+            print_callback(nothing, format_string, print_footer=true)
+        end
         flush(stdout)
     end
     return x, v, primal, dual_gap, traj_data

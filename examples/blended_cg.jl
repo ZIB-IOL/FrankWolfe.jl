@@ -2,7 +2,6 @@ include("activate.jl")
 
 using LinearAlgebra
 using Random
-using DoubleFloats
 using SparseArrays
 
 n = 1000

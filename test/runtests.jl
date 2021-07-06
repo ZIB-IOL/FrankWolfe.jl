@@ -170,6 +170,7 @@ include("utils.jl")
         )[3] - 0.2,
     ) < 1.0e-3
 end
+
 @testset "Gradient with momentum correctly updated" begin
     # fixing https://github.com/ZIB-IOL/FrankWolfe.jl/issues/47
     include("momentum_memory.jl")
@@ -507,6 +508,39 @@ end
 
         @test eltype(x0) == T
         @test primal - 1 // n <= bound
+
+        @time x, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
+            f,
+            grad!,
+            lmo,
+            x0,
+            max_iteration=k,
+            line_search=FrankWolfe.Adaptive(),
+            print_iter=k / 10,
+            emphasis=FrankWolfe.memory,
+            verbose=true,
+        )
+
+        @test eltype(x0) == T
+        @test primal - 1 // n <= bound
+
+        @time x, v, primal, dual_gap, trajectory = FrankWolfe.blended_conditional_gradient(
+            f,
+            grad!,
+            lmo,
+            x0,
+            max_iteration=k,
+            line_search=FrankWolfe.Adaptive(),
+            print_iter=k / 10,
+            emphasis=FrankWolfe.memory,
+            verbose=true,
+        )
+
+        @test eltype(x0) == T
+        @test primal - 1 // n <= bound
+
+
+
     end
 end
 
@@ -646,6 +680,10 @@ end
 
 end
 
+
+include("oddities.jl")
+
+
 # in separate module for name space issues
 module BCGDirectionError
 using Test
@@ -666,3 +704,4 @@ if get(ENV, "FW_TEST", nothing) == "full"
         # TODO test smaller examples to be sure they are up to date
     end
 end
+
