@@ -431,9 +431,7 @@ function lazified_conditional_gradient(
             length(lmo),
         )
         print_callback(rep, format_string)
-        if verbose
-            print_callback(nothing, format_string, print_footer=true)
-        end
+        print_callback(nothing, format_string, print_footer=true)
         flush(stdout)
     end
     return x, v, primal, dual_gap, traj_data
