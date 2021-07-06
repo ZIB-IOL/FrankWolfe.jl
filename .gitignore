@@ -20,3 +20,4 @@ examples/precompile_fw_clean_uniq.jl
 examples/precompile_fw_clean.jl
 examples/precompile_fw.jl
 cc/libloporacle.so
+cc/*
