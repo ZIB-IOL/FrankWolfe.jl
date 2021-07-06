@@ -248,7 +248,6 @@ function lazified_conditional_gradient(
     print_iter=1000,
     trajectory=false,
     verbose=false,
-    verbose_it=false,
     linesearch_tol=1e-7,
     step_lim=20,
     emphasis::Emphasis=memory,
@@ -344,7 +343,7 @@ function lazified_conditional_gradient(
         threshold = fast_dot(x, gradient) - phi / K
 
         # go easy on the memory - only compute if really needed
-        if ((mod(t, print_iter) == 0 && (verbose || verbose_it) ) || callback !== nothing)
+        if ((mod(t, print_iter) == 0 && verbose ) || callback !== nothing)
             primal = f(x)
         end
 
@@ -390,7 +389,7 @@ function lazified_conditional_gradient(
 
         @emphasis(emphasis, x = x - gamma * d)
 
-        if (verbose  || verbose_it) && (mod(t, print_iter) == 0 || tt == dualstep)
+        if verbose && (mod(t, print_iter) == 0 || tt == dualstep)
             if t == 0
                 tt = initial
             end
@@ -418,7 +417,7 @@ function lazified_conditional_gradient(
     primal = f(x)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
 
-    if verbose  || verbose_it
+    if verbose 
         tt = last
         tot_time = (time_ns() - time_start) / 1.0e9
         rep = (
@@ -432,9 +431,7 @@ function lazified_conditional_gradient(
             length(lmo),
         )
         print_callback(rep, format_string)
-        if verbose
-            print_callback(nothing, format_string, print_footer=true)
-        end
+        print_callback(nothing, format_string, print_footer=true)
         flush(stdout)
     end
     return x, v, primal, dual_gap, traj_data
