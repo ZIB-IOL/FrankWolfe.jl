@@ -175,7 +175,6 @@ We run the [`away_frank_wolfe`](@ref) and [`blended_conditional_gradient`](@ref)
 smoothness estimate. We will evaluate the output solution on test points drawn in a similar manner as the training points.
 
 ```@example 2
-
 using FrankWolfe
 
 using LinearAlgebra
