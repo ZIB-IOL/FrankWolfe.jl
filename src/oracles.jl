@@ -158,7 +158,7 @@ function compute_extreme_point(
                 end
             end
         end
-        if best_idx > 0 # && fast_dot(best_v, direction) ≤ threshold 
+        if best_idx > 0 # && fast_dot(best_v, direction) ≤ threshold
             # println("cache sol")
             return best_v
         end
@@ -241,10 +241,10 @@ function compute_extreme_point(
     if best_idx < 0
         v = compute_extreme_point(lmo.inner, direction)
         if store_cache
-            # note: we do not check for duplicates. hence you might end up with more vertices, 
+            # note: we do not check for duplicates. hence you might end up with more vertices,
             # in fact up to number of dual steps many, that might be already in the cache
-            # in order to reach this point, if v was already in the cache is must not meet the threshold (otherwise we would have returned it) 
-            # and it is the best possible, hence we will perform a dual step on the outside. 
+            # in order to reach this point, if v was already in the cache is must not meet the threshold (otherwise we would have returned it)
+            # and it is the best possible, hence we will perform a dual step on the outside.
             #
             # note: another possibility could be to test against that in the if statement but then you might end you recalculating the same vertex a few times.
             # as such this might be a better tradeoff, i.e., to not check the set for duplicates and potentially accept #dualSteps many duplicates.
@@ -302,4 +302,62 @@ function compute_extreme_point(
             compute_extreme_point(lmo.lmos[idx], direction[direction_indices[idx]]; kwargs...)
     end
     return storage
+end
+
+"""
+"""
+struct ChasingGradientLMO{LMO<:LinearMinimizationOracle,T} <: LinearMinimizationOracle
+    inner::LMO
+    max_rounds_number::Int
+    improv_tol::T
+end
+
+"""
+"""
+function compute_extreme_point(lmo::ChasingGradientLMO, direction; x, kwargs...)
+    d = 0 * direction
+    Λ = 0
+    #@debug x
+    #@debug direction
+    if norm(direction) == 0
+        return compute_extreme_point(lmo.inner, direction, x=x, kwargs...)
+    end
+    flag = true
+    function align(d1, d2)
+        if norm(d1) == 0 || norm(d2) == 0
+            return -1
+        else
+            return fast_dot(d1, d2) / (norm(d1) * norm(d2))
+        end
+    end
+    residual = -direction - d
+    for round in 1:lmo.max_rounds_number
+        @debug round
+        #@debug residual
+        v = compute_extreme_point(lmo.inner, -residual; x=x, kwargs...)
+        u = v - x
+        #@debug v
+        #@debug v - x
+        d_norm = norm(d)
+        if d_norm > 0 && fast_dot(-residual, -d / d_norm) < fast_dot(-residual, u)
+            u = -d / d_norm
+            flag = false
+        end
+        λ = fast_dot(residual, u) / (norm(u)^2)
+        d_updated = d + λ * u
+        if align(-direction, d_updated) - align(-direction, d) >= lmo.improv_tol
+            d = d_updated
+            residual = -direction - d
+            if flag
+                Λ += λ
+            else
+                Λ = Λ * (1 - λ / d_norm)
+            end
+            flag = true
+        else
+            break
+        end
+    end
+    #@debug x + d / Λ
+    return x + d / Λ
 end

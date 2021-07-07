@@ -89,7 +89,7 @@ function away_frank_wolfe(
 
     x = compute_active_set_iterate(active_set)
     grad!(gradient, x)
-    v = compute_extreme_point(lmo, gradient)
+    v = compute_extreme_point(lmo, gradient,x=x)
     phi_value = fast_dot(x, gradient) - fast_dot(v, gradient)
 
     while t <= max_iteration && dual_gap >= max(epsilon, eps())
@@ -216,7 +216,7 @@ function away_frank_wolfe(
     if verbose
         x = compute_active_set_iterate(active_set)
         grad!(gradient, x)
-        v = compute_extreme_point(lmo, gradient)
+        v = compute_extreme_point(lmo, gradient,x=x)
         primal = f(x)
         dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         tt = last
@@ -238,7 +238,7 @@ function away_frank_wolfe(
     active_set_cleanup!(active_set)
     x = compute_active_set_iterate(active_set)
     grad!(gradient, x)
-    v = compute_extreme_point(lmo, gradient)
+    v = compute_extreme_point(lmo, gradient, x=x)
     primal = f(x)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
     if verbose
@@ -289,7 +289,7 @@ function lazy_afw_step(x, gradient, lmo, active_set, phi; K=2.0)
             index = a_loc
             #Resort to calling the LMO
         else
-            v = compute_extreme_point(lmo, gradient)
+            v = compute_extreme_point(lmo, gradient, x=x)
             # Real dual gap promises enough progress.
             grad_dot_fw_vertex = fast_dot(v, gradient)
             dual_gap = grad_dot_x - grad_dot_fw_vertex
@@ -321,7 +321,7 @@ function afw_step(x, gradient, lmo, active_set)
     local_v_lambda, local_v, local_v_loc, a_lambda, a, a_loc =
         active_set_argminmax(active_set, gradient)
     away_gap = fast_dot(a, gradient) - fast_dot(x, gradient)
-    v = compute_extreme_point(lmo, gradient)
+    v = compute_extreme_point(lmo, gradient, x=x)
     grad_dot_x = fast_dot(x, gradient)
     away_gap = fast_dot(a, gradient) - grad_dot_x
     dual_gap = grad_dot_x - fast_dot(v, gradient)
@@ -346,7 +346,7 @@ function afw_step(x, gradient, lmo, active_set)
 end
 
 function fw_step(x, gradient, lmo)
-    vertex = compute_extreme_point(lmo, gradient)
+    vertex = compute_extreme_point(lmo, gradient, x=x)
     return (
         x - vertex,
         vertex,

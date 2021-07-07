@@ -532,3 +532,49 @@ end
     vvec = FrankWolfe.compute_extreme_point(lmo, [dinf; d1]; direction_indices=(1:10, 11:15))
     @test vvec ≈ [vinf; v1]
 end
+
+@testset "ChasingGradient LMO" begin
+    max_rounds = 100
+    improv_tol = 10e-3
+    f(x) = norm(x)^2
+    function grad!(storage, x)
+        return storage .= 2x
+    end
+    lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
+    lmo = FrankWolfe.ChasingGradientLMO(lmo_prob, max_rounds, improv_tol)
+    x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(5))
+    @show x0
+    res = FrankWolfe.frank_wolfe(
+        f,
+        grad!,
+        lmo,
+        x0,
+        max_iteration=10,
+        line_search=FrankWolfe.Agnostic(),
+        verbose=true,
+    )
+    @show res
+end
+
+@testset "ChasingGradient LMO 2" begin
+    max_rounds = 100
+    improv_tol = 10e-3
+    f(x) = norm(x)^2
+    function grad!(storage, x)
+        return storage .= 2x
+    end
+    lmo_norm = FrankWolfe.LpNormLMO{1}(1)
+    lmo = FrankWolfe.ChasingGradientLMO(lmo_norm, max_rounds, improv_tol)
+    x0 = ones(5)
+    @show x0
+    res = FrankWolfe.frank_wolfe(
+        f,
+        grad!,
+        lmo,
+        x0,
+        max_iteration=10,
+        line_search=FrankWolfe.Agnostic(),
+        verbose=true,
+    )
+    @show res
+end
