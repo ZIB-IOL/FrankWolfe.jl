@@ -365,7 +365,6 @@ function compute_extreme_point(lmo::ChasingGradientLMO, direction; x, kwargs...)
     end
     if Λ <= eps(eltype(Λ))
         return x
-    else
-        return x + d / Λ
     end
+    return x + d / Λ
 end
