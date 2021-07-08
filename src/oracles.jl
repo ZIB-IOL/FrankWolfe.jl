@@ -314,7 +314,7 @@ See the [paper](https://arxiv.org/abs/2003.06369)
 
 All keyword arguments are passed to the inner LMO.
 """
-struct ChasingGradientLMO{LMO<:LinearMinimizationOracle,T} <: LinearMinimizationOracle
+struct ChasingGradientLMO{LMO<:LinearMinimizationOracle,T,G} <: LinearMinimizationOracle
     inner::LMO
     max_rounds_number::Int
     improv_tol::T
@@ -337,6 +337,7 @@ function compute_extreme_point(lmo::ChasingGradientLMO, direction; x, kwargs...)
     residual = -direction - d
     for round in 1:lmo.max_rounds_number
         if norm(residual) <= eps(eltype(residual))
+            #@show round
             break
         end
         v = compute_extreme_point(lmo.inner, -residual; kwargs...)
@@ -358,10 +359,10 @@ function compute_extreme_point(lmo::ChasingGradientLMO, direction; x, kwargs...)
             end
             flag = true
         else
+            #@show round
             break
         end
     end
-
     if Λ <= eps(eltype(Λ))
         return x
     else

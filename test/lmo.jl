@@ -535,36 +535,41 @@ end
 
 
 @testset "Chasing Gradient LMO" begin
-    max_rounds = 100
+    max_rounds = 1
     improv_tol = 10e-3
-    xp = ones(5)
+    n = Int(1e5)
+    xpi = rand(n)
+    total = sum(xpi)
+    xp = xpi ./ total
     f(x) = norm(x - xp)^2
     function grad!(storage, x)
         @. storage = 2 * (x - xp)
         return nothing
     end
-    lmo_norm = FrankWolfe.LpNormLMO{Float64,1}(1)
-    lmo = FrankWolfe.ChasingGradientLMO(lmo_norm, max_rounds, improv_tol)
-    x0 = zeros(5)
+    lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1.0)
+    x00 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n))
+    d=zeros(n)
+    lmo = FrankWolfe.ChasingGradientLMO(lmo_prob, max_rounds, improv_tol,d)
+    x0 = deepcopy(x00)
     res_boosting = FrankWolfe.frank_wolfe(
         f,
         grad!,
         lmo,
         x0,
-        max_iteration=1,
-        line_search=FrankWolfe.Agnostic(),
+        max_iteration=500,
+        print_iter=50,
+        line_search=FrankWolfe.Adaptive(),
         verbose=true,
     )
-    # x0 = zeros(5)
-    # res = FrankWolfe.frank_wolfe(
-    #     f,
-    #     grad!,
-    #     lmo_norm,
-    #     x0,
-    #     max_iteration = 1000,
-    #     line_search = FrankWolfe.Agnostic(),
-    #     verbose = true,
-    # )
-    @test abs(res_boosting[3] - 3.2) < 1.0e-5
-
+    x0 = deepcopy(x00)
+    res = FrankWolfe.frank_wolfe(
+        f,
+        grad!,
+        lmo_prob,
+        x0,
+        max_iteration=500,
+        print_iter=50,
+        line_search=FrankWolfe.Adaptive(),
+        verbose=true,
+    )
 end
