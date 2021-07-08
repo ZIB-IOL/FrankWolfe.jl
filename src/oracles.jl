@@ -314,7 +314,7 @@ See the [paper](https://arxiv.org/abs/2003.06369)
 
 All keyword arguments are passed to the inner LMO.
 """
-struct ChasingGradientLMO{LMO<:LinearMinimizationOracle,T,G} <: LinearMinimizationOracle
+struct ChasingGradientLMO{LMO<:LinearMinimizationOracle,T} <: LinearMinimizationOracle
     inner::LMO
     max_rounds_number::Int
     improv_tol::T

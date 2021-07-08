@@ -548,8 +548,7 @@ end
     end
     lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1.0)
     x00 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n))
-    d=zeros(n)
-    lmo = FrankWolfe.ChasingGradientLMO(lmo_prob, max_rounds, improv_tol,d)
+    lmo = FrankWolfe.ChasingGradientLMO(lmo_prob, max_rounds, improv_tol)
     x0 = deepcopy(x00)
     res_boosting = FrankWolfe.frank_wolfe(
         f,
