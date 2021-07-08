@@ -175,7 +175,6 @@ We run the [`away_frank_wolfe`](@ref) and [`blended_conditional_gradient`](@ref)
 smoothness estimate. We will evaluate the output solution on test points drawn in a similar manner as the training points.
 
 ```@example 2
-
 using FrankWolfe
 
 using LinearAlgebra
@@ -275,7 +274,6 @@ end
 
 gradient = similar(all_coeffs)
 
-
 max_iter = 100_000
 random_initialization_vector = rand(length(all_coeffs))
 
@@ -295,7 +293,6 @@ for i in 1:num_pairs
         L_estimate = new_L
     end
 end
-
 
 function projnorm1(x, τ)
     n = length(x)
@@ -328,10 +325,9 @@ function projnorm1(x, τ)
 end
 ```
 
-Now we perform gradient descent:
+We can now perform projected gradient descent:
 
 ```@example 2
-
 xgd = FrankWolfe.compute_extreme_point(lmo, random_initialization_vector)
 training_gd = Float64[]
 test_gd = Float64[]
@@ -348,10 +344,8 @@ for iter in 1:max_iter
     push!(gd_times, (time_ns() - time_start) * 1e-9)
 end
 
-
 x00 = FrankWolfe.compute_extreme_point(lmo, random_initialization_vector)
 x0 = deepcopy(x00)
-
 
 trajectory_lafw = []
 callback = build_callback(trajectory_lafw)
@@ -369,8 +363,7 @@ x_lafw, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
     gradient=gradient,
     callback=callback,
     L=L_estimate,
-);
-
+)
 
 trajectory_bcg = []
 callback = build_callback(trajectory_bcg)
@@ -391,8 +384,6 @@ x_bcg, v, primal, dual_gap, _ = FrankWolfe.blended_conditional_gradient(
     L=L_estimate,
 )
 
-
-
 x0 = deepcopy(x00)
 
 trajectory_lafw_ref = []
@@ -411,7 +402,7 @@ _, _, primal_ref, _, _ = FrankWolfe.away_frank_wolfe(
     gradient=gradient,
     callback=callback,
     L=L_estimate,
-);
+)
 
 iteration_list = [
     [x[1] + 1 for x in trajectory_lafw],
