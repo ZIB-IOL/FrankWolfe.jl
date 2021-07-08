@@ -257,15 +257,20 @@ function lazified_conditional_gradient(
     callback=nothing,
     timeout=Inf,
     print_callback=FrankWolfe.print_callback,
+    warmstart_lmo=nothing,
 )
 
     # format string for output of the algorithm
     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
 
-    if isfinite(cache_size)
-        lmo = MultiCacheLMO{cache_size,typeof(lmo_base),VType}(lmo_base)
+    if warmstart_lmo === nothing
+        if isfinite(cache_size)
+            lmo = MultiCacheLMO{cache_size,typeof(lmo_base),VType}(lmo_base)
+        else
+            lmo = VectorCacheLMO{typeof(lmo_base),VType}(lmo_base)
+        end
     else
-        lmo = VectorCacheLMO{typeof(lmo_base),VType}(lmo_base)
+        lmo = warmstart_lmo
     end
 
     t = 0
@@ -437,7 +442,7 @@ function lazified_conditional_gradient(
         end
         flush(stdout)
     end
-    return x, v, primal, dual_gap, traj_data
+    return x, v, primal, dual_gap, traj_data, lmo
 end
 
 """
