@@ -158,7 +158,7 @@ plot!(size=(3000, 2000),legendfontsize=30)
 
 ## Polynomial Regression
 
-The following example features the LMO for the ``\ell_1`` norm ball. Given input/output pairs ``\{x_i,y_i\}_{i=1}^N`` and sparse coefficients ``c_j``, where
+The following example features the LMO for polynomial regression on the ``\ell_1`` norm ball. Given input/output pairs ``\{x_i,y_i\}_{i=1}^N`` and sparse coefficients ``c_j``, where
 ```math
 y_i=\sum_{j=1}^m c_j f_j(x_i)
 ```
