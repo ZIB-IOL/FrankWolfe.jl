@@ -533,48 +533,38 @@ end
     @test vvec ≈ [vinf; v1]
 end
 
-@testset "ChasingGradient LMO" begin
-    max_rounds = 100
-    improv_tol = 10e-3
-    f(x) = norm(x)^2
-    function grad!(storage, x)
-        return storage .= 2x
-    end
-    lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
-    lmo = FrankWolfe.ChasingGradientLMO(lmo_prob, max_rounds, improv_tol)
-    x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(5))
-    @show x0
-    res = FrankWolfe.frank_wolfe(
-        f,
-        grad!,
-        lmo,
-        x0,
-        max_iteration=10,
-        line_search=FrankWolfe.Agnostic(),
-        verbose=true,
-    )
-    @show res
-end
 
-@testset "ChasingGradient LMO 2" begin
+@testset "Chasing Gradient LMO" begin
     max_rounds = 100
     improv_tol = 10e-3
-    f(x) = norm(x)^2
+    xp = ones(5)
+    f(x) = norm(x - xp)^2
     function grad!(storage, x)
-        return storage .= 2x
+        @. storage = 2 * (x - xp)
+        return nothing
     end
-    lmo_norm = FrankWolfe.LpNormLMO{1}(1)
+    lmo_norm = FrankWolfe.LpNormLMO{Float64,1}(1)
     lmo = FrankWolfe.ChasingGradientLMO(lmo_norm, max_rounds, improv_tol)
-    x0 = ones(5)
-    @show x0
-    res = FrankWolfe.frank_wolfe(
+    x0 = zeros(5)
+    res_boosting = FrankWolfe.frank_wolfe(
         f,
         grad!,
         lmo,
         x0,
-        max_iteration=10,
+        max_iteration=1,
         line_search=FrankWolfe.Agnostic(),
         verbose=true,
     )
-    @show res
+    # x0 = zeros(5)
+    # res = FrankWolfe.frank_wolfe(
+    #     f,
+    #     grad!,
+    #     lmo_norm,
+    #     x0,
+    #     max_iteration = 1000,
+    #     line_search = FrankWolfe.Agnostic(),
+    #     verbose = true,
+    # )
+    @test abs(res_boosting[3] - 3.2) < 1.0e-5
+
 end

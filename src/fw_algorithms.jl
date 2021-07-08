@@ -31,6 +31,7 @@ function frank_wolfe(
     callback=nothing,
     timeout=Inf,
     print_callback=FrankWolfe.print_callback,
+    kwargs...,
 )
 
     # format string for output of the algorithm
@@ -132,7 +133,7 @@ function frank_wolfe(
         end
         first_iter = false
 
-        v = compute_extreme_point(lmo, gradient,x=x)
+        v = compute_extreme_point(lmo, gradient, x=x, kwargs...)
         # go easy on the memory - only compute if really needed
         if (
             (mod(t, print_iter) == 0 && verbose) ||
@@ -201,7 +202,7 @@ function frank_wolfe(
     # hence the final computation.
 
     grad!(gradient, x)
-    v = compute_extreme_point(lmo, gradient,x=x)
+    v = compute_extreme_point(lmo, gradient, x=x, kwargs...)
     primal = f(x)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
     if verbose
@@ -256,6 +257,7 @@ function lazified_conditional_gradient(
     callback=nothing,
     timeout=Inf,
     print_callback=FrankWolfe.print_callback,
+    kwargs...,
 )
 
     # format string for output of the algorithm
@@ -347,7 +349,14 @@ function lazified_conditional_gradient(
             primal = f(x)
         end
 
-        v = compute_extreme_point(lmo, gradient, threshold=threshold, greedy=greedy_lazy,x=x)
+        v = compute_extreme_point(
+            lmo,
+            gradient,
+            threshold=threshold,
+            greedy=greedy_lazy,
+            x=x,
+            kwargs...,
+        )
         tt = lazy
         if fast_dot(v, gradient) > threshold
             tt = dualstep
@@ -413,7 +422,7 @@ function lazified_conditional_gradient(
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
     # hence the final computation.
     grad!(gradient, x)
-    v = compute_extreme_point(lmo, gradient,x=x)
+    v = compute_extreme_point(lmo, gradient, x=x, kwargs...)
     primal = f(x)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
 
@@ -465,6 +474,7 @@ function stochastic_frank_wolfe(
     callback=nothing,
     timeout=Inf,
     print_callback=FrankWolfe.print_callback,
+    kwargs...,
 )
 
     # format string for output of the algorithm
@@ -559,7 +569,7 @@ function stochastic_frank_wolfe(
         end
         first_iter = false
 
-        v = compute_extreme_point(lmo, gradient,x=x)
+        v = compute_extreme_point(lmo, gradient, x=x, kwargs...)
 
         # go easy on the memory - only compute if really needed
         if (mod(t, print_iter) == 0 && verbose) ||
@@ -622,7 +632,7 @@ function stochastic_frank_wolfe(
     # last computation done with full evaluation for exact gradient
 
     (primal, gradient) = compute_value_gradient(f, x, full_evaluation=true)
-    v = compute_extreme_point(lmo, gradient,x=x)
+    v = compute_extreme_point(lmo, gradient, x=x, kwargs...)
     # @show (gradient, primal)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
     if verbose

@@ -305,6 +305,14 @@ function compute_extreme_point(
 end
 
 """
+    ChasingGradientLMO{LMO,T}
+
+Oracle wrapping another one of type LMO to boost FW with gradient pursuit.
+Pursuit rounds end once the alignment improvement with the direction of the gradient 
+is lower than `improv_tol` or `max_rounds_number` is reached.
+See the [paper](https://arxiv.org/abs/2003.06369)
+
+All keyword arguments are passed to the inner LMO.
 """
 struct ChasingGradientLMO{LMO<:LinearMinimizationOracle,T} <: LinearMinimizationOracle
     inner::LMO
@@ -312,32 +320,27 @@ struct ChasingGradientLMO{LMO<:LinearMinimizationOracle,T} <: LinearMinimization
     improv_tol::T
 end
 
-"""
-"""
 function compute_extreme_point(lmo::ChasingGradientLMO, direction; x, kwargs...)
     d = 0 * direction
-    Λ = 0
-    #@debug x
-    #@debug direction
-    if norm(direction) == 0
+    Λ = 0.0
+    if norm(direction) <= eps(eltype(direction))
         return compute_extreme_point(lmo.inner, direction, x=x, kwargs...)
     end
     flag = true
     function align(d1, d2)
-        if norm(d1) == 0 || norm(d2) == 0
-            return -1
+        if norm(d1) <= eps(eltype(d1)) || norm(d2) <= eps(eltype(d2))
+            return -1.0
         else
             return fast_dot(d1, d2) / (norm(d1) * norm(d2))
         end
     end
     residual = -direction - d
     for round in 1:lmo.max_rounds_number
-        @debug round
-        #@debug residual
-        v = compute_extreme_point(lmo.inner, -residual; x=x, kwargs...)
+        if norm(residual) <= eps(eltype(residual))
+            break
+        end
+        v = compute_extreme_point(lmo.inner, -residual; kwargs...)
         u = v - x
-        #@debug v
-        #@debug v - x
         d_norm = norm(d)
         if d_norm > 0 && fast_dot(-residual, -d / d_norm) < fast_dot(-residual, u)
             u = -d / d_norm
@@ -358,6 +361,10 @@ function compute_extreme_point(lmo::ChasingGradientLMO, direction; x, kwargs...)
             break
         end
     end
-    #@debug x + d / Λ
-    return x + d / Λ
+
+    if Λ <= eps(eltype(Λ))
+        return x
+    else
+        return x + d / Λ
+    end
 end
