@@ -281,6 +281,7 @@ random_initialization_vector = rand(length(all_coeffs))
 
 lmo = FrankWolfe.LpNormLMO{1}(0.95 * norm(all_coeffs, 1))
 
+# Estimating smoothness parameter
 num_pairs = 10000
 L_estimate = -Inf
 gradient_aux = similar(gradient)
@@ -441,7 +442,7 @@ FrankWolfe.plot_results(
     [L"\textrm{Iteration}", L"\textrm{Time}", L"\textrm{Iteration}", L"\textrm{Time}"],
     [L"\textrm{Primal Gap}", L"\textrm{Primal Gap}", L"\textrm{Test loss}", L"\textrm{Test loss}"],
     xscalelog=[:log, :identity, :log, :identity],
-    legend_position=[:bottomleft, nothing, nothing, nothing]
+    legend_position=[:bottomleft, nothing, nothing, nothing],
 )
 plot!(size=(3000, 2000), legendfontsize=30, annotationfontsize=30)
 ```
