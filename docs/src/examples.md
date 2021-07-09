@@ -439,7 +439,7 @@ FrankWolfe.plot_results(
     [L"\textrm{Iteration}", L"\textrm{Time}", L"\textrm{Iteration}", L"\textrm{Time}"],
     [L"\textrm{Primal Gap}", L"\textrm{Primal Gap}", L"\textrm{Test loss}", L"\textrm{Test loss}"],
     xscalelog=[:log, :identity, :log, :identity],
-    legend_position=[:bottomleft, nothing, nothing, nothing]
+    legend_position=[:bottomleft, nothing, nothing, nothing],
 )
 plot!(size=(3000, 2000), legendfontsize=30)
 ```
