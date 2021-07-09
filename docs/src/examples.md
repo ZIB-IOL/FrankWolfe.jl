@@ -279,6 +279,7 @@ random_initialization_vector = rand(length(all_coeffs))
 
 lmo = FrankWolfe.LpNormLMO{1}(0.95 * norm(all_coeffs, 1))
 
+# Estimating smoothness parameter
 num_pairs = 10000
 L_estimate = -Inf
 gradient_aux = similar(gradient)
