@@ -153,7 +153,7 @@ FrankWolfe.plot_results(
     yscalelog=[:log, :log, :log, :log],
     legend_position=[:bottomleft, nothing, nothing, nothing]
 )
-plot!(size=(3000, 2000),legendfontsize=30)
+plot!(size=(3000, 2000), legendfontsize=30, annotationfontsize=30)
 ```
 
 ## Polynomial Regression
@@ -185,6 +185,8 @@ using DynamicPolynomials
 
 import ReverseDiff
 using FiniteDifferences
+
+using Plots
 
 using LaTeXStrings
 
@@ -441,5 +443,5 @@ FrankWolfe.plot_results(
     xscalelog=[:log, :identity, :log, :identity],
     legend_position=[:bottomleft, nothing, nothing, nothing]
 )
-plot!(size=(3000, 2000),legendfontsize=30)
+plot!(size=(3000, 2000), legendfontsize=30, annotationfontsize=30)
 ```
