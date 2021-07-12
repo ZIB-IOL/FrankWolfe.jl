@@ -345,7 +345,7 @@ function lazified_conditional_gradient(
         threshold = fast_dot(x, gradient) - phi / K
 
         # go easy on the memory - only compute if really needed
-        if ((mod(t, print_iter) == 0 && verbose) || callback !== nothing)
+        if ((mod(t, print_iter) == 0 && verbose ) || callback !== nothing)
             primal = f(x)
         end
 
@@ -426,7 +426,7 @@ function lazified_conditional_gradient(
     primal = f(x)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
 
-    if verbose
+    if verbose 
         tt = last
         tot_time = (time_ns() - time_start) / 1.0e9
         rep = (
