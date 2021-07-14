@@ -58,7 +58,7 @@ end
 
 Base.:+(y::AbstractVector, x::ScaledHotVector) = x + y
 
-function Base.:+(x::FrankWolfe.ScaledHotVector{T1}, y::FrankWolfe.ScaledHotVector{T2}) where {T1,T2}
+function Base.:+(x::ScaledHotVector{T1}, y::ScaledHotVector{T2}) where {T1,T2}
     n = length(x)
     T = promote_type(T1, T2)
     if n != length(y)

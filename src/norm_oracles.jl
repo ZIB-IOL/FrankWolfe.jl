@@ -148,7 +148,7 @@ Warning: this does not work (yet) with all number types, BigFloat and Float16 fa
 function compute_extreme_point(lmo::NuclearNormLMO, direction::AbstractMatrix; tol=1e-8, kwargs...)
     Z = Arpack.svds(direction, nsv=1, tol=tol)[1]
     u = -lmo.radius * view(Z.U, :)
-    return FrankWolfe.RankOneMatrix(u, Z.V[:])
+    return RankOneMatrix(u, Z.V[:])
 end
 
 function convert_mathopt(

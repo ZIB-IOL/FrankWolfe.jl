@@ -31,7 +31,7 @@ function away_frank_wolfe(
     renorm_interval=1000,
     callback=nothing,
     timeout=Inf,
-    print_callback=FrankWolfe.print_callback,
+    print_callback=print_callback,
 )
 
     # format string for output of the algorithm
