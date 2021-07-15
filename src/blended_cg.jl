@@ -52,7 +52,7 @@ function blended_conditional_gradient(
     primal = f(x)
     grad!(gradient, x)
     # initial gap estimate computation
-    vmax = compute_extreme_point(lmo, gradient, x=x, lmo_kwargs...)
+    vmax = compute_extreme_point(lmo, gradient, x=x; lmo_kwargs...)
     phi = fast_dot(gradient, x0 - vmax) / 2
     dual_gap = phi
     traj_data = []
@@ -247,7 +247,7 @@ function blended_conditional_gradient(
     if verbose
         x = compute_active_set_iterate(active_set)
         grad!(gradient, x)
-        v = compute_extreme_point(lmo, gradient, x=x, lmo_kwargs...)
+        v = compute_extreme_point(lmo, gradient, x=x; lmo_kwargs...)
         primal = f(x)
         dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         tot_time = (time_ns() - time_start) / 1e9
@@ -271,7 +271,7 @@ function blended_conditional_gradient(
     active_set_renormalize!(active_set)
     x = compute_active_set_iterate(active_set)
     grad!(gradient, x)
-    v = compute_extreme_point(lmo, gradient, x=x, lmo_kwargs...)
+    v = compute_extreme_point(lmo, gradient, x=x; lmo_kwargs...)
     primal = f(x)
     #dual_gap = 2phi
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)

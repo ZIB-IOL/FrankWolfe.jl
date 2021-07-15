@@ -1,5 +1,6 @@
 module FrankWolfe
 
+using Plots: SparseArrays
 using LinearAlgebra
 using Printf
 using ProgressMeter
@@ -41,7 +42,7 @@ include("fw_algorithms.jl")
 
 # collecting most common data types etc and precompile 
 # min version req set to 1.5 to prevent stalling of julia 1
-@static if VERSION >= v"1.5"   
+@static if VERSION >= v"1.5"
     println("Precompiling common signatures. This might take a moment...")
     include("precompile.jl")
 end

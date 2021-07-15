@@ -1,7 +1,7 @@
 using Test
 using FrankWolfe
 using LinearAlgebra
-import SparseArrays
+using SparseArrays
 
 import FrankWolfe: compute_extreme_point, LpNormLMO, KSparseLMO
 
@@ -519,7 +519,7 @@ end
 end
 
 @testset "Product LMO" begin
-    # 
+    #
     lmo = FrankWolfe.ProductLMO(FrankWolfe.LpNormLMO{Inf}(3.0), FrankWolfe.LpNormLMO{1}(2.0))
     dinf = randn(10)
     d1 = randn(5)
@@ -535,40 +535,50 @@ end
 
 
 @testset "Chasing Gradient LMO" begin
-    max_rounds = 1
-    improv_tol = 10e-3
-    n = Int(1e5)
-    xpi = rand(n)
-    total = sum(xpi)
-    xp = xpi ./ total
-    f(x) = norm(x - xp)^2
-    function grad!(storage, x)
-        @. storage = 2 * (x - xp)
-        return nothing
+    @testset "Consistent results with 1 round" begin
+        max_rounds = 1
+        improv_tol = 1e-3
+        n = Int(1e5)
+        xpi = rand(n)
+        total = sum(xpi)
+        xp = xpi ./ total
+        f(x) = norm(x - xp)^2
+        function grad!(storage, x)
+            @. storage = 2 * (x - xp)
+            return nothing
+        end
+        d = spzeros(n)
+        residual = zeros(n)
+        for lmo_inner in [
+            FrankWolfe.LpNormLMO{1}(1.0),
+            FrankWolfe.LpNormLMO{1}(1.0),
+            FrankWolfe.ProbabilitySimplexOracle(1.0),
+        ]
+            x00 = FrankWolfe.compute_extreme_point(lmo_inner, zeros(n))
+            lmo = FrankWolfe.ChasingGradientLMO(lmo_inner, max_rounds, improv_tol, d, residual)
+            x0 = sparse(deepcopy(x00))
+            res_boosting = FrankWolfe.frank_wolfe(
+                f,
+                grad!,
+                lmo,
+                x0,
+                max_iteration=500,
+                gradient=zeros(n),
+                line_search=FrankWolfe.Adaptive(),
+                verbose=true,
+            )
+            x0 = deepcopy(x00)
+            res = FrankWolfe.frank_wolfe(
+                f,
+                grad!,
+                lmo_inner,
+                x0,
+                max_iteration=500,
+                line_search=FrankWolfe.Adaptive(),
+                verbose=true,
+            )
+            @test isapprox(res_boosting[3], res[3])
+        end
     end
-    lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1.0)
-    x00 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n))
-    lmo = FrankWolfe.ChasingGradientLMO(lmo_prob, max_rounds, improv_tol)
-    x0 = deepcopy(x00)
-    res_boosting = FrankWolfe.frank_wolfe(
-        f,
-        grad!,
-        lmo,
-        x0,
-        max_iteration=500,
-        print_iter=50,
-        line_search=FrankWolfe.Adaptive(),
-        verbose=true,
-    )
-    x0 = deepcopy(x00)
-    res = FrankWolfe.frank_wolfe(
-        f,
-        grad!,
-        lmo_prob,
-        x0,
-        max_iteration=500,
-        print_iter=50,
-        line_search=FrankWolfe.Adaptive(),
-        verbose=true,
-    )
+
 end

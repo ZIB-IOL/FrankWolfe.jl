@@ -61,7 +61,7 @@ function compute_extreme_point(
             return v
         end
     end
-    v = compute_extreme_point(lmo.inner, direction, kwargs...)
+    v = compute_extreme_point(lmo.inner, direction; kwargs...)
     if store_cache
         lmo.last_vertex = v
     end
@@ -165,7 +165,7 @@ function compute_extreme_point(
     end
     # no interesting point found, computing new
     # println("LP sol")
-    v = compute_extreme_point(lmo.inner, direction, kwargs...)
+    v = compute_extreme_point(lmo.inner, direction; kwargs...)
     if store_cache
         tup = Base.setindex(lmo.vertices, v, lmo.oldest_idx)
         lmo.vertices = tup
@@ -308,64 +308,108 @@ end
     ChasingGradientLMO{LMO,T}
 
 Oracle wrapping another one of type LMO to boost FW with gradient pursuit.
-Pursuit rounds end once the alignment improvement with the direction of the gradient 
+Pursuit rounds end once the alignment improvement with the direction of the gradient
 is lower than `improv_tol` or `max_rounds_number` is reached.
 See the [paper](https://arxiv.org/abs/2003.06369)
 
 All keyword arguments are passed to the inner LMO.
 """
-struct ChasingGradientLMO{LMO<:LinearMinimizationOracle,T} <: LinearMinimizationOracle
+mutable struct ChasingGradientLMO{LMO<:LinearMinimizationOracle,T,G,G2} <: LinearMinimizationOracle
     inner::LMO
     max_rounds_number::Int
     improv_tol::T
+    d::G
+    u::G
+    residual::G2
+    m_residual::G2
+end
+
+function ChasingGradientLMO(lmo, max_rounds_number, improv_tol, d, residual)
+    return ChasingGradientLMO(
+        lmo,
+        max_rounds_number,
+        improv_tol,
+        d,
+        copy(d),
+        residual,
+        copy(residual),
+    )
+end
+
+function _zero!(d)
+    @. d = 0
+end
+
+function _zero!(d::SparseArrays.AbstractSparseArray)
+    @. d = 0
+    return SparseArrays.dropzeros!(d)
+end
+
+function _inplace_plus(d, v)
+    @. d += v
+end
+
+function _inplace_plus(d, v::ScaledHotVector)
+    return d[v.val_idx] += v.active_val
 end
 
 function compute_extreme_point(lmo::ChasingGradientLMO, direction; x, kwargs...)
-    d = 0 * direction
-    Λ = 0.0
-    if norm(direction) <= eps(eltype(direction))
-        return compute_extreme_point(lmo.inner, direction, x=x, kwargs...)
+    _zero!(lmo.d)
+    v_ret = 0 * lmo.d
+    Λ = zero(eltype(direction))
+    norm_direction = norm(direction)
+    if norm_direction <= eps(eltype(direction))
+        v_ret .+= compute_extreme_point(lmo.inner, direction, x=x, kwargs...)
+        return v_ret
     end
-    flag = true
-    function align(d1, d2)
-        if norm(d1) <= eps(eltype(d1)) || norm(d2) <= eps(eltype(d2))
-            return -1.0
+    use_v = true
+    function align(d)
+        if norm(d) <= eps(eltype(d))
+            return -one(eltype(d))
         else
-            return fast_dot(d1, d2) / (norm(d1) * norm(d2))
+            return -fast_dot(direction, d) / (norm_direction * norm(d))
         end
     end
-    residual = -direction - d
+    @. lmo.residual = -direction
+    @. lmo.m_residual = direction
     for round in 1:lmo.max_rounds_number
-        if norm(residual) <= eps(eltype(residual))
+        if norm(lmo.residual) <= eps(eltype(lmo.residual))
             #@show round
             break
         end
-        v = compute_extreme_point(lmo.inner, -residual; kwargs...)
-        u = v - x
-        d_norm = norm(d)
-        if d_norm > 0 && fast_dot(-residual, -d / d_norm) < fast_dot(-residual, u)
-            u = -d / d_norm
-            flag = false
+        v = compute_extreme_point(lmo.inner, lmo.m_residual; kwargs...)
+        #@. lmo.u = v - x
+        @. lmo.u = -x
+        _inplace_plus(lmo.u, v)
+        d_norm = norm(lmo.d)
+        if d_norm > 0 && fast_dot(lmo.residual, lmo.d / d_norm) < -fast_dot(lmo.residual, lmo.u)
+            @. lmo.u = -lmo.d / d_norm
+            use_v = false
         end
-        λ = fast_dot(residual, u) / (norm(u)^2)
-        d_updated = d + λ * u
-        if align(-direction, d_updated) - align(-direction, d) >= lmo.improv_tol
-            d = d_updated
-            residual = -direction - d
-            if flag
+        λ = fast_dot(lmo.residual, lmo.u) / (norm(lmo.u)^2)
+        d_updated = lmo.u
+        @. d_updated = lmo.d + λ * lmo.u #2 allocs
+        if align(d_updated) - align(lmo.d) >= lmo.improv_tol
+            @. lmo.d = d_updated
+            # @. lmo.residual = -direction - lmo.d
+            @. lmo.residual -= λ * lmo.u
+            @. lmo.m_residual = -lmo.residual
+            if use_v
                 Λ += λ
             else
                 Λ = Λ * (1 - λ / d_norm)
             end
-            flag = true
+            use_v = true
         else
             #@show round
             break
         end
     end
     if Λ <= eps(eltype(Λ))
-        return x
-    else
-        return x + d / Λ
+        v_ret .+= compute_extreme_point(lmo.inner, direction, x=x, kwargs...)
+        return v_ret
     end
+    @. v_ret += x
+    @. v_ret += lmo.d / Λ #2 allocations
+    return v_ret
 end

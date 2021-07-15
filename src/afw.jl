@@ -90,7 +90,7 @@ function away_frank_wolfe(
 
     x = compute_active_set_iterate(active_set)
     grad!(gradient, x)
-    v = compute_extreme_point(lmo, gradient, x=x, kwargs...)
+    v = compute_extreme_point(lmo, gradient, x=x; kwargs...)
     phi_value = fast_dot(x, gradient) - fast_dot(v, gradient)
 
     while t <= max_iteration && dual_gap >= max(epsilon, eps())
@@ -128,14 +128,14 @@ function away_frank_wolfe(
         if away_steps
             if lazy
                 d, vertex, index, gamma_max, phi_value, away_step_taken, fw_step_taken, tt =
-                    lazy_afw_step(x, gradient, lmo, active_set, phi_value; K=K)
+                    lazy_afw_step(x, gradient, lmo, active_set, phi_value; K=K, kwargs...)
             else
                 d, vertex, index, gamma_max, phi_value, away_step_taken, fw_step_taken, tt =
-                    afw_step(x, gradient, lmo, active_set)
+                    afw_step(x, gradient, lmo, active_set; kwargs...)
             end
         else
             d, vertex, index, gamma_max, phi_value, away_step_taken, fw_step_taken, tt =
-                fw_step(x, gradient, lmo)
+                fw_step(x, gradient, lmo; kwargs...)
         end
 
 
@@ -217,7 +217,7 @@ function away_frank_wolfe(
     if verbose
         x = compute_active_set_iterate(active_set)
         grad!(gradient, x)
-        v = compute_extreme_point(lmo, gradient, x=x, kwargs...)
+        v = compute_extreme_point(lmo, gradient, x=x; kwargs...)
         primal = f(x)
         dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         tt = last
@@ -239,7 +239,7 @@ function away_frank_wolfe(
     active_set_cleanup!(active_set)
     x = compute_active_set_iterate(active_set)
     grad!(gradient, x)
-    v = compute_extreme_point(lmo, gradient, x=x, kwargs...)
+    v = compute_extreme_point(lmo, gradient, x=x; kwargs...)
     primal = f(x)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
     if verbose
@@ -262,7 +262,7 @@ function away_frank_wolfe(
     return x, v, primal, dual_gap, traj_data, active_set
 end
 
-function lazy_afw_step(x, gradient, lmo, active_set, phi; K=2.0)
+function lazy_afw_step(x, gradient, lmo, active_set, phi; K=2.0, kwargs...)
     v_lambda, v, v_loc, a_lambda, a, a_loc = active_set_argminmax(active_set, gradient)
     # Do lazy FW step
     grad_dot_lazy_fw_vertex = fast_dot(v, gradient)
@@ -290,7 +290,7 @@ function lazy_afw_step(x, gradient, lmo, active_set, phi; K=2.0)
             index = a_loc
             # Resort to calling the LMO
         else
-            v = compute_extreme_point(lmo, gradient, x=x, kwargs...)
+            v = compute_extreme_point(lmo, gradient, x=x; kwargs...)
             # Real dual gap promises enough progress.
             grad_dot_fw_vertex = fast_dot(v, gradient)
             dual_gap = grad_dot_x - grad_dot_fw_vertex
@@ -318,11 +318,11 @@ function lazy_afw_step(x, gradient, lmo, active_set, phi; K=2.0)
     return d, vertex, index, gamma_max, phi, away_step_taken, fw_step_taken, tt
 end
 
-function afw_step(x, gradient, lmo, active_set)
+function afw_step(x, gradient, lmo, active_set; kwargs...)
     local_v_lambda, local_v, local_v_loc, a_lambda, a, a_loc =
         active_set_argminmax(active_set, gradient)
     away_gap = fast_dot(a, gradient) - fast_dot(x, gradient)
-    v = compute_extreme_point(lmo, gradient, x=x, kwargs...)
+    v = compute_extreme_point(lmo, gradient, x=x; kwargs...)
     grad_dot_x = fast_dot(x, gradient)
     away_gap = fast_dot(a, gradient) - grad_dot_x
     dual_gap = grad_dot_x - fast_dot(v, gradient)
@@ -346,8 +346,8 @@ function afw_step(x, gradient, lmo, active_set)
     return d, vertex, index, gamma_max, dual_gap, away_step_taken, fw_step_taken, tt
 end
 
-function fw_step(x, gradient, lmo)
-    vertex = compute_extreme_point(lmo, gradient, x=x, kwargs...)
+function fw_step(x, gradient, lmo; kwargs...)
+    vertex = compute_extreme_point(lmo, gradient, x=x; kwargs...)
     return (
         x - vertex,
         vertex,
