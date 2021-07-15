@@ -23,7 +23,7 @@ end
 
 Base.sum(v::ScaledHotVector) = v.active_val
 
-function LinearAlgebra.dot(v1::ScaledHotVector, v2::AbstractVector)
+function LinearAlgebra.dot(v1::ScaledHotVector{<:Number}, v2::AbstractVector{<:Number})
     return v1.active_val * v2[v1.val_idx]
 end
 
@@ -31,7 +31,9 @@ function LinearAlgebra.dot(v1::ScaledHotVector{<:Number}, v2::SparseArrays.Spars
     return v1.active_val * v2[v1.val_idx]
 end
 
-LinearAlgebra.dot(v1::AbstractVector, v2::ScaledHotVector) = dot(v2, v1)
+LinearAlgebra.dot(v1::AbstractVector{<:Number}, v2::ScaledHotVector{<:Number}) = conj(dot(v2, v1))
+
+LinearAlgebra.dot(v1::SparseArrays.SparseVector{<:Number}, v2::FrankWolfe.ScaledHotVector{<:Number}) = conj(dot(v2, v1))
 
 # warning, no bound check
 function LinearAlgebra.dot(v1::ScaledHotVector, v2::ScaledHotVector)

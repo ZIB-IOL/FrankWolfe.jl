@@ -79,7 +79,7 @@ function away_frank_wolfe(
 
     # likely not needed anymore as now the iterates are provided directly via the active set
     if gradient === nothing
-        gradient = similar(x0, float(eltype(x0)))
+        gradient = similar(x0)
     end
     gtemp = if momentum !== nothing
         similar(gradient)
@@ -90,7 +90,7 @@ function away_frank_wolfe(
     x = compute_active_set_iterate(active_set)
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
-    phi_value = max(0.0,fast_dot(x, gradient) - fast_dot(v, gradient))
+    phi_value = max(0, fast_dot(x, gradient) - fast_dot(v, gradient))
     gamma = 1.0
 
     while t <= max_iteration && dual_gap >= max(epsilon, eps())
