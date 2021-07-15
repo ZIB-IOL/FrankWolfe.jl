@@ -46,7 +46,7 @@ function blended_conditional_gradient(
     active_set = ActiveSet([(1.0, x0)])
     x = x0
     if gradient === nothing
-        gradient = similar(x0, float(eltype(x0)))
+        gradient = similar(x0)
     end
     primal = f(x)
     grad!(gradient, x)
@@ -98,7 +98,7 @@ function blended_conditional_gradient(
     end
     # ensure x is a mutable type
     if !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
-        x = copyto!(similar(x, float(eltype(x))), x)
+        x = copyto!(similar(x), x)
     end
     non_simplex_iter = 0
     force_fw_step = false
