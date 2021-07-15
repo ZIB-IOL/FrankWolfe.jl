@@ -91,6 +91,7 @@ function away_frank_wolfe(
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     phi_value = max(0.0,fast_dot(x, gradient) - fast_dot(v, gradient))
+    gamma = 1.0
 
     while t <= max_iteration && dual_gap >= max(epsilon, eps())
 
