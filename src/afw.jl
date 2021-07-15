@@ -137,7 +137,6 @@ function away_frank_wolfe(
                 fw_step(x, gradient, lmo)
         end
 
-
         if fw_step_taken || away_step_taken
             gamma, L = line_search_wrapper(
                 line_search,
@@ -182,6 +181,7 @@ function away_frank_wolfe(
                 x=x,
                 v=vertex,
                 active_set_length=length(active_set),
+                gamma=gamma,
             )
             callback(state)
         end
