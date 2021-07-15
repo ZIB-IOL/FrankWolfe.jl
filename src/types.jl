@@ -31,7 +31,9 @@ function LinearAlgebra.dot(v1::ScaledHotVector{<:Number}, v2::SparseArrays.Spars
     return v1.active_val * v2[v1.val_idx]
 end
 
-LinearAlgebra.dot(v1::AbstractVector, v2::ScaledHotVector) = dot(v2, v1)
+LinearAlgebra.dot(v1::AbstractVector, v2::ScaledHotVector) = conj(dot(v2, v1))
+
+LinearAlgebra.dot(v1::Union{SparseArrays.SparseVector}, v2::FrankWolfe.ScaledHotVector) = conj(dot(v2, v1))
 
 # warning, no bound check
 function LinearAlgebra.dot(v1::ScaledHotVector, v2::ScaledHotVector)
