@@ -107,7 +107,7 @@ function blended_conditional_gradient(
     non_simplex_iter = 0
     force_fw_step = false
 
-    while t <= max_iteration && phi ≥ epsilon
+    while t <= max_iteration && (phi ≥ epsilon || t == 0) # do at least one iteration for consistency with other algos
 
         #####################
         # managing time and Ctrl-C

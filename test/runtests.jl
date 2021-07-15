@@ -170,6 +170,7 @@ include("utils.jl")
         )[3] - 0.2,
     ) < 1.0e-3
 end
+
 @testset "Gradient with momentum correctly updated" begin
     # fixing https://github.com/ZIB-IOL/FrankWolfe.jl/issues/47
     include("momentum_memory.jl")
@@ -679,6 +680,10 @@ end
 
 end
 
+
+include("oddities.jl")
+
+
 # in separate module for name space issues
 module BCGDirectionError
 using Test
@@ -699,3 +704,4 @@ if get(ENV, "FW_TEST", nothing) == "full"
         # TODO test smaller examples to be sure they are up to date
     end
 end
+

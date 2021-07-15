@@ -91,7 +91,7 @@ function away_frank_wolfe(
     x = compute_active_set_iterate(active_set)
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient, x=x; kwargs...)
-    phi_value = fast_dot(x, gradient) - fast_dot(v, gradient)
+    phi_value = max(0, fast_dot(x, gradient) - fast_dot(v, gradient))
 
     while t <= max_iteration && dual_gap >= max(epsilon, eps())
 
@@ -155,17 +155,15 @@ function away_frank_wolfe(
                 step_lim,
                 gamma_max,
             )
-
             # cleanup and renormalize every x iterations. Only for the fw steps.
             renorm = mod(t, renorm_interval) == 0
-
             if away_step_taken
                 active_set_update!(active_set, -gamma, vertex, true, index)
             else
                 active_set_update!(active_set, gamma, vertex, renorm, index)
             end
         end
-
+        
         if (
             (mod(t, print_iter) == 0 && verbose) ||
             callback !== nothing ||
