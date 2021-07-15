@@ -30,7 +30,7 @@ function frank_wolfe(
     gradient=nothing,
     callback=nothing,
     timeout=Inf,
-    print_callback=FrankWolfe.print_callback,
+    print_callback=print_callback,
 )
 
     # format string for output of the algorithm
@@ -256,7 +256,7 @@ function lazified_conditional_gradient(
     VType=typeof(x0),
     callback=nothing,
     timeout=Inf,
-    print_callback=FrankWolfe.print_callback,
+    print_callback=print_callback,
     warmstart_lmo=nothing,
 )
 
@@ -311,7 +311,7 @@ function lazified_conditional_gradient(
     end
 
     if emphasis == memory && !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
-        x = convert(Array{float(eltype(x))}, x)
+        x = copyto!(similar(x, float(eltype(x))), x)
     end
 
     if gradient === nothing
@@ -321,7 +321,7 @@ function lazified_conditional_gradient(
     # container for direction
     d = similar(x)
 
-    while t <= max_iteration && dual_gap >= max(epsilon, eps())
+    while t <= max_iteration && dual_gap >= max(epsilon, eps(float(eltype(x))))
 
         #####################
         # managing time and Ctrl-C
@@ -472,7 +472,7 @@ function stochastic_frank_wolfe(
     full_evaluation=false,
     callback=nothing,
     timeout=Inf,
-    print_callback=FrankWolfe.print_callback,
+    print_callback=print_callback,
 )
 
     # format string for output of the algorithm
@@ -515,8 +515,8 @@ function stochastic_frank_wolfe(
         print_callback(headers, format_string, print_header=true)
     end
 
-    if emphasis == memory && !isa(x, Array)
-        x = convert(Array{promote_type(eltype(x), Float64)}, x)
+    if emphasis == memory && !isa(x, Union{Array, SparseArrays.AbstractSparseArray})
+        x = copyto!(similar(x, float(eltype(x))), x)
     end
     first_iter = true
     gradient = 0
