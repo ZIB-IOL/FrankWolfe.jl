@@ -75,13 +75,12 @@ function frank_wolfe(
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec"]
         print_callback(headers, format_string, print_header=true)
     end
-
     if emphasis == memory && !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
         # if integer, convert element type to most appropriate float
         if eltype(x) <: Integer
-            x = convert(Array{float(eltype(x))}, x)
+            x = copyto!(similar(x, float(eltype(x))), x)
         else
-            x = convert(Array{eltype(x)}, x)
+            x = copyto!(similar(x), x)
         end
     end
     first_iter = true
@@ -311,7 +310,11 @@ function lazified_conditional_gradient(
     end
 
     if emphasis == memory && !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
-        x = copyto!(similar(x, float(eltype(x))), x)
+        if eltype(x) <: Integer
+            x = copyto!(similar(x, float(eltype(x))), x)
+        else
+            x = copyto!(similar(x), x)
+        end
     end
 
     if gradient === nothing
@@ -516,7 +519,11 @@ function stochastic_frank_wolfe(
     end
 
     if emphasis == memory && !isa(x, Union{Array, SparseArrays.AbstractSparseArray})
-        x = copyto!(similar(x, float(eltype(x))), x)
+        if eltype(x) <: Integer
+            x = copyto!(similar(x, float(eltype(x))), x)
+        else
+            x = copyto!(similar(x), x)
+        end
     end
     first_iter = true
     gradient = 0
