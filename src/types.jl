@@ -33,10 +33,9 @@ end
 
 LinearAlgebra.dot(v1::AbstractVector{<:Number}, v2::ScaledHotVector{<:Number}) = conj(dot(v2, v1))
 
-LinearAlgebra.dot(v1::SparseArrays.SparseVector{<:Number}, v2::FrankWolfe.ScaledHotVector{<:Number}) = conj(dot(v2, v1))
+LinearAlgebra.dot(v1::SparseArrays.SparseVector{<:Number}, v2::ScaledHotVector{<:Number}) = conj(dot(v2, v1))
 
-# warning, no bound check
-function LinearAlgebra.dot(v1::ScaledHotVector, v2::ScaledHotVector)
+function LinearAlgebra.dot(v1::ScaledHotVector{<:Number}, v2::ScaledHotVector{<:Number})
     if length(v1) != length(v2)
         throw(DimensionMismatch("v1 and v2 do not have matching sizes"))
     end
