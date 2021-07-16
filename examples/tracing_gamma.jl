@@ -3,8 +3,9 @@ using FrankWolfe
 using ProgressMeter
 using Plots
 
-n = Int(1e5)
-k = 1000
+n = Int(1e2)
+k = Int(1e6)
+eps=1e-8
 
 xpi = rand(n);
 total = sum(xpi);
@@ -20,10 +21,11 @@ function cgrad!(storage, x, xp)
     return @. storage = 2 * (x - xp)
 end
 
-# lmo = FrankWolfe.ProbabilitySimplexOracle(1.0);
+lmo = FrankWolfe.ProbabilitySimplexOracle(1.0);
 # lmo = FrankWolfe.UnitSimplexOracle(1.0);
 # lmo = FrankWolfe.UnitSimplexOracle(1.0);
-lmo = FrankWolfe.KSparseLMO(40, 1.0);
+# lmo = FrankWolfe.KSparseLMO(40, 1.0);
+# lmo = FrankWolfe.LpNormLMO{2}(1.0)
 
 x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
@@ -57,6 +59,7 @@ callback = build_callback(trajectory_ag)
     x0,
     max_iteration=k,
     trajectory=true,
+    epsilon=eps,
     line_search=FrankWolfe.Agnostic(),
     print_iter=k / 10,
     callback=callback,
@@ -79,6 +82,7 @@ callback = build_callback(trajectory_ada)
     x0,
     max_iteration=k,
     trajectory=true,
+    epsilon=eps,
     line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
     callback=callback,
@@ -101,6 +105,7 @@ callback = build_callback(trajectory_ls)
     x0,
     max_iteration=k,
     trajectory=true,
+    epsilon=eps,
     line_search=FrankWolfe.Shortstep(),
     print_iter=k / 10,
     L=2,
@@ -109,11 +114,13 @@ callback = build_callback(trajectory_ls)
     verbose=true,
 );
 
-x = [trajectory_ag[i][1]+1 for i in eachindex(trajectory_ag)]
+x_ag = [trajectory_ag[i][1]+1 for i in eachindex(trajectory_ag)]
 gamma_ag = [trajectory_ag[i][6] for i in eachindex(trajectory_ag)]
+x_ada = [trajectory_ada[i][1]+1 for i in eachindex(trajectory_ada)]
 gamma_ada = [trajectory_ada[i][6] for i in eachindex(trajectory_ada)]
+x_ls = [trajectory_ls[i][1]+1 for i in eachindex(trajectory_ls)]
 gamma_ls = [trajectory_ls[i][6] for i in eachindex(trajectory_ls)]
 
-Plots.plot(x,gamma_ag,label="gamma_ag", yaxis=:log, xaxis=:log)
-Plots.plot!(x,gamma_ada,label="gamma_ada", yaxis=:log, xaxis=:log)
-Plots.plot!(x,gamma_ls,label="gamma_ls", yaxis=:log, xaxis=:log)
+Plots.plot(x_ag,gamma_ag,label="gamma_ag", yaxis=:log, xaxis=:log)
+Plots.plot!(x_ada,gamma_ada,label="gamma_ada", yaxis=:log, xaxis=:log)
+Plots.plot!(x_ls,gamma_ls,label="gamma_ls", yaxis=:log, xaxis=:log)
