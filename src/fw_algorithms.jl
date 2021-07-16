@@ -393,6 +393,7 @@ function lazified_conditional_gradient(
                 cache_size=length(lmo),
                 x=x,
                 v=v,
+                gamma=gamma
             )
             callback(state)
         end
