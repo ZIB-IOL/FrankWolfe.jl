@@ -142,18 +142,6 @@ function frank_wolfe(
             dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         end
 
-        if callback !== nothing
-            state = (
-                t=t,
-                primal=primal,
-                dual=primal - dual_gap,
-                dual_gap=dual_gap,
-                time=tot_time,
-                x=x,
-                v=v,
-            )
-            callback(state)
-        end
         @emphasis(emphasis, d = x - v)
 
         gamma, L = line_search_wrapper(
@@ -171,6 +159,19 @@ function frank_wolfe(
             step_lim,
             one(eltype(x)),
         )
+        if callback !== nothing
+            state = (
+                t=t,
+                primal=primal,
+                dual=primal - dual_gap,
+                dual_gap=dual_gap,
+                time=tot_time,
+                x=x,
+                v=v,
+                gamma=gamma,
+            )
+            callback(state)
+        end
 
         @emphasis(emphasis, x = x - gamma * d)
 
@@ -358,20 +359,6 @@ function lazified_conditional_gradient(
             phi = min(dual_gap, phi / 2)
         end
 
-        if callback !== nothing
-            state = (
-                t=t,
-                primal=primal,
-                dual=primal - dual_gap,
-                dual_gap=dual_gap,
-                time=tot_time,
-                cache_size=length(lmo),
-                x=x,
-                v=v,
-            )
-            callback(state)
-        end
-
         @emphasis(emphasis, d = x - v)
 
         gamma, L = line_search_wrapper(
@@ -389,6 +376,20 @@ function lazified_conditional_gradient(
             step_lim,
             1.0,
         )
+
+        if callback !== nothing
+            state = (
+                t=t,
+                primal=primal,
+                dual=primal - dual_gap,
+                dual_gap=dual_gap,
+                time=tot_time,
+                cache_size=length(lmo),
+                x=x,
+                v=v,
+            )
+            callback(state)
+        end
 
         @emphasis(emphasis, x = x - gamma * d)
 
@@ -576,19 +577,6 @@ function stochastic_frank_wolfe(
             dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         end
 
-        if callback !== nothing
-            state = (
-                t=t,
-                primal=primal,
-                dual=primal - dual_gap,
-                dual_gap=dual_gap,
-                time=tot_time,
-                x=x,
-                v=v,
-            )
-            callback(state)
-        end
-
         if line_search isa Agnostic
             gamma = 2 // (2 + t)
         elseif line_search isa Nonconvex
@@ -600,6 +588,20 @@ function stochastic_frank_wolfe(
             gamma = rat_dual_gap // (L * sum((x - v) .^ 2))
         elseif line_search isa FixedStep
             gamma = gamma0
+        end
+
+        if callback !== nothing
+            state = (
+                t=t,
+                primal=primal,
+                dual=primal - dual_gap,
+                dual_gap=dual_gap,
+                time=tot_time,
+                x=x,
+                v=v,
+                gamma=gamma,
+            )
+            callback(state)
         end
 
         @emphasis(emphasis, x = (1 - gamma) * x + gamma * v)
