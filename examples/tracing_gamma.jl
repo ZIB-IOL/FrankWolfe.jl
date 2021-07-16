@@ -20,7 +20,11 @@ function cgrad!(storage, x, xp)
     return @. storage = 2 * (x - xp)
 end
 
-lmo = FrankWolfe.ProbabilitySimplexOracle(1);
+# lmo = FrankWolfe.ProbabilitySimplexOracle(1.0);
+# lmo = FrankWolfe.UnitSimplexOracle(1.0);
+# lmo = FrankWolfe.UnitSimplexOracle(1.0);
+lmo = FrankWolfe.KSparseLMO(40, 1.0);
+
 x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
 FrankWolfe.benchmark_oracles(
