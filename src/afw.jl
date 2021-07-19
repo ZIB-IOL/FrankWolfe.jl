@@ -31,7 +31,7 @@ function away_frank_wolfe(
     renorm_interval=1000,
     callback=nothing,
     timeout=Inf,
-    print_callback=FrankWolfe.print_callback,
+    print_callback=print_callback,
     kwargs...,
 )
 
@@ -80,7 +80,7 @@ function away_frank_wolfe(
 
     # likely not needed anymore as now the iterates are provided directly via the active set
     if gradient === nothing
-        gradient = similar(x0, float(eltype(x0)))
+        gradient = similar(x0)
     end
     gtemp = if momentum !== nothing
         similar(gradient)
@@ -92,6 +92,7 @@ function away_frank_wolfe(
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient, x=x; kwargs...)
     phi_value = max(0, fast_dot(x, gradient) - fast_dot(v, gradient))
+    gamma = 1.0
 
     while t <= max_iteration && dual_gap >= max(epsilon, eps())
 
@@ -138,7 +139,6 @@ function away_frank_wolfe(
                 fw_step(x, gradient, lmo; kwargs...)
         end
 
-
         if fw_step_taken || away_step_taken
             gamma, L = line_search_wrapper(
                 line_search,
@@ -183,6 +183,7 @@ function away_frank_wolfe(
                 x=x,
                 v=vertex,
                 active_set_length=length(active_set),
+                gamma=gamma,
             )
             callback(state)
         end

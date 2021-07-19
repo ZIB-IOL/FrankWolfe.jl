@@ -31,10 +31,9 @@ function blended_conditional_gradient(
     K=2.0,
     weight_purge_threshold=1e-9,
     gradient=nothing,
-    direction_storage=nothing,
     callback=nothing,
     timeout=Inf,
-    print_callback=FrankWolfe.print_callback,
+    print_callback=print_callback,
     lmo_kwargs...,
 )
 
@@ -47,7 +46,7 @@ function blended_conditional_gradient(
     active_set = ActiveSet([(1.0, x0)])
     x = x0
     if gradient === nothing
-        gradient = similar(x0, float(eltype(x0)))
+        gradient = similar(x0)
     end
     primal = f(x)
     grad!(gradient, x)
@@ -62,10 +61,6 @@ function blended_conditional_gradient(
     tt = regular
     time_start = time_ns()
     v = x0
-    if direction_storage === nothing
-        direction_storage = Vector{float(eltype(x))}()
-        Base.sizehint!(direction_storage, 100)
-    end
 
     if line_search isa Shortstep && !isfinite(L)
         @error("Lipschitz constant not set to a finite value. Prepare to blow up spectacularly.")
@@ -101,8 +96,9 @@ function blended_conditional_gradient(
         )
         print_callback(headers, format_string, print_header=true)
     end
-    if !isa(x, Union{Array,SparseVector})
-        x = convert(Array{float(eltype(x))}, x)
+    # ensure x is a mutable type
+    if !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
+        x = copyto!(similar(x), x)
     end
     non_simplex_iter = 0
     force_fw_step = false
@@ -464,7 +460,7 @@ we return nothing (as there is nothing to do).
 
 """
 function build_reduced_problem(
-    atoms::AbstractVector{<:FrankWolfe.ScaledHotVector},
+    atoms::AbstractVector{<:ScaledHotVector},
     hessian,
     weights,
     gradient,
