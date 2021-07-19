@@ -1,6 +1,5 @@
 module FrankWolfe
 
-using Plots: SparseArrays
 using LinearAlgebra
 using Printf
 using ProgressMeter
