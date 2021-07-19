@@ -44,6 +44,7 @@ end
                 MR = -R
                 @test MR isa FrankWolfe.RankOneMatrix
                 @test -MR == R
+                @test 3R isa FrankWolfe.RankOneMatrix
             end
         end
     end
