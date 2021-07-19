@@ -170,6 +170,8 @@ Base.@propagate_inbounds function Base.:-(a::RankOneMatrix, b::RankOneMatrix)
     return r
 end
 
+Base.:-(x::RankOneMatrix) = RankOneMatrix(-x.u, -x.v)
+
 Base.@propagate_inbounds function Base.:+(a::RankOneMatrix, b::RankOneMatrix)
     @boundscheck size(a) == size(b) || throw(DimensionMismatch())
     r = similar(a)
