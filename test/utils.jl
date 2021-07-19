@@ -41,6 +41,9 @@ end
             @testset "Add and sub" begin
                 @test M + R ≈ R + R
                 @test M - R ≈ R - R
+                MR = -R
+                @test MR isa FrankWolfe.RankOneMatrix
+                @test -MR == R
             end
         end
     end
