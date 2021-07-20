@@ -64,11 +64,13 @@ v0 = FrankWolfe.compute_extreme_point(lmo, gradient)
 
 const k = 500
 
+x00 = copy(x0)
+
 xfin, vmin, _, _, traj_data = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
-    x0;
+    x00;
     epsilon=1e7,
     max_iteration=k,
     print_iter=k / 10,
@@ -81,11 +83,13 @@ xfin, vmin, _, _, traj_data = FrankWolfe.frank_wolfe(
 )
 
 
+x00 = copy(x0)
+
 xfinAFW, vmin, _, _, traj_data = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
-    x0;
+    x00;
     epsilon=1e7,
     max_iteration=k,
     print_iter=k / 10,
@@ -97,12 +101,13 @@ xfinAFW, vmin, _, _, traj_data = FrankWolfe.away_frank_wolfe(
     emphasis=FrankWolfe.memory,#,
 )
 
+x00 = copy(x0)
 
 xfinBCG, vmin, _, _, traj_data = FrankWolfe.blended_conditional_gradient(
     f,
     grad!,
     lmo,
-    x0;
+    x00;
     epsilon=1e7,
     max_iteration=k,
     print_iter=k / 10,
@@ -113,9 +118,11 @@ xfinBCG, vmin, _, _, traj_data = FrankWolfe.blended_conditional_gradient(
     emphasis=FrankWolfe.memory,#,
 )
 
-plot(svdvals(xfin), label="FW", width=3, yaxis=:log)
+pit = plot(svdvals(xfin), label="FW", width=3, yaxis=:log)
 plot!(svdvals(xfinAFW), label="AFW", width=3, yaxis=:log)
 plot!(svdvals(xfinBCG), label="BCG", width=3, yaxis=:log)
 plot!(svdvals(xgd), label="Gradient descent", width=3, yaxis=:log)
 plot!(svdvals(Xreal), label="Real matrix", linestyle=:dash, width=3, color=:black)
 title!("Singular values")
+
+savefig(pit, "matrix_completion.pdf")
