@@ -172,8 +172,8 @@ end
 
 Base.:-(x::RankOneMatrix) = RankOneMatrix(-x.u, x.v)
 
-Base.:*(x::Number, m::RankOneMatrix) = RankOneMatrix(-x * m.u, m.v)
-Base.:*(m::RankOneMatrix, x::Number) = RankOneMatrix(-x * m.u, m.v)
+Base.:*(x::Number, m::RankOneMatrix) = RankOneMatrix(x * m.u, m.v)
+Base.:*(m::RankOneMatrix, x::Number) = RankOneMatrix(x * m.u, m.v)
 
 Base.@propagate_inbounds function Base.:+(a::RankOneMatrix, b::RankOneMatrix)
     @boundscheck size(a) == size(b) || throw(DimensionMismatch())
