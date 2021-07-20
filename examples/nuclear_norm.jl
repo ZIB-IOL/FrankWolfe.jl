@@ -82,6 +82,22 @@ xfin, vmin, _, _, traj_data = FrankWolfe.frank_wolfe(
     gradient=spzeros(size(x0)...),
 )
 
+xfinlcg, vmin, _, _, traj_data = FrankWolfe.lazified_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    x00;
+    epsilon=1e7,
+    max_iteration=k,
+    print_iter=k / 10,
+    trajectory=true,
+    verbose=true,
+    linesearch_tol=1e-7,
+    line_search=FrankWolfe.Adaptive(),
+    emphasis=FrankWolfe.memory,
+    gradient=spzeros(size(x0)...),
+)
+
 
 x00 = copy(x0)
 
@@ -119,7 +135,8 @@ xfinBCG, vmin, _, _, traj_data = FrankWolfe.blended_conditional_gradient(
 )
 
 pit = plot(svdvals(xfin), label="FW", width=3, yaxis=:log)
-plot!(svdvals(xfinAFW), label="AFW", width=3, yaxis=:log)
+plot!(svdvals(xfinlcg), label="LCG", width=3, yaxis=:log)
+plot!(svdvals(xfinAFW), label="LAFW", width=3, yaxis=:log)
 plot!(svdvals(xfinBCG), label="BCG", width=3, yaxis=:log)
 plot!(svdvals(xgd), label="Gradient descent", width=3, yaxis=:log)
 plot!(svdvals(Xreal), label="Real matrix", linestyle=:dash, width=3, color=:black)
