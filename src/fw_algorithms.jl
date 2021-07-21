@@ -55,7 +55,7 @@ function frank_wolfe(
         println("FATAL: gamma0 not set. We are not going to move a single bit.")
     end
 
-    if (!isnothing(momentum) && line_search isa Union{Shortstep,Adaptive,RationalShortstep})
+    if (!isnothing(momentum) && line_search isa Union{Shortstep,Adaptive,RationalShortstep} && verbose)
         println(
             "WARNING: Momentum-averaged gradients should usually be used with agnostic stepsize rules.",
         )
