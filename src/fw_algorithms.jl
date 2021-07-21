@@ -30,6 +30,8 @@ function frank_wolfe(
     gradient=nothing,
     callback=nothing,
     timeout=Inf,
+    ada=false,
+    ada_eps=1e-8,
     print_callback=print_callback,
 )
 
@@ -96,6 +98,11 @@ function frank_wolfe(
     else
         similar(x)
     end
+
+    # H and H2 container
+    H = similar(gradient) * 0.0
+    H2 = similar(gradient) * 0.0
+
     while t <= max_iteration && dual_gap >= max(epsilon, eps())
 
         #####################
@@ -130,6 +137,14 @@ function frank_wolfe(
             @emphasis(emphasis, gradient = (momentum * gradient) + (1 - momentum) * gtemp)
         end
         first_iter = false
+
+        # H2 = H2+est_grad_f_x**2
+        # H = eps+np.sqrt(H2)
+        if ada && momentum === nothing
+            H2 += gradient.^2
+            H = (ada_eps .+ (H2.^(0.5))).^(-1.0)
+            gradient = gradient .* H
+        end
 
         v = compute_extreme_point(lmo, gradient)
         # go easy on the memory - only compute if really needed
