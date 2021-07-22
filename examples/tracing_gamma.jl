@@ -1,5 +1,7 @@
+include("activate.jl")
+
 using LinearAlgebra
-using FrankWolfe
+# using FrankWolfe
 using ProgressMeter
 using Plots
 
