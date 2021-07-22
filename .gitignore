@@ -21,3 +21,4 @@ examples/precompile_fw_clean.jl
 examples/precompile_fw.jl
 cc/libloporacle.so
 cc/*
+examples/temp.jl

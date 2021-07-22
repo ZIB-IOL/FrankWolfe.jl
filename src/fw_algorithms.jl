@@ -55,7 +55,7 @@ function frank_wolfe(
         println("FATAL: gamma0 not set. We are not going to move a single bit.")
     end
 
-    if (!isnothing(momentum) && line_search isa Union{Shortstep,Adaptive,RationalShortstep})
+    if (!isnothing(momentum) && line_search isa Union{Shortstep,Adaptive,RationalShortstep} && verbose)
         println(
             "WARNING: Momentum-averaged gradients should usually be used with agnostic stepsize rules.",
         )
@@ -96,6 +96,11 @@ function frank_wolfe(
     else
         similar(x)
     end
+
+    # # H and H2 container
+    # H = similar(gradient) * 0.0
+    # H2 = similar(gradient) * 0.0
+
     while t <= max_iteration && dual_gap >= max(epsilon, eps())
 
         #####################
@@ -130,6 +135,14 @@ function frank_wolfe(
             @emphasis(emphasis, gradient = (momentum * gradient) + (1 - momentum) * gtemp)
         end
         first_iter = false
+
+        # # H2 = H2+est_grad_f_x**2
+        # # H = eps+np.sqrt(H2)
+        # if ada && momentum === nothing
+        #     H2 += gradient.^2
+        #     H = (ada_eps .+ (H2.^(0.5))).^(-1.0)
+        #     gradient = gradient .* H
+        # end
 
         v = compute_extreme_point(lmo, gradient)
         # go easy on the memory - only compute if really needed
@@ -248,6 +261,7 @@ function lazified_conditional_gradient(
     print_iter=1000,
     trajectory=false,
     verbose=false,
+    verbose_it=false,
     linesearch_tol=1e-7,
     step_lim=20,
     emphasis::Emphasis=memory,
@@ -256,15 +270,20 @@ function lazified_conditional_gradient(
     callback=nothing,
     timeout=Inf,
     print_callback=print_callback,
+    warmstart_lmo=nothing,
 )
 
     # format string for output of the algorithm
     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
 
-    if isfinite(cache_size)
-        lmo = MultiCacheLMO{cache_size,typeof(lmo_base),VType}(lmo_base)
+    if warmstart_lmo === nothing
+        if isfinite(cache_size)
+            lmo = MultiCacheLMO{cache_size,typeof(lmo_base),VType}(lmo_base)
+        else
+            lmo = VectorCacheLMO{typeof(lmo_base),VType}(lmo_base)
+        end
     else
-        lmo = VectorCacheLMO{typeof(lmo_base),VType}(lmo_base)
+        lmo = warmstart_lmo
     end
 
     t = 0
@@ -347,7 +366,7 @@ function lazified_conditional_gradient(
         threshold = fast_dot(x, gradient) - phi / K
 
         # go easy on the memory - only compute if really needed
-        if ((mod(t, print_iter) == 0 && verbose ) || callback !== nothing)
+        if ((mod(t, print_iter) == 0 && (verbose || verbose_it) ) || callback !== nothing)
             primal = f(x)
         end
 
@@ -394,7 +413,7 @@ function lazified_conditional_gradient(
 
         @emphasis(emphasis, x = x - gamma * d)
 
-        if verbose && (mod(t, print_iter) == 0 || tt == dualstep)
+        if (verbose  || verbose_it) && (mod(t, print_iter) == 0 || tt == dualstep)
             if t == 0
                 tt = initial
             end
@@ -422,7 +441,7 @@ function lazified_conditional_gradient(
     primal = f(x)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
 
-    if verbose 
+    if verbose  || verbose_it
         tt = last
         tot_time = (time_ns() - time_start) / 1.0e9
         rep = (
@@ -436,10 +455,12 @@ function lazified_conditional_gradient(
             length(lmo),
         )
         print_callback(rep, format_string)
-        print_callback(nothing, format_string, print_footer=true)
+        if verbose
+            print_callback(nothing, format_string, print_footer=true)
+        end
         flush(stdout)
     end
-    return x, v, primal, dual_gap, traj_data
+    return x, v, primal, dual_gap, traj_data, lmo
 end
 
 """
