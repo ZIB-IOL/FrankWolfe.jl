@@ -2,8 +2,8 @@ include("activate.jl")
 
 using LinearAlgebra
 # using FrankWolfe
-using ProgressMeter
-using Plots
+# using ProgressMeter
+# using Plots
 
 n = Int(1e2)
 k = Int(1e4)
