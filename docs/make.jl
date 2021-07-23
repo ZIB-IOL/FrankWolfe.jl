@@ -2,6 +2,8 @@ using Documenter, FrankWolfe
 using SparseArrays
 using LinearAlgebra
 
+ENV["GKSwstype"] = "100"
+
 makedocs(
     modules=[FrankWolfe],
     sitename="FrankWolfe.jl",

@@ -55,7 +55,7 @@ jobs:
       - shell: bash
         run: julia --project=docs -e "using Pkg; Pkg.develop(PackageSpec(path=pwd()))"
       - shell: bash
-        run: julia --project=docs -e "using Pkg; Pkg.instantiate()"
+        run: julia --project=docs -e "using Pkg; Pkg.instantiate(); Pkg.build()"
       - shell: bash
         run: |
           julia --project=docs -e '
