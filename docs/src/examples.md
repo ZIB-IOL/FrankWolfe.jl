@@ -183,9 +183,6 @@ import Random
 using MultivariatePolynomials
 using DynamicPolynomials
 
-import ReverseDiff
-using FiniteDifferences
-
 using Plots
 
 using LaTeXStrings
@@ -290,6 +287,7 @@ for i in 1:num_pairs # hide
         L_estimate = new_L # hide
     end # hide
 end # hide
+
 function projnorm1(x, τ)
     n = length(x)
     if norm(x, 1) ≤ τ
