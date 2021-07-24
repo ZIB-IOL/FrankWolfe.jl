@@ -23,7 +23,7 @@ end
 
 Base.sum(v::ScaledHotVector) = v.active_val
 
-function LinearAlgebra.dot(v1::ScaledHotVector, v2::AbstractVector)
+function LinearAlgebra.dot(v1::ScaledHotVector{<:Number}, v2::AbstractVector{<:Number})
     return v1.active_val * v2[v1.val_idx]
 end
 
@@ -31,10 +31,11 @@ function LinearAlgebra.dot(v1::ScaledHotVector{<:Number}, v2::SparseArrays.Spars
     return v1.active_val * v2[v1.val_idx]
 end
 
-LinearAlgebra.dot(v1::AbstractVector, v2::ScaledHotVector) = dot(v2, v1)
+LinearAlgebra.dot(v1::AbstractVector{<:Number}, v2::ScaledHotVector{<:Number}) = conj(dot(v2, v1))
 
-# warning, no bound check
-function LinearAlgebra.dot(v1::ScaledHotVector, v2::ScaledHotVector)
+LinearAlgebra.dot(v1::SparseArrays.SparseVector{<:Number}, v2::ScaledHotVector{<:Number}) = conj(dot(v2, v1))
+
+function LinearAlgebra.dot(v1::ScaledHotVector{<:Number}, v2::ScaledHotVector{<:Number})
     if length(v1) != length(v2)
         throw(DimensionMismatch("v1 and v2 do not have matching sizes"))
     end
@@ -58,7 +59,7 @@ end
 
 Base.:+(y::AbstractVector, x::ScaledHotVector) = x + y
 
-function Base.:+(x::FrankWolfe.ScaledHotVector{T1}, y::FrankWolfe.ScaledHotVector{T2}) where {T1,T2}
+function Base.:+(x::ScaledHotVector{T1}, y::ScaledHotVector{T2}) where {T1,T2}
     n = length(x)
     T = promote_type(T1, T2)
     if n != length(y)
@@ -168,6 +169,11 @@ Base.@propagate_inbounds function Base.:-(a::RankOneMatrix, b::RankOneMatrix)
     end
     return r
 end
+
+Base.:-(x::RankOneMatrix) = RankOneMatrix(-x.u, x.v)
+
+Base.:*(x::Number, m::RankOneMatrix) = RankOneMatrix(x * m.u, m.v)
+Base.:*(m::RankOneMatrix, x::Number) = RankOneMatrix(x * m.u, m.v)
 
 Base.@propagate_inbounds function Base.:+(a::RankOneMatrix, b::RankOneMatrix)
     @boundscheck size(a) == size(b) || throw(DimensionMismatch())

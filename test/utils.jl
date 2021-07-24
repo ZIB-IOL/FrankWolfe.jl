@@ -38,9 +38,19 @@ end
                 r2 = M * x
                 @test r1 ≈ r2
             end
+            @testset "Identity test" begin
+                x = 1.0
+                r1 = R
+                r2 = R * x
+                @test r1 ≈ r2
+            end
             @testset "Add and sub" begin
                 @test M + R ≈ R + R
                 @test M - R ≈ R - R
+                MR = -R
+                @test MR isa FrankWolfe.RankOneMatrix
+                @test -MR == R
+                @test 3R isa FrankWolfe.RankOneMatrix
             end
         end
     end

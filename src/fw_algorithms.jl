@@ -30,7 +30,7 @@ function frank_wolfe(
     gradient=nothing,
     callback=nothing,
     timeout=Inf,
-    print_callback=FrankWolfe.print_callback,
+    print_callback=print_callback,
 )
 
     # format string for output of the algorithm
@@ -75,13 +75,12 @@ function frank_wolfe(
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec"]
         print_callback(headers, format_string, print_header=true)
     end
-
     if emphasis == memory && !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
         # if integer, convert element type to most appropriate float
         if eltype(x) <: Integer
-            x = convert(Array{float(eltype(x))}, x)
+            x = copyto!(similar(x, float(eltype(x))), x)
         else
-            x = convert(Array{eltype(x)}, x)
+            x = copyto!(similar(x), x)
         end
     end
     first_iter = true
@@ -143,18 +142,6 @@ function frank_wolfe(
             dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         end
 
-        if callback !== nothing
-            state = (
-                t=t,
-                primal=primal,
-                dual=primal - dual_gap,
-                dual_gap=dual_gap,
-                time=tot_time,
-                x=x,
-                v=v,
-            )
-            callback(state)
-        end
         @emphasis(emphasis, d = x - v)
 
         gamma, L = line_search_wrapper(
@@ -172,6 +159,19 @@ function frank_wolfe(
             step_lim,
             one(eltype(x)),
         )
+        if callback !== nothing
+            state = (
+                t=t,
+                primal=primal,
+                dual=primal - dual_gap,
+                dual_gap=dual_gap,
+                time=tot_time,
+                x=x,
+                v=v,
+                gamma=gamma,
+            )
+            callback(state)
+        end
 
         @emphasis(emphasis, x = x - gamma * d)
 
@@ -255,7 +255,7 @@ function lazified_conditional_gradient(
     VType=typeof(x0),
     callback=nothing,
     timeout=Inf,
-    print_callback=FrankWolfe.print_callback,
+    print_callback=print_callback,
 )
 
     # format string for output of the algorithm
@@ -305,7 +305,11 @@ function lazified_conditional_gradient(
     end
 
     if emphasis == memory && !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
-        x = convert(Array{float(eltype(x))}, x)
+        if eltype(x) <: Integer
+            x = copyto!(similar(x, float(eltype(x))), x)
+        else
+            x = copyto!(similar(x), x)
+        end
     end
 
     if gradient === nothing
@@ -315,7 +319,7 @@ function lazified_conditional_gradient(
     # container for direction
     d = similar(x)
 
-    while t <= max_iteration && dual_gap >= max(epsilon, eps())
+    while t <= max_iteration && dual_gap >= max(epsilon, eps(float(eltype(x))))
 
         #####################
         # managing time and Ctrl-C
@@ -355,20 +359,6 @@ function lazified_conditional_gradient(
             phi = min(dual_gap, phi / 2)
         end
 
-        if callback !== nothing
-            state = (
-                t=t,
-                primal=primal,
-                dual=primal - dual_gap,
-                dual_gap=dual_gap,
-                time=tot_time,
-                cache_size=length(lmo),
-                x=x,
-                v=v,
-            )
-            callback(state)
-        end
-
         @emphasis(emphasis, d = x - v)
 
         gamma, L = line_search_wrapper(
@@ -386,6 +376,21 @@ function lazified_conditional_gradient(
             step_lim,
             1.0,
         )
+
+        if callback !== nothing
+            state = (
+                t=t,
+                primal=primal,
+                dual=primal - dual_gap,
+                dual_gap=dual_gap,
+                time=tot_time,
+                cache_size=length(lmo),
+                x=x,
+                v=v,
+                gamma=gamma
+            )
+            callback(state)
+        end
 
         @emphasis(emphasis, x = x - gamma * d)
 
@@ -464,7 +469,7 @@ function stochastic_frank_wolfe(
     full_evaluation=false,
     callback=nothing,
     timeout=Inf,
-    print_callback=FrankWolfe.print_callback,
+    print_callback=print_callback,
 )
 
     # format string for output of the algorithm
@@ -507,8 +512,12 @@ function stochastic_frank_wolfe(
         print_callback(headers, format_string, print_header=true)
     end
 
-    if emphasis == memory && !isa(x, Array)
-        x = convert(Array{promote_type(eltype(x), Float64)}, x)
+    if emphasis == memory && !isa(x, Union{Array, SparseArrays.AbstractSparseArray})
+        if eltype(x) <: Integer
+            x = copyto!(similar(x, float(eltype(x))), x)
+        else
+            x = copyto!(similar(x), x)
+        end
     end
     first_iter = true
     gradient = 0
@@ -569,19 +578,6 @@ function stochastic_frank_wolfe(
             dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         end
 
-        if callback !== nothing
-            state = (
-                t=t,
-                primal=primal,
-                dual=primal - dual_gap,
-                dual_gap=dual_gap,
-                time=tot_time,
-                x=x,
-                v=v,
-            )
-            callback(state)
-        end
-
         if line_search isa Agnostic
             gamma = 2 // (2 + t)
         elseif line_search isa Nonconvex
@@ -593,6 +589,20 @@ function stochastic_frank_wolfe(
             gamma = rat_dual_gap // (L * sum((x - v) .^ 2))
         elseif line_search isa FixedStep
             gamma = gamma0
+        end
+
+        if callback !== nothing
+            state = (
+                t=t,
+                primal=primal,
+                dual=primal - dual_gap,
+                dual_gap=dual_gap,
+                time=tot_time,
+                x=x,
+                v=v,
+                gamma=gamma,
+            )
+            callback(state)
         end
 
         @emphasis(emphasis, x = (1 - gamma) * x + gamma * v)
