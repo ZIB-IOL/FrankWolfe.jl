@@ -524,7 +524,7 @@ plot!(size=(3000, 2000), legendfontsize=30, annotationfontsize=30, guidefontsize
 ```
 
 
-##Matrix Completion
+## Matrix Completion
 
 We present another example that is about matrix completion. The idea is, given a partially observed matrix ``Y\in\mathbb{R}{m\times n}``, to find
 ``X\in\mathbb{R}{m\times n}`` to minimize the sum of squared errors from the observed entries while 'completing' the matrix ``Y``, i.e. filling the unobserved
