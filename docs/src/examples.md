@@ -543,6 +543,7 @@ using FrankWolfe
 using ZipFile, DataFrames, CSV
 
 using Random
+using Plots
 
 using Profile
 
