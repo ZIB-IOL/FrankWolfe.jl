@@ -817,6 +817,7 @@ plot!(size=(3000, 2000), legendfontsize=30, annotationfontsize=30, guidefontsize
 
 ## Exact Optimization with Rational Arithmetic
 
+This example can be found in section 4.3 [in the paper](https://arxiv.org/pdf/2104.06675.pdf).
 The package allows for exact optimization with rational arithmetic. For this, it suffices to set up the LMO
 to be rational and choose an appropriate step-size rule as detailed below. For the LMOs included in the
 package, this simply means initializing the radius with a rational-compatible element type, e.g., `1`, rather
