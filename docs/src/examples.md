@@ -527,7 +527,7 @@ plot!(size=(3000, 2000), legendfontsize=30, annotationfontsize=30, guidefontsize
 
 We present another example that is about matrix completion. The idea is, given a partially observed matrix ``Y\in\mathbb{R}{m\times n}``, to find
 ``X\in\mathbb{R}{m\times n}`` to minimize the sum of squared errors from the observed entries while 'completing' the matrix ``Y``, i.e. filling the unobserved
-entries to match ``Y`` as good as possible. Again, a detailed explanation can be found in chapter 4.2 of
+entries to match ``Y`` as good as possible. A detailed explanation can be found in section 4.2 of
 [the paper](https://arxiv.org/pdf/2104.06675.pdf).
 We will try to solve
 ```math
