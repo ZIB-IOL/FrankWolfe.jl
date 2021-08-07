@@ -61,7 +61,7 @@ function compute_extreme_point(
             return v
         end
     end
-    v = compute_extreme_point(lmo.inner, direction, kwargs...)
+    v = compute_extreme_point(lmo.inner, direction; kwargs...)
     if store_cache
         lmo.last_vertex = v
     end
@@ -158,14 +158,14 @@ function compute_extreme_point(
                 end
             end
         end
-        if best_idx > 0 # && fast_dot(best_v, direction) ≤ threshold 
+        if best_idx > 0 # && fast_dot(best_v, direction) ≤ threshold
             # println("cache sol")
             return best_v
         end
     end
     # no interesting point found, computing new
     # println("LP sol")
-    v = compute_extreme_point(lmo.inner, direction, kwargs...)
+    v = compute_extreme_point(lmo.inner, direction; kwargs...)
     if store_cache
         tup = Base.setindex(lmo.vertices, v, lmo.oldest_idx)
         lmo.vertices = tup
@@ -241,10 +241,10 @@ function compute_extreme_point(
     if best_idx < 0
         v = compute_extreme_point(lmo.inner, direction)
         if store_cache
-            # note: we do not check for duplicates. hence you might end up with more vertices, 
+            # note: we do not check for duplicates. hence you might end up with more vertices,
             # in fact up to number of dual steps many, that might be already in the cache
-            # in order to reach this point, if v was already in the cache is must not meet the threshold (otherwise we would have returned it) 
-            # and it is the best possible, hence we will perform a dual step on the outside. 
+            # in order to reach this point, if v was already in the cache is must not meet the threshold (otherwise we would have returned it)
+            # and it is the best possible, hence we will perform a dual step on the outside.
             #
             # note: another possibility could be to test against that in the if statement but then you might end you recalculating the same vertex a few times.
             # as such this might be a better tradeoff, i.e., to not check the set for duplicates and potentially accept #dualSteps many duplicates.
@@ -302,4 +302,117 @@ function compute_extreme_point(
             compute_extreme_point(lmo.lmos[idx], direction[direction_indices[idx]]; kwargs...)
     end
     return storage
+end
+
+"""
+    ChasingGradientLMO{LMO,T}
+
+Oracle boosting FW with gradient pursuit: the LMO constructs a direction as
+a combination of multiple extreme vertices:
+`d_t = ∑_k λ_k (v_k - x_t)` found in successive rounds.
+Pursuit rounds terminate once the alignment improvement with the direction of the gradient
+is lower than `improv_tol` or `max_rounds_number` is reached.
+
+The LMO also keeps internal containers `d`, `u`, `residual` and `m_residual` to reduce allocations.
+See the [paper](https://arxiv.org/abs/2003.06369).
+All keyword arguments to `compute_extreme_point` are passed to the inner LMO.
+"""
+mutable struct ChasingGradientLMO{LMO<:LinearMinimizationOracle,T,G,G2} <: LinearMinimizationOracle
+    inner::LMO
+    max_rounds_number::Int
+    improv_tol::T
+    d::G
+    u::G
+    residual::G2
+    m_residual::G2
+end
+
+function ChasingGradientLMO(lmo, max_rounds_number, improv_tol, d, residual)
+    return ChasingGradientLMO(
+        lmo,
+        max_rounds_number,
+        improv_tol,
+        d,
+        copy(d),
+        residual,
+        copy(residual),
+    )
+end
+
+function _zero!(d)
+    @. d = 0
+    return nothing
+end
+
+function _zero!(d::SparseArrays.AbstractSparseArray)
+    @. d = 0
+    SparseArrays.dropzeros!(d)
+    return nothing
+end
+
+function _inplace_plus(d, v)
+    @. d += v
+end
+
+function _inplace_plus(d, v::ScaledHotVector)
+    return d[v.val_idx] += v.active_val
+end
+
+function compute_extreme_point(lmo::ChasingGradientLMO, direction; x, kwargs...)
+    _zero!(lmo.d)
+    v_ret = 0 * lmo.d
+    Λ = zero(eltype(direction))
+    norm_direction = norm(direction)
+    if norm_direction <= eps(eltype(direction))
+        v_ret .+= compute_extreme_point(lmo.inner, direction, x=x, kwargs...)
+        return v_ret
+    end
+    use_v = true
+    function align(d)
+        if norm(d) <= eps(eltype(d))
+            return -one(eltype(d))
+        else
+            return -fast_dot(direction, d) / (norm_direction * norm(d))
+        end
+    end
+    @. lmo.residual = -direction
+    @. lmo.m_residual = direction
+    for round in 1:lmo.max_rounds_number
+        if norm(lmo.residual) <= eps(eltype(lmo.residual))
+            break
+        end
+        v = compute_extreme_point(lmo.inner, lmo.m_residual; kwargs...)
+        @. lmo.u = -x
+        _inplace_plus(lmo.u, v)
+        d_norm = norm(lmo.d)
+        if d_norm > 0 && fast_dot(lmo.residual, lmo.d / d_norm) < -fast_dot(lmo.residual, lmo.u)
+            @. lmo.u = -lmo.d / d_norm
+            use_v = false
+        end
+        λ = fast_dot(lmo.residual, lmo.u) / (norm(lmo.u)^2)
+        d_updated = lmo.u
+        @. d_updated = lmo.d + λ * lmo.u #2 allocs
+        if align(d_updated) - align(lmo.d) >= lmo.improv_tol
+            @. lmo.d = d_updated
+            # @. lmo.residual = -direction - lmo.d
+            @. lmo.residual -= λ * lmo.u
+            @. lmo.m_residual = -lmo.residual
+            if use_v
+                Λ += λ
+            else
+                Λ = Λ * (1 - λ / d_norm)
+            end
+            use_v = true
+        else
+            #@show round
+            break
+        end
+    end
+    if Λ <= eps(eltype(Λ))
+        v_ret .+= compute_extreme_point(lmo.inner, direction, x=x, kwargs...)
+        return v_ret
+    end
+    @. v_ret += x
+    @. v_ret += lmo.d / Λ #2 allocations
+    return v_ret
 end

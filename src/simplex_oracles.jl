@@ -21,7 +21,7 @@ LMO for scaled unit simplex:
 Returns either vector of zeros or vector with one active value equal to RHS if
 there exists an improving direction.
 """
-function compute_extreme_point(lmo::UnitSimplexOracle{T}, direction) where {T}
+function compute_extreme_point(lmo::UnitSimplexOracle{T}, direction; kwargs...) where {T}
     idx = argmin(direction)
     if direction[idx] < 0
         return ScaledHotVector(lmo.right_side, idx, length(direction))
