@@ -30,12 +30,8 @@ function frank_wolfe(
     gradient=nothing,
     callback=nothing,
     timeout=Inf,
-<<<<<<< HEAD
-    print_callback=FrankWolfe.print_callback,
-    kwargs...,
-=======
     print_callback=print_callback,
->>>>>>> master
+    kwargs...,
 )
 
     # format string for output of the algorithm

@@ -307,12 +307,15 @@ end
 """
     ChasingGradientLMO{LMO,T}
 
-Oracle wrapping another one of type LMO to boost FW with gradient pursuit.
-Pursuit rounds end once the alignment improvement with the direction of the gradient
+Oracle boosting FW with gradient pursuit: the LMO constructs a direction as
+a combination of multiple extreme vertices:
+`d_t = ∑_k λ_k (v_k - x_t)` found in successive rounds.
+Pursuit rounds terminate once the alignment improvement with the direction of the gradient
 is lower than `improv_tol` or `max_rounds_number` is reached.
-See the [paper](https://arxiv.org/abs/2003.06369)
 
-All keyword arguments are passed to the inner LMO.
+The LMO also keeps internal containers `d`, `u`, `residual` and `m_residual` to reduce allocations.
+See the [paper](https://arxiv.org/abs/2003.06369).
+All keyword arguments to `compute_extreme_point` are passed to the inner LMO.
 """
 mutable struct ChasingGradientLMO{LMO<:LinearMinimizationOracle,T,G,G2} <: LinearMinimizationOracle
     inner::LMO
@@ -338,11 +341,13 @@ end
 
 function _zero!(d)
     @. d = 0
+    return nothing
 end
 
 function _zero!(d::SparseArrays.AbstractSparseArray)
     @. d = 0
-    return SparseArrays.dropzeros!(d)
+    SparseArrays.dropzeros!(d)
+    return nothing
 end
 
 function _inplace_plus(d, v)
@@ -374,11 +379,9 @@ function compute_extreme_point(lmo::ChasingGradientLMO, direction; x, kwargs...)
     @. lmo.m_residual = direction
     for round in 1:lmo.max_rounds_number
         if norm(lmo.residual) <= eps(eltype(lmo.residual))
-            #@show round
             break
         end
         v = compute_extreme_point(lmo.inner, lmo.m_residual; kwargs...)
-        #@. lmo.u = v - x
         @. lmo.u = -x
         _inplace_plus(lmo.u, v)
         d_norm = norm(lmo.d)
