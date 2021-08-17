@@ -519,7 +519,6 @@ FrankWolfe.plot_results(
     xscalelog=[:log, :identity, :log, :identity],
     legend_position=[:bottomleft, nothing, nothing, nothing],
 )
-plot!(size=(3000, 2000), legendfontsize=30, annotationfontsize=30, guidefontsize=30, tickfontsize=30)
 ```
 
 
@@ -810,7 +809,6 @@ FrankWolfe.plot_results(
     xscalelog=[:log, :identity, :log, :identity],
     legend_position=[:bottomleft, nothing, nothing, nothing]
 )
-plot!(size=(3000, 2000), legendfontsize=30, annotationfontsize=30, guidefontsize=30, tickfontsize=30)
 ```
 
 
