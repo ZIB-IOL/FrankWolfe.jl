@@ -7,6 +7,7 @@ frank_wolfe
 lazified_conditional_gradient
 away_frank_wolfe
 blended_conditional_gradient
+FrankWolfe.stochastic_frank_wolfe
 ```
 
 
@@ -65,7 +66,6 @@ This section gathers all additional relevant components of the package.
 ## Functions and Structures
 
 ```@docs
-FrankWolfe.stochastic_frank_wolfe
 FrankWolfe.ActiveSet
 FrankWolfe.active_set_update!
 FrankWolfe.compute_active_set_iterate
@@ -91,7 +91,12 @@ FrankWolfe.RankOneMatrix
 FrankWolfe.line_search_wrapper
 FrankWolfe.adaptive_step_size
 FrankWolfe.plot_results
-FrankWolfe._unsafe_equal
 FrankWolfe.check_gradients
 FrankWolfe.trajectory_callback
 ```
+
+A note on iterates precision in algorithms depending on an active set:  
+The weights in the active set are currently defined as `Float64` in the algorithm.
+This means that even with vertices using a lower precision, the iterate `sum_i(lambda_i * v_i)`
+will be upcast to `Float64`. One reason for keeping this as-is for now is the
+higher precision required by the computation of iterates from their barycentric decomposition.
