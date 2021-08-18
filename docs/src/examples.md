@@ -636,13 +636,6 @@ const lmo = FrankWolfe.NuclearNormLMO(norm_estimation)
 const x0 = FrankWolfe.compute_extreme_point(lmo, ones(size(rating_matrix)))
 const k = 100
 
-FrankWolfe.benchmark_oracles(
-    f,
-    (str, x) -> grad!(str, x),
-    () -> randn(size(rating_matrix)),
-    lmo;
-    k=100,
-)
 
 gradient = spzeros(size(x0)...)
 gradient_aux = spzeros(size(x0)...)
