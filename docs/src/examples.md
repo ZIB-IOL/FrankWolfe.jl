@@ -640,6 +640,7 @@ const k = 100
 gradient = spzeros(size(x0)...)
 gradient_aux = spzeros(size(x0)...)
 
+# Define a custom callback computing at each iteration the test loss
 function build_callback(trajectory_arr)
     return function callback(state)
         return push!(trajectory_arr, (Tuple(state)[1:5]..., test_loss(state.x)))
