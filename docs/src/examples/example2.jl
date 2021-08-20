@@ -135,7 +135,7 @@ function projnorm1(x, τ)
         return x
     end
     u = abs.(x)
-    # simplex projection
+    ## simplex projection
     bget = false
     s_indices = sortperm(u, rev=true)
     tsum = zero(τ)
