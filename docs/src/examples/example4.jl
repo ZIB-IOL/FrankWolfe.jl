@@ -19,11 +19,11 @@
 # be rational as long as the atom computed by the LMO is of a rational type. Assuming these requirements are
 # met, all iterates and the computed solution will then be rational:
 
-# ```
-# n = 100
-# x = fill(big(1)//100, n)
+
+n = 100
+x = fill(big(1)//100, n)
 ## equivalent to { 1/100 }^100
-# ```
+
 
 # Another possible step-size rule is `rationalshortstep` which computes the step size by minimizing the
 # smoothness inequality as ``\gamma_t=\frac{\langle \nabla f(x_t),x_t-v_t\rangle}{2L||x_t-v_t||^2}``. However, as this step size depends on an upper bound on the
