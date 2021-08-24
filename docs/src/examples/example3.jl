@@ -109,14 +109,14 @@ norm_estimation = 10 * Arpack.svds(rating_matrix, nsv=1, ritzvec=false)[1].S[1]
 
 const lmo = FrankWolfe.NuclearNormLMO(norm_estimation)
 const x0 = FrankWolfe.compute_extreme_point(lmo, ones(size(rating_matrix)))
-const k = 100
+const k = 10
 
 FrankWolfe.benchmark_oracles(
     f,
     (str, x) -> grad!(str, x),
     () -> randn(size(rating_matrix)),
     lmo;
-    k=100,
+    k=10,
 )
 
 gradient = spzeros(size(x0)...)
@@ -130,7 +130,7 @@ end
 
 # The smoothness constant is estimated:
 
-num_pairs = 1000
+num_pairs = 100
 L_estimate = -Inf
 for i in 1:num_pairs
     global L_estimate

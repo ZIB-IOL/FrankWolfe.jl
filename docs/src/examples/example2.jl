@@ -28,7 +28,7 @@ using Plots
 
 using LaTeXStrings
 
-const N = 15
+const N = 10
 
 DynamicPolynomials.@polyvar X[1:15]
 
@@ -107,13 +107,13 @@ end
 
 gradient = similar(all_coeffs)
 
-max_iter = 100_000
+max_iter = 10000
 random_initialization_vector = rand(length(all_coeffs))
 
 lmo = FrankWolfe.LpNormLMO{1}(0.95 * norm(all_coeffs, 1))
 
 ## Estimating smoothness parameter
-num_pairs = 10000
+num_pairs = 1000
 L_estimate = -Inf
 gradient_aux = similar(gradient)
 
