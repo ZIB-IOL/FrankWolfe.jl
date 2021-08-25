@@ -146,17 +146,21 @@ end
 function compute_extreme_point(lmo::ScaledBoundL1NormBall, direction; kwargs...)
     idx = 0
     lower = false
-    v = -one(eltype(direction))
+    val = -one(eltype(direction))
     for i in eachindex(direction)
-        if direction[i] > v
-            v = direction[i]
+        if direction[i] > val
+            val = direction[i]
             idx = i
             lower = true
-        elseif -direction[i] > v
-            v = direction[i]
+        elseif -direction[i] > val
+            val = -direction[i]
             idx = i
             lower = false
         end
     end
-    return ScaledHotVector(ifelse(lower, lmo.lower_bounds[idx], lmo.upper_bounds[idx]), idx, length(direction))
+    # compute midpoint for all coordinates, replace with extreme coordinate on one
+    # TODO use smarter array type if bounds are FillArrays
+    v = (lmo.lower_bounds + lmo.upper_bounds) / 2
+    v[idx] = ifelse(lower, lmo.lower_bounds[idx], lmo.upper_bounds[idx])
+    return v
 end
