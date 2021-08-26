@@ -539,7 +539,7 @@ end
     # all coordinates shifted up 
     lmo_shifted = FrankWolfe.ScaledBoundL1NormBall(zeros(10), 2 * ones(10))
     lmo_scaled = FrankWolfe.ScaledBoundL1NormBall(-2 * ones(10), 2 * ones(10))
-    for _ in 1:10
+    for _ in 1:100
         d = randn(10)
         v = FrankWolfe.compute_extreme_point(lmo, d)
         vref = FrankWolfe.compute_extreme_point(lmo_ref, d)
@@ -549,4 +549,9 @@ end
         v2 = FrankWolfe.compute_extreme_point(lmo_scaled, d)
         @test v2 ≈ 2v
     end
+    d = zeros(10)
+    v = FrankWolfe.compute_extreme_point(lmo, d)
+    vref = FrankWolfe.compute_extreme_point(lmo_ref, d)
+    @test v ≈ vref
+    @test norm(v) == 1
 end
