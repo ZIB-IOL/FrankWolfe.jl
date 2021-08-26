@@ -67,7 +67,7 @@ function Base.:+(x::ScaledHotVector{T1}, y::ScaledHotVector{T2}) where {T1,T2}
     end
     res = spzeros(T, n)
     @inbounds res[x.val_idx] = x.active_val
-    @inbounds res[y.val_idx] = y.active_val
+    @inbounds res[y.val_idx] += y.active_val
     return res
 end
 

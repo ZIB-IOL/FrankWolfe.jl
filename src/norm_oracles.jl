@@ -40,7 +40,11 @@ function compute_extreme_point(lmo::LpNormLMO{T,1}, direction; kwargs...) where 
             idx = i
         end
     end
-    return ScaledHotVector(-lmo.right_hand_side * sign(direction[idx]), idx, length(direction))
+    sign_coeff = sign(direction[idx])
+    if sign_coeff == 0.0
+        sign_coeff -= 1
+    end
+    return ScaledHotVector(-lmo.right_hand_side * sign_coeff, idx, length(direction))
 end
 
 function compute_extreme_point(lmo::LpNormLMO{T,p}, direction; kwargs...) where {T,p}
