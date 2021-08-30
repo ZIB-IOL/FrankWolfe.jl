@@ -24,16 +24,13 @@ using Pkg
 Pkg.add("FrankWolfe")
 ```
 
-If you want the bleeding edge you can simply clone directly from github
+or the master branch:
 
 ```julia
-using Pkg
-Pkg.add("https://github.com/ZIB-IOL/FrankWolfe.jl")
+Pkg.add(url="https://github.com/ZIB-IOL/FrankWolfe.jl", rev="master")
 ```
 
-Alternatively you can also use the build-in package manager via `]`.
-
-## LMO
+## Linear Minimization Oracles (LMO)
 
 Several oracles are implemented, all are subtypes of `LinearMinimizationOracle`
 and implement the method:
@@ -45,7 +42,7 @@ compute_extreme_point(lmo::LMO, direction; kwargs...) -> v
 which takes a minimization direction and returns the point `v` minimizing in the direction
 over the set represented by the LMO.
 
-## Implemented Methods
+## Implemented Algorithms
 
 ### Conditional Gradient algorithms
 
@@ -118,12 +115,14 @@ state to an array returned from the algorithm.
 
 #### Other 
 
-- Emphasis: All solvers support emphasis (parameter `Emphasis`) to either exploit vectorized linear algebra or be memory efficient, e.g., for extreme large-scale instances
+- Emphasis: All solvers support emphasis (parameter `Emphasis`) to either exploit vectorized linear algebra or be memory efficient, e.g., for large-scale instances
 - Various caching strategies for the lazy implementations. Unbounded cache sizes (can get slow), bounded cache sizes as well as early returns once any sufficient vertex is found in the cache.
 - (to come:) when the LMO can compute dual prices then the Frank-Wolfe algorithms return dual prices for the (approximately) optimal solutions (see <https://arxiv.org/abs/2101.02087>)
 - optionally all algorithms can be endowed with gradient momentum. This might help convergence especially in the stochastic context.
 
 ## Cool Examples
+
+See the `/example` folder. All examples run on the test environment using [TestEnv.jl](https://github.com/JuliaTesting/TestEnv.jl).
 
 ### Approximate Carathéodory with rational arithmetic
 

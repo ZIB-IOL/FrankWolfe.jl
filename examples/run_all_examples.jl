@@ -1,10 +1,13 @@
+using Pkg
+Pkg.activate(@__DIR__)
+
 using Random
 
 # for bug with display
 ENV["GKSwstype"] = "100"
 
-example_files = filter(readdir(@__DIR__)) do f
-    occursin(".jl", f) && !occursin("large", f) && !occursin("result", f) && f != "activate.jl"
+example_files = filter(readdir(@__DIR__, join=true)) do f
+    endswith(f, ".jl") && !occursin("large", f) && !occursin("result", f) && f != "activate.jl"
 end
 
 example_shuffle = randperm(length(example_files))
