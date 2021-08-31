@@ -519,7 +519,6 @@ end
 end
 
 @testset "Product LMO" begin
-    # 
     lmo = FrankWolfe.ProductLMO(FrankWolfe.LpNormLMO{Inf}(3.0), FrankWolfe.LpNormLMO{1}(2.0))
     dinf = randn(10)
     d1 = randn(5)
@@ -531,4 +530,28 @@ end
 
     vvec = FrankWolfe.compute_extreme_point(lmo, [dinf; d1]; direction_indices=(1:10, 11:15))
     @test vvec ≈ [vinf; v1]
+end
+
+@testset "Scaled norm polytopes" begin
+    lmo = FrankWolfe.ScaledBoundL1NormBall(-ones(10), ones(10))
+    # equivalent to LMO
+    lmo_ref = FrankWolfe.LpNormLMO{1}(1)
+    # all coordinates shifted up 
+    lmo_shifted = FrankWolfe.ScaledBoundL1NormBall(zeros(10), 2 * ones(10))
+    lmo_scaled = FrankWolfe.ScaledBoundL1NormBall(-2 * ones(10), 2 * ones(10))
+    for _ in 1:100
+        d = randn(10)
+        v = FrankWolfe.compute_extreme_point(lmo, d)
+        vref = FrankWolfe.compute_extreme_point(lmo_ref, d)
+        @test v ≈ vref
+        vshift = FrankWolfe.compute_extreme_point(lmo_shifted, d)
+        @test v .+ 1 ≈ vshift
+        v2 = FrankWolfe.compute_extreme_point(lmo_scaled, d)
+        @test v2 ≈ 2v
+    end
+    d = zeros(10)
+    v = FrankWolfe.compute_extreme_point(lmo, d)
+    vref = FrankWolfe.compute_extreme_point(lmo_ref, d)
+    @test v ≈ vref
+    @test norm(v) == 1
 end
