@@ -10,17 +10,17 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - version: 'nightly'
-            os: ubuntu-latest
-            arch: x64
-          - version: '1'
-            os: ubuntu-latest
-            arch: x64
           - version: '1'
             os: ubuntu-latest
             arch: x64
           - version: '1.5'
+            os: ubuntu-latest
+            arch: x64
+          - version: '1'
             os: windows-latest
+            arch: x64
+          - version: 'nightly'
+            os: ubuntu-latest
             arch: x64
     steps:
       - uses: actions/checkout@v2
@@ -77,4 +77,4 @@ jobs:
       - shell: bash
         run: julia --project -e 'import Pkg; Pkg.instantiate(); Pkg.activate("examples"); Pkg.instantiate()'
       - shell: bash
-        run: cd examples; julia run_all_examples.jl
+        run: julia examples/run_all_examples.jl

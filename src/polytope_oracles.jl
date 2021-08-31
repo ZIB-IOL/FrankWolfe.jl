@@ -129,3 +129,42 @@ function convert_mathopt(
     end
     return MathOptLMO(optimizer)
 end
+
+"""
+    ScaledBoundL1NormBall(lower_bounds, upper_bounds)
+
+Polytope similar to a L1-ball with shifted bounds.
+It is the convex hull of two scaled unit vectors for each axis.
+Lower and upper bounds are passed on as abstract vectors, possibly of different types.
+For the standard L1-ball, all lower and upper bounds would be -1 and 1.
+"""
+struct ScaledBoundL1NormBall{T, VT1 <: AbstractVector{T}, VT2 <: AbstractVector{T}} <: LinearMinimizationOracle
+    lower_bounds::VT1
+    upper_bounds::VT2
+end
+
+function compute_extreme_point(lmo::ScaledBoundL1NormBall, direction; kwargs...)
+    idx = 0
+    lower = false
+    val =  zero(eltype(direction))
+    for i in eachindex(direction)
+        if direction[i] > val
+            val = direction[i]
+            idx = i
+            lower = true
+        elseif -direction[i] > val
+            val = -direction[i]
+            idx = i
+            lower = false
+        end
+    end
+    # compute midpoint for all coordinates, replace with extreme coordinate on one
+    # TODO use smarter array type if bounds are FillArrays
+    v = (lmo.lower_bounds + lmo.upper_bounds) / 2
+    # handle zero direction
+    if idx == 0
+        idx = 1
+    end
+    v[idx] = ifelse(lower, lmo.lower_bounds[idx], lmo.upper_bounds[idx])
+    return v
+end
