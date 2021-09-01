@@ -46,15 +46,14 @@ over the set represented by the LMO.
 
 ### Conditional Gradient algorithms
 
-- Basic Frank-Wolfe Algorithm (see <http://proceedings.mlr.press/v28/jaggi13.html> for an overview)
+- Basic Frank-Wolfe Algorithm (see [Jaggi 2013](http://proceedings.mlr.press/v28/jaggi13.html) for an overview)
   - works both for convex and non-convex function (use step size rule `FrankWolfe.Nonconvex()`)
-- Stochastic Frank-Wolfe 
-- Away-Step Frank-Wolfe (see <https://arxiv.org/abs/1511.05932> for an overview)
-- Blended Conditional Gradients (see <https://arxiv.org/abs/1805.07311>)
+- Stochastic Frank-Wolfe
+- Away-Step Frank-Wolfe (see [Lacoste-Julien, Jaggi 2015](https://arxiv.org/abs/1511.05932) for an overview)
+- Blended Conditional Gradients (see [Braun, Pokutta, Tu, Wright 2018](https://arxiv.org/abs/1805.07311))
   - built-in stability feature that temporarily increases accuracy
-- Pairwise Conditional Gradients to come (see <https://arxiv.org/abs/1511.05932> for an overview)
 
-- Most algorithms also have a lazified version (see <https://arxiv.org/abs/1610.05120>)
+- Most algorithms also have a lazified version (see [Braun, Pokutta, Zink 2016](https://arxiv.org/abs/1610.05120)
 
 ### LMOs
 
@@ -66,11 +65,11 @@ Several common LMOs are available out-of-the-box
 - L_p-norm ball
 - Birkhoff polytope
 
-See <https://arxiv.org/pdf/2010.07243.pdf> and <https://arxiv.org/abs/2101.10040> for details
+See [Pokutta, Spiegel, Zimmer 2020](https://arxiv.org/abs/2010.07243) and [Combettes, Pokutta 2021](https://arxiv.org/abs/2101.10040) for details
 
 Moreover: 
 - you can simply define your own LMOs directly 
-- you can use an LP oracle defined via an LP solver (e.g., `glop`, `scip`, `soplex`) with `MathOptInferface`
+- you can use an LP oracle defined via an LP solver (e.g., `SCIP`, `HiGHS`) with `MathOptInferface`
 
 ### General Features
 
@@ -82,14 +81,14 @@ All algorithms can run in various precisions modes: `Float16, Float32, Float64, 
 
 Most common strategies and some more particular ones:
 
-- Agnostic: 2/(2+t) rule for FW 
-- Nonconvex: 1/sqrt rule for nonconvex function and vanilla FW
-- Fixed: fixed stepsize of a given value. Useful for nonconvex and stochastic or more generally when we know the total number of iterations
-- Short-step rule: basically minimizing the smoothness inequality -> requires knowledge of (an estimate of) L
+- Agnostic: `2/(2+t)` rule for FW 
+- Nonconvex: `1/sqrt(2+t)` rule for nonconvex functions and vanilla FW
+- Fixed: fixed step-size of a given value. Useful for nonconvex and stochastic or more generally when we know the total number of iterations
+- Short-step rule: minimizing the smoothness inequality -> requires knowledge of (an estimate of) L
 - Golden ratio linesearch
 - Backtracking line search
-- Rational Short-step rule: some as short-step rule but all computations are kept rational if inputs are rational. useful for the rational variants
-- Adaptive FW: starts with an estimate for L and then refine it dynamically (see <https://arxiv.org/pdf/1806.05123.pdf> and also the survey (forthcoming))
+- Rational short-step rule: similar to short-step rule but all computations are kept rational if inputs are rational. useful for the rational variants
+- Adaptive FW: starts with an estimate for L and then refine it dynamically (see [Pedregosa, Negiar, Askari, Jaggi 2020](https://arxiv.org/abs/1806.05123))
 
 #### Callbacks
 
@@ -117,18 +116,19 @@ state to an array returned from the algorithm.
 
 - Emphasis: All solvers support emphasis (parameter `Emphasis`) to either exploit vectorized linear algebra or be memory efficient, e.g., for large-scale instances
 - Various caching strategies for the lazy implementations. Unbounded cache sizes (can get slow), bounded cache sizes as well as early returns once any sufficient vertex is found in the cache.
-- (to come:) when the LMO can compute dual prices then the Frank-Wolfe algorithms return dual prices for the (approximately) optimal solutions (see <https://arxiv.org/abs/2101.02087>)
-- optionally all algorithms can be endowed with gradient momentum. This might help convergence especially in the stochastic context.
+- Optionally all algorithms can be endowed with gradient momentum. This might help convergence especially in the stochastic context.
+- (to come:) When the LMO can compute dual prices then the Frank-Wolfe algorithms return dual prices for the (approximately) optimal solutions (see [Braun, Pokutta 2021](https://arxiv.org/abs/2101.02087)).
 
-## Cool Examples
+## Noteworthy examples
 
-See the `/example` folder. All examples run on the test environment using [TestEnv.jl](https://github.com/JuliaTesting/TestEnv.jl).
+See the `/examples` folder. All examples run on the test environment using [TestEnv.jl](https://github.com/JuliaTesting/TestEnv.jl).
 
 ### Approximate Carathéodory with rational arithmetic
 
 Example: `examples/approximateCaratheodory.jl`
 
-We can solve the approximate Carathéodory problem with rational arithmetic to obtain rational approximations; see <https://arxiv.org/abs/1911.04415> for some background about approximate Carathéodory and Conditioanl Gradients. We consider the simple instance of approximating the `0` over the probability simplex here:
+We can solve the approximate Carathéodory problem with rational arithmetic to obtain rational approximations; see [Combettes, Pokutta 2019](https://arxiv.org/abs/1911.04415) for some background about approximate Carathéodory and Conditioanl Gradients.
+We consider the simple instance of approximating the `0` over the probability simplex here:
 
 <p class="aligncenter">
 <img src="https://render.githubusercontent.com/render/math?math=\min_{x \in \Delta(n)} \|x\|^2">
@@ -172,7 +172,7 @@ Example: `examples/large_scale.jl`
 
 The package is built to scale well, for those conditional gradients variants that can scale well. For exampple, Away-Step Frank-Wolfe and Pairwise Conditional Gradients do in most cases *not scale well* because they need to maintain active sets and maintaining them can be very expensive. Similarly, line search methods might become prohibitive at large sizes. However if we consider scale-friendly variants, e.g., the vanilla Frank-Wolfe algorithm with the agnostic step size rule or short step rule, then these algorithms can scale well to extreme sizes esentially only limited by the amount of memory available. However even for these methods that tend to scale well, allocation of memory itself can be very slow when you need to allocate gigabytes of memory for a single gradient computation. 
 
-The package is build to support extreme sizes with a special memory efficient emphasis `emphasis=FrankWolfe.memory`, which minimizes very expensive allocation memory and performs as many operations as possible in-place. 
+The package is build to support extreme sizes with a special memory efficient emphasis `emphasis=FrankWolfe.memory`, which minimizes expensive memory allocations and performs as many operations in-place as possible.
 
 Here is an example of a run with 1e9 variables. Each gradient is around 7.5 GB in size. Here is the output of the run broken down into pieces:
 
@@ -200,7 +200,8 @@ Testing update... (Emphasis: memory) 100%|████████████�
  ──────────────────────────────────────────────────────────────────────────
 ```
 
-The above is the optional benchmarking of the oracles that we provide to understand how fast crucial parts of the algorithms are, mostly notably oracle evaluations, the update of the iterate and the computation of the dual gap. As you can see if you compare `update (blas)` vs. `update (memory)`, the normal update when we use BLAS requires an additional 14.9GB of memory on top of the gradient etc whereas the `update (memory)` (the memory emphasis mode) does not consume any extra memory. This is also reflected in the computational times: the BLAS version requires 3.61 seconds on average to update the iterate, while the memory emphasis version requires only 500ms. In fact none of the crucial components in the algorithm consume any memory when run in memory efficient mode. Now let us look at the actual footprint of the whole algorithm:
+The above is the optional benchmarking of the oracles that we provide to understand how fast crucial parts of the algorithms are, mostly notably oracle evaluations, the update of the iterate and the computation of the dual gap.
+As you can see if you compare `update (blas)` vs. `update (memory)`, the normal update when we use BLAS requires an additional 14.9GB of memory on top of the gradient etc whereas the `update (memory)` (the memory emphasis mode) does not consume any extra memory. This is also reflected in the computational times: the BLAS version requires 3.61 seconds on average to update the iterate, while the memory emphasis version requires only 500ms. In fact none of the crucial components in the algorithm consume any memory when run in memory efficient mode. Now let us look at the actual footprint of the whole algorithm:
 
 ```
 Vanilla Frank-Wolfe Algorithm.
@@ -230,7 +231,8 @@ WARNING: In memory emphasis mode iterates are written back into x0!
 
 As you can see the algorithm ran for about 4600 secs (single-thread run) allocating 112.121 GiB of memory throughout. So how does this average out to the per-iteration cost in terms of memory: `112.121 / 7.45 / 1000 = 0.0151` so about 15.1MiB per iteration which is much less than the size of the gradient and in fact only stems from the reporting here. 
 
-**NB.** This example highlights also one of the great features of first-order methods and conditional gradients in particular: We have dimension-independent convergence rates. In fact, we contract the primal gap as `2LD^2 / (t+2)` (for the simple agnostic rule) and, e.g., if the feasible region is the probability simplex with `D = sqrt(2)` and the function has bounded Lipschitzness, e.g., the function `|| x - xp ||^2` has `L = 2`, then the convergence rate is completely independent of the input size. The only thing that limits scaling is how much memory you have available and whether you can stomach the (linear) per-iteration cost.
+**NB.** This example highlights also one of the great features of first-order methods and conditional gradients in particular: we have dimension-independent convergence rates.
+In fact, we contract the primal gap as `2LD^2 / (t+2)` (for the simple agnostic rule) and, e.g., if the feasible region is the probability simplex with `D = sqrt(2)` and the function has bounded Lipschitzness, e.g., the function `|| x - xp ||^2` has `L = 2`, then the convergence rate is completely independent of the input size. The only thing that limits scaling is how much memory you have available and whether you can stomach the (linear) per-iteration cost.
 
 ## Citing
 
