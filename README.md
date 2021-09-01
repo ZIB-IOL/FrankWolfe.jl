@@ -53,7 +53,7 @@ over the set represented by the LMO.
 - Blended Conditional Gradients (see [Braun, Pokutta, Tu, Wright 2018](https://arxiv.org/abs/1805.07311))
   - built-in stability feature that temporarily increases accuracy
 
-- Most algorithms also have a lazified version (see [Braun, Pokutta, Zink 2016](https://arxiv.org/abs/1610.05120)
+- Most algorithms also have a lazified version (see [Braun, Pokutta, Zink 2016](https://arxiv.org/abs/1610.05120))
 
 ### LMOs
 
