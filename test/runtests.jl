@@ -577,13 +577,56 @@ end
         lmo,
         params,
         momentum=0.95,
-        verbose=false,
+        verbose=true,
         line_search=FrankWolfe.Nonconvex(),
         max_iteration=50_000,
         batch_size=length(f_stoch.xs) ÷ 100,
         trajectory=false,
     )
     @test norm(θ - params_perfect) ≤ 0.025 * length(θ)
+
+    # SFW with incrementing batch size
+    batch_iterator = FrankWolfe.IncrementBatchIterator(
+        length(f_stoch.xs) ÷ 1000,
+        length(f_stoch.xs) ÷ 10,
+        2,
+    )
+    θ, _, _, _, _ = FrankWolfe.stochastic_frank_wolfe(
+        f_stoch,
+        lmo,
+        params,
+        momentum=0.95,
+        verbose=false,
+        line_search=FrankWolfe.Nonconvex(),
+        max_iteration=5000,
+        batch_iterator=batch_iterator,
+        trajectory=false,
+    )
+    @test batch_iterator.maxreached
+    # SFW damped momentum 
+    momentum_iterator = FrankWolfe.ExpMomentumIterator()
+    θ, _, _, _, _ = FrankWolfe.stochastic_frank_wolfe(
+        f_stoch,
+        lmo,
+        params,
+        verbose=true,
+        line_search=FrankWolfe.Nonconvex(),
+        max_iteration=5000,
+        batch_size=1,
+        trajectory=false,
+        momentum_iterator=momentum_iterator,
+    )
+    θ, _, _, _, _ = FrankWolfe.stochastic_frank_wolfe(
+        f_stoch,
+        lmo,
+        params,
+        verbose=true,
+        line_search=FrankWolfe.Nonconvex(),
+        max_iteration=5000,
+        batch_size=1,
+        trajectory=false,
+        momentum_iterator=nothing,
+    )
 end
 
 @testset "Away-step FW" begin
