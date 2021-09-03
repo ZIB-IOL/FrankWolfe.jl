@@ -447,6 +447,10 @@ end
 
 Stochastic version of Frank-Wolfe, evaluates the objective and gradient stochastically,
 implemented through the [FrankWolfe.StochasticObjective](@ref) interface.
+
+Keyword arguments include `batch_size` to pass a fixed `batch_size`
+or a `batch_iterator` implementing
+`batch_size = _batchsize_iterate(batch_iterator)`.
 """
 function stochastic_frank_wolfe(
     f::StochasticObjective,
@@ -456,6 +460,7 @@ function stochastic_frank_wolfe(
     L=Inf,
     gamma0=0,
     step_lim=20,
+    momentum_iterator=nothing,
     momentum=nothing,
     epsilon=1e-7,
     max_iteration=10000,
@@ -466,6 +471,7 @@ function stochastic_frank_wolfe(
     emphasis::Emphasis=blas,
     rng=Random.GLOBAL_RNG,
     batch_size=length(f.xs) ÷ 10 + 1,
+    batch_iterator=nothing,
     full_evaluation=false,
     callback=nothing,
     timeout=Inf,
@@ -473,7 +479,7 @@ function stochastic_frank_wolfe(
 )
 
     # format string for output of the algorithm
-    format_string = "%6s %13s %14e %14e %14e %14e %14e\n"
+    format_string = "%6s %13s %14e %14e %14e %14e %14e %6i\n"
 
     t = 0
     dual_gap = Inf
@@ -495,6 +501,12 @@ function stochastic_frank_wolfe(
     if line_search == FixedStep && gamma0 == 0
         println("FATAL: gamma0 not set. We are not going to move a single bit.")
     end
+    if momentum_iterator === nothing && momentum !== nothing
+        momentum_iterator = ConstantMomentumIterator(momentum)
+    end
+    if batch_iterator === nothing
+        batch_iterator = ConstantBatchIterator(batch_size)
+    end
 
     if verbose
         println("\nStochastic Frank-Wolfe Algorithm.")
@@ -504,11 +516,11 @@ function stochastic_frank_wolfe(
         )
         # TODO: needs to fix
         grad_type = typeof(nothing)
-        println("GRADIENTTYPE: $grad_type MOMENTUM: $momentum BATCHSIZE: $batch_size ")
+        println("GRADIENTTYPE: $grad_type MOMENTUM: $(momentum_iterator !== nothing) batch policy: $(typeof(batch_iterator)) ")
         if emphasis == memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
         end
-        headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec")
+        headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "batch size")
         print_callback(headers, format_string, print_header=true)
     end
 
@@ -543,8 +555,9 @@ function stochastic_frank_wolfe(
         end
 
         #####################
+        batch_size = _batchsize_iterate(batch_iterator)
 
-        if momentum === nothing || first_iter
+        if momentum_iterator === nothing || first_iter
             gradient = compute_gradient(
                 f,
                 x,
@@ -553,6 +566,7 @@ function stochastic_frank_wolfe(
                 full_evaluation=full_evaluation,
             )
         else
+            momentum = _momentum_iterate(momentum_iterator)
             @emphasis(
                 emphasis,
                 gradient =
@@ -620,6 +634,7 @@ function stochastic_frank_wolfe(
                 Float64(dual_gap),
                 tot_time,
                 t / tot_time,
+                batch_size,
             )
             print_callback(rep, format_string)
             flush(stdout)
@@ -646,6 +661,7 @@ function stochastic_frank_wolfe(
             Float64(dual_gap),
             tot_time,
             t / tot_time,
+            batch_size
         )
         print_callback(rep, format_string)
         print_callback(nothing, format_string, print_footer=true)
