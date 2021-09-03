@@ -616,6 +616,17 @@ end
         trajectory=false,
         momentum_iterator=momentum_iterator,
     )
+    θ, _, _, _, _ = FrankWolfe.stochastic_frank_wolfe(
+        f_stoch,
+        lmo,
+        params,
+        verbose=true,
+        line_search=FrankWolfe.Nonconvex(),
+        max_iteration=5000,
+        batch_size=1,
+        trajectory=false,
+        momentum_iterator=nothing,
+    )
 end
 
 @testset "Away-step FW" begin
