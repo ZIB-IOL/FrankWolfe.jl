@@ -14,6 +14,7 @@
 # be rational as long as the atom computed by the LMO is of a rational type. Assuming these requirements are
 # met, all iterates and the computed solution will then be rational.
 
+using FrankWolfe
 using LinearAlgebra
 
 n = 100
