@@ -15,9 +15,10 @@
 # met, all iterates and the computed solution will then be rational.
 
 using LinearAlgebra
-k = n
 
 n = 100
+k = n
+
 x = fill(big(1)//100, n)
 
 f(x) = dot(x, x)
