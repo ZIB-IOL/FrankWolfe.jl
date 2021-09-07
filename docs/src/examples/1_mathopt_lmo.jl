@@ -1,11 +1,10 @@
-# Comparison with MathOptInterface on a Probability Simplex
+# # Comparison with MathOptInterface on a Probability Simplex
 
-In this example, we project a random point onto a probability simplex with the Frank-Wolfe algorithm using
-either the specialized LMO defined in the package or a generic LP formulation using `MathOptInterface.jl` (MOI) and
-`GLPK` as underlying LP solver.
-It can be found as Example 4.4 [in the paper](https://arxiv.org/abs/2104.06675).
+# In this example, we project a random point onto a probability simplex with the Frank-Wolfe algorithm using
+# either the specialized LMO defined in the package or a generic LP formulation using `MathOptInterface.jl` (MOI) and
+# `GLPK` as underlying LP solver.
+# It can be found as Example 4.4 [in the paper](https://arxiv.org/abs/2104.06675).
 
-```@example 1
 using FrankWolfe
 
 using LinearAlgebra
@@ -50,9 +49,9 @@ x_lmo, v, primal, dual_gap, trajectory_lmo = FrankWolfe.frank_wolfe(
     verbose=false,
     trajectory=true,
 );
-```
-Create a MathOptInterface Optimizer and build the same linear constraints:
-```@example 1
+
+# Create a MathOptInterface Optimizer and build the same linear constraints:
+
 o = GLPK.Optimizer()
 x = MOI.add_variables(o, n)
 
@@ -81,9 +80,10 @@ x, v, primal, dual_gap, trajectory_moi = FrankWolfe.frank_wolfe(
     verbose=false,
     trajectory=true,
 );
-```
-Alternatively, we can use one of the modelling interfaces based on `MOI` to formulate the LP. The following example builds the same set of constraints using `JuMP`:
-```@example 1
+
+# Alternatively, we can use one of the modelling interfaces based on `MOI` to formulate the LP.
+# The following example builds the same set of constraints using `JuMP`:
+
 m = JuMP.Model(GLPK.Optimizer)
 @variable(m, y[1:n] ≥ 0)
 
@@ -151,4 +151,3 @@ FrankWolfe.plot_results(
     yscalelog=[:log, :log, :log, :log],
     legend_position=[:bottomleft, nothing, nothing, nothing]
 )
-```
