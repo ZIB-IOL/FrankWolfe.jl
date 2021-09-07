@@ -1,22 +1,21 @@
-# Polynomial Regression
+# # Polynomial Regression
 
-The following example features the LMO for polynomial regression on the ``\ell_1`` norm ball. Given input/output pairs ``\{x_i,y_i\}_{i=1}^N`` and sparse coefficients ``c_j``, where
-```math
-y_i=\sum_{j=1}^m c_j f_j(x_i)
-```
-and ``f_j: \mathbb{R}^n\to\mathbb{R}``, the task is to recover those ``c_j`` that are non-zero alongside their corresponding values. Under certain assumptions,
-this problem can be convexified into
-```math
-\min_{c\in\mathcal{C}}||y-Ac||^2
-```
-for a convex set ``\mathcal{C}``. It can also be found as example 4.1 [in the paper](https://arxiv.org/pdf/2104.06675.pdf).
-In order to evaluate the polynomial, we generate a total of 1000 data points
-``\{x_i\}_{i=1}^N`` from the standard multivariate Gaussian, with which we will compute the output variables ``\{y_i\}_{i=1}^N``. Before
-evaluating the polynomial, these points will be contaminated with noise drawn from a standard multivariate Gaussian.
-We run the [`away_frank_wolfe`](@ref) and [`blended_conditional_gradient`](@ref) algorithms, and compare them to Projected Gradient Descent using a
-smoothness estimate. We will evaluate the output solution on test points drawn in a similar manner as the training points.
+# The following example features the LMO for polynomial regression on the ``\ell_1`` norm ball. Given input/output pairs ``\{x_i,y_i\}_{i=1}^N`` and sparse coefficients ``c_j``, where
+# ```math
+# y_i=\sum_{j=1}^m c_j f_j(x_i)
+# ```
+# and ``f_j: \mathbb{R}^n\to\mathbb{R}``, the task is to recover those ``c_j`` that are non-zero alongside their corresponding values. Under certain assumptions,
+# this problem can be convexified into
+# ```math
+# \min_{c\in\mathcal{C}}||y-Ac||^2
+# ```
+# for a convex set ``\mathcal{C}``. It can also be found as example 4.1 [in the paper](https://arxiv.org/pdf/2104.06675.pdf).
+# In order to evaluate the polynomial, we generate a total of 1000 data points
+# ``\{x_i\}_{i=1}^N`` from the standard multivariate Gaussian, with which we will compute the output variables ``\{y_i\}_{i=1}^N``. Before
+# evaluating the polynomial, these points will be contaminated with noise drawn from a standard multivariate Gaussian.
+# We run the [`away_frank_wolfe`](@ref) and [`blended_conditional_gradient`](@ref) algorithms, and compare them to Projected Gradient Descent using a
+# smoothness estimate. We will evaluate the output solution on test points drawn in a similar manner as the training points.
 
-```@example 2
 using FrankWolfe
 
 using LinearAlgebra
@@ -29,7 +28,7 @@ using Plots
 
 using LaTeXStrings
 
-const N = 15
+const N = 10
 
 DynamicPolynomials.@polyvar X[1:15]
 
@@ -108,13 +107,13 @@ end
 
 gradient = similar(all_coeffs)
 
-max_iter = 100_000
+max_iter = 10000
 random_initialization_vector = rand(length(all_coeffs))
 
 lmo = FrankWolfe.LpNormLMO{1}(0.95 * norm(all_coeffs, 1))
 
-# Estimating smoothness parameter
-num_pairs = 10000
+## Estimating smoothness parameter
+num_pairs = 1000
 L_estimate = -Inf
 gradient_aux = similar(gradient)
 
@@ -136,7 +135,7 @@ function projnorm1(x, τ)
         return x
     end
     u = abs.(x)
-    # simplex projection
+    ## simplex projection
     bget = false
     s_indices = sortperm(u, rev=true)
     tsum = zero(τ)
@@ -244,11 +243,9 @@ for i in 1:num_pairs
         L_estimate = new_L
     end
 end
-```
 
-We can now perform projected gradient descent:
+# We can now perform projected gradient descent:
 
-```@example 2
 xgd = FrankWolfe.compute_extreme_point(lmo, random_initialization_vector)
 training_gd = Float64[]
 test_gd = Float64[]
@@ -362,4 +359,3 @@ FrankWolfe.plot_results(
     xscalelog=[:log, :identity, :log, :identity],
     legend_position=[:bottomleft, nothing, nothing, nothing],
 )
-```
