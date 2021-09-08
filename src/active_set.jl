@@ -54,7 +54,7 @@ function Base.push!(as::ActiveSet, (λ, a))
     return as
 end
 
-# these two functions do not update the active set iterate,
+# these two functions do not update the active set iterate
 
 function Base.deleteat!(as::ActiveSet, idx)
     deleteat!(as.weights, idx)
@@ -228,6 +228,11 @@ function find_minmax_directions(active_set::ActiveSet, direction, Φ; goodstep_t
     return (idx_fw, idx_as, v_as - v_fw ≥ Φ)
 end
 
+"""
+    active_set_initialize!(as, v)
+
+Resets the active set structure to a single vertex `v` with unit weight.
+"""
 function active_set_initialize!(as::ActiveSet{AT,R}, v) where {AT,R}
     empty!(as)
     push!(as, (one(R), v))

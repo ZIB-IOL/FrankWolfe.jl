@@ -450,11 +450,11 @@ implemented through the [FrankWolfe.StochasticObjective](@ref) interface.
 
 Keyword arguments include `batch_size` to pass a fixed `batch_size`
 or a `batch_iterator` implementing
-`batch_size = FrankWolfe._batchsize_iterate(batch_iterator)` for algorithms like
+`batch_size = FrankWolfe.batchsize_iterate(batch_iterator)` for algorithms like
 Variance-reduced and projection-free stochastic optimization, E Hazan, H Luo, 2016.
 
 Similarly, a constant `momentum` can be passed or replaced by a `momentum_iterator`
-implementing `momentum = FrankWolfe._momentum_iterate(momentum_iterator)`.
+implementing `momentum = FrankWolfe.momentum_iterate(momentum_iterator)`.
 """
 function stochastic_frank_wolfe(
     f::StochasticObjective,
@@ -559,7 +559,7 @@ function stochastic_frank_wolfe(
         end
 
         #####################
-        batch_size = _batchsize_iterate(batch_iterator)
+        batch_size = batchsize_iterate(batch_iterator)
 
         if momentum_iterator === nothing || first_iter
             gradient = compute_gradient(
@@ -570,7 +570,7 @@ function stochastic_frank_wolfe(
                 full_evaluation=full_evaluation,
             )
         else
-            momentum = _momentum_iterate(momentum_iterator)
+            momentum = momentum_iterate(momentum_iterator)
             @emphasis(
                 emphasis,
                 gradient =
