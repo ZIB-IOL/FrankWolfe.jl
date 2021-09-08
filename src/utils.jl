@@ -897,6 +897,14 @@ function print_callback(data, format_string; print_header=false, print_footer=fa
 end
 
 """
+    momentum_iterate(iter::MomentumIterator) -> ρ
+
+Method to implement for a type `MomentumIterator`.
+Returns the next momentum value `ρ` and updates the iterator internal state.
+"""
+function momentum_iterate end
+
+"""
     ExpMomentumIterator{T}
 
 Iterator for the momentum used in the variant of Stochastic Frank-Wolfe.
@@ -918,7 +926,7 @@ end
 
 ExpMomentumIterator() = ExpMomentumIterator(2/3, 4.0, 8.0, 0)
 
-function _momentum_iterate(em::ExpMomentumIterator)
+function momentum_iterate(em::ExpMomentumIterator)
     em.iter += 1
     return em.num / (em.offset + em.iter)^(em.exp)
 end
@@ -932,9 +940,17 @@ struct ConstantMomentumIterator{T}
     v::T
 end
 
-_momentum_iterate(em::ConstantMomentumIterator) = em.v
+momentum_iterate(em::ConstantMomentumIterator) = em.v
 
 # batch sizes
+
+"""
+    batchsize_iterate(iter::BatchSizeIterator) -> b
+
+Method to implement for a batch size iterator of type `BatchSizeIterator`.
+Calling `batchsize_iterate` returns the next batch size and typically update the internal state of `iter`.
+"""
+function batchsize_iterate end
 
 """
     ConstantBatchIterator(batch_size)
@@ -944,8 +960,8 @@ Batch iterator always returning a constant batch size.
 struct ConstantBatchIterator
     batch_size::Int
 end
-
-_batchsize_iterate(cbi::ConstantBatchIterator) = cbi.batch_size
+ 
+batchsize_iterate(cbi::ConstantBatchIterator) = cbi.batch_size
 
 """
     IncrementBatchIterator(starting_batch_size, max_batch_size, [increment = 1])
@@ -968,7 +984,7 @@ function IncrementBatchIterator(starting_batch_size::Int, max_batch_size::Int)
     return IncrementBatchIterator(starting_batch_size, max_batch_size, 1, 0, false)
 end
 
-function _batchsize_iterate(ibi::IncrementBatchIterator)
+function batchsize_iterate(ibi::IncrementBatchIterator)
     if ibi.maxreached
         return ibi.max_batch_size
     end

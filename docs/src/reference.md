@@ -63,6 +63,31 @@ FrankWolfe.convert_mathopt
 
 This section gathers all additional relevant components of the package.
 
+## Active set management
+
+The active set represents an iterate as a convex combination of atoms.
+It maintains a vector of atoms, the corresponding weights, and the current iterate.
+
+```@autodocs
+Module = [FrankWolfe]
+Pages = [active_set.jl]
+```
+
+## Step size determination
+
+For all Frank-Wolfe algorithms, a step size must be determined to move from the
+current iterate to the next one. This step size can be determined by exact line search
+or any other rule represented by a subtype of `LineSearchMethod` which
+must implement `line_search_wrapper`.
+
+```@docs
+FrankWolfe.line_search_wrapper
+FrankWolfe.LineSearchMethod
+FrankWolfe.adaptive_step_size
+FrankWolfe.MonotonousStepSize
+FrankWolfe.MonotonousNonConvexStepSize
+```
+
 ## Functions and Structures
 
 ```@docs
@@ -81,15 +106,10 @@ FrankWolfe.projection_simplex_sort
 FrankWolfe.strong_frankwolfe_gap_probability_simplex
 FrankWolfe.simplex_gradient_descent_over_convex_hull
 FrankWolfe.lp_separation_oracle
-FrankWolfe.LineSearchMethod
 FrankWolfe.Emphasis
 FrankWolfe.ObjectiveFunction
 FrankWolfe.compute_value_gradient
 FrankWolfe.StochasticObjective
-FrankWolfe.ScaledHotVector
-FrankWolfe.RankOneMatrix
-FrankWolfe.line_search_wrapper
-FrankWolfe.adaptive_step_size
 FrankWolfe.plot_results
 FrankWolfe.check_gradients
 FrankWolfe.trajectory_callback
@@ -100,3 +120,25 @@ The weights in the active set are currently defined as `Float64` in the algorith
 This means that even with vertices using a lower precision, the iterate `sum_i(lambda_i * v_i)`
 will be upcast to `Float64`. One reason for keeping this as-is for now is the
 higher precision required by the computation of iterates from their barycentric decomposition.
+
+## Custom extreme point types
+
+For some feasible sets, the extreme points of the feasible set returned by
+the LMO possess a specific structure that can be represented in an efficient
+manner both for storage and for common operations like scaling and addition with an iterate. They are presented below:
+
+```@docs
+FrankWolfe.ScaledHotVector
+FrankWolfe.RankOneMatrix
+```
+
+## Batch and momentum iterators
+
+```@docs
+FrankWolfe.momentum_iterate
+FrankWolfe.ExpMomentumIterator
+FrankWolfe.ConstantMomentumIterator
+FrankWolfe.batchsize_iterate
+FrankWolfe.ConstantBatchIterator
+FrankWolfe.IncrementBatchIterator
+```
