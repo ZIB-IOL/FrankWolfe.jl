@@ -31,7 +31,7 @@ function grad!(storage, x)
 end
 
 lmo_radius = 2.5
-lmo = FrankWolfe.LpNormLMO{Float64,1}(lmo_radius)
+lmo = FrankWolfe.FrankWolfe.ProbabilitySimplexOracle(lmo_radius)
 
 x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
 gradient = collect(x00)
