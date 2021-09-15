@@ -583,7 +583,7 @@ end
         batch_size=length(f_stoch.xs) ÷ 100,
         trajectory=false,
     )
-    @test norm(θ - params_perfect) ≤ 0.025 * length(θ)
+    @test norm(θ - params_perfect) ≤ 0.05 * length(θ)
 
     # SFW with incrementing batch size
     batch_iterator = FrankWolfe.IncrementBatchIterator(
