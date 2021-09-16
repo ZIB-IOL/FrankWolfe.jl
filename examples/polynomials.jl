@@ -6,7 +6,6 @@ import Random
 using MultivariatePolynomials
 using DynamicPolynomials
 
-import ReverseDiff
 using FiniteDifferences
 import JSON
 
