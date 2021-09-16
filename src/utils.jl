@@ -895,3 +895,104 @@ function print_callback(data, format_string; print_header=false, print_footer=fa
         print_formatted(format_string, data...)
     end
 end
+
+"""
+    momentum_iterate(iter::MomentumIterator) -> ρ
+
+Method to implement for a type `MomentumIterator`.
+Returns the next momentum value `ρ` and updates the iterator internal state.
+"""
+function momentum_iterate end
+
+"""
+    ExpMomentumIterator{T}
+
+Iterator for the momentum used in the variant of Stochastic Frank-Wolfe.
+Momentum coefficients are the values of the iterator:
+`ρ_t = num / (offset + t)^exp`
+
+The state corresponds to the iteration count.
+
+Source:
+Stochastic Conditional Gradient Methods: From Convex Minimization to Submodular Maximization
+Aryan Mokhtari, Hamed Hassani, Amin Karbasi, JMLR 2020.
+"""
+mutable struct ExpMomentumIterator{T}
+    exp::T
+    num::T
+    offset::T
+    iter::Int
+end
+
+ExpMomentumIterator() = ExpMomentumIterator(2/3, 4.0, 8.0, 0)
+
+function momentum_iterate(em::ExpMomentumIterator)
+    em.iter += 1
+    return em.num / (em.offset + em.iter)^(em.exp)
+end
+
+"""
+    ConstantMomentumIterator{T}
+
+Iterator for momentum with a fixed damping value, always return the value and a dummy state.
+"""
+struct ConstantMomentumIterator{T}
+    v::T
+end
+
+momentum_iterate(em::ConstantMomentumIterator) = em.v
+
+# batch sizes
+
+"""
+    batchsize_iterate(iter::BatchSizeIterator) -> b
+
+Method to implement for a batch size iterator of type `BatchSizeIterator`.
+Calling `batchsize_iterate` returns the next batch size and typically update the internal state of `iter`.
+"""
+function batchsize_iterate end
+
+"""
+    ConstantBatchIterator(batch_size)
+
+Batch iterator always returning a constant batch size.
+"""
+struct ConstantBatchIterator
+    batch_size::Int
+end
+ 
+batchsize_iterate(cbi::ConstantBatchIterator) = cbi.batch_size
+
+"""
+    IncrementBatchIterator(starting_batch_size, max_batch_size, [increment = 1])
+
+Batch size starting at starting_batch_size and incrementing by `increment` at every iteration.
+"""
+mutable struct IncrementBatchIterator
+    starting_batch_size::Int
+    max_batch_size::Int
+    increment::Int
+    iter::Int
+    maxreached::Bool
+end
+
+function IncrementBatchIterator(starting_batch_size::Int, max_batch_size::Int, increment::Int)
+    return IncrementBatchIterator(starting_batch_size, max_batch_size, increment, 0, false)
+end
+
+function IncrementBatchIterator(starting_batch_size::Int, max_batch_size::Int)
+    return IncrementBatchIterator(starting_batch_size, max_batch_size, 1, 0, false)
+end
+
+function batchsize_iterate(ibi::IncrementBatchIterator)
+    if ibi.maxreached
+        return ibi.max_batch_size
+    end
+    new_size = ibi.starting_batch_size + ibi.iter * ibi.increment
+    ibi.iter += 1
+    if new_size > ibi.max_batch_size
+        ibi.maxreached = true
+        return ibi.max_batch_size
+    end
+    return new_size
+end

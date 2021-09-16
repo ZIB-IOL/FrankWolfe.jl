@@ -1,18 +1,17 @@
-# Matrix Completion
+# # Matrix Completion
 
-We present another example that is about matrix completion. The idea is, given a partially observed matrix ``Y\in\mathbb{R}^{m\times n}``, to find
-``X\in\mathbb{R}^{m\times n}`` to minimize the sum of squared errors from the observed entries while 'completing' the matrix ``Y``, i.e. filling the unobserved
-entries to match ``Y`` as good as possible. A detailed explanation can be found in section 4.2 of
-[the paper](https://arxiv.org/pdf/2104.06675.pdf).
-We will try to solve
-```math
-\min_{||X||_*\le \tau} \sum_{(i,j)\in\mathcal{I}} (X_{i,j}iY_{i,j})^2,
-```
-where ``\tau>0`` and ``\mathcal{I}`` denote the indices of the observed entries. We will use [`FrankWolfe.NuclearNormLMO`](@ref) and compare our
-Frank-Wolfe implementation with a Projected Gradient Descent (PGD) algorithm which, after each gradient descent step, projects the iterates back onto the nuclear
-norm ball. We use a movielens dataset for comparison.
+# We present another example that is about matrix completion. The idea is, given a partially observed matrix ``Y\in\mathbb{R}^{m\times n}``, to find
+# ``X\in\mathbb{R}^{m\times n}`` to minimize the sum of squared errors from the observed entries while 'completing' the matrix ``Y``, i.e. filling the unobserved
+# entries to match ``Y`` as good as possible. A detailed explanation can be found in section 4.2 of
+# [the paper](https://arxiv.org/pdf/2104.06675.pdf).
+# We will try to solve
+# ```math
+# \min_{||X||_*\le \tau} \sum_{(i,j)\in\mathcal{I}} (X_{i,j}iY_{i,j})^2,
+# ```
+# where ``\tau>0`` and ``\mathcal{I}`` denote the indices of the observed entries. We will use [`FrankWolfe.NuclearNormLMO`](@ref) and compare our
+# Frank-Wolfe implementation with a Projected Gradient Descent (PGD) algorithm which, after each gradient descent step, projects the iterates back onto the nuclear
+# norm ball. We use a movielens dataset for comparison.
 
-```@example 3
 using FrankWolfe
 using ZipFile, DataFrames, CSV
 
@@ -110,14 +109,14 @@ norm_estimation = 10 * Arpack.svds(rating_matrix, nsv=1, ritzvec=false)[1].S[1]
 
 const lmo = FrankWolfe.NuclearNormLMO(norm_estimation)
 const x0 = FrankWolfe.compute_extreme_point(lmo, ones(size(rating_matrix)))
-const k = 100
+const k = 10
 
 FrankWolfe.benchmark_oracles(
     f,
     (str, x) -> grad!(str, x),
     () -> randn(size(rating_matrix)),
     lmo;
-    k=100,
+    k=10,
 )
 
 gradient = spzeros(size(x0)...)
@@ -128,12 +127,10 @@ function build_callback(trajectory_arr)
         return push!(trajectory_arr, (Tuple(state)[1:5]..., test_loss(state.x)))
     end
 end
-```
 
-The smoothness constant is estimated:
+# The smoothness constant is estimated:
 
-```@example 3
-num_pairs = 1000
+num_pairs = 100
 L_estimate = -Inf
 for i in 1:num_pairs
     global L_estimate
@@ -156,11 +153,9 @@ for i in 1:num_pairs
         L_estimate = new_L
     end
 end
-```
 
-We can now perform projected gradient descent:
+# We can now perform projected gradient descent:
 
-```@example 3
 xgd = Matrix(x0)
 function_values = Float64[]
 timing_values = Float64[]
@@ -285,4 +280,3 @@ FrankWolfe.plot_results(
     xscalelog=[:log, :identity, :log, :identity],
     legend_position=[:bottomleft, nothing, nothing, nothing]
 )
-```
