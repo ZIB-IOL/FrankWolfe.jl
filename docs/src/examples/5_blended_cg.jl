@@ -1,4 +1,5 @@
 # # Blended Conditional Gradients
+
 # The FW and AFW algorithms, and their lazy variants share one feature:
 # they attempt to make primal progress over a reduced set of vertices. The AFW algorithm does this through
 # away steps (which do not increase the cardinality of the active set), and the lazy variants do this through the
@@ -9,7 +10,7 @@
 # possible through the convex hull of the current active set ``S_t`` until it automatically detects that in order to
 # make further progress it requires additional calls to the LMO.
 
-
+# See also Blended Conditional Gradients: the unconditioning of conditional gradients, Braun et al, 2019, https://arxiv.org/abs/1805.07311
 
 
 using FrankWolfe
