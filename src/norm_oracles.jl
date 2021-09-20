@@ -144,8 +144,7 @@ NuclearNormLMO{T}() where {T} = NuclearNormLMO{T}(one(T))
 NuclearNormLMO() = NuclearNormLMO(1.0)
 
 """
-Best rank-one approximation using the
-Golub-Kahan-Lanczos bidiagonalization from IterativeSolvers.
+Best rank-one approximation using the greatest singular value computed with Arpack.
 
 Warning: this does not work (yet) with all number types, BigFloat and Float16 fail.
 """
