@@ -579,11 +579,11 @@ end
         momentum=0.95,
         verbose=true,
         line_search=FrankWolfe.Nonconvex(),
-        max_iteration=50_000,
+        max_iteration=100_000,
         batch_size=length(f_stoch.xs) ÷ 100,
         trajectory=false,
     )
-    @test norm(θ - params_perfect) ≤ 0.025 * length(θ)
+    @test norm(θ - params_perfect) ≤ 0.05 * length(θ)
 
     # SFW with incrementing batch size
     batch_iterator = FrankWolfe.IncrementBatchIterator(
