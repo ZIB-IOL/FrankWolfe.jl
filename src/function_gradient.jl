@@ -58,7 +58,7 @@ end
     StochasticObjective{F, G, XT, S}(f::F, grad!::G, xs::XT, storage::S)
 
 Represents a composite function evaluated with stochastic gradient.
-`f(θ, x)` evaluates the loss for data point `x` and parameter `θ`.
+`f(θ, x)` evaluates the loss for a single data point `x` and parameter `θ`.
 `grad!(storage, θ, x)` adds to storage the partial gradient with respect to data point `x` at parameter `θ`.
 `xs` must be an indexable iterable (`Vector{Vector{Float64}}` for instance).
 Functions using a `StochasticObjective` have optional keyword arguments `rng`, `batch_size`
