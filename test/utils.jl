@@ -84,3 +84,9 @@ end
         0.9,
     )
 end
+
+@testset "Momentum tests" begin
+    it = FrankWolfe.ExpMomentumIterator()
+    it.num = 0
+    @test momentum_iterate(it) == 0
+end
