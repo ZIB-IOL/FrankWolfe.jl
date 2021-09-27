@@ -909,7 +909,7 @@ function momentum_iterate end
 
 Iterator for the momentum used in the variant of Stochastic Frank-Wolfe.
 Momentum coefficients are the values of the iterator:
-`ρ_t = num / (offset + t)^exp`
+`ρ_t = 1 - num / (offset + t)^exp`
 
 The state corresponds to the iteration count.
 
@@ -928,7 +928,7 @@ ExpMomentumIterator() = ExpMomentumIterator(2/3, 4.0, 8.0, 0)
 
 function momentum_iterate(em::ExpMomentumIterator)
     em.iter += 1
-    return em.num / (em.offset + em.iter)^(em.exp)
+    return 1 - em.num / (em.offset + em.iter)^(em.exp)
 end
 
 """
