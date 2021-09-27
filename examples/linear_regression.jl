@@ -41,10 +41,10 @@ f_stoch = FrankWolfe.StochasticObjective(simple_reg_loss, ∇simple_reg_loss, da
 # Vanilla Stochastic Gradient Descent with reshuffling
 storage = similar(params)
 for idx in 1:1000
-    storage .= 0
     for data_point in shuffle!(data_perfect)
-        gradient = ∇simple_reg_loss(storage, params, data_point)
-        params .-= 0.05 * gradient / length(data_perfect)
+        storage .= 0
+        ∇simple_reg_loss(storage, params, data_point)
+        params .-= 0.05 * storage / length(data_perfect)
     end
 end
 
@@ -72,8 +72,8 @@ end
 
 # Vanilla Stochastic Gradient Descent with reshuffling
 for idx in 1:1000
-    storage .= 0
     for data_point in shuffle!(data_perfect)
+        storage .= 0
         params .-= 0.05 * ∇simple_reg_loss(storage, params, data_point) / length(data_perfect)
     end
 end
