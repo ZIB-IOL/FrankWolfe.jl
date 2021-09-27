@@ -4,7 +4,6 @@
 #
 # to get accurate timings it is important to run twice so that the compile time of Julia for the first run
 # is not tainting the results
-
 include("activate.jl")
 
 using LinearAlgebra
@@ -138,7 +137,7 @@ primal_gap_list = [[x[2] for x in trajectory_lmo], [x[2] for x in trajectory_moi
 # Defined the y-axis for the series, when plotting the dual gap.
 dual_gap_list = [[x[4] for x in trajectory_lmo], [x[4] for x in trajectory_moi]]
 # Defined the labels for the series using latex rendering.
-label = [L"\textrm{Closed-form LMO}", L"\textrm{MOI LMO}"]
+label = [L"\textrm{Closed-form LMO}", L"\textrm{GLPK LMO}"]
 
 FrankWolfe.plot_results(
     [primal_gap_list, primal_gap_list, dual_gap_list, dual_gap_list],
