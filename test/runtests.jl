@@ -539,8 +539,6 @@ end
         @test eltype(x0) == T
         @test primal - 1 // n <= bound
 
-
-
     end
 end
 
@@ -552,13 +550,13 @@ end
         return (pred - yi)^2 / 2
     end
 
-    function ∇simple_reg_loss(θ, data_point)
+    function ∇simple_reg_loss(storage, θ, data_point)
         (xi, yi) = data_point
         (a, b) = (θ[1:end-1], θ[end])
         pred = a ⋅ xi + b
-        grad_a = xi * (pred - yi)
-        grad = push!(grad_a, pred - yi)
-        return grad
+        storage[1:end-1] .+= xi * (pred - yi)
+        storage[end] += pred - yi
+        return storage
     end
 
     xs = [10 * randn(5) for i in 1:20000]
@@ -569,15 +567,15 @@ end
     params = rand(6) .- 1 # start params in (-1,0)
 
     data_perfect = [(x, x ⋅ (1:5) + bias) for x in xs]
-    f_stoch = FrankWolfe.StochasticObjective(simple_reg_loss, ∇simple_reg_loss, data_perfect)
+    f_stoch = FrankWolfe.StochasticObjective(simple_reg_loss, ∇simple_reg_loss, data_perfect, similar(params))
     lmo = FrankWolfe.LpNormLMO{2}(1.1 * norm(params_perfect))
 
     θ, _, _, _, _ = FrankWolfe.stochastic_frank_wolfe(
         f_stoch,
         lmo,
-        params,
+        copy(params),
         momentum=0.95,
-        verbose=true,
+        verbose=false,
         line_search=FrankWolfe.Nonconvex(),
         max_iteration=100_000,
         batch_size=length(f_stoch.xs) ÷ 100,
@@ -594,7 +592,7 @@ end
     θ, _, _, _, _ = FrankWolfe.stochastic_frank_wolfe(
         f_stoch,
         lmo,
-        params,
+        copy(params),
         momentum=0.95,
         verbose=false,
         line_search=FrankWolfe.Nonconvex(),
@@ -608,8 +606,8 @@ end
     θ, _, _, _, _ = FrankWolfe.stochastic_frank_wolfe(
         f_stoch,
         lmo,
-        params,
-        verbose=true,
+        copy(params),
+        verbose=false,
         line_search=FrankWolfe.Nonconvex(),
         max_iteration=5000,
         batch_size=1,
@@ -619,11 +617,11 @@ end
     θ, _, _, _, _ = FrankWolfe.stochastic_frank_wolfe(
         f_stoch,
         lmo,
-        params,
-        verbose=true,
+        copy(params),
         line_search=FrankWolfe.Nonconvex(),
         max_iteration=5000,
         batch_size=1,
+        verbose=false,
         trajectory=false,
         momentum_iterator=nothing,
     )

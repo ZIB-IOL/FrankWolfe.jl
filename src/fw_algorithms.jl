@@ -460,10 +460,9 @@ function stochastic_frank_wolfe(
     f::StochasticObjective,
     lmo,
     x0;
-    line_search::LineSearchMethod=nonconvex,
+    line_search::LineSearchMethod=Nonconvex(),
     L=Inf,
     gamma0=0,
-    step_lim=20,
     momentum_iterator=nothing,
     momentum=nothing,
     epsilon=1e-7,
@@ -495,7 +494,6 @@ function stochastic_frank_wolfe(
     if trajectory && callback === nothing
         callback = trajectory_callback(traj_data)
     end
-    dx = similar(x0) # Array{eltype(x0)}(undef, length(x0))
     time_start = time_ns()
 
     if line_search == Shortstep && L == Inf
@@ -518,9 +516,7 @@ function stochastic_frank_wolfe(
         println(
             "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration TYPE: $numType",
         )
-        # TODO: needs to fix
-        grad_type = typeof(nothing)
-        println("GRADIENTTYPE: $grad_type MOMENTUM: $(momentum_iterator !== nothing) batch policy: $(typeof(batch_iterator)) ")
+        println("GRADIENTTYPE: $(typeof(f.storage)) MOMENTUM: $(momentum_iterator !== nothing) batch policy: $(typeof(batch_iterator)) ")
         if emphasis == memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
         end

@@ -19,14 +19,6 @@ function simple_reg_loss(θ, data_point)
     return (pred - yi)^2 / 2
 end
 
-function ∇simple_reg_loss(θ, data_point)
-    (xi, yi) = data_point
-    (a, b) = (θ[1:end-1], θ[end])
-    pred = a ⋅ xi + b
-    storage = [xi * (pred - yi); pred - yi]
-    return storage
-end
-
 function ∇simple_reg_loss(storage, θ, data_point)
     (xi, yi) = data_point
     (a, b) = (θ[1:end-1], θ[end])
@@ -42,15 +34,17 @@ bias = 4π
 params_perfect = [1:5; bias]
 
 data_perfect = [(x, x ⋅ (1:5) + bias) for x in xs]
-f_stoch = FrankWolfe.StochasticObjective(simple_reg_loss, ∇simple_reg_loss, data_perfect)
+f_stoch = FrankWolfe.StochasticObjective(simple_reg_loss, ∇simple_reg_loss, data_perfect, similar(params))
 
 @test FrankWolfe.compute_value(f_stoch, params) > FrankWolfe.compute_value(f_stoch, params_perfect)
 
 # Vanilla Stochastic Gradient Descent with reshuffling
-storage = 0 * similar(params)
+storage = similar(params)
 for idx in 1:1000
+    storage .= 0
     for data_point in shuffle!(data_perfect)
-        params .-= 0.05 * ∇simple_reg_loss(params, data_point) / length(data_perfect)
+        gradient = ∇simple_reg_loss(storage, params, data_point)
+        params .-= 0.05 * gradient / length(data_perfect)
     end
 end
 
@@ -58,12 +52,15 @@ end
 
 # similar example with noisy data, Gaussian noise around the linear estimate
 data_noisy = [(x, x ⋅ (1:5) + bias + 0.5 * randn()) for x in xs]
-f_stoch_noisy = FrankWolfe.StochasticObjective(simple_reg_loss, ∇simple_reg_loss, data_noisy)
+f_stoch_noisy = FrankWolfe.StochasticObjective(simple_reg_loss, ∇simple_reg_loss, data_noisy, storage)
 
 params = rand(6) .- 1 # start params in (-1,0)
 
-# test that the true parameters yield a good error
-@test norm(FrankWolfe.compute_gradient(f_stoch_noisy, params_perfect)) <= length(data_noisy) * 0.05
+# test that the 
+@testset "true parameters yield a good error" begin
+    n1 = norm(FrankWolfe.compute_gradient(f_stoch_noisy, params_perfect))
+    @test n1 <= length(data_noisy) * 0.05
+end
 
 # test that gradient at true parameters has lower norm than at randomly initialized ones
 @test norm(FrankWolfe.compute_gradient(f_stoch_noisy, params_perfect)) <
@@ -75,12 +72,13 @@ params = rand(6) .- 1 # start params in (-1,0)
 
 # Vanilla Stochastic Gradient Descent with reshuffling
 for idx in 1:1000
+    storage .= 0
     for data_point in shuffle!(data_perfect)
-        params .-= 0.05 * ∇simple_reg_loss(params, data_point) / length(data_perfect)
+        params .-= 0.05 * ∇simple_reg_loss(storage, params, data_point) / length(data_perfect)
     end
 end
 
-# test that SG converged towards true parameters 
+# test that SGD converged towards true parameters 
 @test norm(params - params_perfect) <= 1e-6
 
 #####
@@ -89,14 +87,14 @@ end
 
 lmo = FrankWolfe.LpNormLMO{2}(1.05 * norm(params_perfect))
 
-params = rand(6) .- 1 # start params in (-1,0)
+params0 = rand(6) .- 1 # start params in (-1,0)
 
 k = 10000
 
 @time x, v, primal, dual_gap, trajectoryS = FrankWolfe.stochastic_frank_wolfe(
     f_stoch_noisy,
     lmo,
-    params,
+    copy(params0),
     verbose=true,
     rng=Random.GLOBAL_RNG,
     line_search=FrankWolfe.Nonconvex(),
@@ -109,7 +107,7 @@ k = 10000
 @time x, v, primal, dual_gap, trajectory09 = FrankWolfe.stochastic_frank_wolfe(
     f_stoch_noisy,
     lmo,
-    params,
+    copy(params0),
     momentum=0.9,
     verbose=true,
     rng=Random.GLOBAL_RNG,
@@ -123,7 +121,7 @@ k = 10000
 @time x, v, primal, dual_gap, trajectory099 = FrankWolfe.stochastic_frank_wolfe(
     f_stoch_noisy,
     lmo,
-    params,
+    copy(params0),
     momentum=0.99,
     verbose=true,
     rng=Random.GLOBAL_RNG,
