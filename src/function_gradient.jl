@@ -95,11 +95,8 @@ function compute_gradient(
     rng=Random.GLOBAL_RNG,
     full_evaluation=false,
 )
-    (batch_size, rand_indices) = if full_evaluation
-        (length(f.xs), eachindex(f.xs))
-    else
-        (batch_size, rand(rng, eachindex(f.xs), batch_size))
-    end
+    (batch_size, rand_indices) = _random_indices(f, batch_size, full_evaluation; rng=rng)
+
     f.storage .= 0
     for idx in rand_indices
         f.grad!(f.storage, θ, f.xs[idx])
@@ -115,11 +112,7 @@ function compute_value_gradient(
     rng=Random.GLOBAL_RNG,
     full_evaluation=false,
 )
-    (batch_size, rand_indices) = if full_evaluation
-        (length(f.xs), eachindex(f.xs))
-    else
-        (batch_size, rand(rng, eachindex(f.xs), batch_size))
-    end
+    (batch_size, rand_indices) = _random_indices(f, batch_size, full_evaluation; rng=rng)
     # map operation, for each index, computes value and gradient
     f_val = zero(eltype(θ))
     f.storage .= 0
@@ -131,4 +124,11 @@ function compute_value_gradient(
     f.storage ./= batch_size
     f_val /= batch_size
     return (f_val, f.storage)
+end
+
+function _random_indices(f::StochasticObjective, batch_size::Integer, full_evaluation::Bool; rng=Random.GLOBAL_RNG)
+    if full_evaluation
+        return (length(f.xs), eachindex(f.xs))
+    end
+    return (batch_size, rand(rng, eachindex(f.xs), batch_size))
 end

@@ -56,8 +56,11 @@ Random.seed!(123)
                 # Y perfectly representable by X
                 data_perfect = [(x, x ⋅ (1:5) + bias) for x in xs]
                 storage = similar(params_perfect)
-                f_stoch =
-                    FrankWolfe.StochasticObjective(simple_reg_loss, ∇simple_reg_loss, data_perfect, storage)
+                f_stoch = FrankWolfe.StochasticObjective(
+                    simple_reg_loss, ∇simple_reg_loss, data_perfect, storage,
+                )
+                @test FrankWolfe._random_indices(f, 33, false)[1] == 33
+                @test FrankWolfe._random_indices(f, 33, true)[1] == length(xs)
                 @test compute_value(f_stoch, params) > compute_value(f_stoch, params_perfect)
                 @test compute_value(f_stoch, params_perfect) ≈ 0 atol = 1e-10
                 @test compute_gradient(f_stoch, params_perfect) ≈ zeros(6) atol = 1e-9
