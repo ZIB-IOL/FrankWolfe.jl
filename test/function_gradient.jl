@@ -91,6 +91,7 @@ Random.seed!(123)
             end
             @testset "Noisy data" begin
                 data_noisy = [(x, x ⋅ (1:5) + bias + 0.5 * randn()) for x in xs]
+                storage = similar(params_perfect)
                 f_stoch_noisy =
                     FrankWolfe.StochasticObjective(simple_reg_loss, ∇simple_reg_loss, data_noisy, storage)
                 @test compute_value(f_stoch_noisy, params) >

@@ -233,7 +233,7 @@ end
     lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
     x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n))
 
-    @time x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
+    x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
         f,
         grad!,
         lmo_prob,
@@ -246,7 +246,7 @@ end
 
     @test primal - 1 / n <= bound
 
-    @time x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
+    x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
         f,
         grad!,
         lmo_prob,
@@ -260,7 +260,7 @@ end
 
     @test primal - 1 / n <= bound
 
-    @time x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
+    x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
         f,
         grad!,
         lmo_prob,
@@ -399,7 +399,7 @@ end
     x0 = FrankWolfe.compute_extreme_point(lmo, direction)
     @test eltype(x0) == Rational{BigInt}
 
-    @time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+    x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
         f,
         grad!,
         lmo,
@@ -413,7 +413,7 @@ end
 
     @test eltype(x0) == Rational{BigInt}
 
-    @time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+    x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
         f,
         grad!,
         lmo,
@@ -429,7 +429,7 @@ end
 
     # very slow computation, explodes quickly
     x0 = collect(FrankWolfe.compute_extreme_point(lmo, direction))
-    @time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+    x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
         f,
         grad!,
         lmo,
@@ -443,7 +443,7 @@ end
     )
 
     x0 = FrankWolfe.compute_extreme_point(lmo, direction)
-    @time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+    x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
         f,
         grad!,
         lmo,
@@ -479,7 +479,7 @@ end
         direction = rand(n)
         x0 = FrankWolfe.compute_extreme_point(lmo, direction)
 
-        @time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+        x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
             f,
             grad!,
             lmo,
@@ -494,7 +494,7 @@ end
         @test eltype(x0) == T
         @test primal - 1 / n <= bound
 
-        @time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+        x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
             f,
             grad!,
             lmo,
@@ -509,7 +509,7 @@ end
         @test eltype(x0) == T
         @test primal - 1 // n <= bound
 
-        @time x, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
+        x, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
             f,
             grad!,
             lmo,
@@ -524,7 +524,7 @@ end
         @test eltype(x0) == T
         @test primal - 1 // n <= bound
 
-        @time x, v, primal, dual_gap, trajectory = FrankWolfe.blended_conditional_gradient(
+        x, v, primal, dual_gap, trajectory = FrankWolfe.blended_conditional_gradient(
             f,
             grad!,
             lmo,
@@ -739,10 +739,3 @@ using Test
     include("rational_test.jl")
 end
 end
-
-if get(ENV, "FW_TEST", nothing) == "full"
-    @testset "Running examples" begin
-        # TODO test smaller examples to be sure they are up to date
-    end
-end
-

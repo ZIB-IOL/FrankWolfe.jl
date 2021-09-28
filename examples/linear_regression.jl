@@ -1,6 +1,6 @@
 """
-Example of a L1-constrained linearized regression
-using the stochastic version of Frank Wolfe.
+Example of a L2-regularized linearized regression
+using the stochastic version of Frank-Wolfe.
 """
 
 include("activate.jl")

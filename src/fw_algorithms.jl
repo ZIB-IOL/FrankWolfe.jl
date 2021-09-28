@@ -471,7 +471,7 @@ function stochastic_frank_wolfe(
     trajectory=false,
     verbose=false,
     linesearch_tol=1e-7,
-    emphasis::Emphasis=blas,
+    emphasis::Emphasis=memory,
     rng=Random.GLOBAL_RNG,
     batch_size=length(f.xs) ÷ 10 + 1,
     batch_iterator=nothing,
@@ -557,7 +557,7 @@ function stochastic_frank_wolfe(
         #####################
         batch_size = batchsize_iterate(batch_iterator)
 
-        if momentum_iterator === nothing || first_iter
+        if momentum_iterator === nothing
             gradient = compute_gradient(
                 f,
                 x,
@@ -565,20 +565,25 @@ function stochastic_frank_wolfe(
                 batch_size=batch_size,
                 full_evaluation=full_evaluation,
             )
+        elseif first_iter
+            gradient = copy(compute_gradient(
+                f,
+                x,
+                rng=rng,
+                batch_size=batch_size,
+                full_evaluation=full_evaluation,
+            ))
         else
             momentum = momentum_iterate(momentum_iterator)
-            @emphasis(
-                emphasis,
-                gradient =
-                    (momentum * gradient) .+
-                    (1 - momentum) * compute_gradient(
-                        f,
-                        x,
-                        rng=rng,
-                        batch_size=batch_size,
-                        full_evaluation=full_evaluation,
-                    )
+            compute_gradient(
+                f,
+                x,
+                rng=rng,
+                batch_size=batch_size,
+                full_evaluation=full_evaluation,
             )
+            # gradient = momentum * gradient + (1 - momentum) * f.storage
+            LinearAlgebra.mul!(gradient, LinearAlgebra.I, f.storage, 1-momentum, momentum)
         end
         first_iter = false
 
