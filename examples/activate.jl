@@ -12,3 +12,5 @@ using Arpack
 using Plots
 using DoubleFloats
 using ReverseDiff
+
+include(joinpath(dirname(pathof(FrankWolfe)), "../examples/plot_utils.jl"))

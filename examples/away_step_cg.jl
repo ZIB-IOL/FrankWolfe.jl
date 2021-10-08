@@ -74,4 +74,4 @@ FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo; k=100)
 data = [trajectory, trajectoryA, trajectoryAM]
 label = ["FW" "AFW" "MAFW"]
 
-FrankWolfe.plot_trajectories(data, label)
+plot_trajectories(data, label)
