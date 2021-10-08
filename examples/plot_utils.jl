@@ -1,3 +1,4 @@
+using Plots
 
 """
 plot_results
@@ -214,7 +215,7 @@ function plot_trajectories(
 )
     # theme(:dark)
     # theme(:vibrant)
-    gr()
+    Plots.gr()
 
     x = []
     y = []
