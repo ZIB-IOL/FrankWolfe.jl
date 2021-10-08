@@ -370,7 +370,7 @@ function minimize_over_convex_hull!(
         if isnothing(M)
             return 0
         end
-        L_reduced = eigmax(converted_matrix)
+        L_reduced = eigmax(M)
         reduced_f(y) =
             f(x) - fast_dot(gradient, x) +
             0.5 * transpose(x) * hessian * x +
