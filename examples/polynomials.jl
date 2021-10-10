@@ -8,6 +8,7 @@ using DynamicPolynomials
 
 using FiniteDifferences
 import JSON
+using Statistics
 
 const N = 15
 
@@ -20,10 +21,13 @@ noise_magnitude = 1
 const var_monomials = MultivariatePolynomials.monomials(X, 0:max_degree)
 
 Random.seed!(42)
-const all_coeffs = map(var_monomials) do m
+all_coeffs = map(var_monomials) do m
     d = MultivariatePolynomials.degree(m)
-    return coefficient_magnitude * rand() .* (rand() .> 0.95 * d / max_degree)
+    return coefficient_magnitude * rand()
 end
+random_vector = rand(length(all_coeffs))
+cutoff = quantile(random_vector, 0.95)
+all_coeffs[findall(<(cutoff), random_vector)]  .= 0.0
 
 const true_poly = dot(all_coeffs, var_monomials)
 
