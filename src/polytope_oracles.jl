@@ -130,6 +130,25 @@ function convert_mathopt(
     return MathOptLMO(optimizer)
 end
 
+
+"""
+    ScaledBoundLInfNormBall(lower_bounds, upper_bounds)
+
+Polytope similar to a L-inf-ball with shifted bounds.
+It is similar to a hypercube, but with two bounds in the form of two scaled unit vectors for each axis.
+Lower and upper bounds are passed on as abstract vectors, possibly of different types.
+For the standard L-inf-ball, i.e. the standard hypercube, all lower and upper bounds would be -1 and 1.
+"""
+struct ScaledBoundLInfNormBall{T, VT1 <: AbstractVector{T}, VT2 <: AbstractVector{T}} <: LinearMinimizationOracle
+    lower_bounds::VT1
+    upper_bounds::VT2
+end
+
+function compute_extreme_point(lmo::ScaledBoundLInfNormBall, direction; kwargs...)
+
+end
+
+
 """
     ScaledBoundL1NormBall(lower_bounds, upper_bounds)
 
