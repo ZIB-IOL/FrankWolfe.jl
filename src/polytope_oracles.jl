@@ -134,8 +134,9 @@ end
 """
     ScaledBoundLInfNormBall(lower_bounds, upper_bounds)
 
-Polytope similar to a L-inf-ball with shifted bounds.
+Polytope similar to a L-inf-ball with shifted and scaled bounds.
 It is similar to a hypercube, but with two bounds in the form of two scaled unit vectors for each axis.
+The midpoint of the polytope is the midpoint of the upper and lower bounds.
 Lower and upper bounds are passed on as abstract vectors, possibly of different types.
 For the standard L-inf-ball, i.e. the standard hypercube, all lower and upper bounds would be -1 and 1.
 """
@@ -145,7 +146,13 @@ struct ScaledBoundLInfNormBall{T, VT1 <: AbstractVector{T}, VT2 <: AbstractVecto
 end
 
 function compute_extreme_point(lmo::ScaledBoundLInfNormBall, direction; kwargs...)
-
+    v=lower_bounds
+    for i in eachindex(direction)
+        if direction[i]*upper_bounds[i] < direction[i]*lower_bounds[i]
+            v[i]=upper_bounds[i]
+        end
+    end
+    return v
 end
 
 
