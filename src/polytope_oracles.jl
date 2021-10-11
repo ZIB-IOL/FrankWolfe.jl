@@ -134,7 +134,7 @@ end
     ScaledBoundL1NormBall(lower_bounds, upper_bounds)
 
 Polytope similar to a L1-ball with shifted bounds.
-It is the convex hull of two scaled unit vectors for each axis.
+It is the convex hull of two scaled and shifted unit vectors for each axis.
 Lower and upper bounds are passed on as abstract vectors, possibly of different types.
 For the standard L1-ball, all lower and upper bounds would be -1 and 1.
 """
