@@ -146,8 +146,8 @@ end
 function compute_extreme_point(lmo::ScaledBoundLInfNormBall, direction; kwargs...)
     v=lower_bounds
     for i in eachindex(direction)
-        if direction[i]*upper_bounds[i] < direction[i]*lower_bounds[i]
-            v[i]=upper_bounds[i]
+        if direction[i] * lmo.upper_bounds[i] < direction[i] * lmo.lower_bounds[i]
+            v[i] = lmo.upper_bounds[i]
         end
     end
     return v
