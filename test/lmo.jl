@@ -532,11 +532,11 @@ end
     @test vvec ≈ [vinf; v1]
 end
 
-@testset "Scaled norm polytopes" begin
+@testset "Scaled L-1 norm polytopes" begin
     lmo = FrankWolfe.ScaledBoundL1NormBall(-ones(10), ones(10))
     # equivalent to LMO
     lmo_ref = FrankWolfe.LpNormLMO{1}(1)
-    # all coordinates shifted up 
+    # all coordinates shifted up
     lmo_shifted = FrankWolfe.ScaledBoundL1NormBall(zeros(10), 2 * ones(10))
     lmo_scaled = FrankWolfe.ScaledBoundL1NormBall(-2 * ones(10), 2 * ones(10))
     for _ in 1:100
@@ -554,4 +554,8 @@ end
     vref = FrankWolfe.compute_extreme_point(lmo_ref, d)
     @test v ≈ vref
     @test norm(v) == 1
+end
+
+@testset "Scaled L-inf norm polytopes"
+    
 end

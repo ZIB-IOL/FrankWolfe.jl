@@ -5,7 +5,7 @@ import Arpack
 
 LMO with feasible set being a bound on the L-p norm:
 ```
-C = {x ∈ R^n, norm(x, p) ≤ right_side}
+C = {x ∈ R^n, norm(x, p) ≤ right_hand_side}
 ```
 """
 struct LpNormLMO{T,p} <: LinearMinimizationOracle
