@@ -556,6 +556,6 @@ end
     @test norm(v) == 1
 end
 
-@testset "Scaled L-inf norm polytopes"
+@testset "Scaled L-inf norm polytopes" begin
     
 end
