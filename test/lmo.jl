@@ -556,6 +556,38 @@ end
     @test norm(v) == 1
 end
 
+
 @testset "Scaled L-inf norm polytopes" begin
-    
+    lmo = FrankWolfe.ScaledBoundLInfNormBall(-ones(10), ones (10))
+    lmo_ref = FrankWolfe.LpNormLMO{Inf}(1)
+    lmo_shifted = FrankWolfe.ScaledBoundLInfNormBall(zeros(10), 2 * ones(10))
+    lmo_scaled = FrankWolfe.ScaledBoundLInfNormBall(-2 * ones(10), 2 * ones(10))
+    bounds=ones(10)
+    for i in 1:10
+        bounds[i] = i
+    end
+    lmo_scaled_unequally = FrankWolfe.ScaledBoundLInfNormBall(-bounds, bounds)
+    scaled_unequally_opt = GLPK.Optimizer()
+    MOI.set(scaled_unequally_opt, MOI.Silent(), true)
+    x = MOI.add_variables(scaled_unequally_opt, 10)
+    MOI.add_constraint.(scaled_unequally_opt, MOI.GreaterThan(-bounds))
+    MOI.add_constraint.(scaled_unequally_opt, MOI.LessThan(bounds))
+    for _ in 1:100
+        d = randn(10)
+        v = FrankWolfe.compute_extreme_point(lmo, d)
+        vref = FrankWolfe.compute_extreme_point(lmo_ref, d)
+        @test v ≈ vref
+        vshift = FrankWolfe.compute_extreme_point(lmo_shifted, d)
+        @test v .+ 1 ≈ vshift
+        v2 = FrankWolfe.compute_extreme_point(lmo_scaled, d)
+        @test v2 ≈ 2v
+        v3 = FrankWolfe.compute_extreme_point(lmo_scaled_unequally, d)
+        v3_test = compute_extreme_point(scaled_unequally_opt, d)
+        @test v3 ≈ v3_test
+    end
+    d = zeros(10)
+    v = FrankWolfe.compute_extreme_point(lmo, d)
+    vref = FrankWolfe.compute_extreme_point(lmo_ref, d)
+    @test v ≈ vref
+    @test norm(v, Inf) == 1
 end
