@@ -562,10 +562,7 @@ end
     lmo_ref = FrankWolfe.LpNormLMO{Inf}(1)
     lmo_shifted = FrankWolfe.ScaledBoundLInfNormBall(zeros(10), 2 * ones(10))
     lmo_scaled = FrankWolfe.ScaledBoundLInfNormBall(-2 * ones(10), 2 * ones(10))
-    bounds=ones(10)
-    for i in 1:10
-        bounds[i] = i
-    end
+    bounds = collect(1.0:10)
     lmo_scaled_unequally = FrankWolfe.ScaledBoundLInfNormBall(-bounds, bounds)
     scaled_unequally_opt = GLPK.Optimizer()
     MOI.set(scaled_unequally_opt, MOI.Silent(), true)
