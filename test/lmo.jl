@@ -558,7 +558,7 @@ end
 
 
 @testset "Scaled L-inf norm polytopes" begin
-    lmo = FrankWolfe.ScaledBoundLInfNormBall(-ones(10), ones (10))
+    lmo = FrankWolfe.ScaledBoundLInfNormBall(-ones(10), ones(10))
     lmo_ref = FrankWolfe.LpNormLMO{Inf}(1)
     lmo_shifted = FrankWolfe.ScaledBoundLInfNormBall(zeros(10), 2 * ones(10))
     lmo_scaled = FrankWolfe.ScaledBoundLInfNormBall(-2 * ones(10), 2 * ones(10))
