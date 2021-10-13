@@ -569,8 +569,8 @@ end
     scaled_unequally_opt = GLPK.Optimizer()
     MOI.set(scaled_unequally_opt, MOI.Silent(), true)
     x = MOI.add_variables(scaled_unequally_opt, 10)
-    MOI.add_constraint.(scaled_unequally_opt, MOI.GreaterThan(-bounds))
-    MOI.add_constraint.(scaled_unequally_opt, MOI.LessThan(bounds))
+    MOI.add_constraint.(scaled_unequally_opt, MOI.GreaterThan.(-bounds))
+    MOI.add_constraint.(scaled_unequally_opt, MOI.LessThan.(bounds))
     for _ in 1:100
         d = randn(10)
         v = FrankWolfe.compute_extreme_point(lmo, d)
