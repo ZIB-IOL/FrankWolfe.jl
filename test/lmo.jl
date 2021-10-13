@@ -566,11 +566,12 @@ end
     bounds = collect(1.0:10)
     # tests another ScaledBoundLInfNormBall with unequal bounds against a MOI optimizer
     lmo_scaled_unequally = FrankWolfe.ScaledBoundLInfNormBall(-bounds, bounds)
-    scaled_unequally_opt = GLPK.Optimizer()
-    MOI.set(scaled_unequally_opt, MOI.Silent(), true)
-    x = MOI.add_variables(scaled_unequally_opt, 10)
-    MOI.add_constraint.(scaled_unequally_opt, MOI.GreaterThan.(-bounds))
-    MOI.add_constraint.(scaled_unequally_opt, MOI.LessThan.(bounds))
+    o = GLPK.Optimizer()
+    MOI.set(o, MOI.Silent(), true)
+    x = MOI.add_variables(o, 10)
+    MOI.add_constraint.(o, MOI.GreaterThan.(-bounds))
+    MOI.add_constraint.(o, MOI.LessThan.(bounds))
+    scaled_unequally_opt = FrankWolfe.MathOptLMO(o)
     for _ in 1:100
         d = randn(10)
         v = FrankWolfe.compute_extreme_point(lmo, d)
