@@ -560,7 +560,6 @@ end
 @testset "Scaled L-inf norm polytopes" begin
     # tests ScaledBoundLInfNormBall for the standard hypercube, a shifted one, and a scaled one
     lmo = FrankWolfe.ScaledBoundLInfNormBall(-ones(10), ones(10))
-    # reference LMO
     lmo_ref = FrankWolfe.LpNormLMO{Inf}(1)
     lmo_shifted = FrankWolfe.ScaledBoundLInfNormBall(zeros(10), 2 * ones(10))
     lmo_scaled = FrankWolfe.ScaledBoundLInfNormBall(-2 * ones(10), 2 * ones(10))
