@@ -532,11 +532,11 @@ end
     @test vvec ≈ [vinf; v1]
 end
 
-@testset "Scaled norm polytopes" begin
+@testset "Scaled L-1 norm polytopes" begin
     lmo = FrankWolfe.ScaledBoundL1NormBall(-ones(10), ones(10))
     # equivalent to LMO
     lmo_ref = FrankWolfe.LpNormLMO{1}(1)
-    # all coordinates shifted up 
+    # all coordinates shifted up
     lmo_shifted = FrankWolfe.ScaledBoundL1NormBall(zeros(10), 2 * ones(10))
     lmo_scaled = FrankWolfe.ScaledBoundL1NormBall(-2 * ones(10), 2 * ones(10))
     for _ in 1:100
@@ -554,4 +554,40 @@ end
     vref = FrankWolfe.compute_extreme_point(lmo_ref, d)
     @test v ≈ vref
     @test norm(v) == 1
+end
+
+
+@testset "Scaled L-inf norm polytopes" begin
+    # tests ScaledBoundLInfNormBall for the standard hypercube, a shifted one, and a scaled one
+    lmo = FrankWolfe.ScaledBoundLInfNormBall(-ones(10), ones(10))
+    lmo_ref = FrankWolfe.LpNormLMO{Inf}(1)
+    lmo_shifted = FrankWolfe.ScaledBoundLInfNormBall(zeros(10), 2 * ones(10))
+    lmo_scaled = FrankWolfe.ScaledBoundLInfNormBall(-2 * ones(10), 2 * ones(10))
+    bounds = collect(1.0:10)
+    # tests another ScaledBoundLInfNormBall with unequal bounds against a MOI optimizer
+    lmo_scaled_unequally = FrankWolfe.ScaledBoundLInfNormBall(-bounds, bounds)
+    o = GLPK.Optimizer()
+    MOI.set(o, MOI.Silent(), true)
+    x = MOI.add_variables(o, 10)
+    MOI.add_constraint.(o, x, MOI.GreaterThan.(-bounds))
+    MOI.add_constraint.(o, x, MOI.LessThan.(bounds))
+    scaled_unequally_opt = FrankWolfe.MathOptLMO(o)
+    for _ in 1:100
+        d = randn(10)
+        v = FrankWolfe.compute_extreme_point(lmo, d)
+        vref = FrankWolfe.compute_extreme_point(lmo_ref, d)
+        @test v ≈ vref
+        vshift = FrankWolfe.compute_extreme_point(lmo_shifted, d)
+        @test v .+ 1 ≈ vshift
+        v2 = FrankWolfe.compute_extreme_point(lmo_scaled, d)
+        @test v2 ≈ 2v
+        v3 = FrankWolfe.compute_extreme_point(lmo_scaled_unequally, d)
+        v3_test = compute_extreme_point(scaled_unequally_opt, d)
+        @test v3 ≈ v3_test
+    end
+    d = zeros(10)
+    v = FrankWolfe.compute_extreme_point(lmo, d)
+    vref = FrankWolfe.compute_extreme_point(lmo_ref, d)
+    @test v ≈ vref
+    @test norm(v, Inf) == 1
 end
