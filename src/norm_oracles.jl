@@ -5,7 +5,7 @@ import Arpack
 
 LMO with feasible set being a bound on the L-p norm:
 ```
-C = {x ∈ R^n, norm(x, p) ≤ right_side}
+C = {x ∈ R^n, norm(x, p) ≤ right_hand_side}
 ```
 """
 struct LpNormLMO{T,p} <: LinearMinimizationOracle
@@ -28,7 +28,7 @@ function compute_extreme_point(lmo::LpNormLMO{T,2}, direction; kwargs...) where 
 end
 
 function compute_extreme_point(lmo::LpNormLMO{T,Inf}, direction; kwargs...) where {T}
-    return -[lmo.right_hand_side * sign(d) for d in direction]
+    return -[lmo.right_hand_side * (1 - 2signbit(d)) for d in direction]
 end
 
 function compute_extreme_point(lmo::LpNormLMO{T,1}, direction; kwargs...) where {T}

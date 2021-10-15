@@ -130,6 +130,30 @@ function convert_mathopt(
     return MathOptLMO(optimizer)
 end
 
+
+"""
+    ScaledBoundLInfNormBall(lower_bounds, upper_bounds)
+
+Polytope similar to a L-inf-ball with shifted bounds or general box constraints.
+Lower- and upper-bounds are passed on as abstract vectors, possibly of different types.
+For the standard L-inf ball, all lower- and upper-bounds would be -1 and 1.
+"""
+struct ScaledBoundLInfNormBall{T, VT1 <: AbstractVector{T}, VT2 <: AbstractVector{T}} <: LinearMinimizationOracle
+    lower_bounds::VT1
+    upper_bounds::VT2
+end
+
+function compute_extreme_point(lmo::ScaledBoundLInfNormBall, direction; kwargs...)
+    v = copy(lmo.lower_bounds)
+    for i in eachindex(direction)
+        if direction[i] * lmo.upper_bounds[i] < direction[i] * lmo.lower_bounds[i]
+            v[i] = lmo.upper_bounds[i]
+        end
+    end
+    return v
+end
+
+
 """
     ScaledBoundL1NormBall(lower_bounds, upper_bounds)
 
