@@ -291,6 +291,42 @@ end
     )
 end
 
+@testset "Spectral norms" begin
+    Random.seed!(42)
+    o = Hypatia.Optimizer()
+    MOI.set(o, MOI.Silent(), true)
+    optimizer = MOI.Bridges.full_bridge_optimizer(
+            MOI.Utilities.CachingOptimizer(
+            MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
+            o,
+        ),
+        Float64,
+    )
+    radius = 5.0
+    @testset "Spectraplex $n" for n in (2, 10)
+        lmo = FrankWolfe.SpectraplexLMO(radius, n)
+        direction = Matrix{Float64}(undef, n, n)
+        lmo_moi = FrankWolfe.convert_mathopt(lmo, optimizer; side_dimension=n)
+        for _ in 1:10
+            Random.randn!(direction)
+            v = @inferred FrankWolfe.compute_extreme_point(lmo, direction)
+            @testset "Vertex properties" begin
+                eigen_v = eigen(Matrix(v))
+                @test eigmax(Matrix(v)) ≈ radius
+                @test norm(eigen_v.values[1:end-1]) ≈ 0 atol=1e-7
+                # u can be sqrt(r) * vec or -sqrt(r) * vec
+                case_pos = ≈(norm(eigen_v.vectors[:,n] * sqrt(eigen_v.values[n]) - v.u), 0, atol=1e-9)
+                case_neg = ≈(norm(eigen_v.vectors[:,n] * sqrt(eigen_v.values[n]) + v.u), 0, atol=1e-9)
+                @test case_pos || case_neg
+            end
+            @testset "Comparison with SDP solution" begin
+                v_moi = FrankWolfe.compute_extreme_point(lmo_moi, direction)
+                @test norm(v - v_moi) <= 1e-6
+            end
+        end
+    end
+end
+
 @testset "MOI oracle consistency" begin
     Random.seed!(42)
     o = GLPK.Optimizer()

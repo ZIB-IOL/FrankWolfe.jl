@@ -131,10 +131,10 @@ function compute_extreme_point(lmo::KNormBallLMO{T}, direction; kwargs...) where
 end
 
 """
-    NuclearNormLMO{T}(δ)
+    NuclearNormLMO{T}(radius)
 
-LMO over matrices that have a nuclear norm less than δ.
-The LMO returns the rank-one matrix with singular value δ.
+LMO over matrices that have a nuclear norm less than `radius`.
+The LMO returns the rank-one matrix with singular value `radius`.
 """
 struct NuclearNormLMO{T} <: LinearMinimizationOracle
     radius::T
@@ -165,5 +165,60 @@ function convert_mathopt(
     x = MOI.add_variables(optimizer, row_dimension * col_dimension)
     (t, _) = MOI.add_constrained_variable(optimizer, MOI.LessThan(lmo.radius))
     MOI.add_constraint(optimizer, [t; x], MOI.NormNuclearCone(row_dimension, col_dimension))
+    return MathOptLMO(optimizer)
+end
+
+"""
+    SpectraplexLMO{T,M}(radius::T,gradient_container::M)
+
+Feasible set
+```
+{X ∈ 𝕊_n^+, trace(X) == radius}
+```
+`gradient_container` is used to store the symmetrized negative direction
+"""
+struct SpectraplexLMO{T,M} <: LinearMinimizationOracle
+    radius::T
+    gradient_container::M
+end
+
+function SpectraplexLMO(radius::T, side_dimension::Int) where {T}
+    SpectraplexLMO(
+        radius,
+        Matrix{T}(undef, side_dimension, side_dimension),
+    )
+end
+
+SpectraplexLMO(radius::Integer, side_dimension::Int) = SpectraplexLMO(float(radius), side_dimension)
+
+function compute_extreme_point(lmo::SpectraplexLMO{T}, direction::AbstractMatrix; maxiters=500, kwargs...) where {T}
+    # make gradient symmetric
+    lmo.gradient_container .= direction
+    @. lmo.gradient_container += direction'
+    lmo.gradient_container .*= -1
+
+    _, evec = Arpack.eigs(lmo.gradient_container; nev=1, which=:LR, maxiter=maxiters)
+    # type annotatio because of Arpack instability
+    unit_vec::Vector{T} = vec(evec)
+    # scaling by sqrt(radius) so that x x^T has spectral norm radius while using a single vector
+    unit_vec .*= sqrt(lmo.radius)
+    return FrankWolfe.RankOneMatrix(unit_vec, unit_vec)
+end
+
+function convert_mathopt(
+    lmo::SpectraplexLMO{T},
+    optimizer::OT;
+    side_dimension::Integer,
+    kwargs...,
+) where {T, OT}
+    MOI.empty!(optimizer)
+    X = MOI.add_variables(optimizer, side_dimension * side_dimension)
+    MOI.add_constraint(optimizer, X, MOI.PositiveSemidefiniteConeSquare(side_dimension))
+    sum_diag_terms = MOI.ScalarAffineFunction{T}([],zero(T))
+    # collect diagonal terms of the matrix
+    for i in 1:side_dimension
+        push!(sum_diag_terms.terms, MOI.ScalarAffineTerm(one(T), X[i + side_dimension * (i-1)]))
+    end
+    MOI.add_constraint(optimizer, sum_diag_terms, MOI.EqualTo(lmo.radius))
     return MathOptLMO(optimizer)
 end
