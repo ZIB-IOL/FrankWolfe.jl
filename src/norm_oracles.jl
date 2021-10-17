@@ -198,15 +198,57 @@ function compute_extreme_point(lmo::SpectraplexLMO{T}, direction::AbstractMatrix
     lmo.gradient_container .*= -1
 
     _, evec = Arpack.eigs(lmo.gradient_container; nev=1, which=:LR, maxiter=maxiters)
-    # type annotatio because of Arpack instability
+    # type annotation because of Arpack instability
     unit_vec::Vector{T} = vec(evec)
     # scaling by sqrt(radius) so that x x^T has spectral norm radius while using a single vector
     unit_vec .*= sqrt(lmo.radius)
     return FrankWolfe.RankOneMatrix(unit_vec, unit_vec)
 end
 
+"""
+    UnitSpectrahedronLMO{T,M}(radius::T, gradient_container::M)
+
+Feasible set of PSD matrices with bounded trace:
+```
+{X ∈ 𝕊_n^+, trace(X) ≤ radius}
+```
+`gradient_container` is used to store the symmetrized negative direction.
+"""
+struct UnitSpectrahedronLMO{T,M} <: LinearMinimizationOracle
+    radius::T
+    gradient_container::M
+end
+
+function UnitSpectrahedronLMO(radius::T, side_dimension::Int) where {T}
+    UnitSpectrahedronLMO(
+        radius,
+        Matrix{T}(undef, side_dimension, side_dimension),
+    )
+end
+
+UnitSpectrahedronLMO(radius::Integer, side_dimension::Int) = UnitSpectrahedronLMO(float(radius), side_dimension)
+
+function compute_extreme_point(lmo::UnitSpectrahedronLMO{T}, direction::AbstractMatrix; maxiters=500, kwargs...) where {T}
+    # make gradient symmetric
+    lmo.gradient_container .= direction
+    @. lmo.gradient_container += direction'
+    lmo.gradient_container .*= -1
+
+    e_val::Vector{T}, evec::Matrix{T} = Arpack.eigs(lmo.gradient_container; nev=1, which=:LR, maxiter=maxiters)
+    # type annotation because of Arpack instability
+    unit_vec::Vector{T} = vec(evec)
+    if e_val[1] < 0
+        # return a zero rank-one matrix
+        unit_vec .*= 0
+    else
+        # scaling by sqrt(radius) so that x x^T has spectral norm radius while using a single vector
+        unit_vec .*= sqrt(lmo.radius)
+    end
+    return FrankWolfe.RankOneMatrix(unit_vec, unit_vec)
+end
+
 function convert_mathopt(
-    lmo::SpectraplexLMO{T},
+    lmo::Union{SpectraplexLMO{T}, UnitSpectrahedronLMO{T}},
     optimizer::OT;
     side_dimension::Integer,
     kwargs...,
@@ -219,6 +261,11 @@ function convert_mathopt(
     for i in 1:side_dimension
         push!(sum_diag_terms.terms, MOI.ScalarAffineTerm(one(T), X[i + side_dimension * (i-1)]))
     end
-    MOI.add_constraint(optimizer, sum_diag_terms, MOI.EqualTo(lmo.radius))
+    constraint_set = if lmo isa SpectraplexLMO
+        MOI.EqualTo(lmo.radius)
+    else
+        MOI.LessThan(lmo.radius)
+    end
+    MOI.add_constraint(optimizer, sum_diag_terms, constraint_set)
     return MathOptLMO(optimizer)
 end
