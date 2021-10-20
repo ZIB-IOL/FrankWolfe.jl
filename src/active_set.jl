@@ -75,6 +75,10 @@ function Base.empty!(as::ActiveSet)
     return as
 end
 
+function Base.isempty(as::ActiveSet)
+    return isempty(as.atoms) || isempty(as.weights)
+end
+
 """
 Copies an active set, the weight and atom vectors and the iterate.
 Individual atoms are not copied.
