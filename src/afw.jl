@@ -39,7 +39,7 @@ function away_frank_wolfe(
 
     active_set = ActiveSet([(1.0, x0)]) # add the first vertex to active set from initialization
 
-    # Call the other method with the active set
+    # Call the method using an ActiveSet as input
     x, v, primal, dual_gap, traj_data, active_set = away_frank_wolfe(f,
     grad!,
     lmo,
