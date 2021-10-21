@@ -140,7 +140,7 @@ end
 """
     compute_active_set_iterate(active_set)
 """
-function compute_active_set_iterate(active_set)
+function get_active_set_iterate(active_set)
     return active_set.x
 end
 

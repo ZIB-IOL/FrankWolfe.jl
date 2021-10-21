@@ -68,7 +68,7 @@ using LinearAlgebra: norm
         lambda_max = lambda / (1 - lambda)
         FrankWolfe.active_set_update!(active_set, -lambda_max / 2, [2, 3, 4])
         @test collect(active_set) == [(0.75, [1, 2, 3]), (0.25, [2, 3, 4])]
-        x = FrankWolfe.compute_active_set_iterate(active_set)
+        x = FrankWolfe.get_active_set_iterate(active_set)
         @test x == [1.25, 2.25, 3.25]
         λ, a, i = FrankWolfe.active_set_argmin(active_set, [1.0, 1.0, 1.0])
         @test a == [1, 2, 3] && λ == 0.75 && i == 1
@@ -106,7 +106,7 @@ end
     # |______\|
 
     active_set = ActiveSet([(0.5, [0, 0]), (0.5, [0, 1]), (0.0, [1, 0])])
-    x = FrankWolfe.compute_active_set_iterate(active_set)
+    x = FrankWolfe.get_active_set_iterate(active_set)
     @test x ≈ [0, 0.5]
     f(x) = (x[1] - 1)^2 + (x[2] - 1)^2
 
@@ -131,7 +131,7 @@ end
     @test [1, 0] ∈ active_set.atoms
     @test [0, 1] ∈ active_set.atoms
     active_set2 = ActiveSet([(0.5, [0, 0]), (0.0, [0, 1]), (0.5, [1, 0])])
-    x2 = FrankWolfe.compute_active_set_iterate(active_set2)
+    x2 = FrankWolfe.get_active_set_iterate(active_set2)
     @test x2 ≈ [0.5, 0]
     FrankWolfe.simplex_gradient_descent_over_convex_hull(
         f,
@@ -148,10 +148,10 @@ end
     @test length(active_set) == 2
     @test [1, 0] ∈ active_set.atoms
     @test [0, 1] ∈ active_set.atoms
-    @test FrankWolfe.compute_active_set_iterate(active_set2) ≈ [0.5, 0.5]
+    @test FrankWolfe.get_active_set_iterate(active_set2) ≈ [0.5, 0.5]
     # updating again (at optimum) triggers the active set emptying
     for as in (active_set, active_set2)
-        x = FrankWolfe.compute_active_set_iterate(as)
+        x = FrankWolfe.get_active_set_iterate(as)
         number_of_steps = FrankWolfe.simplex_gradient_descent_over_convex_hull(
             f,
             grad!,
@@ -185,7 +185,7 @@ end
     ∇f(x) = [2 * (x[1] - 1), 2 * (x[2] - 1)]
     lmo = FrankWolfe.LpNormLMO{Inf}(1)
 
-    x = FrankWolfe.compute_active_set_iterate(active_set)
+    x = FrankWolfe.get_active_set_iterate(active_set)
     @test x ≈ [-0.4, -0.4]
     gradient_dir = ∇f(x)
     (y, _) = FrankWolfe.lp_separation_oracle(lmo, active_set, gradient_dir, 0.5, 1)

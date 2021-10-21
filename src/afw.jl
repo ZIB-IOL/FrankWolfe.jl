@@ -107,7 +107,7 @@ function away_frank_wolfe(
     t = 0
     dual_gap = Inf
     primal = Inf
-    x = compute_active_set_iterate(active_set)
+    x = get_active_set_iterate(active_set)
     #  not need anymore active_set = ActiveSet([(1.0, x0)]) # add the first vertex to active set from initialization
     tt = regular
     traj_data = []
@@ -154,7 +154,7 @@ function away_frank_wolfe(
         nothing
     end
 
-    x = compute_active_set_iterate(active_set)
+    x = get_active_set_iterate(active_set)
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     phi_value = max(0, fast_dot(x, gradient) - fast_dot(v, gradient))
@@ -184,7 +184,7 @@ function away_frank_wolfe(
         #####################
 
         # compute current iterate from active set
-        x = compute_active_set_iterate(active_set)
+        x = get_active_set_iterate(active_set)
         if isnothing(momentum)
             grad!(gradient, x)
         else
@@ -280,7 +280,7 @@ function away_frank_wolfe(
     # do also cleanup of active_set due to many operations on the same set
 
     if verbose
-        x = compute_active_set_iterate(active_set)
+        x = get_active_set_iterate(active_set)
         grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
@@ -302,7 +302,7 @@ function away_frank_wolfe(
 
     active_set_renormalize!(active_set)
     active_set_cleanup!(active_set)
-    x = compute_active_set_iterate(active_set)
+    x = get_active_set_iterate(active_set)
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
