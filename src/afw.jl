@@ -329,7 +329,7 @@ end
 
 
 function lazy_afw_step(x, gradient, lmo, active_set, phi; K=2.0)
-    v_lambda, v, v_loc, a_lambda, a, a_loc = active_set_argminmax(active_set, gradient)
+    v_lambda, v, v_loc, v_val, a_lambda, a, a_loc, a_val, progress = active_set_argminmax(active_set, gradient)
     #Do lazy FW step
     grad_dot_lazy_fw_vertex = fast_dot(v, gradient)
     grad_dot_x = fast_dot(x, gradient)
@@ -385,7 +385,7 @@ function lazy_afw_step(x, gradient, lmo, active_set, phi; K=2.0)
 end
 
 function afw_step(x, gradient, lmo, active_set)
-    local_v_lambda, local_v, local_v_loc, a_lambda, a, a_loc =
+    local_v_lambda, local_v, local_v_loc, local_v_val, a_lambda, a, a_loc, a_val, progress =
         active_set_argminmax(active_set, gradient)
     away_gap = fast_dot(a, gradient) - fast_dot(x, gradient)
     v = compute_extreme_point(lmo, gradient)
