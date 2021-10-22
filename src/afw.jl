@@ -108,7 +108,6 @@ function away_frank_wolfe(
     dual_gap = Inf
     primal = Inf
     x = compute_active_set_iterate(active_set)
-    #  not need anymore active_set = ActiveSet([(1.0, x0)]) # add the first vertex to active set from initialization
     tt = regular
     traj_data = []
     if trajectory && callback === nothing
