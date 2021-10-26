@@ -102,7 +102,7 @@ function away_frank_wolfe(
     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
 
     if isempty(active_set)
-        return nothing 
+        throw(ArgumentError("Empty active set"))
     end 
 
     t = 0

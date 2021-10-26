@@ -711,7 +711,7 @@ end
     @test xref ≈ xs atol = (1e-3 / length(x))
 
     empty!(active_set)
-    @test_throws ErrorException("Invalid empty active set") xs, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
+    @test_throws ErrorException("Empty active set") xs, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
         f,
         grad!,
         lmo_prob,
