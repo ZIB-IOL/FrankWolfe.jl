@@ -53,6 +53,13 @@ using LinearAlgebra: norm
         @test FrankWolfe.active_set_validate(active_set) == true
     end
 
+    @testset "active set isempty" begin
+        active_set = ActiveSet([(1.0, [1,2,3])])
+        @test isempty(active_set) == false
+        empty!(active_set)
+        @test isempty(active_set) == true
+    end
+
     @testset "Away step operations" begin
         active_set = ActiveSet([(0.125, [1, 2, 3]), (0.125, [2, 3, 4]), (0.75, [5, 6, 7])])
 

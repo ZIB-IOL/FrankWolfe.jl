@@ -45,7 +45,7 @@ function away_frank_wolfe(
         grad!,
         lmo,
         active_set,
-        line_search=line_search,
+        line_search = line_search,
         L=L,
         gamma0=gamma0,
         K=K,
@@ -102,13 +102,14 @@ function away_frank_wolfe(
     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
 
     if isempty(active_set)
-        error("Invalid empty active set")
+        return nothing 
     end 
 
     t = 0
     dual_gap = Inf
     primal = Inf
     x = compute_active_set_iterate(active_set)
+    #  not need anymore active_set = ActiveSet([(1.0, x0)]) # add the first vertex to active set from initialization
     tt = regular
     traj_data = []
     if trajectory && callback === nothing
