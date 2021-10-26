@@ -66,8 +66,6 @@ function away_frank_wolfe(
         timeout= timeout,
         print_callback=print_callback,
     )
-    
-    return x, v, primal, dual_gap, traj_data, active_set
 end
 
 # step away FrankWolfe with the active set given as parameter 
