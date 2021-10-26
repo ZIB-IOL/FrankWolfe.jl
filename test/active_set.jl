@@ -55,9 +55,9 @@ using LinearAlgebra: norm
 
     @testset "active set isempty" begin
         active_set = ActiveSet([(1.0, [1,2,3])])
-        @test isempty(active_set) == false
+        @test !isempty(active_set)
         empty!(active_set)
-        @test isempty(active_set) == true
+        @test isempty(active_set)
     end
 
     @testset "Away step operations" begin
