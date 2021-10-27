@@ -5,11 +5,18 @@
 # S = \{X \in \mathbb{S}_+^n, Tr(X) = 1\}
 # ```
 
+
 using FrankWolfe
 using LinearAlgebra
 using Random
 using SparseArrays
 
+# The objective function will be the symmetric squared distance to a set of known or observed entries $Y_{ij}$ of the matrix.
+# ```math
+# f(X) = \sum_{(i,j) \in L} 1/2 (X_{ij} - Y_{ij})^2
+# ```
+
+# dimension, number of iterations and number of known entries
 n = 500
 k = 10000
 n_entries = 50
@@ -22,8 +29,8 @@ const entry_values = randn(length(entry_indices))
 function f(X)
     r = zero(eltype(X))
     for (idx, (i, j)) in enumerate(entry_indices)
-        r += 1 / 2 * (X[i,j] - entry_values[idx])^2
-        r += 1 / 2 * (X[j,i] - entry_values[idx])^2
+        r += 1/2 * (X[i,j] - entry_values[idx])^2
+        r += 1/2 * (X[j,i] - entry_values[idx])^2
     end
     return r
 end
@@ -32,7 +39,7 @@ function grad!(storage, X)
     storage .= 0
     for (idx, (i, j)) in enumerate(entry_indices)
         storage[i,j] += (X[i,j] - entry_values[idx])
-        storage[i,j] += (X[j,i] - entry_values[idx])
+        storage[j,i] += (X[j,i] - entry_values[idx])
     end
 end
 
@@ -46,6 +53,9 @@ FrankWolfe.frank_wolfe(f, grad!, lmo, x0, max_iteration=2, line_search=FrankWolf
 FrankWolfe.lazified_conditional_gradient(f, grad!, lmo, x0, max_iteration=2, line_search=FrankWolfe.MonotonousStepSize()) #src
 
 # Running standard and lazified Frank-Wolfe
+# Note the `ensure_symmetry` keyword argument passed to the SpectraplexLMO extreme point computation.
+# It skips an additional step making the used direction symmetric.
+# It is not necessary when the gradient is a `LinearAlgebra.Symmetric` (or more rarely a `LinearAlgebra.Diagonal` or `LinearAlgebra.UniformScaling`).
 
 Xfinal, Vfinal, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
     f,
@@ -59,6 +69,7 @@ Xfinal, Vfinal, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
     verbose=true,
     trajectory=true,
     epsilon=target_tolerance,
+    ensure_symmetry=false,
 )
 
 Xfinal, Vfinal, primal, dual_gap, trajectory_lazy = FrankWolfe.lazified_conditional_gradient(
@@ -73,6 +84,7 @@ Xfinal, Vfinal, primal, dual_gap, trajectory_lazy = FrankWolfe.lazified_conditio
     verbose=true,
     trajectory=true,
     epsilon=target_tolerance,
+    ensure_symmetry=false,
 )
 
 data = [trajectory, trajectory_lazy]

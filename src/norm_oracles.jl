@@ -191,10 +191,12 @@ end
 
 SpectraplexLMO(radius::Integer, side_dimension::Int) = SpectraplexLMO(float(radius), side_dimension)
 
-function compute_extreme_point(lmo::SpectraplexLMO{T}, direction::AbstractMatrix; maxiters=500, kwargs...) where {T}
-    # make gradient symmetric
+function compute_extreme_point(lmo::SpectraplexLMO{T}, direction::M; maxiters=500, ensure_symmetry=true, kwargs...) where {T,M <: AbstractMatrix}
     lmo.gradient_container .= direction
-    @. lmo.gradient_container += direction'
+    if !(M <: Union{LinearAlgebra.Symmetric, LinearAlgebra.Diagonal, LinearAlgebra.UniformScaling}) && symmetric_ensured
+        # make gradient symmetric
+        @. lmo.gradient_container += direction'
+    end
     lmo.gradient_container .*= -1
 
     _, evec = Arpack.eigs(lmo.gradient_container; nev=1, which=:LR, maxiter=maxiters)
