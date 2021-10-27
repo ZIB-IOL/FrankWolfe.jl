@@ -21,8 +21,8 @@ function grad!(storage,x)
     return nothing
 end
 
-lower = Vector([-1.0,-1.0])
-upper = Vector([3.0,1.0])
+lower = [-1.0,-1.0]
+upper = [3.0,1.0]
 
 l1 = FrankWolfe.ScaledBoundL1NormBall(lower, upper)
 
