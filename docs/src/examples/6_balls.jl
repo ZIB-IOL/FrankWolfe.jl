@@ -77,5 +77,5 @@ ycoord2 = [-1,1,1,-1,-1]
 
 plot(xcoord1, ycoord1, title = "Visualization of scaled shifted norm balls", lw = 2, label = L"L^1 \textrm{ norm}")
 plot!(xcoord2, ycoord2, lw = 2, label = L"L^{\infty} \textrm{ norm}")
-plot!([x_l1[1]], [x_l1[2]], seriestype = :scatter, lw = 5, color = "red", label = L"L^1 \textrm{ approximation}")
-plot!([x_linf[1]], [x_linf[2]], seriestype = :scatter, lw = 5, color = "orange", label = L"L^{\infty} \textrm{ approximation}", legend_position = :bottom)
+plot!([x_l1[1]], [x_l1[2]], seriestype = :scatter, lw = 5, color = "blue", label = L"L^1 \textrm{ approximation}")
+plot!([x_linf[1]], [x_linf[2]], seriestype = :scatter, lw = 5, color = "orange", label = L"L^{\infty} \textrm{ approximation}", legend = :bottomleft)
