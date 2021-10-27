@@ -10,54 +10,61 @@ blended_conditional_gradient
 FrankWolfe.stochastic_frank_wolfe
 ```
 
-
 # LMOs
 
 The Linear Minimization Oracle (LMO) is a key component called at each iteration of the FW algorithm. Given ``d\in \mathcal{X}``, it returns a vertex of the feasible set:
 ```math
 v\in \argmin_{x\in \mathcal{C}} \langle d,x \rangle.
 ```
-[`FrankWolfe.jl`](https://github.com/ZIB-IOL/FrankWolfe.jl) features the following common LMOs out of the box:
 
-- probability simplex: [`FrankWolfe.ProbabilitySimplexOracle`](@ref)
-- unit simplex: [`FrankWolfe.UnitSimplexOracle`](@ref)
-- ``K``-sparse polytope: [`FrankWolfe.KSparseLMO`](@ref)
-- ``K``-norm ball: [`FrankWolfe.KNormBallLMO`](@ref)
-- ``L^p``-norm ball: [`FrankWolfe.LpNormLMO`](@ref)
-- Birkhoff polytope: [`FrankWolfe.BirkhoffPolytopeLMO`](@ref)
+```@docs
+FrankWolfe.LinearMinimizationOracle
+```
 
 All of them are subtypes of [`FrankWolfe.LinearMinimizationOracle`](@ref) and implement the following method:
 ```@docs
 compute_extreme_point
 ```
 
-## Functions and Structures
+[`FrankWolfe.jl`](https://github.com/ZIB-IOL/FrankWolfe.jl) features the following common LMOs out of the box:
 
 ```@docs
-FrankWolfe.LinearMinimizationOracle
+FrankWolfe.BirkhoffPolytopeLMO
+FrankWolfe.KNormBallLMO
+FrankWolfe.KSparseLMO
+FrankWolfe.L1ballDense
+FrankWolfe.LpNormLMO
+FrankWolfe.NuclearNormLMO
+FrankWolfe.ProbabilitySimplexOracle
+FrankWolfe.ScaledBoundL1NormBall
+FrankWolfe.ScaledBoundLInfNormBall
+FrankWolfe.SpectraplexLMO
+FrankWolfe.UnitSimplexOracle
+FrankWolfe.UnitSpectrahedronLMO
+FrankWolfe.MathOptLMO
+```
+
+It also contains some meta-LMOs wrapping another one with extended behavior:
+```@docs
 FrankWolfe.CachedLinearMinimizationOracle
+FrankWolfe.ProductLMO
 FrankWolfe.SingleLastCachedLMO
 FrankWolfe.MultiCacheLMO
 FrankWolfe.VectorCacheLMO
-FrankWolfe.ProductLMO
-compute_extreme_point(lmo::FrankWolfe.ProductLMO, direction::Tuple; kwargs...)
-compute_extreme_point(lmo::FrankWolfe.ProductLMO{N},direction::AbstractArray;storage=similar(direction),direction_indices,kwargs...,) where {N}
-FrankWolfe.UnitSimplexOracle
-compute_extreme_point(lmo::FrankWolfe.UnitSimplexOracle{T}, direction) where {T}
-FrankWolfe.compute_dual_solution(::FrankWolfe.UnitSimplexOracle{T}, direction, primalSolution) where {T}
-FrankWolfe.ProbabilitySimplexOracle
-compute_extreme_point(lmo::FrankWolfe.ProbabilitySimplexOracle{T}, direction; kwargs...) where {T}
-FrankWolfe.compute_dual_solution(::FrankWolfe.ProbabilitySimplexOracle{T},direction,primal_solution;kwargs...,) where {T}
-FrankWolfe.KSparseLMO
-FrankWolfe.BirkhoffPolytopeLMO
-FrankWolfe.LpNormLMO
-FrankWolfe.KNormBallLMO
-FrankWolfe.NuclearNormLMO
-compute_extreme_point(lmo::FrankWolfe.NuclearNormLMO, direction::AbstractMatrix; tol=1e-8, kwargs...)
-FrankWolfe.MathOptLMO
-FrankWolfe.convert_mathopt
 ```
 
+## Functions and Structures
+
+```@docs
+compute_extreme_point(lmo::FrankWolfe.ProductLMO, direction::Tuple; kwargs...)
+compute_extreme_point(lmo::FrankWolfe.ProductLMO{N},direction::AbstractArray;storage=similar(direction),direction_indices,kwargs...,) where {N}
+compute_extreme_point(lmo::FrankWolfe.UnitSimplexOracle{T}, direction) where {T}
+FrankWolfe.compute_dual_solution(::FrankWolfe.UnitSimplexOracle{T}, direction, primalSolution) where {T}
+compute_extreme_point(lmo::FrankWolfe.ProbabilitySimplexOracle{T}, direction; kwargs...) where {T}
+FrankWolfe.compute_dual_solution(::FrankWolfe.ProbabilitySimplexOracle{T},direction,primal_solution;kwargs...,) where {T}
+compute_extreme_point(lmo::FrankWolfe.NuclearNormLMO, direction::AbstractMatrix; tol=1e-8, kwargs...)
+FrankWolfe.convert_mathopt
+```
 
 # Components
 

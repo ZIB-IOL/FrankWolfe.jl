@@ -291,6 +291,90 @@ end
     )
 end
 
+@testset "Spectral norms" begin
+    Random.seed!(42)
+    o = Hypatia.Optimizer()
+    MOI.set(o, MOI.Silent(), true)
+    optimizer = MOI.Bridges.full_bridge_optimizer(
+            MOI.Utilities.CachingOptimizer(
+            MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
+            o,
+        ),
+        Float64,
+    )
+    radius = 5.0
+    @testset "Spectraplex $n" for n in (2, 10)
+        lmo = FrankWolfe.SpectraplexLMO(radius, n)
+        direction = Matrix{Float64}(undef, n, n)
+        lmo_moi = FrankWolfe.convert_mathopt(lmo, optimizer; side_dimension=n)
+        for _ in 1:10
+            Random.randn!(direction)
+            v = @inferred FrankWolfe.compute_extreme_point(lmo, direction)
+            vsym = @inferred FrankWolfe.compute_extreme_point(lmo, direction + direction')
+            vsym2 = @inferred FrankWolfe.compute_extreme_point(lmo, Symmetric(direction + direction'))
+            @test v ≈ vsym atol=1e-6
+            @test v ≈ vsym2 atol=1e-6
+            @testset "Vertex properties" begin
+                eigen_v = eigen(Matrix(v))
+                @test eigmax(Matrix(v)) ≈ radius
+                @test norm(eigen_v.values[1:end-1]) ≈ 0 atol=1e-7
+                # u can be sqrt(r) * vec or -sqrt(r) * vec
+                case_pos = ≈(norm(eigen_v.vectors[:,n] * sqrt(eigen_v.values[n]) - v.u), 0, atol=1e-9)
+                case_neg = ≈(norm(eigen_v.vectors[:,n] * sqrt(eigen_v.values[n]) + v.u), 0, atol=1e-9)
+                @test case_pos || case_neg
+            end
+            @testset "Comparison with SDP solution" begin
+                v_moi = FrankWolfe.compute_extreme_point(lmo_moi, direction)
+                @test norm(v - v_moi) <= 1e-6
+            end
+        end
+    end
+    @testset "Unit spectrahedron $n" for n in (2, 10)
+        lmo = FrankWolfe.UnitSpectrahedronLMO(radius, n)
+        direction = Matrix{Float64}(undef, n, n)
+        lmo_moi = FrankWolfe.convert_mathopt(lmo, optimizer; side_dimension=n)
+        direction_sym = similar(direction)
+        for _ in 1:10
+            Random.randn!(direction)
+            @. direction_sym = direction + direction'
+            v = @inferred FrankWolfe.compute_extreme_point(lmo, direction)
+            vsym = @inferred FrankWolfe.compute_extreme_point(lmo, direction_sym)
+            @test v ≈ vsym atol=1e-6
+            @testset "Vertex properties" begin
+                emin = eigmin(direction_sym)
+                if emin ≥ 0
+                    @test norm(Matrix(v)) ≈ 0
+                else
+                    eigen_v = eigen(Matrix(v))
+                    @test eigmax(Matrix(v)) ≈ radius
+                    @test norm(eigen_v.values[1:end-1]) ≈ 0 atol=1e-7
+                    # u can be sqrt(r) * vec or -sqrt(r) * vec
+                    case_pos = ≈(norm(eigen_v.vectors[:,n] * sqrt(eigen_v.values[n]) - v.u), 0, atol=1e-9)
+                    case_neg = ≈(norm(eigen_v.vectors[:,n] * sqrt(eigen_v.values[n]) + v.u), 0, atol=1e-9)
+                    @test case_pos || case_neg
+                    # make direction PSD
+                    direction_sym += 1.1 * abs(emin) * I
+                    @assert isposdef(direction_sym)
+                    v2 = FrankWolfe.compute_extreme_point(lmo, direction_sym)
+                    @test norm(Matrix(v2)) ≈ 0
+                end
+            end
+            @testset "Comparison with SDP solution" begin
+                v_moi = FrankWolfe.compute_extreme_point(lmo_moi, direction)
+                @test norm(v - v_moi) <= 1e-6
+                # forcing PSD direction to test 0 matrix case
+                @. direction_sym = direction + direction'
+                direction_sym += 1.1 * abs(eigmin(direction_sym)) * I
+                @assert isposdef(direction_sym)
+                v_moi2 = FrankWolfe.compute_extreme_point(lmo_moi, direction_sym)
+                v_lmo2 = FrankWolfe.compute_extreme_point(lmo_moi, direction_sym)
+                @test norm(v_moi2 - v_lmo2) <= 1e-6
+                @test norm(v_moi2) <= 1e-6
+            end
+        end
+    end
+end
+
 @testset "MOI oracle consistency" begin
     Random.seed!(42)
     o = GLPK.Optimizer()
