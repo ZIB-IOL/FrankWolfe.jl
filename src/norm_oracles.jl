@@ -230,9 +230,12 @@ end
 
 UnitSpectrahedronLMO(radius::Integer, side_dimension::Int) = UnitSpectrahedronLMO(float(radius), side_dimension)
 
-function compute_extreme_point(lmo::UnitSpectrahedronLMO{T}, direction::AbstractMatrix; maxiters=500, kwargs...) where {T}
-    # make gradient symmetric
+function compute_extreme_point(lmo::UnitSpectrahedronLMO{T}, direction::AbstractMatrix; maxiters=500, symmetric_ensured=true, kwargs...) where {T}
     lmo.gradient_container .= direction
+    if !(M <: Union{LinearAlgebra.Symmetric, LinearAlgebra.Diagonal, LinearAlgebra.UniformScaling}) && symmetric_ensured
+        # make gradient symmetric
+        @. lmo.gradient_container += direction'
+    end
     @. lmo.gradient_container += direction'
     lmo.gradient_container .*= -1
 
