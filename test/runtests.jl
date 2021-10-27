@@ -636,6 +636,7 @@ end
         @. storage = 2x
     end
     k = 1000
+    active_set = ActiveSet([(1.0, x0)]) 
 
     # compute reference from vanilla FW
     xref, _ = FrankWolfe.frank_wolfe(
@@ -670,13 +671,90 @@ end
         lmo_prob,
         x0,
         max_iteration=k,
+        away_steps = false,
+        line_search=FrankWolfe.Backtracking(),
+        print_iter=k / 10,
+        verbose=true,
+        emphasis=FrankWolfe.blas,
+    )
+
+    @test x !== nothing
+    @test xref ≈ x atol = (1e-3 / length(x))
+
+    xs, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
+        f,
+        grad!,
+        lmo_prob,
+        active_set,
+        max_iteration=k,
+        line_search=FrankWolfe.Backtracking(),
+        print_iter=k / 10,
+        verbose=true,
+        emphasis=FrankWolfe.blas,
+    )
+
+    @test xs !== nothing
+    @test xref ≈ xs atol = (1e-3 / length(x))
+
+    x, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
+        f,
+        grad!,
+        lmo_prob,
+        x0,
+        max_iteration=k,
         line_search=FrankWolfe.Backtracking(),
         print_iter=k / 10,
         verbose=true,
         emphasis=FrankWolfe.memory,
     )
+
     @test x !== nothing
     @test xref ≈ x atol = (1e-3 / length(x))
+
+    x, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
+        f,
+        grad!,
+        lmo_prob,
+        x0,
+        max_iteration=k,
+        away_steps=false,
+        line_search=FrankWolfe.Backtracking(),
+        print_iter=k / 10,
+        verbose=true,
+        emphasis=FrankWolfe.memory,
+    )
+
+    @test x !== nothing
+    @test xref ≈ x atol = (1e-3 / length(x))
+
+    xs, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
+        f,
+        grad!,
+        lmo_prob,
+        active_set,
+        max_iteration=k,
+        line_search=FrankWolfe.Backtracking(),
+        print_iter=k / 10,
+        verbose=true,
+        emphasis=FrankWolfe.memory,
+    )
+
+    @test xs !== nothing
+    @test xref ≈ xs atol = (1e-3 / length(x))
+
+    empty!(active_set)
+    @test_throws ArgumentError("Empty active set") FrankWolfe.away_frank_wolfe(
+        f,
+        grad!,
+        lmo_prob,
+        active_set,
+        max_iteration=k,
+        line_search=FrankWolfe.Backtracking(),
+        print_iter=k / 10,
+        verbose=true,
+        emphasis=FrankWolfe.blas,
+    )
+    
 end
 
 @testset "Blended conditional gradient" begin
