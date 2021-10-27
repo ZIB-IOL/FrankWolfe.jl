@@ -169,31 +169,36 @@ function convert_mathopt(
 end
 
 """
-    SpectraplexLMO{T,M}(radius::T,gradient_container::M)
+    SpectraplexLMO{T,M}(radius::T,gradient_container::M,ensure_symmetry::Bool=true)
 
 Feasible set
 ```
 {X ∈ 𝕊_n^+, trace(X) == radius}
 ```
-`gradient_container` is used to store the symmetrized negative direction
+`gradient_container` is used to store the symmetrized negative direction.
+`ensure_symmetry` indicates whether the linear function is made symmetric before computing the eigenvector.
 """
 struct SpectraplexLMO{T,M} <: LinearMinimizationOracle
     radius::T
     gradient_container::M
+    ensure_symmetry::Bool
 end
 
-function SpectraplexLMO(radius::T, side_dimension::Int) where {T}
-    SpectraplexLMO(
+function SpectraplexLMO(radius::T, side_dimension::Int, ensure_symmetry::Bool=true) where {T}
+    return SpectraplexLMO(
         radius,
         Matrix{T}(undef, side_dimension, side_dimension),
+        ensure_symmetry,
     )
 end
 
-SpectraplexLMO(radius::Integer, side_dimension::Int) = SpectraplexLMO(float(radius), side_dimension)
+function SpectraplexLMO(radius::Integer, side_dimension::Int, ensure_symmetry::Bool=true)
+    return SpectraplexLMO(float(radius), side_dimension, ensure_symmetry)
+end
 
-function compute_extreme_point(lmo::SpectraplexLMO{T}, direction::M; maxiters=500, ensure_symmetry=true, kwargs...) where {T,M <: AbstractMatrix}
+function compute_extreme_point(lmo::SpectraplexLMO{T}, direction::M; maxiters=500, kwargs...) where {T,M <: AbstractMatrix}
     lmo.gradient_container .= direction
-    if !(M <: Union{LinearAlgebra.Symmetric, LinearAlgebra.Diagonal, LinearAlgebra.UniformScaling}) && ensure_symmetry
+    if !(M <: Union{LinearAlgebra.Symmetric, LinearAlgebra.Diagonal, LinearAlgebra.UniformScaling}) && lmo.ensure_symmetry
         # make gradient symmetric
         @. lmo.gradient_container += direction'
     end
@@ -215,24 +220,27 @@ Feasible set of PSD matrices with bounded trace:
 {X ∈ 𝕊_n^+, trace(X) ≤ radius}
 ```
 `gradient_container` is used to store the symmetrized negative direction.
+`ensure_symmetry` indicates whether the linear function is made symmetric before computing the eigenvector.
 """
 struct UnitSpectrahedronLMO{T,M} <: LinearMinimizationOracle
     radius::T
     gradient_container::M
+    ensure_symmetry::Bool
 end
 
-function UnitSpectrahedronLMO(radius::T, side_dimension::Int) where {T}
-    UnitSpectrahedronLMO(
+function UnitSpectrahedronLMO(radius::T, side_dimension::Int, ensure_symmetry::Bool=true) where {T}
+    return UnitSpectrahedronLMO(
         radius,
         Matrix{T}(undef, side_dimension, side_dimension),
+        ensure_symmetry,
     )
 end
 
 UnitSpectrahedronLMO(radius::Integer, side_dimension::Int) = UnitSpectrahedronLMO(float(radius), side_dimension)
 
-function compute_extreme_point(lmo::UnitSpectrahedronLMO{T}, direction::M; maxiters=500, ensure_symmetry=true, kwargs...) where {T, M <: AbstractMatrix}
+function compute_extreme_point(lmo::UnitSpectrahedronLMO{T}, direction::M; maxiters=500, kwargs...) where {T, M <: AbstractMatrix}
     lmo.gradient_container .= direction
-    if !(M <: Union{LinearAlgebra.Symmetric, LinearAlgebra.Diagonal, LinearAlgebra.UniformScaling}) && ensure_symmetry
+    if !(M <: Union{LinearAlgebra.Symmetric, LinearAlgebra.Diagonal, LinearAlgebra.UniformScaling}) && lmo.ensure_symmetry
         # make gradient symmetric
         @. lmo.gradient_container += direction'
     end

@@ -52,7 +52,11 @@ function grad!(storage, X)
     end
 end
 
-const lmo = FrankWolfe.SpectraplexLMO(1.0, n)
+# Note that the `ensure_symmetry = false` argument to `SpectraplexLMO`.
+# It skips an additional step making the used direction symmetric.
+# It is not necessary when the gradient is a `LinearAlgebra.Symmetric` (or more rarely a `LinearAlgebra.Diagonal` or `LinearAlgebra.UniformScaling`).
+
+const lmo = FrankWolfe.SpectraplexLMO(1.0, n, false)
 const x0 = FrankWolfe.compute_extreme_point(lmo, spzeros(n, n))
 
 target_tolerance = 1e-6;
@@ -62,10 +66,6 @@ FrankWolfe.frank_wolfe(f, grad!, lmo, x0, max_iteration=2, line_search=FrankWolf
 FrankWolfe.lazified_conditional_gradient(f, grad!, lmo, x0, max_iteration=2, line_search=FrankWolfe.MonotonousStepSize()) #src
 
 # ## Running standard and lazified Frank-Wolfe
-#
-# Note that the `ensure_symmetry` keyword argument passed to the SpectraplexLMO extreme point computation.
-# It skips an additional step making the used direction symmetric.
-# It is not necessary when the gradient is a `LinearAlgebra.Symmetric` (or more rarely a `LinearAlgebra.Diagonal` or `LinearAlgebra.UniformScaling`).
 
 Xfinal, Vfinal, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
     f,
@@ -79,7 +79,6 @@ Xfinal, Vfinal, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
     verbose=true,
     trajectory=true,
     epsilon=target_tolerance,
-    ensure_symmetry=false,
 )
 
 Xfinal, Vfinal, primal, dual_gap, trajectory_lazy = FrankWolfe.lazified_conditional_gradient(
@@ -94,7 +93,6 @@ Xfinal, Vfinal, primal, dual_gap, trajectory_lazy = FrankWolfe.lazified_conditio
     verbose=true,
     trajectory=true,
     epsilon=target_tolerance,
-    ensure_symmetry=false,
 )
 
 # ## Plotting the resulting trajectories
