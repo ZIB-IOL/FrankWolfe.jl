@@ -100,7 +100,7 @@ function active_set_update!(active_set::ActiveSet, lambda, atom, renorm=true, id
     # rescale active set
     active_set.weights .*= (1 - lambda)
     # add value for new atom
-    if isnothing(idx)
+    if idx === nothing
         idx = find_atom(active_set, atom)
     end
     updating = false

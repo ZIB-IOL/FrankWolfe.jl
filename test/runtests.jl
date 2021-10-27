@@ -175,6 +175,7 @@ end
     # fixing https://github.com/ZIB-IOL/FrankWolfe.jl/issues/47
     include("momentum_memory.jl")
 end
+
 @testset "Testing Lazified Conditional Gradients with various step size strategies" begin
     f(x) = norm(x)^2
     function grad!(storage, x)

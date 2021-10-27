@@ -27,7 +27,7 @@ blas mode for small dimensions.
     lazylazy = 4
     dualstep = 5
     away = 6
-    local_fw = 7
+    transfer = 7
     simplex_descent = 101
     gap_step = 102
     last = 1000
@@ -41,7 +41,7 @@ const st = (
     lazylazy="LL",
     dualstep="LD",
     away="A",
-    local_fw="locFW",
+    transfer="T",
     simplex_descent="SD",
     gap_step="GS",
     last="Last",
