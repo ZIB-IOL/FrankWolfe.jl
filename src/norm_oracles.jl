@@ -236,7 +236,6 @@ function compute_extreme_point(lmo::UnitSpectrahedronLMO{T}, direction::M; maxit
         # make gradient symmetric
         @. lmo.gradient_container += direction'
     end
-    @. lmo.gradient_container += direction'
     lmo.gradient_container .*= -1
 
     e_val::Vector{T}, evec::Matrix{T} = Arpack.eigs(lmo.gradient_container; nev=1, which=:LR, maxiter=maxiters)

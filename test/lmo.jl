@@ -310,6 +310,10 @@ end
         for _ in 1:10
             Random.randn!(direction)
             v = @inferred FrankWolfe.compute_extreme_point(lmo, direction)
+            vsym = @inferred FrankWolfe.compute_extreme_point(lmo, direction + direction')
+            vsym2 = @inferred FrankWolfe.compute_extreme_point(lmo, Symmetric(direction + direction'))
+            @test v ≈ vsym atol=1e-6
+            @test v ≈ vsym2 atol=1e-6
             @testset "Vertex properties" begin
                 eigen_v = eigen(Matrix(v))
                 @test eigmax(Matrix(v)) ≈ radius
@@ -334,6 +338,8 @@ end
             Random.randn!(direction)
             @. direction_sym = direction + direction'
             v = @inferred FrankWolfe.compute_extreme_point(lmo, direction)
+            vsym = @inferred FrankWolfe.compute_extreme_point(lmo, direction_sym)
+            @test v ≈ vsym atol=1e-6
             @testset "Vertex properties" begin
                 emin = eigmin(direction_sym)
                 if emin ≥ 0
