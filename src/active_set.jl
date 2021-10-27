@@ -75,6 +75,22 @@ function Base.empty!(as::ActiveSet)
     return as
 end
 
+function Base.isempty(as::ActiveSet)
+    return isempty(as.atoms)
+end
+
+"""
+Copies an active set, the weight and atom vectors and the iterate.
+Individual atoms are not copied.
+"""
+function Base.copy(as::ActiveSet{AT, R, IT}) where {AT, R, IT}
+    return ActiveSet{AT, R, IT}(
+        copy(as.weights),
+        copy(as.atoms),
+        copy(as.x),
+    )
+end
+
 """
     active_set_update!(active_set::ActiveSet, lambda, atom)
 
