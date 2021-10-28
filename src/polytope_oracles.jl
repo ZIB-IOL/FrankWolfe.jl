@@ -191,9 +191,7 @@ function compute_extreme_point(lmo::ScaledBoundL1NormBall, direction; kwargs...)
     # TODO use smarter array type if bounds are FillArrays
     v = (lmo.lower_bounds + lmo.upper_bounds) / 2
     # handle zero direction
-    if idx == 0
-        idx = 1
-    end
+    idx = max(idx, 1)
     v[idx] = ifelse(lower, lmo.lower_bounds[idx], lmo.upper_bounds[idx])
     return v
 end
