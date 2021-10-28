@@ -453,9 +453,9 @@ function line_search_wrapper(
     return gamma, L
 end
 
+print_formatted(fmt, args...) = @eval @printf($fmt, $(args...))
 
 function print_callback(data, format_string; print_header=false, print_footer=false)
-    print_formatted(fmt, args...) = @eval @printf($fmt, $(args...))
     if print_header || print_footer
         temp = strip(format_string, ['\n'])
         temp = replace(temp, "%" => "")

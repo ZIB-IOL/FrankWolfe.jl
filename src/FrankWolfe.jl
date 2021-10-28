@@ -35,4 +35,9 @@ include("blended_cg.jl")
 include("afw.jl")
 include("fw_algorithms.jl")
 
+@static if VERSION >= v"1.5"   
+    println("Precompiling common signatures. This might take a moment...")
+    include("precompile.jl")
+end
+
 end
