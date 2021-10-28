@@ -32,5 +32,15 @@ using SparseArrays
     )
     @test res_afw[3] ≈ res_bpcg[3]
     @test res_afw[1] ≈ res_bpcg[1]
-
+    res_bpcg2 = FrankWolfe.blended_pairwise_conditional_gradient(
+        f,
+        grad!,
+        lmo_prob,
+        x0,
+        max_iteration=6000,
+        line_search=FrankWolfe.MonotonousStepSize(),
+        verbose=false,
+        lazy=true
+    )
+    @test res_bpcg2[3] ≈ res_bpcg[3] atol=1e-5
 end
