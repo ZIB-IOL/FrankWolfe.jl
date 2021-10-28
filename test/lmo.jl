@@ -638,8 +638,15 @@ end
     vref = FrankWolfe.compute_extreme_point(lmo_ref, d)
     @test v ≈ vref
     @test norm(v) == 1
+    # non-uniform scaling
+    # validates bugfix
+    lmo_nonunif = FrankWolfe.ScaledBoundL1NormBall([-1.0,-1.0], [3.0,1.0])
+    direction = [-0.8272727272727383, -0.977272727272718]
+    v = FrankWolfe.compute_extreme_point(lmo_nonunif, direction)
+    @test v ≈ [3, 0]
+    v = FrankWolfe.compute_extreme_point(lmo_nonunif, -direction)
+    @test v ≈ [-1, 0]
 end
-
 
 @testset "Scaled L-inf norm polytopes" begin
     # tests ScaledBoundLInfNormBall for the standard hypercube, a shifted one, and a scaled one

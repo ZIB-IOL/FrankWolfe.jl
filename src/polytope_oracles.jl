@@ -170,14 +170,19 @@ end
 function compute_extreme_point(lmo::ScaledBoundL1NormBall, direction; kwargs...)
     idx = 0
     lower = false
-    val =  zero(eltype(direction))
-    for i in eachindex(direction)
-        if direction[i] > val
-            val = direction[i]
+    val = zero(eltype(direction))
+    if length(direction) != length(lmo.upper_bounds)
+        throw(DimensionMismatch())
+    end
+    @inbounds for i in eachindex(direction)
+        scale_factor = lmo.upper_bounds[i] - lmo.lower_bounds[i]
+        scaled_dir = direction[i] * scale_factor
+        if scaled_dir > val
+            val = scaled_dir
             idx = i
             lower = true
-        elseif -direction[i] > val
-            val = -direction[i]
+        elseif -scaled_dir > val
+            val = -scaled_dir
             idx = i
             lower = false
         end
