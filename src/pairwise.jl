@@ -28,6 +28,8 @@ function blended_pairwise_conditional_gradient(
     timeout=Inf,
     print_callback=print_callback,
     renorm_interval=1000,
+    lazy_tolerance=1.0,
+    lazy=false,
 )
     # add the first vertex to active set from initialization
     active_set = ActiveSet([(1.0, x0)])
@@ -54,6 +56,8 @@ function blended_pairwise_conditional_gradient(
         timeout=timeout,
         print_callback=print_callback,
         renorm_interval=renorm_interval,
+        lazy=lazy,
+        lazy_tolerance=lazy_tolerance,
     )
 end
 
@@ -84,6 +88,8 @@ function blended_pairwise_conditional_gradient(
     timeout=Inf,
     print_callback=print_callback,
     renorm_interval=1000,
+    lazy=false,
+    lazy_tolerance=1.0,
 )
 
     # format string for output of the algorithm
@@ -132,14 +138,14 @@ function blended_pairwise_conditional_gradient(
         gradient = similar(x)
     end
 
-    x = compute_active_set_iterate(active_set)
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
-    dual_gap = max(0, fast_dot(x, gradient) - fast_dot(v, gradient))
-    local_gap = zero(dual_gap)
+    # if !lazy, phi is maintained as the global dual gap
+    phi = max(0, fast_dot(x, gradient) - fast_dot(v, gradient))
+    local_gap = zero(phi)
     gamma = 1.0
 
-    while t <= max_iteration && dual_gap >= max(epsilon, eps())
+    while t <= max_iteration && phi >= max(epsilon, eps())
 
         # managing time limit
         time_at_loop = time_ns()
@@ -164,15 +170,16 @@ function blended_pairwise_conditional_gradient(
         x = compute_active_set_iterate(active_set)
         grad!(gradient, x)
 
-        v = compute_extreme_point(lmo, gradient)
-
         _, local_v, local_v_loc, a_lambda, a, a_loc =
-            active_set_argminmax(active_set, gradient)
+        active_set_argminmax(active_set, gradient)
         
-        dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
         local_gap = fast_dot(a, x) - fast_dot(gradient, local_v)
-
-        if local_gap ≥ dual_gap
+        
+        if !lazy
+            v = compute_extreme_point(lmo, gradient)
+            phi = fast_dot(gradient, x) - fast_dot(gradient, v)
+        end
+        if local_gap ≥ phi
             @. d = a - local_v
             gamma_max = a_lambda
             gamma, L = line_search_wrapper(
@@ -183,7 +190,7 @@ function blended_pairwise_conditional_gradient(
                 x,
                 d,
                 gradient,
-                dual_gap,
+                phi,
                 L,
                 gamma0,
                 linesearch_tol,
@@ -202,30 +209,39 @@ function blended_pairwise_conditional_gradient(
                 @assert active_set_validate(active_set)
             end
         else # add to active set
-            tt = regular
-            @. d = x - v
-            gamma_max = 1.0
-            gamma, L = line_search_wrapper(
-                line_search,
-                t,
-                f,
-                grad!,
-                x,
-                d,
-                gradient,
-                dual_gap,
-                L,
-                gamma0,
-                linesearch_tol,
-                step_lim,
-                gamma_max,
-            )
-            # dropping active set and restarting from singleton
-            if gamma ≈ 1.0
-                active_set_initialize!(active_set, v)
-            else
-                renorm = mod(t, renorm_interval) == 0
-                active_set_update!(active_set, gamma, v, renorm, nothing)
+            if lazy # otherwise, v computed above already
+                v = compute_extreme_point(lmo, gradient)
+            end
+            dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
+            if (!lazy || dual_gap ≥ phi / lazy_tolerance)
+                tt = regular
+                @. d = x - v
+                gamma_max = one(eltype(x))
+                gamma, L = line_search_wrapper(
+                    line_search,
+                    t,
+                    f,
+                    grad!,
+                    x,
+                    d,
+                    gradient,
+                    dual_gap,
+                    L,
+                    gamma0,
+                    linesearch_tol,
+                    step_lim,
+                    gamma_max,
+                )
+                # dropping active set and restarting from singleton
+                if gamma ≈ 1.0
+                    active_set_initialize!(active_set, v)
+                else
+                    renorm = mod(t, renorm_interval) == 0
+                    active_set_update!(active_set, gamma, v, renorm, nothing)
+                end
+            else # dual step
+                tt = dualstep
+                phi /= 2
             end
         end
 
@@ -242,7 +258,7 @@ function blended_pairwise_conditional_gradient(
                 t=t,
                 primal=primal,
                 dual=primal - dual_gap,
-                dual_gap=phi_value,
+                dual_gap=phi,
                 time=tot_time,
                 x=x,
                 v=vertex,
@@ -282,7 +298,7 @@ function blended_pairwise_conditional_gradient(
         grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
-        dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
+        phi = fast_dot(x, gradient) - fast_dot(v, gradient)
         tt = last
         rep = (
             st[Symbol(tt)],

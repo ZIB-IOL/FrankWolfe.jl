@@ -7,6 +7,7 @@ include("lmo.jl")
 include("function_gradient.jl")
 include("active_set.jl")
 include("utils.jl")
+include("pairwise.jl")
 
 @testset "Testing vanilla Frank-Wolfe with various step size and momentum strategies" begin
     f(x) = norm(x)^2
