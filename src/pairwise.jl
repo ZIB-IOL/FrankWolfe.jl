@@ -123,7 +123,7 @@ function blended_pairwise_conditional_gradient(
         )
         grad_type = typeof(gradient)
         println(
-            "GRADIENTTYPE: $grad_type",
+            "GRADIENTTYPE: $grad_type LAZY: $lazy",
         )
         if emphasis == memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
@@ -181,6 +181,7 @@ function blended_pairwise_conditional_gradient(
         end
         if local_gap ≥ phi
             @. d = a - local_v
+            w = local_v
             gamma_max = a_lambda
             gamma, L = line_search_wrapper(
                 line_search,
@@ -199,11 +200,11 @@ function blended_pairwise_conditional_gradient(
             )
             # reached maximum of lambda -> dropping away vertex
             if gamma ≈ gamma_max
-                tt = away
+                tt = drop
                 active_set.weights[local_v_loc] += gamma
                 deleteat!(active_set, a_loc)
             else # transfer weight from away to local FW
-                tt = transfer
+                tt = pairwise
                 active_set.weights[a_loc] -= gamma
                 active_set.weights[local_v_loc] += gamma
                 @assert active_set_validate(active_set)
@@ -212,6 +213,7 @@ function blended_pairwise_conditional_gradient(
             if lazy # otherwise, v computed above already
                 v = compute_extreme_point(lmo, gradient)
             end
+            w = v
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
             if (!lazy || dual_gap ≥ phi / lazy_tolerance)
                 tt = regular
@@ -241,18 +243,18 @@ function blended_pairwise_conditional_gradient(
                 end
             else # dual step
                 tt = dualstep
-                phi /= 2
+                phi = dual_gap / 2
             end
         end
-
+        print(active_set)
+        print(phi)
         if (
             (mod(t, print_iter) == 0 && verbose) ||
             callback !== nothing ||
             !(line_search isa Agnostic || line_search isa Nonconvex || line_search isa FixedStep)
         )
             primal = f(x)
-        end
-
+        end            
         if callback !== nothing
             state = (
                 t=t,
@@ -261,7 +263,7 @@ function blended_pairwise_conditional_gradient(
                 dual_gap=phi,
                 time=tot_time,
                 x=x,
-                v=vertex,
+                v=w, 
                 active_set_length=length(active_set),
                 gamma=gamma,
             )
