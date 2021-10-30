@@ -118,6 +118,11 @@ function active_set_update!(active_set::ActiveSet, lambda, atom, renorm=true, id
     return active_set
 end
 
+function active_set_update_iterate_pairwise!(active_set::ActiveSet, lambda, fw_atom, away_atom)
+    @. active_set.x += lambda * fw_atom - lambda * away_atom
+    return active_set
+end
+
 function active_set_validate(active_set::ActiveSet)
     return sum(active_set.weights) ≈ 1.0
 end
