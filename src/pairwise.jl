@@ -28,7 +28,6 @@ function blended_pairwise_conditional_gradient(
     timeout=Inf,
     print_callback=print_callback,
     renorm_interval=1000,
-    lazy_tolerance=1.0,
     lazy=false,
 )
     # add the first vertex to active set from initialization
@@ -57,7 +56,6 @@ function blended_pairwise_conditional_gradient(
         print_callback=print_callback,
         renorm_interval=renorm_interval,
         lazy=lazy,
-        lazy_tolerance=lazy_tolerance,
     )
 end
 
@@ -179,7 +177,7 @@ function blended_pairwise_conditional_gradient(
             v = compute_extreme_point(lmo, gradient)
             phi = fast_dot(gradient, x) - fast_dot(gradient, v)
         end
-        if local_gap ≥ phi
+        if local_gap ≥ phi / K
             @. d = a - local_v
             w = local_v
             gamma_max = a_lambda
@@ -216,7 +214,7 @@ function blended_pairwise_conditional_gradient(
             end
             w = v
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
-            if (!lazy || dual_gap ≥ phi / lazy_tolerance)
+            if (!lazy || dual_gap ≥ phi / K)
                 tt = regular
                 @. d = x - v
                 gamma_max = one(eltype(x))
@@ -269,7 +267,7 @@ function blended_pairwise_conditional_gradient(
             callback(state)
         end
 
-        if verbose && (mod(t, print_iter) == 0)
+        if verbose && (mod(t, print_iter) == 0 || tt == dualstep)
             if t == 0
                 tt = initial
             end
