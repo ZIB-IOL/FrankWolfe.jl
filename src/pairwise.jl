@@ -173,7 +173,7 @@ function blended_pairwise_conditional_gradient(
         _, local_v, local_v_loc, a_lambda, a, a_loc =
         active_set_argminmax(active_set, gradient)
         
-        local_gap = fast_dot(a, x) - fast_dot(gradient, local_v)
+        local_gap = fast_dot(gradient, a) - fast_dot(gradient, local_v)
         
         if !lazy
             v = compute_extreme_point(lmo, gradient)
@@ -209,6 +209,7 @@ function blended_pairwise_conditional_gradient(
                 active_set.weights[local_v_loc] += gamma
                 @assert active_set_validate(active_set)
             end
+            active_set_update_iterate_pairwise!(active_set, gamma, local_v, a)
         else # add to active set
             if lazy # otherwise, v computed above already
                 v = compute_extreme_point(lmo, gradient)
@@ -246,8 +247,6 @@ function blended_pairwise_conditional_gradient(
                 phi = dual_gap / 2
             end
         end
-        print(active_set)
-        print(phi)
         if (
             (mod(t, print_iter) == 0 && verbose) ||
             callback !== nothing ||
@@ -315,7 +314,6 @@ function blended_pairwise_conditional_gradient(
         print_callback(rep, format_string)
         flush(stdout)
     end
-
     active_set_renormalize!(active_set)
     active_set_cleanup!(active_set)
     x = compute_active_set_iterate(active_set)
