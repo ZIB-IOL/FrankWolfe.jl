@@ -17,7 +17,7 @@ using SparseArrays
         lmo_prob,
         x0,
         max_iteration=6000,
-        line_search=FrankWolfe.MonotonousStepSize(),
+        line_search=FrankWolfe.Adaptive(),
         verbose=false,
     )
     res_afw = FrankWolfe.away_frank_wolfe(
@@ -26,19 +26,19 @@ using SparseArrays
         lmo_prob,
         x0,
         max_iteration=6000,
-        line_search=FrankWolfe.MonotonousStepSize(),
+        line_search=FrankWolfe.Adaptive(),
         print_iter=100,
         verbose=false,
     )
     @test res_afw[3] ≈ res_bpcg[3]
-    @test res_afw[1] ≈ res_bpcg[1]
+    @test norm(res_afw[1] - res_bpcg[1]) ≈ 0 atol=1e-6
     res_bpcg2 = FrankWolfe.blended_pairwise_conditional_gradient(
         f,
         grad!,
         lmo_prob,
         x0,
         max_iteration=6000,
-        line_search=FrankWolfe.MonotonousStepSize(),
+        line_search=FrankWolfe.Adaptive(),
         verbose=false,
         lazy=true
     )

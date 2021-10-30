@@ -14,7 +14,7 @@ include("activate.jl")
 using LinearAlgebra
 using Random
 
-n = Int(1e4)
+n = Int(1e3)
 k = 10000
 
 s = rand(1:100)
@@ -34,7 +34,7 @@ function grad!(storage, x)
     @. storage = 2 * (x - xp)
 end
 
-const lmo = FrankWolfe.KSparseLMO(100, 1.0)
+const lmo = FrankWolfe.KSparseLMO(10, 1.0)
 
 ## other LMOs to try
 # lmo_big = FrankWolfe.KSparseLMO(100, big"1.0")
