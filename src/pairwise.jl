@@ -87,7 +87,6 @@ function blended_pairwise_conditional_gradient(
     print_callback=print_callback,
     renorm_interval=1000,
     lazy=false,
-    lazy_tolerance=1.0,
 )
 
     # format string for output of the algorithm
@@ -177,7 +176,7 @@ function blended_pairwise_conditional_gradient(
             v = compute_extreme_point(lmo, gradient)
             phi = fast_dot(gradient, x) - fast_dot(gradient, v)
         end
-        if local_gap ≥ phi / K
+        if local_gap ≥ phi / K # minor modification from original paper for improved sparsity (proof follows with minor modification when estimating the step)
             @. d = a - local_v
             w = local_v
             gamma_max = a_lambda
