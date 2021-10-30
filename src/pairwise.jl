@@ -174,7 +174,8 @@ function blended_pairwise_conditional_gradient(
         
         if !lazy
             v = compute_extreme_point(lmo, gradient)
-            phi = fast_dot(gradient, x) - fast_dot(gradient, v)
+            dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
+            phi = dual_gap
         end
         if local_gap ≥ phi / K # minor modification from original paper for improved sparsity (proof follows with minor modification when estimating the step)
             @. d = a - local_v
