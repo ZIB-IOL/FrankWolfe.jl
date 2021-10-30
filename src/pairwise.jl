@@ -120,7 +120,7 @@ function blended_pairwise_conditional_gradient(
         )
         grad_type = typeof(gradient)
         println(
-            "GRADIENTTYPE: $grad_type LAZY: $lazy",
+            "GRADIENTTYPE: $grad_type LAZY: $lazy K: $K",
         )
         if emphasis == memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
@@ -245,7 +245,7 @@ function blended_pairwise_conditional_gradient(
             end
         end
         if (
-            (mod(t, print_iter) == 0 && verbose) ||
+            ((mod(t, print_iter) == 0 || tt == dualstep) == 0 && verbose) ||
             callback !== nothing ||
             !(line_search isa Agnostic || line_search isa Nonconvex || line_search isa FixedStep)
         )
