@@ -14,8 +14,8 @@ include("activate.jl")
 using LinearAlgebra
 using Random
 
-n = Int(1e1)
-k = 10
+n = Int(1e4)
+k = 1000
 
 s = rand(1:100)
 @info "Seed $s"
@@ -102,28 +102,7 @@ trajectoryAdaLoc15 = []
 callback = build_callback(trajectoryAdaLoc15)
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
-    f,
-    grad!,
-    lmo,
-    x0,
-    max_iteration=k,
-    line_search=FrankWolfe.Adaptive(),
-    print_iter=1, #k / 10,
-    emphasis=FrankWolfe.memory,
-    verbose=true,
-#    lazy=true,
-#    K=1.5,
-    trajectory=true,
-    callback=callback,
-);
-
-
-trajectoryAdaLoc2 = []
-callback = build_callback(trajectoryAdaLoc2)
-
-x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, trajectoryAdaLoc2 = FrankWolfe.blended_pairwise_conditional_gradient(
+@time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
@@ -134,7 +113,28 @@ x0 = deepcopy(x00)
     emphasis=FrankWolfe.memory,
     verbose=true,
     lazy=true,
-#    K=2.0,
+    K=1.5,
+    trajectory=true,
+    callback=callback,
+);
+
+
+trajectoryAdaLoc2 = []
+callback = build_callback(trajectoryAdaLoc2)
+
+x0 = deepcopy(x00)
+@time x, v, primal, dual_gap, trajectoryAdaLoc2 = FrankWolfe.away_frank_wolfe(
+    f,
+    grad!,
+    lmo,
+    x0,
+    max_iteration=k,
+    line_search=FrankWolfe.Adaptive(),
+    print_iter=k / 10,
+    emphasis=FrankWolfe.memory,
+    verbose=true,
+    lazy=true,
+    K=2.0,
     trajectory=true,
     callback=callback,
 );
