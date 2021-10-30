@@ -241,7 +241,7 @@ function blended_pairwise_conditional_gradient(
                 end
             else # dual step
                 tt = dualstep
-                phi = dual_gap / 2
+                phi = dual_gap # / 2 # removed the 2 for consistency between the lazy and non-lazy run
             end
         end
         if (
