@@ -100,7 +100,7 @@ function active_set_update!(active_set::ActiveSet, lambda, atom, renorm=true, id
     # rescale active set
     active_set.weights .*= (1 - lambda)
     # add value for new atom
-    if isnothing(idx)
+    if idx === nothing
         idx = find_atom(active_set, atom)
     end
     updating = false
@@ -115,6 +115,11 @@ function active_set_update!(active_set::ActiveSet, lambda, atom, renorm=true, id
         active_set_renormalize!(active_set)
     end
     @. active_set.x = active_set.x * (1 - lambda) + lambda * atom
+    return active_set
+end
+
+function active_set_update_iterate_pairwise!(active_set::ActiveSet, lambda, fw_atom, away_atom)
+    @. active_set.x += lambda * fw_atom - lambda * away_atom
     return active_set
 end
 
