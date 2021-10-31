@@ -7,6 +7,7 @@ include("lmo.jl")
 include("function_gradient.jl")
 include("active_set.jl")
 include("utils.jl")
+include("pairwise.jl")
 
 @testset "Testing vanilla Frank-Wolfe with various step size and momentum strategies" begin
     f(x) = norm(x)^2
@@ -175,6 +176,7 @@ end
     # fixing https://github.com/ZIB-IOL/FrankWolfe.jl/issues/47
     include("momentum_memory.jl")
 end
+
 @testset "Testing Lazified Conditional Gradients with various step size strategies" begin
     f(x) = norm(x)^2
     function grad!(storage, x)
