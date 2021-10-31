@@ -240,7 +240,7 @@ function lazified_conditional_gradient(
     line_search::LineSearchMethod=Adaptive(),
     L=Inf,
     gamma0=0,
-    K=2.0,
+    lazy_tolerance=2.0,
     cache_size=Inf,
     greedy_lazy=false,
     epsilon=1e-7,
@@ -290,9 +290,9 @@ function lazified_conditional_gradient(
 
     if verbose
         println("\nLazified Conditional Gradients (Frank-Wolfe + Lazification).")
-        numType = eltype(x0)
+        NumType = eltype(x0)
         println(
-            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration K: $K TYPE: $numType",
+            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration lazy_tolerance: $lazy_tolerance TYPE: $NumType",
         )
         grad_type = typeof(gradient)
         println("GRADIENTTYPE: $grad_type CACHESIZE $cache_size GREEDYCACHE: $greedy_lazy")
@@ -344,7 +344,7 @@ function lazified_conditional_gradient(
 
         grad!(gradient, x)
 
-        threshold = fast_dot(x, gradient) - phi / K
+        threshold = fast_dot(x, gradient) - phi / lazy_tolerance
 
         # go easy on the memory - only compute if really needed
         if ((mod(t, print_iter) == 0 && verbose ) || callback !== nothing)
