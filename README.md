@@ -52,6 +52,8 @@ over the set represented by the LMO.
 - Away-Step Frank-Wolfe (see [Lacoste-Julien, Jaggi 2015](https://arxiv.org/abs/1511.05932) for an overview)
 - Blended Conditional Gradients (see [Braun, Pokutta, Tu, Wright 2018](https://arxiv.org/abs/1805.07311))
   - built-in stability feature that temporarily increases accuracy
+- Blended Pairwise Conditional Gradients (see [Tsuji, Tanaka, Pokutta 2021](https://arxiv.org/abs/2110.12650))
+  - minor modification for improved sparsity (see [Modified Selection Criterion](https://hackmd.io/@spokutta/B14MTMsLF))
 
 - Most algorithms also have a lazified version (see [Braun, Pokutta, Zink 2016](https://arxiv.org/abs/1610.05120))
 
