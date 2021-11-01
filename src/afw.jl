@@ -33,11 +33,8 @@ function away_frank_wolfe(
     timeout=Inf,
     print_callback=print_callback,
 )
-
-    # format string for output of the algorithm
-    format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
-
-    active_set = ActiveSet([(1.0, x0)]) # add the first vertex to active set from initialization
+    # add the first vertex to active set from initialization
+    active_set = ActiveSet([(1.0, x0)])
 
     # Call the method using an ActiveSet as input
     return away_frank_wolfe(
