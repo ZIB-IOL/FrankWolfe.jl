@@ -37,7 +37,7 @@ include("fw_algorithms.jl")
 
 @static if VERSION >= v"1.5"   
     println("Precompiling common signatures. This might take a moment...")
-    include("precompile.jl")
+    #include("precompile.jl")
 end
 
 end

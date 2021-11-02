@@ -229,7 +229,7 @@ function blended_conditional_gradient(
                 non_simplex_iter,
             )
             print_callback(rep, format_string)
-            flush(stdout)
+            flush(stdout::Base.TTY)
         end
 
         t = t + 1
@@ -259,7 +259,7 @@ function blended_conditional_gradient(
             non_simplex_iter,
         )
         print_callback(rep, format_string)
-        flush(stdout)
+        flush(stdout::Base.TTY)
     end
 
     # cleanup the active set, renormalize, and recompute values
