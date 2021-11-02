@@ -203,7 +203,7 @@ end
 Computes the linear minimizer in the direction on the active set.
 Returns `(λ_min, a_min, i_min, val_min,  λ_max, a_max, i_max. val_max, val_max-val_min ≥ Φ)`
 """
-function active_set_argminmax(active_set::ActiveSet, direction; Φ=0.5 , goodstep_tolerance=0.75)
+function active_set_argminmax(active_set::ActiveSet, direction; Φ=0.5)
     val = Inf
     valM = -Inf
     idx = -1
