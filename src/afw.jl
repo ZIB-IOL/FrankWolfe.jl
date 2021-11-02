@@ -33,40 +33,36 @@ function away_frank_wolfe(
     timeout=Inf,
     print_callback=print_callback,
 )
-
-    # format string for output of the algorithm
-    format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
-
-    active_set = ActiveSet([(1.0, x0)]) # add the first vertex to active set from initialization
+    # add the first vertex to active set from initialization
+    active_set = ActiveSet([(1.0, x0)])
 
     # Call the method using an ActiveSet as input
-    x, v, primal, dual_gap, traj_data, active_set = away_frank_wolfe(f,
-    grad!,
-    lmo,
-    active_set,
-    line_search = line_search,
-    L=L,
-    gamma0=gamma0,
-    K=K,
-    step_lim=step_lim,
-    epsilon=epsilon,
-    away_steps=away_steps,
-    lazy=lazy,
-    momentum=momentum,
-    max_iteration=max_iteration,
-    print_iter=print_iter,
-    trajectory=trajectory,
-    verbose=verbose,
-    linesearch_tol=linesearch_tol,
-    emphasis=emphasis,
-    gradient=gradient,
-    renorm_interval=renorm_interval,
-    callback=callback,
-    timeout= timeout,
-    print_callback=print_callback,
+    return away_frank_wolfe(
+        f,
+        grad!,
+        lmo,
+        active_set,
+        line_search = line_search,
+        L=L,
+        gamma0=gamma0,
+        K=K,
+        step_lim=step_lim,
+        epsilon=epsilon,
+        away_steps=away_steps,
+        lazy=lazy,
+        momentum=momentum,
+        max_iteration=max_iteration,
+        print_iter=print_iter,
+        trajectory=trajectory,
+        verbose=verbose,
+        linesearch_tol=linesearch_tol,
+        emphasis=emphasis,
+        gradient=gradient,
+        renorm_interval=renorm_interval,
+        callback=callback,
+        timeout= timeout,
+        print_callback=print_callback,
     )
-    
-    return x, v, primal, dual_gap, traj_data, active_set
 end
 
 # step away FrankWolfe with the active set given as parameter 
@@ -97,12 +93,11 @@ function away_frank_wolfe(
     timeout=Inf,
     print_callback=print_callback,
 )
-# format string for output of the algorithm
+    # format string for output of the algorithm
     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
-
     if isempty(active_set)
-        return nothing 
-    end 
+        throw(ArgumentError("Empty active set"))
+    end
 
     t = 0
     dual_gap = Inf
