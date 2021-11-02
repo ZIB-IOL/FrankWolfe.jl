@@ -138,7 +138,9 @@ function weight_from_atom(active_set::ActiveSet, atom)
 end
 
 """
-    compute_active_set_iterate(active_set)
+    get_active_set_iterate(active_set)
+
+Return the current iterate corresponding. Does not recompute it. 
 """
 function get_active_set_iterate(active_set)
     return active_set.x
