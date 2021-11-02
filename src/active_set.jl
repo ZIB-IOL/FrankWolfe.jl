@@ -27,7 +27,7 @@ function ActiveSet(tuple_values::AbstractVector{Tuple{R,AT}}) where {AT,R}
     end
     x = float.(similar(atoms[1]))
     as = ActiveSet{AT,R,typeof(x)}(weights, atoms, x)
-    update_active_set_iterate!(as)
+    compute_active_set_iterate!(as)
     return as
 end
 
@@ -144,7 +144,7 @@ function get_active_set_iterate(active_set)
     return active_set.x
 end
 
-function update_active_set_iterate!(active_set)
+function compute_active_set_iterate!(active_set) # update active set iterate
     active_set.x .= 0
     for (λi, ai) in active_set
         active_set.x .+= λi * ai
@@ -155,7 +155,7 @@ end
 function active_set_cleanup!(active_set; weight_purge_threshold=1e-12, update=true)
     filter!(e -> e[1] > weight_purge_threshold, active_set)
     if update
-        update_active_set_iterate!(active_set)
+        compute_active_set_iterate!(active_set)
     end
     return nothing
 end

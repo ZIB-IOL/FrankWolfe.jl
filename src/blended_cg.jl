@@ -870,7 +870,7 @@ function simplex_gradient_descent_over_convex_hull(
         x = copy(active_set.x)
         η = max(0, η)
         @. active_set.weights -= η * d
-        y = copy(update_active_set_iterate!(active_set))
+        y = copy(compute_active_set_iterate!(active_set))
         number_of_steps += 1
         if f(x) ≥ f(y)
             active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
