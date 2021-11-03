@@ -32,6 +32,9 @@ Base.precompile(Tuple{Core.kwftype(typeof(lazy_afw_step)),NamedTuple{(:K,), Tupl
 Base.precompile(Tuple{typeof(print_callback),Tuple{String, String, Float64, Float64, Float64, Float64, Float64, Int64},String})   # time: 0.004592817
 Base.precompile(Tuple{typeof(afw_step),SparseVector{Float64, Int64},Vector{Float64},LpNormLMO{Float64, 1},ActiveSet{ScaledHotVector{Float64}, Float64, SparseVector{Float64, Int64}}})   # time: 0.002910835
 Base.precompile(Tuple{typeof(fw_step),SparseVector{Float64, Int64},Vector{Float64},LpNormLMO{Float64, 1}})   # time: 0.001129889
+Base.precompile(Tuple{Core.kwftype(typeof(lazified_conditional_gradient)),NamedTuple{(:max_iteration, :L, :line_search, :print_iter, :emphasis, :verbose), Tuple{Int64, Int64, Adaptive, Float64, Emphasis, Bool}},typeof(lazified_conditional_gradient),Function,Function,KSparseLMO{Float64},SparseVector{Float64, Int64}})   # time: 3.9177554
+Base.precompile(Tuple{Type{MultiCacheLMO{_A, KSparseLMO{Float64}, _B}} where {_A, _B},KSparseLMO{Float64}})   # time: 0.012864536
+Base.precompile(Tuple{Type{VectorCacheLMO{KSparseLMO{Float64}, _A}} where _A,KSparseLMO{Float64}})   # time: 0.011564771
 
 #Printf
 Base.precompile(Tuple{typeof(Printf.format),Base.TTY,Printf.Format{Base.CodeUnits{UInt8, String}, Tuple{Printf.Spec{Val{'s'}}, Printf.Spec{Val{'s'}}, Printf.Spec{Val{'e'}}, Printf.Spec{Val{'e'}}, Printf.Spec{Val{'e'}}, Printf.Spec{Val{'e'}}, Printf.Spec{Val{'e'}}}},String,String,Vararg{Any, N} where N})   # time: 0.17503943
@@ -125,3 +128,6 @@ Base.precompile(Tuple{typeof(*),Transpose{Float64, Vector{Float64}},Matrix{Float
 
 #Math
 Base.precompile(Tuple{typeof(min),Float64,Float64})   # time: 0.001037768
+
+#Core
+Base.precompile(Tuple{Type{NamedTuple{(:t, :primal, :dual, :dual_gap, :time, :cache_size, :x, :v, :gamma), T} where T<:Tuple},Tuple{Int64, Any, Any, Any, Float64, Any, Any, Any, Any}})   # time: 0.008965231

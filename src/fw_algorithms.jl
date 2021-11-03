@@ -218,7 +218,7 @@ function frank_wolfe(
         )
         print_callback(rep, format_string)
         print_callback(nothing, format_string, print_footer=true)
-        flush(stdout)
+        flush(stdout::Base.TTY)
     end
     return x, v, primal, dual_gap, traj_data
 end
