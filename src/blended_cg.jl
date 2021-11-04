@@ -151,7 +151,7 @@ function blended_conditional_gradient(
         )
         t += num_simplex_descent_steps
         #Take a FW step.
-        x = compute_active_set_iterate(active_set)
+        x = get_active_set_iterate(active_set)
         primal = f(x)
         grad!(gradient, x)
         # compute new atom
@@ -196,7 +196,7 @@ function blended_conditional_gradient(
             end
         end
 
-        x = compute_active_set_iterate(active_set)
+        x = get_active_set_iterate(active_set)
         dual_gap = phi
         if callback !== nothing
             state = (
@@ -241,7 +241,7 @@ function blended_conditional_gradient(
 
     # report last iteration
     if verbose
-        x = compute_active_set_iterate(active_set)
+        x = get_active_set_iterate(active_set)
         grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
@@ -265,7 +265,7 @@ function blended_conditional_gradient(
     # cleanup the active set, renormalize, and recompute values
     active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
     active_set_renormalize!(active_set)
-    x = compute_active_set_iterate(active_set)
+    x = get_active_set_iterate(active_set)
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
@@ -356,7 +356,7 @@ function minimize_over_convex_hull!(
             format_string=format_string,
         )
     else
-        x = compute_active_set_iterate(active_set)
+        x = get_active_set_iterate(active_set)
         grad!(gradient, x)
         #Rewrite as problem over the simplex
         M, b = build_reduced_problem(
@@ -816,7 +816,7 @@ function simplex_gradient_descent_over_convex_hull(
     number_of_steps = 0
     L_inner = nothing
     upgrade_accuracy_flag = false
-    x = compute_active_set_iterate(active_set)
+    x = get_active_set_iterate(active_set)
     while t + number_of_steps ≤ max_iteration
         grad!(gradient, x)
         #Check if strong Wolfe gap over the convex hull is small enough.
@@ -870,7 +870,7 @@ function simplex_gradient_descent_over_convex_hull(
         x = copy(active_set.x)
         η = max(0, η)
         @. active_set.weights -= η * d
-        y = copy(update_active_set_iterate!(active_set))
+        y = copy(compute_active_set_iterate!(active_set))
         number_of_steps += 1
         if f(x) ≥ f(y)
             active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
@@ -923,7 +923,7 @@ function simplex_gradient_descent_over_convex_hull(
                 @. active_set.x = x + gamma * (y - x)
             end
         end
-        x = compute_active_set_iterate(active_set)
+        x = get_active_set_iterate(active_set)
         primal = f(x)
         dual_gap = tolerance
 

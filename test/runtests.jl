@@ -667,6 +667,21 @@ end
     @test x !== nothing
     @test xref ≈ x atol = (1e-3 / length(x))
 
+    xs, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
+        f,
+        grad!,
+        lmo_prob,
+        active_set,
+        max_iteration=k,
+        line_search=FrankWolfe.Backtracking(),
+        print_iter=k / 10,
+        verbose=true,
+        emphasis=FrankWolfe.blas,
+    )
+
+    @test xs !== nothing
+    @test xref ≈ xs atol = (1e-3 / length(x))
+
     x, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
         f,
         grad!,
@@ -755,8 +770,7 @@ end
         print_iter=k / 10,
         verbose=true,
         emphasis=FrankWolfe.blas,
-    )
-    
+    )    
 end
 
 @testset "Blended conditional gradient" begin
