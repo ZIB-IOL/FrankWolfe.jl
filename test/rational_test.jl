@@ -47,8 +47,7 @@ xmem, vmem, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.RationalShortstep(),
-    L=2,
+    line_search=FrankWolfe.RationalShortstep(2.0),
     print_iter=k / 10,
     verbose=true,
 )

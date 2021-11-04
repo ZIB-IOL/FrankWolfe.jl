@@ -16,16 +16,12 @@ function blended_conditional_gradient(
     x0;
     line_search::LineSearchMethod=Adaptive(),
     line_search_inner::LineSearchMethod=Adaptive(),
-    L=Inf,
-    gamma0=0,
     hessian=nothing,
-    step_lim=20,
     epsilon=1e-7,
     max_iteration=10000,
     print_iter=1000,
     trajectory=false,
     verbose=false,
-    linesearch_tol=1e-7,
     emphasis=nothing,
     accelerated=false,
     K=2.0,
@@ -62,23 +58,15 @@ function blended_conditional_gradient(
     time_start = time_ns()
     v = x0
 
-    if line_search isa Shortstep && !isfinite(L)
-        @error("Lipschitz constant not set to a finite value. Prepare to blow up spectacularly.")
-    end
-
     if line_search isa Agnostic || line_search isa Nonconvex
         @error("Lazification is not known to converge with open-loop step size strategies.")
     end
 
-    if line_search isa FixedStep && gamma0 == 0
-        println("WARNING: gamma0 not set. We are not going to move a single bit.")
-    end
-
     if verbose
         println("\nBlended Conditional Gradients Algorithm.")
-        numType = eltype(x0)
+        NumType = eltype(x0)
         println(
-            "EMPHASIS: $memory STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $numType",
+            "EMPHASIS: $memory STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
         )
         grad_type = typeof(gradient)
         println("GRADIENTTYPE: $grad_type K: $K")
@@ -173,22 +161,17 @@ function blended_conditional_gradient(
             phi = (xval - value) / 2
         else
             tt = regular
-            gamma, L = line_search_wrapper(
+            gamma = perform_line_search(
                 line_search,
                 t,
                 f,
                 grad!,
+                gradient,
                 x,
                 x - v,
-                gradient,
-                dual_gap,
-                L,
-                gamma0,
-                linesearch_tol,
-                step_lim,
                 1.0,
             )
-
+    
             if gamma == 1.0
                 active_set_initialize!(active_set, v)
             else
@@ -321,10 +304,7 @@ function minimize_over_convex_hull!(
     verbose=true,
     print_iter=1000,
     hessian=nothing,
-    linesearch_tol=10e-10,
-    step_lim=100,
     weight_purge_threshold=1e-12,
-    storage=nothing,
     accelerated=false,
     max_iteration,
     callback,
@@ -346,8 +326,6 @@ function minimize_over_convex_hull!(
             line_search_inner=line_search_inner,
             verbose=verbose,
             print_iter=print_iter,
-            linesearch_tol=linesearch_tol,
-            step_lim=step_lim,
             weight_purge_threshold=weight_purge_threshold,
             max_iteration=max_iteration,
             callback=callback,
@@ -804,8 +782,6 @@ function simplex_gradient_descent_over_convex_hull(
     verbose=true,
     print_iter=1000,
     hessian=nothing,
-    linesearch_tol=10e-10,
-    step_lim=100,
     weight_purge_threshold=1e-12,
     max_iteration,
     callback,
@@ -815,7 +791,6 @@ function simplex_gradient_descent_over_convex_hull(
 )
     number_of_steps = 0
     L_inner = nothing
-    upgrade_accuracy_flag = false
     x = compute_active_set_iterate(active_set)
     while t + number_of_steps ≤ max_iteration
         grad!(gradient, x)
@@ -876,44 +851,45 @@ function simplex_gradient_descent_over_convex_hull(
             active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
         else
             if line_search_inner isa Adaptive
-                gamma, L_inner = adaptive_step_size(
+                gamma = perform_line_search(
+                    line_search_inner,
+                    t,
                     f,
                     grad!,
                     gradient,
                     x,
                     x - y,
-                    L_inner,
-                    gamma_max=1.0,
-                    upgrade_accuracy=upgrade_accuracy_flag,
+                    1.0,
                 )
                 #If the stepsize is that small we probably need to increase the accuracy of
                 #the types we are using.
-                if gamma < eps()
-                    #@warn "Upgrading the accuracy of the adaptive line search."
-                    L_inner = nothing
-                    gamma, L_inner = adaptive_step_size(
+                if gamma < eps(gamma)
+                    @warn "Upgrading the accuracy of the adaptive line search."
+                    gamma = perform_line_search(
+                        line_search_inner,
+                        t,
                         f,
                         grad!,
                         gradient,
                         x,
                         x - y,
-                        L_inner,
-                        gamma_max=1.0,
-                        upgrade_accuracy=true,
+                        1.0,
+                        should_upgrade=Val{true}(),
                     )
                 end
             else
-                gamma, _ = backtrackingLS(
+                gamma = perform_line_search(
+                    line_search_inner,
+                    t,
                     f,
+                    grad!,
                     gradient,
                     x,
                     x - y,
                     1.0,
-                    linesearch_tol=linesearch_tol,
-                    step_lim=step_lim,
                 )
             end
-            gamma = min(1.0, gamma)
+            gamma = min(1, gamma)
             # step back from y to x by (1 - γ) η d
             # new point is x - γ η d
             if gamma == 1.0

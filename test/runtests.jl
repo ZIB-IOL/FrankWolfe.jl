@@ -46,7 +46,7 @@ include("pairwise.jl")
             lmo_prob,
             x0,
             max_iteration=1000,
-            line_search=FrankWolfe.Goldenratio(),
+            line_search=FrankWolfe.Goldenratio(size(x0), eltype(x0)),
             verbose=true,
         )[3] - 0.2,
     ) < 1.0e-5
@@ -57,7 +57,7 @@ include("pairwise.jl")
             lmo_prob,
             x0,
             max_iteration=1000,
-            line_search=FrankWolfe.Backtracking(),
+            line_search=FrankWolfe.Backtracking(similar(x0)),
             verbose=false,
         )[3] - 0.2,
     ) < 1.0e-5
@@ -78,8 +78,7 @@ include("pairwise.jl")
         lmo_prob,
         x0,
         max_iteration=1000,
-        line_search=FrankWolfe.Shortstep(),
-        L=2,
+        line_search=FrankWolfe.Shortstep(2.0),
         verbose=false,
     )[3] ≈ 0.2
     @test abs(
@@ -137,8 +136,7 @@ include("pairwise.jl")
             lmo_prob,
             x0,
             max_iteration=1000,
-            line_search=FrankWolfe.Adaptive(),
-            L=100,
+            line_search=FrankWolfe.Adaptive(L_est=100.0),
             verbose=false,
             momentum=0.9,
         )[3] - 0.2,
@@ -150,8 +148,7 @@ include("pairwise.jl")
             lmo_prob,
             x0,
             max_iteration=1000,
-            line_search=FrankWolfe.Adaptive(),
-            L=100,
+            line_search=FrankWolfe.Adaptive(L_est=100.0),
             verbose=false,
             momentum=0.5,
         )[3] - 0.2,
@@ -163,8 +160,7 @@ include("pairwise.jl")
             lmo_prob,
             x0,
             max_iteration=1000,
-            line_search=FrankWolfe.Adaptive(),
-            L=100,
+            line_search=FrankWolfe.Adaptive(L_est=100.0),
             verbose=false,
             momentum=0.9,
             emphasis=FrankWolfe.memory,
@@ -192,7 +188,7 @@ end
             lmo_prob,
             x0,
             max_iteration=1000,
-            line_search=FrankWolfe.Goldenratio(),
+            line_search=FrankWolfe.Goldenratio(size(x0), eltype(x0)),
             verbose=true,
         )[3] - 0.2,
     ) < 1.0e-5
@@ -203,7 +199,7 @@ end
             lmo_prob,
             x0,
             max_iteration=1000,
-            line_search=FrankWolfe.Backtracking(),
+            line_search=FrankWolfe.Backtracking(similar(x0)),
             verbose=true,
         )[3] - 0.2,
     ) < 1.0e-5
@@ -214,8 +210,7 @@ end
             lmo_prob,
             x0,
             max_iteration=1000,
-            line_search=FrankWolfe.Shortstep(),
-            L=2,
+            line_search=FrankWolfe.Shortstep(2.0),
             verbose=true,
         )[3] - 0.2,
     ) < 1.0e-5
@@ -241,8 +236,7 @@ end
         lmo_prob,
         x0,
         max_iteration=k,
-        line_search=FrankWolfe.Shortstep(),
-        L=2,
+        line_search=FrankWolfe.Shortstep(2.0),
         verbose=true,
     )
 
@@ -254,8 +248,7 @@ end
         lmo_prob,
         x0,
         max_iteration=k,
-        line_search=FrankWolfe.Shortstep(),
-        L=2,
+        line_search=FrankWolfe.Shortstep(2.0),
         cache_size=100,
         verbose=false,
     )
@@ -268,8 +261,7 @@ end
         lmo_prob,
         x0,
         max_iteration=k,
-        line_search=FrankWolfe.Shortstep(),
-        L=2,
+        line_search=FrankWolfe.Shortstep(2.0),
         cache_size=100,
         greedy_lazy=true,
         verbose=false,
@@ -299,7 +291,7 @@ end
             lmo_prob,
             x0,
             max_iteration=k,
-            line_search=FrankWolfe.Backtracking(),
+            line_search=FrankWolfe.Backtracking(similar(x0)),
             print_iter=k / 10,
             verbose=false,
             emphasis=FrankWolfe.blas,
@@ -313,7 +305,7 @@ end
             lmo_prob,
             x0,
             max_iteration=k,
-            line_search=FrankWolfe.Backtracking(),
+            line_search=FrankWolfe.Backtracking(similar(x0)),
             print_iter=k / 10,
             verbose=false,
             emphasis=FrankWolfe.memory,
@@ -331,7 +323,7 @@ end
             lmo_prob,
             copy(x0),
             max_iteration=k,
-            line_search=FrankWolfe.Backtracking(),
+            line_search=FrankWolfe.Backtracking(similar(x0)),
             print_iter=k / 10,
             verbose=false,
             emphasis=FrankWolfe.blas,
@@ -345,7 +337,7 @@ end
             lmo_prob,
             copy(x0),
             max_iteration=k,
-            line_search=FrankWolfe.Backtracking(),
+            line_search=FrankWolfe.Backtracking(similar(x0)),
             print_iter=k / 10,
             verbose=false,
             emphasis=FrankWolfe.memory,
@@ -353,7 +345,7 @@ end
 
         @test x !== nothing
 
-        line_search = FrankWolfe.MonotonousStepSize()
+        line_search = FrankWolfe.MonotonousStepSize(size(x0))
         x, _, primal_conv, _ = FrankWolfe.frank_wolfe(
             f,
             grad!,
@@ -367,7 +359,7 @@ end
         )
         @test line_search.factor < 20
 
-        line_search = FrankWolfe.MonotonousNonConvexStepSize()
+        line_search = FrankWolfe.MonotonousNonConvexStepSize(size(x0))
         x, _, primal_nonconv, _ = FrankWolfe.frank_wolfe(
             f,
             grad!,
@@ -437,8 +429,7 @@ end
         lmo,
         x0,
         max_iteration=15,
-        line_search=FrankWolfe.RationalShortstep(),
-        L=2,
+        line_search=FrankWolfe.Shortstep(2//1),
         print_iter=k / 100,
         emphasis=FrankWolfe.memory,
         verbose=true,
@@ -451,8 +442,7 @@ end
         lmo,
         x0,
         max_iteration=15,
-        line_search=FrankWolfe.RationalShortstep(),
-        L=2,
+        line_search=FrankWolfe.Shortstep(2//1),
         print_iter=k / 10,
         emphasis=FrankWolfe.memory,
         verbose=true,
@@ -647,7 +637,7 @@ end
         lmo_prob,
         x0,
         max_iteration=k,
-        line_search=FrankWolfe.Backtracking(),
+        line_search=FrankWolfe.Backtracking(similar(x0)),
         verbose=false,
         emphasis=FrankWolfe.blas,
     )
@@ -658,7 +648,7 @@ end
         lmo_prob,
         x0,
         max_iteration=k,
-        line_search=FrankWolfe.Backtracking(),
+        line_search=FrankWolfe.Backtracking(similar(x0)),
         print_iter=k / 10,
         verbose=true,
         emphasis=FrankWolfe.blas,
@@ -674,7 +664,7 @@ end
         x0,
         max_iteration=k,
         away_steps = false,
-        line_search=FrankWolfe.Backtracking(),
+        line_search=FrankWolfe.Backtracking(similar(x0)),
         print_iter=k / 10,
         verbose=true,
         emphasis=FrankWolfe.blas,
@@ -689,7 +679,7 @@ end
         lmo_prob,
         active_set,
         max_iteration=k,
-        line_search=FrankWolfe.Backtracking(),
+        line_search=FrankWolfe.Backtracking(similar(x0)),
         print_iter=k / 10,
         verbose=true,
         emphasis=FrankWolfe.blas,
@@ -704,7 +694,7 @@ end
         lmo_prob,
         x0,
         max_iteration=k,
-        line_search=FrankWolfe.Backtracking(),
+        line_search=FrankWolfe.Backtracking(similar(x0)),
         print_iter=k / 10,
         verbose=true,
         emphasis=FrankWolfe.memory,
@@ -720,7 +710,7 @@ end
         x0,
         max_iteration=k,
         away_steps=false,
-        line_search=FrankWolfe.Backtracking(),
+        line_search=FrankWolfe.Backtracking(similar(x0)),
         print_iter=k / 10,
         verbose=true,
         emphasis=FrankWolfe.memory,
@@ -735,7 +725,7 @@ end
         lmo_prob,
         active_set,
         max_iteration=k,
-        line_search=FrankWolfe.Backtracking(),
+        line_search=FrankWolfe.Backtracking(similar(active_set.x)),
         print_iter=k / 10,
         verbose=true,
         emphasis=FrankWolfe.memory,
@@ -751,7 +741,7 @@ end
         lmo_prob,
         active_set,
         max_iteration=k,
-        line_search=FrankWolfe.Backtracking(),
+        line_search=FrankWolfe.Backtracking(similar(active_set.x)),
         print_iter=k / 10,
         verbose=true,
         emphasis=FrankWolfe.blas,
@@ -776,7 +766,7 @@ end
         lmo_prob,
         x0,
         max_iteration=k,
-        line_search=FrankWolfe.Backtracking(),
+        line_search=FrankWolfe.Backtracking(similar(x0)),
         verbose=true,
         emphasis=FrankWolfe.blas,
     )
@@ -786,14 +776,13 @@ end
         grad!,
         lmo_prob,
         x0;
-        line_search=FrankWolfe.Backtracking(),
+        line_search=FrankWolfe.Backtracking(similar(x0)),
         L=Inf,
         epsilon=1e-9,
         max_iteration=k,
         print_iter=1,
         trajectory=false,
         verbose=false,
-        linesearch_tol=1e-10,
     )
 
     @test x !== nothing

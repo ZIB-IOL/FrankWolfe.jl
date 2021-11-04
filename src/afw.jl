@@ -13,10 +13,7 @@ function away_frank_wolfe(
     lmo,
     x0;
     line_search::LineSearchMethod=Adaptive(),
-    L=Inf,
-    gamma0=0,
     K=2.0,
-    step_lim=20,
     epsilon=1e-7,
     away_steps=true,
     lazy=false,
@@ -25,7 +22,6 @@ function away_frank_wolfe(
     print_iter=1000,
     trajectory=false,
     verbose=false,
-    linesearch_tol=1e-7,
     emphasis::Emphasis=memory,
     gradient=nothing,
     renorm_interval=1000,
@@ -42,11 +38,8 @@ function away_frank_wolfe(
         grad!,
         lmo,
         active_set,
-        line_search = line_search,
-        L=L,
-        gamma0=gamma0,
+        line_search=line_search,
         K=K,
-        step_lim=step_lim,
         epsilon=epsilon,
         away_steps=away_steps,
         lazy=lazy,
@@ -55,7 +48,6 @@ function away_frank_wolfe(
         print_iter=print_iter,
         trajectory=trajectory,
         verbose=verbose,
-        linesearch_tol=linesearch_tol,
         emphasis=emphasis,
         gradient=gradient,
         renorm_interval=renorm_interval,
@@ -73,10 +65,7 @@ function away_frank_wolfe(
     lmo,
     active_set::ActiveSet;
     line_search::LineSearchMethod=Adaptive(),
-    L=Inf,
-    gamma0=0,
     K=2.0,
-    step_lim=20,
     epsilon=1e-7,
     away_steps=true,
     lazy=false,
@@ -85,7 +74,6 @@ function away_frank_wolfe(
     print_iter=1000,
     trajectory=false,
     verbose=false,
-    linesearch_tol=1e-7,
     emphasis::Emphasis=memory,
     gradient=nothing,
     renorm_interval=1000,
@@ -114,26 +102,18 @@ function away_frank_wolfe(
 
     d = similar(x)
 
-    if line_search isa Shortstep && L == Inf
-        println("WARNING: Lipschitz constant not set. Prepare to blow up spectacularly.")
-    end
-
-    if line_search isa FixedStep && gamma0 == 0
-        println("WARNING: gamma0 not set. We are not going to move a single bit.")
-    end
-
     if verbose
         println("\nAway-step Frank-Wolfe Algorithm.")
-        numType = eltype(x)
+        NumType = eltype(x)
         println(
-            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $numType",
+            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
         )
         grad_type = typeof(gradient)
         println(
             "GRADIENTTYPE: $grad_type LAZY: $lazy K: $K MOMENTUM: $momentum AWAYSTEPS: $away_steps",
         )
         if emphasis == memory
-            println("WARNING: In memory emphasis mode iterates are written back into x0!")
+            @warn("In memory emphasis mode iterates are written back into x0!")
         end
         headers =
             ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "#ActiveSet")
@@ -202,20 +182,15 @@ function away_frank_wolfe(
         end
 
         if fw_step_taken || away_step_taken
-            gamma, L = line_search_wrapper(
+            gamma = perform_line_search(
                 line_search,
                 t,
                 f,
                 grad!,
+                gradient,
                 x,
                 d,
-                gradient,
-                dual_gap,
-                L,
-                gamma0,
-                linesearch_tol,
-                step_lim,
-                gamma_max,
+                1.0,
             )
             # cleanup and renormalize every x iterations. Only for the fw steps.
             renorm = mod(t, renorm_interval) == 0

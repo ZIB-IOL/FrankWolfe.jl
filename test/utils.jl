@@ -65,24 +65,18 @@ end
     f(x) = norm(x)^2
     gradient = similar(a)
     grad!(gradient, a)
-    @test FrankWolfe.backtrackingLS(f, gradient, a, a - b, 1.0) == (0.5, 1)
-    @test abs(FrankWolfe.segment_search(f, grad!, a, a - b, 1.0)[1] - 0.5) < 0.0001
+    ls = FrankWolfe.Backtracking(similar(a))
+    gamma_bt = @inferred FrankWolfe.perform_line_search(ls, 1, f, grad!, gradient, a, a - b, 1.0)
+    @test gamma_bt ≈ 0.5
 
-    @inferred FrankWolfe.line_search_wrapper(
-        FrankWolfe.Agnostic(),
-        3,
-        identity,
-        nothing,
-        [0.3, 0.2],
-        ones(2),
-        ones(3),
-        0.0,
-        3,
-        nothing,
-        1e-6,
-        1e-6,
-        0.9,
-    )
+    ls_gr = FrankWolfe.Goldenratio(size(a))
+    gamma_gr = @inferred FrankWolfe.perform_line_search(ls_gr, 1, f, grad!, gradient, a, a - b, 1.0)
+    @test gamma_gr ≈ 0.5 atol=1e-4
+
+    @inferred FrankWolfe.perform_line_search(FrankWolfe.Agnostic(), 1, f, grad!, gradient, a, a - b, 1.0)
+    @inferred FrankWolfe.perform_line_search(FrankWolfe.Nonconvex(), 1, f, grad!, gradient, a, a - b, 1.0)
+    @inferred FrankWolfe.perform_line_search(FrankWolfe.Nonconvex(), 1, f, grad!, gradient, a, a - b, 1.0)
+    @inferred FrankWolfe.perform_line_search(FrankWolfe.Adaptive(), 1, f, grad!, gradient, a, a - b, 1.0)
 end
 
 @testset "Momentum tests" begin
