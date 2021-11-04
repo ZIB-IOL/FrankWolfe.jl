@@ -3,9 +3,11 @@
 Line search method to apply once the direction is computed.
 A `LineSearchMethod` must implement
 ```
-perform_line_search(ls::LineSearchMethod, t, f, grad!, gradient, x, d, gamma_max)
+perform_line_search(ls::LineSearchMethod, t, f, grad!, gradient, x, d, gamma_max, workspace)
 ```
 with `d = x - v`.
+It may also implement `build_workspace(x, gradient)` which creates a
+workspace structure that is passed as last argument to `perform_line_search`.
 """
 abstract type LineSearchMethod end
 
@@ -241,16 +243,25 @@ Adaptive Step Size strategy from https://arxiv.org/pdf/1806.05123.pdf
 The `Adaptive` struct keeps track of the Lipschitz constant estimate.
 `perform_line_search` also has a `should_upgrade` keyword argument on
 whether there should be a temporary upgrade to `BigFloat`.
+The struct stores a storage of the same type as the iterate `x`.
 """
-mutable struct Adaptive{T,TT} <: LineSearchMethod
+mutable struct Adaptive{T,TT,VT} <: LineSearchMethod
+    storage::VT
     eta::T
     tau::TT
     L_est::T
 end
 
-Adaptive(eta::T, tau::TT) where {T, TT} = Adaptive{T, TT}(eta, tau, T(Inf))
+Adaptive(storage, eta::T, tau::TT) where {T, TT} = Adaptive{T, TT}(storage, eta, tau, T(Inf))
+function Adaptive(st_size::NTuple{N, Int}, eta::T, tau::TT, ::Type{ET} = Float64) where {N,T,TT,ET}
+    return Adaptive{T,TT,Array{ET, N}}(Array{ET, N}(undef, st_size...), eta, tau, T(Inf))
+end
 
-Adaptive(;eta=0.9, tau=2, L_est=Inf) = Adaptive(eta, tau, L_est)
+Adaptive(storage; eta=0.9, tau=2, L_est=Inf) = Adaptive(storage, eta, tau, L_est)
+
+function Adaptive(st_size::NTuple{N, Int}, ::Type{ET} = Float64; eta=0.9, tau=2, L_est=Inf) where {N,ET}
+    return Adaptive(st_size, eta, tau, L_est, ET)
+end
 
 function perform_line_search(
     line_search::Adaptive,
