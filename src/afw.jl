@@ -28,6 +28,7 @@ function away_frank_wolfe(
     callback=nothing,
     timeout=Inf,
     print_callback=print_callback,
+    linesearch_workspace=nothing,
 )
     # add the first vertex to active set from initialization
     active_set = ActiveSet([(1.0, x0)])
@@ -54,6 +55,7 @@ function away_frank_wolfe(
         callback=callback,
         timeout= timeout,
         print_callback=print_callback,
+        linesearch_workspace=linesearch_workspace,
     )
 end
 
@@ -80,6 +82,7 @@ function away_frank_wolfe(
     callback=nothing,
     timeout=Inf,
     print_callback=print_callback,
+    linesearch_workspace=nothing,
 )
 # format string for output of the algorithm
     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
@@ -136,6 +139,10 @@ function away_frank_wolfe(
     phi_value = max(0, fast_dot(x, gradient) - fast_dot(v, gradient))
     gamma = 1.0
 
+    if linesearch_workspace === nothing
+        linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
+    end
+
     while t <= max_iteration && dual_gap >= max(epsilon, eps())
 
         #####################
@@ -191,6 +198,7 @@ function away_frank_wolfe(
                 x,
                 d,
                 1.0,
+                linesearch_workspace,
             )
             # cleanup and renormalize every x iterations. Only for the fw steps.
             renorm = mod(t, renorm_interval) == 0

@@ -268,7 +268,7 @@ end
         print_iter=100,
         trajectory=false,
         verbose=false,
-        line_search=FrankWolfe.Backtracking(similar(x0)),
+        line_search=FrankWolfe.Backtracking(),
         emphasis=FrankWolfe.memory,
     )
     @test 1 - (f(x0) - f(xfin)) / f(x0) < 1e-3
@@ -284,7 +284,7 @@ end
         print_iter=100,
         trajectory=false,
         verbose=false,
-        line_search=FrankWolfe.Backtracking(similar(x0)),
+        line_search=FrankWolfe.Backtracking(),
         emphasis=FrankWolfe.memory,
     )
 end
