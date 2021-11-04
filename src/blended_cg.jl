@@ -864,7 +864,7 @@ function simplex_gradient_descent_over_convex_hull(
                 #If the stepsize is that small we probably need to increase the accuracy of
                 #the types we are using.
                 if gamma < eps(gamma)
-                    @warn "Upgrading the accuracy of the adaptive line search."
+                    # @warn "Upgrading the accuracy of the adaptive line search."
                     gamma = perform_line_search(
                         line_search_inner,
                         t,
