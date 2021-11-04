@@ -85,12 +85,11 @@ Pages = [active_set.jl]
 For all Frank-Wolfe algorithms, a step size must be determined to move from the
 current iterate to the next one. This step size can be determined by exact line search
 or any other rule represented by a subtype of `LineSearchMethod` which
-must implement `line_search_wrapper`.
+must implement `perform_line_search`.
 
 ```@docs
-FrankWolfe.line_search_wrapper
 FrankWolfe.LineSearchMethod
-FrankWolfe.adaptive_step_size
+FrankWolfe.perform_line_search
 FrankWolfe.MonotonousStepSize
 FrankWolfe.MonotonousNonConvexStepSize
 ```
