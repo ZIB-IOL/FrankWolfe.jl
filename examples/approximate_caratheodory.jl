@@ -47,7 +47,7 @@ println("\nOutput type of solution: ", eltype(x))
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.RationalShortstep(2.0),
+    line_search=FrankWolfe.Shortstep(2//1),
     print_iter=k / 10,
     verbose=true,
     emphasis=FrankWolfe.blas,

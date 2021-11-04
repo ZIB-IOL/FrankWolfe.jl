@@ -30,6 +30,8 @@ function blended_conditional_gradient(
     callback=nothing,
     timeout=Inf,
     print_callback=print_callback,
+    linesearch_workspace=nothing,
+    linesearch_inner_workspace=nothing,
     lmo_kwargs...,
 )
 
@@ -40,7 +42,7 @@ function blended_conditional_gradient(
     primal = Inf
     dual_gap = Inf
     active_set = ActiveSet([(1.0, x0)])
-    x = x0
+    x = active_set.x
     if gradient === nothing
         gradient = similar(x0)
     end
@@ -91,8 +93,15 @@ function blended_conditional_gradient(
     non_simplex_iter = 0
     force_fw_step = false
 
-    while t <= max_iteration && (phi ≥ epsilon || t == 0) # do at least one iteration for consistency with other algos
+    if linesearch_workspace === nothing
+        linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
+    end
 
+    if linesearch_inner_workspace === nothing
+        linesearch_inner_workspace = build_linesearch_workspace(line_search_inner, x, gradient)
+    end
+
+    while t <= max_iteration && (phi ≥ epsilon || t == 0) # do at least one iteration for consistency with other algos
         #####################
         # managing time and Ctrl-C
         #####################
@@ -136,6 +145,7 @@ function blended_conditional_gradient(
             timeout=timeout,
             print_callback=print_callback,
             format_string=format_string,
+            linesearch_inner_workspace=linesearch_inner_workspace,
         )
         t += num_simplex_descent_steps
         #Take a FW step.
@@ -170,6 +180,7 @@ function blended_conditional_gradient(
                 x,
                 x - v,
                 1.0,
+                linesearch_workspace,
             )
     
             if gamma == 1.0
@@ -214,10 +225,8 @@ function blended_conditional_gradient(
             print_callback(rep, format_string)
             flush(stdout)
         end
-
         t = t + 1
         non_simplex_iter += 1
-
     end
 
     ## post-processing and cleanup after loop
@@ -311,6 +320,7 @@ function minimize_over_convex_hull!(
     timeout=Inf,
     print_callback=nothing,
     format_string=nothing,
+    linesearch_inner_workspace=nothing,
 )
     #No hessian is known, use simplex gradient descent.
     if hessian === nothing
@@ -332,6 +342,7 @@ function minimize_over_convex_hull!(
             timeout=timeout,
             print_callback=print_callback,
             format_string=format_string,
+            linesearch_inner_workspace=linesearch_inner_workspace,
         )
     else
         x = compute_active_set_iterate(active_set)
@@ -788,9 +799,9 @@ function simplex_gradient_descent_over_convex_hull(
     timeout=Inf,
     print_callback=nothing,
     format_string=nothing,
+    linesearch_inner_workspace=build_linesearch_workspace(line_search_inner, active_set.x, gradient),
 )
     number_of_steps = 0
-    L_inner = nothing
     x = compute_active_set_iterate(active_set)
     while t + number_of_steps ≤ max_iteration
         grad!(gradient, x)
@@ -860,6 +871,7 @@ function simplex_gradient_descent_over_convex_hull(
                     x,
                     x - y,
                     1.0,
+                    linesearch_inner_workspace,
                 )
                 #If the stepsize is that small we probably need to increase the accuracy of
                 #the types we are using.
@@ -874,6 +886,7 @@ function simplex_gradient_descent_over_convex_hull(
                         x,
                         x - y,
                         1.0,
+                        linesearch_inner_workspace,
                         should_upgrade=Val{true}(),
                     )
                 end
@@ -887,6 +900,7 @@ function simplex_gradient_descent_over_convex_hull(
                     x,
                     x - y,
                     1.0,
+                    linesearch_inner_workspace,
                 )
             end
             gamma = min(1, gamma)

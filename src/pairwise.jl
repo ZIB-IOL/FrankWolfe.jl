@@ -25,6 +25,7 @@ function blended_pairwise_conditional_gradient(
     print_callback=print_callback,
     renorm_interval=1000,
     lazy=false,
+    linesearch_workspace=nothing,
 )
     # add the first vertex to active set from initialization
     active_set = ActiveSet([(1.0, x0)])
@@ -48,6 +49,7 @@ function blended_pairwise_conditional_gradient(
         print_callback=print_callback,
         renorm_interval=renorm_interval,
         lazy=lazy,
+        linesearch_workspace=linesearch_workspace,
     )
 end
 
@@ -75,6 +77,7 @@ function blended_pairwise_conditional_gradient(
     print_callback=print_callback,
     renorm_interval=1000,
     lazy=false,
+    linesearch_workspace=nothing
 )
 
     # format string for output of the algorithm
@@ -121,6 +124,10 @@ function blended_pairwise_conditional_gradient(
     phi = max(0, fast_dot(x, gradient) - fast_dot(v, gradient))
     local_gap = zero(phi)
     gamma = 1.0
+
+    if linesearch_workspace === nothing
+        linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
+    end
 
     while t <= max_iteration && phi >= max(epsilon, eps())
 
@@ -170,6 +177,7 @@ function blended_pairwise_conditional_gradient(
                 x,
                 d,
                 1.0,
+                linesearch_workspace,
             )
             # reached maximum of lambda -> dropping away vertex
             if gamma ≈ gamma_max
@@ -201,6 +209,7 @@ function blended_pairwise_conditional_gradient(
                     x,
                     d,
                     one(eltype(x)),
+                    linesearch_workspace,
                 )
     
                 # dropping active set and restarting from singleton

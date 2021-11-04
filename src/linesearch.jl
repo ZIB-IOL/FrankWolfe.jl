@@ -6,7 +6,7 @@ A `LineSearchMethod` must implement
 perform_line_search(ls::LineSearchMethod, t, f, grad!, gradient, x, d, gamma_max, workspace)
 ```
 with `d = x - v`.
-It may also implement `build_workspace(x, gradient)` which creates a
+It may also implement `build_linesearch_workspace(x, gradient)` which creates a
 workspace structure that is passed as last argument to `perform_line_search`.
 """
 abstract type LineSearchMethod end
@@ -14,19 +14,28 @@ abstract type LineSearchMethod end
 # default printing for LineSearchMethod is just showing the type
 Base.print(io::IO, ls::LineSearchMethod) = print(io, split(string(typeof(ls)), ".")[end])
 
+"""
+    perform_line_search(ls::LineSearchMethod, t, f, grad!, gradient, x, d, gamma_max, workspace)
+
+Returns the step size `gamma` for step size strategy `ls`.
+"""
+function perform_line_search end
+
+build_linesearch_workspace(::LineSearchMethod, x, gradient) = nothing
+
 struct Agnostic{T <: Real} <: LineSearchMethod end
 
 Agnostic() = Agnostic{Float64}()
 
-perform_line_search(::Agnostic{<:Rational}, t, _, _, _, _, _, _) = 2 // (t + 2)
-perform_line_search(::Agnostic{T}, t, _, _, _, _, _, _) where {T} = T(2 / (t + 2))
+perform_line_search(::Agnostic{<:Rational}, t, f, g!, gradient, x, d, gamma_max, workspace) = 2 // (t + 2)
+perform_line_search(::Agnostic{T}, t, f, g!, gradient, x, d, gamma_max, workspace) where {T} = T(2 / (t + 2))
 
 Base.print(io::IO, ::Agnostic) = print(io, "Agnostic")
 
 struct Nonconvex{T} <: LineSearchMethod end
 Nonconvex() = Nonconvex{Float64}()
 
-perform_line_search(::Nonconvex{T}, t, _, _, _, _, _, _) where {T} = T(1 / sqrt(t + 1))
+perform_line_search(::Nonconvex{T}, t, f, g!, gradient, x, d, gamma_max, workspace) where {T} = T(1 / sqrt(t + 1))
 
 Base.print(io::IO, ::Nonconvex) = print(io, "Nonconvex")
 
@@ -42,13 +51,14 @@ end
 
 function perform_line_search(
         line_search::Shortstep,
-        _,
-        _,
-        _,
+        t,
+        f,
+        grad!,
         gradient,
-        _,
+        x,
         d,
         gamma_max,
+        workspace,
     )
     
     return min(
@@ -67,14 +77,15 @@ struct FixedStep{T} <: LineSearchMethod
 end
 
 function perform_line_search(
-    line_search::FixedStep,
-    _,
-    _,
-    _,
-    gradient,
-    _,
-    d,
-    gamma_max,
+        line_search::FixedStep,
+        t,
+        f,
+        grad!,
+        gradient,
+        x,
+        d,
+        gamma_max,
+        workspace,
     )
     return min(line_search.gamma0, gamma_max)
 end
@@ -86,34 +97,25 @@ Base.print(io::IO, ::FixedStep) = print(io, "FixedStep")
 
 Simple golden-ratio based line search
 based on boostedFW paper code and adapted.
-
-Requires all fields set as workspace with the same type as the iterates,
-except `gradient` storing a gradient copy.
 """
-struct Goldenratio{VT, GT, T} <: LineSearchMethod
-    y::VT
-    left::VT
-    right::VT
-    new_vec::VT
-    probe::VT
-    gradient::GT
+struct Goldenratio{T} <: LineSearchMethod
     tol::T
 end
 
-"""
-    Goldenratio(arr_size::NTuple, ::Type{T} = Float64, tol)
+Goldenratio() = Goldenratio(1e-7)
 
-All intermediate vectors are instanciated as dense of eltype `T` and size `arr_size`.
-"""
-function Goldenratio(arr_size::NTuple{N, Int}, ::Type{T} = Float64, tol = 1e-7) where {N, T}
-    return Goldenratio(
-        Vector{T}(undef, arr_size...),
-        Vector{T}(undef, arr_size...),
-        Vector{T}(undef, arr_size...),
-        Vector{T}(undef, arr_size...),
-        Vector{T}(undef, arr_size...),
-        Vector{T}(undef, arr_size...),
-        tol,
+struct GoldenratioWorkspace{XT, GT}
+    y::XT
+    left::XT
+    right::XT
+    new_vec::XT
+    probe::XT
+    gradient::GT
+end
+
+function build_linesearch_workspace(::Goldenratio, x::XT, gradient::GT) where {XT, GT}
+    return GoldenratioWorkspace{XT,GT}(
+        similar(x), similar(x), similar(x), similar(x), similar(x), similar(gradient),
     )
 end
 
@@ -126,18 +128,19 @@ function perform_line_search(
     x,
     d,
     gamma_max,
+    workspace::GoldenratioWorkspace,
 )
     # restrict segment of search to [x, y]
-    @. line_search.y = x - gamma_max * d
-    @. line_search.left = x
-    @. line_search.right = line_search.y
+    @. workspace.y = x - gamma_max * d
+    @. workspace.left = x
+    @. workspace.right = workspace.y
     dgx = fast_dot(d, gradient)
-    grad!(line_search.gradient, line_search.y)
-    dgy = fast_dot(d, line_search.gradient)
+    grad!(workspace.gradient, workspace.y)
+    dgy = fast_dot(d, workspace.gradient)
 
     # if the minimum is at an endpoint
     if dgx * dgy >= 0
-        if f(line_search.y) <= f(x)
+        if f(workspace.y) <= f(x)
             return one(eltype(d))
         else
             return zero(eltype(d))
@@ -148,24 +151,24 @@ function perform_line_search(
     gold = (1 + sqrt(5)) / 2
     improv = Inf
     while improv > line_search.tol
-        f_old_left = f(line_search.left)
-        f_old_right = f(line_search.right)
-        @. line_search.new_vec = line_search.left + (line_search.right - line_search.left) / (1 + gold)
-        @. line_search.probe = line_search.new_vec + (line_search.right - line_search.new_vec) / 2
-        if f(line_search.probe) <= f(line_search.new_vec)
-            line_search.left .= line_search.new_vec
+        f_old_left = f(workspace.left)
+        f_old_right = f(workspace.right)
+        @. workspace.new_vec = workspace.left + (workspace.right - workspace.left) / (1 + gold)
+        @. workspace.probe = workspace.new_vec + (workspace.right - workspace.new_vec) / 2
+        if f(workspace.probe) <= f(workspace.new_vec)
+            workspace.left .= workspace.new_vec
             # right unchanged
         else
-            @. line_search.right = line_search.probe
+            workspace.right .= workspace.probe
             # left unchanged
         end
-        improv = norm(f(line_search.right) - f_old_right) + norm(f(line_search.left) - f_old_left)
+        improv = norm(f(workspace.right) - f_old_right) + norm(f(workspace.left) - f_old_left)
     end
     # compute step size gamma
     gamma = zero(eltype(d))
     for i in eachindex(d)
         if d[i] != 0
-            x_min = (line_search.left[i] + line_search.right[i]) / 2
+            x_min = (workspace.left[i] + workspace.right[i]) / 2
             gamma = (x[i] - x_min) / d[i]
             break
         end
@@ -177,23 +180,20 @@ end
 Base.print(io::IO, ::Goldenratio) = print(io, "Goldenratio")
 
 """
-    Backtracking{T, VT}
+    Backtracking(limit_num_steps, tol, tau)
 
 Backtracking line search strategy.
 """
-struct Backtracking{VT, T} <: LineSearchMethod
-    storage::VT
-    step_lim::Int
+struct Backtracking{T} <: LineSearchMethod
+    limit_num_steps::Int
     tol::T
     tau::T
 end
 
-function Backtracking(storage; step_lim=20, tol=1e-10, tau=0.5)
-    return Backtracking(storage, step_lim, tol, tau)
-end
+build_linesearch_workspace(::Backtracking, x, gradient) = similar(x)
 
-function Backtracking(arr_size::NTuple{N, Int}, ::Type{T} = Float64, step_lim=20, tol=1e-10, tau=0.5) where {N, T}
-    return Backtracking(Vector{T}(undef, arr_size...), step_lim, tol, tau)
+function Backtracking(; limit_num_steps=20, tol=1e-10, tau=0.5)
+    return Backtracking(limit_num_steps, tol, tau)
 end
 
 function perform_line_search(
@@ -205,6 +205,7 @@ function perform_line_search(
     x,
     d,
     gamma_max,
+    storage,
 )
     gamma = gamma_max * one(line_search.tau)
     i = 0
@@ -216,10 +217,10 @@ function perform_line_search(
     end
 
     old_val = f(x)
-    @. line_search.storage = x - gamma * d
-    new_val = f(line_search.storage)
+    @. storage = x - gamma * d
+    new_val = f(storage)
     while new_val - old_val > -line_search.tol * gamma * dot_gdir
-        if i > line_search.step_lim
+        if i > line_search.limit_num_steps
             if old_val - new_val >= 0
                 return gamma
             else
@@ -227,8 +228,8 @@ function perform_line_search(
             end
         end
         gamma *= line_search.tau
-        @. line_search.storage = x - gamma * d
-        new_val = f(line_search.storage)
+        @. storage = x - gamma * d
+        new_val = f(storage)
         i += 1
     end
     return gamma
@@ -243,25 +244,18 @@ Adaptive Step Size strategy from https://arxiv.org/pdf/1806.05123.pdf
 The `Adaptive` struct keeps track of the Lipschitz constant estimate.
 `perform_line_search` also has a `should_upgrade` keyword argument on
 whether there should be a temporary upgrade to `BigFloat`.
-The struct stores a storage of the same type as the iterate `x`.
 """
-mutable struct Adaptive{T,TT,VT} <: LineSearchMethod
-    storage::VT
+mutable struct Adaptive{T,TT} <: LineSearchMethod
     eta::T
     tau::TT
     L_est::T
 end
 
-Adaptive(storage, eta::T, tau::TT) where {T, TT} = Adaptive{T, TT}(storage, eta, tau, T(Inf))
-function Adaptive(st_size::NTuple{N, Int}, eta::T, tau::TT, ::Type{ET} = Float64) where {N,T,TT,ET}
-    return Adaptive{T,TT,Array{ET, N}}(Array{ET, N}(undef, st_size...), eta, tau, T(Inf))
-end
+Adaptive(eta::T, tau::TT) where {T, TT} = Adaptive{T, TT}(eta, tau, T(Inf))
 
-Adaptive(storage; eta=0.9, tau=2, L_est=Inf) = Adaptive(storage, eta, tau, L_est)
+Adaptive(; eta=0.9, tau=2, L_est=Inf) = Adaptive(eta, tau, L_est)
 
-function Adaptive(st_size::NTuple{N, Int}, ::Type{ET} = Float64; eta=0.9, tau=2, L_est=Inf) where {N,ET}
-    return Adaptive(st_size, eta, tau, L_est, ET)
-end
+build_linesearch_workspace(::Adaptive, x, gradient) = similar(x)
 
 function perform_line_search(
     line_search::Adaptive,
@@ -269,11 +263,12 @@ function perform_line_search(
     f,
     grad!,
     gradient,
-    x,
+    x::XT,
     d,
-    gamma_max;
+    gamma_max,
+    storage::XT;
     should_upgrade::Val=Val{true}(),
-)
+) where {XT}
     if norm(d) == 0
         if should_upgrade isa Val{true}
             return big(zero(promote_type(eltype(d), eltype(gradient))))
@@ -291,9 +286,11 @@ function perform_line_search(
     (dot_dir, ndir2) = _upgrade_accuracy_adaptive(gradient, d, should_upgrade)
     
     gamma = min(max(dot_dir / (M * ndir2), 0), gamma_max)
-    while f(x - gamma * d) - f(x) > -gamma * dot_dir + gamma^2 * ndir2 * M / 2
+    @. storage = x - gamma * d 
+    while f(storage) - f(x) > -gamma * dot_dir + gamma^2 * ndir2 * M / 2
         M *= line_search.tau
         gamma = min(max(dot_dir / (M * ndir2), 0), gamma_max)
+        @. storage = x - gamma * d 
     end
     line_search.L_est = M
     return gamma
@@ -315,21 +312,19 @@ function _upgrade_accuracy_adaptive(gradient, direction, ::Val{false})
 end
 
 """
-    MonotonousStepSize{F, VT}
+    MonotonousStepSize{F}
 
 Represents a monotonous open-loop step size.
 Contains a halving factor `N` increased at each iteration until there is primal progress
 `gamma = 2 / (t + 2) * 2^(-N)`.
-It uses an internal storage `xnew` of type `VT` to keep `x - γ d`.
 """
-mutable struct MonotonousStepSize{F,VT} <: LineSearchMethod
+mutable struct MonotonousStepSize{F} <: LineSearchMethod
     domain_oracle::F
     factor::Int
-    xnew::VT
 end
 
-MonotonousStepSize(f::F, arr_size::NTuple{N,Int}, ::Type{T} = Float64) where {N,F<:Function,T} = MonotonousStepSize{F, Vector{T}}(f, 0, Array{T,N}(undef, arr_size...))
-MonotonousStepSize(arr_size::NTuple{N, Int}, ::Type{T} = Float64) where {N,T} = MonotonousStepSize(x -> true, arr_size, T)
+MonotonousStepSize(f::F) where {F<:Function} = MonotonousStepSize{F}(f, 0)
+MonotonousStepSize() = MonotonousStepSize(x -> true, 0)
 
 Base.print(io::IO, ::MonotonousStepSize) = print(io, "MonotonousStepSize")
 
@@ -337,19 +332,20 @@ function perform_line_search(
     line_search::MonotonousStepSize,
     t,
     f,
-    _,
-    _,
+    g!,
+    gradient,
     x,
     d,
-    _,
+    gamma_max,
+    storage,
 )
     gamma = 2.0^(1 - line_search.factor) / (2 + t)
-    @. line_search.xnew = x - gamma * d
+    @. storage = x - gamma * d
     f0 = f(x)
-    while !line_search.domain_oracle(line_search.xnew) || f(line_search.xnew) > f0
+    while !line_search.domain_oracle(storage) || f(storage) > f0
         line_search.factor += 1
         gamma = 2.0^(1 - line_search.factor) / (2 + t)
-        @. line_search.xnew = x - gamma * d
+        @. storage = x - gamma * d
     end
     return gamma
 end
@@ -360,36 +356,39 @@ end
 Represents a monotonous open-loop non-convex step size.
 Contains a halving factor `N` increased at each iteration until there is primal progress
 `gamma = 1 / sqrt(t + 1) * 2^(-N)`.
-It uses an internal storage `xnew` of type `VT` to keep `x - γ d`.
 """
-mutable struct MonotonousNonConvexStepSize{F,VT} <: LineSearchMethod
+mutable struct MonotonousNonConvexStepSize{F} <: LineSearchMethod
     domain_oracle::F
     factor::Int
-    xnew::VT
 end
 
-MonotonousNonConvexStepSize(f::F, arr_size::NTuple{N,Int}, ::Type{T} = Float64) where {N,F<:Function,T} = MonotonousNonConvexStepSize{F, Vector{T}}(f, 0, Array{T,N}(undef, arr_size...))
-MonotonousNonConvexStepSize(arr_size::NTuple{N, Int}, ::Type{T} = Float64) where {N,T} = MonotonousNonConvexStepSize(x -> true, arr_size, T)
+MonotonousNonConvexStepSize(f::F) where {F<:Function} = MonotonousNonConvexStepSize{F}(f, 0)
+MonotonousNonConvexStepSize() = MonotonousNonConvexStepSize(x -> true, 0)
 
 Base.print(io::IO, ::MonotonousNonConvexStepSize) = print(io, "MonotonousNonConvexStepSize")
+
+function build_linesearch_workspace(::Union{MonotonousStepSize, MonotonousNonConvexStepSize}, x, gradient)
+    return similar(x)
+end
 
 function perform_line_search(
     line_search::MonotonousNonConvexStepSize,
     t,
     f,
-    _,
-    _,
+    g!,
+    gradient,
     x,
     d,
-    _,
+    gamma_max,
+    storage,
 )
     gamma = 2.0^(-line_search.factor) / sqrt(1 + t)
-    @. line_search.xnew = x - gamma * d
+    @. storage = x - gamma * d
     f0 = f(x)
-    while !line_search.domain_oracle(line_search.xnew) || f(line_search.xnew) > f0
+    while !line_search.domain_oracle(storage) || f(storage) > f0
         line_search.factor += 1
         gamma = 2.0^(-line_search.factor) / sqrt(1 + t)
-        @. line_search.xnew = x - gamma * d
+        @. storage = x - gamma * d
     end
     return gamma
 end

@@ -27,6 +27,7 @@ function frank_wolfe(
     callback=nothing,
     timeout=Inf,
     print_callback=print_callback,
+    linesearch_workspace=nothing,
 )
 
     # format string for output of the algorithm
@@ -75,6 +76,9 @@ function frank_wolfe(
     # instanciating container for gradient
     if gradient === nothing
         gradient = similar(x)
+    end
+    if linesearch_workspace === nothing
+        linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
     end
 
     # container for direction
@@ -141,6 +145,7 @@ function frank_wolfe(
             x,
             d,
             1.0,
+            linesearch_workspace,
         )
         if callback !== nothing
             state = (
@@ -235,6 +240,7 @@ function lazified_conditional_gradient(
     callback=nothing,
     timeout=Inf,
     print_callback=print_callback,
+    linesearch_workspace=nothing,
 )
 
     # format string for output of the algorithm
@@ -293,6 +299,9 @@ function lazified_conditional_gradient(
 
     # container for direction
     d = similar(x)
+    if linesearch_workspace === nothing
+        linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
+    end
 
     while t <= max_iteration && dual_gap >= max(epsilon, eps(float(eltype(x))))
 
@@ -345,6 +354,7 @@ function lazified_conditional_gradient(
             x,
             d,
             1.0,
+            linesearch_workspace,
         )
 
         if callback !== nothing
@@ -357,7 +367,7 @@ function lazified_conditional_gradient(
                 cache_size=length(lmo),
                 x=x,
                 v=v,
-                gamma=gamma
+                gamma=gamma,
             )
             callback(state)
         end
@@ -446,6 +456,7 @@ function stochastic_frank_wolfe(
     callback=nothing,
     timeout=Inf,
     print_callback=print_callback,
+    linesearch_workspace=nothing,
 )
 
     # format string for output of the algorithm
@@ -500,6 +511,10 @@ function stochastic_frank_wolfe(
     end
     first_iter = true
     gradient = 0
+    if linesearch_workspace === nothing
+        linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
+    end
+
     while t <= max_iteration && dual_gap >= max(epsilon, eps())
 
         #####################
@@ -564,18 +579,9 @@ function stochastic_frank_wolfe(
             dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         end
 
-        if line_search isa Agnostic
-            gamma = 2 // (2 + t)
-        elseif line_search isa Nonconvex
-            gamma = 1 / sqrt(t + 1)
-        elseif line_search isa Shortstep
-            gamma = dual_gap / (L * norm(x - v)^2)
-        elseif line_search isa RationalShortstep
-            rat_dual_gap = sum((x - v) .* gradient)
-            gamma = rat_dual_gap // (L * sum((x - v) .^ 2))
-        elseif line_search isa FixedStep
-            gamma = gamma0
-        end
+        # note: only linesearch methods that do not require full evaluations are supported
+        # so nothing is passed as function 
+        gamma = perform_line_search(line_search, t, nothing, nothing, gradient, x, d, 1.0, linesearch_workspace)
 
         if callback !== nothing
             state = (

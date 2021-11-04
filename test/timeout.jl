@@ -39,7 +39,7 @@ using SparseArrays
             lmo_prob,
             x0,
             max_iteration=1000,
-            line_search=FrankWolfe.Goldenratio(size(x0), eltype(x0)),
+            line_search=FrankWolfe.Goldenratio(),
             verbose=true,
         )[3] - 0.2,
     ) < 1.0e-5
@@ -50,7 +50,7 @@ using SparseArrays
             lmo_prob,
             x0,
             max_iteration=1000,
-            line_search=FrankWolfe.Backtracking(similar(x0)),
+            line_search=FrankWolfe.Backtracking(),
             verbose=false,
         )[3] - 0.2,
     ) < 1.0e-5
