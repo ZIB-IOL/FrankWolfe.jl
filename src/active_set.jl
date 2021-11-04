@@ -27,7 +27,7 @@ function ActiveSet(tuple_values::AbstractVector{Tuple{R,AT}}) where {AT,R}
     end
     x = float.(similar(atoms[1]))
     as = ActiveSet{AT,R,typeof(x)}(weights, atoms, x)
-    update_active_set_iterate!(as)
+    compute_active_set_iterate!(as)
     return as
 end
 
@@ -143,13 +143,15 @@ function weight_from_atom(active_set::ActiveSet, atom)
 end
 
 """
-    compute_active_set_iterate(active_set)
+    get_active_set_iterate(active_set)
+
+Return the current iterate corresponding. Does not recompute it. 
 """
-function compute_active_set_iterate(active_set)
+function get_active_set_iterate(active_set)
     return active_set.x
 end
 
-function update_active_set_iterate!(active_set)
+function compute_active_set_iterate!(active_set)
     active_set.x .= 0
     for (λi, ai) in active_set
         active_set.x .+= λi * ai
@@ -160,7 +162,7 @@ end
 function active_set_cleanup!(active_set; weight_purge_threshold=1e-12, update=true)
     filter!(e -> e[1] > weight_purge_threshold, active_set)
     if update
-        update_active_set_iterate!(active_set)
+        compute_active_set_iterate!(active_set)
     end
     return nothing
 end
@@ -199,9 +201,9 @@ end
     active_set_argminmax(active_set::ActiveSet, direction)
 
 Computes the linear minimizer in the direction on the active set.
-Returns `(λ_min, a_min, i_min, λ_max, a_max, i_max)`
+Returns `(λ_min, a_min, i_min, val_min, λ_max, a_max, i_max, val_max, val_max-val_min ≥ Φ)`
 """
-function active_set_argminmax(active_set::ActiveSet, direction)
+function active_set_argminmax(active_set::ActiveSet, direction; Φ=0.5)
     val = Inf
     valM = -Inf
     idx = -1
@@ -217,37 +219,9 @@ function active_set_argminmax(active_set::ActiveSet, direction)
             idxM = i
         end
     end
-    return (active_set[idx]..., idx, active_set[idxM]..., idxM)
+    return (active_set[idx]..., idx, val, active_set[idxM]..., idxM, valM, valM - val ≥ Φ)
 end
 
-
-"""
-    find_minmax_directions(active_set::ActiveSet, direction, Φ)
-
-Computes the point of the active set minimizing in `direction`
-on the active set (local Frank Wolfe)
-and the maximizing one (away step).
-Returns the two corresponding indices in the active set, along with a flag
-indicating if the direction improvement is above a threshold.
-`goodstep_tolerance ∈ (0, 1]` is a tolerance coefficient multiplying Φ for the validation of the progress. 
-"""
-function find_minmax_directions(active_set::ActiveSet, direction, Φ; goodstep_tolerance=0.75)
-    idx_fw = idx_as = 1
-    v_fw = fast_dot(direction, active_set.atoms[1])
-    v_as = v_fw
-    for (idx, a) in enumerate(active_set.atoms)
-        val = fast_dot(direction, a)
-        if val ≤ v_fw
-            v_fw = val
-            idx_fw = idx
-        elseif val ≥ v_as
-            v_as = val
-            idx_as = idx
-        end
-    end
-    # improving step
-    return (idx_fw, idx_as, v_as - v_fw ≥ Φ)
-end
 
 """
     active_set_initialize!(as, v)

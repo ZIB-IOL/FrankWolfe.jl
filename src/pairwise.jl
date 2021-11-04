@@ -94,7 +94,7 @@ function blended_pairwise_conditional_gradient(
 
     t = 0
     primal = Inf
-    x = compute_active_set_iterate(active_set)
+    x = get_active_set_iterate(active_set)
     tt = regular
     traj_data = []
     if trajectory && callback === nothing
@@ -164,11 +164,11 @@ function blended_pairwise_conditional_gradient(
         #####################
 
         # compute current iterate from active set
-        x = compute_active_set_iterate(active_set)
+        x = get_active_set_iterate(active_set)
         grad!(gradient, x)
 
-        _, v_local, v_local_loc, a_lambda, a, a_loc =
-        active_set_argminmax(active_set, gradient)
+        _, v_local, v_local_loc, _, a_lambda, a, a_loc, _ ,_ =
+            active_set_argminmax(active_set, gradient)
         
         local_gap = fast_dot(gradient, a) - fast_dot(gradient, v_local)
         
@@ -297,7 +297,7 @@ function blended_pairwise_conditional_gradient(
     # do also cleanup of active_set due to many operations on the same set
 
     if verbose
-        x = compute_active_set_iterate(active_set)
+        x = get_active_set_iterate(active_set)
         grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
@@ -318,7 +318,7 @@ function blended_pairwise_conditional_gradient(
     end
     active_set_renormalize!(active_set)
     active_set_cleanup!(active_set)
-    x = compute_active_set_iterate(active_set)
+    x = get_active_set_iterate(active_set)
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
