@@ -159,7 +159,8 @@ function_values = Float64[]
 timing_values = Float64[]
 function_test_values = Float64[]
 
-ls = FrankWolfe.Backtracking(similar(xgd))
+ls = FrankWolfe.Backtracking()
+ls_workspace = FrankWolfe.build_linesearch_workspace(ls, xgd, gradient)
 
 time_start = time_ns()
 for _ in 1:k
@@ -170,7 +171,7 @@ for _ in 1:k
     @info f_val
     grad!(gradient, xgd)
     xgd_new, vertex = project_nuclear_norm_ball(xgd - gradient / L_estimate, radius=norm_estimation)
-    gamma = FrankWolfe.perform_line_search(ls, 1, f, grad!, gradient, xgd, xgd - xgd_new, 1.0)
+    gamma = FrankWolfe.perform_line_search(ls, 1, f, grad!, gradient, xgd, xgd - xgd_new, 1.0, ls_workspace)
     @. xgd -= gamma * (xgd - xgd_new)
 end
 

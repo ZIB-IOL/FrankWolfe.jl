@@ -791,7 +791,6 @@ end
         lmo_prob,
         x0;
         line_search=FrankWolfe.Backtracking(),
-        L=Inf,
         epsilon=1e-9,
         max_iteration=k,
         print_iter=1,
