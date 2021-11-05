@@ -159,7 +159,7 @@ function_values = Float64[]
 timing_values = Float64[]
 function_test_values = Float64[]
 
-ls = FrankWolfe.Backtracking(similar(xgd))
+ls = FrankWolfe.Backtracking()
 
 time_start = time_ns()
 for _ in 1:k

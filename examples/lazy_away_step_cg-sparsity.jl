@@ -1,11 +1,11 @@
 #= 
 
-Example demonstrating sparsity control by means of the "K"-factor passed to the lazy AFW variant
+Example demonstrating sparsity control by means of the `lazy_tolerance`-factor passed to the lazy AFW variant
 
-A larger K >= 1 favors sparsity by favoring optimization over the current active set rather than
+A larger lazy_tolerance >= 1 favors sparsity by favoring optimization over the current active set rather than
 adding a new FW vertex.
 
-The default for AFW is K = 2.0
+The default for AFW is lazy_tolerance = 2.0
 
 =#
 
@@ -112,7 +112,7 @@ x0 = deepcopy(x00)
     emphasis=FrankWolfe.memory,
     verbose=true,
     lazy=true,
-    K=1.5,
+    lazy_tolerance=1.5,
     trajectory=true,
     callback=callback,
 );
@@ -133,7 +133,7 @@ x0 = deepcopy(x00)
     emphasis=FrankWolfe.memory,
     verbose=true,
     lazy=true,
-    K=2.0,
+    lazy_tolerance=2.0,
     trajectory=true,
     callback=callback,
 );
@@ -153,7 +153,7 @@ x0 = deepcopy(x00)
     print_iter=k / 10,
     emphasis=FrankWolfe.memory,
     verbose=true,
-    K=4.0,
+    lazy_tolerance=4.0,
     lazy=true,
     trajectory=true,
     callback=callback,
@@ -173,7 +173,7 @@ x0 = deepcopy(x00)
     print_iter=k / 10,
     emphasis=FrankWolfe.memory,
     lazy=true,
-    K=10.0,
+    lazy_tolerance=10.0,
     verbose=true,
     trajectory=true,
     callback=callback,
