@@ -24,7 +24,7 @@ function blended_conditional_gradient(
     verbose=false,
     emphasis=nothing,
     accelerated=false,
-    K=2.0,
+    lazy_tolerance=2.0,
     weight_purge_threshold=1e-9,
     gradient=nothing,
     callback=nothing,
@@ -71,7 +71,7 @@ function blended_conditional_gradient(
             "EMPHASIS: $memory STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
         )
         grad_type = typeof(gradient)
-        println("GRADIENTTYPE: $grad_type K: $K")
+        println("GRADIENTTYPE: $grad_type lazy_tolerance: $lazy_tolerance")
         println("WARNING: In memory emphasis mode iterates are written back into x0!")
         headers = (
             "Type",
@@ -158,14 +158,14 @@ function blended_conditional_gradient(
             active_set,
             gradient,
             phi,
-            K;
+            lazy_tolerance;
             inplace_loop=(emphasis == memory),
             force_fw_step=force_fw_step,
             lmo_kwargs...,
         )
         force_fw_step = false
         xval = fast_dot(x, gradient)
-        if value > xval - phi / K
+        if value > xval - phi / lazy_tolerance
             tt = dualstep
             # setting gap estimate as ∇f(x) (x - v_FW) / 2
             phi = (xval - value) / 2
@@ -979,7 +979,7 @@ function lp_separation_oracle(
     active_set::ActiveSet,
     direction,
     min_gap,
-    K;
+    lazy_tolerance;
     inplace_loop=false,
     force_fw_step::Bool=false,
     kwargs...,
@@ -1012,7 +1012,7 @@ function lp_separation_oracle(
             end
         end
         xval = fast_dot(direction, x)
-        if xval - val_best ≥ min_gap / K
+        if xval - val_best ≥ min_gap / lazy_tolerance
             return (ybest, val_best)
         end
     end

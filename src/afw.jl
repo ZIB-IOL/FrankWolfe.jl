@@ -13,7 +13,10 @@ function away_frank_wolfe(
     lmo,
     x0;
     line_search::LineSearchMethod=Adaptive(),
-    K=2.0,
+    L=Inf,
+    gamma0=0,
+    lazy_tolerance=2.0,
+    step_lim=20,
     epsilon=1e-7,
     away_steps=true,
     lazy=false,
@@ -39,8 +42,11 @@ function away_frank_wolfe(
         grad!,
         lmo,
         active_set,
-        line_search=line_search,
-        K=K,
+        line_search = line_search,
+        L=L,
+        gamma0=gamma0,
+        lazy_tolerance=lazy_tolerance,
+        step_lim=step_lim,
         epsilon=epsilon,
         away_steps=away_steps,
         lazy=lazy,
@@ -67,7 +73,10 @@ function away_frank_wolfe(
     lmo,
     active_set::ActiveSet;
     line_search::LineSearchMethod=Adaptive(),
-    K=2.0,
+    L=Inf,
+    gamma0=0,
+    lazy_tolerance=2.0,
+    step_lim=20,
     epsilon=1e-7,
     away_steps=true,
     lazy=false,
@@ -111,7 +120,7 @@ function away_frank_wolfe(
         )
         grad_type = typeof(gradient)
         println(
-            "GRADIENTTYPE: $grad_type LAZY: $lazy K: $K MOMENTUM: $momentum AWAYSTEPS: $away_steps",
+            "GRADIENTTYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance MOMENTUM: $momentum AWAYSTEPS: $away_steps",
         )
         if emphasis == memory
             @warn("In memory emphasis mode iterates are written back into x0!")
@@ -176,7 +185,7 @@ function away_frank_wolfe(
         if away_steps
             if lazy
                 d, vertex, index, gamma_max, phi_value, away_step_taken, fw_step_taken, tt =
-                    lazy_afw_step(x, gradient, lmo, active_set, phi_value; K=K)
+                    lazy_afw_step(x, gradient, lmo, active_set, phi_value; lazy_tolerance=lazy_tolerance)
             else
                 d, vertex, index, gamma_max, phi_value, away_step_taken, fw_step_taken, tt =
                     afw_step(x, gradient, lmo, active_set)
@@ -304,15 +313,15 @@ function away_frank_wolfe(
     return x, v, primal, dual_gap, traj_data, active_set
 end
 
-
-function lazy_afw_step(x, gradient, lmo, active_set, phi; K=2.0)
-    v_lambda, v, v_loc, v_val, a_lambda, a, a_loc, a_val, progress = active_set_argminmax(active_set, gradient)
+function lazy_afw_step(x, gradient, lmo, active_set, phi; lazy_tolerance=2.0)
+    _, v, v_loc, _, a_lambda, a, a_loc, _, _ =
+        active_set_argminmax(active_set, gradient)
     #Do lazy FW step
     grad_dot_lazy_fw_vertex = fast_dot(v, gradient)
     grad_dot_x = fast_dot(x, gradient)
     grad_dot_a = fast_dot(a, gradient)
     if grad_dot_x - grad_dot_lazy_fw_vertex >= grad_dot_a - grad_dot_x &&
-       grad_dot_x - grad_dot_lazy_fw_vertex >= phi / K
+       grad_dot_x - grad_dot_lazy_fw_vertex >= phi / lazy_tolerance
         tt = lazy
         gamma_max = 1
         d = x - v
@@ -323,7 +332,7 @@ function lazy_afw_step(x, gradient, lmo, active_set, phi; K=2.0)
     else
         #Do away step, as it promises enough progress.
         if grad_dot_a - grad_dot_x > grad_dot_x - grad_dot_lazy_fw_vertex &&
-           grad_dot_a - grad_dot_x >= phi / K
+           grad_dot_a - grad_dot_x >= phi / lazy_tolerance
             tt = away
             gamma_max = a_lambda / (1 - a_lambda)
             d = a - x
@@ -337,7 +346,7 @@ function lazy_afw_step(x, gradient, lmo, active_set, phi; K=2.0)
             # Real dual gap promises enough progress.
             grad_dot_fw_vertex = fast_dot(v, gradient)
             dual_gap = grad_dot_x - grad_dot_fw_vertex
-            if dual_gap >= phi / K
+            if dual_gap >= phi / lazy_tolerance
                 tt = regular
                 gamma_max = 1
                 d = x - v
@@ -362,7 +371,7 @@ function lazy_afw_step(x, gradient, lmo, active_set, phi; K=2.0)
 end
 
 function afw_step(x, gradient, lmo, active_set)
-    local_v_lambda, local_v, local_v_loc, local_v_val, a_lambda, a, a_loc, a_val, progress =
+    _, _, _, _, a_lambda, a, a_loc =
         active_set_argminmax(active_set, gradient)
     v = compute_extreme_point(lmo, gradient)
     grad_dot_x = fast_dot(x, gradient)
