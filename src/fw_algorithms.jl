@@ -192,7 +192,7 @@ function frank_wolfe(
             )
             print_callback(rep, format_string)
 
-            flush(stdout)
+            flush(stdout::Base.TTY)
         end
         t = t + 1
     end
@@ -409,7 +409,7 @@ function lazified_conditional_gradient(
                 length(lmo),
             )
             print_callback(rep, format_string)
-            flush(stdout)
+            flush(stdout::Base.TTY)
         end
         t += 1
     end
@@ -437,7 +437,7 @@ function lazified_conditional_gradient(
         )
         print_callback(rep, format_string)
         print_callback(nothing, format_string, print_footer=true)
-        flush(stdout)
+        flush(stdout::Base.TTY)
     end
     return x, v, primal, dual_gap, traj_data
 end
@@ -642,7 +642,7 @@ function stochastic_frank_wolfe(
                 batch_size,
             )
             print_callback(rep, format_string)
-            flush(stdout)
+            flush(stdout::Base.TTY)
         end
         t += 1
     end
@@ -670,7 +670,7 @@ function stochastic_frank_wolfe(
         )
         print_callback(rep, format_string)
         print_callback(nothing, format_string, print_footer=true)
-        flush(stdout)
+        flush(stdout::Base.TTY)
     end
     return x, v, primal, dual_gap, traj_data
 end
