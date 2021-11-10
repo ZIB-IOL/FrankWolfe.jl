@@ -260,59 +260,77 @@ function away_frank_wolfe(
     return x, v, primal, dual_gap, traj_data, active_set
 end
 
-function lazy_afw_step(x, gradient, lmo, active_set, phi; K=2.0)
+function lazy_afw_step(x, gradient, lmo, active_set, phi, lazy_fw::Val{true}; K=2.0)
     v_lambda, v, v_loc, a_lambda, a, a_loc = active_set_argminmax(active_set, gradient)
     #Do lazy FW step
-    grad_dot_lazy_fw_vertex = fast_dot(v, gradient)
+    # grad_dot_lazy_fw_vertex = fast_dot(v, gradient)
+    # grad_dot_x = fast_dot(x, gradient)
+    # grad_dot_a = fast_dot(a, gradient)
+    #if grad_dot_x - grad_dot_lazy_fw_vertex >= grad_dot_a - grad_dot_x &&
+    #   grad_dot_x - grad_dot_lazy_fw_vertex >= phi / K
+    tt = lazy
+    gamma_max = 1
+    d = x - v
+    vertex = v
+    away_step_taken = false
+    fw_step_taken = true
+    index = v_loc
+    return d, vertex, index, gamma_max, phi, away_step_taken, fw_step_taken, tt
+end
+
+function lazy_afw_step(x, gradient, lmo, active_set, phi, lazy_fw::Val{false}, away_step::Val{true}; K=2.0)
+    v_lambda::Float64, v, v_loc::Int64, a_lambda::Float64, a, a_loc::Int64 = active_set_argminmax(active_set, gradient)
+    #Do lazy FW step
+    #grad_dot_lazy_fw_vertex = fast_dot(v, gradient)
+    #grad_dot_x = fast_dot(x, gradient)
+    #grad_dot_a = fast_dot(a, gradient)
+    #Do away step, as it promises enough progress.
+    #if grad_dot_a - grad_dot_x > grad_dot_x - grad_dot_lazy_fw_vertex &&
+    #    grad_dot_a - grad_dot_x >= phi / K
+    tt = away
+    gamma_max = a_lambda / (1 - a_lambda)
+    d = a - x
+    vertex = a
+    away_step_taken = true
+    fw_step_taken = false
+    index = a_loc
+    #Resort to calling the LMO
+    return d, vertex, index, gamma_max, phi, away_step_taken, fw_step_taken, tt
+end 
+
+function lazy_afw_step(x, gradient, lmo, active_set, phi, lazy_fw::Val{false}, away_step::Val{false}, regular_step::Val{true}; K=2.0)
+    v_lambda::Float64, v, v_loc::Int64, a_lambda::Float64, a, a_loc::Int64 = active_set_argminmax(active_set, gradient)
     grad_dot_x = fast_dot(x, gradient)
-    grad_dot_a = fast_dot(a, gradient)
-    if grad_dot_x - grad_dot_lazy_fw_vertex >= grad_dot_a - grad_dot_x &&
-       grad_dot_x - grad_dot_lazy_fw_vertex >= phi / K
-        tt = lazy
-        gamma_max = 1
-        d = x - v
-        vertex = v
-        away_step_taken = false
-        fw_step_taken = true
-        index = v_loc
-    else
-        #Do away step, as it promises enough progress.
-        if grad_dot_a - grad_dot_x > grad_dot_x - grad_dot_lazy_fw_vertex &&
-           grad_dot_a - grad_dot_x >= phi / K
-            tt = away
-            gamma_max = a_lambda / (1 - a_lambda)
-            d = a - x
-            vertex = a
-            away_step_taken = true
-            fw_step_taken = false
-            index = a_loc
-            #Resort to calling the LMO
-        else
-            v = compute_extreme_point(lmo, gradient)
-            # Real dual gap promises enough progress.
-            grad_dot_fw_vertex = fast_dot(v, gradient)
-            dual_gap = grad_dot_x - grad_dot_fw_vertex
-            if dual_gap >= phi / K
-                tt = regular
-                gamma_max = 1
-                d = x - v
-                vertex = v
-                away_step_taken = false
-                fw_step_taken = true
-                index = nothing
-                #Lower our expectation for progress.
-            else
-                tt = dualstep
-                phi = min(dual_gap, phi / 2.0)
-                gamma_max = 0.0
-                d = zeros(length(x))
-                vertex = v
-                away_step_taken = false
-                fw_step_taken = false
-                index = nothing
-            end
-        end
-    end
+    v = compute_extreme_point(lmo, gradient)
+    # Real dual gap promises enough progress.
+    grad_dot_fw_vertex = fast_dot(v, gradient)
+    dual_gap = grad_dot_x - grad_dot_fw_vertex
+    #if dual_gap >= phi / K
+    tt = regular
+    gamma_max = 1
+    d = x - v
+    vertex = v
+    away_step_taken = false
+    fw_step_taken = true
+    index = nothing
+    #Lower our expectation for progress.
+    return d, vertex, index, gamma_max, phi, away_step_taken, fw_step_taken, tt
+end
+
+function lazy_afw_step(x, gradient, lmo, active_set, phi, lazy_fw::Val{false}, away_step::Val{false}, regular_step::Val{false}; K=2.0)
+    grad_dot_x = fast_dot(x, gradient)
+    v = compute_extreme_point(lmo, gradient)
+    # Real dual gap promises enough progress.
+    grad_dot_fw_vertex = fast_dot(v, gradient)
+    dual_gap = grad_dot_x - grad_dot_fw_vertex
+    tt = dualstep
+    phi = min(dual_gap, phi / 2.0)
+    gamma_max = 0.0
+    d = zeros(length(x))
+    vertex = v
+    away_step_taken = false
+    fw_step_taken = false
+    index = nothing
     return d, vertex, index, gamma_max, phi, away_step_taken, fw_step_taken, tt
 end
 
