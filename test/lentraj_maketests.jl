@@ -6,7 +6,7 @@ using DelimitedFiles
 import FrankWolfe: ActiveSet
 
 filename = joinpath(@__DIR__, "lentraj.txt")
-len_traj_array = vec(DelimitedFiles.readdlm(filename))
+len_traj_array = zeros(0)
 
 @testset "Testing vanilla Frank-Wolfe with various step size and momentum strategies" begin
     f(x) = norm(x)^2
@@ -25,9 +25,9 @@ len_traj_array = vec(DelimitedFiles.readdlm(filename))
             trajectory=true,
             verbose=false,
     )
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1)
-
+    append!( len_traj_array, length(trajectory))
+    println(length(trajectory))
+ 
     x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
             f,
             grad!,
@@ -39,8 +39,8 @@ len_traj_array = vec(DelimitedFiles.readdlm(filename))
             verbose=false,
             gradient=collect(similar(x0)),
     )
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1) 
+    append!( len_traj_array, length(trajectory))
+    println(length(trajectory)) 
 
     x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
             f,
@@ -52,8 +52,8 @@ len_traj_array = vec(DelimitedFiles.readdlm(filename))
             trajectory=true,
             verbose=false,
     )
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1) 
+    append!( len_traj_array, length(trajectory))
+    println(length(trajectory)) 
 
     x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
             f,
@@ -65,8 +65,8 @@ len_traj_array = vec(DelimitedFiles.readdlm(filename))
             trajectory=true,
             verbose=false,
     )
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1) 
+    append!( len_traj_array, length(trajectory))
+    println(length(trajectory)) 
 
     x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
             f,
@@ -78,8 +78,8 @@ len_traj_array = vec(DelimitedFiles.readdlm(filename))
             trajectory=true,
             verbose=false,
     )
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1) 
+    append!( len_traj_array, length(trajectory))
+    println(length(trajectory)) 
 
     x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
         f,
@@ -92,8 +92,8 @@ len_traj_array = vec(DelimitedFiles.readdlm(filename))
         trajectory=true,
         verbose=false,
     )
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1) 
+    append!( len_traj_array, length(trajectory))
+    println(length(trajectory)) 
 
     x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
             f,
@@ -105,8 +105,8 @@ len_traj_array = vec(DelimitedFiles.readdlm(filename))
             trajectory=true,
             verbose=false,
     )
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1) 
+    append!( len_traj_array, length(trajectory))
+    println(length(trajectory)) 
 
     x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
             f,
@@ -119,8 +119,8 @@ len_traj_array = vec(DelimitedFiles.readdlm(filename))
             verbose=false,
             momentum=0.9,
     )
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1) 
+    append!( len_traj_array, length(trajectory))
+    println(length(trajectory)) 
 
     x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
             f,
@@ -133,8 +133,8 @@ len_traj_array = vec(DelimitedFiles.readdlm(filename))
             verbose=false,
             momentum=0.5,
     )
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1) 
+    append!( len_traj_array, length(trajectory))
+    println(length(trajectory)) 
 
     x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
             f,
@@ -148,8 +148,8 @@ len_traj_array = vec(DelimitedFiles.readdlm(filename))
             momentum=0.9,
             emphasis=FrankWolfe.memory,
     )
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1) 
+    append!( len_traj_array, length(trajectory))
+    println(length(trajectory)) 
 
     x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
             f,
@@ -163,8 +163,8 @@ len_traj_array = vec(DelimitedFiles.readdlm(filename))
             verbose=false,
             momentum=0.9,
     )
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1) 
+    append!( len_traj_array, length(trajectory))
+    println(length(trajectory)) 
 
     x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
             f,
@@ -178,8 +178,8 @@ len_traj_array = vec(DelimitedFiles.readdlm(filename))
             verbose=false,
             momentum=0.5,
     )
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1) 
+    append!( len_traj_array, length(trajectory))
+    println(length(trajectory)) 
 
     x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
             f,
@@ -194,8 +194,8 @@ len_traj_array = vec(DelimitedFiles.readdlm(filename))
             momentum=0.9,
             emphasis=FrankWolfe.memory,
     )
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1)
+    append!( len_traj_array, length(trajectory))
+    println(length(trajectory))
 end
 
 @testset "Gradient with momentum correctly updated" begin
@@ -223,8 +223,8 @@ x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
             verbose=false,
     )
 
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1) 
+    append!( len_traj_array, length(trajectory))
+    println(length(trajectory)) 
 
 x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
             f,
@@ -237,8 +237,8 @@ x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
             verbose=false,
     )
 
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1) 
+    append!( len_traj_array, length(trajectory))
+    println(length(trajectory)) 
 
 x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
             f,
@@ -252,8 +252,8 @@ x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
             verbose=false,
     )
 
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1) 
+    append!( len_traj_array, length(trajectory))
+    println(length(trajectory)) 
 end
 
 @testset "Testing Lazified Conditional Gradients with cache strategies" begin
@@ -282,8 +282,8 @@ end
         verbose=false,
     )
 
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1)
+    append!( len_traj_array, length(trajectory))
+    println(length(trajectory))
 
     x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
         f,
@@ -298,8 +298,8 @@ end
         verbose=false,
     )
 
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1)
+    append!( len_traj_array, length(trajectory))
+    println(length(trajectory))
 
     x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
         f,
@@ -315,8 +315,8 @@ end
         verbose=false,
     )
 
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1)
+    append!( len_traj_array, length(trajectory))
+    println(length(trajectory))
 end
 
 @testset "Testing emphasis blas vs memory" begin
@@ -347,8 +347,8 @@ end
             emphasis=FrankWolfe.blas,
         )
 
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1)
+        append!( len_traj_array, length(trajectory))
+        println(length(trajectory))
 
         x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
             f,
@@ -363,8 +363,8 @@ end
             emphasis=FrankWolfe.memory,
         )
 
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1)
+        append!( len_traj_array, length(trajectory))
+        println(length(trajectory))
     end
     @testset "Using dense structure" begin
         lmo_prob = FrankWolfe.L1ballDense{Float64}(1)
@@ -383,8 +383,8 @@ end
             emphasis=FrankWolfe.blas,
         )
 
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1)
+        append!( len_traj_array, length(trajectory))
+        println(length(trajectory))
 
         x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
             f,
@@ -399,8 +399,8 @@ end
             emphasis=FrankWolfe.memory,
         )
 
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1)
+        append!( len_traj_array, length(trajectory))
+        println(length(trajectory))
 
         line_search = FrankWolfe.MonotonousStepSize()
         x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
@@ -415,8 +415,8 @@ end
             verbose=false,
             emphasis=FrankWolfe.memory,
         )
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1)
+        append!( len_traj_array, length(trajectory))
+        println(length(trajectory))
 
         line_search = FrankWolfe.MonotonousNonConvexStepSize()
         x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
@@ -431,8 +431,8 @@ end
             verbose=false,
             emphasis=FrankWolfe.memory,
         )
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1)
+        append!( len_traj_array, length(trajectory))
+        println(length(trajectory))
     end
 end
 @testset "Testing rational variant" begin
@@ -466,8 +466,8 @@ end
         verbose=false,
     )
 
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1)
+    append!( len_traj_array, length(trajectory))
+    println(length(trajectory))
 
     x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
         f,
@@ -482,8 +482,8 @@ end
         verbose=false,
     )
 
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1)
+    append!( len_traj_array, length(trajectory))
+    println(length(trajectory))
 
     # very slow computation, explodes quickly
     x0 = collect(FrankWolfe.compute_extreme_point(lmo, direction))
@@ -515,8 +515,8 @@ end
         trajectory=true,
         verbose=false,
     )
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1)
+    append!( len_traj_array, length(trajectory))
+    println(length(trajectory))
 end
 @testset "Multi-precision tests" begin
     rhs = 1
@@ -554,8 +554,8 @@ end
         )
 
 
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1)
+        append!( len_traj_array, length(trajectory))
+        println(length(trajectory))
 
         x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
             f,
@@ -571,8 +571,8 @@ end
         )
 
 
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1)
+        append!( len_traj_array, length(trajectory))
+        println(length(trajectory))
 
         x, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
             f,
@@ -588,8 +588,8 @@ end
         )
 
 
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1)
+        append!( len_traj_array, length(trajectory))
+        println(length(trajectory))
 
         x, v, primal, dual_gap, trajectory = FrankWolfe.blended_conditional_gradient(
             f,
@@ -605,8 +605,8 @@ end
         )
 
 
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1)
+        append!( len_traj_array, length(trajectory))
+        println(length(trajectory))
 
     end
 end
@@ -650,8 +650,8 @@ end
         max_iteration=100_000,
         batch_size=length(f_stoch.xs) ÷ 100,
     )
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1)
+    append!( len_traj_array, length(trajectory))
+    println(length(trajectory))
 
     # SFW with incrementing batch size
     batch_iterator = FrankWolfe.IncrementBatchIterator(
@@ -671,8 +671,8 @@ end
         batch_iterator=batch_iterator,
         
     )
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1)
+    append!( len_traj_array, length(trajectory))
+    println(length(trajectory))
     # SFW damped momentum 
     momentum_iterator = FrankWolfe.ExpMomentumIterator()
     x, v, primal, dual_gap, trajectory = FrankWolfe.stochastic_frank_wolfe(
@@ -738,8 +738,8 @@ end
         emphasis=FrankWolfe.blas,
     )
 
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1)
+    append!( len_traj_array, length(trajectory))
+    println(length(trajectory))
 
 
     x, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
@@ -756,8 +756,8 @@ end
         emphasis=FrankWolfe.blas,
     )
 
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1)
+    append!( len_traj_array, length(trajectory))
+    println(length(trajectory))
 
 
     xs, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
@@ -773,8 +773,8 @@ end
         emphasis=FrankWolfe.blas,
     )
 
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1)
+    append!( len_traj_array, length(trajectory))
+    println(length(trajectory))
 
 
     x, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
@@ -790,8 +790,8 @@ end
         emphasis=FrankWolfe.memory,
     )
 
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1)
+    append!( len_traj_array, length(trajectory))
+    println(length(trajectory))
 
 
     x, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
@@ -808,8 +808,8 @@ end
         emphasis=FrankWolfe.memory,
     )
 
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1)
+    append!( len_traj_array, length(trajectory))
+    println(length(trajectory))
 
 
     xs, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
@@ -825,8 +825,8 @@ end
         emphasis=FrankWolfe.memory,
     )
 
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1)
+    append!( len_traj_array, length(trajectory))
+    println(length(trajectory))
 
 
     empty!(active_set)
@@ -884,12 +884,9 @@ end
         linesearch_tol=1e-10,
     )
 
-    @test length(trajectory) <= len_traj_array[1]
-    deleteat!(len_traj_array,1)
-
+    append!( len_traj_array, length(trajectory))
+    println(length(trajectory))
 end
-
-
 
 if isfile(filename)
     rm(filename)
