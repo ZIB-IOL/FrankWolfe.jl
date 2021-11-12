@@ -1,9 +1,6 @@
-#Main
 Base.precompile(Tuple{typeof(Base.print),Base.GenericIOBuffer{Array{UInt8,1}}, FrankWolfe.Shortstep})
 Base.precompile(Tuple{Core.kwftype(typeof(FrankWolfe.frank_wolfe)),NamedTuple{(:max_iteration, :line_search, :L, :print_iter, :emphasis, :verbose, :trajectory), Tuple{Int64, FrankWolfe.Shortstep, Int64, Float64, FrankWolfe.Emphasis, Bool, Bool}},typeof(FrankWolfe.frank_wolfe),Function,Function,FrankWolfe.ProbabilitySimplexOracle{Float64},Vector{Float64}})   # time: 0.28827453
 Base.precompile(Tuple{Core.kwftype(typeof(FrankWolfe.frank_wolfe)),NamedTuple{(:max_iteration, :line_search, :L, :print_iter, :emphasis, :verbose, :epsilon, :trajectory), Tuple{Int64, Agnostic, Int64, Float64, Emphasis, Bool, Float64, Bool}},typeof(frank_wolfe),Function,Function,ProbabilitySimplexOracle{Float64},ScaledHotVector{Float64}})   # time: 0.38316718
-Base.precompile(Tuple{typeof(Printf.format),Base.TTY,Printf.Format{Base.CodeUnits{UInt8, String}, Tuple{Printf.Spec{Val{'s'}}, Printf.Spec{Val{'s'}}, Printf.Spec{Val{'e'}}, Printf.Spec{Val{'e'}}, Printf.Spec{Val{'e'}}, Printf.Spec{Val{'e'}}, Printf.Spec{Val{'e'}}}},String,String,Vararg{Any, N} where N})   # time: 0.17503943
-Base.precompile(Tuple{typeof(Printf.format),Base.TTY,Printf.Format{Base.CodeUnits{UInt8, String}, NTuple{7, Printf.Spec{Val{'s'}}}},String,String,Vararg{String, N} where N})   # time: 0.05030084
 Base.precompile(Tuple{typeof(print),IOBuffer,FrankWolfe.Shortstep})   # time: 0.009745528
 Base.precompile(Tuple{typeof(print),IOBuffer,Agnostic})   # time: 0.039685145
 Base.precompile(Tuple{typeof(FrankWolfe.print_callback),Tuple{String, String, Float64, Float64, Float64, Float64, Float64},String})   # time: 0.005003308
