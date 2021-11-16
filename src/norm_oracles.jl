@@ -134,7 +134,7 @@ end
     NuclearNormLMO{T}(radius)
 
 LMO over matrices that have a nuclear norm less than `radius`.
-The LMO returns the rank-one matrix with singular value `radius`.
+The LMO returns the best rank-one approximation matrix with singular value `radius`, computed with Arpack.
 """
 struct NuclearNormLMO{T} <: LinearMinimizationOracle
     radius::T
@@ -143,11 +143,6 @@ end
 NuclearNormLMO{T}() where {T} = NuclearNormLMO{T}(one(T))
 NuclearNormLMO() = NuclearNormLMO(1.0)
 
-"""
-Best rank-one approximation using the greatest singular value computed with Arpack.
-
-Warning: this does not work (yet) with all number types, BigFloat and Float16 fail.
-"""
 function compute_extreme_point(lmo::NuclearNormLMO, direction::AbstractMatrix; tol=1e-8, kwargs...)
     Z = Arpack.svds(direction, nsv=1, tol=tol)[1]
     u = -lmo.radius * view(Z.U, :)
