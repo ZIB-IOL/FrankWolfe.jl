@@ -52,6 +52,8 @@ over the set represented by the LMO.
 - Away-Step Frank-Wolfe (see [Lacoste-Julien, Jaggi 2015](https://arxiv.org/abs/1511.05932) for an overview)
 - Blended Conditional Gradients (see [Braun, Pokutta, Tu, Wright 2018](https://arxiv.org/abs/1805.07311))
   - built-in stability feature that temporarily increases accuracy
+- Blended Pairwise Conditional Gradients (see [Tsuji, Tanaka, Pokutta 2021](https://arxiv.org/abs/2110.12650))
+  - minor modification for improved sparsity (see [Modified Selection Criterion](https://hackmd.io/@spokutta/B14MTMsLF))
 
 - Most algorithms also have a lazified version (see [Braun, Pokutta, Zink 2016](https://arxiv.org/abs/1610.05120))
 
@@ -170,7 +172,7 @@ x = Rational{BigInt}[1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//
 
 Example: `examples/large_scale.jl`
 
-The package is built to scale well, for those conditional gradients variants that can scale well. For exampple, Away-Step Frank-Wolfe and Pairwise Conditional Gradients do in most cases *not scale well* because they need to maintain active sets and maintaining them can be very expensive. Similarly, line search methods might become prohibitive at large sizes. However if we consider scale-friendly variants, e.g., the vanilla Frank-Wolfe algorithm with the agnostic step size rule or short step rule, then these algorithms can scale well to extreme sizes esentially only limited by the amount of memory available. However even for these methods that tend to scale well, allocation of memory itself can be very slow when you need to allocate gigabytes of memory for a single gradient computation. 
+The package is built to scale well, for those conditional gradients variants that can scale well. For example, Away-Step Frank-Wolfe and Pairwise Conditional Gradients do in most cases *not scale well* because they need to maintain active sets and maintaining them can be very expensive. Similarly, line search methods might become prohibitive at large sizes. However if we consider scale-friendly variants, e.g., the vanilla Frank-Wolfe algorithm with the agnostic step size rule or short step rule, then these algorithms can scale well to extreme sizes esentially only limited by the amount of memory available. However even for these methods that tend to scale well, allocation of memory itself can be very slow when you need to allocate gigabytes of memory for a single gradient computation. 
 
 The package is build to support extreme sizes with a special memory efficient emphasis `emphasis=FrankWolfe.memory`, which minimizes expensive memory allocations and performs as many operations in-place as possible.
 
