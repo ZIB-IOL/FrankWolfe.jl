@@ -55,5 +55,5 @@ function _precompile_()
         if !ismissing(fbody)
             precompile(fbody, (QuickSortAlg,Function,Function,Nothing,ForwardOrdering,typeof(sortperm),Vector{Int64},))
         end
-    end   # time: 0.007903982
+    end   # time: 0.00756414
 end
