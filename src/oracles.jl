@@ -58,11 +58,11 @@ function compute_extreme_point(
 )
     if lmo.last_vertex !== nothing && isfinite(threshold)
         if fast_dot(lmo.last_vertex, direction) ≤ threshold # cache is a sufficiently-decreasing direction
-            v += lmo.last_vertex
+            @. v = lmo.last_vertex
             return v
         end
     end
-    v += compute_extreme_point(lmo.inner, direction, kwargs...)
+    @. v = compute_extreme_point(lmo.inner, direction, kwargs...)
     if store_cache
         lmo.last_vertex = v
     end
@@ -143,7 +143,7 @@ function compute_extreme_point(
         end
         for idx in iter_order
             if lmo.vertices[idx] !== nothing
-                v += lmo.vertices[idx]
+                @. v = lmo.vertices[idx]
                 new_val = fast_dot(v, direction)
                 if new_val ≤ threshold # cache is a sufficiently-decreasing direction
                     # if greedy, stop and return point
@@ -167,8 +167,7 @@ function compute_extreme_point(
     end
     # no interesting point found, computing new
     # println("LP sol")
-    v -= v # reset v to zero in-place
-    v += compute_extreme_point(lmo.inner, direction, kwargs...)
+    @. v = compute_extreme_point(lmo.inner, direction, kwargs...)
     if store_cache
         tup = Base.setindex(lmo.vertices, v, lmo.oldest_idx)
         lmo.vertices = tup
@@ -216,7 +215,7 @@ function compute_extreme_point(
     kwargs...,
 )
     if isempty(lmo.vertices)
-        v += compute_extreme_point(lmo.inner, direction)
+        @. v = compute_extreme_point(lmo.inner, direction)
         if store_cache
             push!(lmo.vertices, v)
         end
@@ -226,8 +225,7 @@ function compute_extreme_point(
     best_val = Inf
     best_v = nothing
     for idx in reverse(eachindex(lmo.vertices))
-        v -= v # reset v to zero in-place
-        @inbounds v += lmo.vertices[idx]
+        @inbounds v .= lmo.vertices[idx]
         new_val = fast_dot(v, direction)
         if new_val ≤ threshold
             # stop, store and return
@@ -242,11 +240,9 @@ function compute_extreme_point(
             end
         end
     end
-    v -= v
-    v += best_v
+    @. v = best_v
     if best_idx < 0
-        v -= v
-        v += compute_extreme_point(lmo.inner, direction)
+        @. v = compute_extreme_point(lmo.inner, direction)
         if store_cache
             # note: we do not check for duplicates. hence you might end up with more vertices,
             # in fact up to number of dual steps many, that might be already in the cache

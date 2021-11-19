@@ -19,24 +19,24 @@ function compute_extreme_point(lmo::LpNormLMO{T,2}, direction; v = zeros(length(
     n = length(direction)
     # if direction numerically 0
     if dir_norm <= 10eps(eltype(direction))
-        @. v += lmo.right_hand_side / sqrt(n)
+        @. v = lmo.right_hand_side / sqrt(n)
     else
-        @. v += -lmo.right_hand_side * direction / dir_norm
+        @. v = -lmo.right_hand_side * direction / dir_norm
     end
     return v
 end
 
 function compute_extreme_point(lmo::LpNormLMO{T,Inf}, direction; v = zeros(length(direction)), kwargs...) where {T}
-    v -= [lmo.right_hand_side * (1 - 2signbit(d)) for d in direction]
+    @. v = -[lmo.right_hand_side * (1 - 2signbit(d)) for d in direction]
     return v
 end
 
 function compute_extreme_point(lmo::LpNormLMO{T,1}, direction; v = nothing, kwargs...) where {T}
     idx = 0
-    v_ = -one(eltype(direction))
+    v = -one(eltype(direction))
     for i in eachindex(direction)
-        if abs(direction[i]) > v_
-            v_ = abs(direction[i])
+        if abs(direction[i]) > v
+            v = abs(direction[i])
             idx = i
         end
     end
@@ -50,10 +50,10 @@ end
 function compute_extreme_point(lmo::LpNormLMO{T,p}, direction; v = zeros(length(direction)), kwargs...) where {T,p}
     # covers the case where the Inf or 1 is of another type
     if p == Inf
-        v += compute_extreme_point(LpNormLMO{T,Inf}(lmo.right_hand_side), direction)
+        @. v = compute_extreme_point(LpNormLMO{T,Inf}(lmo.right_hand_side), direction)
         return v
     elseif p == 1
-        v += compute_extreme_point(LpNormLMO{T,1}(lmo.right_hand_side), direction)
+        @. v = compute_extreme_point(LpNormLMO{T,1}(lmo.right_hand_side), direction)
         return v
     end
     q = p / (p - 1)
@@ -63,11 +63,11 @@ function compute_extreme_point(lmo::LpNormLMO{T,p}, direction; v = zeros(length(
     # assuming the direction is a vector of 1
     if q_norm < eps()
         one_vec = trues(length(direction))
-        v -= lmo.right_hand_side * one_vec^(pow_ratio) / oftype(q_norm, 1)
-        return @. v
+        @. v = -lmo.right_hand_side * one_vec^(pow_ratio) / oftype(q_norm, 1)
+        return v
     end
-    v -= lmo.right_hand_side * sign(direction) * abs(direction)^(pow_ratio) / q_norm
-    return @. v
+    @. v = -lmo.right_hand_side * sign(direction) * abs(direction)^(pow_ratio) / q_norm
+    return v
 end
 
 
@@ -127,8 +127,7 @@ function compute_extreme_point(lmo::KNormBallLMO{T}, direction; v = similar(dire
     v1 = ScaledHotVector(-lmo.right_hand_side * sign(direction[idx_l1]), idx_l1, length(direction))
     o1 = dot(v1, direction)
     if o1 < oinf
-        v -= v
-        v .+= v1
+        @. v = v1
     end
     return v
 end
