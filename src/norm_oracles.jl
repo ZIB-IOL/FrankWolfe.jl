@@ -50,10 +50,12 @@ end
 function compute_extreme_point(lmo::LpNormLMO{T,p}, direction; v = zeros(length(direction)), kwargs...) where {T,p}
     # covers the case where the Inf or 1 is of another type
     if p == Inf
-        @. v = compute_extreme_point(LpNormLMO{T,Inf}(lmo.right_hand_side), direction)
+        v_ = compute_extreme_point(LpNormLMO{T,Inf}(lmo.right_hand_side), direction)
+        @. v = v_
         return v
     elseif p == 1
-        @. v = compute_extreme_point(LpNormLMO{T,1}(lmo.right_hand_side), direction)
+        v_ = compute_extreme_point(LpNormLMO{T,1}(lmo.right_hand_side), direction)
+        @. v = v_
         return v
     end
     q = p / (p - 1)
