@@ -89,8 +89,7 @@ function compute_extreme_point(
     @inbounds for i in eachindex(cols)
         v[rows[i], cols[i]] = vals[i] == 2
     end
-    @. v = convert(SparseArrays.SparseMatrixCSC{Float64,Int64}, v)
-    return v
+    return convert(SparseArrays.SparseMatrixCSC{Float64,Int64}, v)
 end
 
 function compute_extreme_point(

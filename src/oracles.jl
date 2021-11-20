@@ -240,9 +240,7 @@ function compute_extreme_point(
             end
         end
     end
-    if best_v == nothing
-        v = best_v
-    else
+    if best_v != nothing
         @. v = best_v
     end
     if best_idx < 0
