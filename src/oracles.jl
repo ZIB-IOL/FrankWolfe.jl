@@ -240,7 +240,11 @@ function compute_extreme_point(
             end
         end
     end
-    @. v = best_v
+    if best_v == nothing
+        v = best_v
+    else
+        @. v = best_v
+    end
     if best_idx < 0
         v = compute_extreme_point(lmo.inner, direction)
         if store_cache
