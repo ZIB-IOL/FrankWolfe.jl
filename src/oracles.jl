@@ -62,7 +62,7 @@ function compute_extreme_point(
             return v
         end
     end
-    @. v = compute_extreme_point(lmo.inner, direction, kwargs...)
+    v = compute_extreme_point(lmo.inner, direction, kwargs...)
     if store_cache
         lmo.last_vertex = v
     end
@@ -167,7 +167,7 @@ function compute_extreme_point(
     end
     # no interesting point found, computing new
     # println("LP sol")
-    @. v = compute_extreme_point(lmo.inner, direction, kwargs...)
+    v = compute_extreme_point(lmo.inner, direction, kwargs...)
     if store_cache
         tup = Base.setindex(lmo.vertices, v, lmo.oldest_idx)
         lmo.vertices = tup
@@ -215,7 +215,7 @@ function compute_extreme_point(
     kwargs...,
 )
     if isempty(lmo.vertices)
-        @. v = compute_extreme_point(lmo.inner, direction)
+        v = compute_extreme_point(lmo.inner, direction)
         if store_cache
             push!(lmo.vertices, v)
         end
@@ -242,7 +242,7 @@ function compute_extreme_point(
     end
     @. v = best_v
     if best_idx < 0
-        @. v = compute_extreme_point(lmo.inner, direction)
+        v = compute_extreme_point(lmo.inner, direction)
         if store_cache
             # note: we do not check for duplicates. hence you might end up with more vertices,
             # in fact up to number of dual steps many, that might be already in the cache
