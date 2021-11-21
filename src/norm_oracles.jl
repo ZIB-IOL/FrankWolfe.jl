@@ -27,7 +27,8 @@ function compute_extreme_point(lmo::LpNormLMO{T,2}, direction; v = similar(direc
 end
 
 function compute_extreme_point(lmo::LpNormLMO{T,Inf}, direction; v = similar(direction), kwargs...) where {T}
-    @. v = -[lmo.right_hand_side * (1 - 2signbit(d)) for d in direction]
+    for idx in eachindex(direction)
+        v[idx] = -lmo.right_hand_side * (1 - 2signbit(direction[idx]))
     return v
 end
 
@@ -50,7 +51,7 @@ end
 function compute_extreme_point(lmo::LpNormLMO{T,p}, direction; v = similar(direction), kwargs...) where {T,p}
     # covers the case where the Inf or 1 is of another type
     if p == Inf
-        v = compute_extreme_point(LpNormLMO{T,Inf}(lmo.right_hand_side), direction)
+        v = compute_extreme_point(LpNormLMO{T,Inf}(lmo.right_hand_side), direction, v = v)
         return v
     elseif p == 1
         v = compute_extreme_point(LpNormLMO{T,1}(lmo.right_hand_side), direction)
