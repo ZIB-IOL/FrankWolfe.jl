@@ -78,30 +78,31 @@ struct BirkhoffPolytopeLMO <: LinearMinimizationOracle end
 function compute_extreme_point(
     ::BirkhoffPolytopeLMO,
     direction::AbstractMatrix{T};
-    v = spzeros(Bool, size(direction, 1), size(direction, 1)),
+    v = nothing,
     kwargs...,
 ) where {T}
     n = size(direction, 1)
     n == size(direction, 2) ||
         DimensionMismatch("direction should be square and matching BirkhoffPolytopeLMO dimension")
+    m = spzeros(Bool, n, n)
     res_mat = Hungarian.munkres(direction)
     (rows, cols, vals) = SparseArrays.findnz(res_mat)
     @inbounds for i in eachindex(cols)
-        v[rows[i], cols[i]] = vals[i] == 2
+        m[rows[i], cols[i]] = vals[i] == 2
     end
-    return convert(SparseArrays.SparseMatrixCSC{Float64,Int64}, v)
+    m = convert(SparseArrays.SparseMatrixCSC{Float64,Int64}, m)
+    return m
 end
 
 function compute_extreme_point(
     lmo::BirkhoffPolytopeLMO,
     direction::AbstractVector{T};
-    v = zeros(isqrt(length(direction)), isqrt(length(direction))),
+    v = nothing,
     kwargs...,
 ) where {T}
     nsq = length(direction)
     n = isqrt(nsq)
-    v = compute_extreme_point(lmo, reshape(direction, n, n); kwargs...)
-    return v
+    return compute_extreme_point(lmo, reshape(direction, n, n); kwargs...)
 end
 
 function convert_mathopt(

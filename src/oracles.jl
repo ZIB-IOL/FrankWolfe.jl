@@ -51,15 +51,14 @@ SingleLastCachedLMO(lmo::LMO) where {LMO<:LinearMinimizationOracle} =
 function compute_extreme_point(
     lmo::SingleLastCachedLMO,
     direction;
-    v = zeros(length(direction)),
+    v = nothing,
     threshold=-Inf,
     store_cache=true,
     kwargs...,
 )
     if lmo.last_vertex !== nothing && isfinite(threshold)
         if fast_dot(lmo.last_vertex, direction) ≤ threshold # cache is a sufficiently-decreasing direction
-            @. v = lmo.last_vertex
-            return v
+            return lmo.last_vertex
         end
     end
     v = compute_extreme_point(lmo.inner, direction, kwargs...)
@@ -125,7 +124,7 @@ below `threshold` or look for the best one.
 function compute_extreme_point(
     lmo::MultiCacheLMO{N},
     direction;
-    v = zeros(length(direction)),
+    v = nothing,
     threshold=-Inf,
     store_cache=true,
     greedy=false,
@@ -143,7 +142,7 @@ function compute_extreme_point(
         end
         for idx in iter_order
             if lmo.vertices[idx] !== nothing
-                @. v = lmo.vertices[idx]
+                v = lmo.vertices[idx]
                 new_val = fast_dot(v, direction)
                 if new_val ≤ threshold # cache is a sufficiently-decreasing direction
                     # if greedy, stop and return point
@@ -208,7 +207,7 @@ Base.length(lmo::VectorCacheLMO) = length(lmo.vertices)
 function compute_extreme_point(
     lmo::VectorCacheLMO,
     direction;
-    v = zeros(length(direction)),
+    v = nothing,
     threshold=-Inf,
     store_cache=true,
     greedy=false,
@@ -225,7 +224,7 @@ function compute_extreme_point(
     best_val = Inf
     best_v = nothing
     for idx in reverse(eachindex(lmo.vertices))
-        @inbounds v .= lmo.vertices[idx]
+        @inbounds v = lmo.vertices[idx]
         new_val = fast_dot(v, direction)
         if new_val ≤ threshold
             # stop, store and return
@@ -240,9 +239,7 @@ function compute_extreme_point(
             end
         end
     end
-    if best_v != nothing
-        @. v = best_v
-    end
+    v = best_v
     if best_idx < 0
         v = compute_extreme_point(lmo.inner, direction)
         if store_cache

@@ -14,7 +14,7 @@ end
 
 LpNormLMO{p}(right_hand_side::T) where {T,p} = LpNormLMO{T,p}(right_hand_side)
 
-function compute_extreme_point(lmo::LpNormLMO{T,2}, direction; v = zeros(length(direction)), kwargs...) where {T}
+function compute_extreme_point(lmo::LpNormLMO{T,2}, direction; v = similar(direction), kwargs...) where {T}
     dir_norm = norm(direction, 2)
     n = length(direction)
     # if direction numerically 0
@@ -26,7 +26,7 @@ function compute_extreme_point(lmo::LpNormLMO{T,2}, direction; v = zeros(length(
     return v
 end
 
-function compute_extreme_point(lmo::LpNormLMO{T,Inf}, direction; v = zeros(length(direction)), kwargs...) where {T}
+function compute_extreme_point(lmo::LpNormLMO{T,Inf}, direction; v = similar(direction), kwargs...) where {T}
     @. v = -[lmo.right_hand_side * (1 - 2signbit(d)) for d in direction]
     return v
 end
@@ -47,7 +47,7 @@ function compute_extreme_point(lmo::LpNormLMO{T,1}, direction; v = nothing, kwar
     return ScaledHotVector(-lmo.right_hand_side * sign_coeff, idx, length(direction))
 end
 
-function compute_extreme_point(lmo::LpNormLMO{T,p}, direction; v = zeros(length(direction)), kwargs...) where {T,p}
+function compute_extreme_point(lmo::LpNormLMO{T,p}, direction; v = similar(direction), kwargs...) where {T,p}
     # covers the case where the Inf or 1 is of another type
     if p == Inf
         v = compute_extreme_point(LpNormLMO{T,Inf}(lmo.right_hand_side), direction)
