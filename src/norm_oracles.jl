@@ -29,6 +29,7 @@ end
 function compute_extreme_point(lmo::LpNormLMO{T,Inf}, direction; v = similar(direction), kwargs...) where {T}
     for idx in eachindex(direction)
         v[idx] = -lmo.right_hand_side * (1 - 2signbit(direction[idx]))
+    end
     return v
 end
 
