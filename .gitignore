@@ -22,3 +22,4 @@ examples/precompile_fw.jl
 docs/src/examples/*.md
 cc/libloporacle.so
 cc/*
+examples/temp.jl
