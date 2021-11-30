@@ -14,7 +14,8 @@ function frank_wolfe(
     f,
     grad!,
     lmo,
-    x0;
+    #x0::FrankWolfe.ScaledHotVector{Rational{BigInt}};
+    x0::FrankWolfe.ScaledHotVector{T};
     line_search::LineSearchMethod=Adaptive(),
     momentum=nothing,
     epsilon=1e-7,
@@ -28,17 +29,17 @@ function frank_wolfe(
     timeout=Inf,
     print_callback=print_callback,
     linesearch_workspace=nothing,
-)
+) where T
 
     # format string for output of the algorithm
     format_string = "%6s %13s %14e %14e %14e %14e %14e\n"
     t = 0
     dual_gap = Inf
     primal = Inf
-    v = []
-    x = x0
+    v = [] #Vector{Any}
+    x = x0 #FrankWolfe.ScaledHotVector{Rational{BigInt}} 
     tt = regular
-    traj_data = []
+    traj_data = [] #Vector{Any}
     if trajectory && callback === nothing
         callback = trajectory_callback(traj_data)
     end
@@ -67,22 +68,23 @@ function frank_wolfe(
     if emphasis == memory && !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
         # if integer, convert element type to most appropriate float
         if eltype(x) <: Integer
-            x = copyto!(similar(x, float(eltype(x))), x)
+            x = copyto!(similar(x, float(eltype(x))), x) # Union{}
+
         else
-            x = copyto!(similar(x), x)
+            x = copyto!(similar(x), x) #SparseArrays.SparseVector{Rational{BigInt}, Int64}
         end
     end
     first_iter = true
     # instanciating container for gradient
     if gradient === nothing
-        gradient = similar(x)
+        gradient = similar(x) #SparseArrays.SparseVector{Rational{BigInt}, Int64}
     end
     if linesearch_workspace === nothing
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
     end
 
     # container for direction
-    d = similar(x)
+    d = similar(x) #SparseArrays.SparseVector{Rational{BigInt}, Int64}
     gtemp = if momentum === nothing
         nothing
     else
@@ -130,7 +132,7 @@ function frank_wolfe(
             callback !== nothing ||
             line_search isa Shortstep
         )
-            primal = f(x)
+            primal = f(x) #Any
             dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         end
 
@@ -151,17 +153,21 @@ function frank_wolfe(
             state = (
                 t=t,
                 primal=primal,
-                dual=primal - dual_gap,
-                dual_gap=dual_gap,
+                dual=primal - dual_gap, 
+                dual_gap=dual_gap, 
                 time=tot_time,
-                x=x,
-                v=v,
+                x=x, #Any
+                v=v, #rankWolfe.ScaledHotVector{Rational{BigInt}}
                 gamma=gamma,
             )
             callback(state)
         end
 
-        @emphasis(emphasis, x = x - gamma * d)
+        if emphasis == blas
+            x = x - gamma * d # x::Any
+        else 
+            @. x = x - gamma * d 
+        end
 
         if (mod(t, print_iter) == 0 && verbose)
             tt = regular
@@ -209,6 +215,7 @@ function frank_wolfe(
         flush(stdout)
     end
     return x, v, primal, dual_gap, traj_data
+    # Tuple{Any, FrankWolfe.ScaledHotVector{Rational{BigInt}}, Any, Any, Vector{Any}}
 end
 
 

@@ -39,20 +39,20 @@ function blended_conditional_gradient(
     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i %14i\n"
 
     t = 0
-    primal = Inf
-    dual_gap = Inf
+    #primal = Inf # necessary? line 49
+    dual_gap = Inf # necessary? line 54
     active_set = ActiveSet([(1.0, x0)])
-    x = active_set.x
+    x = active_set.x #SparseVector{Float64, Int64}
     if gradient === nothing
         gradient = similar(x0)
     end
-    primal = f(x)
+    primal = f(x)::SparseVector{Float64, Int64} #Any
     grad!(gradient, x)
     # initial gap estimate computation
     vmax = compute_extreme_point(lmo, gradient)
     phi = fast_dot(gradient, x0 - vmax) / 2
     dual_gap = phi
-    traj_data = []
+    traj_data = [] #Vector{Any}
     if trajectory && callback === nothing
         callback = trajectory_callback(traj_data)
     end
@@ -130,7 +130,7 @@ function blended_conditional_gradient(
             f,
             grad!,
             gradient,
-            active_set::ActiveSet,
+            active_set,#::ActiveSet,
             phi,
             t,
             time_start,
@@ -150,7 +150,7 @@ function blended_conditional_gradient(
         t += num_simplex_descent_steps
         #Take a FW step.
         x = get_active_set_iterate(active_set)
-        primal = f(x)
+        primal = f(x)::SparseVector{Float64, Int64}
         grad!(gradient, x)
         # compute new atom
         (v, value) = lp_separation_oracle(
@@ -236,7 +236,7 @@ function blended_conditional_gradient(
         x = get_active_set_iterate(active_set)
         grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
-        primal = f(x)
+        primal = f(x)::SparseVector{Float64, Int64}
         dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         tot_time = (time_ns() - time_start) / 1e9
         rep = (
@@ -260,7 +260,7 @@ function blended_conditional_gradient(
     x = get_active_set_iterate(active_set)
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
-    primal = f(x)
+    primal = f(x)::SparseVector{Float64, Int64}
     #dual_gap = 2phi
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
 
@@ -283,6 +283,7 @@ function blended_conditional_gradient(
         flush(stdout)
     end
     return x, v, primal, dual_gap, traj_data
+    # Tuple{SparseVector{Float64, Int64}, FrankWolfe.ScaledHotVector{Float64}, Any, Float64, Vector{Any}}
 end
 
 
