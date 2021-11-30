@@ -381,7 +381,6 @@ end
 function afw_step(x, gradient, lmo, active_set)
     _, _, _, _, a_lambda, a, a_loc =
         active_set_argminmax(active_set, gradient)
-    away_gap = fast_dot(a, gradient) - fast_dot(x, gradient)
     v = compute_extreme_point(lmo, gradient)
     grad_dot_x = fast_dot(x, gradient)
     away_gap = fast_dot(a, gradient) - grad_dot_x
