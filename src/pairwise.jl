@@ -12,13 +12,9 @@ function blended_pairwise_conditional_gradient(
     lmo,
     x0;
     line_search::LineSearchMethod=Adaptive(),
-<<<<<<< HEAD
-    K=2.0,
-=======
     L=Inf,
     gamma0=0,
     step_lim=20,
->>>>>>> ca27899... tolerance keyword (#255)
     epsilon=1e-7,
     max_iteration=10000,
     print_iter=1000,
@@ -31,11 +27,7 @@ function blended_pairwise_conditional_gradient(
     print_callback=print_callback,
     renorm_interval=1000,
     lazy=false,
-<<<<<<< HEAD
-    linesearch_workspace=nothing,
-=======
     lazy_tolerance=2.0,
->>>>>>> ca27899... tolerance keyword (#255)
 )
     # add the first vertex to active set from initialization
     active_set = ActiveSet([(1.0, x0)])
@@ -46,13 +38,9 @@ function blended_pairwise_conditional_gradient(
         lmo,
         active_set,
         line_search=line_search,
-<<<<<<< HEAD
-        K=K,
-=======
         L=L,
         gamma0=gamma0,
         step_lim=step_lim,
->>>>>>> ca27899... tolerance keyword (#255)
         epsilon=epsilon,
         max_iteration=max_iteration,
         print_iter=print_iter,
@@ -65,11 +53,7 @@ function blended_pairwise_conditional_gradient(
         print_callback=print_callback,
         renorm_interval=renorm_interval,
         lazy=lazy,
-<<<<<<< HEAD
-        linesearch_workspace=linesearch_workspace,
-=======
         lazy_tolerance=lazy_tolerance,
->>>>>>> ca27899... tolerance keyword (#255)
     )
 end
 
@@ -84,13 +68,9 @@ function blended_pairwise_conditional_gradient(
     lmo,
     active_set::ActiveSet;
     line_search::LineSearchMethod=Adaptive(),
-<<<<<<< HEAD
-    K=2.0,
-=======
     L=Inf,
     gamma0=0,
     step_lim=20,
->>>>>>> ca27899... tolerance keyword (#255)
     epsilon=1e-7,
     max_iteration=10000,
     print_iter=1000,
@@ -103,11 +83,7 @@ function blended_pairwise_conditional_gradient(
     print_callback=print_callback,
     renorm_interval=1000,
     lazy=false,
-<<<<<<< HEAD
-    linesearch_workspace=nothing
-=======
     lazy_tolerance=2.0,
->>>>>>> ca27899... tolerance keyword (#255)
 )
 
     # format string for output of the algorithm

@@ -233,13 +233,9 @@ function lazified_conditional_gradient(
     lmo_base,
     x0;
     line_search::LineSearchMethod=Adaptive(),
-<<<<<<< HEAD
-    K=2.0,
-=======
     L=Inf,
     gamma0=0,
     lazy_tolerance=2.0,
->>>>>>> ca27899... tolerance keyword (#255)
     cache_size=Inf,
     greedy_lazy=false,
     epsilon=1e-7,
@@ -283,17 +279,10 @@ function lazified_conditional_gradient(
     end
 
     if verbose
-<<<<<<< HEAD
-        println("\nLazified Conditional Gradient (Frank-Wolfe + Lazification).")
-        NumType = eltype(x0)
-        println(
-            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration K: $K TYPE: $NumType",
-=======
         println("\nLazified Conditional Gradients (Frank-Wolfe + Lazification).")
         NumType = eltype(x0)
         println(
             "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration lazy_tolerance: $lazy_tolerance TYPE: $NumType",
->>>>>>> ca27899... tolerance keyword (#255)
         )
         grad_type = typeof(gradient)
         println("GRADIENTTYPE: $grad_type CACHESIZE $cache_size GREEDYCACHE: $greedy_lazy")

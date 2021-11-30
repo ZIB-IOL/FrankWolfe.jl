@@ -311,6 +311,10 @@ function away_frank_wolfe(
     end
 
     return x, v, primal, dual_gap, traj_data, active_set
+    # Tuple{SparseArrays.SparseVector{Float64, Int64}, SparseArrays.SparseVector{Float64, Int64}, 
+    # Float64, Float64, Vector{Any}, FrankWolfe.ActiveSet{SparseArrays.SparseVector{Float64, Int64}, 
+    # Float64, SparseArrays.SparseVector{Float64, Int64}}}
+
 end
 
 function lazy_afw_step(x, gradient, lmo, active_set, phi; lazy_tolerance=2.0)
