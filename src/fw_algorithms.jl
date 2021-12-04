@@ -131,7 +131,7 @@ function frank_wolfe(
         end
         first_iter = false
 
-        v = compute_extreme_point(lmo, gradient)
+        v = compute_extreme_point(lmo, gradient, v=v)
         # go easy on the memory - only compute if really needed
         if (
             (mod(t, print_iter) == 0 && verbose) ||
@@ -422,7 +422,7 @@ function lazified_conditional_gradient(
     primal = f(x)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
 
-    if verbose 
+    if verbose
         tt = last
         tot_time = (time_ns() - time_start) / 1.0e9
         rep = (
