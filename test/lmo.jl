@@ -253,7 +253,7 @@ end
     end
     # TODO value of radius?
     lmo = FrankWolfe.NuclearNormLMO(sum(svdvals(Xreal)))
-    x0 = FrankWolfe.compute_extreme_point(lmo, zero(Xreal))
+    x0 = @inferred FrankWolfe.compute_extreme_point(lmo, zero(Xreal))
     gradient = similar(x0)
     grad!(gradient, x0)
     v0 = FrankWolfe.compute_extreme_point(lmo, gradient)
