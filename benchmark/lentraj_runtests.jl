@@ -198,10 +198,10 @@ len_traj_array = vec(DelimitedFiles.readdlm(filename))
         deleteat!(len_traj_array,1)
     end
 
-    @testset "Gradient with momentum correctly updated" begin
-        # fixing https://github.com/ZIB-IOL/FrankWolfe.jl/issues/47
-        include("momentum_memory.jl")
-    end
+    # @testset "Gradient with momentum correctly updated" begin
+    #     # fixing https://github.com/ZIB-IOL/FrankWolfe.jl/issues/47
+    #     include("momentum_memory.jl")
+    # end
 
     @testset "Testing Lazified Conditional Gradients with various step size strategies" begin
         f(x) = norm(x)^2

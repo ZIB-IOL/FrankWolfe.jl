@@ -198,62 +198,62 @@ len_traj_array = zeros(0)
     println(length(trajectory))
 end
 
-@testset "Gradient with momentum correctly updated" begin
-    # fixing https://github.com/ZIB-IOL/FrankWolfe.jl/issues/47
-    include("momentum_memory.jl")
-end
+# @testset "Gradient with momentum correctly updated" begin
+#     # fixing https://github.com/ZIB-IOL/FrankWolfe.jl/issues/47
+#     include("momentum_memory.jl")
+# end
 
 @testset "Testing Lazified Conditional Gradients with various step size strategies" begin
-    f(x) = norm(x)^2
-    function grad!(storage, x)
-        @. storage = 2x
-        return nothing
-    end
-    lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
-    x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(5))
+        f(x) = norm(x)^2
+        function grad!(storage, x)
+            @. storage = 2x
+            return nothing
+        end
+        lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
+        x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(5))
 
-x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
-            f,
-            grad!,
-            lmo_prob,
-            x0,
-            max_iteration=1000,
-            line_search=FrankWolfe.Goldenratio(),
-            trajectory=true,
-            verbose=false,
-    )
+    x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
+                f,
+                grad!,
+                lmo_prob,
+                x0,
+                max_iteration=1000,
+                line_search=FrankWolfe.Goldenratio(),
+                trajectory=true,
+                verbose=false,
+        )
 
-    append!( len_traj_array, length(trajectory))
-    println(length(trajectory)) 
+        append!( len_traj_array, length(trajectory))
+        println(length(trajectory)) 
 
-x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
-            f,
-            grad!,
-            lmo_prob,
-            x0,
-            max_iteration=1000,
-            line_search=FrankWolfe.Backtracking(),
-            trajectory=true,
-            verbose=false,
-    )
+    x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
+                f,
+                grad!,
+                lmo_prob,
+                x0,
+                max_iteration=1000,
+                line_search=FrankWolfe.Backtracking(),
+                trajectory=true,
+                verbose=false,
+        )
 
-    append!( len_traj_array, length(trajectory))
-    println(length(trajectory)) 
+        append!( len_traj_array, length(trajectory))
+        println(length(trajectory)) 
 
-x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
-            f,
-            grad!,
-            lmo_prob,
-            x0,
-            max_iteration=1000,
-            line_search=FrankWolfe.Shortstep(),
-            L=2,
-            trajectory=true,
-            verbose=false,
-    )
+    x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
+                f,
+                grad!,
+                lmo_prob,
+                x0,
+                max_iteration=1000,
+                line_search=FrankWolfe.Shortstep(),
+                L=2,
+                trajectory=true,
+                verbose=false,
+        )
 
-    append!( len_traj_array, length(trajectory))
-    println(length(trajectory)) 
+        append!( len_traj_array, length(trajectory))
+        println(length(trajectory)) 
 end
 
 @testset "Testing Lazified Conditional Gradients with cache strategies" begin
