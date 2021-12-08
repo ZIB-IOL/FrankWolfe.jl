@@ -129,13 +129,14 @@ function frank_wolfe(
             grad!(gtemp, x)
             @emphasis(emphasis, gradient = (momentum * gradient) + (1 - momentum) * gtemp)
         end
-        first_iter = false
 
         v = if first_iter
             compute_extreme_point(lmo, gradient)
             else
             compute_extreme_point(lmo, gradient, v=v)
         end
+
+        first_iter = false
         # go easy on the memory - only compute if really needed
         if (
             (mod(t, print_iter) == 0 && verbose) ||
