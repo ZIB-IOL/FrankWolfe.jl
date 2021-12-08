@@ -96,6 +96,7 @@ function frank_wolfe(
     else
         similar(x)
     end
+
     while t <= max_iteration && dual_gap >= max(epsilon, eps())
 
         #####################
@@ -130,8 +131,11 @@ function frank_wolfe(
             @emphasis(emphasis, gradient = (momentum * gradient) + (1 - momentum) * gtemp)
         end
         first_iter = false
-
-        v = compute_extreme_point(lmo, gradient)
+        v = if is_simple_lmo(lmo)
+            compute_extreme_point(lmo, gradient)
+        else
+            compute_extreme_point(lmo, gradient; call_counter=call_counter)
+        end
         # go easy on the memory - only compute if really needed
         if (
             (mod(t, print_iter) == 0 && verbose) ||
@@ -169,6 +173,9 @@ function frank_wolfe(
                 x=x,
                 v=v,
                 gamma=gamma,
+                f=f,
+                grad!=grad!,
+                lmo=lmo,
             )
             callback(state)
         end
