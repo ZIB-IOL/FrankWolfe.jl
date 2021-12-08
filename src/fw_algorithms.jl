@@ -38,7 +38,7 @@ function frank_wolfe(
     t = 0
     dual_gap = Inf
     primal = Inf
-    v = x0
+    v = []
     x = x0
     tt = regular
     traj_data = []
@@ -131,7 +131,11 @@ function frank_wolfe(
         end
         first_iter = false
 
-        v = compute_extreme_point(lmo, gradient, v=v)
+        v = if first_iter
+            compute_extreme_point(lmo, gradient)
+            else
+            compute_extreme_point(lmo, gradient, v=v)
+        end
         # go easy on the memory - only compute if really needed
         if (
             (mod(t, print_iter) == 0 && verbose) ||
