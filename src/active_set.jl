@@ -76,7 +76,7 @@ function Base.empty!(as::ActiveSet)
 end
 
 function Base.isempty(as::ActiveSet)
-    return isempty(as.atoms) || isempty(as.weights)
+    return isempty(as.atoms)
 end
 
 """
