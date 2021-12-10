@@ -26,6 +26,12 @@ function compute_extreme_point(lmo::MathOptLMO{OT}, direction::AbstractMatrix{T}
     return reshape(v, n, n)
 end
 
+function FrankWolfe.copy(lmo::MathOptLMO{OT}) where {OT}
+    opt = OT() # creates the empty optimizer
+    MOI.copy_to(opt, lmo.o)
+    return MathOptLMO(opt)
+    end
+
 function compute_extreme_point(
     lmo::MathOptLMO{OT},
     direction::AbstractVector{MOI.ScalarAffineTerm{T}},
