@@ -39,12 +39,29 @@ function Base.copy(lmo::MathOptLMO{OT}; ensure_identity=true) where {OT}
     return MathOptLMO(opt)
 end
 
+function Base.copy(lmo::MathOptLMO{OT}; ensure_identity=true) where {OTI, OT <: MOIU.CachingOptimizer{OTI}}
+    opt = MOIU.CachingOptimizer(
+        MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
+        OTI(),
+    )
+
+    index_map = MOI.copy_to(opt, lmo.o)
+    if ensure_identity
+        for (src_idx, des_idx) in index_map.var_map
+            if src_idx != des_idx
+                error("Mapping of variables is not identity")
+            end
+        end
+    end
+    return MathOptLMO(opt)
+end
+
 
 function compute_extreme_point(
     lmo::MathOptLMO{OT},
     direction::AbstractVector{MOI.ScalarAffineTerm{T}},
 ) where {OT,T}
-    variables = [term.variable_index for term in direction]
+    variables = [term.variable for term in direction]
     obj = MOI.ScalarAffineFunction(direction, zero(T))
     MOI.set(lmo.o, MOI.ObjectiveFunction{typeof(obj)}(), obj)
     MOI.set(lmo.o, MOI.ObjectiveSense(), MOI.MIN_SENSE)

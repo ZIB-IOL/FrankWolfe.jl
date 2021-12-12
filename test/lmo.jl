@@ -689,11 +689,11 @@ end
         Clp.Optimizer(),
     )
 
-    for o in (GLPK.Optimizer(), Hypatia.Optimizer, o_clp)
+    for o in (GLPK.Optimizer(), o_clp)
         MOI.set(o, MOI.Silent(), true)
         n = 100
         x = MOI.add_variables(o, n)
-        f = sum(1.0 * MOI.SingleVariable(xi) for xi in x)
+        f = sum(1.0 * xi for xi in x)
         MOI.add_constraint(o, f, MOI.LessThan(1.0))
         MOI.add_constraint(o, f, MOI.GreaterThan(1.0))
         lmo = FrankWolfe.MathOptLMO(o)
