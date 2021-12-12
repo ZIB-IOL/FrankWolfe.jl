@@ -28,7 +28,7 @@ function blended_conditional_gradient(
     linesearch_tol=1e-7,
     emphasis=nothing,
     accelerated=false,
-    K=2.0,
+    lazy_tolerance=2.0,
     weight_purge_threshold=1e-9,
     gradient=nothing,
     callback=nothing,
@@ -76,12 +76,12 @@ function blended_conditional_gradient(
 
     if verbose
         println("\nBlended Conditional Gradients Algorithm.")
-        numType = eltype(x0)
+        NumType = eltype(x0)
         println(
-            "EMPHASIS: $memory STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $numType",
+            "EMPHASIS: $memory STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
         )
         grad_type = typeof(gradient)
-        println("GRADIENTTYPE: $grad_type K: $K")
+        println("GRADIENTTYPE: $grad_type lazy_tolerance: $lazy_tolerance")
         println("WARNING: In memory emphasis mode iterates are written back into x0!")
         headers = (
             "Type",
@@ -151,7 +151,7 @@ function blended_conditional_gradient(
         )
         t += num_simplex_descent_steps
         #Take a FW step.
-        x = compute_active_set_iterate(active_set)
+        x = get_active_set_iterate(active_set)
         primal = f(x)
         grad!(gradient, x)
         # compute new atom
@@ -160,14 +160,14 @@ function blended_conditional_gradient(
             active_set,
             gradient,
             phi,
-            K;
+            lazy_tolerance;
             inplace_loop=(emphasis == memory),
             force_fw_step=force_fw_step,
             lmo_kwargs...,
         )
         force_fw_step = false
         xval = fast_dot(x, gradient)
-        if value > xval - phi / K
+        if value > xval - phi / lazy_tolerance
             tt = dualstep
             # setting gap estimate as ∇f(x) (x - v_FW) / 2
             phi = (xval - value) / 2
@@ -196,7 +196,7 @@ function blended_conditional_gradient(
             end
         end
 
-        x = compute_active_set_iterate(active_set)
+        x = get_active_set_iterate(active_set)
         dual_gap = phi
         if callback !== nothing
             state = (
@@ -241,7 +241,7 @@ function blended_conditional_gradient(
 
     # report last iteration
     if verbose
-        x = compute_active_set_iterate(active_set)
+        x = get_active_set_iterate(active_set)
         grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
@@ -265,7 +265,7 @@ function blended_conditional_gradient(
     # cleanup the active set, renormalize, and recompute values
     active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
     active_set_renormalize!(active_set)
-    x = compute_active_set_iterate(active_set)
+    x = get_active_set_iterate(active_set)
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
@@ -356,7 +356,7 @@ function minimize_over_convex_hull!(
             format_string=format_string,
         )
     else
-        x = compute_active_set_iterate(active_set)
+        x = get_active_set_iterate(active_set)
         grad!(gradient, x)
         #Rewrite as problem over the simplex
         M, b = build_reduced_problem(
@@ -816,7 +816,7 @@ function simplex_gradient_descent_over_convex_hull(
     number_of_steps = 0
     L_inner = nothing
     upgrade_accuracy_flag = false
-    x = compute_active_set_iterate(active_set)
+    x = get_active_set_iterate(active_set)
     while t + number_of_steps ≤ max_iteration
         grad!(gradient, x)
         #Check if strong Wolfe gap over the convex hull is small enough.
@@ -870,7 +870,7 @@ function simplex_gradient_descent_over_convex_hull(
         x = copy(active_set.x)
         η = max(0, η)
         @. active_set.weights -= η * d
-        y = copy(update_active_set_iterate!(active_set))
+        y = copy(compute_active_set_iterate!(active_set))
         number_of_steps += 1
         if f(x) ≥ f(y)
             active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
@@ -923,7 +923,7 @@ function simplex_gradient_descent_over_convex_hull(
                 @. active_set.x = x + gamma * (y - x)
             end
         end
-        x = compute_active_set_iterate(active_set)
+        x = get_active_set_iterate(active_set)
         primal = f(x)
         dual_gap = tolerance
 
@@ -987,7 +987,7 @@ function lp_separation_oracle(
     active_set::ActiveSet,
     direction,
     min_gap,
-    K;
+    lazy_tolerance;
     inplace_loop=false,
     force_fw_step::Bool=false,
     kwargs...,
@@ -1020,7 +1020,7 @@ function lp_separation_oracle(
             end
         end
         xval = fast_dot(direction, x)
-        if xval - val_best ≥ min_gap / K
+        if xval - val_best ≥ min_gap / lazy_tolerance
             return (ybest, val_best)
         end
     end

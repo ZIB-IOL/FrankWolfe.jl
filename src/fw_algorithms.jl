@@ -63,9 +63,9 @@ function frank_wolfe(
 
     if verbose
         println("\nVanilla Frank-Wolfe Algorithm.")
-        numType = eltype(x0)
+        NumType = eltype(x0)
         println(
-            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $numType",
+            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
         )
         grad_type = typeof(gradient)
         println("MOMENTUM: $momentum GRADIENTTYPE: $grad_type")
@@ -96,6 +96,7 @@ function frank_wolfe(
     else
         similar(x)
     end
+
     while t <= max_iteration && dual_gap >= max(epsilon, eps())
 
         #####################
@@ -130,8 +131,11 @@ function frank_wolfe(
             @emphasis(emphasis, gradient = (momentum * gradient) + (1 - momentum) * gtemp)
         end
         first_iter = false
-
-        v = compute_extreme_point(lmo, gradient)
+        v = if is_simple_lmo(lmo)
+            compute_extreme_point(lmo, gradient)
+        else
+            compute_extreme_point(lmo, gradient; call_counter=call_counter)
+        end
         # go easy on the memory - only compute if really needed
         if (
             (mod(t, print_iter) == 0 && verbose) ||
@@ -169,6 +173,9 @@ function frank_wolfe(
                 x=x,
                 v=v,
                 gamma=gamma,
+                f=f,
+                grad!=grad!,
+                lmo=lmo,
             )
             callback(state)
         end
@@ -240,7 +247,7 @@ function lazified_conditional_gradient(
     line_search::LineSearchMethod=Adaptive(),
     L=Inf,
     gamma0=0,
-    K=2.0,
+    lazy_tolerance=2.0,
     cache_size=Inf,
     greedy_lazy=false,
     epsilon=1e-7,
@@ -290,9 +297,9 @@ function lazified_conditional_gradient(
 
     if verbose
         println("\nLazified Conditional Gradients (Frank-Wolfe + Lazification).")
-        numType = eltype(x0)
+        NumType = eltype(x0)
         println(
-            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration K: $K TYPE: $numType",
+            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration lazy_tolerance: $lazy_tolerance TYPE: $NumType",
         )
         grad_type = typeof(gradient)
         println("GRADIENTTYPE: $grad_type CACHESIZE $cache_size GREEDYCACHE: $greedy_lazy")
@@ -344,7 +351,7 @@ function lazified_conditional_gradient(
 
         grad!(gradient, x)
 
-        threshold = fast_dot(x, gradient) - phi / K
+        threshold = fast_dot(x, gradient) - phi / lazy_tolerance
 
         # go easy on the memory - only compute if really needed
         if ((mod(t, print_iter) == 0 && verbose ) || callback !== nothing)
@@ -512,9 +519,9 @@ function stochastic_frank_wolfe(
 
     if verbose
         println("\nStochastic Frank-Wolfe Algorithm.")
-        numType = eltype(x0)
+        NumType = eltype(x0)
         println(
-            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration TYPE: $numType",
+            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration TYPE: $NumType",
         )
         println("GRADIENTTYPE: $(typeof(f.storage)) MOMENTUM: $(momentum_iterator !== nothing) batch policy: $(typeof(batch_iterator)) ")
         if emphasis == memory

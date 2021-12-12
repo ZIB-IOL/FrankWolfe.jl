@@ -14,7 +14,6 @@ function blended_pairwise_conditional_gradient(
     line_search::LineSearchMethod=Adaptive(),
     L=Inf,
     gamma0=0,
-    K=2.0,
     step_lim=20,
     epsilon=1e-7,
     max_iteration=10000,
@@ -29,6 +28,7 @@ function blended_pairwise_conditional_gradient(
     print_callback=print_callback,
     renorm_interval=1000,
     lazy=false,
+    lazy_tolerance=2.0,
 )
     # add the first vertex to active set from initialization
     active_set = ActiveSet([(1.0, x0)])
@@ -41,7 +41,6 @@ function blended_pairwise_conditional_gradient(
         line_search=line_search,
         L=L,
         gamma0=gamma0,
-        K=K,
         step_lim=step_lim,
         epsilon=epsilon,
         max_iteration=max_iteration,
@@ -56,6 +55,7 @@ function blended_pairwise_conditional_gradient(
         print_callback=print_callback,
         renorm_interval=renorm_interval,
         lazy=lazy,
+        lazy_tolerance=lazy_tolerance,
     )
 end
 
@@ -72,7 +72,6 @@ function blended_pairwise_conditional_gradient(
     line_search::LineSearchMethod=Adaptive(),
     L=Inf,
     gamma0=0,
-    K=2.0,
     step_lim=20,
     epsilon=1e-7,
     max_iteration=10000,
@@ -87,6 +86,7 @@ function blended_pairwise_conditional_gradient(
     print_callback=print_callback,
     renorm_interval=1000,
     lazy=false,
+    lazy_tolerance=2.0,
 )
 
     # format string for output of the algorithm
@@ -94,7 +94,7 @@ function blended_pairwise_conditional_gradient(
 
     t = 0
     primal = Inf
-    x = compute_active_set_iterate(active_set)
+    x = get_active_set_iterate(active_set)
     tt = regular
     traj_data = []
     if trajectory && callback === nothing
@@ -120,7 +120,7 @@ function blended_pairwise_conditional_gradient(
         )
         grad_type = typeof(gradient)
         println(
-            "GRADIENTTYPE: $grad_type LAZY: $lazy K: $K",
+            "GRADIENTTYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance",
         )
         if emphasis == memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
@@ -164,22 +164,24 @@ function blended_pairwise_conditional_gradient(
         #####################
 
         # compute current iterate from active set
-        x = compute_active_set_iterate(active_set)
+        x = get_active_set_iterate(active_set)
         grad!(gradient, x)
 
-        _, local_v, local_v_loc, a_lambda, a, a_loc =
-        active_set_argminmax(active_set, gradient)
+        _, v_local, v_local_loc, _, a_lambda, a, a_loc, _ ,_ =
+            active_set_argminmax(active_set, gradient)
         
-        local_gap = fast_dot(gradient, a) - fast_dot(gradient, local_v)
+        local_gap = fast_dot(gradient, a) - fast_dot(gradient, v_local)
         
         if !lazy
             v = compute_extreme_point(lmo, gradient)
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
             phi = dual_gap
         end
-        if local_gap ≥ phi / K # minor modification from original paper for improved sparsity (proof follows with minor modification when estimating the step)
-            @. d = a - local_v
-            w = local_v
+        # minor modification from original paper for improved sparsity
+        # (proof follows with minor modification when estimating the step)
+        if local_gap ≥ phi / lazy_tolerance
+            @. d = a - v_local
+            vertex_taken = v_local
             gamma_max = a_lambda
             gamma, L = line_search_wrapper(
                 line_search,
@@ -199,22 +201,22 @@ function blended_pairwise_conditional_gradient(
             # reached maximum of lambda -> dropping away vertex
             if gamma ≈ gamma_max
                 tt = drop
-                active_set.weights[local_v_loc] += gamma
+                active_set.weights[v_local_loc] += gamma
                 deleteat!(active_set, a_loc)
             else # transfer weight from away to local FW
                 tt = pairwise
                 active_set.weights[a_loc] -= gamma
-                active_set.weights[local_v_loc] += gamma
+                active_set.weights[v_local_loc] += gamma
                 @assert active_set_validate(active_set)
             end
-            active_set_update_iterate_pairwise!(active_set, gamma, local_v, a)
+            active_set_update_iterate_pairwise!(active_set, gamma, v_local, a)
         else # add to active set
             if lazy # otherwise, v computed above already
                 v = compute_extreme_point(lmo, gradient)
             end
-            w = v
+            vertex_taken = v
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
-            if (!lazy || dual_gap ≥ phi / K)
+            if (!lazy || dual_gap ≥ phi / lazy_tolerance)
                 tt = regular
                 @. d = x - v
                 gamma_max = one(eltype(x))
@@ -242,7 +244,9 @@ function blended_pairwise_conditional_gradient(
                 end
             else # dual step
                 tt = dualstep
-                phi = dual_gap # / 2 # removed the 2 for consistency between the lazy and non-lazy run. That is ok as we scale with the K = 2.0 default anyways
+                # set to computed dual_gap for consistency between the lazy and non-lazy run.
+                # that is ok as we scale with the K = 2.0 default anyways
+                phi = dual_gap
             end
         end
         if (
@@ -251,7 +255,7 @@ function blended_pairwise_conditional_gradient(
             !(line_search isa Agnostic || line_search isa Nonconvex || line_search isa FixedStep)
         )
             primal = f(x)
-        end            
+        end
         if callback !== nothing
             state = (
                 t=t,
@@ -260,7 +264,7 @@ function blended_pairwise_conditional_gradient(
                 dual_gap=phi,
                 time=tot_time,
                 x=x,
-                v=w, 
+                v=vertex_taken,
                 active_set_length=length(active_set),
                 gamma=gamma,
             )
@@ -293,7 +297,7 @@ function blended_pairwise_conditional_gradient(
     # do also cleanup of active_set due to many operations on the same set
 
     if verbose
-        x = compute_active_set_iterate(active_set)
+        x = get_active_set_iterate(active_set)
         grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
@@ -314,7 +318,7 @@ function blended_pairwise_conditional_gradient(
     end
     active_set_renormalize!(active_set)
     active_set_cleanup!(active_set)
-    x = compute_active_set_iterate(active_set)
+    x = get_active_set_iterate(active_set)
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)

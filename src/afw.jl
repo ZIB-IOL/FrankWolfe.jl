@@ -15,7 +15,7 @@ function away_frank_wolfe(
     line_search::LineSearchMethod=Adaptive(),
     L=Inf,
     gamma0=0,
-    K=2.0,
+    lazy_tolerance=2.0,
     step_lim=20,
     epsilon=1e-7,
     away_steps=true,
@@ -45,7 +45,7 @@ function away_frank_wolfe(
         line_search = line_search,
         L=L,
         gamma0=gamma0,
-        K=K,
+        lazy_tolerance=lazy_tolerance,
         step_lim=step_lim,
         epsilon=epsilon,
         away_steps=away_steps,
@@ -75,7 +75,7 @@ function away_frank_wolfe(
     line_search::LineSearchMethod=Adaptive(),
     L=Inf,
     gamma0=0,
-    K=2.0,
+    lazy_tolerance=2.0,
     step_lim=20,
     epsilon=1e-7,
     away_steps=true,
@@ -93,18 +93,16 @@ function away_frank_wolfe(
     timeout=Inf,
     print_callback=print_callback,
 )
-# format string for output of the algorithm
+    # format string for output of the algorithm
     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
-
     if isempty(active_set)
         throw(ArgumentError("Empty active set"))
-    end 
+    end
 
     t = 0
     dual_gap = Inf
     primal = Inf
-    x = compute_active_set_iterate(active_set)
-    #  not need anymore active_set = ActiveSet([(1.0, x0)]) # add the first vertex to active set from initialization
+    x = get_active_set_iterate(active_set)
     tt = regular
     traj_data = []
     if trajectory && callback === nothing
@@ -124,13 +122,13 @@ function away_frank_wolfe(
 
     if verbose
         println("\nAway-step Frank-Wolfe Algorithm.")
-        numType = eltype(x)
+        NumType = eltype(x)
         println(
-            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $numType",
+            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
         )
         grad_type = typeof(gradient)
         println(
-            "GRADIENTTYPE: $grad_type LAZY: $lazy K: $K MOMENTUM: $momentum AWAYSTEPS: $away_steps",
+            "GRADIENTTYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance MOMENTUM: $momentum AWAYSTEPS: $away_steps",
         )
         if emphasis == memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
@@ -150,7 +148,7 @@ function away_frank_wolfe(
         nothing
     end
 
-    x = compute_active_set_iterate(active_set)
+    x = get_active_set_iterate(active_set)
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     phi_value = max(0, fast_dot(x, gradient) - fast_dot(v, gradient))
@@ -180,7 +178,7 @@ function away_frank_wolfe(
         #####################
 
         # compute current iterate from active set
-        x = compute_active_set_iterate(active_set)
+        x = get_active_set_iterate(active_set)
         if isnothing(momentum)
             grad!(gradient, x)
         else
@@ -191,7 +189,7 @@ function away_frank_wolfe(
         if away_steps
             if lazy
                 d, vertex, index, gamma_max, phi_value, away_step_taken, fw_step_taken, tt =
-                    lazy_afw_step(x, gradient, lmo, active_set, phi_value; K=K)
+                    lazy_afw_step(x, gradient, lmo, active_set, phi_value; lazy_tolerance=lazy_tolerance)
             else
                 d, vertex, index, gamma_max, phi_value, away_step_taken, fw_step_taken, tt =
                     afw_step(x, gradient, lmo, active_set)
@@ -276,7 +274,7 @@ function away_frank_wolfe(
     # do also cleanup of active_set due to many operations on the same set
 
     if verbose
-        x = compute_active_set_iterate(active_set)
+        x = get_active_set_iterate(active_set)
         grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
@@ -298,7 +296,7 @@ function away_frank_wolfe(
 
     active_set_renormalize!(active_set)
     active_set_cleanup!(active_set)
-    x = compute_active_set_iterate(active_set)
+    x = get_active_set_iterate(active_set)
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
@@ -323,15 +321,15 @@ function away_frank_wolfe(
     return x, v, primal, dual_gap, traj_data, active_set
 end
 
-
-function lazy_afw_step(x, gradient, lmo, active_set, phi; K=2.0)
-    v_lambda, v, v_loc, a_lambda, a, a_loc = active_set_argminmax(active_set, gradient)
+function lazy_afw_step(x, gradient, lmo, active_set, phi; lazy_tolerance=2.0)
+    _, v, v_loc, _, a_lambda, a, a_loc, _, _ =
+        active_set_argminmax(active_set, gradient)
     #Do lazy FW step
     grad_dot_lazy_fw_vertex = fast_dot(v, gradient)
     grad_dot_x = fast_dot(x, gradient)
     grad_dot_a = fast_dot(a, gradient)
     if grad_dot_x - grad_dot_lazy_fw_vertex >= grad_dot_a - grad_dot_x &&
-       grad_dot_x - grad_dot_lazy_fw_vertex >= phi / K
+       grad_dot_x - grad_dot_lazy_fw_vertex >= phi / lazy_tolerance
         tt = lazy
         gamma_max = 1
         d = x - v
@@ -342,7 +340,7 @@ function lazy_afw_step(x, gradient, lmo, active_set, phi; K=2.0)
     else
         #Do away step, as it promises enough progress.
         if grad_dot_a - grad_dot_x > grad_dot_x - grad_dot_lazy_fw_vertex &&
-           grad_dot_a - grad_dot_x >= phi / K
+           grad_dot_a - grad_dot_x >= phi / lazy_tolerance
             tt = away
             gamma_max = a_lambda / (1 - a_lambda)
             d = a - x
@@ -356,7 +354,7 @@ function lazy_afw_step(x, gradient, lmo, active_set, phi; K=2.0)
             # Real dual gap promises enough progress.
             grad_dot_fw_vertex = fast_dot(v, gradient)
             dual_gap = grad_dot_x - grad_dot_fw_vertex
-            if dual_gap >= phi / K
+            if dual_gap >= phi / lazy_tolerance
                 tt = regular
                 gamma_max = 1
                 d = x - v
@@ -381,9 +379,8 @@ function lazy_afw_step(x, gradient, lmo, active_set, phi; K=2.0)
 end
 
 function afw_step(x, gradient, lmo, active_set)
-    local_v_lambda, local_v, local_v_loc, a_lambda, a, a_loc =
+    _, _, _, _, a_lambda, a, a_loc =
         active_set_argminmax(active_set, gradient)
-    away_gap = fast_dot(a, gradient) - fast_dot(x, gradient)
     v = compute_extreme_point(lmo, gradient)
     grad_dot_x = fast_dot(x, gradient)
     away_gap = fast_dot(a, gradient) - grad_dot_x

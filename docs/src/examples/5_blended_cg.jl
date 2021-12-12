@@ -55,7 +55,7 @@ x, v, primal, dual_gap, trajectoryBCG_accel_simplex = FrankWolfe.blended_conditi
     accelerated=true,
     verbose=true,
     trajectory=true,
-    K=1.00,
+    lazy_tolerance=1.0,
     weight_purge_threshold=1e-10,
 )
 
@@ -75,7 +75,7 @@ x, v, primal, dual_gap, trajectoryBCG_simplex = FrankWolfe.blended_conditional_g
     accelerated=false,
     verbose=true,
     trajectory=true,
-    K=1.00,
+    lazy_tolerance=1.0,
     weight_purge_threshold=1e-10,
 )
 
@@ -93,7 +93,7 @@ x, v, primal, dual_gap, trajectoryBCG_convex = FrankWolfe.blended_conditional_gr
     L=L,
     verbose=true,
     trajectory=true,
-    K=1.00,
+    lazy_tolerance=1.0,
     weight_purge_threshold=1e-10,
 )
 
@@ -131,7 +131,7 @@ x, v, primal, dual_gap, trajectoryBCG_accel_simplex = FrankWolfe.blended_conditi
     accelerated=true,
     verbose=true,
     trajectory=true,
-    K=1.00,
+    lazy_tolerance=1.0,
     weight_purge_threshold=1e-10,
 )
 
@@ -151,7 +151,7 @@ x, v, primal, dual_gap, trajectoryBCG_simplex = FrankWolfe.blended_conditional_g
     accelerated=false,
     verbose=true,
     trajectory=true,
-    K=1.00,
+    lazy_tolerance=1.0,
     weight_purge_threshold=1e-10,
 )
 
@@ -169,7 +169,7 @@ x, v, primal, dual_gap, trajectoryBCG_convex = FrankWolfe.blended_conditional_gr
     L=L,
     verbose=true,
     trajectory=true,
-    K=1.00,
+    lazy_tolerance=1.0,
     weight_purge_threshold=1e-10,
 )
 
