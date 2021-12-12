@@ -26,11 +26,18 @@ function compute_extreme_point(lmo::MathOptLMO{OT}, direction::AbstractMatrix{T}
     return reshape(v, n, n)
 end
 
-function FrankWolfe.copy(lmo::MathOptLMO{OT}) where {OT}
+function Base.copy(lmo::MathOptLMO{OT}; ensure_identity=true) where {OT}
     opt = OT() # creates the empty optimizer
-    MOI.copy_to(opt, lmo.o)
-    return MathOptLMO(opt)
+    index_map = MOI.copy_to(opt, lmo.o)
+    if ensure_identity
+        for (src_idx, des_idx) in index_map.var_map
+            if src_idx != des_idx
+                error("Mapping of variables is not identity")
+            end
+        end
     end
+    return MathOptLMO(opt)
+end
 
 
 function compute_extreme_point(

@@ -591,3 +591,26 @@ end
     @test v ≈ vref
     @test norm(v, Inf) == 1
 end
+
+@testset "Copy MathOpt LMO" begin
+    o_clp = MOI.Utilities.CachingOptimizer(
+        MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
+        Clp.Optimizer(),
+    )
+
+    for o in (GLPK.Optimizer(), Hypatia.Optimizer, o_clp)
+        MOI.set(o, MOI.Silent(), true)
+        n = 100
+        x = MOI.add_variables(o, n)
+        f = sum(1.0 * MOI.SingleVariable(xi) for xi in x)
+        MOI.add_constraint(o, f, MOI.LessThan(1.0))
+        MOI.add_constraint(o, f, MOI.GreaterThan(1.0))
+        lmo = FrankWolfe.MathOptLMO(o)
+        lmo2 = copy(lmo)
+        for d in (ones(n), -ones(n))
+            v = FrankWolfe.compute_extreme_point(lmo, d)
+            v2 = FrankWolfe.compute_extreme_point(lmo2, d)
+            @test v ≈ v2
+        end
+    end
+end
