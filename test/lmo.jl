@@ -253,7 +253,7 @@ end
     end
     # TODO value of radius?
     lmo = FrankWolfe.NuclearNormLMO(sum(svdvals(Xreal)))
-    x0 = FrankWolfe.compute_extreme_point(lmo, zero(Xreal))
+    x0 = @inferred FrankWolfe.compute_extreme_point(lmo, zero(Xreal))
     gradient = similar(x0)
     grad!(gradient, x0)
     v0 = FrankWolfe.compute_extreme_point(lmo, gradient)
@@ -289,6 +289,90 @@ end
         line_search=FrankWolfe.Backtracking(),
         emphasis=FrankWolfe.memory,
     )
+end
+
+@testset "Spectral norms" begin
+    Random.seed!(42)
+    o = Hypatia.Optimizer()
+    MOI.set(o, MOI.Silent(), true)
+    optimizer = MOI.Bridges.full_bridge_optimizer(
+            MOI.Utilities.CachingOptimizer(
+            MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
+            o,
+        ),
+        Float64,
+    )
+    radius = 5.0
+    @testset "Spectraplex $n" for n in (2, 10)
+        lmo = FrankWolfe.SpectraplexLMO(radius, n)
+        direction = Matrix{Float64}(undef, n, n)
+        lmo_moi = FrankWolfe.convert_mathopt(lmo, optimizer; side_dimension=n)
+        for _ in 1:10
+            Random.randn!(direction)
+            v = @inferred FrankWolfe.compute_extreme_point(lmo, direction)
+            vsym = @inferred FrankWolfe.compute_extreme_point(lmo, direction + direction')
+            vsym2 = @inferred FrankWolfe.compute_extreme_point(lmo, Symmetric(direction + direction'))
+            @test v ≈ vsym atol=1e-6
+            @test v ≈ vsym2 atol=1e-6
+            @testset "Vertex properties" begin
+                eigen_v = eigen(Matrix(v))
+                @test eigmax(Matrix(v)) ≈ radius
+                @test norm(eigen_v.values[1:end-1]) ≈ 0 atol=1e-7
+                # u can be sqrt(r) * vec or -sqrt(r) * vec
+                case_pos = ≈(norm(eigen_v.vectors[:,n] * sqrt(eigen_v.values[n]) - v.u), 0, atol=1e-9)
+                case_neg = ≈(norm(eigen_v.vectors[:,n] * sqrt(eigen_v.values[n]) + v.u), 0, atol=1e-9)
+                @test case_pos || case_neg
+            end
+            @testset "Comparison with SDP solution" begin
+                v_moi = FrankWolfe.compute_extreme_point(lmo_moi, direction)
+                @test norm(v - v_moi) <= 1e-6
+            end
+        end
+    end
+    @testset "Unit spectrahedron $n" for n in (2, 10)
+        lmo = FrankWolfe.UnitSpectrahedronLMO(radius, n)
+        direction = Matrix{Float64}(undef, n, n)
+        lmo_moi = FrankWolfe.convert_mathopt(lmo, optimizer; side_dimension=n)
+        direction_sym = similar(direction)
+        for _ in 1:10
+            Random.randn!(direction)
+            @. direction_sym = direction + direction'
+            v = @inferred FrankWolfe.compute_extreme_point(lmo, direction)
+            vsym = @inferred FrankWolfe.compute_extreme_point(lmo, direction_sym)
+            @test v ≈ vsym atol=1e-6
+            @testset "Vertex properties" begin
+                emin = eigmin(direction_sym)
+                if emin ≥ 0
+                    @test norm(Matrix(v)) ≈ 0
+                else
+                    eigen_v = eigen(Matrix(v))
+                    @test eigmax(Matrix(v)) ≈ radius
+                    @test norm(eigen_v.values[1:end-1]) ≈ 0 atol=1e-7
+                    # u can be sqrt(r) * vec or -sqrt(r) * vec
+                    case_pos = ≈(norm(eigen_v.vectors[:,n] * sqrt(eigen_v.values[n]) - v.u), 0, atol=1e-9)
+                    case_neg = ≈(norm(eigen_v.vectors[:,n] * sqrt(eigen_v.values[n]) + v.u), 0, atol=1e-9)
+                    @test case_pos || case_neg
+                    # make direction PSD
+                    direction_sym += 1.1 * abs(emin) * I
+                    @assert isposdef(direction_sym)
+                    v2 = FrankWolfe.compute_extreme_point(lmo, direction_sym)
+                    @test norm(Matrix(v2)) ≈ 0
+                end
+            end
+            @testset "Comparison with SDP solution" begin
+                v_moi = FrankWolfe.compute_extreme_point(lmo_moi, direction)
+                @test norm(v - v_moi) <= 1e-6
+                # forcing PSD direction to test 0 matrix case
+                @. direction_sym = direction + direction'
+                direction_sym += 1.1 * abs(eigmin(direction_sym)) * I
+                @assert isposdef(direction_sym)
+                v_moi2 = FrankWolfe.compute_extreme_point(lmo_moi, direction_sym)
+                v_lmo2 = FrankWolfe.compute_extreme_point(lmo_moi, direction_sym)
+                @test norm(v_moi2 - v_lmo2) <= 1e-6
+                @test norm(v_moi2) <= 1e-6
+            end
+        end
+    end
 end
 
 @testset "MOI oracle consistency" begin
@@ -532,11 +616,11 @@ end
     @test vvec ≈ [vinf; v1]
 end
 
-@testset "Scaled norm polytopes" begin
+@testset "Scaled L-1 norm polytopes" begin
     lmo = FrankWolfe.ScaledBoundL1NormBall(-ones(10), ones(10))
     # equivalent to LMO
     lmo_ref = FrankWolfe.LpNormLMO{1}(1)
-    # all coordinates shifted up 
+    # all coordinates shifted up
     lmo_shifted = FrankWolfe.ScaledBoundL1NormBall(zeros(10), 2 * ones(10))
     lmo_scaled = FrankWolfe.ScaledBoundL1NormBall(-2 * ones(10), 2 * ones(10))
     for _ in 1:100
@@ -554,4 +638,47 @@ end
     vref = FrankWolfe.compute_extreme_point(lmo_ref, d)
     @test v ≈ vref
     @test norm(v) == 1
+    # non-uniform scaling
+    # validates bugfix
+    lmo_nonunif = FrankWolfe.ScaledBoundL1NormBall([-1.0,-1.0], [3.0,1.0])
+    direction = [-0.8272727272727383, -0.977272727272718]
+    v = FrankWolfe.compute_extreme_point(lmo_nonunif, direction)
+    @test v ≈ [3, 0]
+    v = FrankWolfe.compute_extreme_point(lmo_nonunif, -direction)
+    @test v ≈ [-1, 0]
+end
+
+@testset "Scaled L-inf norm polytopes" begin
+    # tests ScaledBoundLInfNormBall for the standard hypercube, a shifted one, and a scaled one
+    lmo = FrankWolfe.ScaledBoundLInfNormBall(-ones(10), ones(10))
+    lmo_ref = FrankWolfe.LpNormLMO{Inf}(1)
+    lmo_shifted = FrankWolfe.ScaledBoundLInfNormBall(zeros(10), 2 * ones(10))
+    lmo_scaled = FrankWolfe.ScaledBoundLInfNormBall(-2 * ones(10), 2 * ones(10))
+    bounds = collect(1.0:10)
+    # tests another ScaledBoundLInfNormBall with unequal bounds against a MOI optimizer
+    lmo_scaled_unequally = FrankWolfe.ScaledBoundLInfNormBall(-bounds, bounds)
+    o = GLPK.Optimizer()
+    MOI.set(o, MOI.Silent(), true)
+    x = MOI.add_variables(o, 10)
+    MOI.add_constraint.(o, x, MOI.GreaterThan.(-bounds))
+    MOI.add_constraint.(o, x, MOI.LessThan.(bounds))
+    scaled_unequally_opt = FrankWolfe.MathOptLMO(o)
+    for _ in 1:100
+        d = randn(10)
+        v = FrankWolfe.compute_extreme_point(lmo, d)
+        vref = FrankWolfe.compute_extreme_point(lmo_ref, d)
+        @test v ≈ vref
+        vshift = FrankWolfe.compute_extreme_point(lmo_shifted, d)
+        @test v .+ 1 ≈ vshift
+        v2 = FrankWolfe.compute_extreme_point(lmo_scaled, d)
+        @test v2 ≈ 2v
+        v3 = FrankWolfe.compute_extreme_point(lmo_scaled_unequally, d)
+        v3_test = compute_extreme_point(scaled_unequally_opt, d)
+        @test v3 ≈ v3_test
+    end
+    d = zeros(10)
+    v = FrankWolfe.compute_extreme_point(lmo, d)
+    vref = FrankWolfe.compute_extreme_point(lmo_ref, d)
+    @test v ≈ vref
+    @test norm(v, Inf) == 1
 end

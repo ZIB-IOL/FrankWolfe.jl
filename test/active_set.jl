@@ -53,6 +53,13 @@ using LinearAlgebra: norm
         @test FrankWolfe.active_set_validate(active_set) == true
     end
 
+    @testset "active set isempty" begin
+        active_set = ActiveSet([(1.0, [1,2,3])])
+        @test !isempty(active_set)
+        empty!(active_set)
+        @test isempty(active_set)
+    end
+
     @testset "Away step operations" begin
         active_set = ActiveSet([(0.125, [1, 2, 3]), (0.125, [2, 3, 4]), (0.75, [5, 6, 7])])
 
@@ -74,6 +81,22 @@ using LinearAlgebra: norm
         @test a == [1, 2, 3] && λ == 0.75 && i == 1
         λ, a, i = FrankWolfe.active_set_argmin(active_set, [-1.0, -1.0, -1.0])
         @test a == [2, 3, 4] && λ == 0.25 && i == 2
+    end
+
+    @testset "Copying active sets" begin
+        active_set = ActiveSet([(0.125, [1, 2, 3]), (0.125, [2, 3, 4]), (0.75, [5, 6, 7])])
+        as_copy = copy(active_set)
+        # copy is of same type
+        @test as_copy isa ActiveSet{Vector{Int}, Float64, Vector{Float64}}
+        # copy fields are also copied, same value different location in memory
+        @test as_copy.weights !== active_set.weights
+        @test as_copy.weights == active_set.weights
+        @test as_copy.x !== active_set.x
+        @test as_copy.x == active_set.x
+        @test as_copy.atoms !== active_set.atoms
+        @test as_copy.atoms == active_set.atoms
+        # Individual atoms are not copied
+        @test as_copy.atoms[1] === active_set.atoms[1]
     end
 end
 

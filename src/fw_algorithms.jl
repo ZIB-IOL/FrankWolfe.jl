@@ -460,10 +460,9 @@ function stochastic_frank_wolfe(
     f::StochasticObjective,
     lmo,
     x0;
-    line_search::LineSearchMethod=nonconvex,
+    line_search::LineSearchMethod=Nonconvex(),
     L=Inf,
     gamma0=0,
-    step_lim=20,
     momentum_iterator=nothing,
     momentum=nothing,
     epsilon=1e-7,
@@ -472,7 +471,7 @@ function stochastic_frank_wolfe(
     trajectory=false,
     verbose=false,
     linesearch_tol=1e-7,
-    emphasis::Emphasis=blas,
+    emphasis::Emphasis=memory,
     rng=Random.GLOBAL_RNG,
     batch_size=length(f.xs) ÷ 10 + 1,
     batch_iterator=nothing,
@@ -495,7 +494,6 @@ function stochastic_frank_wolfe(
     if trajectory && callback === nothing
         callback = trajectory_callback(traj_data)
     end
-    dx = similar(x0) # Array{eltype(x0)}(undef, length(x0))
     time_start = time_ns()
 
     if line_search == Shortstep && L == Inf
@@ -518,9 +516,7 @@ function stochastic_frank_wolfe(
         println(
             "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration TYPE: $numType",
         )
-        # TODO: needs to fix
-        grad_type = typeof(nothing)
-        println("GRADIENTTYPE: $grad_type MOMENTUM: $(momentum_iterator !== nothing) batch policy: $(typeof(batch_iterator)) ")
+        println("GRADIENTTYPE: $(typeof(f.storage)) MOMENTUM: $(momentum_iterator !== nothing) batch policy: $(typeof(batch_iterator)) ")
         if emphasis == memory
             println("WARNING: In memory emphasis mode iterates are written back into x0!")
         end
@@ -561,7 +557,7 @@ function stochastic_frank_wolfe(
         #####################
         batch_size = batchsize_iterate(batch_iterator)
 
-        if momentum_iterator === nothing || first_iter
+        if momentum_iterator === nothing
             gradient = compute_gradient(
                 f,
                 x,
@@ -569,20 +565,25 @@ function stochastic_frank_wolfe(
                 batch_size=batch_size,
                 full_evaluation=full_evaluation,
             )
+        elseif first_iter
+            gradient = copy(compute_gradient(
+                f,
+                x,
+                rng=rng,
+                batch_size=batch_size,
+                full_evaluation=full_evaluation,
+            ))
         else
             momentum = momentum_iterate(momentum_iterator)
-            @emphasis(
-                emphasis,
-                gradient =
-                    (momentum * gradient) .+
-                    (1 - momentum) * compute_gradient(
-                        f,
-                        x,
-                        rng=rng,
-                        batch_size=batch_size,
-                        full_evaluation=full_evaluation,
-                    )
+            compute_gradient(
+                f,
+                x,
+                rng=rng,
+                batch_size=batch_size,
+                full_evaluation=full_evaluation,
             )
+            # gradient = momentum * gradient + (1 - momentum) * f.storage
+            LinearAlgebra.mul!(gradient, LinearAlgebra.I, f.storage, 1-momentum, momentum)
         end
         first_iter = false
 

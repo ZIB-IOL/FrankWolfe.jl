@@ -1,7 +1,7 @@
 name = "FrankWolfe"
 uuid = "f55ce6ea-fdc5-4628-88c5-0087fe54bd30"
 authors = ["ZIB-IOL"]
-version = "0.1.6"
+version = "0.1.11"
 
 [deps]
 Arpack = "7d9fca2a-8960-54d3-9f78-7d1dccf2cb97"
@@ -29,6 +29,7 @@ PlotThemes = "2"
 Plots = "1.10"
 ProgressMeter = "1.4"
 TimerOutputs = "0.5"
+ZipFile = "0.9.4"
 julia = "1"
 
 [extras]

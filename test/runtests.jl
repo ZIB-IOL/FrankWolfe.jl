@@ -7,6 +7,7 @@ include("lmo.jl")
 include("function_gradient.jl")
 include("active_set.jl")
 include("utils.jl")
+include("pairwise.jl")
 
 @testset "Testing vanilla Frank-Wolfe with various step size and momentum strategies" begin
     f(x) = norm(x)^2
@@ -175,6 +176,7 @@ end
     # fixing https://github.com/ZIB-IOL/FrankWolfe.jl/issues/47
     include("momentum_memory.jl")
 end
+
 @testset "Testing Lazified Conditional Gradients with various step size strategies" begin
     f(x) = norm(x)^2
     function grad!(storage, x)
@@ -233,7 +235,7 @@ end
     lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
     x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n))
 
-    @time x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
+    x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
         f,
         grad!,
         lmo_prob,
@@ -246,7 +248,7 @@ end
 
     @test primal - 1 / n <= bound
 
-    @time x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
+    x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
         f,
         grad!,
         lmo_prob,
@@ -260,7 +262,7 @@ end
 
     @test primal - 1 / n <= bound
 
-    @time x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
+    x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
         f,
         grad!,
         lmo_prob,
@@ -399,7 +401,7 @@ end
     x0 = FrankWolfe.compute_extreme_point(lmo, direction)
     @test eltype(x0) == Rational{BigInt}
 
-    @time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+    x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
         f,
         grad!,
         lmo,
@@ -413,7 +415,7 @@ end
 
     @test eltype(x0) == Rational{BigInt}
 
-    @time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+    x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
         f,
         grad!,
         lmo,
@@ -429,7 +431,7 @@ end
 
     # very slow computation, explodes quickly
     x0 = collect(FrankWolfe.compute_extreme_point(lmo, direction))
-    @time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+    x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
         f,
         grad!,
         lmo,
@@ -443,7 +445,7 @@ end
     )
 
     x0 = FrankWolfe.compute_extreme_point(lmo, direction)
-    @time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+    x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
         f,
         grad!,
         lmo,
@@ -479,7 +481,7 @@ end
         direction = rand(n)
         x0 = FrankWolfe.compute_extreme_point(lmo, direction)
 
-        @time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+        x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
             f,
             grad!,
             lmo,
@@ -494,7 +496,7 @@ end
         @test eltype(x0) == T
         @test primal - 1 / n <= bound
 
-        @time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+        x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
             f,
             grad!,
             lmo,
@@ -509,7 +511,7 @@ end
         @test eltype(x0) == T
         @test primal - 1 // n <= bound
 
-        @time x, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
+        x, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
             f,
             grad!,
             lmo,
@@ -524,7 +526,7 @@ end
         @test eltype(x0) == T
         @test primal - 1 // n <= bound
 
-        @time x, v, primal, dual_gap, trajectory = FrankWolfe.blended_conditional_gradient(
+        x, v, primal, dual_gap, trajectory = FrankWolfe.blended_conditional_gradient(
             f,
             grad!,
             lmo,
@@ -538,8 +540,6 @@ end
 
         @test eltype(x0) == T
         @test primal - 1 // n <= bound
-
-
 
     end
 end
@@ -552,13 +552,13 @@ end
         return (pred - yi)^2 / 2
     end
 
-    function ∇simple_reg_loss(θ, data_point)
+    function ∇simple_reg_loss(storage, θ, data_point)
         (xi, yi) = data_point
         (a, b) = (θ[1:end-1], θ[end])
         pred = a ⋅ xi + b
-        grad_a = xi * (pred - yi)
-        grad = push!(grad_a, pred - yi)
-        return grad
+        storage[1:end-1] .+= xi * (pred - yi)
+        storage[end] += pred - yi
+        return storage
     end
 
     xs = [10 * randn(5) for i in 1:20000]
@@ -569,21 +569,21 @@ end
     params = rand(6) .- 1 # start params in (-1,0)
 
     data_perfect = [(x, x ⋅ (1:5) + bias) for x in xs]
-    f_stoch = FrankWolfe.StochasticObjective(simple_reg_loss, ∇simple_reg_loss, data_perfect)
+    f_stoch = FrankWolfe.StochasticObjective(simple_reg_loss, ∇simple_reg_loss, data_perfect, similar(params))
     lmo = FrankWolfe.LpNormLMO{2}(1.1 * norm(params_perfect))
 
     θ, _, _, _, _ = FrankWolfe.stochastic_frank_wolfe(
         f_stoch,
         lmo,
-        params,
+        copy(params),
         momentum=0.95,
-        verbose=true,
+        verbose=false,
         line_search=FrankWolfe.Nonconvex(),
-        max_iteration=50_000,
+        max_iteration=100_000,
         batch_size=length(f_stoch.xs) ÷ 100,
         trajectory=false,
     )
-    @test norm(θ - params_perfect) ≤ 0.025 * length(θ)
+    @test norm(θ - params_perfect) ≤ 0.05 * length(θ)
 
     # SFW with incrementing batch size
     batch_iterator = FrankWolfe.IncrementBatchIterator(
@@ -594,7 +594,7 @@ end
     θ, _, _, _, _ = FrankWolfe.stochastic_frank_wolfe(
         f_stoch,
         lmo,
-        params,
+        copy(params),
         momentum=0.95,
         verbose=false,
         line_search=FrankWolfe.Nonconvex(),
@@ -608,8 +608,8 @@ end
     θ, _, _, _, _ = FrankWolfe.stochastic_frank_wolfe(
         f_stoch,
         lmo,
-        params,
-        verbose=true,
+        copy(params),
+        verbose=false,
         line_search=FrankWolfe.Nonconvex(),
         max_iteration=5000,
         batch_size=1,
@@ -619,11 +619,11 @@ end
     θ, _, _, _, _ = FrankWolfe.stochastic_frank_wolfe(
         f_stoch,
         lmo,
-        params,
-        verbose=true,
+        copy(params),
         line_search=FrankWolfe.Nonconvex(),
         max_iteration=5000,
         batch_size=1,
+        verbose=false,
         trajectory=false,
         momentum_iterator=nothing,
     )
@@ -638,6 +638,7 @@ end
         @. storage = 2x
     end
     k = 1000
+    active_set = ActiveSet([(1.0, x0)]) 
 
     # compute reference from vanilla FW
     xref, _ = FrankWolfe.frank_wolfe(
@@ -672,13 +673,90 @@ end
         lmo_prob,
         x0,
         max_iteration=k,
+        away_steps = false,
+        line_search=FrankWolfe.Backtracking(),
+        print_iter=k / 10,
+        verbose=true,
+        emphasis=FrankWolfe.blas,
+    )
+
+    @test x !== nothing
+    @test xref ≈ x atol = (1e-3 / length(x))
+
+    xs, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
+        f,
+        grad!,
+        lmo_prob,
+        active_set,
+        max_iteration=k,
+        line_search=FrankWolfe.Backtracking(),
+        print_iter=k / 10,
+        verbose=true,
+        emphasis=FrankWolfe.blas,
+    )
+
+    @test xs !== nothing
+    @test xref ≈ xs atol = (1e-3 / length(x))
+
+    x, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
+        f,
+        grad!,
+        lmo_prob,
+        x0,
+        max_iteration=k,
         line_search=FrankWolfe.Backtracking(),
         print_iter=k / 10,
         verbose=true,
         emphasis=FrankWolfe.memory,
     )
+
     @test x !== nothing
     @test xref ≈ x atol = (1e-3 / length(x))
+
+    x, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
+        f,
+        grad!,
+        lmo_prob,
+        x0,
+        max_iteration=k,
+        away_steps=false,
+        line_search=FrankWolfe.Backtracking(),
+        print_iter=k / 10,
+        verbose=true,
+        emphasis=FrankWolfe.memory,
+    )
+
+    @test x !== nothing
+    @test xref ≈ x atol = (1e-3 / length(x))
+
+    xs, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
+        f,
+        grad!,
+        lmo_prob,
+        active_set,
+        max_iteration=k,
+        line_search=FrankWolfe.Backtracking(),
+        print_iter=k / 10,
+        verbose=true,
+        emphasis=FrankWolfe.memory,
+    )
+
+    @test xs !== nothing
+    @test xref ≈ xs atol = (1e-3 / length(x))
+
+    empty!(active_set)
+    @test_throws ArgumentError("Empty active set") FrankWolfe.away_frank_wolfe(
+        f,
+        grad!,
+        lmo_prob,
+        active_set,
+        max_iteration=k,
+        line_search=FrankWolfe.Backtracking(),
+        print_iter=k / 10,
+        verbose=true,
+        emphasis=FrankWolfe.blas,
+    )
+    
 end
 
 @testset "Blended conditional gradient" begin
@@ -741,10 +819,3 @@ using Test
     include("rational_test.jl")
 end
 end
-
-if get(ENV, "FW_TEST", nothing) == "full"
-    @testset "Running examples" begin
-        # TODO test smaller examples to be sure they are up to date
-    end
-end
-

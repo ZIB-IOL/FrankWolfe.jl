@@ -33,15 +33,78 @@ function away_frank_wolfe(
     timeout=Inf,
     print_callback=print_callback,
 )
+    # add the first vertex to active set from initialization
+    active_set = ActiveSet([(1.0, x0)])
 
-    # format string for output of the algorithm
+    # Call the method using an ActiveSet as input
+    return away_frank_wolfe(
+        f,
+        grad!,
+        lmo,
+        active_set,
+        line_search = line_search,
+        L=L,
+        gamma0=gamma0,
+        K=K,
+        step_lim=step_lim,
+        epsilon=epsilon,
+        away_steps=away_steps,
+        lazy=lazy,
+        momentum=momentum,
+        max_iteration=max_iteration,
+        print_iter=print_iter,
+        trajectory=trajectory,
+        verbose=verbose,
+        linesearch_tol=linesearch_tol,
+        emphasis=emphasis,
+        gradient=gradient,
+        renorm_interval=renorm_interval,
+        callback=callback,
+        timeout= timeout,
+        print_callback=print_callback,
+    )
+end
+
+# step away FrankWolfe with the active set given as parameter 
+# note: in this case I don't need x0 as it is given by the active set and might otherwise lead to confusion
+function away_frank_wolfe(
+    f,
+    grad!,
+    lmo,
+    active_set::ActiveSet;
+    line_search::LineSearchMethod=Adaptive(),
+    L=Inf,
+    gamma0=0,
+    K=2.0,
+    step_lim=20,
+    epsilon=1e-7,
+    away_steps=true,
+    lazy=false,
+    momentum=nothing,
+    max_iteration=10000,
+    print_iter=1000,
+    trajectory=false,
+    verbose=false,
+    linesearch_tol=1e-7,
+    emphasis::Emphasis=memory,
+    gradient=nothing,
+    renorm_interval=1000,
+    callback=nothing,
+    timeout=Inf,
+    print_callback=print_callback,
+)
+# format string for output of the algorithm
     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
+
+    if isempty(active_set)
+        throw(ArgumentError("Empty active set"))
+    end 
 
     t = 0
     dual_gap = Inf
     primal = Inf
-    x = x0
-    active_set = ActiveSet([(1.0, x0)]) # add the first vertex to active set from initialization
+    x = compute_active_set_iterate(active_set)
+    #  not need anymore active_set = ActiveSet([(1.0, x0)]) # add the first vertex to active set from initialization
     tt = regular
     traj_data = []
     if trajectory && callback === nothing
@@ -61,7 +124,7 @@ function away_frank_wolfe(
 
     if verbose
         println("\nAway-step Frank-Wolfe Algorithm.")
-        numType = eltype(x0)
+        numType = eltype(x)
         println(
             "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $numType",
         )
@@ -79,7 +142,7 @@ function away_frank_wolfe(
 
     # likely not needed anymore as now the iterates are provided directly via the active set
     if gradient === nothing
-        gradient = similar(x0)
+        gradient = similar(x)
     end
     gtemp = if momentum !== nothing
         similar(gradient)
@@ -260,6 +323,7 @@ function away_frank_wolfe(
     return x, v, primal, dual_gap, traj_data, active_set
 end
 
+
 function lazy_afw_step(x, gradient, lmo, active_set, phi; K=2.0)
     v_lambda, v, v_loc, a_lambda, a, a_loc = active_set_argminmax(active_set, gradient)
     #Do lazy FW step
@@ -319,7 +383,6 @@ end
 function afw_step(x, gradient, lmo, active_set)
     local_v_lambda, local_v, local_v_loc, a_lambda, a, a_loc =
         active_set_argminmax(active_set, gradient)
-    away_gap = fast_dot(a, gradient) - fast_dot(x, gradient)
     v = compute_extreme_point(lmo, gradient)
     grad_dot_x = fast_dot(x, gradient)
     away_gap = fast_dot(a, gradient) - grad_dot_x
