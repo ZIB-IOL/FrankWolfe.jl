@@ -148,10 +148,11 @@ Best rank-one approximation using the greatest singular value computed with Arpa
 
 Warning: this does not work (yet) with all number types, BigFloat and Float16 fail.
 """
-function compute_extreme_point(lmo::NuclearNormLMO, direction::AbstractMatrix; tol=1e-8, kwargs...)
+function compute_extreme_point(lmo::NuclearNormLMO{TL}, direction::AbstractMatrix{TD}; tol=1e-8, kwargs...) where {TL, TD}
+    T = promote_type(TD, TL)
     Z = Arpack.svds(direction, nsv=1, tol=tol)[1]
     u = -lmo.radius * view(Z.U, :)
-    return RankOneMatrix(u, Z.V[:])
+    return RankOneMatrix(u::Vector{T}, Z.V[:]::Vector{T})
 end
 
 function convert_mathopt(
