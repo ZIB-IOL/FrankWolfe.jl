@@ -21,6 +21,7 @@ TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 
 [compat]
 Arpack = "0.5"
+Clp = "0.9"
 DoubleFloats = "1.1"
 FiniteDifferences = "0.12"
 Hungarian = "0.6"
