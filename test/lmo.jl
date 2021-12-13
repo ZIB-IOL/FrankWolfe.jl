@@ -471,33 +471,37 @@ end
         end
     end
     @testset "Nuclear norm" for n in (5, 10)
-    #     o = Hypatia.Optimizer()
-    #     MOI.set(o, MOI.Silent(), true)
-    #     optimizer = MOI.Utilities.CachingOptimizer(
-    #         MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
-    #         o,
-    #     )
-    #     MOI.set(optimizer, MOI.Silent(), true)
-    #     nrows = 3n
-    #     ncols = n
-    #     direction = Matrix{Float64}(undef, nrows, ncols)
-    #     τ = 10.0
-    #     lmo = FrankWolfe.NuclearNormLMO(τ)
-    #     lmo_moi =
-    #         FrankWolfe.convert_mathopt(lmo, optimizer, row_dimension=nrows, col_dimension=ncols)
-    #     for _ in 1:10
-    #         randn!(direction)
-    #         v_r = FrankWolfe.compute_extreme_point(lmo, direction)
-    #         flattened = collect(vec(direction))
-    #         push!(flattened, 0)
-    #         v_moi = FrankWolfe.compute_extreme_point(lmo_moi, flattened)
-    #         if v_moi === nothing
-    #             # ignore non-terminating MOI solver results
-    #             continue
-    #         end
-    #         v_moi_mat = reshape(v_moi[1:end-1], nrows, ncols)
-    #         @test v_r ≈ v_moi_mat rtol = 1e-2
-    #     end
+        o = Hypatia.Optimizer()
+        MOI.set(o, MOI.Silent(), true)
+        inner_optimizer = MOI.Utilities.CachingOptimizer(
+            MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
+            o,
+        )
+        optimizer = MOI.Bridges.full_bridge_optimizer(inner_optimizer, Float64)        
+        MOI.set(optimizer, MOI.Silent(), true)
+        nrows = 3n
+        ncols = n
+        direction = Matrix{Float64}(undef, nrows, ncols)
+        τ = 10.0
+        lmo = FrankWolfe.NuclearNormLMO(τ)
+        lmo_moi =
+            FrankWolfe.convert_mathopt(lmo, optimizer, row_dimension=nrows, col_dimension=ncols)
+        nsuccess = 0
+        for _ in 1:10
+            randn!(direction)
+            v_r = FrankWolfe.compute_extreme_point(lmo, direction)
+            flattened = collect(vec(direction))
+            push!(flattened, 0)
+            v_moi = FrankWolfe.compute_extreme_point(lmo_moi, flattened)
+            if v_moi === nothing
+                # ignore non-terminating MOI solver results
+                continue
+            end
+            nsuccess += 1
+            v_moi_mat = reshape(v_moi[1:end-1], nrows, ncols)
+            @test v_r ≈ v_moi_mat rtol = 1e-2
+        end
+        @test nsuccess > 1
     end
 end
 
@@ -681,4 +685,27 @@ end
     vref = FrankWolfe.compute_extreme_point(lmo_ref, d)
     @test v ≈ vref
     @test norm(v, Inf) == 1
+end
+
+@testset "Copy MathOpt LMO" begin
+    o_clp = MOI.Utilities.CachingOptimizer(
+        MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
+        Clp.Optimizer(),
+    )
+
+    for o in (GLPK.Optimizer(), o_clp)
+        MOI.set(o, MOI.Silent(), true)
+        n = 100
+        x = MOI.add_variables(o, n)
+        f = sum(1.0 * xi for xi in x)
+        MOI.add_constraint(o, f, MOI.LessThan(1.0))
+        MOI.add_constraint(o, f, MOI.GreaterThan(1.0))
+        lmo = FrankWolfe.MathOptLMO(o)
+        lmo2 = copy(lmo)
+        for d in (ones(n), -ones(n))
+            v = FrankWolfe.compute_extreme_point(lmo, d)
+            v2 = FrankWolfe.compute_extreme_point(lmo2, d)
+            @test v ≈ v2
+        end
+    end
 end
