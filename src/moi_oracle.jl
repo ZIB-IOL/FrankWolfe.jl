@@ -44,7 +44,6 @@ function Base.copy(lmo::MathOptLMO{OT}; ensure_identity=true) where {OTI, OT <: 
         MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
         OTI(),
     )
-
     index_map = MOI.copy_to(opt, lmo.o)
     if ensure_identity
         for (src_idx, des_idx) in index_map.var_map
