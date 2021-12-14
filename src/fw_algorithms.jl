@@ -132,7 +132,7 @@ function frank_wolfe(
 
         v = if first_iter
             compute_extreme_point(lmo, gradient)
-            else
+        else
             compute_extreme_point(lmo, gradient, v=v)
         end
 
