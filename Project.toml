@@ -1,7 +1,7 @@
 name = "FrankWolfe"
 uuid = "f55ce6ea-fdc5-4628-88c5-0087fe54bd30"
 authors = ["ZIB-IOL"]
-version = "0.1.10"
+version = "0.1.12"
 
 [deps]
 Arpack = "7d9fca2a-8960-54d3-9f78-7d1dccf2cb97"
@@ -23,7 +23,7 @@ Arpack = "0.5"
 DoubleFloats = "1.1"
 FiniteDifferences = "0.12"
 Hungarian = "0.6"
-MathOptInterface = "0.9.19"
+MathOptInterface = "0.10"
 PlotThemes = "2"
 Plots = "1.10"
 ProgressMeter = "1.4"

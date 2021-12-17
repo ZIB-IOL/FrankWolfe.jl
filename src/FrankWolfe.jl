@@ -10,6 +10,7 @@ import Random
 
 import MathOptInterface
 const MOI = MathOptInterface
+const MOIU = MOI.Utilities
 
 # for plotting -> keep here or move somewhere else?
 using Plots
