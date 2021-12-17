@@ -26,7 +26,7 @@ using SparseArrays
 # ## Setting up the input data, objective, and gradient
 
 # Dimension, number of iterations and number of known entries:
-n = 500
+n = 1000
 k = 10000
 n_entries = 50
 
@@ -59,7 +59,7 @@ end
 const lmo = FrankWolfe.SpectraplexLMO(1.0, n, false)
 const x0 = FrankWolfe.compute_extreme_point(lmo, spzeros(n, n))
 
-target_tolerance = 1e-6;
+target_tolerance = 1e-8;
 
 #src the following two lines are used only to precompile the functions
 FrankWolfe.frank_wolfe(f, grad!, lmo, x0, max_iteration=2, line_search=FrankWolfe.MonotonousStepSize()) #src
