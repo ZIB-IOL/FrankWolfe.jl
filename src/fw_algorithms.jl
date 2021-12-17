@@ -84,7 +84,7 @@ function frank_wolfe(
     # container for direction
     d = similar(x)
     gtemp = if momentum === nothing
-        nothing
+        d
     else
         similar(x)
     end
