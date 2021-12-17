@@ -26,7 +26,7 @@ using SparseArrays
 # ## Setting up the input data, objective, and gradient
 
 # Dimension, number of iterations and number of known entries:
-n = 1000
+n = 3000
 k = 10000
 n_entries = 50
 
@@ -99,4 +99,4 @@ Xfinal, Vfinal, primal, dual_gap, trajectory_lazy = FrankWolfe.lazified_conditio
 
 data = [trajectory, trajectory_lazy]
 label = ["FW", "LCG"]
-FrankWolfe.plot_trajectories(data, label, xscalelog=true)
+FrankWolfe.plot_trajectories(data, label, xscalelog=false)
