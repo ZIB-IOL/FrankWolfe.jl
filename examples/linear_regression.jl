@@ -147,7 +147,7 @@ end
     lmo,
     params,
     verbose=true,
-    line_search=FrankWolfe.Adaptive(10.0),
+    line_search=FrankWolfe.Adaptive(L_est=10.0),
     max_iteration=k,
     print_iter=k / 10,
     trajectory=true,
