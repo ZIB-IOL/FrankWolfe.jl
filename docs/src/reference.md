@@ -101,7 +101,6 @@ FrankWolfe.active_set_update!
 FrankWolfe.compute_active_set_iterate
 FrankWolfe.active_set_argmin
 FrankWolfe.active_set_argminmax
-FrankWolfe.find_minmax_directions
 FrankWolfe.minimize_over_convex_hull!
 FrankWolfe.build_reduced_problem(atoms::AbstractVector{<:FrankWolfe.ScaledHotVector},hessian,weights,gradient,tolerance)
 FrankWolfe.strong_frankwolfe_gap
