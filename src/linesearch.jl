@@ -267,7 +267,7 @@ function perform_line_search(
     d,
     gamma_max,
     storage::XT;
-    should_upgrade::Val=Val{true}(),
+    should_upgrade::Val=Val{false}(),
 ) where {XT}
     if norm(d) == 0
         if should_upgrade isa Val{true}
