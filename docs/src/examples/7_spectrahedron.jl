@@ -26,14 +26,14 @@ using SparseArrays
 # ## Setting up the input data, objective, and gradient
 
 # Dimension, number of iterations and number of known entries:
-n = 3000
+n = 1000
 k = 10000
-n_entries = 50
+n_entries = 500
 
 Random.seed!(41)
 
 const entry_indices = unique!([minmax(rand(1:n, 2)...) for _ in 1:n_entries])
-const entry_values = randn(length(entry_indices))
+const entry_values = 10 * randn(length(entry_indices))
 
 function f(X)
     r = zero(eltype(X))
