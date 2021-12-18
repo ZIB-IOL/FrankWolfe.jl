@@ -26,14 +26,14 @@ using SparseArrays
 # ## Setting up the input data, objective, and gradient
 
 # Dimension, number of iterations and number of known entries:
-n = 1000
-k = 10000
-n_entries = 500
+n = 1500
+k = 5000
+n_entries = 1000
 
 Random.seed!(41)
 
 const entry_indices = unique!([minmax(rand(1:n, 2)...) for _ in 1:n_entries])
-const entry_values = 10 * randn(length(entry_indices))
+const entry_values = randn(length(entry_indices))
 
 function f(X)
     r = zero(eltype(X))
@@ -41,7 +41,7 @@ function f(X)
         r += 1/2 * (X[i,j] - entry_values[idx])^2
         r += 1/2 * (X[j,i] - entry_values[idx])^2
     end
-    return r
+    return r / length(entry_values)
 end
 
 function grad!(storage, X)
@@ -50,6 +50,7 @@ function grad!(storage, X)
         storage[i,j] += (X[i,j] - entry_values[idx])
         storage[j,i] += (X[j,i] - entry_values[idx])
     end
+    storage ./= length(entry_values)
 end
 
 # Note that the `ensure_symmetry = false` argument to `SpectraplexLMO`.
@@ -93,10 +94,10 @@ Xfinal, Vfinal, primal, dual_gap, trajectory_lazy = FrankWolfe.lazified_conditio
     verbose=true,
     trajectory=true,
     epsilon=target_tolerance,
-)
+);
 
 # ## Plotting the resulting trajectories
 
 data = [trajectory, trajectory_lazy]
 label = ["FW", "LCG"]
-FrankWolfe.plot_trajectories(data, label, xscalelog=false)
+FrankWolfe.plot_trajectories(data, label, xscalelog=true)
