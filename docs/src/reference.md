@@ -32,7 +32,6 @@ compute_extreme_point
 FrankWolfe.BirkhoffPolytopeLMO
 FrankWolfe.KNormBallLMO
 FrankWolfe.KSparseLMO
-FrankWolfe.L1ballDense
 FrankWolfe.LpNormLMO
 FrankWolfe.NuclearNormLMO
 FrankWolfe.ProbabilitySimplexOracle
@@ -76,7 +75,7 @@ It maintains a vector of atoms, the corresponding weights, and the current itera
 
 ```@autodocs
 Modules = [FrankWolfe]
-Pages = [active_set.jl]
+Pages = ["active_set.jl"]
 ```
 
 ## Step size determination
