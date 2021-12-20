@@ -75,7 +75,7 @@ The active set represents an iterate as a convex combination of atoms.
 It maintains a vector of atoms, the corresponding weights, and the current iterate.
 
 ```@autodocs
-Module = [FrankWolfe]
+Modules = [FrankWolfe]
 Pages = [active_set.jl]
 ```
 
@@ -98,7 +98,7 @@ FrankWolfe.MonotonousNonConvexStepSize
 ```@docs
 FrankWolfe.ActiveSet
 FrankWolfe.active_set_update!
-FrankWolfe.compute_active_set_iterate
+FrankWolfe.compute_active_set_iterate!
 FrankWolfe.active_set_argmin
 FrankWolfe.active_set_argminmax
 FrankWolfe.minimize_over_convex_hull!
