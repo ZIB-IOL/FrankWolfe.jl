@@ -64,7 +64,6 @@ FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo; k=100)
     x0,
     max_iteration=k,
     line_search=FrankWolfe.Agnostic(),
-    L=2,
     print_iter=k / 10,
     emphasis=FrankWolfe.memory,
     verbose=true,

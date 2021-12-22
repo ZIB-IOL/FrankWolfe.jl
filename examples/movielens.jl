@@ -159,6 +159,9 @@ function_values = Float64[]
 timing_values = Float64[]
 function_test_values = Float64[]
 
+ls = FrankWolfe.Backtracking()
+ls_workspace = FrankWolfe.build_linesearch_workspace(ls, xgd, gradient)
+
 time_start = time_ns()
 for _ in 1:k
     f_val = f(xgd)
@@ -168,7 +171,7 @@ for _ in 1:k
     @info f_val
     grad!(gradient, xgd)
     xgd_new, vertex = project_nuclear_norm_ball(xgd - gradient / L_estimate, radius=norm_estimation)
-    gamma, _ = FrankWolfe.backtrackingLS(f, gradient, xgd, xgd - xgd_new, 1.0)
+    gamma = FrankWolfe.perform_line_search(ls, 1, f, grad!, gradient, xgd, xgd - xgd_new, 1.0, ls_workspace)
     @. xgd -= gamma * (xgd - xgd_new)
 end
 
@@ -183,7 +186,6 @@ xfin, _, _, _, traj_data = FrankWolfe.frank_wolfe(
     max_iteration=10 * k,
     print_iter=k / 10,
     verbose=true,
-    linesearch_tol=1e-8,
     line_search=FrankWolfe.Adaptive(),
     emphasis=FrankWolfe.memory,
     gradient=gradient,
@@ -201,7 +203,6 @@ xlazy, _, _, _, _ = FrankWolfe.lazified_conditional_gradient(
     max_iteration=10 * k,
     print_iter=k / 10,
     verbose=true,
-    linesearch_tol=1e-8,
     line_search=FrankWolfe.Adaptive(),
     emphasis=FrankWolfe.memory,
     gradient=gradient,
@@ -220,7 +221,6 @@ xlazy, _, _, _, _ = FrankWolfe.lazified_conditional_gradient(
     max_iteration=50 * k,
     print_iter=k / 10,
     verbose=true,
-    linesearch_tol=1e-8,
     line_search=FrankWolfe.Adaptive(),
     emphasis=FrankWolfe.memory,
     gradient=gradient,

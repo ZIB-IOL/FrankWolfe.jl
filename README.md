@@ -87,9 +87,8 @@ Most common strategies and some more particular ones:
 - Nonconvex: `1/sqrt(2+t)` rule for nonconvex functions and vanilla FW
 - Fixed: fixed step-size of a given value. Useful for nonconvex and stochastic or more generally when we know the total number of iterations
 - Short-step rule: minimizing the smoothness inequality -> requires knowledge of (an estimate of) L
-- Golden ratio linesearch
+- Golden ratio line search
 - Backtracking line search
-- Rational short-step rule: similar to short-step rule but all computations are kept rational if inputs are rational. useful for the rational variants
 - Adaptive FW: starts with an estimate for L and then refine it dynamically (see [Pedregosa, Negiar, Askari, Jaggi 2020](https://arxiv.org/abs/1806.05123))
 
 #### Callbacks
