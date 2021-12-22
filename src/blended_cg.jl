@@ -26,7 +26,7 @@ function blended_conditional_gradient(
     trajectory=false,
     verbose=false,
     linesearch_tol=1e-7,
-    memory_mode=nothing,
+    memory_mode::MemoryEmphasis=nothing,
     accelerated=false,
     lazy_tolerance=2.0,
     weight_purge_threshold=1e-9,
