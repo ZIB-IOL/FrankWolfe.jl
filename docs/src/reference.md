@@ -32,7 +32,6 @@ compute_extreme_point
 FrankWolfe.BirkhoffPolytopeLMO
 FrankWolfe.KNormBallLMO
 FrankWolfe.KSparseLMO
-FrankWolfe.L1ballDense
 FrankWolfe.LpNormLMO
 FrankWolfe.NuclearNormLMO
 FrankWolfe.ProbabilitySimplexOracle
