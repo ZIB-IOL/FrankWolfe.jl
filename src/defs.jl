@@ -18,8 +18,10 @@ Emphasis given to the algorithm for memory-saving or not.
 The memory-saving mode may not be faster than the default
 OutplaceEmphasis mode for small dimensions.
 """
-struct InplaceEmphasis end
-struct OutplaceEmphasis end
+abstract type MemoryEmphasis end
+
+struct InplaceEmphasis <: MemoryEmphasis end
+struct OutplaceEmphasis <: MemoryEmphasis end
 
 @enum StepType begin
     initial = 1
