@@ -42,7 +42,7 @@ x_lmo, v, primal, dual_gap, trajectory_lmo = FrankWolfe.frank_wolfe(
     line_search=FrankWolfe.Shortstep(),
     L=2,
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
 )
@@ -73,7 +73,7 @@ x, v, primal, dual_gap, trajectory_moi = FrankWolfe.frank_wolfe(
     line_search=FrankWolfe.Shortstep(),
     L=2,
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
 )
@@ -95,7 +95,7 @@ x, v, primal, dual_gap, trajectory_jump = FrankWolfe.frank_wolfe(
     line_search=FrankWolfe.Shortstep(),
     L=2,
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
 )
@@ -109,7 +109,7 @@ x_lmo, v, primal, dual_gap, trajectory_lmo_blas = FrankWolfe.frank_wolfe(
     line_search=FrankWolfe.Shortstep(),
     L=2,
     print_iter=k / 10,
-    emphasis=FrankWolfe.blas,
+    memory_mode=FrankWolfe.blas,
     verbose=true,
     trajectory=true,
 )
@@ -123,7 +123,7 @@ x, v, primal, dual_gap, trajectory_jump_blas = FrankWolfe.frank_wolfe(
     line_search=FrankWolfe.Shortstep(),
     L=2,
     print_iter=k / 10,
-    emphasis=FrankWolfe.blas,
+    memory_mode=FrankWolfe.blas,
     verbose=true,
     trajectory=true,
 )

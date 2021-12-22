@@ -54,7 +54,7 @@ x0 = copy(x00)
     line_search=FrankWolfe.Shortstep(),
     L=2,
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
 );
@@ -72,7 +72,7 @@ x0 = copy(x00)
     line_search=FrankWolfe.Shortstep(),
     L=2,
     print_iter=k / 10,
-    emphasis=FrankWolfe.blas,
+    memory_mode=FrankWolfe.blas,
     verbose=true,
     trajectory=true,
     momentum=0.9,
@@ -91,7 +91,7 @@ x0 = copy(x00)
     line_search=FrankWolfe.Adaptive(),
     L=100,
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
 );
@@ -108,7 +108,7 @@ x0 = copy(x00)
     max_iteration=k,
     line_search=FrankWolfe.Agnostic(),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
 );

@@ -50,7 +50,7 @@ x0 = deepcopy(x00)
     L=100,
     line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
 );
 
@@ -68,7 +68,7 @@ x0 = deepcopy(x00)
     L=100,
     line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     cache_size=500,
     verbose=true,
 );
