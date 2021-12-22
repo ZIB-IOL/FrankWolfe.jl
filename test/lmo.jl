@@ -270,7 +270,7 @@ end
         verbose=false,
         linesearch_tol=1e-7,
         line_search=FrankWolfe.Backtracking(),
-        emphasis=FrankWolfe.memory,
+        memory_mode=FrankWolfe.InplaceEmphasis(),
     )
     @test 1 - (f(x0) - f(xfin)) / f(x0) < 1e-3
     svals_fin = svdvals(xfin)
@@ -287,7 +287,7 @@ end
         verbose=false,
         linesearch_tol=1e-7,
         line_search=FrankWolfe.Backtracking(),
-        emphasis=FrankWolfe.memory,
+        memory_mode=FrankWolfe.InplaceEmphasis(),
     )
 end
 

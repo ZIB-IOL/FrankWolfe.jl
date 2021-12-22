@@ -26,7 +26,7 @@ x, v, primal, dual_gap0, trajectory = FrankWolfe.frank_wolfe(
     line_search=FrankWolfe.Agnostic(),
     print_iter=k / 10,
     verbose=false,
-    emphasis=FrankWolfe.blas,
+    memory_mode=FrankWolfe.OutplaceEmphasis(),
 )
 
 xmem, vmem, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
@@ -38,7 +38,7 @@ xmem, vmem, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
     line_search=FrankWolfe.Agnostic(),
     print_iter=k / 10,
     verbose=true,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
 )
 
 @time xstep, _ = FrankWolfe.frank_wolfe(
