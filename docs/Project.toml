@@ -20,6 +20,5 @@ ZipFile = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
 [compat]
 Documenter = "0.27"
 Literate = "2.9"
-PlotUtils = "= 1.0"
 Plots = "= 1.22"
 ZipFile = "0.9.4"
