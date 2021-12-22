@@ -12,7 +12,13 @@ end
 
 example_shuffle = randperm(length(example_files))
 
-for file in example_files[example_shuffle[1:2]]
+if !haskey(ENV, "ALL_EXAMPLES")
+    example_shuffle = example_shuffle[1:2]
+else
+    @info "Running all examples"
+end
+
+for file in example_files[example_shuffle]
     @info "running example $file"
     run(`julia $file`)
 end
