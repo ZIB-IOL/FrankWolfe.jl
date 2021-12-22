@@ -18,7 +18,8 @@ Emphasis given to the algorithm for memory-saving or not.
 The memory-saving mode may not be faster than the default
 blas mode for small dimensions.
 """
-@enum Emphasis blas = 1 memory = 2
+struct InplaceEmphasis end
+struct OutplaceEmphasis end
 
 @enum StepType begin
     initial = 1
