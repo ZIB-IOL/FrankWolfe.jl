@@ -26,7 +26,7 @@ function away_frank_wolfe(
     trajectory=false,
     verbose=false,
     linesearch_tol=1e-7,
-    emphasis::Emphasis=memory,
+    memory_mode=InplaceEmphasis,
     gradient=nothing,
     renorm_interval=1000,
     callback=nothing,
@@ -56,7 +56,7 @@ function away_frank_wolfe(
         trajectory=trajectory,
         verbose=verbose,
         linesearch_tol=linesearch_tol,
-        emphasis=emphasis,
+        memory_mode=memory_mode,
         gradient=gradient,
         renorm_interval=renorm_interval,
         callback=callback,
@@ -86,7 +86,7 @@ function away_frank_wolfe(
     trajectory=false,
     verbose=false,
     linesearch_tol=1e-7,
-    emphasis::Emphasis=memory,
+    memory_mode=InplaceEmphasis,
     gradient=nothing,
     renorm_interval=1000,
     callback=nothing,
@@ -124,14 +124,14 @@ function away_frank_wolfe(
         println("\nAway-step Frank-Wolfe Algorithm.")
         NumType = eltype(x)
         println(
-            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
+            "EMPHASIS: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
         )
         grad_type = typeof(gradient)
         println(
             "GRADIENTTYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance MOMENTUM: $momentum AWAYSTEPS: $away_steps",
         )
-        if emphasis == memory
-            println("WARNING: In memory emphasis mode iterates are written back into x0!")
+        if memory_mode == InplaceEmphasis
+            println("WARNING: In memory_mode memory iterates are written back into x0!")
         end
         headers =
             ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "#ActiveSet")
@@ -183,7 +183,7 @@ function away_frank_wolfe(
             grad!(gradient, x)
         else
             grad!(gtemp, x)
-            @emphasis(emphasis, gradient = (momentum * gradient) + (1 - momentum) * gtemp)
+            @memory_mode(memory_mode, gradient = (momentum * gradient) + (1 - momentum) * gtemp)
         end
 
         if away_steps

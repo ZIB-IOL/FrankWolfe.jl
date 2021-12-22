@@ -26,7 +26,7 @@ function blended_conditional_gradient(
     trajectory=false,
     verbose=false,
     linesearch_tol=1e-7,
-    emphasis=nothing,
+    memory_mode=nothing,
     accelerated=false,
     lazy_tolerance=2.0,
     weight_purge_threshold=1e-9,
@@ -78,11 +78,11 @@ function blended_conditional_gradient(
         println("\nBlended Conditional Gradients Algorithm.")
         NumType = eltype(x0)
         println(
-            "EMPHASIS: $memory STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
+            "EMPHASIS: $InplaceEmphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
         )
         grad_type = typeof(gradient)
         println("GRADIENTTYPE: $grad_type lazy_tolerance: $lazy_tolerance")
-        println("WARNING: In memory emphasis mode iterates are written back into x0!")
+        println("WARNING: In memory_mode memory iterates are written back into x0!")
         headers = (
             "Type",
             "Iteration",
@@ -161,7 +161,7 @@ function blended_conditional_gradient(
             gradient,
             phi,
             lazy_tolerance;
-            inplace_loop=(emphasis == memory),
+            inplace_loop=(memory_mode == InplaceEmphasis),
             force_fw_step=force_fw_step,
             lmo_kwargs...,
         )

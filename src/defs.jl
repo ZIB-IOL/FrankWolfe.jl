@@ -16,7 +16,7 @@ struct Adaptive <: LineSearchMethod end
 """
 Emphasis given to the algorithm for memory-saving or not.
 The memory-saving mode may not be faster than the default
-blas mode for small dimensions.
+OutplaceEmphasis mode for small dimensions.
 """
 struct InplaceEmphasis end
 struct OutplaceEmphasis end
