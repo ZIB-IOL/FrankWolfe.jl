@@ -690,7 +690,6 @@ end
         MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
         Clp.Optimizer(),
     )
-
     for o in (GLPK.Optimizer(), o_clp)
         MOI.set(o, MOI.Silent(), true)
         n = 100

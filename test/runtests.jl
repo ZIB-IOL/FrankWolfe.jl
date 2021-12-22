@@ -283,7 +283,7 @@ end
     end
     @testset "Using sparse structure" begin
         lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1.0)
-        x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n))
+        x0 = FrankWolfe.compute_extreme_point(lmo_prob, spzeros(n))
 
         x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
             f,
@@ -297,7 +297,7 @@ end
             emphasis=FrankWolfe.blas,
         )
 
-        @test x !== nothing
+        @test primal < f(x0)
 
         x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
             f,
@@ -310,68 +310,31 @@ end
             verbose=false,
             emphasis=FrankWolfe.memory,
         )
-
-        @test x !== nothing
-    end
-    @testset "Using dense structure" begin
-        lmo_prob = FrankWolfe.L1ballDense{Float64}(1)
-        x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n))
-
-        x, _ = FrankWolfe.frank_wolfe(
+        @test primal < f(x0)
+        x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
             f,
             grad!,
             lmo_prob,
-            copy(x0),
+            x0,
             max_iteration=k,
-            line_search=FrankWolfe.Backtracking(),
-            print_iter=k / 10,
-            verbose=false,
-            emphasis=FrankWolfe.blas,
-        )
-
-        @test x !== nothing
-
-        x, _ = FrankWolfe.frank_wolfe(
-            f,
-            grad!,
-            lmo_prob,
-            copy(x0),
-            max_iteration=k,
-            line_search=FrankWolfe.Backtracking(),
+            line_search=FrankWolfe.MonotonousStepSize(),
             print_iter=k / 10,
             verbose=false,
             emphasis=FrankWolfe.memory,
         )
-
-        @test x !== nothing
-
-        line_search = FrankWolfe.MonotonousStepSize()
-        x, _, primal_conv, _ = FrankWolfe.frank_wolfe(
+        @test primal < f(x0)
+        x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
             f,
             grad!,
             lmo_prob,
-            copy(x0),
+            x0,
             max_iteration=k,
-            line_search=line_search,
+            line_search=FrankWolfe.MonotonousNonConvexStepSize(),
             print_iter=k / 10,
             verbose=false,
             emphasis=FrankWolfe.memory,
         )
-        @test line_search.factor < 20
-
-        line_search = FrankWolfe.MonotonousNonConvexStepSize()
-        x, _, primal_nonconv, _ = FrankWolfe.frank_wolfe(
-            f,
-            grad!,
-            lmo_prob,
-            copy(x0),
-            max_iteration=k,
-            line_search=line_search,
-            print_iter=k / 10,
-            verbose=false,
-            emphasis=FrankWolfe.memory,
-        )
-        @test line_search.factor < 20
+        @test primal < f(x0)
     end
 end
 @testset "Testing rational variant" begin
