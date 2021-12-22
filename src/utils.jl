@@ -232,7 +232,7 @@ end
 
 macro memory_mode(memory_mode, ex)
     return esc(quote
-        if $memory_mode === memory
+        if $memory_mode isa memory
             @. $ex
         else
             $ex

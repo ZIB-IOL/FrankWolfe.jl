@@ -56,7 +56,7 @@ function away_frank_wolfe(
         trajectory=trajectory,
         verbose=verbose,
         linesearch_tol=linesearch_tol,
-        memory_mode::MemoryEmphasis=memory_mode,
+        memory_mode=memory_mode,
         gradient=gradient,
         renorm_interval=renorm_interval,
         callback=callback,
@@ -124,13 +124,13 @@ function away_frank_wolfe(
         println("\nAway-step Frank-Wolfe Algorithm.")
         NumType = eltype(x)
         println(
-            "EMPHASIS: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
+            "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
         )
         grad_type = typeof(gradient)
         println(
             "GRADIENTTYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance MOMENTUM: $momentum AWAYSTEPS: $away_steps",
         )
-        if memory_mode == InplaceEmphasis
+        if memory_mode isa InplaceEmphasis
             println("WARNING: In memory_mode memory iterates are written back into x0!")
         end
         headers =
