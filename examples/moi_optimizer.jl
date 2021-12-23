@@ -109,7 +109,7 @@ x_lmo, v, primal, dual_gap, trajectory_lmo_blas = FrankWolfe.frank_wolfe(
     line_search=FrankWolfe.Shortstep(),
     L=2,
     print_iter=k / 10,
-    memory_mode=FrankWolfe.blas,
+    memory_mode=FrankWolfe.OutplaceEmphasis(),
     verbose=true,
     trajectory=true,
 )
@@ -123,7 +123,7 @@ x, v, primal, dual_gap, trajectory_jump_blas = FrankWolfe.frank_wolfe(
     line_search=FrankWolfe.Shortstep(),
     L=2,
     print_iter=k / 10,
-    memory_mode=FrankWolfe.blas,
+    memory_mode=FrankWolfe.OutplaceEmphasis(),
     verbose=true,
     trajectory=true,
 )

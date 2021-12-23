@@ -78,7 +78,7 @@ function blended_conditional_gradient(
         println("\nBlended Conditional Gradients Algorithm.")
         NumType = eltype(x0)
         println(
-            "MEMORY_MODE: $InplaceEmphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
+            "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
         )
         grad_type = typeof(gradient)
         println("GRADIENTTYPE: $grad_type lazy_tolerance: $lazy_tolerance")

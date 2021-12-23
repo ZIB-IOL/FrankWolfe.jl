@@ -69,7 +69,7 @@ function frank_wolfe(
         )
         grad_type = typeof(gradient)
         println("MOMENTUM: $momentum GRADIENTTYPE: $grad_type")
-        if memory_mode === InplaceEmphasis
+        if memory_mode isa InplaceEmphasis
             println("WARNING: In memory_mode memory iterates are written back into x0!")
         end
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec"]

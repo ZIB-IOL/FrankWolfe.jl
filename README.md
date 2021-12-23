@@ -174,7 +174,7 @@ Example: `examples/large_scale.jl`
 
 The package is built to scale well, for those conditional gradients variants that can scale well. For example, Away-Step Frank-Wolfe and Pairwise Conditional Gradients do in most cases *not scale well* because they need to maintain active sets and maintaining them can be very expensive. Similarly, line search methods might become prohibitive at large sizes. However if we consider scale-friendly variants, e.g., the vanilla Frank-Wolfe algorithm with the agnostic step size rule or short step rule, then these algorithms can scale well to extreme sizes esentially only limited by the amount of memory available. However even for these methods that tend to scale well, allocation of memory itself can be very slow when you need to allocate gigabytes of memory for a single gradient computation. 
 
-The package is build to support extreme sizes with a special memory efficient emphasis `emphasis=FrankWolfe.memory`, which minimizes expensive memory allocations and performs as many operations in-place as possible.
+The package is build to support extreme sizes with a special memory efficient emphasis `emphasis=FrankWolfe.InplaceEmphasis()`, which minimizes expensive memory allocations and performs as many operations in-place as possible.
 
 Here is an example of a run with 1e9 variables. Each gradient is around 7.5 GB in size. Here is the output of the run broken down into pieces:
 
