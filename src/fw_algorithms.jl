@@ -42,7 +42,7 @@ function frank_wolfe(
     x = x0
     tt = regular
     traj_data = []
-    if trajectory && callback === nothing
+    if trajectory && (callback === nothing)
         callback = trajectory_callback(traj_data)
     end
     time_start = time_ns()
@@ -131,11 +131,7 @@ function frank_wolfe(
             @emphasis(emphasis, gradient = (momentum * gradient) + (1 - momentum) * gtemp)
         end
         first_iter = false
-        v = if is_tracking_lmo(lmo)
-            compute_extreme_point(lmo, gradient; call_counter=call_counter)
-        else
-            compute_extreme_point(lmo, gradient)
-        end
+        v = compute_extreme_point(lmo, gradient)
         # go easy on the memory - only compute if really needed
         if (
             (mod(t, print_iter) == 0 && verbose) ||
