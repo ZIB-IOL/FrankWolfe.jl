@@ -131,10 +131,10 @@ function frank_wolfe(
             @emphasis(emphasis, gradient = (momentum * gradient) + (1 - momentum) * gtemp)
         end
         first_iter = false
-        v = if is_simple_lmo(lmo)
-            compute_extreme_point(lmo, gradient)
-        else
+        v = if is_tracking_lmo(lmo)
             compute_extreme_point(lmo, gradient; call_counter=call_counter)
+        else
+            compute_extreme_point(lmo, gradient)
         end
         # go easy on the memory - only compute if really needed
         if (
@@ -174,7 +174,7 @@ function frank_wolfe(
                 v=v,
                 gamma=gamma,
                 f=f,
-                grad!=grad!,
+                grad! =grad!,
                 lmo=lmo,
             )
             callback(state)
