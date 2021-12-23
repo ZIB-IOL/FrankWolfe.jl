@@ -109,7 +109,7 @@ FrankWolfe.projection_simplex_sort
 FrankWolfe.strong_frankwolfe_gap_probability_simplex
 FrankWolfe.simplex_gradient_descent_over_convex_hull
 FrankWolfe.lp_separation_oracle
-FrankWolfe.Emphasis
+FrankWolfe.MemoryEmphasis
 FrankWolfe.ObjectiveFunction
 FrankWolfe.compute_value_gradient
 FrankWolfe.StochasticObjective

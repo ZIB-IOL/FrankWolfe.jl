@@ -180,7 +180,7 @@ xfin, _, _, _, traj_data = FrankWolfe.frank_wolfe(
     print_iter=k / 10,
     verbose=false,
     line_search=FrankWolfe.Adaptive(),
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     gradient=gradient,
     callback=callback,
 )
@@ -197,7 +197,7 @@ xlazy, _, _, _, _ = FrankWolfe.lazified_conditional_gradient(
     print_iter=k / 10,
     verbose=false,
     line_search=FrankWolfe.Adaptive(),
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     gradient=gradient,
     callback=callback,
 )
@@ -215,7 +215,7 @@ xlazy, _, _, _, _ = FrankWolfe.lazified_conditional_gradient(
     print_iter=k / 10,
     verbose=false,
     line_search=FrankWolfe.Adaptive(),
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     gradient=gradient,
     callback=callback,
 )

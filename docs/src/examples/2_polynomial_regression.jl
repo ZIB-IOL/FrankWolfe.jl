@@ -187,7 +187,7 @@ x_lafw, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe( # hide
     max_iteration=max_iter, # hide
     line_search=FrankWolfe.Adaptive(L_est=L_estimate), # hide
     print_iter=max_iter ÷ 10, # hide
-    emphasis=FrankWolfe.memory, # hide
+    memory_mode=FrankWolfe.InplaceEmphasis(), # hide
     verbose=false, # hide
     lazy=true, # hide
     gradient=gradient, # hide
@@ -205,7 +205,7 @@ x_bcg, v, primal, dual_gap, _ = FrankWolfe.blended_conditional_gradient( # hide
     max_iteration=max_iter, # hide
     line_search=FrankWolfe.Adaptive(L_est=L_estimate), # hide
     print_iter=max_iter ÷ 10, # hide
-    emphasis=FrankWolfe.memory, # hide
+    memory_mode=FrankWolfe.InplaceEmphasis(), # hide
     verbose=false, # hide
     weight_purge_threshold=1e-10, # hide
     callback=callback, # hide
@@ -221,7 +221,7 @@ _, _, primal_ref, _, _ = FrankWolfe.away_frank_wolfe( # hide
     max_iteration=2 * max_iter, # hide
     line_search=FrankWolfe.Adaptive(L_est=L_estimate), # hide
     print_iter=max_iter ÷ 10, # hide
-    emphasis=FrankWolfe.memory, # hide
+    memory_mode=FrankWolfe.InplaceEmphasis(), # hide
     verbose=false, # hide
     lazy=true, # hide
     gradient=gradient, # hide
@@ -272,7 +272,7 @@ x_lafw, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
     max_iteration=max_iter,
     line_search=FrankWolfe.Adaptive(L_est=L_estimate),
     print_iter=max_iter ÷ 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=false,
     lazy=true,
     gradient=gradient,
@@ -291,7 +291,7 @@ x_bcg, v, primal, dual_gap, _ = FrankWolfe.blended_conditional_gradient(
     max_iteration=max_iter,
     line_search=FrankWolfe.Adaptive(L_est=L_estimate),
     print_iter=max_iter ÷ 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=false,
     weight_purge_threshold=1e-10,
     callback=callback,
@@ -309,7 +309,7 @@ _, _, primal_ref, _, _ = FrankWolfe.away_frank_wolfe(
     max_iteration=2 * max_iter,
     line_search=FrankWolfe.Adaptive(L_est=L_estimate),
     print_iter=max_iter ÷ 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=false,
     lazy=true,
     gradient=gradient,

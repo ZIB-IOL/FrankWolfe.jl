@@ -39,7 +39,7 @@ x_l1, v_1, primal_1, dual_gap_1, trajectory_1 = FrankWolfe.frank_wolfe(
     max_iteration=k,
     line_search=FrankWolfe.Shortstep(2.0),
     print_iter=50,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
 );
@@ -57,7 +57,7 @@ x_linf, v_2, primal_2, dual_gap_2, trajectory_2 = FrankWolfe.frank_wolfe(
     max_iteration=k,
     line_search=FrankWolfe.Shortstep(2.0),
     print_iter=50,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
 );

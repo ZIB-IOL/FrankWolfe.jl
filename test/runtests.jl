@@ -126,7 +126,7 @@ include("pairwise.jl")
             line_search=FrankWolfe.Agnostic(),
             verbose=false,
             momentum=0.9,
-            emphasis=FrankWolfe.memory,
+            memory_mode=FrankWolfe.InplaceEmphasis(),
         )[3] - 0.2,
     ) < 1.0e-3
     @test abs(
@@ -163,7 +163,7 @@ include("pairwise.jl")
             line_search=FrankWolfe.Adaptive(L_est=100.0),
             verbose=false,
             momentum=0.9,
-            emphasis=FrankWolfe.memory,
+            memory_mode=FrankWolfe.InplaceEmphasis(),
         )[3] - 0.2,
     ) < 1.0e-3
 end
@@ -270,7 +270,7 @@ end
     @test primal - 1 / n <= bound
 end
 
-@testset "Testing emphasis blas vs memory" begin
+@testset "Testing memory_mode blas vs memory" begin
     n = Int(1e5)
     k = 100
     xpi = rand(n)
@@ -294,7 +294,7 @@ end
             line_search=FrankWolfe.Backtracking(),
             print_iter=k / 10,
             verbose=false,
-            emphasis=FrankWolfe.blas,
+            memory_mode=FrankWolfe.OutplaceEmphasis(),
         )
 
         @test primal < f(x0)
@@ -308,7 +308,7 @@ end
             line_search=FrankWolfe.Backtracking(),
             print_iter=k / 10,
             verbose=false,
-            emphasis=FrankWolfe.memory,
+            memory_mode=FrankWolfe.InplaceEmphasis(),
         )
         @test primal < f(x0)
         x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
@@ -320,7 +320,7 @@ end
             line_search=FrankWolfe.MonotonousStepSize(),
             print_iter=k / 10,
             verbose=false,
-            emphasis=FrankWolfe.memory,
+            memory_mode=FrankWolfe.InplaceEmphasis(),
         )
         @test primal < f(x0)
         x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
@@ -332,7 +332,7 @@ end
             line_search=FrankWolfe.MonotonousNonConvexStepSize(),
             print_iter=k / 10,
             verbose=false,
-            emphasis=FrankWolfe.memory,
+            memory_mode=FrankWolfe.InplaceEmphasis(),
         )
         @test primal < f(x0)
     end
@@ -364,7 +364,7 @@ end
         max_iteration=k,
         line_search=FrankWolfe.Agnostic(),
         print_iter=k / 10,
-        emphasis=FrankWolfe.blas,
+        memory_mode=FrankWolfe.OutplaceEmphasis(),
         verbose=false,
     )
 
@@ -378,7 +378,7 @@ end
         max_iteration=k,
         line_search=FrankWolfe.Agnostic(),
         print_iter=k / 10,
-        emphasis=FrankWolfe.memory,
+        memory_mode=FrankWolfe.InplaceEmphasis(),
         verbose=true,
     )
     @test eltype(x0) == eltype(x) == Rational{BigInt}
@@ -394,7 +394,7 @@ end
         max_iteration=15,
         line_search=FrankWolfe.Shortstep(2//1),
         print_iter=k / 100,
-        emphasis=FrankWolfe.memory,
+        memory_mode=FrankWolfe.InplaceEmphasis(),
         verbose=true,
     )
 
@@ -407,7 +407,7 @@ end
         max_iteration=15,
         line_search=FrankWolfe.Shortstep(2//1),
         print_iter=k / 10,
-        emphasis=FrankWolfe.memory,
+        memory_mode=FrankWolfe.InplaceEmphasis(),
         verbose=true,
     )
     @test eltype(x) == Rational{BigInt}
@@ -442,7 +442,7 @@ end
             max_iteration=k,
             line_search=FrankWolfe.Agnostic(),
             print_iter=k / 10,
-            emphasis=FrankWolfe.blas,
+            memory_mode=FrankWolfe.OutplaceEmphasis(),
             verbose=true,
         )
 
@@ -457,7 +457,7 @@ end
             max_iteration=k,
             line_search=FrankWolfe.Agnostic(),
             print_iter=k / 10,
-            emphasis=FrankWolfe.memory,
+            memory_mode=FrankWolfe.InplaceEmphasis(),
             verbose=true,
         )
 
@@ -472,7 +472,7 @@ end
             max_iteration=k,
             line_search=FrankWolfe.Adaptive(),
             print_iter=k / 10,
-            emphasis=FrankWolfe.memory,
+            memory_mode=FrankWolfe.InplaceEmphasis(),
             verbose=true,
         )
 
@@ -487,7 +487,7 @@ end
             max_iteration=k,
             line_search=FrankWolfe.Adaptive(),
             print_iter=k / 10,
-            emphasis=FrankWolfe.memory,
+            memory_mode=FrankWolfe.InplaceEmphasis(),
             verbose=true,
         )
 
@@ -602,7 +602,7 @@ end
         max_iteration=k,
         line_search=FrankWolfe.Backtracking(),
         verbose=false,
-        emphasis=FrankWolfe.blas,
+        memory_mode=FrankWolfe.OutplaceEmphasis(),
     )
 
     x, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
@@ -614,7 +614,7 @@ end
         line_search=FrankWolfe.Backtracking(),
         print_iter=k / 10,
         verbose=true,
-        emphasis=FrankWolfe.blas,
+        memory_mode=FrankWolfe.OutplaceEmphasis(),
     )
 
     @test x !== nothing
@@ -629,7 +629,7 @@ end
         line_search=FrankWolfe.Backtracking(),
         print_iter=k / 10,
         verbose=true,
-        emphasis=FrankWolfe.blas,
+        memory_mode=FrankWolfe.OutplaceEmphasis(),
     )
 
     @test xs !== nothing
@@ -645,7 +645,7 @@ end
         line_search=FrankWolfe.Backtracking(),
         print_iter=k / 10,
         verbose=true,
-        emphasis=FrankWolfe.blas,
+        memory_mode=FrankWolfe.OutplaceEmphasis(),
     )
 
     @test x !== nothing
@@ -660,7 +660,7 @@ end
         line_search=FrankWolfe.Backtracking(),
         print_iter=k / 10,
         verbose=true,
-        emphasis=FrankWolfe.blas,
+        memory_mode=FrankWolfe.OutplaceEmphasis(),
     )
 
     @test xs !== nothing
@@ -675,7 +675,7 @@ end
         line_search=FrankWolfe.Backtracking(),
         print_iter=k / 10,
         verbose=true,
-        emphasis=FrankWolfe.memory,
+        memory_mode=FrankWolfe.InplaceEmphasis(),
     )
 
     @test x !== nothing
@@ -691,7 +691,7 @@ end
         line_search=FrankWolfe.Backtracking(),
         print_iter=k / 10,
         verbose=true,
-        emphasis=FrankWolfe.memory,
+        memory_mode=FrankWolfe.InplaceEmphasis(),
     )
 
     @test x !== nothing
@@ -706,7 +706,7 @@ end
         line_search=FrankWolfe.Backtracking(),
         print_iter=k / 10,
         verbose=true,
-        emphasis=FrankWolfe.memory,
+        memory_mode=FrankWolfe.InplaceEmphasis(),
     )
 
     @test xs !== nothing
@@ -722,7 +722,7 @@ end
         line_search=FrankWolfe.Backtracking(),
         print_iter=k / 10,
         verbose=true,
-        emphasis=FrankWolfe.blas,
+        memory_mode=FrankWolfe.OutplaceEmphasis(),
     )    
 end
 
@@ -745,7 +745,7 @@ end
         max_iteration=k,
         line_search=FrankWolfe.Backtracking(),
         verbose=true,
-        emphasis=FrankWolfe.blas,
+        memory_mode=FrankWolfe.OutplaceEmphasis(),
     )
 
     x, v, primal, dual_gap, trajectory = FrankWolfe.blended_conditional_gradient(
