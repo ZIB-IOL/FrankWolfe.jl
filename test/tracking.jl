@@ -75,7 +75,7 @@ SUITE["blended_cg"] = Dict()
 
     x0 = FrankWolfe.compute_extreme_point(tlmo_prob, zeros(5))
     # f_values, dual_values, function_calls, gradient_calls, lmo_calls, time_vec
-    tracking_callback = FrankWolfe.build_tracking_callback([],[],[],[],[],[])
+    tracking_trajectory_callback = FrankWolfe.tracking_trajectory_callback
 
     SUITE["vanilla_fw"]["1"] = FrankWolfe.frank_wolfe(
             tf,
@@ -85,7 +85,7 @@ SUITE["blended_cg"] = Dict()
             max_iteration=1000,
             line_search=FrankWolfe.Agnostic(),
             trajectory=true,
-            callback=tracking_callback,
+            callback=tracking_trajectory_callback,
             verbose=false,
     )
 
