@@ -414,8 +414,6 @@ end
 # critical components
 ##############################################################
 
-# TODO: add actual use of T for the rand(n)
-
 function benchmark_oracles(f, grad!, x_gen, lmo; k=100, nocache=true)
     x = x_gen()
     sv = sizeof(x) / 1024^2

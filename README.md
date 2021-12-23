@@ -138,9 +138,6 @@ We consider the simple instance of approximating the `0` over the probability si
 with n = 100.
 
 ````
-Vanilla Frank-Wolfe Algorithm.
-EMPHASIS: blas STEPSIZE: rationalshortstep EPSILON: 1.0e-7 max_iteration: 100 TYPE: Rational{BigInt}
-
 ───────────────────────────────────────────────────────────────────────────────────
   Type     Iteration         Primal           Dual       Dual Gap           Time
 ───────────────────────────────────────────────────────────────────────────────────
@@ -157,8 +154,6 @@ EMPHASIS: blas STEPSIZE: rationalshortstep EPSILON: 1.0e-7 max_iteration: 100 TY
   Last                 1.000000e-02   1.000000e-02   0.000000e+00   4.392171e-01
 ───────────────────────────────────────────────────────────────────────────────────
 
-  0.600608 seconds (3.83 M allocations: 111.274 MiB, 12.97% gc time)
-  
 Output type of solution: Rational{BigInt}
 ````
 The solution returned is rational as we can see and in fact the exactly optimal solution:
