@@ -104,7 +104,7 @@ end
     # Gradient descent over a 2-D unit simplex
     # each atom is a vertex, direction points to [1,1]
     # note: integers for atom element types
-    # |\ - -  + 
+    # |\ - -  +
     # | \     |
     # |  \
     # |   \   |
@@ -179,7 +179,7 @@ end
     # Gradient descent over a L-inf ball of radius one
     # current active set contains 3 vertices
     # direction points to [1,1]
-    # |\ - -  + 
+    # |\ - -  +
     # | \     |
     # |  \
     # |   \   |
@@ -237,4 +237,16 @@ end
         Ktolerance;
         inplace_loop=true,
     )
+end
+
+@testset "ActiveSet for BigFloat" begin 
+  n = Int(1e2)
+  lmo = FrankWolfe.LpNormLMO{BigFloat,1}(rand())
+  x0 = Vector(FrankWolfe.compute_extreme_point(lmo, zeros(n)))
+
+  # add the first vertex to active set from initialization
+  active_set = FrankWolfe.ActiveSet([(1.0, x0)])
+
+  # ensure that ActiveSet is created correctly, tests a fix for a bug when x0 is a BigFloat
+  @test length(FrankWolfe.ActiveSet([(1.0, x0)])) == 1
 end

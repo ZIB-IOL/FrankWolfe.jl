@@ -25,7 +25,7 @@ function ActiveSet(tuple_values::AbstractVector{Tuple{R,AT}}) where {AT,R}
         weights[idx] = tuple_values[idx][1]
         atoms[idx] = tuple_values[idx][2]
     end
-    x = float.(similar(atoms[1]))
+    x = similar(atoms[1], float(eltype(atoms[1])))
     as = ActiveSet{AT,R,typeof(x)}(weights, atoms, x)
     compute_active_set_iterate!(as)
     return as
@@ -35,7 +35,7 @@ function ActiveSet{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}) 
     n = length(tuple_values)
     weights = Vector{R}(undef, n)
     atoms = Vector{AT}(undef, n)
-    x = float.(similar(tuple_values[1][2]))
+    x = similar(tuple_values[1][2], float(eltype(tuple_values[1][2])))
     x .= 0
     @inbounds for idx in 1:n
         weights[idx] = tuple_values[idx][1]
