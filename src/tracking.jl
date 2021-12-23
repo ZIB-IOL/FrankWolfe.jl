@@ -38,16 +38,9 @@ is_tracking_lmo(lmo::TrackingLMO) = true
 
 TrackingLMO(lmo) = TrackingLMO(lmo, 0)
 
-function build_tracking_callback(f_values, dual_values, function_calls, gradient_calls, lmo_calls, time_vec)
-    function tracking_callback(state)
-        push!(function_calls, state.f.counter)
-        push!(gradient_calls, state.grad!.counter)
-        push!(gradient_calls, state.lmo_calls.counter)
-        push!(f_values, state.primal)
-        push!(f_values, state.primal)
-        push!(dual_values, state.dual_gap)
-        push!(lmo_calls, state.lmo.counter)
-        push!(time_vec, state.time)
+function tracking_trajectory_callback(storage)
+    return function push_trajectory!(state)
+        return push!(storage, Tuple(state)[1:8])
     end
 end
 
