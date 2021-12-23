@@ -17,7 +17,7 @@ function blended_pairwise_conditional_gradient(
     print_iter=1000,
     trajectory=false,
     verbose=false,
-    emphasis::Emphasis=memory,
+    memory_mode::MemoryEmphasis=InplaceEmphasis(),
     gradient=nothing,
     callback=nothing,
     timeout=Inf,
@@ -41,7 +41,7 @@ function blended_pairwise_conditional_gradient(
         print_iter=print_iter,
         trajectory=trajectory,
         verbose=verbose,
-        emphasis=emphasis,
+        memory_mode=memory_mode,
         gradient=gradient,
         callback=callback,
         timeout=timeout,
@@ -69,7 +69,7 @@ function blended_pairwise_conditional_gradient(
     print_iter=1000,
     trajectory=false,
     verbose=false,
-    emphasis::Emphasis=memory,
+    memory_mode::MemoryEmphasis=InplaceEmphasis(),
     gradient=nothing,
     callback=nothing,
     timeout=Inf,
@@ -99,14 +99,14 @@ function blended_pairwise_conditional_gradient(
         println("\nBlended Pairwise Conditional Gradient Algorithm.")
         NumType = eltype(x)
         println(
-            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
+            "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $num_type",
         )
         grad_type = typeof(gradient)
         println(
             "GRADIENTTYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance",
         )
-        if emphasis == memory
-            @warn("In memory emphasis mode iterates are written back into x0!")
+        if memory_mode isa InplaceEmphasis
+            @info("In memory emphasis mode iterates are written back into x0!")
         end
         headers =
             ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "#ActiveSet")

@@ -22,7 +22,7 @@ function frank_wolfe(
     print_iter=1000,
     trajectory=false,
     verbose=false,
-    emphasis::Emphasis=memory,
+    memory_mode::MemoryEmphasis=InplaceEmphasis(),
     gradient=nothing,
     callback=nothing,
     timeout=Inf,
@@ -54,17 +54,17 @@ function frank_wolfe(
         println("\nVanilla Frank-Wolfe Algorithm.")
         NumType = eltype(x0)
         println(
-            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
+            "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
         )
         grad_type = typeof(gradient)
         println("MOMENTUM: $momentum GRADIENTTYPE: $grad_type")
-        if emphasis === memory
-            println("WARNING: In memory emphasis mode iterates are written back into x0!")
+        if memory_mode isa InplaceEmphasis
+            @info("In memory_mode memory iterates are written back into x0!")
         end
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec"]
         print_callback(headers, format_string, print_header=true)
     end
-    if emphasis == memory && !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
+    if memory_mode isa InplaceEmphasis && !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
         # if integer, convert element type to most appropriate float
         if eltype(x) <: Integer
             x = copyto!(similar(x, float(eltype(x))), x)
@@ -119,7 +119,7 @@ function frank_wolfe(
             end
         else
             grad!(gtemp, x)
-            @emphasis(emphasis, gradient = (momentum * gradient) + (1 - momentum) * gtemp)
+            @memory_mode(memory_mode, gradient = (momentum * gradient) + (1 - momentum) * gtemp)
         end
         first_iter = false
 
@@ -134,7 +134,7 @@ function frank_wolfe(
             dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         end
 
-        @emphasis(emphasis, d = x - v)
+        @memory_mode(memory_mode, d = x - v)
 
         gamma = perform_line_search(
             line_search,
@@ -161,7 +161,7 @@ function frank_wolfe(
             callback(state)
         end
 
-        @emphasis(emphasis, x = x - gamma * d)
+        @memory_mode(memory_mode, x = x - gamma * d)
 
         if (mod(t, print_iter) == 0 && verbose)
             tt = regular
@@ -234,7 +234,7 @@ function lazified_conditional_gradient(
     print_iter=1000,
     trajectory=false,
     verbose=false,
-    emphasis::Emphasis=memory,
+    memory_mode::MemoryEmphasis=InplaceEmphasis(),
     gradient=nothing,
     VType=typeof(x0),
     callback=nothing,
@@ -273,19 +273,19 @@ function lazified_conditional_gradient(
         println("\nLazified Conditional Gradient (Frank-Wolfe + Lazification).")
         NumType = eltype(x0)
         println(
-            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration lazy_tolerance: $lazy_tolerance TYPE: $NumType",
+            "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration lazy_tolerance: $lazy_tolerance TYPE: $NumType",
         )
         grad_type = typeof(gradient)
         println("GRADIENTTYPE: $grad_type CACHESIZE $cache_size GREEDYCACHE: $greedy_lazy")
-        if emphasis == memory
-            println("WARNING: In memory emphasis mode iterates are written back into x0!")
+        if memory_mode isa InplaceEmphasis
+            @info("In memory_mode memory iterates are written back into x0!")
         end
         headers =
             ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "Cache Size"]
         print_callback(headers, format_string, print_header=true)
     end
 
-    if emphasis == memory && !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
+    if memory_mode isa InplaceEmphasis && !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
         if eltype(x) <: Integer
             x = copyto!(similar(x, float(eltype(x))), x)
         else
@@ -343,7 +343,7 @@ function lazified_conditional_gradient(
             phi = min(dual_gap, phi / 2)
         end
 
-        @emphasis(emphasis, d = x - v)
+        @memory_mode(memory_mode, d = x - v)
 
         gamma = perform_line_search(
             line_search,
@@ -372,7 +372,7 @@ function lazified_conditional_gradient(
             callback(state)
         end
 
-        @emphasis(emphasis, x = x - gamma * d)
+        @memory_mode(memory_mode, x = x - gamma * d)
 
         if verbose && (mod(t, print_iter) == 0 || tt == dualstep)
             if t == 0
@@ -448,7 +448,7 @@ function stochastic_frank_wolfe(
     print_iter=1000,
     trajectory=false,
     verbose=false,
-    emphasis::Emphasis=memory,
+    memory_mode::MemoryEmphasis=InplaceEmphasis(),
     rng=Random.GLOBAL_RNG,
     batch_size=length(f.xs) ÷ 10 + 1,
     batch_iterator=nothing,
@@ -492,17 +492,17 @@ function stochastic_frank_wolfe(
         println("\nStochastic Frank-Wolfe Algorithm.")
         NumType = eltype(x0)
         println(
-            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration TYPE: $NumType",
+            "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration TYPE: $NumType",
         )
         println("GRADIENTTYPE: $(typeof(f.storage)) MOMENTUM: $(momentum_iterator !== nothing) batch policy: $(typeof(batch_iterator)) ")
-        if emphasis == memory
-            println("WARNING: In memory emphasis mode iterates are written back into x0!")
+        if memory_mode isa InplaceEmphasis
+            @info("In memory_mode memory iterates are written back into x0!")
         end
         headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "batch size")
         print_callback(headers, format_string, print_header=true)
     end
 
-    if emphasis == memory && !isa(x, Union{Array, SparseArrays.AbstractSparseArray})
+    if memory_mode isa InplaceEmphasis && !isa(x, Union{Array, SparseArrays.AbstractSparseArray})
         if eltype(x) <: Integer
             x = copyto!(similar(x, float(eltype(x))), x)
         else
@@ -597,7 +597,7 @@ function stochastic_frank_wolfe(
             callback(state)
         end
 
-        @emphasis(emphasis, x = (1 - gamma) * x + gamma * v)
+        @memory_mode(memory_mode, x = (1 - gamma) * x + gamma * v)
 
         if mod(t, print_iter) == 0 && verbose
             tt = regular

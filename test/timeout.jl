@@ -119,7 +119,7 @@ using SparseArrays
             line_search=FrankWolfe.Agnostic(),
             verbose=false,
             momentum=0.9,
-            emphasis=FrankWolfe.memory,
+            memory_mode=FrankWolfe.InplaceEmphasis(),
         )[3] - 0.2,
     ) < 1.0e-3
     @test abs(
@@ -156,7 +156,7 @@ using SparseArrays
             line_search=FrankWolfe.Adaptive(L_est=100.0),
             verbose=false,
             momentum=0.9,
-            emphasis=FrankWolfe.memory,
+            memory_mode=FrankWolfe.InplaceEmphasis(),
         )[3] - 0.2,
     ) < 1.0e-3
 end

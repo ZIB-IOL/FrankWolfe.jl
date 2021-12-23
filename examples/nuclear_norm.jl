@@ -77,7 +77,7 @@ xfin, vmin, _, _, traj_data = FrankWolfe.frank_wolfe(
     trajectory=true,
     verbose=true,
     line_search=FrankWolfe.Adaptive(),
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     gradient=spzeros(size(x0)...),
 )
 
@@ -92,7 +92,7 @@ xfinlcg, vmin, _, _, traj_data = FrankWolfe.lazified_conditional_gradient(
     trajectory=true,
     verbose=true,
     line_search=FrankWolfe.Adaptive(),
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     gradient=spzeros(size(x0)...),
 )
 
@@ -111,7 +111,7 @@ xfinAFW, vmin, _, _, traj_data = FrankWolfe.away_frank_wolfe(
     verbose=true,
     lazy=true,
     line_search=FrankWolfe.Adaptive(),
-    emphasis=FrankWolfe.memory,#,
+    memory_mode=FrankWolfe.InplaceEmphasis(),#,
 )
 
 x00 = copy(x0)
@@ -127,7 +127,7 @@ xfinBCG, vmin, _, _, traj_data = FrankWolfe.blended_conditional_gradient(
     trajectory=true,
     verbose=true,
     line_search=FrankWolfe.Adaptive(),
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
 )
 
 xfinBPCG, vmin, _, _, traj_data = FrankWolfe.blended_pairwise_conditional_gradient(
@@ -141,7 +141,7 @@ xfinBPCG, vmin, _, _, traj_data = FrankWolfe.blended_pairwise_conditional_gradie
     trajectory=true,
     verbose=true,
     line_search=FrankWolfe.Adaptive(),
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
 #    lazy=true,
 )
 
