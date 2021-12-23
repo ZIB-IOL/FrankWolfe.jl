@@ -268,7 +268,6 @@ end
         print_iter=100,
         trajectory=false,
         verbose=false,
-        linesearch_tol=1e-7,
         line_search=FrankWolfe.Backtracking(),
         memory_mode=FrankWolfe.InplaceEmphasis(),
     )
@@ -285,7 +284,6 @@ end
         print_iter=100,
         trajectory=false,
         verbose=false,
-        linesearch_tol=1e-7,
         line_search=FrankWolfe.Backtracking(),
         memory_mode=FrankWolfe.InplaceEmphasis(),
     )

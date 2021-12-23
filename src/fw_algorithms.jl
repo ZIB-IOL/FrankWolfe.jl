@@ -16,21 +16,18 @@ function frank_wolfe(
     lmo,
     x0;
     line_search::LineSearchMethod=Adaptive(),
-    L=Inf,
-    gamma0=0,
-    step_lim=20,
     momentum=nothing,
     epsilon=1e-7,
     max_iteration=10000,
     print_iter=1000,
     trajectory=false,
     verbose=false,
-    linesearch_tol=1e-7,
     memory_mode::MemoryEmphasis=InplaceEmphasis(),
     gradient=nothing,
     callback=nothing,
     timeout=Inf,
     print_callback=print_callback,
+    linesearch_workspace=nothing,
 )
 
     # format string for output of the algorithm
@@ -47,17 +44,9 @@ function frank_wolfe(
     end
     time_start = time_ns()
 
-    if line_search isa Shortstep && !isfinite(L)
-        println("FATAL: Lipschitz constant not set. Prepare to blow up spectacularly.")
-    end
-
-    if line_search isa FixedStep && gamma0 == 0
-        println("FATAL: gamma0 not set. We are not going to move a single bit.")
-    end
-
-    if (!isnothing(momentum) && line_search isa Union{Shortstep,Adaptive,RationalShortstep})
-        println(
-            "WARNING: Momentum-averaged gradients should usually be used with agnostic stepsize rules.",
+    if (momentum !== nothing && line_search isa Union{Shortstep,Adaptive,Backtracking})
+        @warn(
+            "Momentum-averaged gradients should usually be used with agnostic stepsize rules.",
         )
     end
 
@@ -88,11 +77,14 @@ function frank_wolfe(
     if gradient === nothing
         gradient = similar(x)
     end
+    if linesearch_workspace === nothing
+        linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
+    end
 
     # container for direction
     d = similar(x)
     gtemp = if momentum === nothing
-        nothing
+        d
     else
         similar(x)
     end
@@ -144,20 +136,16 @@ function frank_wolfe(
 
         @memory_mode(memory_mode, d = x - v)
 
-        gamma, L = line_search_wrapper(
+        gamma = perform_line_search(
             line_search,
             t,
             f,
             grad!,
+            gradient,
             x,
             d,
-            momentum === nothing ? gradient : gtemp, # use appropriate storage
-            dual_gap,
-            L,
-            gamma0,
-            linesearch_tol,
-            step_lim,
-            one(eltype(x)),
+            1.0,
+            linesearch_workspace,
         )
         if callback !== nothing
             state = (
@@ -238,8 +226,6 @@ function lazified_conditional_gradient(
     lmo_base,
     x0;
     line_search::LineSearchMethod=Adaptive(),
-    L=Inf,
-    gamma0=0,
     lazy_tolerance=2.0,
     cache_size=Inf,
     greedy_lazy=false,
@@ -248,14 +234,13 @@ function lazified_conditional_gradient(
     print_iter=1000,
     trajectory=false,
     verbose=false,
-    linesearch_tol=1e-7,
-    step_lim=20,
     memory_mode::MemoryEmphasis=InplaceEmphasis(),
     gradient=nothing,
     VType=typeof(x0),
     callback=nothing,
     timeout=Inf,
     print_callback=print_callback,
+    linesearch_workspace=nothing,
 )
 
     # format string for output of the algorithm
@@ -280,16 +265,12 @@ function lazified_conditional_gradient(
     tt = regular
     time_start = time_ns()
 
-    if line_search isa Shortstep && !isfinite(L)
-        println("FATAL: Lipschitz constant not set. Prepare to blow up spectacularly.")
-    end
-
     if line_search isa Agnostic || line_search isa Nonconvex
-        println("FATAL: Lazification is not known to converge with open-loop step size strategies.")
+        @warn("Lazification is not known to converge with open-loop step size strategies.")
     end
 
     if verbose
-        println("\nLazified Conditional Gradients (Frank-Wolfe + Lazification).")
+        println("\nLazified Conditional Gradient (Frank-Wolfe + Lazification).")
         NumType = eltype(x0)
         println(
             "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration lazy_tolerance: $lazy_tolerance TYPE: $NumType",
@@ -318,6 +299,9 @@ function lazified_conditional_gradient(
 
     # container for direction
     d = similar(x)
+    if linesearch_workspace === nothing
+        linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
+    end
 
     while t <= max_iteration && dual_gap >= max(epsilon, eps(float(eltype(x))))
 
@@ -361,20 +345,16 @@ function lazified_conditional_gradient(
 
         @memory_mode(memory_mode, d = x - v)
 
-        gamma, L = line_search_wrapper(
+        gamma = perform_line_search(
             line_search,
             t,
             f,
             grad!,
+            gradient,
             x,
             d,
-            gradient,
-            dual_gap,
-            L,
-            gamma0,
-            linesearch_tol,
-            step_lim,
             1.0,
+            linesearch_workspace,
         )
 
         if callback !== nothing
@@ -387,7 +367,7 @@ function lazified_conditional_gradient(
                 cache_size=length(lmo),
                 x=x,
                 v=v,
-                gamma=gamma
+                gamma=gamma,
             )
             callback(state)
         end
@@ -461,8 +441,6 @@ function stochastic_frank_wolfe(
     lmo,
     x0;
     line_search::LineSearchMethod=Nonconvex(),
-    L=Inf,
-    gamma0=0,
     momentum_iterator=nothing,
     momentum=nothing,
     epsilon=1e-7,
@@ -470,7 +448,6 @@ function stochastic_frank_wolfe(
     print_iter=1000,
     trajectory=false,
     verbose=false,
-    linesearch_tol=1e-7,
     memory_mode::MemoryEmphasis=InplaceEmphasis(),
     rng=Random.GLOBAL_RNG,
     batch_size=length(f.xs) ÷ 10 + 1,
@@ -479,6 +456,7 @@ function stochastic_frank_wolfe(
     callback=nothing,
     timeout=Inf,
     print_callback=print_callback,
+    linesearch_workspace=nothing,
 )
 
     # format string for output of the algorithm
@@ -533,6 +511,10 @@ function stochastic_frank_wolfe(
     end
     first_iter = true
     gradient = 0
+    if linesearch_workspace === nothing
+        linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
+    end
+
     while t <= max_iteration && dual_gap >= max(epsilon, eps())
 
         #####################
@@ -597,18 +579,9 @@ function stochastic_frank_wolfe(
             dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         end
 
-        if line_search isa Agnostic
-            gamma = 2 // (2 + t)
-        elseif line_search isa Nonconvex
-            gamma = 1 / sqrt(t + 1)
-        elseif line_search isa Shortstep
-            gamma = dual_gap / (L * norm(x - v)^2)
-        elseif line_search isa RationalShortstep
-            rat_dual_gap = sum((x - v) .* gradient)
-            gamma = rat_dual_gap // (L * sum((x - v) .^ 2))
-        elseif line_search isa FixedStep
-            gamma = gamma0
-        end
+        # note: only linesearch methods that do not require full evaluations are supported
+        # so nothing is passed as function 
+        gamma = perform_line_search(line_search, t, nothing, nothing, gradient, x, x - v, 1.0, linesearch_workspace)
 
         if callback !== nothing
             state = (
