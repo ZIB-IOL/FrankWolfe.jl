@@ -39,7 +39,7 @@ is_tracking_lmo(lmo::TrackingLMO) = true
 TrackingLMO(lmo) = TrackingLMO(lmo, 0)
 
 function tracking_trajectory_callback(storage)
-    return function push_trajectory!(state)
+    return function tracking_push_trajectory!(state)
         return push!(storage, Tuple(state)[1:8])
     end
 end
