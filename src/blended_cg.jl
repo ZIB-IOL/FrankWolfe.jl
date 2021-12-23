@@ -72,7 +72,7 @@ function blended_conditional_gradient(
         )
         grad_type = typeof(gradient)
         println("GRADIENTTYPE: $grad_type lazy_tolerance: $lazy_tolerance")
-        println("WARNING: In memory_mode memory iterates are written back into x0!")
+        @info("In memory_mode memory iterates are written back into x0!")
         headers = (
             "Type",
             "Iteration",

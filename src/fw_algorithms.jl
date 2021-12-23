@@ -59,7 +59,7 @@ function frank_wolfe(
         grad_type = typeof(gradient)
         println("MOMENTUM: $momentum GRADIENTTYPE: $grad_type")
         if memory_mode isa InplaceEmphasis
-            println("WARNING: In memory_mode memory iterates are written back into x0!")
+            @info("In memory_mode memory iterates are written back into x0!")
         end
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec"]
         print_callback(headers, format_string, print_header=true)
@@ -278,7 +278,7 @@ function lazified_conditional_gradient(
         grad_type = typeof(gradient)
         println("GRADIENTTYPE: $grad_type CACHESIZE $cache_size GREEDYCACHE: $greedy_lazy")
         if memory_mode isa InplaceEmphasis
-            println("WARNING: In memory_mode memory iterates are written back into x0!")
+            @info("In memory_mode memory iterates are written back into x0!")
         end
         headers =
             ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "Cache Size"]
@@ -496,7 +496,7 @@ function stochastic_frank_wolfe(
         )
         println("GRADIENTTYPE: $(typeof(f.storage)) MOMENTUM: $(momentum_iterator !== nothing) batch policy: $(typeof(batch_iterator)) ")
         if memory_mode isa InplaceEmphasis
-            println("WARNING: In memory_mode memory iterates are written back into x0!")
+            @info("In memory_mode memory iterates are written back into x0!")
         end
         headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "batch size")
         print_callback(headers, format_string, print_header=true)

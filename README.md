@@ -205,11 +205,6 @@ The above is the optional benchmarking of the oracles that we provide to underst
 As you can see if you compare `update (blas)` vs. `update (memory)`, the normal update when we use BLAS requires an additional 14.9GB of memory on top of the gradient etc whereas the `update (memory)` (the memory emphasis mode) does not consume any extra memory. This is also reflected in the computational times: the BLAS version requires 3.61 seconds on average to update the iterate, while the memory emphasis version requires only 500ms. In fact none of the crucial components in the algorithm consume any memory when run in memory efficient mode. Now let us look at the actual footprint of the whole algorithm:
 
 ```
-Vanilla Frank-Wolfe Algorithm.
-EMPHASIS: memory STEPSIZE: agnostic EPSILON: 1.0e-7 MAXITERATION: 1000 TYPE: Float64
-MOMENTUM: nothing GRADIENTTYPE: Nothing
-WARNING: In memory emphasis mode iterates are written back into x0!
-
 ─────────────────────────────────────────────────────────────────────────────────────────────────
   Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec
 ─────────────────────────────────────────────────────────────────────────────────────────────────
