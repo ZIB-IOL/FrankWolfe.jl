@@ -45,6 +45,11 @@ function frank_wolfe(
     if trajectory && (callback === nothing)
         callback = trajectory_callback(traj_data)
     end
+
+    if trajectory && (callback === tracking_trajectory_callback)
+        callback = tracking_trajectory_callback(traj_data)
+    end
+
     time_start = time_ns()
 
     if line_search isa Shortstep && !isfinite(L)
