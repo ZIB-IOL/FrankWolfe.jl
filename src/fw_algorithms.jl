@@ -39,7 +39,7 @@ function frank_wolfe(
     x = x0
     tt = regular
     traj_data = []
-    if trajectory && (callback === nothing)
+    if trajectory && callback === nothing
         callback = trajectory_callback(traj_data)
     end
 
