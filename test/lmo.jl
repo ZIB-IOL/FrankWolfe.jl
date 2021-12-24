@@ -268,9 +268,8 @@ end
         print_iter=100,
         trajectory=false,
         verbose=false,
-        linesearch_tol=1e-7,
         line_search=FrankWolfe.Backtracking(),
-        emphasis=FrankWolfe.memory,
+        memory_mode=FrankWolfe.InplaceEmphasis(),
     )
     @test 1 - (f(x0) - f(xfin)) / f(x0) < 1e-3
     svals_fin = svdvals(xfin)
@@ -285,9 +284,8 @@ end
         print_iter=100,
         trajectory=false,
         verbose=false,
-        linesearch_tol=1e-7,
         line_search=FrankWolfe.Backtracking(),
-        emphasis=FrankWolfe.memory,
+        memory_mode=FrankWolfe.InplaceEmphasis(),
     )
 end
 
@@ -692,7 +690,6 @@ end
         MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
         Clp.Optimizer(),
     )
-
     for o in (GLPK.Optimizer(), o_clp)
         MOI.set(o, MOI.Silent(), true)
         n = 100

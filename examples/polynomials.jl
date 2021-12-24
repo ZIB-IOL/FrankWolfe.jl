@@ -193,14 +193,13 @@ callback = build_callback(trajectory_lafw)
     lmo,
     x0,
     max_iteration=max_iter,
-    line_search=FrankWolfe.Adaptive(),
+    line_search=FrankWolfe.Adaptive(L_est=L_estimate),
     print_iter=max_iter ÷ 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     lazy=true,
     gradient=gradient,
     callback=callback,
-    L=L_estimate,
 );
 
 @info "Lazy AFW training loss $(f(x_lafw))"
@@ -217,13 +216,12 @@ x0 = deepcopy(x00)
     lmo,
     x0,
     max_iteration=max_iter,
-    line_search=FrankWolfe.Adaptive(),
+    line_search=FrankWolfe.Adaptive(L_est=L_estimate),
     print_iter=max_iter ÷ 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     weight_purge_threshold=1e-10,
     callback=callback,
-    L=L_estimate,
 )
 
 @info "BCG training loss $(f(x_bcg))"
@@ -242,14 +240,13 @@ callback = build_callback(trajectory_lafw_ref)
     lmo,
     x0,
     max_iteration=2 * max_iter,
-    line_search=FrankWolfe.Adaptive(),
+    line_search=FrankWolfe.Adaptive(L_est=L_estimate),
     print_iter=max_iter ÷ 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     lazy=true,
     gradient=gradient,
     callback=callback,
-    L=L_estimate,
 );
 
 open(joinpath(@__DIR__, "polynomial_result.json"), "w") do f

@@ -111,14 +111,6 @@ const lmo = FrankWolfe.NuclearNormLMO(norm_estimation)
 const x0 = FrankWolfe.compute_extreme_point(lmo, ones(size(rating_matrix)))
 const k = 10
 
-FrankWolfe.benchmark_oracles(
-    f,
-    (str, x) -> grad!(str, x),
-    () -> randn(size(rating_matrix)),
-    lmo;
-    k=10,
-)
-
 gradient = spzeros(size(x0)...)
 gradient_aux = spzeros(size(x0)...)
 
@@ -161,6 +153,8 @@ function_values = Float64[]
 timing_values = Float64[]
 function_test_values = Float64[]
 
+ls = FrankWolfe.Backtracking()
+ls_storage = similar(xgd)
 time_start = time_ns()
 for _ in 1:k
     f_val = f(xgd)
@@ -170,7 +164,7 @@ for _ in 1:k
     @info f_val
     grad!(gradient, xgd)
     xgd_new, vertex = project_nuclear_norm_ball(xgd - gradient / L_estimate, radius=norm_estimation)
-    gamma, _ = FrankWolfe.backtrackingLS(f, gradient, xgd, xgd - xgd_new, 1.0)
+    gamma = FrankWolfe.perform_line_search(ls, 1, f, grad!, gradient, xgd, xgd - xgd_new, 1.0, ls_storage)
     @. xgd -= gamma * (xgd - xgd_new)
 end
 
@@ -185,9 +179,8 @@ xfin, _, _, _, traj_data = FrankWolfe.frank_wolfe(
     max_iteration=10 * k,
     print_iter=k / 10,
     verbose=false,
-    linesearch_tol=1e-8,
     line_search=FrankWolfe.Adaptive(),
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     gradient=gradient,
     callback=callback,
 )
@@ -203,9 +196,8 @@ xlazy, _, _, _, _ = FrankWolfe.lazified_conditional_gradient(
     max_iteration=10 * k,
     print_iter=k / 10,
     verbose=false,
-    linesearch_tol=1e-8,
     line_search=FrankWolfe.Adaptive(),
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     gradient=gradient,
     callback=callback,
 )
@@ -222,9 +214,8 @@ xlazy, _, _, _, _ = FrankWolfe.lazified_conditional_gradient(
     max_iteration=50 * k,
     print_iter=k / 10,
     verbose=false,
-    linesearch_tol=1e-8,
     line_search=FrankWolfe.Adaptive(),
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     gradient=gradient,
     callback=callback,
 )

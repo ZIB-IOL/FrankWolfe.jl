@@ -55,6 +55,6 @@ FrankWolfe.benchmark_oracles(
     max_iteration=k,
     line_search=FrankWolfe.Agnostic(),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
 );

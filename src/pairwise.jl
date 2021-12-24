@@ -12,22 +12,19 @@ function blended_pairwise_conditional_gradient(
     lmo,
     x0;
     line_search::LineSearchMethod=Adaptive(),
-    L=Inf,
-    gamma0=0,
-    step_lim=20,
     epsilon=1e-7,
     max_iteration=10000,
     print_iter=1000,
     trajectory=false,
     verbose=false,
-    linesearch_tol=1e-7,
-    emphasis::Emphasis=memory,
+    memory_mode::MemoryEmphasis=InplaceEmphasis(),
     gradient=nothing,
     callback=nothing,
     timeout=Inf,
     print_callback=print_callback,
     renorm_interval=1000,
     lazy=false,
+    linesearch_workspace=nothing,
     lazy_tolerance=2.0,
 )
     # add the first vertex to active set from initialization
@@ -39,22 +36,19 @@ function blended_pairwise_conditional_gradient(
         lmo,
         active_set,
         line_search=line_search,
-        L=L,
-        gamma0=gamma0,
-        step_lim=step_lim,
         epsilon=epsilon,
         max_iteration=max_iteration,
         print_iter=print_iter,
         trajectory=trajectory,
         verbose=verbose,
-        linesearch_tol=linesearch_tol,
-        emphasis=emphasis,
+        memory_mode=memory_mode,
         gradient=gradient,
         callback=callback,
         timeout=timeout,
         print_callback=print_callback,
         renorm_interval=renorm_interval,
         lazy=lazy,
+        linesearch_workspace=linesearch_workspace,
         lazy_tolerance=lazy_tolerance,
     )
 end
@@ -70,22 +64,19 @@ function blended_pairwise_conditional_gradient(
     lmo,
     active_set::ActiveSet;
     line_search::LineSearchMethod=Adaptive(),
-    L=Inf,
-    gamma0=0,
-    step_lim=20,
     epsilon=1e-7,
     max_iteration=10000,
     print_iter=1000,
     trajectory=false,
     verbose=false,
-    linesearch_tol=1e-7,
-    emphasis::Emphasis=memory,
+    memory_mode::MemoryEmphasis=InplaceEmphasis(),
     gradient=nothing,
     callback=nothing,
     timeout=Inf,
     print_callback=print_callback,
     renorm_interval=1000,
     lazy=false,
+    linesearch_workspace=nothing,
     lazy_tolerance=2.0,
 )
 
@@ -104,26 +95,18 @@ function blended_pairwise_conditional_gradient(
 
     d = similar(x)
 
-    if line_search isa Shortstep && L == Inf
-        println("WARNING: Lipschitz constant not set. Prepare to blow up spectacularly.")
-    end
-
-    if line_search isa FixedStep && gamma0 == 0
-        println("WARNING: gamma0 not set. We are not going to move a single bit.")
-    end
-
     if verbose
         println("\nBlended Pairwise Conditional Gradient Algorithm.")
-        num_type = eltype(x)
+        NumType = eltype(x)
         println(
-            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $num_type",
+            "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $num_type",
         )
         grad_type = typeof(gradient)
         println(
             "GRADIENTTYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance",
         )
-        if emphasis == memory
-            println("WARNING: In memory emphasis mode iterates are written back into x0!")
+        if memory_mode isa InplaceEmphasis
+            @info("In memory emphasis mode iterates are written back into x0!")
         end
         headers =
             ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "#ActiveSet")
@@ -141,6 +124,10 @@ function blended_pairwise_conditional_gradient(
     phi = max(0, fast_dot(x, gradient) - fast_dot(v, gradient))
     local_gap = zero(phi)
     gamma = 1.0
+
+    if linesearch_workspace === nothing
+        linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
+    end
 
     while t <= max_iteration && phi >= max(epsilon, eps())
 
@@ -183,20 +170,16 @@ function blended_pairwise_conditional_gradient(
             @. d = a - v_local
             vertex_taken = v_local
             gamma_max = a_lambda
-            gamma, L = line_search_wrapper(
+            gamma = perform_line_search(
                 line_search,
                 t,
                 f,
                 grad!,
+                gradient,
                 x,
                 d,
-                gradient,
-                phi,
-                L,
-                gamma0,
-                linesearch_tol,
-                step_lim,
-                gamma_max,
+                1.0,
+                linesearch_workspace,
             )
             # reached maximum of lambda -> dropping away vertex
             if gamma ≈ gamma_max
@@ -219,22 +202,18 @@ function blended_pairwise_conditional_gradient(
             if (!lazy || dual_gap ≥ phi / lazy_tolerance)
                 tt = regular
                 @. d = x - v
-                gamma_max = one(eltype(x))
-                gamma, L = line_search_wrapper(
+                gamma = perform_line_search(
                     line_search,
                     t,
                     f,
                     grad!,
+                    gradient,
                     x,
                     d,
-                    gradient,
-                    dual_gap,
-                    L,
-                    gamma0,
-                    linesearch_tol,
-                    step_lim,
-                    gamma_max,
+                    one(eltype(x)),
+                    linesearch_workspace,
                 )
+    
                 # dropping active set and restarting from singleton
                 if gamma ≈ 1.0
                     active_set_initialize!(active_set, v)
