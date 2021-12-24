@@ -253,7 +253,7 @@ end
     end
     # TODO value of radius?
     lmo = FrankWolfe.NuclearNormLMO(sum(svdvals(Xreal)))
-    x0 = FrankWolfe.compute_extreme_point(lmo, zero(Xreal))
+    x0 = @inferred FrankWolfe.compute_extreme_point(lmo, zero(Xreal))
     gradient = similar(x0)
     grad!(gradient, x0)
     v0 = FrankWolfe.compute_extreme_point(lmo, gradient)
@@ -473,10 +473,11 @@ end
     @testset "Nuclear norm" for n in (5, 10)
         o = Hypatia.Optimizer()
         MOI.set(o, MOI.Silent(), true)
-        optimizer = MOI.Utilities.CachingOptimizer(
+        inner_optimizer = MOI.Utilities.CachingOptimizer(
             MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
             o,
         )
+        optimizer = MOI.Bridges.full_bridge_optimizer(inner_optimizer, Float64)        
         MOI.set(optimizer, MOI.Silent(), true)
         nrows = 3n
         ncols = n
@@ -485,6 +486,7 @@ end
         lmo = FrankWolfe.NuclearNormLMO(τ)
         lmo_moi =
             FrankWolfe.convert_mathopt(lmo, optimizer, row_dimension=nrows, col_dimension=ncols)
+        nsuccess = 0
         for _ in 1:10
             randn!(direction)
             v_r = FrankWolfe.compute_extreme_point(lmo, direction)
@@ -495,9 +497,11 @@ end
                 # ignore non-terminating MOI solver results
                 continue
             end
+            nsuccess += 1
             v_moi_mat = reshape(v_moi[1:end-1], nrows, ncols)
             @test v_r ≈ v_moi_mat rtol = 1e-2
         end
+        @test nsuccess > 1
     end
 end
 
@@ -681,4 +685,27 @@ end
     vref = FrankWolfe.compute_extreme_point(lmo_ref, d)
     @test v ≈ vref
     @test norm(v, Inf) == 1
+end
+
+@testset "Copy MathOpt LMO" begin
+    o_clp = MOI.Utilities.CachingOptimizer(
+        MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
+        Clp.Optimizer(),
+    )
+
+    for o in (GLPK.Optimizer(), o_clp)
+        MOI.set(o, MOI.Silent(), true)
+        n = 100
+        x = MOI.add_variables(o, n)
+        f = sum(1.0 * xi for xi in x)
+        MOI.add_constraint(o, f, MOI.LessThan(1.0))
+        MOI.add_constraint(o, f, MOI.GreaterThan(1.0))
+        lmo = FrankWolfe.MathOptLMO(o)
+        lmo2 = copy(lmo)
+        for d in (ones(n), -ones(n))
+            v = FrankWolfe.compute_extreme_point(lmo, d)
+            v2 = FrankWolfe.compute_extreme_point(lmo2, d)
+            @test v ≈ v2
+        end
+    end
 end
