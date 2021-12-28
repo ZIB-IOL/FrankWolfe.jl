@@ -360,7 +360,8 @@ function minimize_over_convex_hull!(
             return 0
         end
         T = typeof(M[1])
-        L_reduced = eigmax(M)::T
+        S = schur(M)
+        L_reduced = maximum(S.values)::T
         #L_reduced = Arpack.eigs(M, nev=1, which=:LM)
         reduced_f(y) =
             f(x) - fast_dot(gradient, x) +
@@ -372,7 +373,7 @@ function minimize_over_convex_hull!(
         end
         #Solve using Nesterov's AGD
         if accelerated
-            mu_reduced = eigmin(M)::T
+            mu_reduced = minimum(S.values)::T
             if L_reduced / mu_reduced > 1.0
                 new_weights, number_of_steps =
                     accelerated_simplex_gradient_descent_over_probability_simplex(
