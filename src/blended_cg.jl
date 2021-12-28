@@ -359,14 +359,9 @@ function minimize_over_convex_hull!(
         if isnothing(M)
             return 0
         end
-        #In case the matrices are DoubleFloats we need to cast them as Float64, because LinearAlgebra does not work with them.
-        if eltype(M) === Double64
-            converted_matrix = convert(Array{Float64}, M)
-            L_reduced = eigmax(converted_matrix)
-        else
-            L_reduced = eigmax(M)
-            #L_reduced = Arpack.eigs(M, nev=1, which=:LM)
-        end
+        T = typeof(M[1])
+        L_reduced = eigmax(M)::T
+        #L_reduced = Arpack.eigs(M, nev=1, which=:LM)
         reduced_f(y) =
             f(x) - fast_dot(gradient, x) +
             0.5 * transpose(x) * hessian * x +
@@ -377,11 +372,7 @@ function minimize_over_convex_hull!(
         end
         #Solve using Nesterov's AGD
         if accelerated
-            if eltype(M) === Double64
-                mu_reduced = eigmin(converted_matrix)
-            else
-                mu_reduced = eigmin(M)
-            end
+            mu_reduced = eigmin(M)::T
             if L_reduced / mu_reduced > 1.0
                 new_weights, number_of_steps =
                     accelerated_simplex_gradient_descent_over_probability_simplex(
