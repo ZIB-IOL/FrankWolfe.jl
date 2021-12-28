@@ -1,5 +1,6 @@
 module FrankWolfe
 
+using GenericSchur
 using LinearAlgebra
 using Printf
 using ProgressMeter
