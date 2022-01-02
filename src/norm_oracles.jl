@@ -82,7 +82,7 @@ end
 
 function compute_extreme_point(lmo::L1ballDense{T}, direction; v = zeros(T, length(direction)), kwargs...) where {T}
     idx = 0
-    v_ = -1.0
+    val = -1.0
     for i in eachindex(direction)
         if abs(direction[i]) > v_
             v_ = abs(direction[i])
