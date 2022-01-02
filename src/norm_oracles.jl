@@ -90,6 +90,7 @@ function compute_extreme_point(lmo::L1ballDense{T}, direction; v = zeros(T, leng
         end
     end
 
+    v .= 0
     v[idx] = T(-lmo.right_hand_side * sign(direction[idx]))
     return v
 end
