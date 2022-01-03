@@ -97,4 +97,4 @@ Some typical features to implement are:
 We try to follow the [Julia documentation guidelines](https://docs.julialang.org/en/v1/manual/documentation/).
 We run [`JuliaFormatter.jl`](https://github.com/domluna/JuliaFormatter.jl) on the repo in the way set in the `.JuliaFormatter.toml` file, which enforces a number of conventions.
 
-This contribution guide was inspired by [ColPrac](https://github.com/SciML/ColPrac) and the one on [Manopt.jl](https://github.com/JuliaManifolds/Manopt.jl).
+This contribution guide was inspired by [ColPrac](https://github.com/SciML/ColPrac) and the one in [Manopt.jl](https://github.com/JuliaManifolds/Manopt.jl).
