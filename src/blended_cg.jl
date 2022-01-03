@@ -359,7 +359,7 @@ function minimize_over_convex_hull!(
         if isnothing(M)
             return 0
         end
-        T = typeof(M[1])
+        T = eltype(M)
         S = schur(M)
         L_reduced = maximum(S.values)::T
         #L_reduced = Arpack.eigs(M, nev=1, which=:LM)
