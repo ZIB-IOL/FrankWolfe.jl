@@ -784,3 +784,10 @@ using Test
     include("rational_test.jl")
 end
 end
+
+module BCGAccel
+using Test
+@testset "BCG acceleration with different types" begin
+    include("blended_accelerated.jl")
+end
+end
