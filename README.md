@@ -121,6 +121,10 @@ state to an array returned from the algorithm.
 - Optionally all algorithms can be endowed with gradient momentum. This might help convergence especially in the stochastic context.
 - (to come:) When the LMO can compute dual prices then the Frank-Wolfe algorithms return dual prices for the (approximately) optimal solutions (see [Braun, Pokutta 2021](https://arxiv.org/abs/2101.02087)).
 
+## Contributing
+
+See the [contribution guide](CONTRIBUTING.md).
+
 ## Noteworthy examples
 
 See the `/examples` folder. All examples run on the test environment using [TestEnv.jl](https://github.com/JuliaTesting/TestEnv.jl).
