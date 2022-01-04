@@ -48,11 +48,17 @@ and ideally a Minimal Working Example (MWE), a small program that reproduces the
 ## How can I contribute?
 
 Contributing to the repository will likely be made in a Pull Request (PR).
-Your work will be done in another branch (not master or the branch you want to merge onto).
-See the GitHub [guide to creating PRs](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request).
+You will need to:
+1. Fork the repository
+2. Clone it on your machine to perform the changes
+3. Create a branch for your modifications, based on the branch you want to merge on (typically master)
+4. Push to this branch on your fork
+5. The GitHub web interface will then automatically suggest opening a PR onto the original repository.
 
-A PR should do a single thing to reduce the amount of code that must be reviewed. Do not run the formatter on the whole repository except if your PR
-is specifically about formatting.
+See the GitHub [guide to creating PRs](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request) for more help on workflows using Git and GitHub.
+
+A PR should do a single thing to reduce the amount of code that must be reviewed.
+Do not run the formatter on the whole repository except if your PR is specifically about formatting.
 
 ### Improve the documentation
 
