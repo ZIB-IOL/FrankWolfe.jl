@@ -9,10 +9,10 @@ We list below some guidelines to help you contribute to the package.
 
 - [Contributing to `FrankWolfe`](#Contributing-to-FrankWolfe)
   - [Community Standards](#Community-Standards)
-  - [Where can I get an overview?](#Where-can-I-get-an-overview?)
+  - [Where can I get an overview](#Where-can-I-get-an-overview)
   - [I just have a question](#I-just-have-a-question)
-  - [How can I file an issue?](#How-can-I-file-an-issue?)
-  - [How can I contribute?](#How-can-I-contribute?)
+  - [How can I file an issue](#How-can-I-file-an-issue)
+  - [How can I contribute](#How-can-I-contribute)
     - [Improve the documentation](#Improve-the-documentation)
     - [Provide a new example or test](#Provide-a-new-example-or-test)
     - [Provide a new feature](#Provide-a-new-feature)
@@ -22,7 +22,7 @@ We list below some guidelines to help you contribute to the package.
 
 Interactions on this repository must follow the Julia [Community Standards](https://julialang.org/community/standards/) including Pull Requests and issues.
 
-## Where can I get an overview?
+## Where can I get an overview
 
 Check out the [paper](https://arxiv.org/abs/2104.06675) presenting the package
 for a high-level overview of the feature and algorithms and
@@ -37,7 +37,7 @@ For now, the best way to ask a question is to reach out to [Mathieu Besançon](h
 You can also ask your question on [discourse.julialang.org](https://discourse.julialang.org) in the optimization topic or on the Julia Slack
 on `#mathematical-optimization`, see [the Julia community page](https://julialang.org/community/) to gain access.
 
-## How can I file an issue?
+## How can I file an issue
 
 If you found a bug or want to propose a feature, we track our issues within the [GitHub repository](https://github.com/ZIB-IOL/FrankWolfe.jl/issues).
 Once opened, you can edit the issue or add new comments to continue the conversation.
@@ -45,7 +45,7 @@ Once opened, you can edit the issue or add new comments to continue the conversa
 If you encounter a bug, send the stack trace (the lines appearing after the error occurred containing some source files)
 and ideally a Minimal Working Example (MWE), a small program that reproduces the bug.
 
-## How can I contribute?
+## How can I contribute
 
 Contributing to the repository will likely be made in a Pull Request (PR).
 You will need to:
