@@ -43,10 +43,6 @@ function frank_wolfe(
         callback = trajectory_callback(traj_data)
     end
 
-    if trajectory && (callback === tracking_trajectory_callback)
-        callback = tracking_trajectory_callback(traj_data)
-    end
-
     time_start = time_ns()
 
     if (momentum !== nothing && line_search isa Union{Shortstep,Adaptive,Backtracking})

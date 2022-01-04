@@ -65,7 +65,7 @@ function tracking_trajectory_callback(storage)
     end
 end
 
-function wrap_objective(to:TrackingObjective)
+function wrap_objective(to::TrackingObjective)
     function f(x)
         to.counter += 1
         return to.f(x)
