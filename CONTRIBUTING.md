@@ -9,10 +9,10 @@ We list below some guidelines to help you contribute to the package.
 
 - [Contributing to `FrankWolfe`](#Contributing-to-FrankWolfe)
   - [Community Standards](#Community-Standards)
-  - [Where can I get an overview?](#Where-can-I-get-an-overview)
+  - [Where can I get an overview?](#Where-can-I-get-an-overview?)
   - [I just have a question](#I-just-have-a-question)
-  - [How can I file an issue?](#How-can-I-file-an-issue)
-  - [How can I contribute?](#How-can-I-contribute)
+  - [How can I file an issue?](#How-can-I-file-an-issue?)
+  - [How can I contribute?](#How-can-I-contribute?)
     - [Improve the documentation](#Improve-the-documentation)
     - [Provide a new example or test](#Provide-a-new-example-or-test)
     - [Provide a new feature](#Provide-a-new-feature)
