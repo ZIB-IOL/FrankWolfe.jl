@@ -1,0 +1,8 @@
+function _precompile_()
+    ccall(:jl_generating_output, Cint, ()) == 1 || return nothing
+    Base.precompile(Tuple{Core.kwftype(typeof(blended_conditional_gradient)),NamedTuple{(:epsilon, :max_iteration, :print_iter, :trajectory, :verbose, :line_search, :memory_mode), Tuple{Float64, Int64, Float64, Bool, Bool, Adaptive{Float64, Int64}, InplaceEmphasis}},typeof(blended_conditional_gradient),Function,Function,NuclearNormLMO{Float64},RankOneMatrix{Float64, Vector{Float64}, Vector{Float64}}})   # time: 1.6012237
+    isdefined(FrankWolfe, Symbol("#push_trajectory!#33")) && Base.precompile(Tuple{getfield(FrankWolfe, Symbol("#push_trajectory!#33")),NamedTuple{(:t, :primal, :dual, :dual_gap, :time, :x, :active_set_length, :non_simplex_iter), Tuple{Int64, Float64, Float64, Float64, Float64, Matrix{Float64}, Int64, Int64}}})   # time: 0.09564784
+    isdefined(FrankWolfe, Symbol("#push_trajectory!#33")) && Base.precompile(Tuple{getfield(FrankWolfe, Symbol("#push_trajectory!#33")),NamedTuple{(:t, :primal, :dual, :dual_gap, :time, :x, :v, :active_set_length, :non_simplex_iter), Tuple{Int64, Float64, Float64, Float64, Float64, Matrix{Float64}, RankOneMatrix{Float64, Vector{Float64}, Vector{Float64}}, Int64, Int64}}})   # time: 0.023729613
+    Base.precompile(Tuple{Core.kwftype(typeof(print_callback)),NamedTuple{(:print_header,), Tuple{Bool}},typeof(print_callback),NTuple{9, String},String})   # time: 0.007113008
+    Base.precompile(Tuple{Core.kwftype(typeof(lp_separation_oracle)),NamedTuple{(:inplace_loop, :force_fw_step), Tuple{Bool, Bool}},typeof(lp_separation_oracle),NuclearNormLMO{Float64},ActiveSet{RankOneMatrix{Float64, Vector{Float64}, Vector{Float64}}, Float64, Matrix{Float64}},Matrix{Float64},Float64,Float64})   # time: 0.001352328
+end

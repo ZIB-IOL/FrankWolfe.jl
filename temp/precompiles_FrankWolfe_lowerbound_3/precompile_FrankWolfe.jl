@@ -1,0 +1,8 @@
+function _precompile_()
+    ccall(:jl_generating_output, Cint, ()) == 1 || return nothing
+    Base.precompile(Tuple{Core.kwftype(typeof(blended_conditional_gradient)),NamedTuple{(:max_iteration, :line_search, :print_iter, :memory_mode, :verbose, :epsilon, :trajectory), Tuple{Int64, Adaptive{Float64, Int64}, Float64, InplaceEmphasis, Bool, Float64, Bool}},typeof(blended_conditional_gradient),Function,Function,ProbabilitySimplexOracle{Float64},ScaledHotVector{Float64}})   # time: 1.6212598
+    isdefined(FrankWolfe, Symbol("#push_trajectory!#33")) && Base.precompile(Tuple{getfield(FrankWolfe, Symbol("#push_trajectory!#33")),NamedTuple{(:t, :primal, :dual, :dual_gap, :time, :x, :active_set_length, :non_simplex_iter), Tuple{Int64, Float64, Float64, Float64, Float64, Vector{Float64}, Int64, Int64}}})   # time: 0.14053974
+    Base.precompile(Tuple{Core.kwftype(typeof(print_callback)),NamedTuple{(:print_header,), Tuple{Bool}},typeof(print_callback),NTuple{9, String},String})   # time: 0.05082889
+    isdefined(FrankWolfe, Symbol("#push_trajectory!#33")) && Base.precompile(Tuple{getfield(FrankWolfe, Symbol("#push_trajectory!#33")),NamedTuple{(:t, :primal, :dual, :dual_gap, :time, :x, :v, :active_set_length, :non_simplex_iter), Tuple{Int64, Float64, Float64, Float64, Float64, Vector{Float64}, ScaledHotVector{Float64}, Int64, Int64}}})   # time: 0.029885847
+    Base.precompile(Tuple{Core.kwftype(typeof(lp_separation_oracle)),NamedTuple{(:inplace_loop, :force_fw_step), Tuple{Bool, Bool}},typeof(lp_separation_oracle),ProbabilitySimplexOracle{Float64},ActiveSet{ScaledHotVector{Float64}, Float64, Vector{Float64}},SparseVector{Float64, Int64},Float64,Float64})   # time: 0.001872497
+end
