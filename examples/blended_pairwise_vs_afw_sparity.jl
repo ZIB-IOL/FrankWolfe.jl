@@ -62,7 +62,7 @@ end
 FrankWolfe.benchmark_oracles(f, grad!, () -> randn(n), lmo; k=100)
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, trajectorySs = FrankWolfe.frank_wolfe(
+@time x, v, primal, dual_gap, trajectory_shortstep = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -77,8 +77,8 @@ x0 = deepcopy(x00)
 );
 
 
-trajectoryAfw = []
-callback = build_callback(trajectoryAfw)
+trajectory_afw = []
+callback = build_callback(trajectory_afw)
 
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
@@ -96,8 +96,8 @@ x0 = deepcopy(x00)
 );
 
 
-trajectoryLAfw = []
-callback = build_callback(trajectoryLAfw)
+trajectory_lafw = []
+callback = build_callback(trajectory_lafw)
 
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
@@ -157,7 +157,7 @@ x0 = deepcopy(x00)
 # Reduction primal/dual error vs. sparsity of solution
 
 dataSparsity =
-    [trajectoryAfw, trajectoryLAfw, trajectoryBPCG, trajectoryLBPCG]
+    [trajectory_afw, trajectory_lafw, trajectoryBPCG, trajectoryLBPCG]
 labelSparsity = ["AFW", "LAFW", "BPCG", "LBPCG"]
 
 FrankWolfe.plot_sparsity(dataSparsity, labelSparsity, legend_position=:topright)
