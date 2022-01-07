@@ -1,4 +1,3 @@
-using FiniteDifferences
 
 ##############################
 ### memory_mode macro
