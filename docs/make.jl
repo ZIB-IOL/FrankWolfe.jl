@@ -44,6 +44,26 @@ literate_directory(_EXAMPLE_DIR)
 
 ENV["GKSwstype"] = "100"
 
+generated_path = joinpath(@__DIR__, "src")
+base_url = "https://github.com/ZIB-IOL/FrankWolfe.jl/blob/master/"
+isdir(generated_path) || mkdir(generated_path)
+
+open(joinpath(generated_path, "contributing.md"), "w") do io
+    # Point to source license file
+    println(
+        io,
+        """
+        ```@meta
+        EditURL = "$(base_url)CONTRIBUTING.md"
+        ```
+        """,
+    )
+    # Write the contents out below the meta block
+    for line in eachline(joinpath(dirname(@__DIR__), "CONTRIBUTING.md"))
+        println(io, line)
+    end
+end
+
 makedocs(
     modules=[FrankWolfe],
     sitename="FrankWolfe.jl",
@@ -53,6 +73,7 @@ makedocs(
         "Examples" => [
         joinpath("examples", f) for f in readdir(_EXAMPLE_DIR) if endswith(f, ".md")
         ],
+        "Contributing" => "contributing.md",
         "References" => "reference.md",
         "Index" => "indexlist.md",
     ],
