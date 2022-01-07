@@ -129,8 +129,6 @@ precompile(Tuple{typeof(FrankWolfe.fast_dot), SparseArrays.SparseMatrixCSC{Float
 precompile(Tuple{typeof(FrankWolfe.fast_dot), SparseArrays.SparseMatrixCSC{Float64, Int64}, SparseArrays.SparseMatrixCSC{Float64, Int64}})
 precompile(Tuple{typeof(FrankWolfe.fast_dot), SparseArrays.SparseVector{Float64, Int64}, Array{Float64, 1}})
 precompile(Tuple{typeof(FrankWolfe.fast_dot), SparseArrays.SparseVector{Float64, Int64}, SparseArrays.SparseVector{Float64, Int64}})
-precompile(Tuple{typeof(FrankWolfe.plot_trajectories), Array{Array{Any, 1}, 1}, Array{String, 1}})
-precompile(Tuple{typeof(FrankWolfe.plot_trajectories), Array{Array{Any, 1}, 1}, Array{String, 2}})
 precompile(Tuple{typeof(FrankWolfe.print_callback), Tuple{String, String, Float64, Float64, Float64, Float64, Float64, Int64, Int64}, String})
 precompile(Tuple{typeof(FrankWolfe.print_callback), Tuple{String, String, Float64, Float64, Float64, Float64, Float64, Int64}, String})
 precompile(Tuple{typeof(FrankWolfe.print_callback), Tuple{String, String, Float64, Float64, Float64, Float64, Float64}, String})
