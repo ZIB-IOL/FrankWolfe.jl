@@ -99,4 +99,4 @@ Xfinal, Vfinal, primal, dual_gap, trajectory_lazy = FrankWolfe.lazified_conditio
 
 data = [trajectory, trajectory_lazy]
 label = ["FW", "LCG"]
-FrankWolfe.plot_trajectories(data, label, xscalelog=true)
+plot_trajectories(data, label, xscalelog=true)

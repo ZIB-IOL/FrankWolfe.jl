@@ -100,9 +100,6 @@ end
 #Check the gradient using finite differences just in case
 gradient = similar(all_coeffs)
 
-#Disable for now.
-FrankWolfe.check_gradients(grad!, f, gradient)
-
 max_iter = 100_000
 random_initialization_vector = rand(length(all_coeffs))
 

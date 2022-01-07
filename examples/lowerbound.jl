@@ -112,4 +112,4 @@ data = [trajectory, trajectoryAFW, trajectoryBCG, trajLowerbound]
 label = ["FW", "AFW", "BCG", "Lowerbound"]
 
 # ignore the timing plots - they are not relevant for this example
-FrankWolfe.plot_trajectories(data, label, xscalelog=true, legend_position=:bottomleft)
+plot_trajectories(data, label, xscalelog=true, legend_position=:bottomleft)

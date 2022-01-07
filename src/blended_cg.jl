@@ -370,14 +370,9 @@ function minimize_over_convex_hull!(
         if isnothing(M)
             return 0
         end
-        #In case the matrices are DoubleFloats we need to cast them as Float64, because LinearAlgebra does not work with them.
-        if eltype(M) === Double64
-            converted_matrix = convert(Array{Float64}, M)
-            L_reduced = eigmax(converted_matrix)
-        else
-            L_reduced = eigmax(M)
-            #L_reduced = Arpack.eigs(M, nev=1, which=:LM)
-        end
+        T = eltype(M)
+        S = schur(M)
+        L_reduced = maximum(S.values)::T
         reduced_f(y) =
             f(x) - fast_dot(gradient, x) +
             0.5 * transpose(x) * hessian * x +

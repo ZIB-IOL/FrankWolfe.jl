@@ -11,9 +11,6 @@ import Random
 import MathOptInterface
 const MOI = MathOptInterface
 
-# for plotting -> keep here or move somewhere else?
-using Plots
-
 # for Birkhoff polytope LMO
 import Hungarian
 
@@ -44,7 +41,6 @@ include("tracking.jl")
 # collecting most common data types etc and precompile 
 # min version req set to 1.5 to prevent stalling of julia 1
 @static if VERSION >= v"1.5"   
-    println("Precompiling common signatures. This might take a moment...")
     include("precompile.jl")
 end
 

@@ -187,4 +187,4 @@ dataSparsity =
     [trajectoryAda, trajectoryAdaLoc15, trajectoryAdaLoc2, trajectoryAdaLoc4, trajectoryAdaLoc10]
 labelSparsity = ["AFW", "LAFW-K-1.5", "LAFW-K-2.0", "LAFW-K-4.0", "LAFW-K-10.0"]
 
-FrankWolfe.plot_sparsity(dataSparsity, labelSparsity, legend_position=:topright)
+plot_sparsity(dataSparsity, labelSparsity, legend_position=:topright)

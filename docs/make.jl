@@ -13,6 +13,7 @@ no constants or functions leak into other files.)
 """
 function _include_sandbox(filename)
     mod = @eval module $(gensym()) end
+    Base.include(mod, joinpath(dirname(pathof(FrankWolfe)), "../examples/plot_utils.jl"))
     return Base.include(mod, filename)
 end
 

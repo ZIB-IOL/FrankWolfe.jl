@@ -99,7 +99,7 @@ x, v, primal, dual_gap, trajectoryBCG_convex = FrankWolfe.blended_conditional_gr
 
 data = [trajectoryBCG_accel_simplex, trajectoryBCG_simplex, trajectoryBCG_convex]
 label = ["BCG (accel simplex)", "BCG (simplex)", "BCG (convex)"]
-FrankWolfe.plot_trajectories(data, label, xscalelog=true)
+plot_trajectories(data, label, xscalelog=true)
 
 
 
@@ -175,4 +175,4 @@ x, v, primal, dual_gap, trajectoryBCG_convex = FrankWolfe.blended_conditional_gr
 
 data = [trajectoryBCG_accel_simplex, trajectoryBCG_simplex, trajectoryBCG_convex]
 label = ["BCG (accel simplex)", "BCG (simplex)", "BCG (convex)"]
-FrankWolfe.plot_trajectories(data, label, xscalelog=true)
+plot_trajectories(data, label, xscalelog=true)
