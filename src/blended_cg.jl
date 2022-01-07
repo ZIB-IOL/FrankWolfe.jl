@@ -362,7 +362,6 @@ function minimize_over_convex_hull!(
         T = eltype(M)
         S = schur(M)
         L_reduced = maximum(S.values)::T
-        #L_reduced = Arpack.eigs(M, nev=1, which=:LM)
         reduced_f(y) =
             f(x) - fast_dot(gradient, x) +
             0.5 * transpose(x) * hessian * x +

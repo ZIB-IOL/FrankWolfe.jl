@@ -43,7 +43,7 @@ dual_gap_list = [
 ]
 label = [L"\textrm{FW}", L"\textrm{L-CG}", L"\textrm{BL-CG}", L"\textrm{L-AFW}", L"\textrm{BCG}"]
 
-FrankWolfe.plot_results(
+plot_results(
     [primal_gap_list, primal_gap_list, dual_gap_list, dual_gap_list],
     [iteration_list, time_list, iteration_list, time_list],
     label,

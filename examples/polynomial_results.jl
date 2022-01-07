@@ -34,7 +34,7 @@ coefficient_error_values = [
 ]
 
 
-FrankWolfe.plot_results(
+plot_results(
     [primal_list, primal_list, test_list, test_list],
     [iteration_list, time_list, iteration_list, time_list],
     label,

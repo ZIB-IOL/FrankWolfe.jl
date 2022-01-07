@@ -74,4 +74,4 @@ x0 = deepcopy(x00)
 data = [trajectoryBCG]
 label = ["BCG"]
 
-FrankWolfe.plot_trajectories(data, label)
+plot_trajectories(data, label)

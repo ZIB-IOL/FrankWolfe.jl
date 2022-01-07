@@ -156,4 +156,4 @@ end
 data = [trajectory, trajectoryS, trajectory09, trajectory099]
 label = ["exact", "stochastic", "stochM 0.9", "stochM 0.99"]
 
-FrankWolfe.plot_trajectories(data, label)
+plot_trajectories(data, label)
