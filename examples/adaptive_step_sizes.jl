@@ -76,4 +76,4 @@ data = [trajectorySs, trajectoryAda, trajectoryAg]
 label = ["short step", "adaptive", "agnostic"]
 
 
-FrankWolfe.plot_trajectories(data, label, xscalelog=true)
+plot_trajectories(data, label, xscalelog=true)
