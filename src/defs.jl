@@ -1,24 +1,14 @@
 
-"""
-Line search method to apply once the direction is computed.
-"""
-abstract type LineSearchMethod end
-
-struct Agnostic <: LineSearchMethod end
-struct Backtracking <: LineSearchMethod end
-struct Goldenratio <: LineSearchMethod end
-struct Nonconvex <: LineSearchMethod end
-struct Shortstep <: LineSearchMethod end
-struct FixedStep <: LineSearchMethod end
-struct RationalShortstep <: LineSearchMethod end
-struct Adaptive <: LineSearchMethod end
 
 """
 Emphasis given to the algorithm for memory-saving or not.
-The memory-saving mode may not be faster than the default
-blas mode for small dimensions.
+The default memory-saving mode may be slower than
+OutplaceEmphasis mode for small dimensions.
 """
-@enum Emphasis blas = 1 memory = 2
+abstract type MemoryEmphasis end
+
+struct InplaceEmphasis <: MemoryEmphasis end
+struct OutplaceEmphasis <: MemoryEmphasis end
 
 @enum StepType begin
     initial = 1
@@ -27,7 +17,8 @@ blas mode for small dimensions.
     lazylazy = 4
     dualstep = 5
     away = 6
-    local_fw = 7
+    pairwise = 7
+    drop = 8
     simplex_descent = 101
     gap_step = 102
     last = 1000
@@ -41,7 +32,8 @@ const st = (
     lazylazy="LL",
     dualstep="LD",
     away="A",
-    local_fw="locFW",
+    pairwise="P",
+    drop="D",
     simplex_descent="SD",
     gap_step="GS",
     last="Last",

@@ -7,6 +7,7 @@ include("lmo.jl")
 include("function_gradient.jl")
 include("active_set.jl")
 include("utils.jl")
+include("pairwise.jl")
 
 @testset "Testing vanilla Frank-Wolfe with various step size and momentum strategies" begin
     f(x) = norm(x)^2
@@ -77,8 +78,7 @@ include("utils.jl")
         lmo_prob,
         x0,
         max_iteration=1000,
-        line_search=FrankWolfe.Shortstep(),
-        L=2,
+        line_search=FrankWolfe.Shortstep(2.0),
         verbose=false,
     )[3] ≈ 0.2
     @test abs(
@@ -126,7 +126,7 @@ include("utils.jl")
             line_search=FrankWolfe.Agnostic(),
             verbose=false,
             momentum=0.9,
-            emphasis=FrankWolfe.memory,
+            memory_mode=FrankWolfe.InplaceEmphasis(),
         )[3] - 0.2,
     ) < 1.0e-3
     @test abs(
@@ -136,8 +136,7 @@ include("utils.jl")
             lmo_prob,
             x0,
             max_iteration=1000,
-            line_search=FrankWolfe.Adaptive(),
-            L=100,
+            line_search=FrankWolfe.Adaptive(L_est=100.0),
             verbose=false,
             momentum=0.9,
         )[3] - 0.2,
@@ -149,8 +148,7 @@ include("utils.jl")
             lmo_prob,
             x0,
             max_iteration=1000,
-            line_search=FrankWolfe.Adaptive(),
-            L=100,
+            line_search=FrankWolfe.Adaptive(L_est=100.0),
             verbose=false,
             momentum=0.5,
         )[3] - 0.2,
@@ -162,11 +160,10 @@ include("utils.jl")
             lmo_prob,
             x0,
             max_iteration=1000,
-            line_search=FrankWolfe.Adaptive(),
-            L=100,
+            line_search=FrankWolfe.Adaptive(L_est=100.0),
             verbose=false,
             momentum=0.9,
-            emphasis=FrankWolfe.memory,
+            memory_mode=FrankWolfe.InplaceEmphasis(),
         )[3] - 0.2,
     ) < 1.0e-3
 end
@@ -175,6 +172,7 @@ end
     # fixing https://github.com/ZIB-IOL/FrankWolfe.jl/issues/47
     include("momentum_memory.jl")
 end
+
 @testset "Testing Lazified Conditional Gradients with various step size strategies" begin
     f(x) = norm(x)^2
     function grad!(storage, x)
@@ -212,8 +210,7 @@ end
             lmo_prob,
             x0,
             max_iteration=1000,
-            line_search=FrankWolfe.Shortstep(),
-            L=2,
+            line_search=FrankWolfe.Shortstep(2.0),
             verbose=true,
         )[3] - 0.2,
     ) < 1.0e-5
@@ -239,8 +236,7 @@ end
         lmo_prob,
         x0,
         max_iteration=k,
-        line_search=FrankWolfe.Shortstep(),
-        L=2,
+        line_search=FrankWolfe.Shortstep(2.0),
         verbose=true,
     )
 
@@ -252,8 +248,7 @@ end
         lmo_prob,
         x0,
         max_iteration=k,
-        line_search=FrankWolfe.Shortstep(),
-        L=2,
+        line_search=FrankWolfe.Shortstep(2.0),
         cache_size=100,
         verbose=false,
     )
@@ -266,8 +261,7 @@ end
         lmo_prob,
         x0,
         max_iteration=k,
-        line_search=FrankWolfe.Shortstep(),
-        L=2,
+        line_search=FrankWolfe.Shortstep(2.0),
         cache_size=100,
         greedy_lazy=true,
         verbose=false,
@@ -276,7 +270,7 @@ end
     @test primal - 1 / n <= bound
 end
 
-@testset "Testing emphasis blas vs memory" begin
+@testset "Testing memory_mode blas vs memory" begin
     n = Int(1e5)
     k = 100
     xpi = rand(n)
@@ -289,7 +283,7 @@ end
     end
     @testset "Using sparse structure" begin
         lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1.0)
-        x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n))
+        x0 = FrankWolfe.compute_extreme_point(lmo_prob, spzeros(n))
 
         x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
             f,
@@ -300,10 +294,10 @@ end
             line_search=FrankWolfe.Backtracking(),
             print_iter=k / 10,
             verbose=false,
-            emphasis=FrankWolfe.blas,
+            memory_mode=FrankWolfe.OutplaceEmphasis(),
         )
 
-        @test x !== nothing
+        @test primal < f(x0)
 
         x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
             f,
@@ -314,70 +308,33 @@ end
             line_search=FrankWolfe.Backtracking(),
             print_iter=k / 10,
             verbose=false,
-            emphasis=FrankWolfe.memory,
+            memory_mode=FrankWolfe.InplaceEmphasis(),
         )
-
-        @test x !== nothing
-    end
-    @testset "Using dense structure" begin
-        lmo_prob = FrankWolfe.L1ballDense{Float64}(1)
-        x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n))
-
-        x, _ = FrankWolfe.frank_wolfe(
+        @test primal < f(x0)
+        x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
             f,
             grad!,
             lmo_prob,
-            copy(x0),
+            x0,
             max_iteration=k,
-            line_search=FrankWolfe.Backtracking(),
+            line_search=FrankWolfe.MonotonousStepSize(),
             print_iter=k / 10,
             verbose=false,
-            emphasis=FrankWolfe.blas,
+            memory_mode=FrankWolfe.InplaceEmphasis(),
         )
-
-        @test x !== nothing
-
-        x, _ = FrankWolfe.frank_wolfe(
+        @test primal < f(x0)
+        x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
             f,
             grad!,
             lmo_prob,
-            copy(x0),
+            x0,
             max_iteration=k,
-            line_search=FrankWolfe.Backtracking(),
+            line_search=FrankWolfe.MonotonousNonConvexStepSize(),
             print_iter=k / 10,
             verbose=false,
-            emphasis=FrankWolfe.memory,
+            memory_mode=FrankWolfe.InplaceEmphasis(),
         )
-
-        @test x !== nothing
-
-        line_search = FrankWolfe.MonotonousStepSize()
-        x, _, primal_conv, _ = FrankWolfe.frank_wolfe(
-            f,
-            grad!,
-            lmo_prob,
-            copy(x0),
-            max_iteration=k,
-            line_search=line_search,
-            print_iter=k / 10,
-            verbose=false,
-            emphasis=FrankWolfe.memory,
-        )
-        @test line_search.factor < 20
-
-        line_search = FrankWolfe.MonotonousNonConvexStepSize()
-        x, _, primal_nonconv, _ = FrankWolfe.frank_wolfe(
-            f,
-            grad!,
-            lmo_prob,
-            copy(x0),
-            max_iteration=k,
-            line_search=line_search,
-            print_iter=k / 10,
-            verbose=false,
-            emphasis=FrankWolfe.memory,
-        )
-        @test line_search.factor < 20
+        @test primal < f(x0)
     end
 end
 @testset "Testing rational variant" begin
@@ -407,7 +364,7 @@ end
         max_iteration=k,
         line_search=FrankWolfe.Agnostic(),
         print_iter=k / 10,
-        emphasis=FrankWolfe.blas,
+        memory_mode=FrankWolfe.OutplaceEmphasis(),
         verbose=false,
     )
 
@@ -421,7 +378,7 @@ end
         max_iteration=k,
         line_search=FrankWolfe.Agnostic(),
         print_iter=k / 10,
-        emphasis=FrankWolfe.memory,
+        memory_mode=FrankWolfe.InplaceEmphasis(),
         verbose=true,
     )
     @test eltype(x0) == eltype(x) == Rational{BigInt}
@@ -435,10 +392,9 @@ end
         lmo,
         x0,
         max_iteration=15,
-        line_search=FrankWolfe.RationalShortstep(),
-        L=2,
+        line_search=FrankWolfe.Shortstep(2//1),
         print_iter=k / 100,
-        emphasis=FrankWolfe.memory,
+        memory_mode=FrankWolfe.InplaceEmphasis(),
         verbose=true,
     )
 
@@ -449,10 +405,9 @@ end
         lmo,
         x0,
         max_iteration=15,
-        line_search=FrankWolfe.RationalShortstep(),
-        L=2,
+        line_search=FrankWolfe.Shortstep(2//1),
         print_iter=k / 10,
-        emphasis=FrankWolfe.memory,
+        memory_mode=FrankWolfe.InplaceEmphasis(),
         verbose=true,
     )
     @test eltype(x) == Rational{BigInt}
@@ -487,7 +442,7 @@ end
             max_iteration=k,
             line_search=FrankWolfe.Agnostic(),
             print_iter=k / 10,
-            emphasis=FrankWolfe.blas,
+            memory_mode=FrankWolfe.OutplaceEmphasis(),
             verbose=true,
         )
 
@@ -502,7 +457,7 @@ end
             max_iteration=k,
             line_search=FrankWolfe.Agnostic(),
             print_iter=k / 10,
-            emphasis=FrankWolfe.memory,
+            memory_mode=FrankWolfe.InplaceEmphasis(),
             verbose=true,
         )
 
@@ -517,7 +472,7 @@ end
             max_iteration=k,
             line_search=FrankWolfe.Adaptive(),
             print_iter=k / 10,
-            emphasis=FrankWolfe.memory,
+            memory_mode=FrankWolfe.InplaceEmphasis(),
             verbose=true,
         )
 
@@ -532,7 +487,7 @@ end
             max_iteration=k,
             line_search=FrankWolfe.Adaptive(),
             print_iter=k / 10,
-            emphasis=FrankWolfe.memory,
+            memory_mode=FrankWolfe.InplaceEmphasis(),
             verbose=true,
         )
 
@@ -636,6 +591,7 @@ end
         @. storage = 2x
     end
     k = 1000
+    active_set = ActiveSet([(1.0, x0)]) 
 
     # compute reference from vanilla FW
     xref, _ = FrankWolfe.frank_wolfe(
@@ -646,7 +602,7 @@ end
         max_iteration=k,
         line_search=FrankWolfe.Backtracking(),
         verbose=false,
-        emphasis=FrankWolfe.blas,
+        memory_mode=FrankWolfe.OutplaceEmphasis(),
     )
 
     x, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
@@ -658,7 +614,68 @@ end
         line_search=FrankWolfe.Backtracking(),
         print_iter=k / 10,
         verbose=true,
-        emphasis=FrankWolfe.blas,
+        memory_mode=FrankWolfe.OutplaceEmphasis(),
+    )
+
+    @test x !== nothing
+    @test xref ≈ x atol = (1e-3 / length(x))
+
+    xs, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
+        f,
+        grad!,
+        lmo_prob,
+        active_set,
+        max_iteration=k,
+        line_search=FrankWolfe.Backtracking(),
+        print_iter=k / 10,
+        verbose=true,
+        memory_mode=FrankWolfe.OutplaceEmphasis(),
+    )
+
+    @test xs !== nothing
+    @test xref ≈ xs atol = (1e-3 / length(x))
+
+    x, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
+        f,
+        grad!,
+        lmo_prob,
+        x0,
+        max_iteration=k,
+        away_steps = false,
+        line_search=FrankWolfe.Backtracking(),
+        print_iter=k / 10,
+        verbose=true,
+        memory_mode=FrankWolfe.OutplaceEmphasis(),
+    )
+
+    @test x !== nothing
+    @test xref ≈ x atol = (1e-3 / length(x))
+
+    xs, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
+        f,
+        grad!,
+        lmo_prob,
+        active_set,
+        max_iteration=k,
+        line_search=FrankWolfe.Backtracking(),
+        print_iter=k / 10,
+        verbose=true,
+        memory_mode=FrankWolfe.OutplaceEmphasis(),
+    )
+
+    @test xs !== nothing
+    @test xref ≈ xs atol = (1e-3 / length(x))
+
+    x, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
+        f,
+        grad!,
+        lmo_prob,
+        x0,
+        max_iteration=k,
+        line_search=FrankWolfe.Backtracking(),
+        print_iter=k / 10,
+        verbose=true,
+        memory_mode=FrankWolfe.InplaceEmphasis(),
     )
 
     @test x !== nothing
@@ -670,13 +687,43 @@ end
         lmo_prob,
         x0,
         max_iteration=k,
+        away_steps=false,
         line_search=FrankWolfe.Backtracking(),
         print_iter=k / 10,
         verbose=true,
-        emphasis=FrankWolfe.memory,
+        memory_mode=FrankWolfe.InplaceEmphasis(),
     )
+
     @test x !== nothing
     @test xref ≈ x atol = (1e-3 / length(x))
+
+    xs, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
+        f,
+        grad!,
+        lmo_prob,
+        active_set,
+        max_iteration=k,
+        line_search=FrankWolfe.Backtracking(),
+        print_iter=k / 10,
+        verbose=true,
+        memory_mode=FrankWolfe.InplaceEmphasis(),
+    )
+
+    @test xs !== nothing
+    @test xref ≈ xs atol = (1e-3 / length(x))
+
+    empty!(active_set)
+    @test_throws ArgumentError("Empty active set") FrankWolfe.away_frank_wolfe(
+        f,
+        grad!,
+        lmo_prob,
+        active_set,
+        max_iteration=k,
+        line_search=FrankWolfe.Backtracking(),
+        print_iter=k / 10,
+        verbose=true,
+        memory_mode=FrankWolfe.OutplaceEmphasis(),
+    )    
 end
 
 @testset "Blended conditional gradient" begin
@@ -698,7 +745,7 @@ end
         max_iteration=k,
         line_search=FrankWolfe.Backtracking(),
         verbose=true,
-        emphasis=FrankWolfe.blas,
+        memory_mode=FrankWolfe.OutplaceEmphasis(),
     )
 
     x, v, primal, dual_gap, trajectory = FrankWolfe.blended_conditional_gradient(
@@ -707,13 +754,11 @@ end
         lmo_prob,
         x0;
         line_search=FrankWolfe.Backtracking(),
-        L=Inf,
         epsilon=1e-9,
         max_iteration=k,
         print_iter=1,
         trajectory=false,
         verbose=false,
-        linesearch_tol=1e-10,
     )
 
     @test x !== nothing
@@ -737,5 +782,12 @@ module RationalTest
 using Test
 @testset "Rational test and shortstep" begin
     include("rational_test.jl")
+end
+end
+
+module BCGAccel
+using Test
+@testset "BCG acceleration with different types" begin
+    include("blended_accelerated.jl")
 end
 end

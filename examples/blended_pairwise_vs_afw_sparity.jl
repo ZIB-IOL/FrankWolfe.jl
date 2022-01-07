@@ -1,11 +1,11 @@
 #= 
 
-Example demonstrating sparsity control by means of the `lazy_tolerance`-factor passed to the lazy AFW variant
+Example demonstrating sparsity control by means of the "K"-factor passed to the lazy AFW variant
 
-A larger lazy_tolerance >= 1 favors sparsity by favoring optimization over the current active set rather than
+A larger K >= 1 favors sparsity by favoring optimization over the current active set rather than
 adding a new FW vertex.
 
-The default for AFW is lazy_tolerance = 2.0
+The default for AFW is K = 2.0
 
 =#
 
@@ -14,8 +14,8 @@ include("activate.jl")
 using LinearAlgebra
 using Random
 
-n = Int(1e4)
-k = 1000
+n = Int(1e3)
+k = 10000
 
 s = rand(1:100)
 @info "Seed $s"
@@ -34,7 +34,7 @@ function grad!(storage, x)
     @. storage = 2 * (x - xp)
 end
 
-const lmo = FrankWolfe.KSparseLMO(100, 1.0)
+const lmo = FrankWolfe.KSparseLMO(5, 1.0)
 
 ## other LMOs to try
 # lmo_big = FrankWolfe.KSparseLMO(100, big"1.0")
@@ -76,8 +76,8 @@ x0 = deepcopy(x00)
 );
 
 
-trajectoryAda = []
-callback = build_callback(trajectoryAda)
+trajectoryAfw = []
+callback = build_callback(trajectoryAfw)
 
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
@@ -95,10 +95,8 @@ x0 = deepcopy(x00)
 );
 
 
-println("\n==> Lazy AFW.\n")
-
-trajectoryAdaLoc15 = []
-callback = build_callback(trajectoryAdaLoc15)
+trajectoryLAfw = []
+callback = build_callback(trajectoryLAfw)
 
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
@@ -112,17 +110,34 @@ x0 = deepcopy(x00)
     memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     lazy=true,
-    lazy_tolerance=1.5,
+    trajectory=true,
+    callback=callback,
+);
+
+trajectoryBPCG = []
+callback = build_callback(trajectoryBPCG)
+
+x0 = deepcopy(x00)
+@time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    x0,
+    max_iteration=k,
+    line_search=FrankWolfe.Adaptive(),
+    print_iter=k / 10,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
+    verbose=true,
     trajectory=true,
     callback=callback,
 );
 
 
-trajectoryAdaLoc2 = []
-callback = build_callback(trajectoryAdaLoc2)
+trajectoryLBPCG = []
+callback = build_callback(trajectoryLBPCG)
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, trajectoryAdaLoc2 = FrankWolfe.away_frank_wolfe(
+@time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -133,48 +148,6 @@ x0 = deepcopy(x00)
     memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     lazy=true,
-    lazy_tolerance=2.0,
-    trajectory=true,
-    callback=callback,
-);
-
-
-trajectoryAdaLoc4 = []
-callback = build_callback(trajectoryAdaLoc4)
-
-x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
-    f,
-    grad!,
-    lmo,
-    x0,
-    max_iteration=k,
-    line_search=FrankWolfe.Adaptive(),
-    print_iter=k / 10,
-    memory_mode=FrankWolfe.InplaceEmphasis(),
-    verbose=true,
-    lazy_tolerance=4.0,
-    lazy=true,
-    trajectory=true,
-    callback=callback,
-);
-
-trajectoryAdaLoc10 = []
-callback = build_callback(trajectoryAdaLoc10)
-
-x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
-    f,
-    grad!,
-    lmo,
-    x0,
-    max_iteration=k,
-    line_search=FrankWolfe.Adaptive(),
-    print_iter=k / 10,
-    memory_mode=FrankWolfe.InplaceEmphasis(),
-    lazy=true,
-    lazy_tolerance=10.0,
-    verbose=true,
     trajectory=true,
     callback=callback,
 );
@@ -183,7 +156,7 @@ x0 = deepcopy(x00)
 # Reduction primal/dual error vs. sparsity of solution
 
 dataSparsity =
-    [trajectoryAda, trajectoryAdaLoc15, trajectoryAdaLoc2, trajectoryAdaLoc4, trajectoryAdaLoc10]
-labelSparsity = ["AFW", "LAFW-K-1.5", "LAFW-K-2.0", "LAFW-K-4.0", "LAFW-K-10.0"]
+    [trajectoryAfw, trajectoryLAfw, trajectoryBPCG, trajectoryLBPCG]
+labelSparsity = ["AFW", "LAFW", "BPCG", "LBPCG"]
 
-plot_sparsity(dataSparsity, labelSparsity, legend_position=:topright)
+FrankWolfe.plot_sparsity(dataSparsity, labelSparsity, legend_position=:topright)

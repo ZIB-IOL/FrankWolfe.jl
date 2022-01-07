@@ -38,15 +38,14 @@ x, v, primal, dual_gap, trajectoryBCG_accel_simplex = FrankWolfe.blended_conditi
     x0,
     epsilon=target_tolerance,
     max_iteration=k,
-    line_search=FrankWolfe.Adaptive(),
+    line_search=FrankWolfe.Adaptive(L_est=L),
     print_iter=k / 10,
     hessian=hessian,
-    emphasis=FrankWolfe.memory,
-    L=L,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     accelerated=true,
     verbose=true,
     trajectory=true,
-    K=1.00,
+    lazy_tolerance=1.0,
     weight_purge_threshold=1e-10,
 )
 
@@ -58,15 +57,14 @@ x, v, primal, dual_gap, trajectoryBCG_simplex = FrankWolfe.blended_conditional_g
     x0,
     epsilon=target_tolerance,
     max_iteration=k,
-    line_search=FrankWolfe.Adaptive(),
+    line_search=FrankWolfe.Adaptive(L_est=L),
     print_iter=k / 10,
     hessian=hessian,
-    emphasis=FrankWolfe.memory,
-    L=L,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     accelerated=false,
     verbose=true,
     trajectory=true,
-    K=1.00,
+    lazy_tolerance=1.0,
     weight_purge_threshold=1e-10,
 )
 
@@ -78,13 +76,12 @@ x, v, primal, dual_gap, trajectoryBCG_convex = FrankWolfe.blended_conditional_gr
     x0,
     epsilon=target_tolerance,
     max_iteration=k,
-    line_search=FrankWolfe.Adaptive(),
+    line_search=FrankWolfe.Adaptive(L_est=L),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
-    L=L,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
-    K=1.00,
+    lazy_tolerance=1.0,
     weight_purge_threshold=1e-10,
 )
 
@@ -115,15 +112,14 @@ x, v, primal, dual_gap, trajectoryBCG_accel_simplex = FrankWolfe.blended_conditi
     x0,
     epsilon=target_tolerance,
     max_iteration=k,
-    line_search=FrankWolfe.Adaptive(),
+    line_search=FrankWolfe.Adaptive(L_est=L),
     print_iter=k / 10,
     hessian=hessian,
-    emphasis=FrankWolfe.memory,
-    L=L,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     accelerated=true,
     verbose=true,
     trajectory=true,
-    K=1.00,
+    lazy_tolerance=1.0,
     weight_purge_threshold=1e-10,
 )
 
@@ -135,15 +131,14 @@ x, v, primal, dual_gap, trajectoryBCG_simplex = FrankWolfe.blended_conditional_g
     x0,
     epsilon=target_tolerance,
     max_iteration=k,
-    line_search=FrankWolfe.Adaptive(),
+    line_search=FrankWolfe.Adaptive(L_est=L),
     print_iter=k / 10,
     hessian=hessian,
-    emphasis=FrankWolfe.memory,
-    L=L,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     accelerated=false,
     verbose=true,
     trajectory=true,
-    K=1.00,
+    lazy_tolerance=1.0,
     weight_purge_threshold=1e-10,
 )
 
@@ -155,16 +150,30 @@ x, v, primal, dual_gap, trajectoryBCG_convex = FrankWolfe.blended_conditional_gr
     x0,
     epsilon=target_tolerance,
     max_iteration=k,
-    line_search=FrankWolfe.Adaptive(),
+    line_search=FrankWolfe.Adaptive(L_est=L),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
-    L=L,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
-    K=1.00,
+    lazy_tolerance=1.0,
     weight_purge_threshold=1e-10,
 )
 
-data = [trajectoryBCG_accel_simplex, trajectoryBCG_simplex, trajectoryBCG_convex]
-label = ["BCG (accel simplex)", "BCG (simplex)", "BCG (convex)"]
+x0 = deepcopy(x00)
+x, v, primal, dual_gap, trajectoryBPCG = FrankWolfe.blended_pairwise_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    x0,
+    epsilon=target_tolerance,
+    max_iteration=k,
+    line_search=FrankWolfe.Adaptive(L_est=L),
+    print_iter=k / 10,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
+    verbose=true,
+    trajectory=true,
+)
+
+data = [trajectoryBCG_accel_simplex, trajectoryBCG_simplex, trajectoryBCG_convex, trajectoryBPCG]
+label = ["BCG (accel simplex)", "BCG (simplex)", "BCG (convex)", "BPCG"]
 plot_trajectories(data, label, xscalelog=true)

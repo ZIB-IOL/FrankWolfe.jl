@@ -76,9 +76,8 @@ xfin, vmin, _, _, traj_data = FrankWolfe.frank_wolfe(
     print_iter=k / 10,
     trajectory=true,
     verbose=true,
-    linesearch_tol=1e-7,
     line_search=FrankWolfe.Adaptive(),
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     gradient=spzeros(size(x0)...),
 )
 
@@ -92,9 +91,8 @@ xfinlcg, vmin, _, _, traj_data = FrankWolfe.lazified_conditional_gradient(
     print_iter=k / 10,
     trajectory=true,
     verbose=true,
-    linesearch_tol=1e-7,
     line_search=FrankWolfe.Adaptive(),
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     gradient=spzeros(size(x0)...),
 )
 
@@ -111,10 +109,9 @@ xfinAFW, vmin, _, _, traj_data = FrankWolfe.away_frank_wolfe(
     print_iter=k / 10,
     trajectory=true,
     verbose=true,
-    linesearch_tol=1e-7,
     lazy=true,
     line_search=FrankWolfe.Adaptive(),
-    emphasis=FrankWolfe.memory,#,
+    memory_mode=FrankWolfe.InplaceEmphasis(),#,
 )
 
 x00 = copy(x0)
@@ -129,15 +126,30 @@ xfinBCG, vmin, _, _, traj_data = FrankWolfe.blended_conditional_gradient(
     print_iter=k / 10,
     trajectory=true,
     verbose=true,
-    linesearch_tol=1e-7,
     line_search=FrankWolfe.Adaptive(),
-    emphasis=FrankWolfe.memory,#,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
+)
+
+xfinBPCG, vmin, _, _, traj_data = FrankWolfe.blended_pairwise_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    x00;
+    epsilon=1e7,
+    max_iteration=k,
+    print_iter=k / 10,
+    trajectory=true,
+    verbose=true,
+    line_search=FrankWolfe.Adaptive(),
+    memory_mode=FrankWolfe.InplaceEmphasis(),
+#    lazy=true,
 )
 
 pit = plot(svdvals(xfin), label="FW", width=3, yaxis=:log)
 plot!(svdvals(xfinlcg), label="LCG", width=3, yaxis=:log)
 plot!(svdvals(xfinAFW), label="LAFW", width=3, yaxis=:log)
 plot!(svdvals(xfinBCG), label="BCG", width=3, yaxis=:log)
+plot!(svdvals(xfinBPCG), label="BPCG", width=3, yaxis=:log)
 plot!(svdvals(xgd), label="Gradient descent", width=3, yaxis=:log)
 plot!(svdvals(Xreal), label="Real matrix", linestyle=:dash, width=3, color=:black)
 title!("Singular values")

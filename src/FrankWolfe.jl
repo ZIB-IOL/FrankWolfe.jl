@@ -1,5 +1,6 @@
 module FrankWolfe
 
+using GenericSchur
 using LinearAlgebra
 using Printf
 using ProgressMeter
@@ -10,6 +11,7 @@ import Random
 
 import MathOptInterface
 const MOI = MathOptInterface
+const MOIU = MOI.Utilities
 
 # for Birkhoff polytope LMO
 import Hungarian
@@ -20,8 +22,8 @@ export frank_wolfe, lazified_conditional_gradient, away_frank_wolfe
 export blended_conditional_gradient, compute_extreme_point
 
 include("defs.jl")
-
 include("utils.jl")
+include("linesearch.jl")
 include("types.jl")
 include("oracles.jl")
 include("simplex_oracles.jl")
@@ -34,5 +36,6 @@ include("active_set.jl")
 include("blended_cg.jl")
 include("afw.jl")
 include("fw_algorithms.jl")
+include("pairwise.jl")
 
 end
