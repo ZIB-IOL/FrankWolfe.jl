@@ -244,8 +244,8 @@ function away_frank_wolfe(
                 time=tot_time,
                 x=x,
                 v=vertex,
-                active_set_length=length(active_set),
                 gamma=gamma,
+                active_set_length=length(active_set),
             )
             callback(state)
         end
