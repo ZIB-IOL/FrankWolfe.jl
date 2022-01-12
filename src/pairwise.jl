@@ -122,13 +122,8 @@ function blended_pairwise_conditional_gradient(
         println(
             "GRADIENTTYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance",
         )
-<<<<<<< HEAD
-        if emphasis == memory
-            println("WARNING: In memory emphasis mode iterates are written back into x0!")
-=======
         if memory_mode isa InplaceEmphasis
             @info("In memory_mode memory iterates are written back into x0!")
->>>>>>> Fix plot (#286)
         end
         headers =
             ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "#ActiveSet")
@@ -269,9 +264,9 @@ function blended_pairwise_conditional_gradient(
                 dual_gap=phi,
                 time=tot_time,
                 x=x,
-                v=vertex_taken,
-                active_set_length=length(active_set),
+                v=w, 
                 gamma=gamma,
+                active_set_length=length(active_set),
             )
             callback(state)
         end

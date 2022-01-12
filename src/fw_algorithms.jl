@@ -392,10 +392,10 @@ function lazified_conditional_gradient(
                 dual=primal - dual_gap,
                 dual_gap=dual_gap,
                 time=tot_time,
-                cache_size=length(lmo),
                 x=x,
                 v=v,
-                gamma=gamma
+                gamma=gamma,
+                cache_size=length(lmo),
             )
             callback(state)
         end
