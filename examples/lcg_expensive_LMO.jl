@@ -178,4 +178,4 @@ end
 
 data = [trajectoryFW, trajectoryLCG, trajectoryBLCG, trajectoryLAFW, trajectoryBCG]
 label = ["FW", "L-CG", "BL-CG", "L-AFW", "BCG"]
-FrankWolfe.plot_trajectories(data, label, xscalelog=true)
+plot_trajectories(data, label, xscalelog=true)

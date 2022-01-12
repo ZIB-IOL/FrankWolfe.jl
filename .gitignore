@@ -25,3 +25,4 @@ cc/*
 test/lentraj.txt
 test/lentraj_setup.jl
 benchmark/lentraj.txt
+docs/src/contributing.md

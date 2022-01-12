@@ -359,14 +359,9 @@ function minimize_over_convex_hull!(
         if isnothing(M)
             return 0
         end
-        #In case the matrices are DoubleFloats we need to cast them as Float64, because LinearAlgebra does not work with them.
-        if eltype(M) === Double64
-            converted_matrix = convert(Array{Float64}, M)
-            L_reduced = eigmax(converted_matrix)
-        else
-            L_reduced = eigmax(M)
-            #L_reduced = Arpack.eigs(M, nev=1, which=:LM)
-        end
+        T = eltype(M)
+        S = schur(M)
+        L_reduced = maximum(S.values)::T
         reduced_f(y) =
             f(x) - fast_dot(gradient, x) +
             0.5 * transpose(x) * hessian * x +
@@ -377,11 +372,7 @@ function minimize_over_convex_hull!(
         end
         #Solve using Nesterov's AGD
         if accelerated
-            if eltype(M) === Double64
-                mu_reduced = eigmin(converted_matrix)
-            else
-                mu_reduced = eigmin(M)
-            end
+            mu_reduced = minimum(S.values)::T
             if L_reduced / mu_reduced > 1.0
                 new_weights, number_of_steps =
                     accelerated_simplex_gradient_descent_over_probability_simplex(
@@ -826,7 +817,7 @@ function simplex_gradient_descent_over_convex_hull(
             current_iteration = t + number_of_steps
             @warn "Non-improving d ($descent_direction_product) due to numerical instability in iteration $current_iteration. Temporarily upgrading precision to BigFloat for the current iteration."
             # extended warning - we can discuss what to integrate
-            # If higher accuracy is required, consider using Double64 (still quite fast) and if that does not help BigFloat (slower) as type for the numbers.
+            # If higher accuracy is required, consider using DoubleFloats.Double64 (still quite fast) and if that does not help BigFloat (slower) as type for the numbers.
             # Alternatively, consider using AFW (with lazy = true) instead."
             bdir = big.(gradient)
             c = [fast_dot(bdir, a) for a in active_set.atoms]
