@@ -10,7 +10,7 @@ blended_conditional_gradient
 FrankWolfe.stochastic_frank_wolfe
 ```
 
-# LMOs
+# Linear Minimization Oracle
 
 The Linear Minimization Oracle (LMO) is a key component called at each iteration of the FW algorithm. Given ``d\in \mathcal{X}``, it returns a vertex of the feasible set:
 ```math
@@ -26,7 +26,7 @@ All of them are subtypes of [`FrankWolfe.LinearMinimizationOracle`](@ref) and im
 compute_extreme_point
 ```
 
-[`FrankWolfe.jl`](https://github.com/ZIB-IOL/FrankWolfe.jl) features the following common LMOs out of the box:
+The package features the following common LMOs out of the box:
 
 ```@docs
 FrankWolfe.BirkhoffPolytopeLMO
@@ -52,6 +52,9 @@ FrankWolfe.SingleLastCachedLMO
 FrankWolfe.MultiCacheLMO
 FrankWolfe.VectorCacheLMO
 ```
+
+See [Combettes, Pokutta 2021](https://arxiv.org/abs/2101.10040) for references on most LMOs
+implemented in the package and their comparison with projection operators.
 
 ## Functions and Structures
 
@@ -80,7 +83,7 @@ Module = [FrankWolfe]
 Pages = [active_set.jl]
 ```
 
-## Step size determination
+## Step size computation
 
 For all Frank-Wolfe algorithms, a step size must be determined to move from the
 current iterate to the next one. This step size can be determined by exact line search
@@ -94,6 +97,11 @@ FrankWolfe.adaptive_step_size
 FrankWolfe.MonotonousStepSize
 FrankWolfe.MonotonousNonConvexStepSize
 ```
+
+See [Pedregosa, Negiar, Askari, Jaggi 2020](https://arxiv.org/abs/1806.05123)
+for the adaptive step size,
+[Carderera, Besançon, Pokutta 2021](https://openreview.net/forum?id=rq_UD6IiBpX)
+for the monotonous step size.
 
 ## Functions and Structures
 
