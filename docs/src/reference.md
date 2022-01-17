@@ -32,7 +32,6 @@ The package features the following common LMOs out of the box:
 FrankWolfe.BirkhoffPolytopeLMO
 FrankWolfe.KNormBallLMO
 FrankWolfe.KSparseLMO
-FrankWolfe.L1ballDense
 FrankWolfe.LpNormLMO
 FrankWolfe.NuclearNormLMO
 FrankWolfe.ProbabilitySimplexOracle
@@ -65,7 +64,6 @@ compute_extreme_point(lmo::FrankWolfe.UnitSimplexOracle{T}, direction) where {T}
 FrankWolfe.compute_dual_solution(::FrankWolfe.UnitSimplexOracle{T}, direction, primalSolution) where {T}
 compute_extreme_point(lmo::FrankWolfe.ProbabilitySimplexOracle{T}, direction; kwargs...) where {T}
 FrankWolfe.compute_dual_solution(::FrankWolfe.ProbabilitySimplexOracle{T},direction,primal_solution;kwargs...,) where {T}
-compute_extreme_point(lmo::FrankWolfe.NuclearNormLMO, direction::AbstractMatrix; tol=1e-8, kwargs...)
 FrankWolfe.convert_mathopt
 ```
 
@@ -79,8 +77,8 @@ The active set represents an iterate as a convex combination of atoms.
 It maintains a vector of atoms, the corresponding weights, and the current iterate.
 
 ```@autodocs
-Module = [FrankWolfe]
-Pages = [active_set.jl]
+Modules = [FrankWolfe]
+Pages = ["active_set.jl"]
 ```
 
 ## Step size computation
@@ -88,12 +86,11 @@ Pages = [active_set.jl]
 For all Frank-Wolfe algorithms, a step size must be determined to move from the
 current iterate to the next one. This step size can be determined by exact line search
 or any other rule represented by a subtype of `LineSearchMethod` which
-must implement `line_search_wrapper`.
+must implement `perform_line_search`.
 
 ```@docs
-FrankWolfe.line_search_wrapper
 FrankWolfe.LineSearchMethod
-FrankWolfe.adaptive_step_size
+FrankWolfe.perform_line_search
 FrankWolfe.MonotonousStepSize
 FrankWolfe.MonotonousNonConvexStepSize
 ```
@@ -108,10 +105,9 @@ for the monotonous step size.
 ```@docs
 FrankWolfe.ActiveSet
 FrankWolfe.active_set_update!
-FrankWolfe.compute_active_set_iterate
+FrankWolfe.compute_active_set_iterate!
 FrankWolfe.active_set_argmin
 FrankWolfe.active_set_argminmax
-FrankWolfe.find_minmax_directions
 FrankWolfe.minimize_over_convex_hull!
 FrankWolfe.build_reduced_problem(atoms::AbstractVector{<:FrankWolfe.ScaledHotVector},hessian,weights,gradient,tolerance)
 FrankWolfe.strong_frankwolfe_gap
@@ -121,7 +117,7 @@ FrankWolfe.projection_simplex_sort
 FrankWolfe.strong_frankwolfe_gap_probability_simplex
 FrankWolfe.simplex_gradient_descent_over_convex_hull
 FrankWolfe.lp_separation_oracle
-FrankWolfe.Emphasis
+FrankWolfe.MemoryEmphasis
 FrankWolfe.ObjectiveFunction
 FrankWolfe.compute_value_gradient
 FrankWolfe.StochasticObjective
