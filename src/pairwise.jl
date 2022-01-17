@@ -106,7 +106,7 @@ function blended_pairwise_conditional_gradient(
             "GRADIENTTYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance",
         )
         if memory_mode isa InplaceEmphasis
-            @info("In memory emphasis mode iterates are written back into x0!")
+            @info("In memory_mode memory iterates are written back into x0!")
         end
         headers =
             ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "#ActiveSet")
