@@ -117,7 +117,6 @@ FrankWolfe.Emphasis
 FrankWolfe.ObjectiveFunction
 FrankWolfe.compute_value_gradient
 FrankWolfe.StochasticObjective
-FrankWolfe.plot_results
 FrankWolfe.trajectory_callback
 ```
 

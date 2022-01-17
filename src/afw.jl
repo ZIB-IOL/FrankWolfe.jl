@@ -130,8 +130,8 @@ function away_frank_wolfe(
         println(
             "GRADIENTTYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance MOMENTUM: $momentum AWAYSTEPS: $away_steps",
         )
-        if emphasis == memory
-            println("WARNING: In memory emphasis mode iterates are written back into x0!")
+        if memory_mode isa InplaceEmphasis
+            @info("In memory_mode memory iterates are written back into x0!")
         end
         headers =
             ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "#ActiveSet")

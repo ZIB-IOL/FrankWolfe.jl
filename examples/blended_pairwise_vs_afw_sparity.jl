@@ -160,4 +160,4 @@ dataSparsity =
     [trajectoryAfw, trajectoryLAfw, trajectoryBPCG, trajectoryLBPCG]
 labelSparsity = ["AFW", "LAFW", "BPCG", "LBPCG"]
 
-FrankWolfe.plot_sparsity(dataSparsity, labelSparsity, legend_position=:topright)
+plot_sparsity(dataSparsity, labelSparsity, legend_position=:topright)
