@@ -11,7 +11,7 @@ struct MathOptLMO{OT<:MOI.AbstractOptimizer} <: LinearMinimizationOracle
     o::OT
 end
 
-function compute_extreme_point(lmo::MathOptLMO{OT}, direction::AbstractVector{T}) where {OT,T<:Real}
+function compute_extreme_point(lmo::MathOptLMO{OT}, direction::AbstractVector{T}; kwargs...) where {OT,T<:Real}
     variables = MOI.get(lmo.o, MOI.ListOfVariableIndices())
     terms = [MOI.ScalarAffineTerm(d, v) for (d, v) in zip(direction, variables)]
     obj = MOI.ScalarAffineFunction(terms, zero(T))
@@ -20,7 +20,7 @@ function compute_extreme_point(lmo::MathOptLMO{OT}, direction::AbstractVector{T}
     return _optimize_and_return(lmo, variables)
 end
 
-function compute_extreme_point(lmo::MathOptLMO{OT}, direction::AbstractMatrix{T}) where {OT,T<:Real}
+function compute_extreme_point(lmo::MathOptLMO{OT}, direction::AbstractMatrix{T}; kwargs...) where {OT,T<:Real}
     n = size(direction, 1)
     v = compute_extreme_point(lmo, vec(direction))
     return reshape(v, n, n)
@@ -58,7 +58,8 @@ end
 
 function compute_extreme_point(
     lmo::MathOptLMO{OT},
-    direction::AbstractVector{MOI.ScalarAffineTerm{T}},
+    direction::AbstractVector{MOI.ScalarAffineTerm{T}};
+    kwargs...
 ) where {OT,T}
     variables = [term.variable for term in direction]
     obj = MOI.ScalarAffineFunction(direction, zero(T))
