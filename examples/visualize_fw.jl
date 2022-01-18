@@ -1,6 +1,5 @@
 using FrankWolfe
 using LinearAlgebra
-using IterTools
 using GLPK
 using JuMP
 const MOI = JuMP.MOI
