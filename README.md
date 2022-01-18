@@ -4,8 +4,15 @@
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://zib-iol.github.io/FrankWolfe.jl/dev/)
 [![Coverage](https://codecov.io/gh/ZIB-IOL/FrankWolfe.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/ZIB-IOL/FrankWolfe.jl)
 
-This package defines a generic interface and several implementations for
-Frank-Wolfe algorithms.
+This package is a toolbox for algorithms related to Frank-Wolfe or conditional gradients,
+meant to solve problems of the type:
+
+```
+min_{x in C} f(x)
+```
+where `C` is a compact convex set for which a Linear Minimization Oracle (LMO) is defined
+and `f` is a differentiable function for which the gradient is provided.
+
 The main entry point is the `frank_wolfe` function running the algorithm.
 
 ```julia
@@ -13,7 +20,8 @@ FrankWolfe.frank_wolfe(f, grad!, lmo, x0, max_iteration=1000, verbose=true)
 ```
 
 where `f(x)` is the objective function, `grad!(storage, x)` is the inplace gradient.
-`lmo` is a structure implementing the Linear Minimization Oracle interface presented below.
+`lmo` is a structure implementing the Linear Minimization Oracle interface presented below
+and encoding the constraints.
 
 ## Installation
 
@@ -59,15 +67,13 @@ over the set represented by the LMO.
 
 ### LMOs
 
-Several common LMOs are available out-of-the-box
+Several common LMOs are available out-of-the-box, see the corresponding [documentation page](https://zib-iol.github.io/FrankWolfe.jl/dev/reference/#LMOs):
 - Probability simplex
 - Unit simplex
 - K-sparse polytope
 - K-norm ball
 - L_p-norm ball
 - Birkhoff polytope
-
-See [Pokutta, Spiegel, Zimmer 2020](https://arxiv.org/abs/2010.07243) and [Combettes, Pokutta 2021](https://arxiv.org/abs/2101.10040) for details
 
 Moreover: 
 - you can simply define your own LMOs directly 
@@ -79,17 +85,10 @@ Moreover:
 
 All algorithms can run in various precisions modes: `Float16, Float32, Float64, BigFloat` and also for rationals based on various integer types `Int32, Int64, BigInt` (see e.g., the approximate Carathéodory example)
 
-#### Line Search Strategies
+#### Step size computation
 
-Most common strategies and some more particular ones:
-
-- Agnostic: `2/(2+t)` rule for FW 
-- Nonconvex: `1/sqrt(2+t)` rule for nonconvex functions and vanilla FW
-- Fixed: fixed step-size of a given value. Useful for nonconvex and stochastic or more generally when we know the total number of iterations
-- Short-step rule: minimizing the smoothness inequality -> requires knowledge of (an estimate of) L
-- Golden ratio line search
-- Backtracking line search
-- Adaptive FW: starts with an estimate for L and then refine it dynamically (see [Pedregosa, Negiar, Askari, Jaggi 2020](https://arxiv.org/abs/1806.05123))
+Multiple line search and step size determination rules are implemented, see
+[the documentation](https://zib-iol.github.io/FrankWolfe.jl/dev/reference/#Step-size-determination).
 
 #### Callbacks
 
@@ -104,6 +103,7 @@ state = (
     time = (time_ns() - time_start) / 1e9,
     x = x,
     v = vertex,
+    gamma=gamma,
     active_set_length = active_set_length,
 )
 ```
