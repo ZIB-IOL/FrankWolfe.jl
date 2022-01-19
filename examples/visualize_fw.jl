@@ -21,9 +21,6 @@ function build_callback(trajectory_arr)
     end
 end
 
-status_UnitSimplex = []
-callback = build_callback(status_UnitSimplex)
-
 # gradient
 function grad!(storage, x)
     @. storage = x - y
@@ -35,49 +32,44 @@ o = GLPK.Optimizer()
 x = MOI.add_variables(o, n)
 
 # −x + y ≤ 2
-terms = [MOI.ScalarAffineTerm(-1.0, x[1]), MOI.ScalarAffineTerm(1.0, x[2])]
 MOI.add_constraint(
     o,
-    MOI.ScalarAffineFunction(terms, 0.0),
+    (-1.0x[1] + x[2]),
     MOI.LessThan(2.0),
 )
 
 # x + 2 y ≤ 4
-terms = [MOI.ScalarAffineTerm(1.0, x[1]), MOI.ScalarAffineTerm(2.0, x[2])]
 MOI.add_constraint(
     o,
-    MOI.ScalarAffineFunction(terms, 0.0),
+    (x[1] + 2.0x[2]),
     MOI.LessThan(4.0),
 )
 
 # −2 x − y ≤ 1
-terms = [MOI.ScalarAffineTerm(-2.0, x[1]), MOI.ScalarAffineTerm(-1.0, x[2])]
 MOI.add_constraint(
     o,
-    MOI.ScalarAffineFunction(terms, 0.0),
+    (-2.0x[1] - x[2]),
     MOI.LessThan(1.0),
 )
 
 # x − 2 y ≤ 2
-terms = [MOI.ScalarAffineTerm(1.0, x[1]), MOI.ScalarAffineTerm(-2.0, x[2])]
 MOI.add_constraint(
     o,
-    MOI.ScalarAffineFunction(terms, 0.0),
+    (x[1] - 2.0x[2]),
     MOI.LessThan(2.0),
 )
 
 # x ≤ 2
-terms = [MOI.ScalarAffineTerm(1.0, x[1])]
 MOI.add_constraint(
     o,
-    MOI.ScalarAffineFunction(terms, 0.0),
+    (x[1] + 0.0x[2]),
     MOI.LessThan(2.0),
 )
 
 
 ### build lmo and call frank_wolfe
-status_MathOpt = []
-callback = build_callback(status_MathOpt)
+status_mathopt = []
+callback = build_callback(status_mathopt)
 
 lmo_moi = FrankWolfe.MathOptLMO(o)
 
@@ -98,7 +90,7 @@ xfinal, vfinal, primal_value, dual_gap, traj_data = FrankWolfe.frank_wolfe(
     callback = callback
 )
 
-for s in status_MathOpt
+for s in status_mathopt
     push!(iterates, s[1])
     push!(vertices, s[2])
 end
