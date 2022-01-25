@@ -53,10 +53,9 @@ const x00 = FrankWolfe.compute_extreme_point(lmo, rand(n))
 
 function build_callback(trajectory_arr)
     return function callback(state)
-        return push!(trajectory_arr, (Tuple(state)[1:5]..., state.active_set_length))
+        return push!(trajectory_arr, (Tuple(state)[1:5]..., length(state.active_set)))
     end
 end
-
 
 
 FrankWolfe.benchmark_oracles(f, grad!, () -> randn(n), lmo; k=100)
