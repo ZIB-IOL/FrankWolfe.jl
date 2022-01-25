@@ -207,8 +207,9 @@ function blended_conditional_gradient(
                 time=tot_time,
                 x=x,
                 v=v,
-                active_set_length=length(active_set),
+                active_set=active_set,
                 non_simplex_iter=non_simplex_iter,
+                gradient=gradient,
             )
             callback(state)
         end
@@ -935,8 +936,9 @@ function simplex_gradient_descent_over_convex_hull(
                 dual_gap=dual_gap,
                 time=(time_ns() - time_start) / 1e9,
                 x=x,
-                active_set_length=length(active_set),
+                active_set=active_set,
                 non_simplex_iter=non_simplex_iter,
+                gradient=gradient,
             )
             callback(state)
         end
