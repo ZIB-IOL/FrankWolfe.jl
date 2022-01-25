@@ -104,7 +104,8 @@ state = (
     x = x,
     v = vertex,
     gamma=gamma,
-    active_set_length = active_set_length,
+    active_set=active_set,
+    gradient=gradient,
 )
 ```
 

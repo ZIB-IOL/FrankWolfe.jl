@@ -262,7 +262,8 @@ function blended_pairwise_conditional_gradient(
                 x=x,
                 v=w, 
                 gamma=gamma,
-                active_set_length=length(active_set),
+                active_set=active_set,
+                gradient=gradient,
             )
             callback(state)
         end
