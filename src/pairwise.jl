@@ -244,8 +244,8 @@ function blended_pairwise_conditional_gradient(
                 time=tot_time,
                 x=x,
                 v=vertex_taken,
-                gamma=gamma,
                 active_set_length=length(active_set),
+                gamma=gamma,
             )
             callback(state)
         end

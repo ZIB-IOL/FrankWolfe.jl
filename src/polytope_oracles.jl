@@ -15,7 +15,7 @@ struct KSparseLMO{T} <: LinearMinimizationOracle
     right_hand_side::T
 end
 
-function compute_extreme_point(lmo::KSparseLMO{T}, direction; v = nothing, kwargs...) where {T}
+function compute_extreme_point(lmo::KSparseLMO{T}, direction; kwargs...) where {T}
     K = min(lmo.K, length(direction))
     K_indices = sortperm(direction[1:K], by=abs, rev=true)
     K_values = direction[K_indices]
@@ -78,14 +78,13 @@ struct BirkhoffPolytopeLMO <: LinearMinimizationOracle end
 function compute_extreme_point(
     ::BirkhoffPolytopeLMO,
     direction::AbstractMatrix{T};
-    v = nothing,
     kwargs...,
 ) where {T}
     n = size(direction, 1)
     n == size(direction, 2) ||
         DimensionMismatch("direction should be square and matching BirkhoffPolytopeLMO dimension")
-    m = spzeros(Bool, n, n)
     res_mat = Hungarian.munkres(direction)
+    m = spzeros(Bool, n, n)
     (rows, cols, vals) = SparseArrays.findnz(res_mat)
     @inbounds for i in eachindex(cols)
         m[rows[i], cols[i]] = vals[i] == 2
@@ -97,7 +96,6 @@ end
 function compute_extreme_point(
     lmo::BirkhoffPolytopeLMO,
     direction::AbstractVector{T};
-    v = nothing,
     kwargs...,
 ) where {T}
     nsq = length(direction)
@@ -145,7 +143,8 @@ struct ScaledBoundLInfNormBall{T, VT1 <: AbstractVector{T}, VT2 <: AbstractVecto
     upper_bounds::VT2
 end
 
-function compute_extreme_point(lmo::ScaledBoundLInfNormBall, direction; v = copy(lmo.lower_bounds), kwargs...)
+function compute_extreme_point(lmo::ScaledBoundLInfNormBall, direction; kwargs...)
+    v = copy(lmo.lower_bounds)
     for i in eachindex(direction)
         if direction[i] * lmo.upper_bounds[i] < direction[i] * lmo.lower_bounds[i]
             v[i] = lmo.upper_bounds[i]
@@ -168,7 +167,7 @@ struct ScaledBoundL1NormBall{T, VT1 <: AbstractVector{T}, VT2 <: AbstractVector{
     upper_bounds::VT2
 end
 
-function compute_extreme_point(lmo::ScaledBoundL1NormBall, direction; v = (lmo.lower_bounds + lmo.upper_bounds) / 2, kwargs...)
+function compute_extreme_point(lmo::ScaledBoundL1NormBall, direction; kwargs...)
     idx = 0
     lower = false
     val = zero(eltype(direction))
@@ -190,6 +189,7 @@ function compute_extreme_point(lmo::ScaledBoundL1NormBall, direction; v = (lmo.l
     end
     # compute midpoint for all coordinates, replace with extreme coordinate on one
     # TODO use smarter array type if bounds are FillArrays
+    v = (lmo.lower_bounds + lmo.upper_bounds) / 2
     # handle zero direction
     idx = max(idx, 1)
     v[idx] = ifelse(lower, lmo.lower_bounds[idx], lmo.upper_bounds[idx])

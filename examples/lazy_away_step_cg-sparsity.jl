@@ -62,7 +62,7 @@ end
 FrankWolfe.benchmark_oracles(f, grad!, () -> randn(n), lmo; k=100)
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, trajectory_shortstep = FrankWolfe.frank_wolfe(
+@time x, v, primal, dual_gap, trajectorySs = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -76,8 +76,8 @@ x0 = deepcopy(x00)
 );
 
 
-trajectory_adaptive = []
-callback = build_callback(trajectory_adaptive)
+trajectoryAda = []
+callback = build_callback(trajectoryAda)
 
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
@@ -97,8 +97,8 @@ x0 = deepcopy(x00)
 
 println("\n==> Lazy AFW.\n")
 
-trajectory_adaptiveLoc15 = []
-callback = build_callback(trajectory_adaptiveLoc15)
+trajectoryAdaLoc15 = []
+callback = build_callback(trajectoryAdaLoc15)
 
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
@@ -118,11 +118,11 @@ x0 = deepcopy(x00)
 );
 
 
-trajectory_adaptiveLoc2 = []
-callback = build_callback(trajectory_adaptiveLoc2)
+trajectoryAdaLoc2 = []
+callback = build_callback(trajectoryAdaLoc2)
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, trajectory_adaptiveLoc2 = FrankWolfe.away_frank_wolfe(
+@time x, v, primal, dual_gap, trajectoryAdaLoc2 = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
@@ -139,8 +139,8 @@ x0 = deepcopy(x00)
 );
 
 
-trajectory_adaptiveLoc4 = []
-callback = build_callback(trajectory_adaptiveLoc4)
+trajectoryAdaLoc4 = []
+callback = build_callback(trajectoryAdaLoc4)
 
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
@@ -159,8 +159,8 @@ x0 = deepcopy(x00)
     callback=callback,
 );
 
-trajectory_adaptiveLoc10 = []
-callback = build_callback(trajectory_adaptiveLoc10)
+trajectoryAdaLoc10 = []
+callback = build_callback(trajectoryAdaLoc10)
 
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
@@ -183,7 +183,7 @@ x0 = deepcopy(x00)
 # Reduction primal/dual error vs. sparsity of solution
 
 dataSparsity =
-    [trajectory_adaptive, trajectory_adaptiveLoc15, trajectory_adaptiveLoc2, trajectory_adaptiveLoc4, trajectory_adaptiveLoc10]
+    [trajectoryAda, trajectoryAdaLoc15, trajectoryAdaLoc2, trajectoryAdaLoc4, trajectoryAdaLoc10]
 labelSparsity = ["AFW", "LAFW-K-1.5", "LAFW-K-2.0", "LAFW-K-4.0", "LAFW-K-10.0"]
 
 plot_sparsity(dataSparsity, labelSparsity, legend_position=:topright)
