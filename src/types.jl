@@ -159,6 +159,9 @@ function LinearAlgebra.dot(
     return s
 end
 
+LinearAlgebra.dot(R::RankOneMatrix, M::Matrix) = dot(R.u, M, R.v)
+LinearAlgebra.dot(R::RankOneMatrix, M::Matrix) = dot(R.v, M, R.u)
+
 Base.@propagate_inbounds function Base.:-(a::RankOneMatrix, b::RankOneMatrix)
     @boundscheck size(a) == size(b) || throw(DimensionMismatch())
     r = similar(a)
