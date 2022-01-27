@@ -1,6 +1,7 @@
 import FrankWolfe
 using LinearAlgebra
 using Test
+using SparseArrays
 
 @testset "Simple benchmark_oracles function" begin
     n = Int(1e3)
@@ -51,6 +52,11 @@ end
                 @test MR isa FrankWolfe.RankOneMatrix
                 @test -MR == R
                 @test 3R isa FrankWolfe.RankOneMatrix
+            end
+            @testset "Dot" begin
+                @test dot(R, M) ≈ dot(collect(R), M)
+                @test dot(M, R) ≈ dot(M, collect(R))
+                @test dot(R, sparse(M)) ≈ dot(collect(R), M)
             end
         end
     end
