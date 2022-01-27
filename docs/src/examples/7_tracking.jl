@@ -26,7 +26,7 @@ function grad!(storage, x)
 end
 tgrad! = FrankWolfe.TrackingGradient(grad!,0)
 
-# the tracking function can be applied for all types of LMOs and even in a nasted way
+# the tracking function can be applied for all types of LMOs and even in a nested way
 lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
 tlmo_prob = FrankWolfe.TrackingLMO(lmo_prob)
 
