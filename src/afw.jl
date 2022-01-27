@@ -226,7 +226,8 @@ function away_frank_wolfe(
                 x=x,
                 v=vertex,
                 gamma=gamma,
-                active_set_length=length(active_set),
+                active_set=active_set,
+                gradient=gradient,
             )
             callback(state)
         end
