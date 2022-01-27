@@ -54,6 +54,7 @@ end
             end
             @testset "Dot" begin
                 @test dot(R, M) ≈ dot(collect(R), M)
+                @test dot(M, R) ≈ dot(M, collect(R))
                 @test dot(R, sparse(M)) ≈ dot(collect(R), M)
             end
         end
