@@ -52,6 +52,10 @@ end
                 @test -MR == R
                 @test 3R isa FrankWolfe.RankOneMatrix
             end
+            @testset "Dot" begin
+                @test dot(R, M) ≈ dot(collect(R), M)
+                @test dot(R, sparse(M)) ≈ dot(collect(R), M)
+            end
         end
     end
 end
