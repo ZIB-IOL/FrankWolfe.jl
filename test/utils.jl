@@ -58,6 +58,9 @@ end
                 @test dot(M, R) ≈ dot(M, collect(R))
                 @test dot(R, sparse(M)) ≈ dot(collect(R), M)
             end
+            @testset "Norm" begin
+                @test norm(R) ≈ norm(collect(R))
+            end
         end
     end
 end
@@ -98,7 +101,7 @@ end
     @test FrankWolfe.momentum_iterate(it) == 1
 end
 
-@testset "Fast dot complex" begin
+@testset "Fast dot complex & norm" begin
     s = sparse(I, 3, 3)
     m = randn(Complex{Float64}, 3, 3)
     @test dot(s, m) ≈ FrankWolfe.fast_dot(s, m)
@@ -109,5 +112,6 @@ end
     @test dot(b, a) ≈ dot(b, collect(a))
     c = sparse(b)
     @test dot(a, c) ≈ dot(collect(a), c)
-    @test dot(c, a) ≈ dot(c, collect(a))    
+    @test dot(c, a) ≈ dot(c, collect(a))
+    @test norm(a) ≈ norm(collect(a))
 end
