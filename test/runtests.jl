@@ -819,3 +819,5 @@ using Test
     include("rational_test.jl")
 end
 end
+
+include("generic-arrays.jl")
