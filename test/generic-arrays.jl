@@ -51,7 +51,6 @@ end
 
     @test f(x) < f(x0)
     @test x isa GenericArray
-
     
     @test_broken x, v, primal, dual_gap0, trajectory = FrankWolfe.away_frank_wolfe(
         f,
@@ -64,5 +63,4 @@ end
         verbose=true,
         emphasis=FrankWolfe.memory,
     )
-
 end
