@@ -61,9 +61,9 @@ function compute_extreme_point(
     kwargs...
 ) where {OT,T}
     variables = [term.variable for term in direction]
-    obj = MOI.ScalarAffineFunction(direction, zero(T))
-    MOI.set(lmo.o, MOI.ObjectiveFunction{typeof(obj)}(), obj)
-    MOI.set(lmo.o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+    for i in direction
+        MOI.modify(lmo.o, MOI.ObjectiveFunction{MOI.ScalarAffineFunction{T}}(), MOI.ScalarCoefficientChange(i.variable,i.coefficient)) 
+    end
     return _optimize_and_return(lmo, variables)
 end
 
