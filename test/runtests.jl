@@ -791,3 +791,5 @@ using Test
     include("blended_accelerated.jl")
 end
 end
+
+include("generic-arrays.jl")
