@@ -97,4 +97,11 @@ end
     m = randn(Complex{Float64}, 3, 3)
     @test dot(s, m) ≈ FrankWolfe.fast_dot(s, m)
     @test dot(m, s) ≈ FrankWolfe.fast_dot(m, s)
+    a = FrankWolfe.ScaledHotVector(3.5 + 2im, 2, 4)
+    b = rand(ComplexF64, 4)
+    @test dot(a, b) ≈ dot(collect(a), b)
+    @test dot(b, a) ≈ dot(b, collect(a))
+    c = sparse(b)
+    @test dot(a, c) ≈ dot(collect(a), c)
+    @test dot(c, a) ≈ dot(c, collect(a))    
 end
