@@ -160,7 +160,7 @@ function LinearAlgebra.dot(
 end
 
 LinearAlgebra.dot(R::RankOneMatrix, M::Matrix) = dot(R.u, M, R.v)
-LinearAlgebra.dot(M::Matrix, R::RankOneMatrix) = conj(dot(M, R))
+LinearAlgebra.dot(M::Matrix, R::RankOneMatrix) = conj(dot(R, M))
 
 Base.@propagate_inbounds function Base.:-(a::RankOneMatrix, b::RankOneMatrix)
     @boundscheck size(a) == size(b) || throw(DimensionMismatch())
