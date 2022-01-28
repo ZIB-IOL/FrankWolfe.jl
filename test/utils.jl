@@ -97,3 +97,10 @@ end
     # no momentum -> 1
     @test FrankWolfe.momentum_iterate(it) == 1
 end
+
+@testset "Fast dot complex" begin
+    s = sparse(I, 3, 3)
+    m = randn(Complex{Float64}, 3, 3)
+    @test dot(s, m) ≈ FrankWolfe.fast_dot(s, m)
+    @test dot(m, s) ≈ FrankWolfe.fast_dot(m, s)
+end
