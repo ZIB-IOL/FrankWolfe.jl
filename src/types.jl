@@ -24,11 +24,11 @@ end
 Base.sum(v::ScaledHotVector) = v.active_val
 
 function LinearAlgebra.dot(v1::ScaledHotVector{<:Number}, v2::AbstractVector{<:Number})
-    return v1.active_val * v2[v1.val_idx]
+    return conj(v1.active_val) * v2[v1.val_idx]
 end
 
 function LinearAlgebra.dot(v1::ScaledHotVector{<:Number}, v2::SparseArrays.SparseVector{<:Number})
-    return v1.active_val * v2[v1.val_idx]
+    return conj(v1.active_val) * v2[v1.val_idx]
 end
 
 LinearAlgebra.dot(v1::AbstractVector{<:Number}, v2::ScaledHotVector{<:Number}) = conj(dot(v2, v1))
@@ -39,7 +39,7 @@ function LinearAlgebra.dot(v1::ScaledHotVector{<:Number}, v2::ScaledHotVector{<:
     if length(v1) != length(v2)
         throw(DimensionMismatch("v1 and v2 do not have matching sizes"))
     end
-    return v1.active_val * v2.active_val * (v1.val_idx == v2.val_idx)
+    return conj(v1.active_val) * v2.active_val * (v1.val_idx == v2.val_idx)
 end
 
 function Base.:*(v::ScaledHotVector, x::Number)
