@@ -13,8 +13,11 @@ end
 
 function compute_extreme_point(lmo::MathOptLMO{OT}, direction::AbstractVector{T}; kwargs...) where {OT,T<:Real}
     variables = MOI.get(lmo.o, MOI.ListOfVariableIndices())
-    for i in 1:length(variables)
-        MOI.modify(lmo.o, MOI.ObjectiveFunction{MOI.ScalarAffineFunction{T}}(), MOI.ScalarCoefficientChange(variables[i],direction[i])) 
+    for i in eachindex(variables)
+        MOI.modify(
+            lmo.o, MOI.ObjectiveFunction{MOI.ScalarAffineFunction{T}}(),
+            MOI.ScalarCoefficientChange(variables[i], direction[i]),
+        )
     end
     return _optimize_and_return(lmo, variables)
 end
