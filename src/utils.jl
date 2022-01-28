@@ -724,7 +724,7 @@ _unsafe_equal(a, b) = isequal(a, b)
 
 fast_dot(A, B) = dot(A, B)
 
-fast_dot(B::SparseArrays.SparseMatrixCSC, A::Matrix) = fast_dot(A, B)
+fast_dot(B::SparseArrays.SparseMatrixCSC, A::Matrix) = conj(fast_dot(A, B))
 
 function fast_dot(A::Matrix{T1}, B::SparseArrays.SparseMatrixCSC{T2}) where {T1,T2}
     T = promote_type(T1, T2)
@@ -738,11 +738,11 @@ function fast_dot(A::Matrix{T1}, B::SparseArrays.SparseMatrixCSC{T2}) where {T1,
     end
     rows = SparseArrays.rowvals(B)
     vals = SparseArrays.nonzeros(B)
-    for j in 1:n
+    @inbounds for j in 1:n
         for ridx in SparseArrays.nzrange(B, j)
             i = rows[ridx]
             v = vals[ridx]
-            s += v * A[i, j]
+            s += v * conj(A[i, j])
         end
     end
     return s
