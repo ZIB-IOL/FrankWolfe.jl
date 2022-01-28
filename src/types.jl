@@ -191,4 +191,4 @@ Base.@propagate_inbounds function Base.:+(a::RankOneMatrix, b::RankOneMatrix)
     return r
 end
 
-LinearAlgebra.norm(R::RankOneMatrix) = norm(R.u, R.v)
+LinearAlgebra.norm(R::RankOneMatrix) = norm(R.u) * norm(R.v)
