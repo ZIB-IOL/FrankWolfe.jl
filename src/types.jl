@@ -42,6 +42,8 @@ function LinearAlgebra.dot(v1::ScaledHotVector{<:Number}, v2::ScaledHotVector{<:
     return conj(v1.active_val) * v2.active_val * (v1.val_idx == v2.val_idx)
 end
 
+LinearAlgebra.norm(v::ScaledHotVector) = abs(v.active_val)
+
 function Base.:*(v::ScaledHotVector, x::Number)
     return ScaledHotVector(v.active_val * x, v.val_idx, v.len)
 end
@@ -188,3 +190,5 @@ Base.@propagate_inbounds function Base.:+(a::RankOneMatrix, b::RankOneMatrix)
     end
     return r
 end
+
+LinearAlgebra.norm(R::RankOneMatrix) = norm(R.u) * norm(R.v)
