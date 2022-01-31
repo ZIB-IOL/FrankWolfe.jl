@@ -15,7 +15,8 @@ function compute_extreme_point(lmo::MathOptLMO{OT}, direction::AbstractVector{T}
     variables = MOI.get(lmo.o, MOI.ListOfVariableIndices())
     for i in eachindex(variables)
         MOI.modify(
-            lmo.o, MOI.ObjectiveFunction{MOI.ScalarAffineFunction{T}}(),
+            lmo.o,
+            MOI.ObjectiveFunction{MOI.ScalarAffineFunction{T}}(),
             MOI.ScalarCoefficientChange(variables[i], direction[i]),
         )
     end
@@ -64,20 +65,24 @@ function compute_extreme_point(
     kwargs...
 ) where {OT,T}
     for d in direction
-        MOI.modify(lmo.o, MOI.ObjectiveFunction{MOI.ScalarAffineFunction{T}}(), 
-        MOI.ScalarCoefficientChange(d.variable,d.coefficient)
-        ) 
+        MOI.modify(
+            lmo.o,
+            MOI.ObjectiveFunction{MOI.ScalarAffineFunction{T}}(),
+            MOI.ScalarCoefficientChange(d.variable,d.coefficient),
+        )
     end
 
     variables = MOI.get(lmo.o, MOI.ListOfVariableIndices())
-    variables_to_zero = setdiff(variables,[dir.variable for dir in direction])
+    variables_to_zero = setdiff(variables, [dir.variable for dir in direction])
 
     terms = [MOI.ScalarAffineTerm(d, v) for (d, v) in zip(zeros(length(variables_to_zero)), variables_to_zero)]
     
     for t in terms
-        MOI.modify(lmo.o, MOI.ObjectiveFunction{MOI.ScalarAffineFunction{T}}(), 
-        MOI.ScalarCoefficientChange(t.variable,t.coefficient)
-        ) 
+        MOI.modify(
+            lmo.o,
+            MOI.ObjectiveFunction{MOI.ScalarAffineFunction{T}}(), 
+            MOI.ScalarCoefficientChange(t.variable,t.coefficient),
+        )
     end
     return _optimize_and_return(lmo, variables)
 end
