@@ -104,7 +104,9 @@ state = (
     time = (time_ns() - time_start) / 1e9,
     x = x,
     v = vertex,
-    active_set_length = active_set_length,
+    gamma=gamma,
+    active_set=active_set,
+    gradient=gradient,
 )
 ```
 
