@@ -145,10 +145,9 @@ end
     ff,
     gradf,
     lmo,
-    L=10,
     params,
     verbose=true,
-    line_search=FrankWolfe.Adaptive(),
+    line_search=FrankWolfe.Adaptive(L_est=10.0),
     max_iteration=k,
     print_iter=k / 10,
     trajectory=true,
@@ -157,4 +156,4 @@ end
 data = [trajectory, trajectoryS, trajectory09, trajectory099]
 label = ["exact", "stochastic", "stochM 0.9", "stochM 0.99"]
 
-FrankWolfe.plot_trajectories(data, label)
+plot_trajectories(data, label)

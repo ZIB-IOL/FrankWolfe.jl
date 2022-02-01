@@ -66,29 +66,6 @@ function compute_extreme_point(lmo::LpNormLMO{T,p}, direction; kwargs...) where 
     return @. -lmo.right_hand_side * sign(direction) * abs(direction)^(pow_ratio) / q_norm
 end
 
-
-# temporary oracle for l_1 ball to
-
-struct L1ballDense{T} <: LinearMinimizationOracle
-    right_hand_side::T
-end
-
-
-function compute_extreme_point(lmo::L1ballDense{T}, direction; kwargs...) where {T}
-    idx = 0
-    v = -1.0
-    for i in eachindex(direction)
-        if abs(direction[i]) > v
-            v = abs(direction[i])
-            idx = i
-        end
-    end
-
-    aux = zeros(T, length(direction))
-    aux[idx] = T(-lmo.right_hand_side * sign(direction[idx]))
-    return aux
-end
-
 """
     KNormBallLMO{T}(K::Int, right_hand_side::T)
 
@@ -134,7 +111,7 @@ end
     NuclearNormLMO{T}(radius)
 
 LMO over matrices that have a nuclear norm less than `radius`.
-The LMO returns the rank-one matrix with singular value `radius`.
+The LMO returns the best rank-one approximation matrix with singular value `radius`, computed with Arpack.
 """
 struct NuclearNormLMO{T} <: LinearMinimizationOracle
     radius::T
@@ -143,15 +120,11 @@ end
 NuclearNormLMO{T}() where {T} = NuclearNormLMO{T}(one(T))
 NuclearNormLMO() = NuclearNormLMO(1.0)
 
-"""
-Best rank-one approximation using the greatest singular value computed with Arpack.
-
-Warning: this does not work (yet) with all number types, BigFloat and Float16 fail.
-"""
-function compute_extreme_point(lmo::NuclearNormLMO, direction::AbstractMatrix; tol=1e-8, kwargs...)
+function compute_extreme_point(lmo::NuclearNormLMO{TL}, direction::AbstractMatrix{TD}; tol=1e-8, kwargs...) where {TL, TD}
+    T = promote_type(TD, TL)
     Z = Arpack.svds(direction, nsv=1, tol=tol)[1]
     u = -lmo.radius * view(Z.U, :)
-    return RankOneMatrix(u, Z.V[:])
+    return RankOneMatrix(u::Vector{T}, Z.V[:]::Vector{T})
 end
 
 function convert_mathopt(

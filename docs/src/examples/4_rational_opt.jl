@@ -43,7 +43,7 @@ x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
     line_search=FrankWolfe.Agnostic(),
     print_iter=k / 10,
     verbose=true,
-    emphasis=FrankWolfe.blas,
+    memory_mode=FrankWolfe.OutplaceEmphasis(),
 );
 
 println("\nOutput type of solution: ", eltype(x))
@@ -58,11 +58,10 @@ println("\nOutput type of solution: ", eltype(x))
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.RationalShortstep(),
-    L=2,
+    line_search=FrankWolfe.Shortstep(2//1),
     print_iter=k / 10,
     verbose=true,
-    emphasis=FrankWolfe.blas,
+    memory_mode=FrankWolfe.OutplaceEmphasis(),
 );
 
 # Note: at the last step, we exactly close the gap, finding the solution 1//n * ones(n)

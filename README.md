@@ -87,9 +87,8 @@ Most common strategies and some more particular ones:
 - Nonconvex: `1/sqrt(2+t)` rule for nonconvex functions and vanilla FW
 - Fixed: fixed step-size of a given value. Useful for nonconvex and stochastic or more generally when we know the total number of iterations
 - Short-step rule: minimizing the smoothness inequality -> requires knowledge of (an estimate of) L
-- Golden ratio linesearch
+- Golden ratio line search
 - Backtracking line search
-- Rational short-step rule: similar to short-step rule but all computations are kept rational if inputs are rational. useful for the rational variants
 - Adaptive FW: starts with an estimate for L and then refine it dynamically (see [Pedregosa, Negiar, Askari, Jaggi 2020](https://arxiv.org/abs/1806.05123))
 
 #### Callbacks
@@ -121,6 +120,10 @@ state to an array returned from the algorithm.
 - Optionally all algorithms can be endowed with gradient momentum. This might help convergence especially in the stochastic context.
 - (to come:) When the LMO can compute dual prices then the Frank-Wolfe algorithms return dual prices for the (approximately) optimal solutions (see [Braun, Pokutta 2021](https://arxiv.org/abs/2101.02087)).
 
+## Contributing
+
+See the [contribution guide](CONTRIBUTING.md).
+
 ## Noteworthy examples
 
 See the `/examples` folder. All examples run on the test environment using [TestEnv.jl](https://github.com/JuliaTesting/TestEnv.jl).
@@ -139,9 +142,6 @@ We consider the simple instance of approximating the `0` over the probability si
 with n = 100.
 
 ````
-Vanilla Frank-Wolfe Algorithm.
-EMPHASIS: blas STEPSIZE: rationalshortstep EPSILON: 1.0e-7 max_iteration: 100 TYPE: Rational{BigInt}
-
 ───────────────────────────────────────────────────────────────────────────────────
   Type     Iteration         Primal           Dual       Dual Gap           Time
 ───────────────────────────────────────────────────────────────────────────────────
@@ -158,8 +158,6 @@ EMPHASIS: blas STEPSIZE: rationalshortstep EPSILON: 1.0e-7 max_iteration: 100 TY
   Last                 1.000000e-02   1.000000e-02   0.000000e+00   4.392171e-01
 ───────────────────────────────────────────────────────────────────────────────────
 
-  0.600608 seconds (3.83 M allocations: 111.274 MiB, 12.97% gc time)
-  
 Output type of solution: Rational{BigInt}
 ````
 The solution returned is rational as we can see and in fact the exactly optimal solution:
@@ -174,7 +172,7 @@ Example: `examples/large_scale.jl`
 
 The package is built to scale well, for those conditional gradients variants that can scale well. For example, Away-Step Frank-Wolfe and Pairwise Conditional Gradients do in most cases *not scale well* because they need to maintain active sets and maintaining them can be very expensive. Similarly, line search methods might become prohibitive at large sizes. However if we consider scale-friendly variants, e.g., the vanilla Frank-Wolfe algorithm with the agnostic step size rule or short step rule, then these algorithms can scale well to extreme sizes esentially only limited by the amount of memory available. However even for these methods that tend to scale well, allocation of memory itself can be very slow when you need to allocate gigabytes of memory for a single gradient computation. 
 
-The package is build to support extreme sizes with a special memory efficient emphasis `emphasis=FrankWolfe.memory`, which minimizes expensive memory allocations and performs as many operations in-place as possible.
+The package is build to support extreme sizes with a special memory efficient emphasis `emphasis=FrankWolfe.InplaceEmphasis()`, which minimizes expensive memory allocations and performs as many operations in-place as possible.
 
 Here is an example of a run with 1e9 variables. Each gradient is around 7.5 GB in size. Here is the output of the run broken down into pieces:
 
@@ -206,11 +204,6 @@ The above is the optional benchmarking of the oracles that we provide to underst
 As you can see if you compare `update (blas)` vs. `update (memory)`, the normal update when we use BLAS requires an additional 14.9GB of memory on top of the gradient etc whereas the `update (memory)` (the memory emphasis mode) does not consume any extra memory. This is also reflected in the computational times: the BLAS version requires 3.61 seconds on average to update the iterate, while the memory emphasis version requires only 500ms. In fact none of the crucial components in the algorithm consume any memory when run in memory efficient mode. Now let us look at the actual footprint of the whole algorithm:
 
 ```
-Vanilla Frank-Wolfe Algorithm.
-EMPHASIS: memory STEPSIZE: agnostic EPSILON: 1.0e-7 MAXITERATION: 1000 TYPE: Float64
-MOMENTUM: nothing GRADIENTTYPE: Nothing
-WARNING: In memory emphasis mode iterates are written back into x0!
-
 ─────────────────────────────────────────────────────────────────────────────────────────────────
   Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec
 ─────────────────────────────────────────────────────────────────────────────────────────────────
