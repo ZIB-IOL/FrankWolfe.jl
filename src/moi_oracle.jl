@@ -74,7 +74,7 @@ function compute_extreme_point(
     direction::AbstractVector{MOI.ScalarAffineTerm{T}};
     kwargs...
 ) where {OT,T}
-    if lmo.use_modify == true
+    if lmo.use_modify
         for d in direction
             MOI.modify(
                 lmo.o,
