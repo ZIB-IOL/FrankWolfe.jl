@@ -1,3 +1,4 @@
+
 # Algorithms
 
 This section contains all main algorithms of the [`FrankWolfe.jl`](https://github.com/ZIB-IOL/FrankWolfe.jl) package. These are the ones typical users will call.
@@ -103,11 +104,6 @@ for the monotonous step size.
 ## Functions and Structures
 
 ```@docs
-FrankWolfe.ActiveSet
-FrankWolfe.active_set_update!
-FrankWolfe.compute_active_set_iterate!
-FrankWolfe.active_set_argmin
-FrankWolfe.active_set_argminmax
 FrankWolfe.minimize_over_convex_hull!
 FrankWolfe.build_reduced_problem(atoms::AbstractVector{<:FrankWolfe.ScaledHotVector},hessian,weights,gradient,tolerance)
 FrankWolfe.strong_frankwolfe_gap
