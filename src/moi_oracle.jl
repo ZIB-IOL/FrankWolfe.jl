@@ -12,9 +12,7 @@ struct MathOptLMO{OT<:MOI.AbstractOptimizer} <: LinearMinimizationOracle
     use_modify::Bool
 end
 
-function MathOptLMO(o; use_modify=true)
-    return MathOptLMO(o, use_modify)
-end
+MathOptLMO(o) = MathOptLMO(o, true)
 
 function compute_extreme_point(lmo::MathOptLMO{OT}, direction::AbstractVector{T}; kwargs...) where {OT,T<:Real}
     variables = MOI.get(lmo.o, MOI.ListOfVariableIndices())
