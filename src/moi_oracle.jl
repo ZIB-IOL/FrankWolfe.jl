@@ -9,16 +9,28 @@ The `direction` vector has to be set in the same order of variables as the `MOI.
 """
 struct MathOptLMO{OT<:MOI.AbstractOptimizer} <: LinearMinimizationOracle
     o::OT
+    use_modify::Bool
+end
+
+function MathOptLMO(o; use_modify=true)
+    return MathOptLMO(o, use_modify)
 end
 
 function compute_extreme_point(lmo::MathOptLMO{OT}, direction::AbstractVector{T}; kwargs...) where {OT,T<:Real}
     variables = MOI.get(lmo.o, MOI.ListOfVariableIndices())
-    for i in eachindex(variables)
-        MOI.modify(
-            lmo.o,
-            MOI.ObjectiveFunction{MOI.ScalarAffineFunction{T}}(),
-            MOI.ScalarCoefficientChange(variables[i], direction[i]),
-        )
+    if lmo.use_modify == true
+        for i in eachindex(variables)
+            MOI.modify(
+                lmo.o,
+                MOI.ObjectiveFunction{MOI.ScalarAffineFunction{T}}(),
+                MOI.ScalarCoefficientChange(variables[i], direction[i]),
+            )
+        end
+    else
+        terms = [MOI.ScalarAffineTerm(d, v) for (d, v) in zip(direction, variables)]
+        obj = MOI.ScalarAffineFunction(terms, zero(T))
+        MOI.set(lmo.o, MOI.ObjectiveFunction{typeof(obj)}(), obj)
+        MOI.set(lmo.o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
     end
     return _optimize_and_return(lmo, variables)
 end
@@ -64,27 +76,34 @@ function compute_extreme_point(
     direction::AbstractVector{MOI.ScalarAffineTerm{T}};
     kwargs...
 ) where {OT,T}
-    for d in direction
-        MOI.modify(
-            lmo.o,
-            MOI.ObjectiveFunction{MOI.ScalarAffineFunction{T}}(),
-            MOI.ScalarCoefficientChange(d.variable,d.coefficient),
-        )
-    end
+    if lmo.use_modify == true
+        for d in direction
+            MOI.modify(
+                lmo.o,
+                MOI.ObjectiveFunction{MOI.ScalarAffineFunction{T}}(),
+                MOI.ScalarCoefficientChange(d.variable,d.coefficient),
+            )
+        end
 
-    variables = MOI.get(lmo.o, MOI.ListOfVariableIndices())
-    variables_to_zero = setdiff(variables, [dir.variable for dir in direction])
+        variables = MOI.get(lmo.o, MOI.ListOfVariableIndices())
+        variables_to_zero = setdiff(variables, [dir.variable for dir in direction])
 
-    terms = [MOI.ScalarAffineTerm(d, v) for (d, v) in zip(zeros(length(variables_to_zero)), variables_to_zero)]
-    
-    for t in terms
-        MOI.modify(
-            lmo.o,
-            MOI.ObjectiveFunction{MOI.ScalarAffineFunction{T}}(), 
-            MOI.ScalarCoefficientChange(t.variable,t.coefficient),
-        )
+        terms = [MOI.ScalarAffineTerm(d, v) for (d, v) in zip(zeros(length(variables_to_zero)), variables_to_zero)]
+        
+        for t in terms
+            MOI.modify(
+                lmo.o,
+                MOI.ObjectiveFunction{MOI.ScalarAffineFunction{T}}(), 
+                MOI.ScalarCoefficientChange(t.variable,t.coefficient),
+            )
+        end
+    else 
+        variables = [d.variable for d in direction]
+        obj = MOI.ScalarAffineFunction(direction, zero(T))
+        MOI.set(lmo.o, MOI.ObjectiveFunction{typeof(obj)}(), obj)
+        MOI.set(lmo.o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
     end
-    return _optimize_and_return(lmo, variables)
+        return _optimize_and_return(lmo, variables)
 end
 
 function _optimize_and_return(lmo, variables)
