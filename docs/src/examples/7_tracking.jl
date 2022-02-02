@@ -10,7 +10,6 @@ using FrankWolfe
 using Test
 using LinearAlgebra
 
-using DoubleFloats
 using DelimitedFiles
 import FrankWolfe: ActiveSet
 

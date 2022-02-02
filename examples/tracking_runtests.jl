@@ -1,9 +1,4 @@
-using FrankWolfe
-using Test
-using LinearAlgebra
-using DoubleFloats
-using DelimitedFiles
-import FrankWolfe: ActiveSet
+include("activate.jl")
 
 tracking_trajectory_callback = FrankWolfe.tracking_trajectory_callback
 
