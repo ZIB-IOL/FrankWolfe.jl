@@ -1,3 +1,4 @@
+
 # Algorithms
 
 This section contains all main algorithms of the [`FrankWolfe.jl`](https://github.com/ZIB-IOL/FrankWolfe.jl) package. These are the ones typical users will call.
@@ -79,8 +80,8 @@ The active set represents an iterate as a convex combination of atoms.
 It maintains a vector of atoms, the corresponding weights, and the current iterate.
 
 ```@autodocs
-Module = [FrankWolfe]
-Pages = [active_set.jl]
+Modules = [FrankWolfe]
+Pages = ["active_set.jl"]
 ```
 
 ## Step size computation
