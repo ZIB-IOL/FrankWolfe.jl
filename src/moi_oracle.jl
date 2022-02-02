@@ -101,7 +101,7 @@ function compute_extreme_point(
         MOI.set(lmo.o, MOI.ObjectiveFunction{typeof(obj)}(), obj)
         MOI.set(lmo.o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
     end
-        return _optimize_and_return(lmo, variables)
+    return _optimize_and_return(lmo, variables)
 end
 
 function _optimize_and_return(lmo, variables)
