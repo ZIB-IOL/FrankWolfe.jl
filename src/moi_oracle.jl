@@ -10,9 +10,11 @@ The `direction` vector has to be set in the same order of variables as the `MOI.
 struct MathOptLMO{OT<:MOI.AbstractOptimizer} <: LinearMinimizationOracle
     o::OT
     use_modify::Bool
+    function MathOptLMO(o, use_modify=true)
+        MOI.set(o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+        return new{typeof(o)}(o, use_modify)
+    end
 end
-
-MathOptLMO(o) = MathOptLMO(o, true)
 
 function compute_extreme_point(lmo::MathOptLMO{OT}, direction::AbstractVector{T}; kwargs...) where {OT,T<:Real}
     variables = MOI.get(lmo.o, MOI.ListOfVariableIndices())
@@ -28,7 +30,6 @@ function compute_extreme_point(lmo::MathOptLMO{OT}, direction::AbstractVector{T}
         terms = [MOI.ScalarAffineTerm(d, v) for (d, v) in zip(direction, variables)]
         obj = MOI.ScalarAffineFunction(terms, zero(T))
         MOI.set(lmo.o, MOI.ObjectiveFunction{typeof(obj)}(), obj)
-        MOI.set(lmo.o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
     end
     return _optimize_and_return(lmo, variables)
 end
@@ -99,7 +100,6 @@ function compute_extreme_point(
         variables = [d.variable for d in direction]
         obj = MOI.ScalarAffineFunction(direction, zero(T))
         MOI.set(lmo.o, MOI.ObjectiveFunction{typeof(obj)}(), obj)
-        MOI.set(lmo.o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
     end
     return _optimize_and_return(lmo, variables)
 end
