@@ -3,7 +3,7 @@ import Arpack
 """
     LpNormLMO{T, p}(right_hand_side)
 
-LMO with feasible set being a bound on the L-p norm:
+LMO with feasible set being an L-p norm ball:
 ```
 C = {x ∈ R^n, norm(x, p) ≤ right_hand_side}
 ```
@@ -98,11 +98,15 @@ end
 """
     KNormBallLMO{T}(K::Int, right_hand_side::T)
 
-LMO for the K-norm ball, intersection of L_1-ball (τK) and L_∞-ball (τ/K)
+LMO with feasible set being the K-norm ball in the sense of
+[2010.07243](https://arxiv.org/abs/2010.07243),
+i.e., the convex hull over the union of an
+L_1-ball with radius τ and an L_∞-ball with radius τ/K:
 ```
 C_{K,τ} = conv { B_1(τ) ∪ B_∞(τ / K) }
 ```
-with `τ` the `right_hand_side` parameter.
+with `τ` the `right_hand_side` parameter. The K-norm is defined as
+the sum of the largest $K$ absolute entries in a vector.
 """
 struct KNormBallLMO{T} <: LinearMinimizationOracle
     K::Int
