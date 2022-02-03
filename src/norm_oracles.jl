@@ -99,7 +99,7 @@ end
     KNormBallLMO{T}(K::Int, right_hand_side::T)
 
 LMO with feasible set being the K-norm ball in the sense of
-[https://arxiv.org/pdf/2010.07243.pdf](https://arxiv.org/pdf/2010.07243.pdf),
+[2010.07243](https://arxiv.org/abs/2010.07243),
 i.e., the convex hull over the union of an
 L_1-ball with radius τ and an L_∞-ball with radius τ/K:
 ```
