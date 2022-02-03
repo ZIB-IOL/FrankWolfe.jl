@@ -106,7 +106,7 @@ L_1-ball with radius τ and an L_∞-ball with radius τ/K:
 C_{K,τ} = conv { B_1(τ) ∪ B_∞(τ / K) }
 ```
 with `τ` the `right_hand_side` parameter. The K-norm is defined as
-the sum of the largest $K$ absolute entries in a vector.
+the sum of the largest `K` absolute entries in a vector.
 """
 struct KNormBallLMO{T} <: LinearMinimizationOracle
     K::Int
