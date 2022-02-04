@@ -439,7 +439,7 @@ end
             MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, x), 0.0),
             MOI.EqualTo(1.0),
         )
-        lmo = FrankWolfe.MathOptLMO(o)
+        lmo = FrankWolfe.MathOptLMO(o, false)
         direction = [MOI.ScalarAffineTerm(-2.0i, x[i]) for i in 2:3]
         v = compute_extreme_point(lmo, direction)
         @test v ≈ [0, 1]
@@ -460,7 +460,7 @@ end
             MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, x), 0.0),
             MOI.EqualTo(1.0),
         )
-        lmo = FrankWolfe.MathOptLMO(o)
+        lmo = FrankWolfe.MathOptLMO(o, false)
         lmo_ref = FrankWolfe.ProbabilitySimplexOracle(1.0)
         direction = Vector{Float64}(undef, n)
         for _ in 1:5
