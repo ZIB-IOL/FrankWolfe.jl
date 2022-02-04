@@ -7,9 +7,10 @@ The oracle call sets the direction and reruns the optimizer.
 
 The `direction` vector has to be set in the same order of variables as the `MOI.ListOfVariableIndices()` getter.
 
-The Boolean `use_modify` determines if the objective in`compute_extreme_point` is updated 
-with `MOI.modify()` or with `MOI.set()`. `use_modify` decreases the runtime and memory allocation for 
-models created as an optimizer object and defined directly with MathOptInterface.
+The Boolean `use_modify` determines if the objective in`compute_extreme_point` is updated with 
+`MOI.modify(o, ::MOI.ObjectiveFunction, ::MOI.ScalarCoefficientChange)` or with `MOI.set(o, ::MOI.ObjectiveFunction, f)`. 
+`use_modify = true` decreases the runtime and memory allocation for models created as an optimizer object and defined directly 
+with MathOptInterface. `use_modify = false` should be used for CachingOptimizers.
 """
 struct MathOptLMO{OT<:MOI.AbstractOptimizer} <: LinearMinimizationOracle
     o::OT
