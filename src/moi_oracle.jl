@@ -22,7 +22,7 @@ end
 
 function compute_extreme_point(lmo::MathOptLMO{OT}, direction::AbstractVector{T}; kwargs...) where {OT,T<:Real}
     variables = MOI.get(lmo.o, MOI.ListOfVariableIndices())
-    if lmo.use_modify == true
+    if lmo.use_modify
         for i in eachindex(variables)
             MOI.modify(
                 lmo.o,
