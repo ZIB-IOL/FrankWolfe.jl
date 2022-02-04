@@ -33,6 +33,7 @@ function convert_mathopt(
     lmo::UnitSimplexOracle{T},
     optimizer::OT;
     dimension::Integer,
+    use_modify=true::Bool,
     kwargs...,
 ) where {T,OT}
     MOI.empty!(optimizer)
@@ -44,7 +45,7 @@ function convert_mathopt(
         MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(ones(n), x), 0.0),
         MOI.LessThan(τ),
     )
-    return MathOptLMO(optimizer)
+    return MathOptLMO(optimizer, use_modify)
 end
 
 """
@@ -92,6 +93,7 @@ function convert_mathopt(
     lmo::ProbabilitySimplexOracle{T},
     optimizer::OT;
     dimension::Integer,
+    use_modify=true::Bool,
     kwargs...,
 ) where {T,OT}
     MOI.empty!(optimizer)
@@ -103,7 +105,7 @@ function convert_mathopt(
         MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(ones(n), x), 0.0),
         MOI.EqualTo(τ),
     )
-    return MathOptLMO(optimizer)
+    return MathOptLMO(optimizer, use_modify)
 end
 
 """

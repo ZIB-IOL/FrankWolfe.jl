@@ -306,7 +306,7 @@ end
     @testset "Spectraplex $n" for n in (2, 10)
         lmo = FrankWolfe.SpectraplexLMO(radius, n)
         direction = Matrix{Float64}(undef, n, n)
-        lmo_moi = FrankWolfe.convert_mathopt(lmo, optimizer; side_dimension=n)
+        lmo_moi = FrankWolfe.convert_mathopt(lmo, optimizer; side_dimension=n, use_modify=false)
         for _ in 1:10
             Random.randn!(direction)
             v = @inferred FrankWolfe.compute_extreme_point(lmo, direction)
@@ -332,7 +332,7 @@ end
     @testset "Unit spectrahedron $n" for n in (2, 10)
         lmo = FrankWolfe.UnitSpectrahedronLMO(radius, n)
         direction = Matrix{Float64}(undef, n, n)
-        lmo_moi = FrankWolfe.convert_mathopt(lmo, optimizer; side_dimension=n)
+        lmo_moi = FrankWolfe.convert_mathopt(lmo, optimizer; side_dimension=n, use_modify=false)
         direction_sym = similar(direction)
         for _ in 1:10
             Random.randn!(direction)
@@ -485,7 +485,7 @@ end
         τ = 10.0
         lmo = FrankWolfe.NuclearNormLMO(τ)
         lmo_moi =
-            FrankWolfe.convert_mathopt(lmo, optimizer, row_dimension=nrows, col_dimension=ncols)
+            FrankWolfe.convert_mathopt(lmo, optimizer, row_dimension=nrows, col_dimension=ncols, use_modify=false)
         nsuccess = 0
         for _ in 1:10
             randn!(direction)
@@ -569,9 +569,9 @@ end
             MOI.add_constraint(o, MOI.VectorOfVariables([t1; x]), MOI.NormOneCone(n + 1))
             MOI.add_constraint(o, t1, MOI.LessThan(τ * K))
             direction = Vector{Float64}(undef, n)
-            lmo_moi = FrankWolfe.MathOptLMO(o)
+            lmo_moi = FrankWolfe.MathOptLMO(o, false)
             lmo_ksp = FrankWolfe.KSparseLMO(K, τ)
-            lmo_moi_convert = FrankWolfe.convert_mathopt(lmo_ksp, o_ref, dimension=n)
+            lmo_moi_convert = FrankWolfe.convert_mathopt(lmo_ksp, o_ref, dimension=n, use_modify=false)
             for _ in 1:20
                 randn!(direction)
                 v_moi =
