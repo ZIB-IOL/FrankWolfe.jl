@@ -110,7 +110,7 @@ function convert_mathopt(
     ::BirkhoffPolytopeLMO,
     optimizer::OT;
     dimension::Integer,
-    use_modify=true::Bool,
+    use_modify::Bool=true,
     kwargs...,
 ) where {OT}
     n = dimension
