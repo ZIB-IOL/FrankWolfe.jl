@@ -270,7 +270,7 @@ function convert_mathopt(
     lmo::Union{SpectraplexLMO{T}, UnitSpectrahedronLMO{T}},
     optimizer::OT;
     side_dimension::Integer,
-    use_modify=true::Bool,
+    use_modify::Bool=true,
     kwargs...,
 ) where {T, OT}
     MOI.empty!(optimizer)
