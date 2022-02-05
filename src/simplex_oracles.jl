@@ -33,7 +33,7 @@ function convert_mathopt(
     lmo::UnitSimplexOracle{T},
     optimizer::OT;
     dimension::Integer,
-    use_modify=true::Bool,
+    use_modify::Bool=true,
     kwargs...,
 ) where {T,OT}
     MOI.empty!(optimizer)
