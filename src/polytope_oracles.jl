@@ -51,7 +51,7 @@ function convert_mathopt(
     lmo::KSparseLMO{T},
     optimizer::OT;
     dimension::Integer,
-    use_modify=true::Bool,
+    use_modify::Bool=true,
     kwargs...,
 ) where {T,OT}
     τ = lmo.right_hand_side
