@@ -51,6 +51,7 @@ function convert_mathopt(
     lmo::KSparseLMO{T},
     optimizer::OT;
     dimension::Integer,
+    use_modify::Bool=true,
     kwargs...,
 ) where {T,OT}
     τ = lmo.right_hand_side
@@ -64,7 +65,7 @@ function convert_mathopt(
     t1 = MOI.add_variable(optimizer)
     MOI.add_constraint(optimizer, MOI.VectorOfVariables([t1; x]), MOI.NormOneCone(n + 1))
     MOI.add_constraint(optimizer, t1, MOI.LessThan(τ * K))
-    return MathOptLMO(optimizer)
+    return MathOptLMO(optimizer, use_modify)
 end
 
 """
@@ -109,6 +110,7 @@ function convert_mathopt(
     ::BirkhoffPolytopeLMO,
     optimizer::OT;
     dimension::Integer,
+    use_modify::Bool=true,
     kwargs...,
 ) where {OT}
     n = dimension
@@ -129,7 +131,7 @@ function convert_mathopt(
             MOI.EqualTo(1.0),
         )
     end
-    return MathOptLMO(optimizer)
+    return MathOptLMO(optimizer, use_modify)
 end
 
 
