@@ -169,13 +169,14 @@ function convert_mathopt(
     optimizer::OT;
     row_dimension::Integer,
     col_dimension::Integer,
+    use_modify=true::Bool,
     kwargs...,
 ) where {OT}
     MOI.empty!(optimizer)
     x = MOI.add_variables(optimizer, row_dimension * col_dimension)
     (t, _) = MOI.add_constrained_variable(optimizer, MOI.LessThan(lmo.radius))
     MOI.add_constraint(optimizer, [t; x], MOI.NormNuclearCone(row_dimension, col_dimension))
-    return MathOptLMO(optimizer)
+    return MathOptLMO(optimizer, use_modify)
 end
 
 """
@@ -273,6 +274,7 @@ function convert_mathopt(
     lmo::Union{SpectraplexLMO{T}, UnitSpectrahedronLMO{T}},
     optimizer::OT;
     side_dimension::Integer,
+    use_modify::Bool=true,
     kwargs...,
 ) where {T, OT}
     MOI.empty!(optimizer)
@@ -289,5 +291,5 @@ function convert_mathopt(
         MOI.LessThan(lmo.radius)
     end
     MOI.add_constraint(optimizer, sum_diag_terms, constraint_set)
-    return MathOptLMO(optimizer)
+    return MathOptLMO(optimizer, use_modify)
 end
