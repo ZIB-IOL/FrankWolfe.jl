@@ -6,17 +6,36 @@ Linear minimization oracle with feasible space defined through a MathOptInterfac
 The oracle call sets the direction and reruns the optimizer.
 
 The `direction` vector has to be set in the same order of variables as the `MOI.ListOfVariableIndices()` getter.
+
+The Boolean `use_modify` determines if the objective in`compute_extreme_point` is updated with 
+`MOI.modify(o, ::MOI.ObjectiveFunction, ::MOI.ScalarCoefficientChange)` or with `MOI.set(o, ::MOI.ObjectiveFunction, f)`. 
+`use_modify = true` decreases the runtime and memory allocation for models created as an optimizer object and defined directly 
+with MathOptInterface. `use_modify = false` should be used for CachingOptimizers.
 """
 struct MathOptLMO{OT<:MOI.AbstractOptimizer} <: LinearMinimizationOracle
     o::OT
+    use_modify::Bool
+    function MathOptLMO(o, use_modify=true)
+        MOI.set(o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+        return new{typeof(o)}(o, use_modify)
+    end
 end
 
 function compute_extreme_point(lmo::MathOptLMO{OT}, direction::AbstractVector{T}; kwargs...) where {OT,T<:Real}
     variables = MOI.get(lmo.o, MOI.ListOfVariableIndices())
-    terms = [MOI.ScalarAffineTerm(d, v) for (d, v) in zip(direction, variables)]
-    obj = MOI.ScalarAffineFunction(terms, zero(T))
-    MOI.set(lmo.o, MOI.ObjectiveFunction{typeof(obj)}(), obj)
-    MOI.set(lmo.o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+    if lmo.use_modify
+        for i in eachindex(variables)
+            MOI.modify(
+                lmo.o,
+                MOI.ObjectiveFunction{MOI.ScalarAffineFunction{T}}(),
+                MOI.ScalarCoefficientChange(variables[i], direction[i]),
+            )
+        end
+    else
+        terms = [MOI.ScalarAffineTerm(d, v) for (d, v) in zip(direction, variables)]
+        obj = MOI.ScalarAffineFunction(terms, zero(T))
+        MOI.set(lmo.o, MOI.ObjectiveFunction{typeof(obj)}(), obj)
+    end
     return _optimize_and_return(lmo, variables)
 end
 
@@ -61,10 +80,32 @@ function compute_extreme_point(
     direction::AbstractVector{MOI.ScalarAffineTerm{T}};
     kwargs...
 ) where {OT,T}
-    variables = [term.variable for term in direction]
-    obj = MOI.ScalarAffineFunction(direction, zero(T))
-    MOI.set(lmo.o, MOI.ObjectiveFunction{typeof(obj)}(), obj)
-    MOI.set(lmo.o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+    if lmo.use_modify
+        for d in direction
+            MOI.modify(
+                lmo.o,
+                MOI.ObjectiveFunction{MOI.ScalarAffineFunction{T}}(),
+                MOI.ScalarCoefficientChange(d.variable,d.coefficient),
+            )
+        end
+
+        variables = MOI.get(lmo.o, MOI.ListOfVariableIndices())
+        variables_to_zero = setdiff(variables, [dir.variable for dir in direction])
+
+        terms = [MOI.ScalarAffineTerm(d, v) for (d, v) in zip(zeros(length(variables_to_zero)), variables_to_zero)]
+        
+        for t in terms
+            MOI.modify(
+                lmo.o,
+                MOI.ObjectiveFunction{MOI.ScalarAffineFunction{T}}(), 
+                MOI.ScalarCoefficientChange(t.variable,t.coefficient),
+            )
+        end
+    else 
+        variables = [d.variable for d in direction]
+        obj = MOI.ScalarAffineFunction(direction, zero(T))
+        MOI.set(lmo.o, MOI.ObjectiveFunction{typeof(obj)}(), obj)
+    end
     return _optimize_and_return(lmo, variables)
 end
 
