@@ -169,6 +169,9 @@ function frank_wolfe(
                 x=x,
                 v=v,
                 gamma=gamma,
+                f=f,
+                grad! =grad!,
+                lmo=lmo,
             )
             callback(state)
         end
