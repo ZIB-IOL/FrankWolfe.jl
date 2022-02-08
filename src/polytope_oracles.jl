@@ -147,7 +147,8 @@ struct ScaledBoundLInfNormBall{T, VT1 <: AbstractVector{T}, VT2 <: AbstractVecto
     upper_bounds::VT2
 end
 
-function compute_extreme_point(lmo::ScaledBoundLInfNormBall, direction; v = copy(lmo.lower_bounds), kwargs...)
+function compute_extreme_point(lmo::ScaledBoundLInfNormBall, direction; v = similar(lmo.lower_bounds), kwargs...)
+    v .= lmo.lower_bounds
     for i in eachindex(direction)
         if direction[i] * lmo.upper_bounds[i] < direction[i] * lmo.lower_bounds[i]
             v[i] = lmo.upper_bounds[i]
@@ -170,7 +171,10 @@ struct ScaledBoundL1NormBall{T, VT1 <: AbstractVector{T}, VT2 <: AbstractVector{
     upper_bounds::VT2
 end
 
-function compute_extreme_point(lmo::ScaledBoundL1NormBall, direction; v = (lmo.lower_bounds + lmo.upper_bounds) / 2, kwargs...)
+function compute_extreme_point(lmo::ScaledBoundL1NormBall, direction; v = similar(lmo.lower_bounds), kwargs...)
+    @inbounds for i in eachindex(lmo.lower_bounds)
+        v[i] = (lmo.lower_bounds[i] + lmo.upper_bounds[i]) / 2
+    end
     idx = 0
     lower = false
     val = zero(eltype(direction))
