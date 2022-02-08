@@ -709,3 +709,27 @@ end
         end
     end
 end
+
+@testset "Inplace LMO correctness" begin
+
+    V = [-6.0,-6.15703,-5.55986]
+    M = [3.0 2.8464949 2.4178848; 2.8464949 3.0 2.84649498; 2.4178848 2.84649498 3.0]
+
+    fun0(p) = dot(V, p) + dot(p, M, p)
+    function fun0_grad!(g, p)
+        g .= V
+        mul!(g, M, p, 2, 1)
+    end
+
+    lmo_dense = FrankWolfe.ScaledBoundL1NormBall(-ones(3), ones(3))
+    lmo_standard = FrankWolfe.LpNormLMO{1}(1.0) 
+    x_dense, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad!, lmo_dense, [1.0, 0.0, 0.0])
+    x_standard, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad!, lmo_standard, [1.0, 0.0, 0.0])
+    @test x_dense == x_standard
+
+    lmo_dense = FrankWolfe.ScaledBoundLInfNormBall(-ones(3), ones(3))
+    lmo_standard = FrankWolfe.LpNormLMO{Inf}(1.0)
+    x_dense, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad!, lmo_dense, [1.0, 0.0, 0.0])
+    x_standard, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad!, lmo_standard, [1.0, 0.0, 0.0])   
+    @test x_dense == x_standard
+end
