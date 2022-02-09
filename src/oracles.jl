@@ -12,6 +12,7 @@ abstract type LinearMinimizationOracle end
 
 Computes the point `argmin_{v ∈ C} v ⋅ direction`
 with `C` the set represented by the LMO.
+Most LMOs feature `v` as a keyword argument that allows for an in-place computation whenever `v` is dense.
 All LMOs should accept keyword arguments that they can ignore.
 """
 function compute_extreme_point end
@@ -51,14 +52,14 @@ SingleLastCachedLMO(lmo::LMO) where {LMO<:LinearMinimizationOracle} =
 function compute_extreme_point(
     lmo::SingleLastCachedLMO,
     direction;
+    v = nothing,
     threshold=-Inf,
     store_cache=true,
     kwargs...,
 )
     if lmo.last_vertex !== nothing && isfinite(threshold)
-        v = lmo.last_vertex
-        if fast_dot(v, direction) ≤ threshold # cache is a sufficiently-decreasing direction
-            return v
+        if fast_dot(lmo.last_vertex, direction) ≤ threshold # cache is a sufficiently-decreasing direction
+            return lmo.last_vertex
         end
     end
     v = compute_extreme_point(lmo.inner, direction, kwargs...)
@@ -124,6 +125,7 @@ below `threshold` or look for the best one.
 function compute_extreme_point(
     lmo::MultiCacheLMO{N},
     direction;
+    v = nothing,
     threshold=-Inf,
     store_cache=true,
     greedy=false,
@@ -158,7 +160,7 @@ function compute_extreme_point(
                 end
             end
         end
-        if best_idx > 0 # && fast_dot(best_v, direction) ≤ threshold 
+        if best_idx > 0 # && fast_dot(best_v, direction) ≤ threshold
             # println("cache sol")
             return best_v
         end
@@ -206,6 +208,7 @@ Base.length(lmo::VectorCacheLMO) = length(lmo.vertices)
 function compute_extreme_point(
     lmo::VectorCacheLMO,
     direction;
+    v = nothing,
     threshold=-Inf,
     store_cache=true,
     greedy=false,
@@ -241,10 +244,10 @@ function compute_extreme_point(
     if best_idx < 0
         v = compute_extreme_point(lmo.inner, direction)
         if store_cache
-            # note: we do not check for duplicates. hence you might end up with more vertices, 
+            # note: we do not check for duplicates. hence you might end up with more vertices,
             # in fact up to number of dual steps many, that might be already in the cache
-            # in order to reach this point, if v was already in the cache is must not meet the threshold (otherwise we would have returned it) 
-            # and it is the best possible, hence we will perform a dual step on the outside. 
+            # in order to reach this point, if v was already in the cache is must not meet the threshold (otherwise we would have returned it)
+            # and it is the best possible, hence we will perform a dual step on the outside.
             #
             # note: another possibility could be to test against that in the if statement but then you might end you recalculating the same vertex a few times.
             # as such this might be a better tradeoff, i.e., to not check the set for duplicates and potentially accept #dualSteps many duplicates.

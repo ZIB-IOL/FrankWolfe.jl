@@ -253,7 +253,7 @@ end
     end
     # TODO value of radius?
     lmo = FrankWolfe.NuclearNormLMO(sum(svdvals(Xreal)))
-    x0 = FrankWolfe.compute_extreme_point(lmo, zero(Xreal))
+    x0 = @inferred FrankWolfe.compute_extreme_point(lmo, zero(Xreal))
     gradient = similar(x0)
     grad!(gradient, x0)
     v0 = FrankWolfe.compute_extreme_point(lmo, gradient)
@@ -268,9 +268,8 @@ end
         print_iter=100,
         trajectory=false,
         verbose=false,
-        linesearch_tol=1e-7,
         line_search=FrankWolfe.Backtracking(),
-        emphasis=FrankWolfe.memory,
+        memory_mode=FrankWolfe.InplaceEmphasis(),
     )
     @test 1 - (f(x0) - f(xfin)) / f(x0) < 1e-3
     svals_fin = svdvals(xfin)
@@ -285,9 +284,8 @@ end
         print_iter=100,
         trajectory=false,
         verbose=false,
-        linesearch_tol=1e-7,
         line_search=FrankWolfe.Backtracking(),
-        emphasis=FrankWolfe.memory,
+        memory_mode=FrankWolfe.InplaceEmphasis(),
     )
 end
 
@@ -306,7 +304,7 @@ end
     @testset "Spectraplex $n" for n in (2, 10)
         lmo = FrankWolfe.SpectraplexLMO(radius, n)
         direction = Matrix{Float64}(undef, n, n)
-        lmo_moi = FrankWolfe.convert_mathopt(lmo, optimizer; side_dimension=n)
+        lmo_moi = FrankWolfe.convert_mathopt(lmo, optimizer; side_dimension=n, use_modify=false)
         for _ in 1:10
             Random.randn!(direction)
             v = @inferred FrankWolfe.compute_extreme_point(lmo, direction)
@@ -332,7 +330,7 @@ end
     @testset "Unit spectrahedron $n" for n in (2, 10)
         lmo = FrankWolfe.UnitSpectrahedronLMO(radius, n)
         direction = Matrix{Float64}(undef, n, n)
-        lmo_moi = FrankWolfe.convert_mathopt(lmo, optimizer; side_dimension=n)
+        lmo_moi = FrankWolfe.convert_mathopt(lmo, optimizer; side_dimension=n, use_modify=false)
         direction_sym = similar(direction)
         for _ in 1:10
             Random.randn!(direction)
@@ -439,7 +437,7 @@ end
             MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, x), 0.0),
             MOI.EqualTo(1.0),
         )
-        lmo = FrankWolfe.MathOptLMO(o)
+        lmo = FrankWolfe.MathOptLMO(o, false)
         direction = [MOI.ScalarAffineTerm(-2.0i, x[i]) for i in 2:3]
         v = compute_extreme_point(lmo, direction)
         @test v ≈ [0, 1]
@@ -460,7 +458,7 @@ end
             MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, x), 0.0),
             MOI.EqualTo(1.0),
         )
-        lmo = FrankWolfe.MathOptLMO(o)
+        lmo = FrankWolfe.MathOptLMO(o, false)
         lmo_ref = FrankWolfe.ProbabilitySimplexOracle(1.0)
         direction = Vector{Float64}(undef, n)
         for _ in 1:5
@@ -473,10 +471,11 @@ end
     @testset "Nuclear norm" for n in (5, 10)
         o = Hypatia.Optimizer()
         MOI.set(o, MOI.Silent(), true)
-        optimizer = MOI.Utilities.CachingOptimizer(
+        inner_optimizer = MOI.Utilities.CachingOptimizer(
             MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
             o,
         )
+        optimizer = MOI.Bridges.full_bridge_optimizer(inner_optimizer, Float64)        
         MOI.set(optimizer, MOI.Silent(), true)
         nrows = 3n
         ncols = n
@@ -484,7 +483,8 @@ end
         τ = 10.0
         lmo = FrankWolfe.NuclearNormLMO(τ)
         lmo_moi =
-            FrankWolfe.convert_mathopt(lmo, optimizer, row_dimension=nrows, col_dimension=ncols)
+            FrankWolfe.convert_mathopt(lmo, optimizer, row_dimension=nrows, col_dimension=ncols, use_modify=false)
+        nsuccess = 0
         for _ in 1:10
             randn!(direction)
             v_r = FrankWolfe.compute_extreme_point(lmo, direction)
@@ -495,9 +495,11 @@ end
                 # ignore non-terminating MOI solver results
                 continue
             end
+            nsuccess += 1
             v_moi_mat = reshape(v_moi[1:end-1], nrows, ncols)
             @test v_r ≈ v_moi_mat rtol = 1e-2
         end
+        @test nsuccess > 1
     end
 end
 
@@ -565,9 +567,9 @@ end
             MOI.add_constraint(o, MOI.VectorOfVariables([t1; x]), MOI.NormOneCone(n + 1))
             MOI.add_constraint(o, t1, MOI.LessThan(τ * K))
             direction = Vector{Float64}(undef, n)
-            lmo_moi = FrankWolfe.MathOptLMO(o)
+            lmo_moi = FrankWolfe.MathOptLMO(o, false)
             lmo_ksp = FrankWolfe.KSparseLMO(K, τ)
-            lmo_moi_convert = FrankWolfe.convert_mathopt(lmo_ksp, o_ref, dimension=n)
+            lmo_moi_convert = FrankWolfe.convert_mathopt(lmo_ksp, o_ref, dimension=n, use_modify=false)
             for _ in 1:20
                 randn!(direction)
                 v_moi =
@@ -681,4 +683,50 @@ end
     vref = FrankWolfe.compute_extreme_point(lmo_ref, d)
     @test v ≈ vref
     @test norm(v, Inf) == 1
+end
+
+@testset "Copy MathOpt LMO" begin
+    o_clp = MOI.Utilities.CachingOptimizer(
+        MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
+        Clp.Optimizer(),
+    )
+    for o in (GLPK.Optimizer(), o_clp)
+        MOI.set(o, MOI.Silent(), true)
+        n = 100
+        x = MOI.add_variables(o, n)
+        f = sum(1.0 * xi for xi in x)
+        MOI.add_constraint(o, f, MOI.LessThan(1.0))
+        MOI.add_constraint(o, f, MOI.GreaterThan(1.0))
+        lmo = FrankWolfe.MathOptLMO(o)
+        lmo2 = copy(lmo)
+        for d in (ones(n), -ones(n))
+            v = FrankWolfe.compute_extreme_point(lmo, d)
+            v2 = FrankWolfe.compute_extreme_point(lmo2, d)
+            @test v ≈ v2
+        end
+    end
+end
+
+@testset "Inplace LMO correctness" begin
+
+    V = [-6.0,-6.15703,-5.55986]
+    M = [3.0 2.8464949 2.4178848; 2.8464949 3.0 2.84649498; 2.4178848 2.84649498 3.0]
+
+    fun0(p) = dot(V, p) + dot(p, M, p)
+    function fun0_grad!(g, p)
+        g .= V
+        mul!(g, M, p, 2, 1)
+    end
+
+    lmo_dense = FrankWolfe.ScaledBoundL1NormBall(-ones(3), ones(3))
+    lmo_standard = FrankWolfe.LpNormLMO{1}(1.0) 
+    x_dense, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad!, lmo_dense, [1.0, 0.0, 0.0])
+    x_standard, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad!, lmo_standard, [1.0, 0.0, 0.0])
+    @test x_dense == x_standard
+
+    lmo_dense = FrankWolfe.ScaledBoundLInfNormBall(-ones(3), ones(3))
+    lmo_standard = FrankWolfe.LpNormLMO{Inf}(1.0)
+    x_dense, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad!, lmo_dense, [1.0, 0.0, 0.0])
+    x_standard, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad!, lmo_standard, [1.0, 0.0, 0.0])   
+    @test x_dense == x_standard
 end

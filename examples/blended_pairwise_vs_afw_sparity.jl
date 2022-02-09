@@ -53,32 +53,30 @@ const x00 = FrankWolfe.compute_extreme_point(lmo, rand(n))
 
 function build_callback(trajectory_arr)
     return function callback(state)
-        return push!(trajectory_arr, (Tuple(state)[1:5]..., state.active_set_length))
+        return push!(trajectory_arr, (Tuple(state)[1:5]..., length(state.active_set)))
     end
 end
-
 
 
 FrankWolfe.benchmark_oracles(f, grad!, () -> randn(n), lmo; k=100)
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, trajectorySs = FrankWolfe.frank_wolfe(
+@time x, v, primal, dual_gap, trajectory_shortstep = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.Shortstep(),
-    L=2,
+    line_search=FrankWolfe.Shortstep(2.0),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
 );
 
 
-trajectoryAfw = []
-callback = build_callback(trajectoryAfw)
+trajectory_afw = []
+callback = build_callback(trajectory_afw)
 
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
@@ -89,15 +87,15 @@ x0 = deepcopy(x00)
     max_iteration=k,
     line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
     callback=callback,
 );
 
 
-trajectoryLAfw = []
-callback = build_callback(trajectoryLAfw)
+trajectory_lafw = []
+callback = build_callback(trajectory_lafw)
 
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
@@ -108,7 +106,7 @@ x0 = deepcopy(x00)
     max_iteration=k,
     line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     lazy=true,
     trajectory=true,
@@ -127,7 +125,7 @@ x0 = deepcopy(x00)
     max_iteration=k,
     line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
     callback=callback,
@@ -146,7 +144,7 @@ x0 = deepcopy(x00)
     max_iteration=k,
     line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     lazy=true,
     trajectory=true,
@@ -157,7 +155,7 @@ x0 = deepcopy(x00)
 # Reduction primal/dual error vs. sparsity of solution
 
 dataSparsity =
-    [trajectoryAfw, trajectoryLAfw, trajectoryBPCG, trajectoryLBPCG]
+    [trajectory_afw, trajectory_lafw, trajectoryBPCG, trajectoryLBPCG]
 labelSparsity = ["AFW", "LAFW", "BPCG", "LBPCG"]
 
-FrankWolfe.plot_sparsity(dataSparsity, labelSparsity, legend_position=:topright)
+plot_sparsity(dataSparsity, labelSparsity, legend_position=:topright)

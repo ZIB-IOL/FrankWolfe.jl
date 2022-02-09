@@ -39,10 +39,9 @@ x_lmo, v, primal, dual_gap, trajectory_lmo = FrankWolfe.frank_wolfe(
     lmo,
     collect(copy(x00)),
     max_iteration=k,
-    line_search=FrankWolfe.Shortstep(),
-    L=2,
+    line_search=FrankWolfe.Shortstep(2.0),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
 )
@@ -70,10 +69,9 @@ x, v, primal, dual_gap, trajectory_moi = FrankWolfe.frank_wolfe(
     lmo_moi,
     collect(copy(x00)),
     max_iteration=k,
-    line_search=FrankWolfe.Shortstep(),
-    L=2,
+    line_search=FrankWolfe.Shortstep(2.0),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
 )
@@ -92,10 +90,9 @@ x, v, primal, dual_gap, trajectory_jump = FrankWolfe.frank_wolfe(
     lmo_jump,
     collect(copy(x00)),
     max_iteration=k,
-    line_search=FrankWolfe.Shortstep(),
-    L=2,
+    line_search=FrankWolfe.Shortstep(2.0),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
 )
@@ -106,10 +103,9 @@ x_lmo, v, primal, dual_gap, trajectory_lmo_blas = FrankWolfe.frank_wolfe(
     lmo,
     x00,
     max_iteration=k,
-    line_search=FrankWolfe.Shortstep(),
-    L=2,
+    line_search=FrankWolfe.Shortstep(2.0),
     print_iter=k / 10,
-    emphasis=FrankWolfe.blas,
+    memory_mode=FrankWolfe.OutplaceEmphasis(),
     verbose=true,
     trajectory=true,
 )
@@ -120,10 +116,9 @@ x, v, primal, dual_gap, trajectory_jump_blas = FrankWolfe.frank_wolfe(
     lmo_jump,
     x00,
     max_iteration=k,
-    line_search=FrankWolfe.Shortstep(),
-    L=2,
+    line_search=FrankWolfe.Shortstep(2.0),
     print_iter=k / 10,
-    emphasis=FrankWolfe.blas,
+    memory_mode=FrankWolfe.OutplaceEmphasis(),
     verbose=true,
     trajectory=true,
 )
@@ -139,7 +134,7 @@ dual_gap_list = [[x[4] for x in trajectory_lmo], [x[4] for x in trajectory_moi]]
 # Defined the labels for the series using latex rendering.
 label = [L"\textrm{Closed-form LMO}", L"\textrm{GLPK LMO}"]
 
-FrankWolfe.plot_results(
+plot_results(
     [primal_gap_list, primal_gap_list, dual_gap_list, dual_gap_list],
     [iteration_list, time_list, iteration_list, time_list],
     label,

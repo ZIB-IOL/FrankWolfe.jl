@@ -16,17 +16,13 @@ function blended_conditional_gradient(
     x0;
     line_search::LineSearchMethod=Adaptive(),
     line_search_inner::LineSearchMethod=Adaptive(),
-    L=Inf,
-    gamma0=0,
     hessian=nothing,
-    step_lim=20,
     epsilon=1e-7,
     max_iteration=10000,
     print_iter=1000,
     trajectory=false,
     verbose=false,
-    linesearch_tol=1e-7,
-    emphasis=nothing,
+    memory_mode::MemoryEmphasis=InplaceEmphasis(),
     accelerated=false,
     lazy_tolerance=2.0,
     weight_purge_threshold=1e-9,
@@ -34,6 +30,8 @@ function blended_conditional_gradient(
     callback=nothing,
     timeout=Inf,
     print_callback=print_callback,
+    linesearch_workspace=nothing,
+    linesearch_inner_workspace=nothing,
     lmo_kwargs...,
 )
 
@@ -44,7 +42,7 @@ function blended_conditional_gradient(
     primal = Inf
     dual_gap = Inf
     active_set = ActiveSet([(1.0, x0)])
-    x = x0
+    x = active_set.x
     if gradient === nothing
         gradient = similar(x0)
     end
@@ -62,27 +60,19 @@ function blended_conditional_gradient(
     time_start = time_ns()
     v = x0
 
-    if line_search isa Shortstep && !isfinite(L)
-        @error("Lipschitz constant not set to a finite value. Prepare to blow up spectacularly.")
-    end
-
     if line_search isa Agnostic || line_search isa Nonconvex
         @error("Lazification is not known to converge with open-loop step size strategies.")
-    end
-
-    if line_search isa FixedStep && gamma0 == 0
-        println("WARNING: gamma0 not set. We are not going to move a single bit.")
     end
 
     if verbose
         println("\nBlended Conditional Gradients Algorithm.")
         NumType = eltype(x0)
         println(
-            "EMPHASIS: $memory STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
+            "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
         )
         grad_type = typeof(gradient)
         println("GRADIENTTYPE: $grad_type lazy_tolerance: $lazy_tolerance")
-        println("WARNING: In memory emphasis mode iterates are written back into x0!")
+        @info("In memory_mode memory iterates are written back into x0!")
         headers = (
             "Type",
             "Iteration",
@@ -103,8 +93,15 @@ function blended_conditional_gradient(
     non_simplex_iter = 0
     force_fw_step = false
 
-    while t <= max_iteration && (phi ≥ epsilon || t == 0) # do at least one iteration for consistency with other algos
+    if linesearch_workspace === nothing
+        linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
+    end
 
+    if linesearch_inner_workspace === nothing
+        linesearch_inner_workspace = build_linesearch_workspace(line_search_inner, x, gradient)
+    end
+
+    while t <= max_iteration && (phi ≥ epsilon || t == 0) # do at least one iteration for consistency with other algos
         #####################
         # managing time and Ctrl-C
         #####################
@@ -148,6 +145,7 @@ function blended_conditional_gradient(
             timeout=timeout,
             print_callback=print_callback,
             format_string=format_string,
+            linesearch_inner_workspace=linesearch_inner_workspace,
         )
         t += num_simplex_descent_steps
         #Take a FW step.
@@ -161,7 +159,7 @@ function blended_conditional_gradient(
             gradient,
             phi,
             lazy_tolerance;
-            inplace_loop=(emphasis == memory),
+            inplace_loop=(memory_mode isa InplaceEmphasis),
             force_fw_step=force_fw_step,
             lmo_kwargs...,
         )
@@ -173,22 +171,18 @@ function blended_conditional_gradient(
             phi = (xval - value) / 2
         else
             tt = regular
-            gamma, L = line_search_wrapper(
+            gamma = perform_line_search(
                 line_search,
                 t,
                 f,
                 grad!,
+                gradient,
                 x,
                 x - v,
-                gradient,
-                dual_gap,
-                L,
-                gamma0,
-                linesearch_tol,
-                step_lim,
                 1.0,
+                linesearch_workspace,
             )
-
+    
             if gamma == 1.0
                 active_set_initialize!(active_set, v)
             else
@@ -207,8 +201,9 @@ function blended_conditional_gradient(
                 time=tot_time,
                 x=x,
                 v=v,
-                active_set_length=length(active_set),
+                active_set=active_set,
                 non_simplex_iter=non_simplex_iter,
+                gradient=gradient,
             )
             callback(state)
         end
@@ -231,10 +226,8 @@ function blended_conditional_gradient(
             print_callback(rep, format_string)
             flush(stdout)
         end
-
         t = t + 1
         non_simplex_iter += 1
-
     end
 
     ## post-processing and cleanup after loop
@@ -321,16 +314,14 @@ function minimize_over_convex_hull!(
     verbose=true,
     print_iter=1000,
     hessian=nothing,
-    linesearch_tol=10e-10,
-    step_lim=100,
     weight_purge_threshold=1e-12,
-    storage=nothing,
     accelerated=false,
     max_iteration,
     callback,
     timeout=Inf,
     print_callback=nothing,
     format_string=nothing,
+    linesearch_inner_workspace=nothing,
 )
     #No hessian is known, use simplex gradient descent.
     if hessian === nothing
@@ -346,14 +337,13 @@ function minimize_over_convex_hull!(
             line_search_inner=line_search_inner,
             verbose=verbose,
             print_iter=print_iter,
-            linesearch_tol=linesearch_tol,
-            step_lim=step_lim,
             weight_purge_threshold=weight_purge_threshold,
             max_iteration=max_iteration,
             callback=callback,
             timeout=timeout,
             print_callback=print_callback,
             format_string=format_string,
+            linesearch_inner_workspace=linesearch_inner_workspace,
         )
     else
         x = get_active_set_iterate(active_set)
@@ -370,14 +360,9 @@ function minimize_over_convex_hull!(
         if isnothing(M)
             return 0
         end
-        #In case the matrices are DoubleFloats we need to cast them as Float64, because LinearAlgebra does not work with them.
-        if eltype(M) === Double64
-            converted_matrix = convert(Array{Float64}, M)
-            L_reduced = eigmax(converted_matrix)
-        else
-            L_reduced = eigmax(M)
-            #L_reduced = Arpack.eigs(M, nev=1, which=:LM)
-        end
+        T = eltype(M)
+        S = schur(M)
+        L_reduced = maximum(S.values)::T
         reduced_f(y) =
             f(x) - fast_dot(gradient, x) +
             0.5 * transpose(x) * hessian * x +
@@ -388,11 +373,7 @@ function minimize_over_convex_hull!(
         end
         #Solve using Nesterov's AGD
         if accelerated
-            if eltype(M) === Double64
-                mu_reduced = eigmin(converted_matrix)
-            else
-                mu_reduced = eigmin(M)
-            end
+            mu_reduced = minimum(S.values)::T
             if L_reduced / mu_reduced > 1.0
                 new_weights, number_of_steps =
                     accelerated_simplex_gradient_descent_over_probability_simplex(
@@ -804,18 +785,15 @@ function simplex_gradient_descent_over_convex_hull(
     verbose=true,
     print_iter=1000,
     hessian=nothing,
-    linesearch_tol=10e-10,
-    step_lim=100,
     weight_purge_threshold=1e-12,
     max_iteration,
     callback,
     timeout=Inf,
     print_callback=nothing,
     format_string=nothing,
+    linesearch_inner_workspace=build_linesearch_workspace(line_search_inner, active_set.x, gradient),
 )
     number_of_steps = 0
-    L_inner = nothing
-    upgrade_accuracy_flag = false
     x = get_active_set_iterate(active_set)
     while t + number_of_steps ≤ max_iteration
         grad!(gradient, x)
@@ -840,7 +818,7 @@ function simplex_gradient_descent_over_convex_hull(
             current_iteration = t + number_of_steps
             @warn "Non-improving d ($descent_direction_product) due to numerical instability in iteration $current_iteration. Temporarily upgrading precision to BigFloat for the current iteration."
             # extended warning - we can discuss what to integrate
-            # If higher accuracy is required, consider using Double64 (still quite fast) and if that does not help BigFloat (slower) as type for the numbers.
+            # If higher accuracy is required, consider using DoubleFloats.Double64 (still quite fast) and if that does not help BigFloat (slower) as type for the numbers.
             # Alternatively, consider using AFW (with lazy = true) instead."
             bdir = big.(gradient)
             c = [fast_dot(bdir, a) for a in active_set.atoms]
@@ -876,44 +854,48 @@ function simplex_gradient_descent_over_convex_hull(
             active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
         else
             if line_search_inner isa Adaptive
-                gamma, L_inner = adaptive_step_size(
+                gamma = perform_line_search(
+                    line_search_inner,
+                    t,
                     f,
                     grad!,
                     gradient,
                     x,
                     x - y,
-                    L_inner,
-                    gamma_max=1.0,
-                    upgrade_accuracy=upgrade_accuracy_flag,
+                    1.0,
+                    linesearch_inner_workspace,
                 )
                 #If the stepsize is that small we probably need to increase the accuracy of
                 #the types we are using.
-                if gamma < eps()
-                    #@warn "Upgrading the accuracy of the adaptive line search."
-                    L_inner = nothing
-                    gamma, L_inner = adaptive_step_size(
+                if gamma < eps(gamma)
+                    # @warn "Upgrading the accuracy of the adaptive line search."
+                    gamma = perform_line_search(
+                        line_search_inner,
+                        t,
                         f,
                         grad!,
                         gradient,
                         x,
                         x - y,
-                        L_inner,
-                        gamma_max=1.0,
-                        upgrade_accuracy=true,
+                        1.0,
+                        linesearch_inner_workspace,
+                        should_upgrade=Val{true}(),
                     )
                 end
             else
-                gamma, _ = backtrackingLS(
+                gamma = perform_line_search(
+                    line_search_inner,
+                    t,
                     f,
+                    grad!,
                     gradient,
                     x,
                     x - y,
                     1.0,
-                    linesearch_tol=linesearch_tol,
-                    step_lim=step_lim,
+                    linesearch_inner_workspace,
                 )
             end
-            gamma = min(1.0, gamma)
+            gamma = min(1, gamma)
             # step back from y to x by (1 - γ) η d
             # new point is x - γ η d
             if gamma == 1.0
@@ -935,8 +917,9 @@ function simplex_gradient_descent_over_convex_hull(
                 dual_gap=dual_gap,
                 time=(time_ns() - time_start) / 1e9,
                 x=x,
-                active_set_length=length(active_set),
+                active_set=active_set,
                 non_simplex_iter=non_simplex_iter,
+                gradient=gradient,
             )
             callback(state)
         end

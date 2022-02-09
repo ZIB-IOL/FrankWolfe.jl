@@ -3,7 +3,7 @@ import Arpack
 """
     LpNormLMO{T, p}(right_hand_side)
 
-LMO with feasible set being a bound on the L-p norm:
+LMO with feasible set being an L-p norm ball:
 ```
 C = {x ∈ R^n, norm(x, p) ≤ right_hand_side}
 ```
@@ -14,24 +14,26 @@ end
 
 LpNormLMO{p}(right_hand_side::T) where {T,p} = LpNormLMO{T,p}(right_hand_side)
 
-function compute_extreme_point(lmo::LpNormLMO{T,2}, direction; kwargs...) where {T}
+function compute_extreme_point(lmo::LpNormLMO{T,2}, direction; v = similar(direction), kwargs...) where {T}
     dir_norm = norm(direction, 2)
-    res = similar(direction)
     n = length(direction)
     # if direction numerically 0
     if dir_norm <= 10eps(eltype(direction))
-        @. res = lmo.right_hand_side / sqrt(n)
+        @. v = lmo.right_hand_side / sqrt(n)
     else
-        @. res = -lmo.right_hand_side * direction / dir_norm
+        @. v = -lmo.right_hand_side * direction / dir_norm
     end
-    return res
+    return v
 end
 
-function compute_extreme_point(lmo::LpNormLMO{T,Inf}, direction; kwargs...) where {T}
-    return -[lmo.right_hand_side * (1 - 2signbit(d)) for d in direction]
+function compute_extreme_point(lmo::LpNormLMO{T,Inf}, direction; v = similar(direction), kwargs...) where {T}
+    for idx in eachindex(direction)
+        v[idx] = -lmo.right_hand_side * (1 - 2signbit(direction[idx]))
+    end
+    return v
 end
 
-function compute_extreme_point(lmo::LpNormLMO{T,1}, direction; kwargs...) where {T}
+function compute_extreme_point(lmo::LpNormLMO{T,1}, direction; v = nothing, kwargs...) where {T}
     idx = 0
     v = -one(eltype(direction))
     for i in eachindex(direction)
@@ -47,12 +49,14 @@ function compute_extreme_point(lmo::LpNormLMO{T,1}, direction; kwargs...) where 
     return ScaledHotVector(-lmo.right_hand_side * sign_coeff, idx, length(direction))
 end
 
-function compute_extreme_point(lmo::LpNormLMO{T,p}, direction; kwargs...) where {T,p}
+function compute_extreme_point(lmo::LpNormLMO{T,p}, direction; v = similar(direction), kwargs...) where {T,p}
     # covers the case where the Inf or 1 is of another type
     if p == Inf
-        return compute_extreme_point(LpNormLMO{T,Inf}(lmo.right_hand_side), direction)
+        v = compute_extreme_point(LpNormLMO{T,Inf}(lmo.right_hand_side), direction, v = v)
+        return v
     elseif p == 1
-        return compute_extreme_point(LpNormLMO{T,1}(lmo.right_hand_side), direction)
+        v = compute_extreme_point(LpNormLMO{T,1}(lmo.right_hand_side), direction)
+        return v
     end
     q = p / (p - 1)
     pow_ratio = q / p
@@ -61,55 +65,37 @@ function compute_extreme_point(lmo::LpNormLMO{T,p}, direction; kwargs...) where 
     # assuming the direction is a vector of 1
     if q_norm < eps()
         one_vec = trues(length(direction))
-        return @. -lmo.right_hand_side * one_vec^(pow_ratio) / oftype(q_norm, 1)
+        @. v = -lmo.right_hand_side * one_vec^(pow_ratio) / oftype(q_norm, 1)
+        return v
     end
-    return @. -lmo.right_hand_side * sign(direction) * abs(direction)^(pow_ratio) / q_norm
-end
-
-
-# temporary oracle for l_1 ball to
-
-struct L1ballDense{T} <: LinearMinimizationOracle
-    right_hand_side::T
-end
-
-
-function compute_extreme_point(lmo::L1ballDense{T}, direction; kwargs...) where {T}
-    idx = 0
-    v = -1.0
-    for i in eachindex(direction)
-        if abs(direction[i]) > v
-            v = abs(direction[i])
-            idx = i
-        end
-    end
-
-    aux = zeros(T, length(direction))
-    aux[idx] = T(-lmo.right_hand_side * sign(direction[idx]))
-    return aux
+    @. v = -lmo.right_hand_side * sign(direction) * abs(direction)^(pow_ratio) / q_norm
+    return v
 end
 
 """
     KNormBallLMO{T}(K::Int, right_hand_side::T)
 
-LMO for the K-norm ball, intersection of L_1-ball (τK) and L_∞-ball (τ/K)
+LMO with feasible set being the K-norm ball in the sense of
+[2010.07243](https://arxiv.org/abs/2010.07243),
+i.e., the convex hull over the union of an
+L_1-ball with radius τ and an L_∞-ball with radius τ/K:
 ```
 C_{K,τ} = conv { B_1(τ) ∪ B_∞(τ / K) }
 ```
-with `τ` the `right_hand_side` parameter.
+with `τ` the `right_hand_side` parameter. The K-norm is defined as
+the sum of the largest `K` absolute entries in a vector.
 """
 struct KNormBallLMO{T} <: LinearMinimizationOracle
     K::Int
     right_hand_side::T
 end
 
-function compute_extreme_point(lmo::KNormBallLMO{T}, direction; kwargs...) where {T}
+function compute_extreme_point(lmo::KNormBallLMO{T}, direction; v = similar(direction), kwargs...) where {T}
     K = max(min(lmo.K, length(direction)), 1)
 
     oinf = zero(eltype(direction))
     idx_l1 = 0
     val_l1 = -one(eltype(direction))
-    v = similar(direction)
 
     @inbounds for (i, dir_val) in enumerate(direction)
         temp = -lmo.right_hand_side / K * sign(dir_val)
@@ -125,7 +111,7 @@ function compute_extreme_point(lmo::KNormBallLMO{T}, direction; kwargs...) where
     v1 = ScaledHotVector(-lmo.right_hand_side * sign(direction[idx_l1]), idx_l1, length(direction))
     o1 = dot(v1, direction)
     if o1 < oinf
-        v .= v1
+        @. v = v1
     end
     return v
 end
@@ -134,7 +120,7 @@ end
     NuclearNormLMO{T}(radius)
 
 LMO over matrices that have a nuclear norm less than `radius`.
-The LMO returns the rank-one matrix with singular value `radius`.
+The LMO returns the best rank-one approximation matrix with singular value `radius`, computed with Arpack.
 """
 struct NuclearNormLMO{T} <: LinearMinimizationOracle
     radius::T
@@ -143,15 +129,11 @@ end
 NuclearNormLMO{T}() where {T} = NuclearNormLMO{T}(one(T))
 NuclearNormLMO() = NuclearNormLMO(1.0)
 
-"""
-Best rank-one approximation using the greatest singular value computed with Arpack.
-
-Warning: this does not work (yet) with all number types, BigFloat and Float16 fail.
-"""
-function compute_extreme_point(lmo::NuclearNormLMO, direction::AbstractMatrix; tol=1e-8, kwargs...)
+function compute_extreme_point(lmo::NuclearNormLMO{TL}, direction::AbstractMatrix{TD}; tol=1e-8, kwargs...) where {TL, TD}
+    T = promote_type(TD, TL)
     Z = Arpack.svds(direction, nsv=1, tol=tol)[1]
     u = -lmo.radius * view(Z.U, :)
-    return RankOneMatrix(u, Z.V[:])
+    return RankOneMatrix(u::Vector{T}, Z.V[:]::Vector{T})
 end
 
 function convert_mathopt(
@@ -159,13 +141,14 @@ function convert_mathopt(
     optimizer::OT;
     row_dimension::Integer,
     col_dimension::Integer,
+    use_modify=true::Bool,
     kwargs...,
 ) where {OT}
     MOI.empty!(optimizer)
     x = MOI.add_variables(optimizer, row_dimension * col_dimension)
     (t, _) = MOI.add_constrained_variable(optimizer, MOI.LessThan(lmo.radius))
     MOI.add_constraint(optimizer, [t; x], MOI.NormNuclearCone(row_dimension, col_dimension))
-    return MathOptLMO(optimizer)
+    return MathOptLMO(optimizer, use_modify)
 end
 
 """
@@ -196,7 +179,7 @@ function SpectraplexLMO(radius::Integer, side_dimension::Int, ensure_symmetry::B
     return SpectraplexLMO(float(radius), side_dimension, ensure_symmetry)
 end
 
-function compute_extreme_point(lmo::SpectraplexLMO{T}, direction::M; maxiters=500, kwargs...) where {T,M <: AbstractMatrix}
+function compute_extreme_point(lmo::SpectraplexLMO{T}, direction::M; v = nothing, maxiters=500, kwargs...) where {T,M <: AbstractMatrix}
     lmo.gradient_container .= direction
     if !(M <: Union{LinearAlgebra.Symmetric, LinearAlgebra.Diagonal, LinearAlgebra.UniformScaling}) && lmo.ensure_symmetry
         # make gradient symmetric
@@ -238,7 +221,7 @@ end
 
 UnitSpectrahedronLMO(radius::Integer, side_dimension::Int) = UnitSpectrahedronLMO(float(radius), side_dimension)
 
-function compute_extreme_point(lmo::UnitSpectrahedronLMO{T}, direction::M; maxiters=500, kwargs...) where {T, M <: AbstractMatrix}
+function compute_extreme_point(lmo::UnitSpectrahedronLMO{T}, direction::M; v = nothing, maxiters=500, kwargs...) where {T, M <: AbstractMatrix}
     lmo.gradient_container .= direction
     if !(M <: Union{LinearAlgebra.Symmetric, LinearAlgebra.Diagonal, LinearAlgebra.UniformScaling}) && lmo.ensure_symmetry
         # make gradient symmetric
@@ -263,6 +246,7 @@ function convert_mathopt(
     lmo::Union{SpectraplexLMO{T}, UnitSpectrahedronLMO{T}},
     optimizer::OT;
     side_dimension::Integer,
+    use_modify::Bool=true,
     kwargs...,
 ) where {T, OT}
     MOI.empty!(optimizer)
@@ -279,5 +263,5 @@ function convert_mathopt(
         MOI.LessThan(lmo.radius)
     end
     MOI.add_constraint(optimizer, sum_diag_terms, constraint_set)
-    return MathOptLMO(optimizer)
+    return MathOptLMO(optimizer, use_modify)
 end

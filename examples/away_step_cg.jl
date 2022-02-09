@@ -23,55 +23,52 @@ x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
 FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo; k=100)
 
-@time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.Adaptive(),
-    L=100,
+    line_search=FrankWolfe.Adaptive(L_est=100.0),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     epsilon=1e-5,
     trajectory=true,
 );
 
-@time x, v, primal, dual_gap, trajectoryA, active_set = FrankWolfe.away_frank_wolfe(
+x, v, primal, dual_gap, trajectory_away, active_set = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.Adaptive(),
-    L=100,
+    line_search=FrankWolfe.Adaptive(L_est=100.0),
     print_iter=k / 10,
     epsilon=1e-5,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     away_steps=true,
     trajectory=true,
 );
 
-@time x, v, primal, dual_gap, trajectoryAM, active_set = FrankWolfe.away_frank_wolfe(
+x, v, primal, dual_gap, trajectory_away_outplace, active_set = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.Adaptive(),
-    L=100,
+    line_search=FrankWolfe.Adaptive(L_est=100.0),
     print_iter=k / 10,
     epsilon=1e-5,
     momentum=0.9,
-    emphasis=FrankWolfe.blas,
+    memory_mode=FrankWolfe.OutplaceEmphasis(),
     verbose=true,
     away_steps=true,
     trajectory=true,
 );
 
-data = [trajectory, trajectoryA, trajectoryAM]
+data = [trajectory, trajectory_away, trajectory_away_outplace]
 label = ["FW" "AFW" "MAFW"]
 
-FrankWolfe.plot_trajectories(data, label)
+plot_trajectories(data, label)

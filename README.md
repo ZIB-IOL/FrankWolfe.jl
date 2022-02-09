@@ -4,8 +4,15 @@
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://zib-iol.github.io/FrankWolfe.jl/dev/)
 [![Coverage](https://codecov.io/gh/ZIB-IOL/FrankWolfe.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/ZIB-IOL/FrankWolfe.jl)
 
-This package defines a generic interface and several implementations for
-Frank-Wolfe algorithms.
+This package is a toolbox for algorithms related to Frank-Wolfe or conditional gradients,
+meant to solve problems of the type:
+
+```
+min_{x in C} f(x)
+```
+where `C` is a compact convex set for which a Linear Minimization Oracle (LMO) is defined
+and `f` is a differentiable function for which the gradient is provided.
+
 The main entry point is the `frank_wolfe` function running the algorithm.
 
 ```julia
@@ -13,7 +20,8 @@ FrankWolfe.frank_wolfe(f, grad!, lmo, x0, max_iteration=1000, verbose=true)
 ```
 
 where `f(x)` is the objective function, `grad!(storage, x)` is the inplace gradient.
-`lmo` is a structure implementing the Linear Minimization Oracle interface presented below.
+`lmo` is a structure implementing the Linear Minimization Oracle interface presented below
+and encoding the constraints.
 
 ## Installation
 
@@ -59,15 +67,13 @@ over the set represented by the LMO.
 
 ### LMOs
 
-Several common LMOs are available out-of-the-box
+Several common LMOs are available out-of-the-box, see the corresponding [documentation page](https://zib-iol.github.io/FrankWolfe.jl/dev/reference/#LMOs):
 - Probability simplex
 - Unit simplex
 - K-sparse polytope
 - K-norm ball
 - L_p-norm ball
 - Birkhoff polytope
-
-See [Pokutta, Spiegel, Zimmer 2020](https://arxiv.org/abs/2010.07243) and [Combettes, Pokutta 2021](https://arxiv.org/abs/2101.10040) for details
 
 Moreover: 
 - you can simply define your own LMOs directly 
@@ -79,18 +85,10 @@ Moreover:
 
 All algorithms can run in various precisions modes: `Float16, Float32, Float64, BigFloat` and also for rationals based on various integer types `Int32, Int64, BigInt` (see e.g., the approximate Carathéodory example)
 
-#### Line Search Strategies
+#### Step size computation
 
-Most common strategies and some more particular ones:
-
-- Agnostic: `2/(2+t)` rule for FW 
-- Nonconvex: `1/sqrt(2+t)` rule for nonconvex functions and vanilla FW
-- Fixed: fixed step-size of a given value. Useful for nonconvex and stochastic or more generally when we know the total number of iterations
-- Short-step rule: minimizing the smoothness inequality -> requires knowledge of (an estimate of) L
-- Golden ratio linesearch
-- Backtracking line search
-- Rational short-step rule: similar to short-step rule but all computations are kept rational if inputs are rational. useful for the rational variants
-- Adaptive FW: starts with an estimate for L and then refine it dynamically (see [Pedregosa, Negiar, Askari, Jaggi 2020](https://arxiv.org/abs/1806.05123))
+Multiple line search and step size determination rules are implemented, see
+[the documentation](https://zib-iol.github.io/FrankWolfe.jl/dev/reference/#Step-size-determination).
 
 #### Callbacks
 
@@ -105,7 +103,9 @@ state = (
     time = (time_ns() - time_start) / 1e9,
     x = x,
     v = vertex,
-    active_set_length = active_set_length,
+    gamma=gamma,
+    active_set=active_set,
+    gradient=gradient,
 )
 ```
 
@@ -121,6 +121,10 @@ state to an array returned from the algorithm.
 - Various caching strategies for the lazy implementations. Unbounded cache sizes (can get slow), bounded cache sizes as well as early returns once any sufficient vertex is found in the cache.
 - Optionally all algorithms can be endowed with gradient momentum. This might help convergence especially in the stochastic context.
 - (to come:) When the LMO can compute dual prices then the Frank-Wolfe algorithms return dual prices for the (approximately) optimal solutions (see [Braun, Pokutta 2021](https://arxiv.org/abs/2101.02087)).
+
+## Contributing
+
+See the [contribution guide](CONTRIBUTING.md).
 
 ## Noteworthy examples
 
@@ -140,9 +144,6 @@ We consider the simple instance of approximating the `0` over the probability si
 with n = 100.
 
 ````
-Vanilla Frank-Wolfe Algorithm.
-EMPHASIS: blas STEPSIZE: rationalshortstep EPSILON: 1.0e-7 max_iteration: 100 TYPE: Rational{BigInt}
-
 ───────────────────────────────────────────────────────────────────────────────────
   Type     Iteration         Primal           Dual       Dual Gap           Time
 ───────────────────────────────────────────────────────────────────────────────────
@@ -159,8 +160,6 @@ EMPHASIS: blas STEPSIZE: rationalshortstep EPSILON: 1.0e-7 max_iteration: 100 TY
   Last                 1.000000e-02   1.000000e-02   0.000000e+00   4.392171e-01
 ───────────────────────────────────────────────────────────────────────────────────
 
-  0.600608 seconds (3.83 M allocations: 111.274 MiB, 12.97% gc time)
-  
 Output type of solution: Rational{BigInt}
 ````
 The solution returned is rational as we can see and in fact the exactly optimal solution:
@@ -175,7 +174,7 @@ Example: `examples/large_scale.jl`
 
 The package is built to scale well, for those conditional gradients variants that can scale well. For example, Away-Step Frank-Wolfe and Pairwise Conditional Gradients do in most cases *not scale well* because they need to maintain active sets and maintaining them can be very expensive. Similarly, line search methods might become prohibitive at large sizes. However if we consider scale-friendly variants, e.g., the vanilla Frank-Wolfe algorithm with the agnostic step size rule or short step rule, then these algorithms can scale well to extreme sizes esentially only limited by the amount of memory available. However even for these methods that tend to scale well, allocation of memory itself can be very slow when you need to allocate gigabytes of memory for a single gradient computation. 
 
-The package is build to support extreme sizes with a special memory efficient emphasis `emphasis=FrankWolfe.memory`, which minimizes expensive memory allocations and performs as many operations in-place as possible.
+The package is build to support extreme sizes with a special memory efficient emphasis `emphasis=FrankWolfe.InplaceEmphasis()`, which minimizes expensive memory allocations and performs as many operations in-place as possible.
 
 Here is an example of a run with 1e9 variables. Each gradient is around 7.5 GB in size. Here is the output of the run broken down into pieces:
 
@@ -207,11 +206,6 @@ The above is the optional benchmarking of the oracles that we provide to underst
 As you can see if you compare `update (blas)` vs. `update (memory)`, the normal update when we use BLAS requires an additional 14.9GB of memory on top of the gradient etc whereas the `update (memory)` (the memory emphasis mode) does not consume any extra memory. This is also reflected in the computational times: the BLAS version requires 3.61 seconds on average to update the iterate, while the memory emphasis version requires only 500ms. In fact none of the crucial components in the algorithm consume any memory when run in memory efficient mode. Now let us look at the actual footprint of the whole algorithm:
 
 ```
-Vanilla Frank-Wolfe Algorithm.
-EMPHASIS: memory STEPSIZE: agnostic EPSILON: 1.0e-7 MAXITERATION: 1000 TYPE: Float64
-MOMENTUM: nothing GRADIENTTYPE: Nothing
-WARNING: In memory emphasis mode iterates are written back into x0!
-
 ─────────────────────────────────────────────────────────────────────────────────────────────────
   Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec
 ─────────────────────────────────────────────────────────────────────────────────────────────────

@@ -30,7 +30,7 @@ end
         line_search=FrankWolfe.Agnostic(),
         print_iter=k / 10,
         verbose=true,
-        emphasis=FrankWolfe.memory,
+        memory_mode=FrankWolfe.InplaceEmphasis(),
     )
 
     @test f(x) < f(x0)
@@ -45,13 +45,12 @@ end
         line_search=FrankWolfe.Agnostic(),
         print_iter=k / 10,
         verbose=true,
-        emphasis=FrankWolfe.memory,
+        memory_mode=FrankWolfe.InplaceEmphasis(),
         VType=FrankWolfe.ScaledHotVector{Float64},
     )
 
     @test f(x) < f(x0)
     @test x isa GenericArray
-
     
     @test_broken x, v, primal, dual_gap0, trajectory = FrankWolfe.away_frank_wolfe(
         f,
@@ -62,7 +61,6 @@ end
         line_search=FrankWolfe.Agnostic(),
         print_iter=k / 10,
         verbose=true,
-        emphasis=FrankWolfe.memory,
+        memory_mode=FrankWolfe.InplaceEmphasis(),
     )
-
 end

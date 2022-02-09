@@ -1,6 +1,7 @@
 import FrankWolfe
 using LinearAlgebra
 using Test
+using SparseArrays
 
 @testset "Simple benchmark_oracles function" begin
     n = Int(1e3)
@@ -52,6 +53,14 @@ end
                 @test -MR == R
                 @test 3R isa FrankWolfe.RankOneMatrix
             end
+            @testset "Dot" begin
+                @test dot(R, M) ≈ dot(collect(R), M)
+                @test dot(M, R) ≈ dot(M, collect(R))
+                @test dot(R, sparse(M)) ≈ dot(collect(R), M)
+            end
+            @testset "Norm" begin
+                @test norm(R) ≈ norm(collect(R))
+            end
         end
     end
 end
@@ -65,24 +74,18 @@ end
     f(x) = norm(x)^2
     gradient = similar(a)
     grad!(gradient, a)
-    @test FrankWolfe.backtrackingLS(f, gradient, a, a - b, 1.0) == (0.5, 1)
-    @test abs(FrankWolfe.segment_search(f, grad!, a, a - b, 1.0)[1] - 0.5) < 0.0001
+    ls = FrankWolfe.Backtracking()
+    gamma_bt = @inferred FrankWolfe.perform_line_search(ls, 1, f, grad!, gradient, a, a - b, 1.0, similar(a))
+    @test gamma_bt ≈ 0.5
 
-    @inferred FrankWolfe.line_search_wrapper(
-        FrankWolfe.Agnostic(),
-        3,
-        identity,
-        nothing,
-        [0.3, 0.2],
-        ones(2),
-        ones(3),
-        0.0,
-        3,
-        nothing,
-        1e-6,
-        1e-6,
-        0.9,
-    )
+    ls_gr = FrankWolfe.Goldenratio()
+    gamma_gr = @inferred FrankWolfe.perform_line_search(ls_gr, 1, f, grad!, gradient, a, a - b, 1.0, FrankWolfe.build_linesearch_workspace(ls_gr, a, gradient))
+    @test gamma_gr ≈ 0.5 atol=1e-4
+
+    @inferred FrankWolfe.perform_line_search(FrankWolfe.Agnostic(), 1, f, grad!, gradient, a, a - b, 1.0, nothing)
+    @inferred FrankWolfe.perform_line_search(FrankWolfe.Nonconvex(), 1, f, grad!, gradient, a, a - b, 1.0, nothing)
+    @inferred FrankWolfe.perform_line_search(FrankWolfe.Nonconvex(), 1, f, grad!, gradient, a, a - b, 1.0, nothing)
+    @inferred FrankWolfe.perform_line_search(FrankWolfe.Adaptive(), 1, f, grad!, gradient, a, a - b, 1.0, similar(a))
 end
 
 @testset "Momentum tests" begin
@@ -90,4 +93,19 @@ end
     it.num = 0
     # no momentum -> 1
     @test FrankWolfe.momentum_iterate(it) == 1
+end
+
+@testset "Fast dot complex & norm" begin
+    s = sparse(I, 3, 3)
+    m = randn(Complex{Float64}, 3, 3)
+    @test dot(s, m) ≈ FrankWolfe.fast_dot(s, m)
+    @test dot(m, s) ≈ FrankWolfe.fast_dot(m, s)
+    a = FrankWolfe.ScaledHotVector(3.5 + 2im, 2, 4)
+    b = rand(ComplexF64, 4)
+    @test dot(a, b) ≈ dot(collect(a), b)
+    @test dot(b, a) ≈ dot(b, collect(a))
+    c = sparse(b)
+    @test dot(a, c) ≈ dot(collect(a), c)
+    @test dot(c, a) ≈ dot(c, collect(a))
+    @test norm(a) ≈ norm(collect(a))
 end

@@ -53,7 +53,7 @@ const x00 = FrankWolfe.compute_extreme_point(lmo, rand(n))
 
 function build_callback(trajectory_arr)
     return function callback(state)
-        return push!(trajectory_arr, (Tuple(state)[1:5]..., state.active_set_length))
+        return push!(trajectory_arr, (Tuple(state)[1:5]..., length(state.active_set)))
     end
 end
 
@@ -62,23 +62,22 @@ end
 FrankWolfe.benchmark_oracles(f, grad!, () -> randn(n), lmo; k=100)
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, trajectorySs = FrankWolfe.frank_wolfe(
+@time x, v, primal, dual_gap, trajectory_shortstep = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.Shortstep(),
-    L=2,
+    line_search=FrankWolfe.Shortstep(2.0),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
 );
 
 
-trajectoryAda = []
-callback = build_callback(trajectoryAda)
+trajectory_adaptive = []
+callback = build_callback(trajectory_adaptive)
 
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
@@ -89,7 +88,7 @@ x0 = deepcopy(x00)
     max_iteration=k,
     line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
     callback=callback,
@@ -98,8 +97,8 @@ x0 = deepcopy(x00)
 
 println("\n==> Lazy AFW.\n")
 
-trajectoryAdaLoc15 = []
-callback = build_callback(trajectoryAdaLoc15)
+trajectory_adaptiveLoc15 = []
+callback = build_callback(trajectory_adaptiveLoc15)
 
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
@@ -110,7 +109,7 @@ x0 = deepcopy(x00)
     max_iteration=k,
     line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     lazy=true,
     lazy_tolerance=1.5,
@@ -119,11 +118,11 @@ x0 = deepcopy(x00)
 );
 
 
-trajectoryAdaLoc2 = []
-callback = build_callback(trajectoryAdaLoc2)
+trajectory_adaptiveLoc2 = []
+callback = build_callback(trajectory_adaptiveLoc2)
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, trajectoryAdaLoc2 = FrankWolfe.away_frank_wolfe(
+@time x, v, primal, dual_gap, trajectory_adaptiveLoc2 = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
@@ -131,7 +130,7 @@ x0 = deepcopy(x00)
     max_iteration=k,
     line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     lazy=true,
     lazy_tolerance=2.0,
@@ -140,8 +139,8 @@ x0 = deepcopy(x00)
 );
 
 
-trajectoryAdaLoc4 = []
-callback = build_callback(trajectoryAdaLoc4)
+trajectory_adaptiveLoc4 = []
+callback = build_callback(trajectory_adaptiveLoc4)
 
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
@@ -152,7 +151,7 @@ x0 = deepcopy(x00)
     max_iteration=k,
     line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     lazy_tolerance=4.0,
     lazy=true,
@@ -160,8 +159,8 @@ x0 = deepcopy(x00)
     callback=callback,
 );
 
-trajectoryAdaLoc10 = []
-callback = build_callback(trajectoryAdaLoc10)
+trajectory_adaptiveLoc10 = []
+callback = build_callback(trajectory_adaptiveLoc10)
 
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
@@ -172,7 +171,7 @@ x0 = deepcopy(x00)
     max_iteration=k,
     line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     lazy=true,
     lazy_tolerance=10.0,
     verbose=true,
@@ -184,7 +183,7 @@ x0 = deepcopy(x00)
 # Reduction primal/dual error vs. sparsity of solution
 
 dataSparsity =
-    [trajectoryAda, trajectoryAdaLoc15, trajectoryAdaLoc2, trajectoryAdaLoc4, trajectoryAdaLoc10]
+    [trajectory_adaptive, trajectory_adaptiveLoc15, trajectory_adaptiveLoc2, trajectory_adaptiveLoc4, trajectory_adaptiveLoc10]
 labelSparsity = ["AFW", "LAFW-K-1.5", "LAFW-K-2.0", "LAFW-K-4.0", "LAFW-K-10.0"]
 
-FrankWolfe.plot_sparsity(dataSparsity, labelSparsity, legend_position=:topright)
+plot_sparsity(dataSparsity, labelSparsity, legend_position=:topright)

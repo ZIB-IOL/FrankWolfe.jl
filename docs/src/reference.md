@@ -1,3 +1,4 @@
+
 # Algorithms
 
 This section contains all main algorithms of the [`FrankWolfe.jl`](https://github.com/ZIB-IOL/FrankWolfe.jl) package. These are the ones typical users will call.
@@ -10,7 +11,7 @@ blended_conditional_gradient
 FrankWolfe.stochastic_frank_wolfe
 ```
 
-# LMOs
+# Linear Minimization Oracle
 
 The Linear Minimization Oracle (LMO) is a key component called at each iteration of the FW algorithm. Given ``d\in \mathcal{X}``, it returns a vertex of the feasible set:
 ```math
@@ -26,13 +27,12 @@ All of them are subtypes of [`FrankWolfe.LinearMinimizationOracle`](@ref) and im
 compute_extreme_point
 ```
 
-[`FrankWolfe.jl`](https://github.com/ZIB-IOL/FrankWolfe.jl) features the following common LMOs out of the box:
+The package features the following common LMOs out of the box:
 
 ```@docs
 FrankWolfe.BirkhoffPolytopeLMO
 FrankWolfe.KNormBallLMO
 FrankWolfe.KSparseLMO
-FrankWolfe.L1ballDense
 FrankWolfe.LpNormLMO
 FrankWolfe.NuclearNormLMO
 FrankWolfe.ProbabilitySimplexOracle
@@ -53,6 +53,9 @@ FrankWolfe.MultiCacheLMO
 FrankWolfe.VectorCacheLMO
 ```
 
+See [Combettes, Pokutta 2021](https://arxiv.org/abs/2101.10040) for references on most LMOs
+implemented in the package and their comparison with projection operators.
+
 ## Functions and Structures
 
 ```@docs
@@ -62,7 +65,6 @@ compute_extreme_point(lmo::FrankWolfe.UnitSimplexOracle{T}, direction) where {T}
 FrankWolfe.compute_dual_solution(::FrankWolfe.UnitSimplexOracle{T}, direction, primalSolution) where {T}
 compute_extreme_point(lmo::FrankWolfe.ProbabilitySimplexOracle{T}, direction; kwargs...) where {T}
 FrankWolfe.compute_dual_solution(::FrankWolfe.ProbabilitySimplexOracle{T},direction,primal_solution;kwargs...,) where {T}
-compute_extreme_point(lmo::FrankWolfe.NuclearNormLMO, direction::AbstractMatrix; tol=1e-8, kwargs...)
 FrankWolfe.convert_mathopt
 ```
 
@@ -76,34 +78,32 @@ The active set represents an iterate as a convex combination of atoms.
 It maintains a vector of atoms, the corresponding weights, and the current iterate.
 
 ```@autodocs
-Module = [FrankWolfe]
-Pages = [active_set.jl]
+Modules = [FrankWolfe]
+Pages = ["active_set.jl"]
 ```
 
-## Step size determination
+## Step size computation
 
 For all Frank-Wolfe algorithms, a step size must be determined to move from the
 current iterate to the next one. This step size can be determined by exact line search
 or any other rule represented by a subtype of `LineSearchMethod` which
-must implement `line_search_wrapper`.
+must implement `perform_line_search`.
 
 ```@docs
-FrankWolfe.line_search_wrapper
 FrankWolfe.LineSearchMethod
-FrankWolfe.adaptive_step_size
+FrankWolfe.perform_line_search
 FrankWolfe.MonotonousStepSize
 FrankWolfe.MonotonousNonConvexStepSize
 ```
 
+See [Pedregosa, Negiar, Askari, Jaggi 2020](https://arxiv.org/abs/1806.05123)
+for the adaptive step size,
+[Carderera, Besançon, Pokutta 2021](https://openreview.net/forum?id=rq_UD6IiBpX)
+for the monotonous step size.
+
 ## Functions and Structures
 
 ```@docs
-FrankWolfe.ActiveSet
-FrankWolfe.active_set_update!
-FrankWolfe.compute_active_set_iterate
-FrankWolfe.active_set_argmin
-FrankWolfe.active_set_argminmax
-FrankWolfe.find_minmax_directions
 FrankWolfe.minimize_over_convex_hull!
 FrankWolfe.build_reduced_problem(atoms::AbstractVector{<:FrankWolfe.ScaledHotVector},hessian,weights,gradient,tolerance)
 FrankWolfe.strong_frankwolfe_gap
@@ -113,12 +113,10 @@ FrankWolfe.projection_simplex_sort
 FrankWolfe.strong_frankwolfe_gap_probability_simplex
 FrankWolfe.simplex_gradient_descent_over_convex_hull
 FrankWolfe.lp_separation_oracle
-FrankWolfe.Emphasis
+FrankWolfe.MemoryEmphasis
 FrankWolfe.ObjectiveFunction
 FrankWolfe.compute_value_gradient
 FrankWolfe.StochasticObjective
-FrankWolfe.plot_results
-FrankWolfe.check_gradients
 FrankWolfe.trajectory_callback
 ```
 

@@ -45,16 +45,15 @@ FrankWolfe.benchmark_oracles(
 println("\n==> Short Step rule - if you know L.\n")
 
 x0 = copy(x00)
-@time x, v, primal, dual_gap, trajectorySs = FrankWolfe.frank_wolfe(
+@time x, v, primal, dual_gap, trajectory_shortstep = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.Shortstep(),
-    L=2,
+    line_search=FrankWolfe.Shortstep(2.0),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
 );
@@ -69,10 +68,9 @@ x0 = copy(x00)
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.Shortstep(),
-    L=2,
+    line_search=FrankWolfe.Shortstep(2.0),
     print_iter=k / 10,
-    emphasis=FrankWolfe.blas,
+    memory_mode=FrankWolfe.OutplaceEmphasis(),
     verbose=true,
     trajectory=true,
     momentum=0.9,
@@ -82,16 +80,15 @@ println("\n==> Adaptive if you do not know L.\n")
 
 x0 = copy(x00)
 
-@time x, v, primal, dual_gap, trajectoryAda = FrankWolfe.frank_wolfe(
+@time x, v, primal, dual_gap, trajectory_adaptive = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.Adaptive(),
-    L=100,
+    line_search=FrankWolfe.Adaptive(L_est=100.0),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
 );
@@ -100,7 +97,7 @@ println("\n==> Agnostic if function is too expensive for adaptive.\n")
 
 x0 = copy(x00)
 
-@time x, v, primal, dual_gap, trajectoryAg = FrankWolfe.frank_wolfe(
+@time x, v, primal, dual_gap, trajectory_agnostic = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -108,15 +105,15 @@ x0 = copy(x00)
     max_iteration=k,
     line_search=FrankWolfe.Agnostic(),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
 );
 
 
 
-data = [trajectorySs, trajectoryAda, trajectoryAg, trajectoryM]
+data = [trajectory_shortstep, trajectory_adaptive, trajectory_agnostic, trajectoryM]
 label = ["short step" "adaptive" "agnostic" "momentum"]
 
 
-FrankWolfe.plot_trajectories(data, label)
+plot_trajectories(data, label)

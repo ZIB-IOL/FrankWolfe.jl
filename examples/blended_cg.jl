@@ -38,11 +38,10 @@ x, v, primal, dual_gap, trajectoryBCG_accel_simplex = FrankWolfe.blended_conditi
     x0,
     epsilon=target_tolerance,
     max_iteration=k,
-    line_search=FrankWolfe.Adaptive(),
+    line_search=FrankWolfe.Adaptive(L_est=L),
     print_iter=k / 10,
     hessian=hessian,
-    emphasis=FrankWolfe.memory,
-    L=L,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     accelerated=true,
     verbose=true,
     trajectory=true,
@@ -58,11 +57,10 @@ x, v, primal, dual_gap, trajectoryBCG_simplex = FrankWolfe.blended_conditional_g
     x0,
     epsilon=target_tolerance,
     max_iteration=k,
-    line_search=FrankWolfe.Adaptive(),
+    line_search=FrankWolfe.Adaptive(L_est=L),
     print_iter=k / 10,
     hessian=hessian,
-    emphasis=FrankWolfe.memory,
-    L=L,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     accelerated=false,
     verbose=true,
     trajectory=true,
@@ -78,10 +76,9 @@ x, v, primal, dual_gap, trajectoryBCG_convex = FrankWolfe.blended_conditional_gr
     x0,
     epsilon=target_tolerance,
     max_iteration=k,
-    line_search=FrankWolfe.Adaptive(),
+    line_search=FrankWolfe.Adaptive(L_est=L),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
-    L=L,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
     lazy_tolerance=1.0,
@@ -90,7 +87,7 @@ x, v, primal, dual_gap, trajectoryBCG_convex = FrankWolfe.blended_conditional_gr
 
 data = [trajectoryBCG_accel_simplex, trajectoryBCG_simplex, trajectoryBCG_convex]
 label = ["BCG (accel simplex)", "BCG (simplex)", "BCG (convex)"]
-FrankWolfe.plot_trajectories(data, label, xscalelog=true)
+plot_trajectories(data, label, xscalelog=true)
 
 
 
@@ -115,11 +112,10 @@ x, v, primal, dual_gap, trajectoryBCG_accel_simplex = FrankWolfe.blended_conditi
     x0,
     epsilon=target_tolerance,
     max_iteration=k,
-    line_search=FrankWolfe.Adaptive(),
+    line_search=FrankWolfe.Adaptive(L_est=L),
     print_iter=k / 10,
     hessian=hessian,
-    emphasis=FrankWolfe.memory,
-    L=L,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     accelerated=true,
     verbose=true,
     trajectory=true,
@@ -135,11 +131,10 @@ x, v, primal, dual_gap, trajectoryBCG_simplex = FrankWolfe.blended_conditional_g
     x0,
     epsilon=target_tolerance,
     max_iteration=k,
-    line_search=FrankWolfe.Adaptive(),
+    line_search=FrankWolfe.Adaptive(L_est=L),
     print_iter=k / 10,
     hessian=hessian,
-    emphasis=FrankWolfe.memory,
-    L=L,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     accelerated=false,
     verbose=true,
     trajectory=true,
@@ -155,10 +150,9 @@ x, v, primal, dual_gap, trajectoryBCG_convex = FrankWolfe.blended_conditional_gr
     x0,
     epsilon=target_tolerance,
     max_iteration=k,
-    line_search=FrankWolfe.Adaptive(),
+    line_search=FrankWolfe.Adaptive(L_est=L),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
-    L=L,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
     lazy_tolerance=1.0,
@@ -173,14 +167,13 @@ x, v, primal, dual_gap, trajectoryBPCG = FrankWolfe.blended_pairwise_conditional
     x0,
     epsilon=target_tolerance,
     max_iteration=k,
-    line_search=FrankWolfe.Adaptive(),
+    line_search=FrankWolfe.Adaptive(L_est=L),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
-    L=L,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
 )
 
 data = [trajectoryBCG_accel_simplex, trajectoryBCG_simplex, trajectoryBCG_convex, trajectoryBPCG]
 label = ["BCG (accel simplex)", "BCG (simplex)", "BCG (convex)", "BPCG"]
-FrankWolfe.plot_trajectories(data, label, xscalelog=false)
+plot_trajectories(data, label, xscalelog=true)

@@ -21,7 +21,7 @@ LMO for scaled unit simplex:
 Returns either vector of zeros or vector with one active value equal to RHS if
 there exists an improving direction.
 """
-function compute_extreme_point(lmo::UnitSimplexOracle{T}, direction) where {T}
+function compute_extreme_point(lmo::UnitSimplexOracle{T}, direction; v = nothing, kwargs...) where {T}
     idx = argmin(direction)
     if direction[idx] < 0
         return ScaledHotVector(lmo.right_side, idx, length(direction))
@@ -33,6 +33,7 @@ function convert_mathopt(
     lmo::UnitSimplexOracle{T},
     optimizer::OT;
     dimension::Integer,
+    use_modify::Bool=true,
     kwargs...,
 ) where {T,OT}
     MOI.empty!(optimizer)
@@ -44,13 +45,13 @@ function convert_mathopt(
         MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(ones(n), x), 0.0),
         MOI.LessThan(τ),
     )
-    return MathOptLMO(optimizer)
+    return MathOptLMO(optimizer, use_modify)
 end
 
 """
 Dual costs for a given primal solution to form a primal dual pair
 for scaled unit simplex.
-Returns two vectors. The first one is the dual costs associated with the constraints 
+Returns two vectors. The first one is the dual costs associated with the constraints
 and the second is the reduced costs for the variables.
 """
 function compute_dual_solution(::UnitSimplexOracle{T}, direction, primalSolution) where {T}
@@ -83,7 +84,7 @@ LMO for scaled probability simplex.
 Returns a vector with one active value equal to RHS in the
 most improving (or least degrading) direction.
 """
-function compute_extreme_point(lmo::ProbabilitySimplexOracle{T}, direction; kwargs...) where {T}
+function compute_extreme_point(lmo::ProbabilitySimplexOracle{T}, direction; v = nothing, kwargs...) where {T}
     idx = argmin(direction)
     return ScaledHotVector(lmo.right_side, idx, length(direction))
 end
@@ -92,6 +93,7 @@ function convert_mathopt(
     lmo::ProbabilitySimplexOracle{T},
     optimizer::OT;
     dimension::Integer,
+    use_modify=true::Bool,
     kwargs...,
 ) where {T,OT}
     MOI.empty!(optimizer)
@@ -103,13 +105,13 @@ function convert_mathopt(
         MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(ones(n), x), 0.0),
         MOI.EqualTo(τ),
     )
-    return MathOptLMO(optimizer)
+    return MathOptLMO(optimizer, use_modify)
 end
 
 """
 Dual costs for a given primal solution to form a primal dual pair
 for scaled probability simplex.
-Returns two vectors. The first one is the dual costs associated with the constraints 
+Returns two vectors. The first one is the dual costs associated with the constraints
 and the second is the reduced costs for the variables.
 """
 function compute_dual_solution(
