@@ -77,7 +77,7 @@ end
 Base.length(lmo::SingleLastCachedLMO) = Int(lmo.last_vertex !== nothing)
 
 """
-    MultiCacheLMO{N, LMO, VT}
+    MultiCacheLMO{N, LMO, A}
 
 Cache for a LMO storing up to `N` vertices in the cache, removed in FIFO style.
 `oldest_idx` keeps track of the oldest index in the tuple, i.e. to replace next.
