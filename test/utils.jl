@@ -53,13 +53,12 @@ end
                 @test -MR == R
                 @test 3R isa FrankWolfe.RankOneMatrix
             end
-            @testset "Dot" begin
+            @testset "Dot, norm, mul" begin
                 @test dot(R, M) ≈ dot(collect(R), M)
                 @test dot(M, R) ≈ dot(M, collect(R))
                 @test dot(R, sparse(M)) ≈ dot(collect(R), M)
-            end
-            @testset "Norm" begin
                 @test norm(R) ≈ norm(collect(R))
+                @test R * M' ≈ R * transpose(M) ≈ M * M'
             end
         end
     end
