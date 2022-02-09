@@ -605,7 +605,9 @@ function stochastic_frank_wolfe(
             callback(state)
         end
 
-        @memory_mode(memory_mode, x = (1 - gamma) * x + gamma * v)
+        d = similar(x)
+        @memory_mode(memory_mode, d = x - v)
+        @memory_mode(memory_mode, x = x - gamma * d)
 
         if mod(t, print_iter) == 0 && verbose
             tt = regular
