@@ -139,7 +139,7 @@ function frank_wolfe(
             dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         end
 
-        muladd_memory_mode(memory_mode, d, x, v)
+        d = muladd_memory_mode(memory_mode, d, x, v)
 
         gamma = perform_line_search(
             line_search,
@@ -167,7 +167,7 @@ function frank_wolfe(
             callback(state)
         end
 
-        muladd_memory_mode(memory_mode, x, gamma, d)
+        x = muladd_memory_mode(memory_mode, x, gamma, d)
 
         if (mod(t, print_iter) == 0 && verbose)
             tt = regular
@@ -349,7 +349,7 @@ function lazified_conditional_gradient(
             phi = min(dual_gap, phi / 2)
         end
 
-        muladd_memory_mode(memory_mode, d, x, v)
+        d = muladd_memory_mode(memory_mode, d, x, v)
 
         gamma = perform_line_search(
             line_search,
@@ -379,7 +379,7 @@ function lazified_conditional_gradient(
             callback(state)
         end
 
-        muladd_memory_mode(memory_mode, x, gamma, d)
+        x = muladd_memory_mode(memory_mode, x, gamma, d)
 
         if verbose && (mod(t, print_iter) == 0 || tt == dualstep)
             if t == 0
@@ -606,8 +606,8 @@ function stochastic_frank_wolfe(
         end
 
         d = similar(x)
-        muladd_memory_mode(memory_mode, d, x, v)
-        muladd_memory_mode(memory_mode, x, gamma, d)
+        d = muladd_memory_mode(memory_mode, d, x, v)
+        x = muladd_memory_mode(memory_mode, x, gamma, d)
 
         if mod(t, print_iter) == 0 && verbose
             tt = regular
