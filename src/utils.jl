@@ -13,6 +13,14 @@ macro memory_mode(memory_mode, ex)
     end)
 end
 
+function execute_memory_mode(memory_mode::MemoryEmphasis, d, x, v)
+    @memory_mode(memory_mode, d = x - v)
+end
+
+function execute_memory_mode(memory_mode::MemoryEmphasis, x, gamma::Real, d)
+    @memory_mode(memory_mode, x = x - gamma * d)
+end
+
 ##############################################################
 # simple benchmark of elementary costs of oracles and 
 # critical components
