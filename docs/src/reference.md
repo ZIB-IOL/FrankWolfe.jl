@@ -147,3 +147,16 @@ FrankWolfe.batchsize_iterate
 FrankWolfe.ConstantBatchIterator
 FrankWolfe.IncrementBatchIterator
 ```
+
+## Oracle counting trackers
+
+The following structures are wrapping given oracles to behave similarly but additionally track the number of calls.
+
+```@docs
+FrankWolfe.TrackingObjective
+FrankWolfe.TrackingGradient
+FrankWolfe.TrackingLMO
+FrankWolfe.tracking_trajectory_callback
+```
+
+Also see the example "Tracking number of calls to different oracles".

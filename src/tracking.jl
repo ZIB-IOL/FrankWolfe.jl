@@ -56,12 +56,14 @@ TrackingLMO(lmo) = TrackingLMO(lmo, 0)
 
 Similar to `trajectory_callback` and
 pushing the state at each iteration to the passed storage.
-The state data is only the 5 first fields + 3 call counters usually:
-`(t,primal,dual,dual_gap,time,function_calls,gradient_calls,lmo_calls)`
+The state data is only the 5 first fields, gamma and 3 call counters, usually
+`(t, primal, dual, dual_gap, time, gamma, function_calls, gradient_calls, lmo_calls)`
 """
 function tracking_trajectory_callback(storage)
     return function tracking_push_trajectory!(state)
-        return push!(storage, Tuple(state)[1:8])
+        base_tuple = Tuple(state)[1:5]
+        complete_tuple = tuple(base_tuple..., state.gamma, state.f.counter, state.grad!.counter, state.lmo.counter)
+        return push!(storage, complete_tuple)
     end
 end
 
