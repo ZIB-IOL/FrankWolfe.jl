@@ -768,7 +768,7 @@ end
 
 
 include("oddities.jl")
-
+include("tracking.jl")
 
 # in separate module for name space issues
 module BCGDirectionError
