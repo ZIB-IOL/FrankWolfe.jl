@@ -31,6 +31,18 @@ function (tf::TrackingObjective)(x)
     return tf.f(x)
 end
 
+function wrap_objective(to::TrackingObjective)
+    function f(x)
+        to.counter += 1
+        return to.f(x)
+    end
+    function grad!(storage,x)
+        to.counter += 1
+        return to.g(storage ,x)
+    end
+    return (f,grad!)
+end
+
 """
     TrackingLMO{LMO}(lmo)
 
@@ -54,8 +66,8 @@ TrackingLMO(lmo) = TrackingLMO(lmo, 0)
 """
     tracking_trajectory_callback(storage)
 
-Similar to `trajectory_callback` and
-pushing the state at each iteration to the passed storage.
+Similar to `trajectory_callback`, appropriate for tracking vanilla frank_wolfe without lmo caching.
+Pushes the state at each iteration to the passed storage.
 The state data is only the 5 first fields, gamma and 3 call counters, usually
 `(t, primal, dual, dual_gap, time, gamma, function_calls, gradient_calls, lmo_calls)`
 """
@@ -67,14 +79,19 @@ function tracking_trajectory_callback(storage)
     end
 end
 
-function wrap_objective(to::TrackingObjective)
-    function f(x)
-        to.counter += 1
-        return to.f(x)
+"""
+    tracking_cached_trajectory_callback(storage)
+    
+Similar to `trajectory_callback`, appropriate for tracking progress with cached LMOs, e.g. lazified_conditional_gradient.
+Pushes the state at each iteration to the passed storage.
+The state data is only the 5 first fields, gamma and 3 call counters, usually
+`(t, primal, dual, dual_gap, time, gamma, function_calls, gradient_calls, lmo_calls)`
+For this callback, the counter method is accessed through the inner LMO inside its CacheLMO wrapper 
+"""
+function tracking_cached_trajectory_callback(storage)
+    return function tracking_push_trajectory!(state)
+        base_tuple = Tuple(state)[1:5]
+        complete_tuple = tuple(base_tuple..., state.gamma, state.f.counter, state.grad!.counter, state.lmo.inner.counter)
+        return push!(storage, complete_tuple)
     end
-    function grad!(storage,x)
-        to.counter += 1
-        return to.g(storage ,x)
-    end
-    return (f,grad!)
 end

@@ -69,17 +69,32 @@ end
         callback=callback,
         verbose=true,
     )
+    
+    @test length(storage[1]) == 9
 
-    @test length(storage[1]) == 8
     niters = length(storage)
     @test tf.counter == niters + 1
     @test tgrad!.counter == niters + 1
     @test tlmo.counter == niters + 2 # x0 computation and initialization
+end
 
-    tf.counter = 0
-    tgrad!.counter = 0
-    tlmo.counter = 0
-    empty!(storage)
+@testset "Testing lazified Frank-Wolfe with various step size and momentum strategies" begin
+    f(x) = norm(x)^2
+
+    function grad!(storage, x)
+        @. storage = 2x
+    end
+    
+    lmo = FrankWolfe.ProbabilitySimplexOracle(1)
+
+    tf = FrankWolfe.TrackingObjective(f,0)
+    tgrad! = FrankWolfe.TrackingGradient(grad!,0)
+    tlmo = FrankWolfe.TrackingLMO(lmo)
+
+    x0 = FrankWolfe.compute_extreme_point(tlmo, spzeros(1000))
+    storage = []
+    callback = FrankWolfe.tracking_cached_trajectory_callback(storage)
+
     FrankWolfe.lazified_conditional_gradient(
         tf,
         tgrad!,
@@ -91,6 +106,9 @@ end
         callback=callback,
         verbose=false,
     )
+
+    @test length(storage[1]) == 9
+
     niters = length(storage)
     @test tf.counter == niters + 1
     @test tgrad!.counter == niters + 1
