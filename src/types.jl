@@ -118,7 +118,7 @@ end
 
 function Base.:*(R::RankOneMatrix, M::AbstractMatrix)
     temp = R.v' * M
-    return RankOneMatrix(u, temp')
+    return RankOneMatrix(R.u, temp')
 end
 
 function Base.:*(R1::RankOneMatrix, R2::RankOneMatrix)
