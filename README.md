@@ -117,6 +117,7 @@ state to an array returned from the algorithm.
 #### Other 
 
 - Emphasis: All solvers support emphasis (parameter `Emphasis`) to either exploit vectorized linear algebra or be memory efficient, e.g., for large-scale instances
+- Tracking: Tracking versions with counters of objective function, gradient and LMO calls can be passed to the Frank Wolfe solver, using the structs provided in src/tracking    
 - Various caching strategies for the lazy implementations. Unbounded cache sizes (can get slow), bounded cache sizes as well as early returns once any sufficient vertex is found in the cache.
 - Optionally all algorithms can be endowed with gradient momentum. This might help convergence especially in the stochastic context.
 - (to come:) When the LMO can compute dual prices then the Frank-Wolfe algorithms return dual prices for the (approximately) optimal solutions (see [Braun, Pokutta 2021](https://arxiv.org/abs/2101.02087)).

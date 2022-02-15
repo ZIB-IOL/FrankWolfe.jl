@@ -162,7 +162,9 @@ function frank_wolfe(
                 x=x,
                 v=v,
                 gamma=gamma,
-                gradient=gradient,
+                f=f,
+                grad! =grad!,
+                lmo=lmo,
             )
             callback(state)
         end
@@ -373,6 +375,9 @@ function lazified_conditional_gradient(
                 x=x,
                 v=v,
                 gamma=gamma,
+                f=f,
+                grad! =grad!,
+                lmo=lmo,
                 cache_size=length(lmo),
                 gradient=gradient,
             )
