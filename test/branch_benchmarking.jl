@@ -75,4 +75,4 @@ LibGit2.transact(repo_base) do rb
     end
 end
 
-println(suite[shastring_head][1])
+println(suite[shastring_base][1])
