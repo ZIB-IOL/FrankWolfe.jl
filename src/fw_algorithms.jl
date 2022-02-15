@@ -42,6 +42,7 @@ function frank_wolfe(
     if trajectory && callback === nothing
         callback = trajectory_callback(traj_data)
     end
+
     time_start = time_ns()
 
     if (momentum !== nothing && line_search isa Union{Shortstep,Adaptive,Backtracking})
@@ -88,6 +89,7 @@ function frank_wolfe(
     else
         similar(x)
     end
+
     while t <= max_iteration && dual_gap >= max(epsilon, eps())
 
         #####################
