@@ -51,7 +51,7 @@ suite=Dict()
 dir_base = pwd()
 repo_base = LibGit2.GitRepo(dir_base)
 commit_base = LibGit2.peel(LibGit2.GitCommit,LibGit2.head(repo_base))
-shastring_base = LibGit2.GitHash(commit_base)
+shastring_base = string(LibGit2.GitHash(commit_base))
 
 suite[shastring_base]=run_benchmark()
 
@@ -64,10 +64,14 @@ LibGit2.transact(repo_base) do rb
     try
         LibGit2.checkout!(rb,shastring_branch)
         suite[shastring_branch]=run_benchmark()
-    catch errP
+    catch err
         rethrow(err)
     finally
-        LibGit2.branch!(rb, branch_base)
+        if branch_base !== nothing
+            LibGit2.branch!(r, branch_base)
+        else
+            LibGit2.checkout!(r, branch_base)
+        end
     end
 end
 
