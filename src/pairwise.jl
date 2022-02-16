@@ -167,7 +167,7 @@ function blended_pairwise_conditional_gradient(
         # minor modification from original paper for improved sparsity
         # (proof follows with minor modification when estimating the step)
         if local_gap ≥ phi / lazy_tolerance
-            @. d = a - v_local
+            d = muladd_memory_mode(memory_mode, d, a, v_local)
             vertex_taken = v_local
             gamma_max = a_lambda
             gamma = perform_line_search(
@@ -201,7 +201,8 @@ function blended_pairwise_conditional_gradient(
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
             if (!lazy || dual_gap ≥ phi / lazy_tolerance)
                 tt = regular
-                @. d = x - v
+                d = muladd_memory_mode(memory_mode, d, x, v)
+
                 gamma = perform_line_search(
                     line_search,
                     t,
