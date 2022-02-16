@@ -146,6 +146,7 @@ function blended_conditional_gradient(
             print_callback=print_callback,
             format_string=format_string,
             linesearch_inner_workspace=linesearch_inner_workspace,
+            memory_mode = memory_mode
         )
         t += num_simplex_descent_steps
         #Take a FW step.
@@ -322,6 +323,7 @@ function minimize_over_convex_hull!(
     print_callback=nothing,
     format_string=nothing,
     linesearch_inner_workspace=nothing,
+    memory_mode::MemoryEmphasis
 )
     #No hessian is known, use simplex gradient descent.
     if hessian === nothing
@@ -393,6 +395,7 @@ function minimize_over_convex_hull!(
                         timeout=timeout,
                         print_callback=print_callback,
                         format_string=format_string,
+                        memory_mode = memory_mode
                     )
                 @. active_set.weights = new_weights
             end
@@ -561,6 +564,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
     timeout=Inf,
     print_callback=nothing,
     format_string=nothing,
+    memory_mode::MemoryEmphasis
 )
     number_of_steps = 0
     x = deepcopy(initial_point)
@@ -589,7 +593,9 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
             alpha = 0.5 * (1 + sqrt(1 + 4 * alpha^2))
             gamma = (alpha_old - 1.0) / alpha
         end
-        @. y = x + gamma * (x - x_old)
+        diff = similar(x)
+        diff = muladd_memory_mode(memory_mode, diff, x, x_old)
+        y = muladd_memory_mode(memory_mode, y, x, -gamma, diff)
         number_of_steps += 1
         primal = reduced_f(x)
         reduced_grad!(gradient_x, x)
