@@ -68,9 +68,9 @@ LibGit2.transact(repo_base) do rb
         rethrow(err)
     finally
         if branch_base !== nothing
-            LibGit2.branch!(r, branch_base)
+            LibGit2.branch!(rb, branch_base)
         else
-            LibGit2.checkout!(r, branch_base)
+            LibGit2.checkout!(rb, branch_base)
         end
     end
 end
