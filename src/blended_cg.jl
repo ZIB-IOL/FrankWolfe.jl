@@ -146,7 +146,7 @@ function blended_conditional_gradient(
             print_callback=print_callback,
             format_string=format_string,
             linesearch_inner_workspace=linesearch_inner_workspace,
-            memory_mode = memory_mode
+            memory_mode=memory_mode
         )
         t += num_simplex_descent_steps
         #Take a FW step.
@@ -397,7 +397,7 @@ function minimize_over_convex_hull!(
                         timeout=timeout,
                         print_callback=print_callback,
                         format_string=format_string,
-                        memory_mode = memory_mode
+                        memory_mode=memory_mode
                     )
                 @. active_set.weights = new_weights
             end
