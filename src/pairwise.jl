@@ -180,6 +180,7 @@ function blended_pairwise_conditional_gradient(
                 d,
                 1.0,
                 linesearch_workspace,
+                memory_mode
             )
             # reached maximum of lambda -> dropping away vertex
             if gamma ≈ gamma_max
@@ -213,6 +214,7 @@ function blended_pairwise_conditional_gradient(
                     d,
                     one(eltype(x)),
                     linesearch_workspace,
+                    memory_mode
                 )
     
                 # dropping active set and restarting from singleton

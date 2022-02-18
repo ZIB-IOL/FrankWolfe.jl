@@ -151,6 +151,7 @@ function frank_wolfe(
             d,
             1.0,
             linesearch_workspace,
+            memory_mode
         )
         if callback !== nothing
             state = (
@@ -361,6 +362,7 @@ function lazified_conditional_gradient(
             d,
             1.0,
             linesearch_workspace,
+            memory_mode
         )
 
         if callback !== nothing
@@ -588,7 +590,7 @@ function stochastic_frank_wolfe(
 
         # note: only linesearch methods that do not require full evaluations are supported
         # so nothing is passed as function 
-        gamma = perform_line_search(line_search, t, nothing, nothing, gradient, x, x - v, 1.0, linesearch_workspace)
+        gamma = perform_line_search(line_search, t, nothing, nothing, gradient, x, x - v, 1.0, linesearch_workspace, memory_mode)
 
         if callback !== nothing
             state = (

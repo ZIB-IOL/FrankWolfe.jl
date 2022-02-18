@@ -182,6 +182,7 @@ function blended_conditional_gradient(
                 x - v,
                 1.0,
                 linesearch_workspace,
+                memory_mode
             )
     
             if gamma == 1.0
@@ -323,7 +324,7 @@ function minimize_over_convex_hull!(
     print_callback=nothing,
     format_string=nothing,
     linesearch_inner_workspace=nothing,
-    memory_mode::MemoryEmphasis
+    memory_mode::MemoryEmphasis=InplaceEmphasis()
 )
     #No hessian is known, use simplex gradient descent.
     if hessian === nothing
@@ -336,6 +337,7 @@ function minimize_over_convex_hull!(
             t,
             time_start,
             non_simplex_iter,
+            memory_mode,
             line_search_inner=line_search_inner,
             verbose=verbose,
             print_iter=print_iter,
@@ -786,7 +788,8 @@ function simplex_gradient_descent_over_convex_hull(
     tolerance,
     t,
     time_start,
-    non_simplex_iter;
+    non_simplex_iter,
+    memory_mode::MemoryEmphasis=InplaceEmphasis();
     line_search_inner=Adaptive(),
     verbose=true,
     print_iter=1000,
@@ -870,6 +873,7 @@ function simplex_gradient_descent_over_convex_hull(
                     x - y,
                     1.0,
                     linesearch_inner_workspace,
+                    memory_mode
                 )
                 #If the stepsize is that small we probably need to increase the accuracy of
                 #the types we are using.
@@ -885,7 +889,8 @@ function simplex_gradient_descent_over_convex_hull(
                         x - y,
                         1.0,
                         linesearch_inner_workspace,
-                        should_upgrade=Val{true}(),
+                        memory_mode,
+                        should_upgrade=Val{true}()
                     )
                 end
             else
@@ -899,6 +904,7 @@ function simplex_gradient_descent_over_convex_hull(
                     x - y,
                     1.0,
                     linesearch_inner_workspace,
+                    memory_mode
                 )
             end
             gamma = min(1, gamma)
