@@ -146,6 +146,7 @@ function blended_conditional_gradient(
             print_callback=print_callback,
             format_string=format_string,
             linesearch_inner_workspace=linesearch_inner_workspace,
+            memory_mode=memory_mode
         )
         t += num_simplex_descent_steps
         #Take a FW step.
@@ -181,6 +182,7 @@ function blended_conditional_gradient(
                 x - v,
                 1.0,
                 linesearch_workspace,
+                memory_mode
             )
     
             if gamma == 1.0
@@ -322,6 +324,7 @@ function minimize_over_convex_hull!(
     print_callback=nothing,
     format_string=nothing,
     linesearch_inner_workspace=nothing,
+    memory_mode::MemoryEmphasis=InplaceEmphasis()
 )
     #No hessian is known, use simplex gradient descent.
     if hessian === nothing
@@ -334,6 +337,7 @@ function minimize_over_convex_hull!(
             t,
             time_start,
             non_simplex_iter,
+            memory_mode,
             line_search_inner=line_search_inner,
             verbose=verbose,
             print_iter=print_iter,
@@ -393,6 +397,7 @@ function minimize_over_convex_hull!(
                         timeout=timeout,
                         print_callback=print_callback,
                         format_string=format_string,
+                        memory_mode=memory_mode
                     )
                 @. active_set.weights = new_weights
             end
@@ -561,6 +566,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
     timeout=Inf,
     print_callback=nothing,
     format_string=nothing,
+    memory_mode::MemoryEmphasis
 )
     number_of_steps = 0
     x = deepcopy(initial_point)
@@ -589,7 +595,9 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
             alpha = 0.5 * (1 + sqrt(1 + 4 * alpha^2))
             gamma = (alpha_old - 1.0) / alpha
         end
-        @. y = x + gamma * (x - x_old)
+        diff = similar(x)
+        diff = muladd_memory_mode(memory_mode, diff, x, x_old)
+        y = muladd_memory_mode(memory_mode, y, x, -gamma, diff)
         number_of_steps += 1
         primal = reduced_f(x)
         reduced_grad!(gradient_x, x)
@@ -780,7 +788,8 @@ function simplex_gradient_descent_over_convex_hull(
     tolerance,
     t,
     time_start,
-    non_simplex_iter;
+    non_simplex_iter,
+    memory_mode::MemoryEmphasis=InplaceEmphasis();
     line_search_inner=Adaptive(),
     verbose=true,
     print_iter=1000,
@@ -864,6 +873,7 @@ function simplex_gradient_descent_over_convex_hull(
                     x - y,
                     1.0,
                     linesearch_inner_workspace,
+                    memory_mode
                 )
                 #If the stepsize is that small we probably need to increase the accuracy of
                 #the types we are using.
@@ -879,7 +889,8 @@ function simplex_gradient_descent_over_convex_hull(
                         x - y,
                         1.0,
                         linesearch_inner_workspace,
-                        should_upgrade=Val{true}(),
+                        memory_mode,
+                        should_upgrade=Val{true}()
                     )
                 end
             else
@@ -893,6 +904,7 @@ function simplex_gradient_descent_over_convex_hull(
                     x - y,
                     1.0,
                     linesearch_inner_workspace,
+                    memory_mode
                 )
             end
             gamma = min(1, gamma)
