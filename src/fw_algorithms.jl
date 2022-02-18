@@ -476,6 +476,7 @@ function stochastic_frank_wolfe(
     primal = Inf
     v = []
     x = x0
+    d = similar(x)
     tt = regular
     traj_data = []
     if trajectory && callback === nothing
@@ -607,7 +608,6 @@ function stochastic_frank_wolfe(
             callback(state)
         end
 
-        d = similar(x)
         d = muladd_memory_mode(memory_mode, d, x, v)
         x = muladd_memory_mode(memory_mode, x, gamma, d)
 
