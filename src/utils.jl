@@ -13,6 +13,33 @@ macro memory_mode(memory_mode, ex)
     end)
 end
 
+"""
+    muladd_memory_mode(memory_mode::MemoryEmphasis, d, x, v)
+
+Performs `d = x - v` in-place or not depending on MemoryEmphasis
+"""
+function muladd_memory_mode(memory_mode::MemoryEmphasis, d, x, v)
+    @memory_mode(memory_mode, d = x - v)
+end
+
+"""
+    (memory_mode::MemoryEmphasis, x, gamma::Real, d)
+
+Performs `x = x - gamma * d` in-place or not depending on MemoryEmphasis
+"""
+function muladd_memory_mode(memory_mode::MemoryEmphasis, x, gamma::Real, d)
+    @memory_mode(memory_mode, x = x - gamma * d)
+end
+
+"""
+    (memory_mode::MemoryEmphasis, storage, x, gamma::Real, d)
+
+Performs `storage = x - gamma * d` in-place or not depending on MemoryEmphasis
+"""
+function muladd_memory_mode(memory_mode::MemoryEmphasis, storage, x, gamma::Real, d)
+    @memory_mode(memory_mode, storage = x - gamma * d)
+end
+
 ##############################################################
 # simple benchmark of elementary costs of oracles and 
 # critical components
