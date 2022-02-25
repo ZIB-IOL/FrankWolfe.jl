@@ -9,6 +9,7 @@ using PkgBenchmark
 
 
 function run_include()
+    include("./test/benchmarking_suite.jl")
     println(read("./test/benchmarking_suite.jl",String))
 end
 
