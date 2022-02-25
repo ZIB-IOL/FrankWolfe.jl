@@ -13,6 +13,7 @@ function get_include(dir)
     function run_include()
         include(path)
         println(read(path,String))
+        return run_benchmark()
     end
 end
 
