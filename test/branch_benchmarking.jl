@@ -28,11 +28,8 @@ end
 # end
 
 suite=Dict()
-
 dir_base = pwd()
-
 run_include = get_include(dir_base)
-
 
 repo_base = LibGit2.GitRepo(dir_base)
 commit_base = LibGit2.peel(LibGit2.GitCommit,LibGit2.head(repo_base))
@@ -44,10 +41,9 @@ run_include()
 shastring_branch = "2d262639d02bc1a6bb5d1ed286160a0c96b0f5cc"
 
 # function, grad! and lmo counters
-
 # println(suite[shastring_base][end])
 
-suite[shastring_branch] = PkgBenchmark._withcommit(run_include, repo_base,shastring_branch)
+suite[shastring_branch] = withcommit(run_include, repo_base,shastring_branch)
 
 # println(suite[shastring_base][end][end])
 # println(suite[shastring_branch][end][end])
