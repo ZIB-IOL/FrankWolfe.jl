@@ -8,10 +8,15 @@ import FrankWolfe: ActiveSet
 using PkgBenchmark
 
 
-function run_include()
-    include("./test/benchmarking_suite.jl")
-    println(read("./test/benchmarking_suite.jl",String))
+function get_include(dir)
+    path = joinpath(dir,"test/benchmarking_suite.jl")
+    function run_include()
+        include(path)
+        println(read(path,String))
+    end
 end
+
+
 
 # function get_head_shastring()
 #     repo_dir = pwd()
@@ -24,6 +29,10 @@ end
 suite=Dict()
 
 dir_base = pwd()
+
+run_include = get_include(dir_base)
+
+
 repo_base = LibGit2.GitRepo(dir_base)
 commit_base = LibGit2.peel(LibGit2.GitCommit,LibGit2.head(repo_base))
 shastring_base = string(LibGit2.GitHash(commit_base))
