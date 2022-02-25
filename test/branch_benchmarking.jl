@@ -9,7 +9,7 @@ using PkgBenchmark
 
 
 function run_include()
-    read("./test/benchmarking_suite.jl")
+    println(read("./test/benchmarking_suite.jl"))
 end
 
 # function get_head_shastring()
