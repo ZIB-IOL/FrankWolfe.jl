@@ -5,7 +5,6 @@ using DelimitedFiles
 using SparseArrays
 using LibGit2
 import FrankWolfe: ActiveSet
-using PkgBenchmark
 
 
 function get_include(dir)
