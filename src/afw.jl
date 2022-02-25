@@ -197,6 +197,7 @@ function away_frank_wolfe(
                 d,
                 1.0,
                 linesearch_workspace,
+                memory_mode
             )
             # cleanup and renormalize every x iterations. Only for the fw steps.
             renorm = mod(t, renorm_interval) == 0

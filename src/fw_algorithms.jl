@@ -141,7 +141,7 @@ function frank_wolfe(
             dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         end
 
-        @memory_mode(memory_mode, d = x - v)
+        d = muladd_memory_mode(memory_mode, d, x, v)
 
         gamma = perform_line_search(
             line_search,
@@ -153,6 +153,7 @@ function frank_wolfe(
             d,
             1.0,
             linesearch_workspace,
+            memory_mode
         )
         if callback !== nothing
             state = (
@@ -171,7 +172,7 @@ function frank_wolfe(
             callback(state)
         end
 
-        @memory_mode(memory_mode, x = x - gamma * d)
+        x = muladd_memory_mode(memory_mode, x, gamma, d)
 
         if (mod(t, print_iter) == 0 && verbose)
             tt = regular
@@ -353,7 +354,7 @@ function lazified_conditional_gradient(
             phi = min(dual_gap, phi / 2)
         end
 
-        @memory_mode(memory_mode, d = x - v)
+        d = muladd_memory_mode(memory_mode, d, x, v)
 
         gamma = perform_line_search(
             line_search,
@@ -365,6 +366,7 @@ function lazified_conditional_gradient(
             d,
             1.0,
             linesearch_workspace,
+            memory_mode
         )
 
         if callback !== nothing
@@ -386,7 +388,7 @@ function lazified_conditional_gradient(
             callback(state)
         end
 
-        @memory_mode(memory_mode, x = x - gamma * d)
+        x = muladd_memory_mode(memory_mode, x, gamma, d)
 
         if verbose && (mod(t, print_iter) == 0 || tt == dualstep)
             if t == 0
@@ -481,6 +483,7 @@ function stochastic_frank_wolfe(
     primal = Inf
     v = []
     x = x0
+    d = similar(x)
     tt = regular
     traj_data = []
     if trajectory && callback === nothing
@@ -595,7 +598,7 @@ function stochastic_frank_wolfe(
 
         # note: only linesearch methods that do not require full evaluations are supported
         # so nothing is passed as function 
-        gamma = perform_line_search(line_search, t, nothing, nothing, gradient, x, x - v, 1.0, linesearch_workspace)
+        gamma = perform_line_search(line_search, t, nothing, nothing, gradient, x, x - v, 1.0, linesearch_workspace, memory_mode)
 
         if callback !== nothing
             state = (
@@ -612,7 +615,8 @@ function stochastic_frank_wolfe(
             callback(state)
         end
 
-        @memory_mode(memory_mode, x = (1 - gamma) * x + gamma * v)
+        d = muladd_memory_mode(memory_mode, d, x, v)
+        x = muladd_memory_mode(memory_mode, x, gamma, d)
 
         if mod(t, print_iter) == 0 && verbose
             tt = regular
