@@ -34,7 +34,7 @@ end
     # function, grad! and lmo counters
     # println(suite[shastring_base][end])
 
-    suite[shastring_branch] = withcommit(run_include, repo_base,shastring_branch)
+    suite[shastring_branch] = FrankWolfe.withcommit(run_include, repo_base,shastring_branch)
 
     @test suite[shastring_base][end][end] =  2502
     @test suite[shastring_branch][end][end] = 5002
