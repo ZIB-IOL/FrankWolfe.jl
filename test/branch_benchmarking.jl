@@ -5,7 +5,9 @@ using DelimitedFiles
 using SparseArrays
 using LibGit2
 import FrankWolfe: ActiveSet
+using PkgBenchmark
 
+include("benchmarking_suite.jl")
 
 function get_head_shastring()
     repo_dir = pwd()
@@ -13,37 +15,6 @@ function get_head_shastring()
     commit_head = LibGit2.peel(LibGit2.GitCommit,LibGit2.head(repo))
     shastring_head = LibGit2.GitHash(commit_head)
     return shastring_head
-end
-
-function run_benchmark()
-    f(x) = norm(x)^2
-
-    function grad!(storage, x)
-        @. storage = 2x
-    end
-
-    lmo = FrankWolfe.ProbabilitySimplexOracle(1)
-
-    tf = FrankWolfe.TrackingObjective(f,0)
-    tgrad! = FrankWolfe.TrackingGradient(grad!,0)
-    tlmo = FrankWolfe.TrackingLMO(lmo)
-
-    x0 = FrankWolfe.compute_extreme_point(tlmo, spzeros(1000))
-    storage = []
-    callback = FrankWolfe.tracking_trajectory_callback(storage)
-
-    x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
-        tf,
-        tgrad!,
-        tlmo,
-        x0,
-        line_search=FrankWolfe.Agnostic(),
-        max_iteration=5000,
-        trajectory=true,
-        callback=callback,
-        verbose=true,
-    )
-    return trajectory
 end
 
 suite=Dict()
@@ -55,24 +26,13 @@ shastring_base = string(LibGit2.GitHash(commit_base))
 
 suite[shastring_base]=run_benchmark()
 
-shastring_branch = "1bd668459b93d39d6e1c68dd2ce8d362470dae76"
+shastring_branch = "67d4d343ef3ef8427407e98f8eb753ecfee71a9a"
 
+# function, grad! and lmo counters
 
+println(suite[shastring_base][end])
 
-LibGit2.transact(repo_base) do rb
-    branch_base = try LibGit2.branch(rb) catch err; nothing end
-    try
-        LibGit2.checkout!(rb,shastring_branch)
-        suite[shastring_branch]=run_benchmark()
-    catch err
-        rethrow(err)
-    finally
-        if branch_base !== nothing
-            LibGit2.branch!(rb, branch_base)
-        else
-            LibGit2.checkout!(rb, branch_base)
-        end
-    end
-end
+suite[shastring_branch] = PkgBenchmark._withcommit(run_benchmark, repo_base,shastring_branch)
 
-println(suite[shastring_base][1])
+println(suite[shastring_base][end][end])
+println(suite[shastring_branch][end][end])
