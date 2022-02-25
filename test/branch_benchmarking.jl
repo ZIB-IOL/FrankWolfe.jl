@@ -26,7 +26,8 @@ shastring_base = string(LibGit2.GitHash(commit_base))
 
 suite[shastring_base]=run_benchmark()
 
-shastring_branch = "67d4d343ef3ef8427407e98f8eb753ecfee71a9a"
+
+shastring_branch = "2d262639d02bc1a6bb5d1ed286160a0c96b0f5cc"
 
 # function, grad! and lmo counters
 
