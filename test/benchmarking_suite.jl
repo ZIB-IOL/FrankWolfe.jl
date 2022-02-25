@@ -30,7 +30,7 @@ function run_benchmark()
         tlmo,
         x0,
         line_search=FrankWolfe.Agnostic(),
-        max_iteration=5000,
+        max_iteration=2500,
         trajectory=true,
         callback=callback,
         verbose=true,
