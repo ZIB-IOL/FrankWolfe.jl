@@ -34,7 +34,7 @@ shastring_branch = "2d262639d02bc1a6bb5d1ed286160a0c96b0f5cc"
 
 # function, grad! and lmo counters
 
-println(suite[shastring_base][end])
+# println(suite[shastring_base][end])
 
 suite[shastring_branch] = PkgBenchmark._withcommit(run_include, repo_base,shastring_branch)
 
