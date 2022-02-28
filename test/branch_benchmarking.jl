@@ -35,8 +35,8 @@ end
 
     suite[shastring_branch] = FrankWolfe.withcommit(run_include, repo_base,shastring_branch)
 
-    @test suite[shastring_base][end][end] ==  2502
-    @test suite[shastring_branch][end][end] == 5002
+    @test suite[shastring_base][end][end] ==  5002
+    @test suite[shastring_branch][end][end] == 2502
 
 end
 
