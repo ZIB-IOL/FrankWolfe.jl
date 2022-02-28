@@ -16,29 +16,27 @@ function get_include(dir)
 end
 
 
-@testset "TrackingGradient" begin
 
-    suite=Dict()
-    dir_base = pwd()
-    run_include = get_include(dir_base)
+suite=Dict()
+dir_base = pwd()
+run_include = get_include(dir_base)
 
-    repo_base = LibGit2.GitRepo(dir_base)
-    commit_base = LibGit2.peel(LibGit2.GitCommit,LibGit2.head(repo_base))
-    shastring_base = string(LibGit2.GitHash(commit_base))
+repo_base = LibGit2.GitRepo(dir_base)
+commit_base = LibGit2.peel(LibGit2.GitCommit,LibGit2.head(repo_base))
+shastring_base = string(LibGit2.GitHash(commit_base))
 
-    suite[shastring_base] = run_include()
+suite[shastring_base] = run_include()
 
 
-    shastring_branch = "2d262639d02bc1a6bb5d1ed286160a0c96b0f5cc"
+shastring_branch = "2d262639d02bc1a6bb5d1ed286160a0c96b0f5cc"
 
-    # function, grad! and lmo counters
-    # println(suite[shastring_base][end])
+# function, grad! and lmo counters
+# println(suite[shastring_base][end])
 
-    suite[shastring_branch] = FrankWolfe.withcommit(run_include, repo_base,shastring_branch)
+suite[shastring_branch] = FrankWolfe.withcommit(run_include, repo_base,shastring_branch)
 
-    # @test suite[shastring_base][end][end] =  2502
-    # @test suite[shastring_branch][end][end] = 5002
+# @test suite[shastring_base][end][end] =  2502
+# @test suite[shastring_branch][end][end] = 5002
 
-end
 
 
