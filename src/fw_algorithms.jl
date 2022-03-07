@@ -39,7 +39,6 @@ function frank_wolfe(
     x = x0
     tt = regular
     traj_data = []
-    stop_criterion=false
     if trajectory && callback === nothing
         callback = trajectory_callback(traj_data)
     end
@@ -89,7 +88,7 @@ function frank_wolfe(
     else
         similar(x)
     end
-    while t <= max_iteration && dual_gap >= max(epsilon, eps()) && stop_criterion != true
+    while t <= max_iteration && dual_gap >= max(epsilon, eps())
 
         #####################
         # managing time and Ctrl-C
@@ -168,7 +167,9 @@ function frank_wolfe(
                 grad=grad!,
                 lmo=lmo,
             )
-            stop_criterion = callback(state)
+            if callback(state)
+                break
+            end
         end
 
         x = muladd_memory_mode(memory_mode, x, gamma, d)
