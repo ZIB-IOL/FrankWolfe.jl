@@ -80,7 +80,7 @@ TrackingCallback() = TrackingCallback(state->false, [])
 
 function (tc::TrackingCallback)(state)
     base_tuple = Tuple(state)[1:5]
-    complete_tuple = tuple(base_tuple..., state.gamma, state.f.counter, state.grad!.counter, state.lmo.counter)
+    complete_tuple = tuple(base_tuple..., state.gamma, state.f.counter, state.grad.counter, state.lmo.counter)
     push!(tc.storage, complete_tuple)
     return tc.callback(state)
 end
@@ -101,7 +101,7 @@ TrackingCachedCallback() = TrackingCachedCallback(state->false, [])
 
 function (tc::TrackingCachedCallback)(state)
     base_tuple = Tuple(state)[1:5]
-    complete_tuple = tuple(base_tuple..., state.gamma, state.f.counter, state.grad!.counter, state.lmo.inner.counter)
+    complete_tuple = tuple(base_tuple..., state.gamma, state.f.counter, state.grad.counter, state.lmo.inner.counter)
     push!(tc.storage, complete_tuple)
     return tc.callback(state)
 end
