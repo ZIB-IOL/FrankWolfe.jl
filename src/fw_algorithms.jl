@@ -379,7 +379,7 @@ function lazified_conditional_gradient(
                 v=v,
                 gamma=gamma,
                 f=f,
-                grad! =grad!,
+                grad=grad!,
                 lmo=lmo,
                 cache_size=length(lmo),
                 gradient=gradient,
