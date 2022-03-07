@@ -167,7 +167,7 @@ function frank_wolfe(
                 grad=grad!,
                 lmo=lmo,
             )
-            if callback(state)
+            if callback(state) === true
                 break
             end
         end
