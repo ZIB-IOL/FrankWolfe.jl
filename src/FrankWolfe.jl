@@ -35,7 +35,6 @@ include("polytope_oracles.jl")
 include("moi_oracle.jl")
 include("function_gradient.jl")
 include("active_set.jl")
-include("tracking.jl")
 
 include("blended_cg.jl")
 include("afw.jl")
