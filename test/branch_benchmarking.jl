@@ -11,7 +11,7 @@ function get_include(dir)
     path = joinpath(dir,"test/benchmarking_suite.jl")
     function run_include()
         include(path)
-        return run_benchmark()
+        return Base.invokelatest(run_benchmark())
     end
 end
 
