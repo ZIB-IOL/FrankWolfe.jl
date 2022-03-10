@@ -28,7 +28,10 @@ end
     suite[shastring_base] = run_include()
 
     # branch where the iteration count of the benchmarking_suite.jl frank_wolfe call was halved
-    shastring_branch = "2d262639d02bc1a6bb5d1ed286160a0c96b0f5cc"
+
+    commit_branch = LibGit2.GitObject(repo_base,"benchmarking-mirror")
+    
+    shastring_branch = string(LibGit2.GitHash(commit_branch))
 
     suite[shastring_branch] = FrankWolfe.withcommit(run_include, repo_base,shastring_branch)
 
