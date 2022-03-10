@@ -6,7 +6,6 @@ using SparseArrays
 using LibGit2
 import FrankWolfe: ActiveSet
 
-
 function get_include(dir)
     path = joinpath(dir,"test/benchmarking_suite.jl")
     function run_include()
