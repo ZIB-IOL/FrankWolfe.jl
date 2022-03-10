@@ -20,7 +20,6 @@ function run_benchmark()
     tlmo = FrankWolfe.TrackingLMO(lmo)
 
     x0 = FrankWolfe.compute_extreme_point(tlmo, spzeros(1000))
-    storage = []
     callback = FrankWolfe.TrackingCallback()
 
     FrankWolfe.frank_wolfe(
@@ -34,5 +33,5 @@ function run_benchmark()
         callback=callback,
         verbose=true,
     )
-    return storage
+    return callback.storage
 end
