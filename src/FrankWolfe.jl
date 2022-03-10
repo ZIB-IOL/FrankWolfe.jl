@@ -41,6 +41,7 @@ include("afw.jl")
 include("fw_algorithms.jl")
 include("pairwise.jl")
 include("tracking.jl")
+include("stop_criterion.jl")
 
 # collecting most common data types etc and precompile 
 # min version req set to 1.5 to prevent stalling of julia 1

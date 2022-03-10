@@ -28,7 +28,7 @@ tgrad! = FrankWolfe.TrackingGradient(grad!)
 lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
 tlmo_prob = FrankWolfe.TrackingLMO(lmo_prob)
 
-# The `FrankWolfe.tracking_trajectory_callback` stores in the trajectory array the
+# The `FrankWolfe.TrackingCallback` stores in the trajectory array the
 # number of calls to each oracle at each iteration.
 
 x0 = FrankWolfe.compute_extreme_point(tlmo_prob, ones(5))
@@ -39,7 +39,7 @@ fw_results = FrankWolfe.frank_wolfe(
     x0,
     max_iteration=1000,
     line_search=FrankWolfe.Agnostic(),
-    callback=FrankWolfe.tracking_trajectory_callback,
+    callback=FrankWolfe.TrackingCallback(),
 )
 
 @show tf.counter
@@ -61,7 +61,7 @@ FrankWolfe.lazified_conditional_gradient(
     x0,
     max_iteration=1000,
     line_search=FrankWolfe.Agnostic(),
-    callback=FrankWolfe.tracking_trajectory_callback,
+    callback=FrankWolfe.TrackingCachedCallback(),
 )
 
 @show tf.counter

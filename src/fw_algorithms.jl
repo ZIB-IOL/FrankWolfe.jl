@@ -166,10 +166,12 @@ function frank_wolfe(
                 v=v,
                 gamma=gamma,
                 f=f,
-                grad! =grad!,
+                grad=grad!,
                 lmo=lmo,
             )
-            callback(state)
+            if callback(state) === true
+                break
+            end
         end
 
         x = muladd_memory_mode(memory_mode, x, gamma, d)
@@ -380,7 +382,7 @@ function lazified_conditional_gradient(
                 v=v,
                 gamma=gamma,
                 f=f,
-                grad! =grad!,
+                grad=grad!,
                 lmo=lmo,
                 cache_size=length(lmo),
                 gradient=gradient,
