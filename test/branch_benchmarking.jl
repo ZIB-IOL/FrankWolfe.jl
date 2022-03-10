@@ -11,7 +11,7 @@ function get_include(dir)
     function run_include()
         include(path)
         run_benchmark_latest = Base.invokelatest(run_benchmark)
-        return run_benchmark_latest()
+        return run_benchmark_latest
     end
 end
 
