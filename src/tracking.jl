@@ -70,20 +70,16 @@ A function acting like the passed callback,
     The state data is only the 5 first fields, gamma and 3 call counters, usually
 `(t, primal, dual, dual_gap, time, gamma, function_calls, gradient_calls, lmo_calls)`
 """
-mutable struct TrackingCallback{C} <: Function
-    callback::C
-    storage::Vector
+function tracking_callback(storage, callback)
+    function push_and_callback(state)
+        base_tuple = Tuple(state)[1:5]
+        complete_tuple = tuple(base_tuple..., state.gamma, state.f.counter, state.grad.counter, state.lmo.counter)
+        push!(storage, complete_tuple)
+        return callback(state)
+    end
 end
 
-TrackingCallback(callback) = TrackingCallback(callback, [])
-TrackingCallback() = TrackingCallback(state->false, [])
-
-function (tc::TrackingCallback)(state)
-    base_tuple = Tuple(state)[1:5]
-    complete_tuple = tuple(base_tuple..., state.gamma, state.f.counter, state.grad.counter, state.lmo.counter)
-    push!(tc.storage, complete_tuple)
-    return tc.callback(state)
-end
+tracking_callback(storage) = tracking_callback(storage, state->false)
 
 """
 A function acting like the passed callback for cached LMOs,
@@ -91,17 +87,13 @@ A function acting like the passed callback for cached LMOs,
     The state data is only the 5 first fields, gamma and 3 call counters, usually
 `(t, primal, dual, dual_gap, time, gamma, function_calls, gradient_calls, lmo_calls)`
 """
-mutable struct TrackingCachedCallback{C} <: Function
-    callback::C
-    storage::Vector
+function tracking_cached_callback(storage, callback)
+    function push_and_callback(state)
+        base_tuple = Tuple(state)[1:5]
+        complete_tuple = tuple(base_tuple..., state.gamma, state.f.counter, state.grad.counter, state.lmo.inner.counter)
+        push!(storage, complete_tuple)
+        return callback(state)
+    end
 end
 
-TrackingCachedCallback(callback) = TrackingCachedCallback(callback, [])
-TrackingCachedCallback() = TrackingCachedCallback(state->false, [])
-
-function (tc::TrackingCachedCallback)(state)
-    base_tuple = Tuple(state)[1:5]
-    complete_tuple = tuple(base_tuple..., state.gamma, state.f.counter, state.grad.counter, state.lmo.inner.counter)
-    push!(tc.storage, complete_tuple)
-    return tc.callback(state)
-end
+tracking_cached_callback(storage) = tracking_cached_callback(storage, state->false)
