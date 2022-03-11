@@ -17,10 +17,11 @@ using FrankWolfe
     tlmo = FrankWolfe.TrackingLMO(lmo)
 
     x0 = FrankWolfe.compute_extreme_point(tlmo, spzeros(1000))
+    storage=[]
     # objective value reached after 2000 iterations
     primal_limit = 1.083250e-03
     limit_callback = FrankWolfe.primal_value_callback(primal_limit)
-    callback = FrankWolfe.TrackingCallback(limit_callback)
+    callback = FrankWolfe.tracking_callback(storage,limit_callback)
 
     FrankWolfe.frank_wolfe(
         tf,
@@ -33,8 +34,8 @@ using FrankWolfe
         callback=callback,
         verbose=true,
     )
-    @test callback.storage[end][2] < primal_limit
-    @test callback.storage[end][1] == 2000
+    @test storage[end][2] < primal_limit
+    @test storage[end][1] == 2000
 end
 
 @testset "Testing vanilla Frank-Wolfe with objective function call count limit stop criterion" begin
@@ -51,9 +52,10 @@ end
     tlmo = FrankWolfe.TrackingLMO(lmo)
 
     x0 = FrankWolfe.compute_extreme_point(tlmo, spzeros(1000))
+    storage=[]
     f_call_limit = 1000
     limit_callback = FrankWolfe.f_call_callback(f_call_limit)
-    callback = FrankWolfe.TrackingCallback(limit_callback)
+    callback = FrankWolfe.tracking_callback(storage,limit_callback)
 
     FrankWolfe.frank_wolfe(
         tf,
@@ -66,7 +68,7 @@ end
         callback=callback,
         verbose=true,
     )
-    @test callback.storage[end][7] < f_call_limit
+    @test storage[end][7] < f_call_limit
 end
 
 @testset "Testing vanilla Frank-Wolfe with gradient call count limit stop criterion" begin
@@ -83,9 +85,10 @@ end
     tlmo = FrankWolfe.TrackingLMO(lmo)
 
     x0 = FrankWolfe.compute_extreme_point(tlmo, spzeros(1000))
+    storage=[]
     grad_call_limit = 1000
     limit_callback = FrankWolfe.grad_call_callback(grad_call_limit)
-    callback = FrankWolfe.TrackingCallback(limit_callback)
+    callback = FrankWolfe.tracking_callback(storage,limit_callback)
 
     FrankWolfe.frank_wolfe(
         tf,
@@ -98,7 +101,7 @@ end
         callback=callback,
         verbose=true,
     )
-    @test callback.storage[end][8] < grad_call_limit
+    @test storage[end][8] < grad_call_limit
 end
 
 @testset "Testing vanilla Frank-Wolfe with lmo call count limit stop criterion" begin
@@ -115,9 +118,10 @@ end
     tlmo = FrankWolfe.TrackingLMO(lmo)
 
     x0 = FrankWolfe.compute_extreme_point(tlmo, spzeros(1000))
+    storage=[]
     lmo_call_limit = 1000
     limit_callback = FrankWolfe.lmo_call_callback(lmo_call_limit)
-    callback = FrankWolfe.TrackingCallback(limit_callback)
+    callback = FrankWolfe.tracking_callback(storage,limit_callback)
 
     FrankWolfe.frank_wolfe(
         tf,
@@ -130,5 +134,5 @@ end
         callback=callback,
         verbose=true,
     )
-    @test callback.storage[end][9] < lmo_call_limit
+    @test storage[end][9] < lmo_call_limit
 end
