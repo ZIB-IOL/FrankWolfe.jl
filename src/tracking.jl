@@ -66,8 +66,8 @@ TrackingLMO(lmo) = TrackingLMO(lmo, 0)
 
 """
 A function acting like the passed callback,
-    but adding the state to the storage variable.
-    The state data is only the 5 first fields, gamma and 3 call counters, usually
+but adding the state to the storage variable.
+The state data is only the 5 first fields, gamma and 3 call counters, usually
 `(t, primal, dual, dual_gap, time, gamma, function_calls, gradient_calls, lmo_calls)`
 """
 function tracking_callback(storage, callback)
