@@ -7,16 +7,17 @@ We list below some guidelines to help you contribute to the package.
 
 #### Table of Contents
 
-- [Contributing to `FrankWolfe`](#Contributing-to-FrankWolfe)
-  - [Community Standards](#Community-Standards)
-  - [Where can I get an overview](#Where-can-I-get-an-overview)
-  - [I just have a question](#I-just-have-a-question)
-  - [How can I file an issue](#How-can-I-file-an-issue)
-  - [How can I contribute](#How-can-I-contribute)
-    - [Improve the documentation](#Improve-the-documentation)
-    - [Provide a new example or test](#Provide-a-new-example-or-test)
-    - [Provide a new feature](#Provide-a-new-feature)
-    - [Code style](#Code-style)
+- [Contributing to FrankWolfe](#contributing-to-frankwolfe)
+      - [Table of Contents](#table-of-contents)
+  - [Community Standards](#community-standards)
+  - [Where can I get an overview](#where-can-i-get-an-overview)
+  - [I just have a question](#i-just-have-a-question)
+  - [How can I file an issue](#how-can-i-file-an-issue)
+  - [How can I contribute](#how-can-i-contribute)
+    - [Improve the documentation](#improve-the-documentation)
+    - [Provide a new example or test](#provide-a-new-example-or-test)
+    - [Provide a new feature](#provide-a-new-feature)
+    - [Code style](#code-style)
 
 ## Community Standards
 
@@ -33,7 +34,7 @@ the [documentation](https://zib-iol.github.io/FrankWolfe.jl/dev/) for more detai
 If your question is related to Julia, its syntax or tooling, the best places to get help will be tied to the Julia community,
 see [the Julia community page](https://julialang.org/community/) for a number of communication channels.
 
-For now, the best way to ask a question is to reach out to [Mathieu Besançon](https://github/matbesancon) or [Sebastian Pokutta](github.com/pokutta).
+For now, the best way to ask a question is to reach out to [Mathieu Besançon](https://github/matbesancon) or [Sebastian Pokutta](https://github.com/pokutta).
 You can also ask your question on [discourse.julialang.org](https://discourse.julialang.org) in the optimization topic or on the Julia Slack
 on `#mathematical-optimization`, see [the Julia community page](https://julialang.org/community/) to gain access.
 

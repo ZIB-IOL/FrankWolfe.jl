@@ -1,24 +1,109 @@
-# Introduction
+# Frank-Wolfe.jl
 
-```@contents
+[![Build Status](https://github.com/ZIB-IOL/FrankWolfe.jl/workflows/CI/badge.svg)](https://github.com/ZIB-IOL/FrankWolfe.jl/actions)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://zib-iol.github.io/FrankWolfe.jl/dev/)
+[![Coverage](https://codecov.io/gh/ZIB-IOL/FrankWolfe.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/ZIB-IOL/FrankWolfe.jl)
+
+This package is a toolbox for Frank-Wolfe and conditional gradients algorithms.
+
+## Overview
+
+`FrankWolfe.jl` contains generic routines to solve optimization problems of the form
+
+```math
+\min_{x \in \mathcal{C}} f(x)
 ```
 
-This package defines a generic interface and several implementations for [Frank-Wolfe algorithms](https://en.wikipedia.org/wiki/Frank%E2%80%93Wolfe_algorithm).
-A paper presenting the package and explaining the algorithms and numerous examples in detail can be found here:
-[FrankWolfe.jl: A high-performance and flexible toolbox for Frank-Wolfe algorithms and Conditional Gradients](https://arxiv.org/pdf/2104.06675.pdf).
-The package features four algorithms: a *standard Frank-Wolfe* implementation ([`frank_wolfe`](@ref), FW), *Away-step Frank-Wolfe* ([`away_frank_wolfe`](@ref), AFW), *Blended Conditional
-Gradient* ([`blended_conditional_gradient`](@ref), BCG), and *Stochastic Frank-Wolfe* ([`FrankWolfe.stochastic_frank_wolfe`](@ref), SFW).
-While the standard Frank-Wolfe algorithm can only move *towards* extreme points of the compact, convex set ``\mathcal{C}``, Away-step Frank-Wolfe can move *away* 
-from them. The following figure from [FrankWolfe.jl: A high-performance and flexible toolbox
-for Frank-Wolfe algorithms and Conditional Gradients](https://arxiv.org/pdf/2104.06675.pdf) schematizes this behaviour:
-![FW vs AFW](./fw_vs_afw.PNG) \
-The algorithms minimize a quadratic function (contour lines depicted) over a simple polytope. As the minimizer lies on a face, the standard Frank-Wolfe algorithm
-zig-zags towards the solution. \
-The following table compares the characteristics of the algorithms presented in the package:
+where $\mathcal{C}$ is a compact convex set and $f$ is a differentiable function.
+These routines work by solving a sequence of linear subproblems:
 
-| Algorithm | Progress/Iteration | Time/Iteration | Sparsity | Numerical Stability | Active Set | Lazifiable |
-|:---------:|:------------------:|:--------------:|:--------:|:-------------------:|:----------:|:----------:|
-| **FW**    | Low                | Low            | Low      | High                | No         | Yes        |
-| **AFW**   | Medium             | Medium-High    | Medium   | Medium-High         | Yes        | Yes        |
-| **BCG**   | High               | Medium-High    | High     | Medium              | Yes        | By design  |
-| **SFW**   | Low                | Low            | Low      | High                | No         | No         |
+```math
+\min_{x \in \mathcal{C}} \langle d_k, x \rangle \quad \text{where} \quad d_k = \nabla f(x_k)
+```
+
+A paper presenting the package with mathematical explanations and numerous examples can be found here:
+
+> [FrankWolfe.jl: A high-performance and flexible toolbox for Frank-Wolfe algorithms and Conditional Gradients](https://arxiv.org/abs/2104.06675).
+
+## Installation
+
+The most recent release is available via the julia package manager, e.g., with
+
+```julia
+using Pkg
+Pkg.add("FrankWolfe")
+```
+
+or the master branch:
+
+```julia
+Pkg.add(url="https://github.com/ZIB-IOL/FrankWolfe.jl", rev="master")
+```
+
+## Getting started
+
+Let's say we want to minimize the Euclidian norm over the probability simplex $\Delta$ of dimension $n$:
+
+```math
+\min \sum_{i=1}^{n} p_i^2 \quad \text{s.t.} \quad p \geq 0, ~ \sum_{i=1}^{n} p_i = 1
+```
+
+In `FrankWolfe.jl`, this is what it looks like (with $n = 3$):
+
+```julia
+julia> using FrankWolfe
+
+julia> f(p) = sum(abs2, p)  # objective function
+f (generic function with 1 method)
+
+julia> grad!(storage, p) = storage .= 2p  # in-place gradient computation
+grad! (generic function with 1 method)
+
+julia> lmo = FrankWolfe.ProbabilitySimplexOracle(1.)  # function d ⟼ argmin ⟨g,d⟩ st. p ∈ Δ
+FrankWolfe.ProbabilitySimplexOracle{Float64}(1.0)
+
+julia> p0 = [1., 0., 0.]
+3-element Vector{Float64}:
+ 1.0
+ 0.0
+ 0.0
+
+julia> p_opt, _ = frank_wolfe(f, grad!, lmo, p0; verbose=true);
+
+Vanilla Frank-Wolfe Algorithm.
+EMPHASIS: memory STEPSIZE: Adaptive EPSILON: 1.0e-7 MAXITERATION: 10000 TYPE: Float64
+MOMENTUM: nothing GRADIENTTYPE: Nothing
+WARNING: In memory emphasis mode iterates are written back into x0!
+
+-------------------------------------------------------------------------------------------------
+  Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec
+-------------------------------------------------------------------------------------------------
+     I             0   1.000000e+00  -1.000000e+00   2.000000e+00   0.000000e+00            NaN
+    FW          1000   3.333333e-01   3.333333e-01   1.098983e-08   1.468400e-01   6.810132e+03
+  Last          1000   3.333333e-01   3.333333e-01   1.098983e-08   1.470088e-01   6.809116e+03
+-------------------------------------------------------------------------------------------------
+
+
+julia> p_opt
+3-element Vector{Float64}:
+ 0.33333334349923327
+ 0.33333332783841896
+ 0.3333333286623478
+```
+
+## Going further
+
+To explore the content of the package, go to the [documentation](https://zib-iol.github.io/FrankWolfe.jl/dev/).
+
+Beyond those presented in the documentation, many more use cases are implemented in the `examples` folder.
+To run them, you will need to activate the test environment, which can be done simply with [TestEnv.jl](https://github.com/JuliaTesting/TestEnv.jl) (we recommend you install it in your base Julia).
+
+```julia
+julia> using TestEnv
+
+julia> TestEnv.activate()
+"/tmp/jl_Ux8wKE/Project.toml"
+
+julia> include("examples/linear_regression.jl")
+...
+```

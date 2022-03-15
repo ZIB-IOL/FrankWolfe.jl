@@ -1,4 +1,4 @@
-#= 
+#=
 
 Running a very large-scale example with 1e9 variables (note this requires a lot of RAM).
 
@@ -10,7 +10,12 @@ NOTE.
 
 =#
 
-include("activate.jl")
+using FrankWolfe
+using ProgressMeter
+using Arpack
+using Plots
+using DoubleFloats
+using ReverseDiff
 
 using LinearAlgebra
 

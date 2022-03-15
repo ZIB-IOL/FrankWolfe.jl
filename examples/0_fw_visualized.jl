@@ -69,21 +69,21 @@ c2 = MOI.add_constraint(
     x[1] + 2.0x[2],
     MOI.LessThan(4.0),
 )
-        
+
 ## −2 x − y ≤ 1
 c3 = MOI.add_constraint(
     o,
     -2.0x[1] - x[2],
     MOI.LessThan(1.0),
 )
-    
+
 ## x − 2 y ≤ 2
 c4 = MOI.add_constraint(
     o,
     x[1] - 2.0x[2],
     MOI.LessThan(2.0),
 )
-    
+
 ## x ≤ 2
 c5 = MOI.add_constraint(
     o,
