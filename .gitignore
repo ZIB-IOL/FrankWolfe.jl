@@ -1,4 +1,6 @@
 Manifest.toml
+examples/Manifest.toml
+test/Manifest.toml
 codeServ.sh
 src/temp.jl
 .vscode/settings.json
@@ -23,3 +25,4 @@ docs/src/examples/*.md
 cc/libloporacle.so
 cc/*
 docs/src/contributing.md
+docs/src/index.md
