@@ -1,5 +1,5 @@
 using Pkg
-Pkg.activate(@__DIR__)
+Pkg.activate(dirname(@__DIR__))
 
 using TestEnv
 TestEnv.activate()
