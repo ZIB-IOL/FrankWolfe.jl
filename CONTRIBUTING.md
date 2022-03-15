@@ -5,20 +5,6 @@ Contributions in any form, such as documentation, bug fix, examples or algorithm
 
 We list below some guidelines to help you contribute to the package.
 
-#### Table of Contents
-
-- [Contributing to FrankWolfe](#contributing-to-frankwolfe)
-      - [Table of Contents](#table-of-contents)
-  - [Community Standards](#community-standards)
-  - [Where can I get an overview](#where-can-i-get-an-overview)
-  - [I just have a question](#i-just-have-a-question)
-  - [How can I file an issue](#how-can-i-file-an-issue)
-  - [How can I contribute](#how-can-i-contribute)
-    - [Improve the documentation](#improve-the-documentation)
-    - [Provide a new example or test](#provide-a-new-example-or-test)
-    - [Provide a new feature](#provide-a-new-feature)
-    - [Code style](#code-style)
-
 ## Community Standards
 
 Interactions on this repository must follow the Julia [Community Standards](https://julialang.org/community/standards/) including Pull Requests and issues.
