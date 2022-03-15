@@ -1,4 +1,4 @@
-# Linear oracles
+# Linear Minimization Oracles
 
 ## Framework
 

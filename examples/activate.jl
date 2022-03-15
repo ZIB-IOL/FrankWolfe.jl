@@ -1,14 +1,10 @@
 import Pkg
 Pkg.activate(@__DIR__)
+Pkg.instantiate()
 
 using TestEnv
 
-Pkg.activate(joinpath(@__DIR__, ".."))
-TestEnv.activate()
+Pkg.activate(dirname(@__DIR__))
+Pkg.instantiate()
 
-using FrankWolfe
-using ProgressMeter
-using Arpack
-using Plots
-using DoubleFloats
-using ReverseDiff
+TestEnv.activate()

@@ -1,9 +1,3 @@
-using Pkg
-Pkg.activate(dirname(@__DIR__))
-Pkg.instantiate()
-using TestEnv
-TestEnv.activate()
-
 using Random
 
 # for bug with display
@@ -15,7 +9,10 @@ end
 
 example_shuffle = randperm(length(example_files))
 
+activate_file = joinpath(@__DIR__, "activate.jl")
+
 for file in example_files[example_shuffle[1:2]]
     @info "Including example $file"
-    include(file)
+    instruction = """include("$activate_file"); include("$file")"""
+    run(`julia -e $instruction`)
 end
