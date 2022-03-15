@@ -70,9 +70,14 @@ FrankWolfe.convert_mathopt
 
 ### Active set management
 
-```@autodocs
-Modules = [FrankWolfe]
-Pages = ["active_set.jl"]
+```@docs
+FrankWolfe.ActiveSet
+FrankWolfe.active_set_update!
+FrankWolfe.compute_active_set_iterate
+FrankWolfe.active_set_argmin
+FrankWolfe.active_set_argminmax
+FrankWolfe.find_minmax_directions
+FrankWolfe.active_set_initialize!
 ```
 
 ### Step size computation

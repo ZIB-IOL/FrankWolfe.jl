@@ -20,7 +20,7 @@ function literate_directory(jl_dir, md_dir)
         filepath = joinpath(jl_dir, filename)
         # `include` the file to test it before `#src` lines are removed. It is
         # in a testset to isolate local variables between files.
-        if startswith(filename, "_docs_0")
+        if startswith(filename, "docs")
             Literate.markdown(
                 filepath, md_dir; documenter=true, flavor=Literate.DocumenterFlavor()
             )

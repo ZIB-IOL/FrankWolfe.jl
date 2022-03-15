@@ -73,8 +73,16 @@ function compute_extreme_point(lmo::LpNormLMO{T,p}, direction; v = similar(direc
 end
 
 
-# temporary oracle for l_1 ball to
+# temporary oracle for l_1 ball
 
+"""
+    L1ballDense{T}(right_hand_side)
+
+LMO with feasible set being an L-1 norm ball:
+```
+C = {x ∈ R^n, norm(x, 1) ≤ right_hand_side}
+```
+"""
 struct L1ballDense{T} <: LinearMinimizationOracle
     right_hand_side::T
 end
