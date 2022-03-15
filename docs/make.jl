@@ -7,34 +7,23 @@ using Literate, Test
 EXAMPLE_DIR = joinpath(dirname(@__DIR__), "examples")
 DOCS_EXAMPLE_DIR = joinpath(@__DIR__, "src", "examples")
 
-"""
-    _include_sandbox(filename)
-Include the `filename` in a temporary module that acts as a sandbox. (Ensuring
-no constants or functions leak into other files.)
-"""
-function _include_sandbox(filename)
-    mod = @eval module $(gensym()) end
-    return Base.include(mod, filename)
-end
-
-function _file_list(dir, extension)
+function file_list(dir, extension)
     return filter(file -> endswith(file, extension), sort(readdir(dir)))
 end
 
 function literate_directory(jl_dir, md_dir)
-    for filename in _file_list(md_dir, ".md")
+    for filename in file_list(md_dir, ".md")
         filepath = joinpath(md_dir, filename)
         rm(filepath)
     end
-    for filename in _file_list(jl_dir, ".jl")
+    for filename in file_list(jl_dir, ".jl")
         filepath = joinpath(jl_dir, filename)
         # `include` the file to test it before `#src` lines are removed. It is
         # in a testset to isolate local variables between files.
-        if startswith(filename, r"[0-9]")
-            @testset "$(filename)" begin
-                _include_sandbox(filepath)
-            end
-            Literate.markdown(filepath, md_dir; documenter=true)
+        if startswith(filename, r"[0-0]")
+            Literate.markdown(
+                filepath, md_dir; documenter=true, flavor=Literate.DocumenterFlavor()
+            )
         end
     end
     return nothing
@@ -64,7 +53,21 @@ open(joinpath(generated_path, "contributing.md"), "w") do io
     end
 end
 
-cp(joinpath(dirname(@__DIR__), "README.md"), joinpath(@__DIR__, "src", "index.md"), force=true)
+open(joinpath(generated_path, "index.md"), "w") do io
+    # Point to source license file
+    println(
+        io,
+        """
+        ```@meta
+        EditURL = "$(base_url)README.md"
+        ```
+        """,
+    )
+    # Write the contents out below the meta block
+    for line in eachline(joinpath(dirname(@__DIR__), "README.md"))
+        println(io, line)
+    end
+end
 
 makedocs(;
     modules=[FrankWolfe],
@@ -76,8 +79,7 @@ makedocs(;
         "Linear oracles" => "oracles.md",
         "Algorithms" => "algorithms.md",
         "Advanced features" => "advanced.md",
-        "Examples" =>
-            [joinpath("examples", f) for f in readdir(_EXAMPLE_DIR_MD) if endswith(f, ".md")],
+        "Examples" => [joinpath("examples", f) for f in file_list(DOCS_EXAMPLE_DIR, ".md")],
         "Contributing" => "contributing.md",
         "API Reference" => "reference.md",
         "Index" => "indexlist.md",
