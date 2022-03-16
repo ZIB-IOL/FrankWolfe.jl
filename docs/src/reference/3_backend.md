@@ -1,4 +1,4 @@
-# Backend
+# Utilities and data structures
 
 ## Settings
 
