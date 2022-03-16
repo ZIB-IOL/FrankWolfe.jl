@@ -49,7 +49,5 @@ jobs:
       - uses: julia-actions/setup-julia@v1
         with:
           version: '1'
-      # - shell: bash
-      #   run: julia --project -e 'import Pkg; Pkg.instantiate(); Pkg.activate("examples"); Pkg.instantiate()'
       - shell: bash
         run: julia examples/run_all_examples.jl
