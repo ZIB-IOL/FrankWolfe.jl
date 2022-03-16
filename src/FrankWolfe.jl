@@ -28,7 +28,7 @@ include("defs.jl")
 
 include("utils.jl")
 include("types.jl")
-include("oracles.jl")
+include("abstract_oracles.jl")
 include("simplex_oracles.jl")
 include("norm_oracles.jl")
 include("polytope_oracles.jl")
@@ -41,9 +41,9 @@ include("afw.jl")
 include("fw_algorithms.jl")
 include("pairwise.jl")
 
-# collecting most common data types etc and precompile 
+# collecting most common data types etc and precompile
 # min version req set to 1.5 to prevent stalling of julia 1
-@static if VERSION >= v"1.5"   
+@static if VERSION >= v"1.5"
     println("Precompiling common signatures. This might take a moment...")
     include("precompile.jl")
 end

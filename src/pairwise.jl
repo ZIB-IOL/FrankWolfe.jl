@@ -169,9 +169,9 @@ function blended_pairwise_conditional_gradient(
 
         _, local_v, local_v_loc, a_lambda, a, a_loc =
         active_set_argminmax(active_set, gradient)
-        
+
         local_gap = fast_dot(gradient, a) - fast_dot(gradient, local_v)
-        
+
         if !lazy
             v = compute_extreme_point(lmo, gradient)
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
@@ -251,7 +251,7 @@ function blended_pairwise_conditional_gradient(
             !(line_search isa Agnostic || line_search isa Nonconvex || line_search isa FixedStep)
         )
             primal = f(x)
-        end            
+        end
         if callback !== nothing
             state = (
                 t=t,
@@ -260,7 +260,7 @@ function blended_pairwise_conditional_gradient(
                 dual_gap=phi,
                 time=tot_time,
                 x=x,
-                v=w, 
+                v=w,
                 gamma=gamma,
                 active_set=active_set,
                 gradient=gradient,
