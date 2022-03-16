@@ -1,6 +1,6 @@
 # Algorithms
 
-The package features several variants that share the same basic API.
+The package features several variants of Frank-Wolfe that share the same basic API.
 
 Most of the algorithms listed below also have a lazified version: see [Braun, Pokutta, Zink (2016)](https://arxiv.org/abs/1610.05120).
 

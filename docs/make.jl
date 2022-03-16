@@ -6,6 +6,7 @@ using Literate, Test
 
 EXAMPLE_DIR = joinpath(dirname(@__DIR__), "examples")
 DOCS_EXAMPLE_DIR = joinpath(@__DIR__, "src", "examples")
+DOCS_REFERENCE_DIR = joinpath(@__DIR__, "src", "reference")
 
 function file_list(dir, extension)
     return filter(file -> endswith(file, extension), sort(readdir(dir)))
@@ -72,16 +73,16 @@ end
 makedocs(;
     modules=[FrankWolfe],
     sitename="FrankWolfe.jl",
-    format=Documenter.HTML(; prettyurls=get(ENV, "CI", nothing) == "true"),
+    format=Documenter.HTML(; prettyurls=get(ENV, "CI", nothing) == "true", collapselevel=1),
     pages=[
         "Home" => "index.md",
         "Linear Minimization Oracles" => "oracles.md",
         "Algorithms" => "algorithms.md",
         "Advanced features" => "advanced.md",
         "Examples" => [joinpath("examples", f) for f in file_list(DOCS_EXAMPLE_DIR, ".md")],
+        "API reference" =>
+            [joinpath("reference", f) for f in file_list(DOCS_REFERENCE_DIR, ".md")],
         "Contributing" => "contributing.md",
-        "API Reference" => "reference.md",
-        "Index" => "indexlist.md",
     ],
 )
 

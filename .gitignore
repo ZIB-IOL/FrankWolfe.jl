@@ -22,6 +22,7 @@ examples/precompile_fw_clean_uniq.jl
 examples/precompile_fw_clean.jl
 examples/precompile_fw.jl
 docs/src/examples/*.md
+docs/src/examples/*.jl
 cc/libloporacle.so
 cc/*
 docs/src/contributing.md
