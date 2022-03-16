@@ -86,5 +86,4 @@ makedocs(;
     ],
 )
 
-# deploydocs(; repo="github.com/ZIB-IOL/FrankWolfe.jl.git", push_preview=true)
-deploydocs(; repo="github.com/gdalle/FrankWolfe.jl.git", push_preview=true)
+deploydocs(; repo="github.com/ZIB-IOL/FrankWolfe.jl.git", push_preview=true)
