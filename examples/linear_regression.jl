@@ -61,7 +61,6 @@ f_stoch_noisy = FrankWolfe.StochasticObjective(simple_reg_loss, ∇simple_reg_lo
 
 params = rand(6) .- 1 # start params in (-1,0)
 
-# test that the
 @testset "true parameters yield a good error" begin
     n1 = norm(FrankWolfe.compute_gradient(f_stoch_noisy, params_perfect))
     @test n1 <= length(data_noisy) * 0.05
