@@ -64,7 +64,7 @@ Adaptive Step Size strategy from https://arxiv.org/pdf/1806.05123.pdf
 
 Note: direction is opposite to the improving direction
 norm(gradient, direction) > 0
-TODO: 
+TODO:
 - make emphasis aware and optimize
 """
 function adaptive_step_size(
@@ -262,8 +262,8 @@ list_label -> contains the labels for the series that will be plotted,
 which has to have a length equal to the number of series that are being plotted:
     list_label = ["Series 1", "Series 2"]
 
-list_axis_x -> contains the labels for the x-axis that will be plotted, 
-which has to have a length equal to the number of subplots: 
+list_axis_x -> contains the labels for the x-axis that will be plotted,
+which has to have a length equal to the number of subplots:
     list_axis_x = ["x-axis plot 1", "x-axis plot 1"]
 
 list_axis_y -> Same as list_axis_x but for the y-axis
@@ -636,7 +636,7 @@ function plot_sparsity(data, label; filename=nothing, xscalelog=false, legend_po
 end
 
 ##############################################################
-# simple benchmark of elementary costs of oracles and 
+# simple benchmark of elementary costs of oracles and
 # critical components
 ##############################################################
 
@@ -706,7 +706,9 @@ function benchmark_oracles(f, grad!, x_gen, lmo; k=100, nocache=true)
 end
 
 """
-`isequal` without the checks. Assumes a and b have the same axes.
+    _unsafe_equal(a, b)
+
+Like `isequal` on arrays but without the checks. Assumes a and b have the same axes.
 """
 function _unsafe_equal(a::AbstractArray, b::AbstractArray)
     if a === b
@@ -960,7 +962,7 @@ Batch iterator always returning a constant batch size.
 struct ConstantBatchIterator
     batch_size::Int
 end
- 
+
 batchsize_iterate(cbi::ConstantBatchIterator) = cbi.batch_size
 
 """

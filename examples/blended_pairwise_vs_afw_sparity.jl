@@ -1,4 +1,4 @@
-#= 
+#=
 
 Example demonstrating sparsity control by means of the "K"-factor passed to the lazy AFW variant
 
@@ -9,7 +9,12 @@ The default for AFW is K = 2.0
 
 =#
 
-include("activate.jl")
+using FrankWolfe
+using ProgressMeter
+using Arpack
+using Plots
+using DoubleFloats
+using ReverseDiff
 
 using LinearAlgebra
 using Random
@@ -45,7 +50,7 @@ const lmo = FrankWolfe.KSparseLMO(5, 1.0)
 const x00 = FrankWolfe.compute_extreme_point(lmo, rand(n))
 
 
-## example with BirkhoffPolytopeLMO - uses square matrix. 
+## example with BirkhoffPolytopeLMO - uses square matrix.
 # const lmo = FrankWolfe.BirkhoffPolytopeLMO()
 # cost = rand(n, n)
 # const x00 = FrankWolfe.compute_extreme_point(lmo, cost)
