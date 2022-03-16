@@ -42,7 +42,7 @@ See for example [`FrankWolfe.ScaledHotVector`](@ref) and [`FrankWolfe.RankOneMat
 
 ## Active set
 
-The active set represents an iterate as a convex combination of atoms.
+The active set represents an iterate as a convex combination of atoms (also referred to as extreme points or vertices).
 It maintains a vector of atoms, the corresponding weights, and the current iterate.
 
 Note: the weights in the active set are currently defined as `Float64` in the algorithm.
