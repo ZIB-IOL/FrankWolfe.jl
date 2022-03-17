@@ -8,18 +8,8 @@ This package is a toolbox for Frank-Wolfe and conditional gradients algorithms.
 
 ## Overview
 
-`FrankWolfe.jl` contains generic routines to solve optimization problems of the form
-
-```math
-\min_{x \in \mathcal{C}} f(x)
-```
-
-where $\mathcal{C}$ is a compact convex set and $f$ is a differentiable function.
-These routines work by solving a sequence of linear subproblems:
-
-```math
-\min_{x \in \mathcal{C}} \langle d_k, x \rangle \quad \text{where} \quad d_k = \nabla f(x_k)
-```
+Frank-Wolfe algorithms were designed to solve optimization problems of the form `min_{x ∈ C} f(x)`, where `f` is a differentiable convex function and `C` is a convex and compact set.
+They are especially useful when we know how to optimize a linear function over `C` in an efficient way.
 
 A paper presenting the package with mathematical explanations and numerous examples can be found here:
 
