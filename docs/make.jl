@@ -76,8 +76,7 @@ makedocs(;
     format=Documenter.HTML(; prettyurls=get(ENV, "CI", nothing) == "true", collapselevel=1),
     pages=[
         "Home" => "index.md",
-        "Linear Minimization Oracles" => "oracles.md",
-        "Algorithms" => "algorithms.md",
+        "How does it work?" => "basics.md",
         "Advanced features" => "advanced.md",
         "Examples" => [joinpath("examples", f) for f in file_list(DOCS_EXAMPLE_DIR, ".md")],
         "API reference" =>
