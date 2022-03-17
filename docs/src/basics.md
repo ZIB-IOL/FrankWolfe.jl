@@ -66,7 +66,7 @@ It is implemented in the [`away_frank_wolfe`](@ref) function.
 
 See [Lacoste-Julien, Jaggi (2015)](https://arxiv.org/abs/1511.05932) for an overview.
 
-## Stochastic Frank-Wolfe (SFW)
+### Stochastic Frank-Wolfe (SFW)
 
 It is implemented in the [`FrankWolfe.stochastic_frank_wolfe`](@ref) function.
 
