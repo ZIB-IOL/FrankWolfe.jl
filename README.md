@@ -32,13 +32,7 @@ Pkg.add(url="https://github.com/ZIB-IOL/FrankWolfe.jl", rev="master")
 
 ## Getting started
 
-Let's say we want to minimize the Euclidian norm over the probability simplex $\Delta$ of dimension $n$:
-
-```math
-\min \sum_{i=1}^{n} p_i^2 \quad \text{s.t.} \quad p \geq 0, ~ \sum_{i=1}^{n} p_i = 1
-```
-
-In `FrankWolfe.jl`, this is what it looks like (with $n = 3$):
+Let's say we want to minimize the Euclidian norm over the probability simplex `Δ`. Using `FrankWolfe.jl`, this is what the code looks like (in dimension 3):
 
 ```julia
 julia> using FrankWolfe
