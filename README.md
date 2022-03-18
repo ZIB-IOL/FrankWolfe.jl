@@ -32,7 +32,7 @@ Pkg.add(url="https://github.com/ZIB-IOL/FrankWolfe.jl", rev="master")
 
 ## Getting started
 
-Let's say we want to minimize the Euclidian norm over the probability simplex `Δ`.Using `FrankWolfe.jl`, this is what the code looks like (in dimension 3):
+Let's say we want to minimize the Euclidian norm over the probability simplex `Δ`. Using `FrankWolfe.jl`, this is what the code looks like (in dimension 3):
 
 ```julia
 julia> using FrankWolfe
