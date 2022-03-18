@@ -3,7 +3,12 @@ Example of a L2-regularized linearized regression
 using the stochastic version of Frank-Wolfe.
 """
 
-include("activate.jl")
+using FrankWolfe
+using ProgressMeter
+using Arpack
+using Plots
+using DoubleFloats
+using ReverseDiff
 
 using Random
 using LinearAlgebra
@@ -56,7 +61,6 @@ f_stoch_noisy = FrankWolfe.StochasticObjective(simple_reg_loss, ∇simple_reg_lo
 
 params = rand(6) .- 1 # start params in (-1,0)
 
-# test that the 
 @testset "true parameters yield a good error" begin
     n1 = norm(FrankWolfe.compute_gradient(f_stoch_noisy, params_perfect))
     @test n1 <= length(data_noisy) * 0.05
@@ -78,7 +82,7 @@ for idx in 1:1000
     end
 end
 
-# test that SGD converged towards true parameters 
+# test that SGD converged towards true parameters
 @test norm(params - params_perfect) <= 1e-6
 
 #####

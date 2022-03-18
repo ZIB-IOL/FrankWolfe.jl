@@ -1,6 +1,6 @@
-#= 
+#=
 
-Lower bound instance from 
+Lower bound instance from
 
 http://proceedings.mlr.press/v28/jaggi13.pdf
 
@@ -11,10 +11,10 @@ https://arxiv.org/abs/1309.5550
 Example instance is to minimize || x ||^2 over the probability simplex conv(e_1, ..., e_n)
 
 Then the primal gap is lower bounded by 1/k - 1/n in iteration k as the optimal solution has value 1/n attained by
-the (1/n, ..., 1/n) vector and in iteration k we have picked up at most k vertices from the simplex lower bounding the 
+the (1/n, ..., 1/n) vector and in iteration k we have picked up at most k vertices from the simplex lower bounding the
 primal value by 1/k.
 
-Here: slightly rewritten to consider || x - (1/n, ..., 1/n) ||^2 so that the function value becomes directly the 
+Here: slightly rewritten to consider || x - (1/n, ..., 1/n) ||^2 so that the function value becomes directly the
 primal gap (squared)
 
 Three runs are compared:
@@ -23,7 +23,7 @@ Three runs are compared:
 3. Blended Conditional Gradients with adaptive step-size rule
 
 NOTE:
-1. ignore the timing graphs 
+1. ignore the timing graphs
 2. as the primal gap lower bounds the dual gap we also plot the primal gap lower bound in the dual gap graph
 3. AFW violates the bound in the very first round which is due to the initialization in AFW starting with two vertices
 4. all methods that call an LMO at most once in an iteration are subject to this lower bound
@@ -31,7 +31,12 @@ NOTE:
 
 =#
 
-include("activate.jl")
+using FrankWolfe
+using ProgressMeter
+using Arpack
+using Plots
+using DoubleFloats
+using ReverseDiff
 
 import LinearAlgebra
 
@@ -45,7 +50,7 @@ xp = 1 / n * ones(n);
 # definition of objective
 f(x) = LinearAlgebra.norm(x - xp)^2
 
-# definition of gradient 
+# definition of gradient
 function grad!(storage, x)
     @. storage = 2 * (x - xp)
 end
@@ -99,7 +104,7 @@ FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo; k=100)
     trajectory=true,
 );
 
-# define lower bound 
+# define lower bound
 
 trajLowerbound = []
 for i in 1:n-1
