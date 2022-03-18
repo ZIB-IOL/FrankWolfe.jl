@@ -75,7 +75,11 @@ function tracking_callback(storage, callback)
         base_tuple = Tuple(state)[1:5]
         complete_tuple = tuple(base_tuple..., state.gamma, state.f.counter, state.grad.counter, state.lmo.counter)
         push!(storage, complete_tuple)
-        return callback(state)
+        if callback === nothing
+            return false
+        else
+            return callback(state)
+        end
     end
 end
 
