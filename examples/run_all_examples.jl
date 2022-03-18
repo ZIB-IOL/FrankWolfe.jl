@@ -1,6 +1,3 @@
-using Pkg
-Pkg.activate(@__DIR__)
-
 using Random
 
 # for bug with display
@@ -18,7 +15,9 @@ else
     @info "Running all examples"
 end
 
+
 for file in example_files[example_shuffle]
-    @info "running example $file"
-    run(`julia $file`)
+    @info "Including example $file"
+    instruction = """include("$activate_file"); include("$file")"""
+    run(`julia -e $instruction`)
 end

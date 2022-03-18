@@ -1,17 +1,10 @@
 import Pkg
 Pkg.activate(@__DIR__)
+Pkg.instantiate()
 
 using TestEnv
 
-Pkg.activate(joinpath(@__DIR__, ".."))
+Pkg.activate(dirname(@__DIR__))
+Pkg.instantiate()
+
 TestEnv.activate()
-
-using FrankWolfe
-using ProgressMeter
-using Arpack
-using Plots
-using DoubleFloats
-using ReverseDiff
-using PlotThemes
-
-include(joinpath(dirname(pathof(FrankWolfe)), "../examples/plot_utils.jl"))
