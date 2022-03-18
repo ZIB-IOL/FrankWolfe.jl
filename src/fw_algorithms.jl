@@ -25,6 +25,7 @@ function frank_wolfe(
     memory_mode::MemoryEmphasis=InplaceEmphasis(),
     gradient=nothing,
     callback=nothing,
+    traj_data=[],
     timeout=Inf,
     print_callback=print_callback,
     linesearch_workspace=nothing,
@@ -38,9 +39,8 @@ function frank_wolfe(
     v = []
     x = x0
     tt = regular
-    traj_data = []
-    if trajectory && callback === nothing
-        callback = trajectory_callback(traj_data)
+    if trajectory
+        callback = tracking_callback(traj_data,callback)
     end
     time_start = time_ns()
 
