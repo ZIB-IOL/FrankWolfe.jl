@@ -16,9 +16,10 @@ else
 end
 
 const activate_file = joinpath(@__DIR__, "activate.jl")
+const plot_file = joinpath(@__DIR__, "plot_utils.jl")
 
 for file in example_files[example_shuffle]
     @info "Including example $file"
-    instruction = """include("$activate_file"); include("$file")"""
+    instruction = """include("$activate_file"); include("$plot_file"); include("$file")"""
     run(`julia -e $instruction`)
 end
