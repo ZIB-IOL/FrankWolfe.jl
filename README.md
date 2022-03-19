@@ -43,7 +43,7 @@ f (generic function with 1 method)
 julia> grad!(storage, p) = storage .= 2p  # in-place gradient computation
 grad! (generic function with 1 method)
 
-julia> lmo = FrankWolfe.ProbabilitySimplexOracle(1.)  # function d ⟼ argmin ⟨g,d⟩ st. p ∈ Δ
+julia> lmo = FrankWolfe.ProbabilitySimplexOracle(1.)  # function d ⟼ argmin ⟨p,d⟩ st. p ∈ Δ
 FrankWolfe.ProbabilitySimplexOracle{Float64}(1.0)
 
 julia> p0 = [1., 0., 0.]
