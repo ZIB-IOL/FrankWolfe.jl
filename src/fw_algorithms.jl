@@ -39,8 +39,16 @@ function frank_wolfe(
     v = []
     x = x0
     tt = regular
+
+    if callback === nothing
+        callback = state->false
+    end
+
     if trajectory
         callback = tracking_callback(traj_data,callback)
+        f = TrackingObjective(f)
+        grad! = TrackingGradient(grad!)
+        lmo = TrackingLMO(lmo)
     end
     time_start = time_ns()
 
