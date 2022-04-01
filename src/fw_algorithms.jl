@@ -24,15 +24,18 @@ function frank_wolfe(
     verbose=false,
     memory_mode::MemoryEmphasis=InplaceEmphasis(),
     gradient=nothing,
-    callback=nothing,
+    stop_criterion=nothing,
     traj_data=[],
     timeout=Inf,
     print_callback=print_callback,
     linesearch_workspace=nothing,
 )
 
-    # format string for output of the algorithm
+    # header and format string for output of the algorithm
+    headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec"]
     format_string = "%6s %13s %14e %14e %14e %14e %14e\n"
+
+
     t = 0
     dual_gap = Inf
     primal = Inf
@@ -40,16 +43,15 @@ function frank_wolfe(
     x = x0
     tt = regular
 
-    if callback === nothing
-        callback = state->false
-    end
-
     if trajectory
-        callback = tracking_callback(traj_data,callback)
         f = TrackingObjective(f)
         grad! = TrackingGradient(grad!)
         lmo = TrackingLMO(lmo)
     end
+
+    callback = make_callback(traj_data, stop_criterion, verbose, trajectory, print_iter, headers, format_string)
+
+
     time_start = time_ns()
 
     if (momentum !== nothing && line_search isa Union{Shortstep,Adaptive,Backtracking})
@@ -69,8 +71,6 @@ function frank_wolfe(
         if memory_mode isa InplaceEmphasis
             @info("In memory_mode memory iterates are written back into x0!")
         end
-        headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec"]
-        print_callback(headers, format_string, print_header=true)
     end
     if memory_mode isa InplaceEmphasis && !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
         # if integer, convert element type to most appropriate float
@@ -174,6 +174,7 @@ function frank_wolfe(
                 f=f,
                 grad=grad!,
                 lmo=lmo,
+                tt=tt,
             )
             if callback(state) === true
                 break
@@ -182,25 +183,6 @@ function frank_wolfe(
 
         x = muladd_memory_mode(memory_mode, x, gamma, d)
 
-        if (mod(t, print_iter) == 0 && verbose)
-            tt = regular
-            if t == 0
-                tt = initial
-            end
-
-            rep = (
-                st[Symbol(tt)],
-                string(t),
-                Float64(primal),
-                Float64(primal - dual_gap),
-                Float64(dual_gap),
-                tot_time,
-                t / tot_time,
-            )
-            print_callback(rep, format_string)
-
-            flush(stdout)
-        end
         t = t + 1
     end
     # recompute everything once for final verfication / do not record to trajectory though for now!
@@ -211,23 +193,26 @@ function frank_wolfe(
     v = compute_extreme_point(lmo, gradient, v=v)
     primal = f(x)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
-    if verbose
-        tt = last
-        tot_time = (time_ns() - time_start) / 1.0e9
-        rep = (
-            st[Symbol(tt)],
-            string(t - 1),
-            Float64(primal),
-            Float64(primal - dual_gap),
-            Float64(dual_gap),
-            tot_time,
-            t / tot_time,
-        )
-        print_callback(rep, format_string)
-        print_callback(nothing, format_string, print_footer=true)
-        flush(stdout)
-    end
-    return x, v, primal, dual_gap, traj_data
+    tot_time = (time_ns() - time_start) / 1.0e9
+
+    state = (
+        t=t,
+        primal=primal,
+        dual=primal - dual_gap,
+        dual_gap=dual_gap,
+        time=tot_time,
+        x=x,
+        v=v,
+        gamma=gamma,
+        f=f,
+        grad=grad!,
+        lmo=lmo,
+        tt=last,
+    )
+
+        callback(state)
+    
+        return x, v, primal, dual_gap, traj_data
 end
 
 
@@ -264,7 +249,7 @@ function lazified_conditional_gradient(
 
     # format string for output of the algorithm
     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
-
+    headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "Cache Size"]
     if isfinite(cache_size)
         lmo = MultiCacheLMO{cache_size,typeof(lmo_base),VType}(lmo_base)
     else
@@ -299,9 +284,6 @@ function lazified_conditional_gradient(
         if memory_mode isa InplaceEmphasis
             @info("In memory_mode memory iterates are written back into x0!")
         end
-        headers =
-            ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "Cache Size"]
-        print_callback(headers, format_string, print_header=true)
     end
 
     if memory_mode isa InplaceEmphasis && !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
@@ -392,6 +374,7 @@ function lazified_conditional_gradient(
                 lmo=lmo,
                 cache_size=length(lmo),
                 gradient=gradient,
+                tt=tt,
             )
             callback(state)
         end
