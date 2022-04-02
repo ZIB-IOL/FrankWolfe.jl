@@ -55,10 +55,10 @@ end
     tlmo = FrankWolfe.TrackingLMO(lmo)
 
     x0 = FrankWolfe.compute_extreme_point(tlmo, spzeros(1000))
-    storage = []
-    callback = FrankWolfe.tracking_callback(storage)
+    stop_criterion = state->false
 
-    FrankWolfe.frank_wolfe(
+
+    results = FrankWolfe.frank_wolfe(
         tf,
         tgrad!,
         tlmo,
@@ -66,9 +66,10 @@ end
         line_search=FrankWolfe.Agnostic(),
         max_iteration=50,
         trajectory=true,
-        callback=callback,
+        stop_criterion=stop_criterion,
         verbose=true,
     )
+    storage = results[end]
     
     @test length(storage[1]) == 9
 
@@ -92,10 +93,9 @@ end
     tlmo = FrankWolfe.TrackingLMO(lmo)
 
     x0 = FrankWolfe.compute_extreme_point(tlmo, spzeros(1000))
-    storage = []
-    callback = FrankWolfe.tracking_cached_callback(storage)
+    stop_criterion = state->false
 
-    FrankWolfe.lazified_conditional_gradient(
+    results = FrankWolfe.lazified_conditional_gradient(
         tf,
         tgrad!,
         tlmo,
@@ -103,10 +103,10 @@ end
         line_search=FrankWolfe.Agnostic(),
         max_iteration=50,
         trajectory=true,
-        callback=callback,
+        stop_criterion=stop_criterion,
         verbose=false,
     )
-
+    storage = results[end]
     @test length(storage[1]) == 9
 
     niters = length(storage)
