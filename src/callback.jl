@@ -48,7 +48,7 @@ end
 
 function push_state(state,storage)
     base_tuple = Tuple(state)[1:5]
-    if state.lmo <: CachedLinearMinimizationOracle
+    if typeof(state.lmo) <: CachedLinearMinimizationOracle
         complete_tuple = tuple(base_tuple..., state.gamma, state.f.counter, state.grad.counter, state.lmo.inner.counter)
     else
         complete_tuple = tuple(base_tuple..., state.gamma, state.f.counter, state.grad.counter, state.lmo.counter)
@@ -87,20 +87,6 @@ function print_callback(data, format_string; print_header=false, print_footer=fa
     end
 end
 
-function format_state(state)
-    rep = (
-        st[Symbol(state.tt)],
-        string(state.t),
-        Float64(state.primal),
-        Float64(state.primal - state.dual_gap),
-        Float64(state.dual_gap),
-        state.time,
-        state.t / state.tot_time,
-    )
-    return rep
-end
-
-
 """
     Callback for fw_algorithms
     If verbose is true, prints the state to the console after print_iter iterations.
@@ -108,33 +94,34 @@ end
     The state data is only the 5 first fields, gamma and 3 call counters, usually
 `(t, primal, dual, dual_gap, time, gamma, function_calls, gradient_calls, lmo_calls)`
 """
-function make_callback(traj_data, stop_criterion, verbose, trajectory, print_iter, headers, format_string)
-    function callback(state)
-        if trajectory
+function make_callback(traj_data, stop_criterion, verbose, trajectory, print_iter, headers, format_string, format_state)
+    return function callback(state)
+        if trajectory && (state.tt !== last)
             push_state(state, traj_data)
         end
-
         if verbose 
-            if mod(t, print_iter) == 0
-                if t == 0
+            if mod(state.t, print_iter) == 0
+                if state.t == 0
+                    state = merge(state,(tt=initial,))
                     print_callback(headers, format_string, print_header=true)
                 end
                 rep = format_state(state)
                 print_callback(rep, format_string)
                 flush(stdout)
+            end 
 
             if (state.tt == last)
-                
+                rep = format_state(state)
                 print_callback(rep, format_string)
                 print_callback(nothing, format_string, print_footer=true)
                 flush(stdout)
             end
         end
-        return stop_criterion(state)
+        
+        if stop_criterion !== nothing
+            return stop_criterion(state)
+        else 
+            return false
+        end
     end
-    return callback
 end
-
-
-
-tracking_cached_callback(storage) = tracking_cached_callback(storage, state->false)
