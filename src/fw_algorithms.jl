@@ -34,7 +34,18 @@ function frank_wolfe(
     # header and format string for output of the algorithm
     headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec"]
     format_string = "%6s %13s %14e %14e %14e %14e %14e\n"
-
+    function format_state(state)
+        rep = (
+            st[Symbol(state.tt)],
+            string(state.t),
+            Float64(state.primal),
+            Float64(state.primal - state.dual_gap),
+            Float64(state.dual_gap),
+            state.time,
+            state.t / state.time,
+        )
+        return rep
+    end
 
     t = 0
     dual_gap = Inf
@@ -49,7 +60,7 @@ function frank_wolfe(
         lmo = TrackingLMO(lmo)
     end
 
-    callback = make_callback(traj_data, stop_criterion, verbose, trajectory, print_iter, headers, format_string)
+    callback = make_callback(traj_data, stop_criterion, verbose, trajectory, print_iter, headers, format_string, format_state)
 
 
     time_start = time_ns()
@@ -161,25 +172,25 @@ function frank_wolfe(
             linesearch_workspace,
             memory_mode
         )
-        if callback !== nothing
-            state = (
-                t=t,
-                primal=primal,
-                dual=primal - dual_gap,
-                dual_gap=dual_gap,
-                time=tot_time,
-                x=x,
-                v=v,
-                gamma=gamma,
-                f=f,
-                grad=grad!,
-                lmo=lmo,
-                tt=tt,
-            )
-            if callback(state) === true
-                break
-            end
+
+        state = (
+            t=t,
+            primal=primal,
+            dual=primal - dual_gap,
+            dual_gap=dual_gap,
+            time=tot_time,
+            x=x,
+            v=v,
+            gamma=gamma,
+            f=f,
+            grad=grad!,
+            lmo=lmo,
+            tt=tt,
+        )
+        if callback(state) === true
+            break
         end
+
 
         x = muladd_memory_mode(memory_mode, x, gamma, d)
 
@@ -188,11 +199,23 @@ function frank_wolfe(
     # recompute everything once for final verfication / do not record to trajectory though for now!
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
     # hence the final computation.
-
+    tt = last
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient, v=v)
     primal = f(x)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
+    gamma = perform_line_search(
+        line_search,
+        t,
+        f,
+        grad!,
+        gradient,
+        x,
+        d,
+        1.0,
+        linesearch_workspace,
+        memory_mode
+    )
     tot_time = (time_ns() - time_start) / 1.0e9
 
     state = (
@@ -207,12 +230,12 @@ function frank_wolfe(
         f=f,
         grad=grad!,
         lmo=lmo,
-        tt=last,
+        tt=tt,
     )
 
         callback(state)
     
-        return x, v, primal, dual_gap, traj_data
+    return x, v, primal, dual_gap, traj_data
 end
 
 
@@ -240,8 +263,9 @@ function lazified_conditional_gradient(
     verbose=false,
     memory_mode::MemoryEmphasis=InplaceEmphasis(),
     gradient=nothing,
+    stop_criterion=nothing,
+    traj_data=[],
     VType=typeof(x0),
-    callback=nothing,
     timeout=Inf,
     print_callback=print_callback,
     linesearch_workspace=nothing,
@@ -250,6 +274,26 @@ function lazified_conditional_gradient(
     # format string for output of the algorithm
     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
     headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "Cache Size"]
+    function format_state(state)
+        rep = (
+            st[Symbol(state.tt)],
+            string(state.t - 1),
+            Float64(state.primal),
+            Float64(state.primal - state.dual_gap),
+            Float64(state.dual_gap),
+            state.time,
+            state.t / state.time,
+            length(state.lmo),
+        )
+        return rep
+    end
+
+    if trajectory
+        f = TrackingObjective(f)
+        grad! = TrackingGradient(grad!)
+        lmo_base = TrackingLMO(lmo_base)
+    end
+
     if isfinite(cache_size)
         lmo = MultiCacheLMO{cache_size,typeof(lmo_base),VType}(lmo_base)
     else
@@ -262,11 +306,10 @@ function lazified_conditional_gradient(
     v = []
     x = x0
     phi = Inf
-    traj_data = []
-    if trajectory && callback === nothing
-        callback = trajectory_callback(traj_data)
-    end
     tt = regular
+
+    callback = make_callback(traj_data, stop_criterion, verbose, trajectory, print_iter, headers, format_string, format_state)
+
     time_start = time_ns()
 
     if line_search isa Agnostic || line_search isa Nonconvex
@@ -359,72 +402,72 @@ function lazified_conditional_gradient(
             memory_mode
         )
 
-        if callback !== nothing
-            state = (
-                t=t,
-                primal=primal,
-                dual=primal - dual_gap,
-                dual_gap=dual_gap,
-                time=tot_time,
-                x=x,
-                v=v,
-                gamma=gamma,
-                f=f,
-                grad=grad!,
-                lmo=lmo,
-                cache_size=length(lmo),
-                gradient=gradient,
-                tt=tt,
-            )
-            callback(state)
+        state = (
+            t=t,
+            primal=primal,
+            dual=primal - dual_gap,
+            dual_gap=dual_gap,
+            time=tot_time,
+            x=x,
+            v=v,
+            gamma=gamma,
+            f=f,
+            grad=grad!,
+            lmo=lmo,
+            cache_size=length(lmo),
+            gradient=gradient,
+            tt=tt,
+        )
+
+        if callback(state) === true
+            break
         end
 
         x = muladd_memory_mode(memory_mode, x, gamma, d)
-
-        if verbose && (mod(t, print_iter) == 0 || tt == dualstep)
-            if t == 0
-                tt = initial
-            end
-            rep = (
-                st[Symbol(tt)],
-                string(t),
-                Float64(primal),
-                Float64(primal - dual_gap),
-                Float64(dual_gap),
-                tot_time,
-                t / tot_time,
-                length(lmo),
-            )
-            print_callback(rep, format_string)
-            flush(stdout)
-        end
         t += 1
     end
 
     # recompute everything once for final verfication / do not record to trajectory though for now!
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
     # hence the final computation.
+    tt = last
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
-
-    if verbose
-        tt = last
-        tot_time = (time_ns() - time_start) / 1.0e9
-        rep = (
-            st[Symbol(tt)],
-            string(t - 1),
-            Float64(primal),
-            Float64(primal - dual_gap),
-            Float64(dual_gap),
-            tot_time,
-            t / tot_time,
-            length(lmo),
+    gamma = perform_line_search(
+        line_search,
+        t,
+        f,
+        grad!,
+        gradient,
+        x,
+        d,
+        1.0,
+        linesearch_workspace,
+        memory_mode
+    )
+    tot_time = (time_ns() - time_start) / 1.0e9
+    
+    if callback !== nothing
+        state = (
+            t=t,
+            primal=primal,
+            dual=primal - dual_gap,
+            dual_gap=dual_gap,
+            time=tot_time,
+            x=x,
+            v=v,
+            gamma=gamma,
+            f=f,
+            grad=grad!,
+            lmo=lmo,
+            cache_size=length(lmo),
+            gradient=gradient,
+            tt=tt,
         )
-        print_callback(rep, format_string)
-        print_callback(nothing, format_string, print_footer=true)
-        flush(stdout)
+
+        callback(state)
     end
     return x, v, primal, dual_gap, traj_data
 end
@@ -460,14 +503,28 @@ function stochastic_frank_wolfe(
     batch_size=length(f.xs) ÷ 10 + 1,
     batch_iterator=nothing,
     full_evaluation=false,
-    callback=nothing,
+    stop_criterion=nothing,
+    traj_data=[],
     timeout=Inf,
-    print_callback=print_callback,
     linesearch_workspace=nothing,
 )
 
     # format string for output of the algorithm
     format_string = "%6s %13s %14e %14e %14e %14e %14e %6i\n"
+    headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "batch size")
+    function format_state(state)
+        rep = (
+            st[Symbol(state.tt)],
+            string(state.t),
+            Float64(state.primal),
+            Float64(state.primal - state.dual_gap),
+            Float64(state.dual_gap),
+            state.time,
+            state.t / state.time,
+            state.batch_size,
+        )
+        return rep
+    end
 
     t = 0
     dual_gap = Inf
@@ -476,10 +533,15 @@ function stochastic_frank_wolfe(
     x = x0
     d = similar(x)
     tt = regular
-    traj_data = []
-    if trajectory && callback === nothing
-        callback = trajectory_callback(traj_data)
+
+    if trajectory
+        f = TrackingObjective(f)
+        # grad! = TrackingGradient(grad!) 
+        lmo = TrackingLMO(lmo)
     end
+
+    callback = make_callback(traj_data, stop_criterion, verbose, trajectory, print_iter, headers, format_string, format_state)
+
     time_start = time_ns()
 
     if line_search == Shortstep && L == Inf
@@ -506,8 +568,6 @@ function stochastic_frank_wolfe(
         if memory_mode isa InplaceEmphasis
             @info("In memory_mode memory iterates are written back into x0!")
         end
-        headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "batch size")
-        print_callback(headers, format_string, print_header=true)
     end
 
     if memory_mode isa InplaceEmphasis && !isa(x, Union{Array, SparseArrays.AbstractSparseArray})
@@ -591,69 +651,51 @@ function stochastic_frank_wolfe(
         # so nothing is passed as function 
         gamma = perform_line_search(line_search, t, nothing, nothing, gradient, x, x - v, 1.0, linesearch_workspace, memory_mode)
 
-        if callback !== nothing
-            state = (
-                t=t,
-                primal=primal,
-                dual=primal - dual_gap,
-                dual_gap=dual_gap,
-                time=tot_time,
-                x=x,
-                v=v,
-                gamma=gamma,
-                gradient=gradient,
-            )
-            callback(state)
-        end
+        state = (
+            t=t,
+            primal=primal,
+            dual=primal - dual_gap,
+            dual_gap=dual_gap,
+            time=tot_time,
+            x=x,
+            v=v,
+            gamma=gamma,
+            gradient=gradient,
+        )
+        callback(state)
 
         d = muladd_memory_mode(memory_mode, d, x, v)
         x = muladd_memory_mode(memory_mode, x, gamma, d)
 
-        if mod(t, print_iter) == 0 && verbose
-            tt = regular
-            if t == 0
-                tt = initial
-            end
-            rep = (
-                st[Symbol(tt)],
-                string(t),
-                Float64(primal),
-                Float64(primal - dual_gap),
-                Float64(dual_gap),
-                tot_time,
-                t / tot_time,
-                batch_size,
-            )
-            print_callback(rep, format_string)
-            flush(stdout)
-        end
         t += 1
     end
     # recompute everything once for final verfication / no additional callback call
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
     # hence the final computation.
     # last computation done with full evaluation for exact gradient
-
+    tt = last
     (primal, gradient) = compute_value_gradient(f, x, full_evaluation=true)
     v = compute_extreme_point(lmo, gradient)
     # @show (gradient, primal)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
-    if verbose
-        tt = last
-        tot_time = (time_ns() - time_start) / 1.0e9
-        rep = (
-            st[Symbol(tt)],
-            string(t - 1),
-            Float64(primal),
-            Float64(primal - dual_gap),
-            Float64(dual_gap),
-            tot_time,
-            t / tot_time,
-            batch_size
-        )
-        print_callback(rep, format_string)
-        print_callback(nothing, format_string, print_footer=true)
-        flush(stdout)
-    end
+    gamma = perform_line_search(line_search, t, nothing, nothing, gradient, x, x - v, 1.0, linesearch_workspace, memory_mode)
+
+    tot_time = (time_ns() - time_start) / 1.0e9
+
+    state = (
+        t=t,
+        primal=primal,
+        dual=primal - dual_gap,
+        dual_gap=dual_gap,
+        time=tot_time,
+        x=x,
+        v=v,
+        gamma=gamma,
+        gradient=gradient,
+        tt= tt,
+    )
+
+    callback(state)
+
     return x, v, primal, dual_gap, traj_data
 end
