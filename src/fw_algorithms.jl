@@ -475,7 +475,8 @@ end
 """
     stochastic_frank_wolfe(f::StochasticObjective, lmo, x0; ...)
 Stochastic version of Frank-Wolfe, evaluates the objective and gradient stochastically,
-implemented through the [FrankWolfe.StochasticObjective](@ref) interface.
+implemented through the [`FrankWolfe.StochasticObjective`](@ref) interface.
+
 Keyword arguments include `batch_size` to pass a fixed `batch_size`
 or a `batch_iterator` implementing
 `batch_size = FrankWolfe.batchsize_iterate(batch_iterator)` for algorithms like
