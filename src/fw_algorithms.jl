@@ -166,6 +166,7 @@ function frank_wolfe(
                 f=f,
                 grad! =grad!,
                 lmo=lmo,
+                gradient=gradient,
             )
             callback(state)
         end
