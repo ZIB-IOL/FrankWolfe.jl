@@ -24,7 +24,7 @@ function frank_wolfe(
     verbose=false,
     memory_mode::MemoryEmphasis=InplaceEmphasis(),
     gradient=nothing,
-    stop_criterion=nothing,
+    callback=nothing,
     traj_data=[],
     timeout=Inf,
     print_callback=print_callback,
@@ -54,14 +54,13 @@ function frank_wolfe(
     x = x0
     tt = regular
 
-    if trajectory
-        f = TrackingObjective(f)
-        grad! = TrackingGradient(grad!)
-        lmo = TrackingLMO(lmo)
+    if verbose 
+        callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
     end
 
-    callback = make_callback(traj_data, stop_criterion, verbose, trajectory, print_iter, headers, format_string, format_state)
-
+    if trajectory
+        callback = make_trajectory_callback(callback, traj_data, trajectory)
+    end
 
     time_start = time_ns()
 
@@ -172,25 +171,25 @@ function frank_wolfe(
             linesearch_workspace,
             memory_mode
         )
-
-        state = (
-            t=t,
-            primal=primal,
-            dual=primal - dual_gap,
-            dual_gap=dual_gap,
-            time=tot_time,
-            x=x,
-            v=v,
-            gamma=gamma,
-            f=f,
-            grad=grad!,
-            lmo=lmo,
-            tt=tt,
-        )
-        if callback(state) === true
-            break
+        if callback !== nothing 
+            state = (
+                t=t,
+                primal=primal,
+                dual=primal - dual_gap,
+                dual_gap=dual_gap,
+                time=tot_time,
+                x=x,
+                v=v,
+                gamma=gamma,
+                f=f,
+                grad=grad!,
+                lmo=lmo,
+                tt=tt,
+            )
+            if callback(state) == true
+                break
+            end
         end
-
 
         x = muladd_memory_mode(memory_mode, x, gamma, d)
 
@@ -218,22 +217,23 @@ function frank_wolfe(
     )
     tot_time = (time_ns() - time_start) / 1.0e9
 
-    state = (
-        t=t,
-        primal=primal,
-        dual=primal - dual_gap,
-        dual_gap=dual_gap,
-        time=tot_time,
-        x=x,
-        v=v,
-        gamma=gamma,
-        f=f,
-        grad=grad!,
-        lmo=lmo,
-        tt=tt,
-    )
-
+    if callback !== nothing 
+        state = (
+            t=t,
+            primal=primal,
+            dual=primal - dual_gap,
+            dual_gap=dual_gap,
+            time=tot_time,
+            x=x,
+            v=v,
+            gamma=gamma,
+            f=f,
+            grad=grad!,
+            lmo=lmo,
+            tt=tt,
+        )
         callback(state)
+    end
     
     return x, v, primal, dual_gap, traj_data
 end
@@ -263,7 +263,7 @@ function lazified_conditional_gradient(
     verbose=false,
     memory_mode::MemoryEmphasis=InplaceEmphasis(),
     gradient=nothing,
-    stop_criterion=nothing,
+    callback=nothing,
     traj_data=[],
     VType=typeof(x0),
     timeout=Inf,
@@ -308,8 +308,14 @@ function lazified_conditional_gradient(
     phi = Inf
     tt = regular
 
-    callback = make_callback(traj_data, stop_criterion, verbose, trajectory, print_iter, headers, format_string, format_state)
+    if verbose 
+        callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
+    end
 
+    if trajectory
+        callback = make_trajectory_callback(callback, traj_data, trajectory)
+    end
+    
     time_start = time_ns()
 
     if line_search isa Agnostic || line_search isa Nonconvex
@@ -402,25 +408,27 @@ function lazified_conditional_gradient(
             memory_mode
         )
 
-        state = (
-            t=t,
-            primal=primal,
-            dual=primal - dual_gap,
-            dual_gap=dual_gap,
-            time=tot_time,
-            x=x,
-            v=v,
-            gamma=gamma,
-            f=f,
-            grad=grad!,
-            lmo=lmo,
-            cache_size=length(lmo),
-            gradient=gradient,
-            tt=tt,
-        )
+        if callback !== nothing
+            state = (
+                t=t,
+                primal=primal,
+                dual=primal - dual_gap,
+                dual_gap=dual_gap,
+                time=tot_time,
+                x=x,
+                v=v,
+                gamma=gamma,
+                f=f,
+                grad=grad!,
+                lmo=lmo,
+                cache_size=length(lmo),
+                gradient=gradient,
+                tt=tt,
+            )
 
-        if callback(state) === true
-            break
+            if callback(state) == true
+                break
+            end
         end
 
         x = muladd_memory_mode(memory_mode, x, gamma, d)
@@ -466,7 +474,6 @@ function lazified_conditional_gradient(
             gradient=gradient,
             tt=tt,
         )
-
         callback(state)
     end
     return x, v, primal, dual_gap, traj_data
