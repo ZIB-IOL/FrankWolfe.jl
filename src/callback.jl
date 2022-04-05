@@ -94,32 +94,39 @@ end
     The state data is only the 5 first fields, gamma and 3 call counters, usually
 `(t, primal, dual, dual_gap, time, gamma, function_calls, gradient_calls, lmo_calls)`
 """
-function make_callback(traj_data, stop_criterion, verbose, trajectory, print_iter, headers, format_string, format_state)
-    return function callback(state)
+function make_print_callback(callback, print_iter, headers, format_string, format_state)
+    return function callback_with_prints(state)
+        if mod(state.t, print_iter) == 0
+            if state.t == 0
+                state = merge(state,(tt=initial,))
+                print_callback(headers, format_string, print_header=true)
+            end
+            rep = format_state(state)
+            print_callback(rep, format_string)
+            flush(stdout)
+        end 
+
+        if (state.tt == last)
+            rep = format_state(state)
+            print_callback(rep, format_string)
+            print_callback(nothing, format_string, print_footer=true)
+            flush(stdout)
+        end
+        if callback !== nothing
+            callback(state)
+        else 
+            return false
+        end
+    end
+end
+
+function make_trajectory_callback(callback, traj_data, trajectory)
+    return function callback_with_trajectory(state)
         if trajectory && (state.tt !== last)
             push_state(state, traj_data)
         end
-        if verbose 
-            if mod(state.t, print_iter) == 0
-                if state.t == 0
-                    state = merge(state,(tt=initial,))
-                    print_callback(headers, format_string, print_header=true)
-                end
-                rep = format_state(state)
-                print_callback(rep, format_string)
-                flush(stdout)
-            end 
-
-            if (state.tt == last)
-                rep = format_state(state)
-                print_callback(rep, format_string)
-                print_callback(nothing, format_string, print_footer=true)
-                flush(stdout)
-            end
-        end
-        
-        if stop_criterion !== nothing
-            return stop_criterion(state)
+        if callback !== nothing
+        callback(state)
         else 
             return false
         end
