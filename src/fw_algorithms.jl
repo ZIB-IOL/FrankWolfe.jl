@@ -172,26 +172,26 @@ function frank_wolfe(
             linesearch_workspace,
             memory_mode
         )
-
-        state = (
-            t=t,
-            primal=primal,
-            dual=primal - dual_gap,
-            dual_gap=dual_gap,
-            time=tot_time,
-            x=x,
-            v=v,
-            gamma=gamma,
-            f=f,
-            grad=grad!,
-            lmo=lmo,
-            tt=tt,
-        )
-        if callback(state) === true
-            break
+        if callback !== nothing
+            state = (
+                t=t,
+                primal=primal,
+                dual=primal - dual_gap,
+                dual_gap=dual_gap,
+                time=tot_time,
+                x=x,
+                v=v,
+                gamma=gamma,
+                f=f,
+                grad! =grad!,
+                lmo=lmo,
+                gradient=gradient,
+            )
+            if callback(state) === true
+                break
+            end
         end
-
-
+  
         x = muladd_memory_mode(memory_mode, x, gamma, d)
 
         t = t + 1

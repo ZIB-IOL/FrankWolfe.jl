@@ -1,12 +1,9 @@
-using Pkg
-Pkg.activate(@__DIR__)
-
 using Random
 
 # for bug with display
 ENV["GKSwstype"] = "100"
 
-example_files = filter(readdir(@__DIR__, join=true)) do f
+const example_files = filter(readdir(@__DIR__, join=true)) do f
     endswith(f, ".jl") && !occursin("large", f) && !occursin("result", f) && !occursin("activate.jl", f) && !occursin("plot_utils.jl", f)
 end
 
@@ -18,7 +15,11 @@ else
     @info "Running all examples"
 end
 
+const activate_file = joinpath(@__DIR__, "activate.jl")
+const plot_file = joinpath(@__DIR__, "plot_utils.jl")
+
 for file in example_files[example_shuffle]
-    @info "running example $file"
-    run(`julia $file`)
+    @info "Including example $file"
+    instruction = """include("$activate_file"); include("$plot_file"); include("$file")"""
+    run(`julia -e $instruction`)
 end
