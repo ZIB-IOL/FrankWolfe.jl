@@ -48,12 +48,7 @@ end
 
 function push_state(state,storage)
     base_tuple = Tuple(state)[1:5]
-    if typeof(state.lmo) <: CachedLinearMinimizationOracle
-        complete_tuple = tuple(base_tuple..., state.gamma, state.f.counter, state.grad.counter, state.lmo.inner.counter)
-    else
-        complete_tuple = tuple(base_tuple..., state.gamma, state.f.counter, state.grad.counter, state.lmo.counter)
-    end
-    push!(storage, complete_tuple)
+    push!(storage, base_tuple)
 end
 
 function print_callback(data, format_string; print_header=false, print_footer=false)
