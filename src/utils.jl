@@ -41,7 +41,7 @@ function muladd_memory_mode(memory_mode::MemoryEmphasis, storage, x, gamma::Real
 end
 
 ##############################################################
-# simple benchmark of elementary costs of oracles and 
+# simple benchmark of elementary costs of oracles and
 # critical components
 ##############################################################
 
@@ -109,7 +109,9 @@ function benchmark_oracles(f, grad!, x_gen, lmo; k=100, nocache=true)
 end
 
 """
-`isequal` without the checks. Assumes a and b have the same axes.
+    _unsafe_equal(a, b)
+
+Like `isequal` on arrays but without the checks. Assumes a and b have the same axes.
 """
 function _unsafe_equal(a::AbstractArray, b::AbstractArray)
     if a === b
@@ -228,7 +230,7 @@ Batch iterator always returning a constant batch size.
 struct ConstantBatchIterator
     batch_size::Int
 end
- 
+
 batchsize_iterate(cbi::ConstantBatchIterator) = cbi.batch_size
 
 """

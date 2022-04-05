@@ -315,7 +315,7 @@ function lazified_conditional_gradient(
     if trajectory
         callback = make_trajectory_callback(callback, traj_data, trajectory)
     end
-    
+
     time_start = time_ns()
 
     if line_search isa Agnostic || line_search isa Nonconvex
