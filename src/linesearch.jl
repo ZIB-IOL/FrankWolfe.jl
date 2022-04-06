@@ -209,7 +209,7 @@ function perform_line_search(
     d,
     gamma_max,
     storage,
-    memory_mode
+    memory_mode,
 )
     gamma = gamma_max * one(line_search.tau)
     i = 0
