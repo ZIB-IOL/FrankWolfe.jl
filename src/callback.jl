@@ -80,7 +80,7 @@ function make_trajectory_callback(callback, traj_data, trajectory)
             push_state(state, traj_data)
         end
         if callback !== nothing
-        callback(state)
+            callback(state)
         else 
             return false
         end
