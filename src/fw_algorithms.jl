@@ -184,6 +184,7 @@ function frank_wolfe(
                 f=f,
                 grad=grad!,
                 lmo=lmo,
+                gradient=gradient,
                 tt=tt,
             )
             if callback(state) == true
@@ -203,18 +204,6 @@ function frank_wolfe(
     v = compute_extreme_point(lmo, gradient, v=v)
     primal = f(x)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
-    gamma = perform_line_search(
-        line_search,
-        t,
-        f,
-        grad!,
-        gradient,
-        x,
-        d,
-        1.0,
-        linesearch_workspace,
-        memory_mode
-    )
     tot_time = (time_ns() - time_start) / 1.0e9
 
     if callback !== nothing 
@@ -230,6 +219,7 @@ function frank_wolfe(
             f=f,
             grad=grad!,
             lmo=lmo,
+            gradient=gradient,
             tt=tt,
         )
         callback(state)
@@ -443,18 +433,6 @@ function lazified_conditional_gradient(
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
-    gamma = perform_line_search(
-        line_search,
-        t,
-        f,
-        grad!,
-        gradient,
-        x,
-        d,
-        1.0,
-        linesearch_workspace,
-        memory_mode
-    )
     tot_time = (time_ns() - time_start) / 1.0e9
     
     if callback !== nothing
