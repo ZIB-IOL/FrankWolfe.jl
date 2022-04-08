@@ -205,7 +205,18 @@ function frank_wolfe(
     primal = f(x)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
     tot_time = (time_ns() - time_start) / 1.0e9
-
+    gamma = perform_line_search(
+        line_search,
+        t,
+        f,
+        grad!,
+        gradient,
+        x,
+        d,
+        1.0,
+        linesearch_workspace,
+        memory_mode
+    )
     if callback !== nothing 
         state = (
             t=t,
@@ -434,7 +445,18 @@ function lazified_conditional_gradient(
     primal = f(x)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
     tot_time = (time_ns() - time_start) / 1.0e9
-    
+    gamma = perform_line_search(
+        line_search,
+        t,
+        f,
+        grad!,
+        gradient,
+        x,
+        d,
+        1.0,
+        linesearch_workspace,
+        memory_mode
+    )
     if callback !== nothing
         state = (
             t=t,
