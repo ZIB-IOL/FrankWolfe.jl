@@ -1,4 +1,10 @@
+"""
+    push_state(state,storage)
 
+Pushes the state at each iteration to the passed storage.
+The state data is only the 5 first fields, usually:
+`(t,primal,dual,dual_gap,time)`
+"""
 function push_state(state,storage)
     base_tuple = Tuple(state)[1:5]
     push!(storage, base_tuple)
