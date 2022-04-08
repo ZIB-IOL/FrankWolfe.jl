@@ -71,7 +71,7 @@ tlmo_prob.counter = 0
 storage = []
 
 # Now define our own trajectory logging function that extends 
-# the default logging  (iterations,primal, dual, dual_gap, time)with ".counter" field arguments present in the tracking functions.
+# the five default logging (iterations,primal, dual, dual_gap, time) with ".counter" field arguments present in the tracking functions.
 # (this function works for both vanilla and lazified frank_wolfe versions)
 
 function push_tracking_state(state,storage)
