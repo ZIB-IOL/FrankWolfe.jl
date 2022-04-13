@@ -195,7 +195,7 @@ function away_frank_wolfe(
                 gradient,
                 x,
                 d,
-                1.0,
+                gamma_max,
                 linesearch_workspace,
                 memory_mode
             )

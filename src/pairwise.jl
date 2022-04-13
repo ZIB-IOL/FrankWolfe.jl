@@ -178,7 +178,7 @@ function blended_pairwise_conditional_gradient(
                 gradient,
                 x,
                 d,
-                1.0,
+                gamma_max,
                 linesearch_workspace,
                 memory_mode
             )
