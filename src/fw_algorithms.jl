@@ -187,7 +187,7 @@ function frank_wolfe(
                 gradient=gradient,
                 tt=tt,
             )
-            if callback(state) == true
+            if callback(state) == false
                 break
             end
         end
@@ -427,7 +427,7 @@ function lazified_conditional_gradient(
                 tt=tt,
             )
 
-            if callback(state) == true
+            if callback(state) == false
                 break
             end
         end

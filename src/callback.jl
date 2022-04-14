@@ -10,6 +10,12 @@ function push_state(state,storage)
     push!(storage, base_tuple)
 end
 
+"""
+    print_callback(state,storage)
+
+Handles formating of the callback state into a table format with consistent length independent of state values.
+"""
+
 function print_callback(data, format_string; print_header=false, print_footer=false)
     print_formatted(fmt, args...) = @eval @printf($fmt, $(args...))
     if print_header || print_footer
@@ -42,11 +48,11 @@ function print_callback(data, format_string; print_header=false, print_footer=fa
 end
 
 """
-    Callback for fw_algorithms
-    If verbose is true, prints the state to the console after print_iter iterations.
-    If trajectory is true, adds the state to the storage variable.
-    The state data is only the 5 first fields, gamma and 3 call counters, usually
-`(t, primal, dual, dual_gap, time, gamma, function_calls, gradient_calls, lmo_calls)`
+    make_print_callback(callback, print_iter, headers, format_string, format_state)
+
+Default verbose callback for fw_algorithms, that wraps around previous callback. 
+Prints the state to the console after print_iter iterations.
+If the callback to be wrapped is of type nothing, always return true to enforce boolean output for non-nothing callbacks.
 """
 function make_print_callback(callback, print_iter, headers, format_string, format_state)
     return function callback_with_prints(state)
@@ -69,11 +75,21 @@ function make_print_callback(callback, print_iter, headers, format_string, forma
         if callback !== nothing
             callback(state)
         else 
-            return false
+            return true
         end
     end
 end
 
+
+"""
+make_trajectory_callback(callback, traj_data, trajectory)
+
+Default trajectory logging callback for fw_algorithms, that wraps around previous callback. 
+If trajectory is true, adds the state to the storage variable.
+The state data is only the 5 first fields, usually:
+`(t, primal, dual, dual_gap, time)`
+If the callback to be wrapped is of type nothing, always return true to enforce boolean output for non-nothing callbacks.
+"""
 function make_trajectory_callback(callback, traj_data, trajectory)
     return function callback_with_trajectory(state)
         if trajectory && (state.tt !== last)
@@ -82,7 +98,7 @@ function make_trajectory_callback(callback, traj_data, trajectory)
         if callback !== nothing
             callback(state)
         else 
-            return false
+            return true
         end
     end
 end

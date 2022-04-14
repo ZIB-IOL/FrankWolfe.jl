@@ -88,11 +88,8 @@ end
 # we can return a boolean stop criterion that will halt the optimization if the pimal objective function is evaluated more than 500 times.
 function make_callback(storage)
     return function callback(state)
-        if state.primal < Inf && isdefined(Base,:primal_limit) == false
-            primal_limit = state.primal
-        end
         push_tracking_state(state,storage)
-        return state.f.counter > 500
+        return state.f.counter < 500
     end
 end
 
