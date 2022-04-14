@@ -7,9 +7,9 @@ The oracle call sets the direction and reruns the optimizer.
 
 The `direction` vector has to be set in the same order of variables as the `MOI.ListOfVariableIndices()` getter.
 
-The Boolean `use_modify` determines if the objective in`compute_extreme_point` is updated with 
-`MOI.modify(o, ::MOI.ObjectiveFunction, ::MOI.ScalarCoefficientChange)` or with `MOI.set(o, ::MOI.ObjectiveFunction, f)`. 
-`use_modify = true` decreases the runtime and memory allocation for models created as an optimizer object and defined directly 
+The Boolean `use_modify` determines if the objective in`compute_extreme_point` is updated with
+`MOI.modify(o, ::MOI.ObjectiveFunction, ::MOI.ScalarCoefficientChange)` or with `MOI.set(o, ::MOI.ObjectiveFunction, f)`.
+`use_modify = true` decreases the runtime and memory allocation for models created as an optimizer object and defined directly
 with MathOptInterface. `use_modify = false` should be used for CachingOptimizers.
 """
 struct MathOptLMO{OT<:MOI.AbstractOptimizer} <: LinearMinimizationOracle
@@ -97,11 +97,11 @@ function compute_extreme_point(
         for t in terms
             MOI.modify(
                 lmo.o,
-                MOI.ObjectiveFunction{MOI.ScalarAffineFunction{T}}(), 
+                MOI.ObjectiveFunction{MOI.ScalarAffineFunction{T}}(),
                 MOI.ScalarCoefficientChange(t.variable,t.coefficient),
             )
         end
-    else 
+    else
         variables = [d.variable for d in direction]
         obj = MOI.ScalarAffineFunction(direction, zero(T))
         MOI.set(lmo.o, MOI.ObjectiveFunction{typeof(obj)}(), obj)

@@ -1,14 +1,3 @@
-"""
-    push_state(state,storage)
-
-Pushes the state at each iteration to the passed storage.
-The state data is only the 5 first fields, usually:
-`(t,primal,dual,dual_gap,time)`
-"""
-function push_state(state,storage)
-    base_tuple = Tuple(state)[1:5]
-    push!(storage, base_tuple)
-end
 
 """
     print_callback(state,storage)
@@ -72,17 +61,16 @@ function make_print_callback(callback, print_iter, headers, format_string, forma
             print_callback(nothing, format_string, print_footer=true)
             flush(stdout)
         end
-        if callback !== nothing
-            callback(state)
-        else 
+        if callback === nothing
             return true
         end
+        return callback(state)
     end
 end
 
 
 """
-make_trajectory_callback(callback, traj_data, trajectory)
+    make_trajectory_callback(callback, traj_data, trajectory)
 
 Default trajectory logging callback for fw_algorithms, that wraps around previous callback. 
 If trajectory is true, adds the state to the storage variable.
@@ -90,15 +78,14 @@ The state data is only the 5 first fields, usually:
 `(t, primal, dual, dual_gap, time)`
 If the callback to be wrapped is of type nothing, always return true to enforce boolean output for non-nothing callbacks.
 """
-function make_trajectory_callback(callback, traj_data, trajectory)
+function make_trajectory_callback(callback, traj_data::Vector, trajectory::Bool)
     return function callback_with_trajectory(state)
-        if trajectory && (state.tt !== last)
-            push_state(state, traj_data)
+        if trajectory && state.tt !== last
+            push!(traj_data, Tuple(state)[1:5])
         end
-        if callback !== nothing
-            callback(state)
-        else 
+        if callback === nothing
             return true
         end
+        return callback(state)
     end
 end

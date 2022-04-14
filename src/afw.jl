@@ -59,7 +59,7 @@ function away_frank_wolfe(
     )
 end
 
-# step away FrankWolfe with the active set given as parameter 
+# step away FrankWolfe with the active set given as parameter
 # note: in this case I don't need x0 as it is given by the active set and might otherwise lead to confusion
 function away_frank_wolfe(
     f,
