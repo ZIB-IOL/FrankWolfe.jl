@@ -80,12 +80,29 @@ function away_frank_wolfe(
     gradient=nothing,
     renorm_interval=1000,
     callback=nothing,
+    traj_data=[],
     timeout=Inf,
     print_callback=print_callback,
     linesearch_workspace=nothing,
 )
     # format string for output of the algorithm
     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
+    headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "#ActiveSet")
+    function format_state(state)
+        rep = (
+            st[Symbol(tt)],
+            string(t),
+            Float64(primal),
+            Float64(primal - dual_gap),
+            Float64(dual_gap),
+            tot_time,
+            t / tot_time,
+            length(active_set),
+        )
+        return rep
+    end
+
+
     if isempty(active_set)
         throw(ArgumentError("Empty active set"))
     end
@@ -95,10 +112,15 @@ function away_frank_wolfe(
     primal = Inf
     x = get_active_set_iterate(active_set)
     tt = regular
-    traj_data = []
-    if trajectory && callback === nothing
-        callback = trajectory_callback(traj_data)
+
+    if verbose 
+        callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
     end
+
+    if trajectory
+        callback = make_trajectory_callback(callback, traj_data, trajectory)
+    end
+
     time_start = time_ns()
 
     d = similar(x)
@@ -116,9 +138,6 @@ function away_frank_wolfe(
         if memory_mode isa InplaceEmphasis
             @info("In memory_mode memory iterates are written back into x0!")
         end
-        headers =
-            ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "#ActiveSet")
-        print_callback(headers, format_string, print_header=true)
     end
 
     # likely not needed anymore as now the iterates are provided directly via the active set
@@ -230,25 +249,9 @@ function away_frank_wolfe(
                 active_set=active_set,
                 gradient=gradient,
             )
-            callback(state)
-        end
-
-        if verbose && (mod(t, print_iter) == 0 || tt == dualstep)
-            if t == 0
-                tt = initial
+            if callback(state) == false
+                break
             end
-            rep = (
-                st[Symbol(tt)],
-                string(t),
-                Float64(primal),
-                Float64(primal - dual_gap),
-                Float64(dual_gap),
-                tot_time,
-                t / tot_time,
-                length(active_set),
-            )
-            print_callback(rep, format_string)
-            flush(stdout)
         end
         t += 1
     end
@@ -258,25 +261,29 @@ function away_frank_wolfe(
     # hence the final computation.
     # do also cleanup of active_set due to many operations on the same set
 
-    if verbose
-        x = get_active_set_iterate(active_set)
-        grad!(gradient, x)
-        v = compute_extreme_point(lmo, gradient)
-        primal = f(x)
-        dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
-        tt = last
-        rep = (
-            st[Symbol(tt)],
-            string(t - 1),
-            Float64(primal),
-            Float64(primal - dual_gap),
-            Float64(dual_gap),
-            (time_ns() - time_start) / 1.0e9,
-            t / ((time_ns() - time_start) / 1.0e9),
-            length(active_set),
+    x = get_active_set_iterate(active_set)
+    grad!(gradient, x)
+    v = compute_extreme_point(lmo, gradient)
+    primal = f(x)
+    dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
+    tt = last
+    if callback !== nothing 
+        state = (
+            t=t,
+            primal=primal,
+            dual=primal - dual_gap,
+            dual_gap=dual_gap,
+            time=tot_time,
+            x=x,
+            v=v,
+            gamma=gamma,
+            f=f,
+            grad=grad!,
+            lmo=lmo,
+            gradient=gradient,
+            tt=tt,
         )
-        print_callback(rep, format_string)
-        flush(stdout)
+        callback(state)
     end
 
     active_set_renormalize!(active_set)
@@ -286,21 +293,24 @@ function away_frank_wolfe(
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
-    if verbose
-        tt = pp
-        rep = (
-            st[Symbol(tt)],
-            string(t - 1),
-            Float64(primal),
-            Float64(primal - dual_gap),
-            Float64(dual_gap),
-            (time_ns() - time_start) / 1.0e9,
-            t / ((time_ns() - time_start) / 1.0e9),
-            length(active_set),
+    tt = pp
+    if callback !== nothing 
+        state = (
+            t=t,
+            primal=primal,
+            dual=primal - dual_gap,
+            dual_gap=dual_gap,
+            time=tot_time,
+            x=x,
+            v=v,
+            gamma=gamma,
+            f=f,
+            grad=grad!,
+            lmo=lmo,
+            gradient=gradient,
+            tt=tt,
         )
-        print_callback(rep, format_string)
-        print_callback(nothing, format_string, print_footer=true)
-        flush(stdout)
+        callback(state)
     end
 
     return x, v, primal, dual_gap, traj_data, active_set
