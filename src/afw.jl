@@ -250,7 +250,7 @@ function away_frank_wolfe(
                 gradient=gradient,
                 tt=tt,
             )
-            if callback(state) == false
+            if callback(state) === false
                 break
             end
         end
