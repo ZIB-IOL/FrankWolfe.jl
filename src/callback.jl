@@ -66,7 +66,7 @@ function make_print_callback(callback, print_iter, headers, format_string, forma
             flush(stdout)
         end 
 
-        if (state.tt == last)
+        if (state.tt == "Last" || state.tt == "PP" )
             rep = format_state(state)
             print_callback(rep, format_string)
             print_callback(nothing, format_string, print_footer=true)
