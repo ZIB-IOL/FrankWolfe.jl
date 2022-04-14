@@ -515,6 +515,20 @@ function stochastic_frank_wolfe(
     format_string = "%6s %13s %14e %14e %14e %14e %14e %6i\n"
     headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "batch size")
 
+    function format_state(state)
+        rep = (
+            st[Symbol(state.tt)],
+            string(state.t),
+            Float64(state.primal),
+            Float64(state.primal - state.dual_gap),
+            Float64(state.dual_gap),
+            state.time,
+            state.t / state.time,
+            state.batch_size,
+        )
+        return rep
+    end
+
     t = 0
     dual_gap = Inf
     primal = Inf
@@ -651,6 +665,8 @@ function stochastic_frank_wolfe(
                 v=v,
                 gamma=gamma,
                 gradient=gradient,
+                tt=tt,
+                batch_size=batch_size,
             )
             callback(state)
         end
@@ -682,6 +698,7 @@ function stochastic_frank_wolfe(
             gamma=gamma,
             gradient=gradient,
             tt=tt,
+            batch_size=batch_size,
         )
         callback(state)
     end
