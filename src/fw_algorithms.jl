@@ -505,6 +505,7 @@ function stochastic_frank_wolfe(
     batch_iterator=nothing,
     full_evaluation=false,
     callback=nothing,
+    traj_data = [],
     timeout=Inf,
     print_callback=print_callback,
     linesearch_workspace=nothing,
@@ -512,6 +513,7 @@ function stochastic_frank_wolfe(
 
     # format string for output of the algorithm
     format_string = "%6s %13s %14e %14e %14e %14e %14e %6i\n"
+    headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "batch size")
 
     t = 0
     dual_gap = Inf
@@ -520,10 +522,15 @@ function stochastic_frank_wolfe(
     x = x0
     d = similar(x)
     tt = regular
-    traj_data = []
-    if trajectory && callback === nothing
-        callback = trajectory_callback(traj_data)
+
+    if verbose 
+        callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
     end
+
+    if trajectory
+        callback = make_trajectory_callback(callback, traj_data, trajectory)
+    end
+
     time_start = time_ns()
 
     if line_search == Shortstep && L == Inf
@@ -550,8 +557,6 @@ function stochastic_frank_wolfe(
         if memory_mode isa InplaceEmphasis
             @info("In memory_mode memory iterates are written back into x0!")
         end
-        headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "batch size")
-        print_callback(headers, format_string, print_header=true)
     end
 
     if memory_mode isa InplaceEmphasis && !isa(x, Union{Array, SparseArrays.AbstractSparseArray})
@@ -653,24 +658,6 @@ function stochastic_frank_wolfe(
         d = muladd_memory_mode(memory_mode, d, x, v)
         x = muladd_memory_mode(memory_mode, x, gamma, d)
 
-        if mod(t, print_iter) == 0 && verbose
-            tt = regular
-            if t == 0
-                tt = initial
-            end
-            rep = (
-                st[Symbol(tt)],
-                string(t),
-                Float64(primal),
-                Float64(primal - dual_gap),
-                Float64(dual_gap),
-                tot_time,
-                t / tot_time,
-                batch_size,
-            )
-            print_callback(rep, format_string)
-            flush(stdout)
-        end
         t += 1
     end
     # recompute everything once for final verfication / no additional callback call
@@ -682,22 +669,21 @@ function stochastic_frank_wolfe(
     v = compute_extreme_point(lmo, gradient)
     # @show (gradient, primal)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
-    if verbose
-        tt = last
-        tot_time = (time_ns() - time_start) / 1.0e9
-        rep = (
-            st[Symbol(tt)],
-            string(t - 1),
-            Float64(primal),
-            Float64(primal - dual_gap),
-            Float64(dual_gap),
-            tot_time,
-            t / tot_time,
-            batch_size
+    tt = last
+    if callback !== nothing
+        state = (
+            t=t,
+            primal=primal,
+            dual=primal - dual_gap,
+            dual_gap=dual_gap,
+            time=tot_time,
+            x=x,
+            v=v,
+            gamma=gamma,
+            gradient=gradient,
+            tt=tt,
         )
-        print_callback(rep, format_string)
-        print_callback(nothing, format_string, print_footer=true)
-        flush(stdout)
+        callback(state)
     end
     return x, v, primal, dual_gap, traj_data
 end
