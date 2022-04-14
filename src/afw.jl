@@ -90,14 +90,14 @@ function away_frank_wolfe(
     headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "#ActiveSet")
     function format_state(state)
         rep = (
-            st[Symbol(tt)],
-            string(t),
-            Float64(primal),
-            Float64(primal - dual_gap),
-            Float64(dual_gap),
-            tot_time,
-            t / tot_time,
-            length(active_set),
+            st[Symbol(state.tt)],
+            string(state.t),
+            Float64(state.primal),
+            Float64(state.primal - state.dual_gap),
+            Float64(state.dual_gap),
+            state.tot_time,
+            state.t / state.time,
+            length(state.active_set),
         )
         return rep
     end
@@ -248,6 +248,7 @@ function away_frank_wolfe(
                 gamma=gamma,
                 active_set=active_set,
                 gradient=gradient,
+                tt=tt,
             )
             if callback(state) == false
                 break
@@ -280,6 +281,7 @@ function away_frank_wolfe(
             f=f,
             grad=grad!,
             lmo=lmo,
+            active_set=active_set,
             gradient=gradient,
             tt=tt,
         )
@@ -307,6 +309,7 @@ function away_frank_wolfe(
             f=f,
             grad=grad!,
             lmo=lmo,
+            active_set=active_set,
             gradient=gradient,
             tt=tt,
         )
