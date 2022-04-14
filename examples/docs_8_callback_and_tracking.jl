@@ -109,8 +109,9 @@ FrankWolfe.lazified_conditional_gradient(
     line_search=FrankWolfe.Agnostic(),
     callback=callback,
 )
+
 total_iterations = storage[end][1]
 @show total_iterations
 @show tf.counter
 @show tgrad!.counter
-@show tlmo_prob.counter
+@show tlmo_prob.counter;
