@@ -270,7 +270,7 @@ function away_frank_wolfe(
     tt = last
     if callback !== nothing 
         state = (
-            t=t,
+            t=t-1,
             primal=primal,
             dual=primal - dual_gap,
             dual_gap=dual_gap,
@@ -298,7 +298,7 @@ function away_frank_wolfe(
     tt = pp
     if callback !== nothing 
         state = (
-            t=t,
+            t=t-1,
             primal=primal,
             dual=primal - dual_gap,
             dual_gap=dual_gap,
