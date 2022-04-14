@@ -95,7 +95,7 @@ function away_frank_wolfe(
             Float64(state.primal),
             Float64(state.primal - state.dual_gap),
             Float64(state.dual_gap),
-            state.tot_time,
+            state.time,
             state.t / state.time,
             length(state.active_set),
         )
@@ -268,6 +268,7 @@ function away_frank_wolfe(
     primal = f(x)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
     tt = last
+    tot_time= (time_ns()- time_start) / 1e9
     if callback !== nothing 
         state = (
             t=t-1,
@@ -296,6 +297,7 @@ function away_frank_wolfe(
     primal = f(x)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
     tt = pp
+    tot_time= (time_ns()- time_start) / 1e9
     if callback !== nothing 
         state = (
             t=t-1,
