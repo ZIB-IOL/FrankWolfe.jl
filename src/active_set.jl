@@ -145,7 +145,7 @@ end
 """
     get_active_set_iterate(active_set)
 
-Return the current iterate corresponding. Does not recompute it. 
+Return the current iterate corresponding. Does not recompute it.
 """
 function get_active_set_iterate(active_set)
     return active_set.x

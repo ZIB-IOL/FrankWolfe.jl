@@ -59,7 +59,7 @@ function away_frank_wolfe(
     )
 end
 
-# step away FrankWolfe with the active set given as parameter 
+# step away FrankWolfe with the active set given as parameter
 # note: in this case I don't need x0 as it is given by the active set and might otherwise lead to confusion
 function away_frank_wolfe(
     f,
@@ -230,7 +230,9 @@ function away_frank_wolfe(
                 active_set=active_set,
                 gradient=gradient,
             )
-            callback(state)
+            if callback(state) === false
+                break
+            end
         end
 
         if verbose && (mod(t, print_iter) == 0 || tt == dualstep)

@@ -171,7 +171,7 @@ function frank_wolfe(
             linesearch_workspace,
             memory_mode
         )
-        if callback !== nothing 
+        if callback !== nothing
             state = (
                 t=t,
                 primal=primal,
@@ -187,7 +187,7 @@ function frank_wolfe(
                 gradient=gradient,
                 tt=tt,
             )
-            if callback(state) == false
+            if callback(state) === false
                 break
             end
         end
@@ -217,7 +217,7 @@ function frank_wolfe(
         linesearch_workspace,
         memory_mode
     )
-    if callback !== nothing 
+    if callback !== nothing
         state = (
             t=t,
             primal=primal,
@@ -287,12 +287,6 @@ function lazified_conditional_gradient(
             length(state.lmo),
         )
         return rep
-    end
-
-    if trajectory
-        f = TrackingObjective(f)
-        grad! = TrackingGradient(grad!)
-        lmo_base = TrackingLMO(lmo_base)
     end
 
     if isfinite(cache_size)
@@ -427,7 +421,7 @@ function lazified_conditional_gradient(
                 tt=tt,
             )
 
-            if callback(state) == false
+            if callback(state) === false
                 break
             end
         end
