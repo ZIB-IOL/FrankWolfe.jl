@@ -95,7 +95,7 @@ function away_frank_wolfe(
             Float64(state.primal),
             Float64(state.primal - state.dual_gap),
             Float64(state.dual_gap),
-            state.tot_time,
+            state.time,
             state.t / state.time,
             length(state.active_set),
         )
