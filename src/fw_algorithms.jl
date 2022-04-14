@@ -219,7 +219,7 @@ function frank_wolfe(
     )
     if callback !== nothing
         state = (
-            t=t,
+            t=t-1,
             primal=primal,
             dual=primal - dual_gap,
             dual_gap=dual_gap,
@@ -278,7 +278,7 @@ function lazified_conditional_gradient(
     function format_state(state)
         rep = (
             st[Symbol(state.tt)],
-            string(state.t - 1),
+            string(state.t),
             Float64(state.primal),
             Float64(state.primal - state.dual_gap),
             Float64(state.dual_gap),
@@ -453,7 +453,7 @@ function lazified_conditional_gradient(
     )
     if callback !== nothing
         state = (
-            t=t,
+            t=t-1,
             primal=primal,
             dual=primal - dual_gap,
             dual_gap=dual_gap,
@@ -688,7 +688,7 @@ function stochastic_frank_wolfe(
     tt = last
     if callback !== nothing
         state = (
-            t=t,
+            t=t-1,
             primal=primal,
             dual=primal - dual_gap,
             dual_gap=dual_gap,
