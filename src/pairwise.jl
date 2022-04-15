@@ -90,8 +90,8 @@ function blended_pairwise_conditional_gradient(
             Float64(state.primal),
             Float64(state.primal - state.dual_gap),
             Float64(state.dual_gap),
-            (time_ns() - state.time_start) / 1.0e9,
-            t / ((time_ns() - state.time_start) / 1.0e9),
+            state.time,
+            state.t / state.time,
             length(state.active_set),
         )
         return rep
