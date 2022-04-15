@@ -97,22 +97,18 @@ function blended_pairwise_conditional_gradient(
         return rep
     end
 
-    if verbose 
-        callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
+    if trajectory && callback === nothing
+        callback = make_trajectory_callback(callback, traj_data, trajectory)
     end
 
-    if trajectory
-        callback = make_trajectory_callback(callback, traj_data, trajectory)
+    if verbose 
+        callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
     end
 
     t = 0
     primal = Inf
     x = get_active_set_iterate(active_set)
     tt = regular
-    traj_data = []
-    if trajectory && callback === nothing
-        callback = trajectory_callback(traj_data)
-    end
     time_start = time_ns()
 
     d = similar(x)
