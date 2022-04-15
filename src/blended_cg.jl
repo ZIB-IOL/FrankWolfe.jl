@@ -214,6 +214,7 @@ function blended_conditional_gradient(
                 active_set=active_set,
                 non_simplex_iter=non_simplex_iter,
                 gradient=gradient,
+                tt=tt,
             )
             if callback(state) === false
                 break
@@ -245,6 +246,7 @@ function blended_conditional_gradient(
             active_set=active_set,
             non_simplex_iter=non_simplex_iter,
             gradient=gradient,
+            tt=tt,
         )
         callback(state)
     end
@@ -274,6 +276,7 @@ function blended_conditional_gradient(
             active_set=active_set,
             non_simplex_iter=non_simplex_iter,
             gradient=gradient,
+            tt=tt,
         )
         callback(state)
     end
