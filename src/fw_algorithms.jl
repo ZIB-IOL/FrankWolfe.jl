@@ -27,7 +27,6 @@ function frank_wolfe(
     callback=nothing,
     traj_data=[],
     timeout=Inf,
-    print_callback=print_callback,
     linesearch_workspace=nothing,
 )
 
@@ -268,7 +267,6 @@ function lazified_conditional_gradient(
     traj_data=[],
     VType=typeof(x0),
     timeout=Inf,
-    print_callback=print_callback,
     linesearch_workspace=nothing,
 )
 
@@ -506,7 +504,6 @@ function stochastic_frank_wolfe(
     callback=nothing,
     traj_data = [],
     timeout=Inf,
-    print_callback=print_callback,
     linesearch_workspace=nothing,
 )
 
