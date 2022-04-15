@@ -665,7 +665,9 @@ function simplex_gradient_descent_over_probability_simplex(
                 dual_gap=tolerance,
                 time=tot_time,
                 x=x,
-                tt = tt,
+                tt=tt,
+                active_set=initial_point,
+                non_simplex_iter = non_simplex_iter,
             )
             callback(state)
         end
