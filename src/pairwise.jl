@@ -82,6 +82,28 @@ function blended_pairwise_conditional_gradient(
 
     # format string for output of the algorithm
     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
+    headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "#ActiveSet")
+    function format_state(state)
+        rep = (
+            st[Symbol(state.tt)],
+            string(state.t),
+            Float64(state.primal),
+            Float64(state.primal - state.dual_gap),
+            Float64(state.dual_gap),
+            (time_ns() - state.time_start) / 1.0e9,
+            t / ((time_ns() - state.time_start) / 1.0e9),
+            length(state.active_set),
+        )
+        return rep
+    end
+
+    if verbose 
+        callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
+    end
+
+    if trajectory
+        callback = make_trajectory_callback(callback, traj_data, trajectory)
+    end
 
     t = 0
     primal = Inf
@@ -108,9 +130,6 @@ function blended_pairwise_conditional_gradient(
         if memory_mode isa InplaceEmphasis
             @info("In memory_mode memory iterates are written back into x0!")
         end
-        headers =
-            ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "#ActiveSet")
-        print_callback(headers, format_string, print_header=true)
     end
 
     # likely not needed anymore as now the iterates are provided directly via the active set
@@ -250,26 +269,9 @@ function blended_pairwise_conditional_gradient(
                 gamma=gamma,
                 active_set=active_set,
                 gradient=gradient,
+                tt=tt,
             )
             callback(state)
-        end
-
-        if verbose && (mod(t, print_iter) == 0 || tt == dualstep)
-            if t == 0
-                tt = initial
-            end
-            rep = (
-                st[Symbol(tt)],
-                string(t),
-                Float64(primal),
-                Float64(primal - dual_gap),
-                Float64(dual_gap),
-                tot_time,
-                t / tot_time,
-                length(active_set),
-            )
-            print_callback(rep, format_string)
-            flush(stdout)
         end
         t += 1
     end
@@ -286,18 +288,23 @@ function blended_pairwise_conditional_gradient(
         primal = f(x)
         phi = fast_dot(x, gradient) - fast_dot(v, gradient)
         tt = last
-        rep = (
-            st[Symbol(tt)],
-            string(t - 1),
-            Float64(primal),
-            Float64(primal - dual_gap),
-            Float64(dual_gap),
-            (time_ns() - time_start) / 1.0e9,
-            t / ((time_ns() - time_start) / 1.0e9),
-            length(active_set),
-        )
-        print_callback(rep, format_string)
-        flush(stdout)
+        tot_time = (time_ns() - time_start) / 1e9
+        if callback !== nothing
+            state = (
+                t=t-1,
+                primal=primal,
+                dual=primal - dual_gap,
+                dual_gap=phi,
+                time=tot_time,
+                x=x,
+                v=vertex_taken,
+                gamma=gamma,
+                active_set=active_set,
+                gradient=gradient,
+                tt=tt,
+            )
+            callback(state)
+        end
     end
     active_set_renormalize!(active_set)
     active_set_cleanup!(active_set)
@@ -306,21 +313,23 @@ function blended_pairwise_conditional_gradient(
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
-    if verbose
-        tt = pp
-        rep = (
-            st[Symbol(tt)],
-            string(t - 1),
-            Float64(primal),
-            Float64(primal - dual_gap),
-            Float64(dual_gap),
-            (time_ns() - time_start) / 1.0e9,
-            t / ((time_ns() - time_start) / 1.0e9),
-            length(active_set),
+    tt = pp
+    tot_time = (time_ns() - time_start) / 1e9
+    if callback !== nothing
+        state = (
+            t=t-1,
+            primal=primal,
+            dual=primal - dual_gap,
+            dual_gap=phi,
+            time=tot_time,
+            x=x,
+            v=vertex_taken,
+            gamma=gamma,
+            active_set=active_set,
+            gradient=gradient,
+            tt=tt,
         )
-        print_callback(rep, format_string)
-        print_callback(nothing, format_string, print_footer=true)
-        flush(stdout)
+        callback(state)
     end
 
     return x, v, primal, dual_gap, traj_data, active_set
