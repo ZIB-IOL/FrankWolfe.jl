@@ -20,6 +20,7 @@ function blended_pairwise_conditional_gradient(
     memory_mode::MemoryEmphasis=InplaceEmphasis(),
     gradient=nothing,
     callback=nothing,
+    traj_data = [],
     timeout=Inf,
     print_callback=print_callback,
     renorm_interval=1000,
