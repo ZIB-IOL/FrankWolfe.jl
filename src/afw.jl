@@ -27,7 +27,6 @@ function away_frank_wolfe(
     renorm_interval=1000,
     callback=nothing,
     timeout=Inf,
-    print_callback=print_callback,
     linesearch_workspace=nothing,
 )
     # add the first vertex to active set from initialization
@@ -54,7 +53,6 @@ function away_frank_wolfe(
         renorm_interval=renorm_interval,
         callback=callback,
         timeout= timeout,
-        print_callback=print_callback,
         linesearch_workspace=linesearch_workspace,
     )
 end
@@ -82,7 +80,6 @@ function away_frank_wolfe(
     callback=nothing,
     traj_data=[],
     timeout=Inf,
-    print_callback=print_callback,
     linesearch_workspace=nothing,
 )
     # format string for output of the algorithm
