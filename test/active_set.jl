@@ -46,11 +46,11 @@ using LinearAlgebra: norm
         @test collect(active_set) == [(0.25, [1, 2, 3]), (0.25, [2, 3, 4]), (0.5, [5, 6, 7])]
 
         # element addition
-        @test FrankWolfe.active_set_validate(active_set) == true
+        @test FrankWolfe.active_set_validate(active_set) === true
         # update existing element
         FrankWolfe.active_set_update!(active_set, 1.0 / 2, [5, 6, 7])
         @test collect(active_set) == [(0.125, [1, 2, 3]), (0.125, [2, 3, 4]), (0.75, [5, 6, 7])]
-        @test FrankWolfe.active_set_validate(active_set) == true
+        @test FrankWolfe.active_set_validate(active_set) === true
     end
 
     @testset "active set isempty" begin
@@ -239,7 +239,7 @@ end
     )
 end
 
-@testset "ActiveSet for BigFloat" begin 
+@testset "ActiveSet for BigFloat" begin
   n = Int(1e2)
   lmo = FrankWolfe.LpNormLMO{BigFloat,1}(rand())
   x0 = Vector(FrankWolfe.compute_extreme_point(lmo, zeros(n)))

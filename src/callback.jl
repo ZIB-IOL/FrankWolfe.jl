@@ -1,14 +1,9 @@
-"""
-    push_state(state,storage)
 
-Pushes the state at each iteration to the passed storage.
-The state data is only the 5 first fields, usually:
-`(t,primal,dual,dual_gap,time)`
 """
-function push_state(state,storage)
-    base_tuple = Tuple(state)[1:5]
-    push!(storage, base_tuple)
-end
+    print_callback(state,storage)
+
+Handles formating of the callback state into a table format with consistent length independent of state values.
+"""
 
 function print_callback(data, format_string; print_header=false, print_footer=false)
     print_formatted(fmt, args...) = @eval @printf($fmt, $(args...))
@@ -42,15 +37,15 @@ function print_callback(data, format_string; print_header=false, print_footer=fa
 end
 
 """
-    Callback for fw_algorithms
-    If verbose is true, prints the state to the console after print_iter iterations.
-    If trajectory is true, adds the state to the storage variable.
-    The state data is only the 5 first fields, gamma and 3 call counters, usually
-`(t, primal, dual, dual_gap, time, gamma, function_calls, gradient_calls, lmo_calls)`
+    make_print_callback(callback, print_iter, headers, format_string, format_state)
+
+Default verbose callback for fw_algorithms, that wraps around previous callback. 
+Prints the state to the console after print_iter iterations.
+If the callback to be wrapped is of type nothing, always return true to enforce boolean output for non-nothing callbacks.
 """
 function make_print_callback(callback, print_iter, headers, format_string, format_state)
     return function callback_with_prints(state)
-        if mod(state.t, print_iter) == 0
+        if mod(state.t, print_iter) == 0 || state.tt == "LD"
             if state.t == 0
                 state = merge(state,(tt=initial,))
                 print_callback(headers, format_string, print_header=true)
@@ -60,29 +55,37 @@ function make_print_callback(callback, print_iter, headers, format_string, forma
             flush(stdout)
         end 
 
-        if (state.tt == last)
+        if (state.tt == "Last" || state.tt == "PP" )
             rep = format_state(state)
             print_callback(rep, format_string)
             print_callback(nothing, format_string, print_footer=true)
             flush(stdout)
         end
-        if callback !== nothing
-            callback(state)
-        else 
-            return false
+        if callback === nothing
+            return true
         end
+        return callback(state)
     end
 end
 
-function make_trajectory_callback(callback, traj_data, trajectory)
+
+"""
+    make_trajectory_callback(callback, traj_data, trajectory)
+
+Default trajectory logging callback for fw_algorithms, that wraps around previous callback. 
+If trajectory is true, adds the state to the storage variable.
+The state data is only the 5 first fields, usually:
+`(t, primal, dual, dual_gap, time)`
+If the callback to be wrapped is of type nothing, always return true to enforce boolean output for non-nothing callbacks.
+"""
+function make_trajectory_callback(callback, traj_data::Vector, trajectory::Bool)
     return function callback_with_trajectory(state)
-        if trajectory && (state.tt !== last)
-            push_state(state, traj_data)
+        if trajectory && state.tt !== last
+            push!(traj_data, Tuple(state)[1:5])
         end
-        if callback !== nothing
-            callback(state)
-        else 
-            return false
+        if callback === nothing
+            return true
         end
+        return callback(state)
     end
 end

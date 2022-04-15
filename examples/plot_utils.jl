@@ -15,8 +15,8 @@ And if we have two plots, each with two series, these might look like:
 list_label -> contains the labels for the series that will be plotted,
 which has to have a length equal to the number of series that are being plotted:
     list_label = ["Series 1", "Series 2"]
-list_axis_x -> contains the labels for the x-axis that will be plotted, 
-which has to have a length equal to the number of subplots: 
+list_axis_x -> contains the labels for the x-axis that will be plotted,
+which has to have a length equal to the number of subplots:
     list_axis_x = ["x-axis plot 1", "x-axis plot 1"]
 list_axis_y -> Same as list_axis_x but for the y-axis
 xscalelog -> A list of values indicating the type of axes to use in each subplot,

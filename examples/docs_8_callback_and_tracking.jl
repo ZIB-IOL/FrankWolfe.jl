@@ -1,8 +1,8 @@
 # # Tracking, counters and custom callbacks for Frank Wolfe
 
-# In this example we will run the standard Frank-Wolfe algorithm while tracking the number of 
+# In this example we will run the standard Frank-Wolfe algorithm while tracking the number of
 # calls to the different oracles, namely function, gradient evaluations, and LMO calls.
-# In order to track each of these metrics, a "Tracking" version of the Gradient, LMO and Function methods have to be supplied to 
+# In order to track each of these metrics, a "Tracking" version of the Gradient, LMO and Function methods have to be supplied to
 # the frank_wolfe algorithm, which are wrapping a standard one.
 
 using FrankWolfe
@@ -33,7 +33,7 @@ tgrad! = FrankWolfe.TrackingGradient(grad!)
 
 lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
 tlmo_prob = FrankWolfe.TrackingLMO(lmo_prob)
-@show tlmo_prob.counter 
+@show tlmo_prob.counter
 
 # We can now pass the tracking versions `tf`, `tgrad` and `tlmo_prob` into `frank_wolfe`
 # and display their call counts after the optimization process.
@@ -70,7 +70,7 @@ tlmo_prob.counter = 0
 
 storage = []
 
-# Now define our own trajectory logging function that extends 
+# Now define our own trajectory logging function that extends
 # the five default logging (iterations,primal, dual, dual_gap, time) with ".counter" field arguments present in the tracking functions.
 # (this function works for both vanilla and lazified frank_wolfe versions)
 
@@ -88,11 +88,8 @@ end
 # we can return a boolean stop criterion that will halt the optimization if the pimal objective function is evaluated more than 500 times.
 function make_callback(storage)
     return function callback(state)
-        if state.primal < Inf && isdefined(Base,:primal_limit) == false
-            primal_limit = state.primal
-        end
         push_tracking_state(state,storage)
-        return state.f.counter > 500
+        return state.f.counter < 500
     end
 end
 
@@ -112,8 +109,9 @@ FrankWolfe.lazified_conditional_gradient(
     line_search=FrankWolfe.Agnostic(),
     callback=callback,
 )
+
 total_iterations = storage[end][1]
 @show total_iterations
 @show tf.counter
 @show tgrad!.counter
-@show tlmo_prob.counter
+@show tlmo_prob.counter;
