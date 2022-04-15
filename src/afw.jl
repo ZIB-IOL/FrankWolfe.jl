@@ -113,12 +113,12 @@ function away_frank_wolfe(
     x = get_active_set_iterate(active_set)
     tt = regular
 
-    if verbose 
-        callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
+    if trajectory && callback === nothing
+        callback = make_trajectory_callback(callback, traj_data, trajectory)
     end
 
-    if trajectory
-        callback = make_trajectory_callback(callback, traj_data, trajectory)
+    if verbose 
+        callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
     end
 
     time_start = time_ns()
