@@ -53,12 +53,12 @@ function frank_wolfe(
     x = x0
     tt = regular
 
-    if verbose 
-        callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
+    if trajectory && callback === nothing
+        callback = make_trajectory_callback(callback, traj_data, trajectory)
     end
 
-    if trajectory
-        callback = make_trajectory_callback(callback, traj_data, trajectory)
+    if verbose 
+        callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
     end
 
     time_start = time_ns()
@@ -301,14 +301,13 @@ function lazified_conditional_gradient(
     phi = Inf
     tt = regular
 
-    if verbose 
-        callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
-    end
-
-    if trajectory
+    if trajectory && callback === nothing
         callback = make_trajectory_callback(callback, traj_data, trajectory)
     end
 
+    if verbose 
+        callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
+    end
     time_start = time_ns()
 
     if line_search isa Agnostic || line_search isa Nonconvex
@@ -534,14 +533,14 @@ function stochastic_frank_wolfe(
     d = similar(x)
     tt = regular
 
-    if verbose 
-        callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
-    end
-
-    if trajectory
+    if trajectory && callback === nothing
         callback = make_trajectory_callback(callback, traj_data, trajectory)
     end
 
+    if verbose 
+        callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
+    end
+    
     time_start = time_ns()
 
     if line_search == Shortstep && L == Inf

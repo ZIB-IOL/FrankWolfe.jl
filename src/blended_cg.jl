@@ -69,12 +69,12 @@ function blended_conditional_gradient(
     phi = fast_dot(gradient, x0 - vmax) / 2
     dual_gap = phi
 
-    if verbose 
-        callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
+    if trajectory && callback === nothing
+        callback = make_trajectory_callback(callback, traj_data, trajectory)
     end
 
-    if trajectory
-        callback = make_trajectory_callback(callback, traj_data, trajectory)
+    if verbose 
+        callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
     end
 
     tt = regular
@@ -665,7 +665,9 @@ function simplex_gradient_descent_over_probability_simplex(
                 dual_gap=tolerance,
                 time=tot_time,
                 x=x,
-                tt = tt,
+                tt=tt,
+                active_set=initial_point,
+                non_simplex_iter = non_simplex_iter,
             )
             callback(state)
         end

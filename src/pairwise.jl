@@ -20,6 +20,7 @@ function blended_pairwise_conditional_gradient(
     memory_mode::MemoryEmphasis=InplaceEmphasis(),
     gradient=nothing,
     callback=nothing,
+    traj_data = [],
     timeout=Inf,
     renorm_interval=1000,
     lazy=false,
@@ -43,6 +44,7 @@ function blended_pairwise_conditional_gradient(
         memory_mode=memory_mode,
         gradient=gradient,
         callback=callback,
+        traj_data = traj_data,
         timeout=timeout,
         renorm_interval=renorm_interval,
         lazy=lazy,
@@ -70,6 +72,7 @@ function blended_pairwise_conditional_gradient(
     memory_mode::MemoryEmphasis=InplaceEmphasis(),
     gradient=nothing,
     callback=nothing,
+    traj_data = [],
     timeout=Inf,
     renorm_interval=1000,
     lazy=false,
@@ -87,29 +90,25 @@ function blended_pairwise_conditional_gradient(
             Float64(state.primal),
             Float64(state.primal - state.dual_gap),
             Float64(state.dual_gap),
-            (time_ns() - state.time_start) / 1.0e9,
-            t / ((time_ns() - state.time_start) / 1.0e9),
+            state.time,
+            state.t / state.time,
             length(state.active_set),
         )
         return rep
+    end
+
+    if trajectory && callback === nothing
+        callback = make_trajectory_callback(callback, traj_data, trajectory)
     end
 
     if verbose 
         callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
     end
 
-    if trajectory
-        callback = make_trajectory_callback(callback, traj_data, trajectory)
-    end
-
     t = 0
     primal = Inf
     x = get_active_set_iterate(active_set)
     tt = regular
-    traj_data = []
-    if trajectory && callback === nothing
-        callback = trajectory_callback(traj_data)
-    end
     time_start = time_ns()
 
     d = similar(x)
@@ -294,7 +293,7 @@ function blended_pairwise_conditional_gradient(
                 dual_gap=phi,
                 time=tot_time,
                 x=x,
-                v=vertex_taken,
+                v=v,
                 gamma=gamma,
                 active_set=active_set,
                 gradient=gradient,
@@ -320,7 +319,7 @@ function blended_pairwise_conditional_gradient(
             dual_gap=phi,
             time=tot_time,
             x=x,
-            v=vertex_taken,
+            v=v,
             gamma=gamma,
             active_set=active_set,
             gradient=gradient,
