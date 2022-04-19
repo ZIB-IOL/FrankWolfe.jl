@@ -97,8 +97,8 @@ function blended_pairwise_conditional_gradient(
         return rep
     end
 
-    if trajectory || callback !== nothing
-        callback = make_trajectory_callback(callback, traj_data, trajectory)
+    if trajectory
+        callback = make_trajectory_callback(callback, traj_data)
     end
 
     if verbose

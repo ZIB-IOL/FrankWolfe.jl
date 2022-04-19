@@ -69,8 +69,8 @@ function blended_conditional_gradient(
     phi = fast_dot(gradient, x0 - vmax) / 2
     dual_gap = phi
 
-    if trajectory || callback !== nothing
-        callback = make_trajectory_callback(callback, traj_data, trajectory)
+    if trajectory
+        callback = make_trajectory_callback(callback, traj_data)
     end
 
     if verbose

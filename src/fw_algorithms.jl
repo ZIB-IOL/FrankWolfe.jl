@@ -53,8 +53,8 @@ function frank_wolfe(
     x = x0
     tt = regular
 
-    if trajectory || callback !== nothing
-        callback = make_trajectory_callback(callback, traj_data, trajectory)
+    if trajectory
+        callback = make_trajectory_callback(callback, traj_data)
     end
 
     if verbose
@@ -301,8 +301,8 @@ function lazified_conditional_gradient(
     phi = Inf
     tt = regular
 
-    if trajectory || callback !== nothing
-        callback = make_trajectory_callback(callback, traj_data, trajectory)
+    if trajectory
+        callback = make_trajectory_callback(callback, traj_data)
     end
 
     if verbose
@@ -533,8 +533,8 @@ function stochastic_frank_wolfe(
     d = similar(x)
     tt = regular
 
-    if trajectory || callback !== nothing
-        callback = make_trajectory_callback(callback, traj_data, trajectory)
+    if trajectory
+        callback = make_trajectory_callback(callback, traj_data)
     end
 
     if verbose

@@ -112,8 +112,8 @@ function away_frank_wolfe(
     x = get_active_set_iterate(active_set)
     tt = regular
 
-    if trajectory || callback !== nothing
-        callback = make_trajectory_callback(callback, traj_data, trajectory)
+    if trajectory
+        callback = make_trajectory_callback(callback, traj_data)
     end
 
     if verbose
