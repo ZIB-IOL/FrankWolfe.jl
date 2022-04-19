@@ -112,7 +112,7 @@ FrankWolfe.lazified_conditional_gradient(
     tlmo_prob,
     x0,
     max_iteration=1000,
-    traj_data = storage,
+    traj_data=storage,
     line_search=FrankWolfe.Agnostic(),
     callback=callback,
 )

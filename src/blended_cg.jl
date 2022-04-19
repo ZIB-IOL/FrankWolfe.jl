@@ -28,7 +28,7 @@ function blended_conditional_gradient(
     weight_purge_threshold=1e-9,
     gradient=nothing,
     callback=nothing,
-    traj_data = [],
+    traj_data=[],
     timeout=Inf,
     linesearch_workspace=nothing,
     linesearch_inner_workspace=nothing,
@@ -69,11 +69,11 @@ function blended_conditional_gradient(
     phi = fast_dot(gradient, x0 - vmax) / 2
     dual_gap = phi
 
-    if trajectory && callback === nothing
+    if trajectory || callback !== nothing
         callback = make_trajectory_callback(callback, traj_data, trajectory)
     end
 
-    if verbose 
+    if verbose
         callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
     end
 
