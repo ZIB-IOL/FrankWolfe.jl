@@ -601,6 +601,8 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
                 dual_gap=tolerance,
                 time=(time_ns() - time_start) / 1e9,
                 x=x,
+                active_set=active_set,
+                non_simplex_iter=non_simplex_iter,
                 tt=tt,
             )
             if callback(state) === false
