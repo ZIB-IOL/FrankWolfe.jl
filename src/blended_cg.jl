@@ -37,7 +37,7 @@ function blended_conditional_gradient(
 
     # format string for output of the algorithm
     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i %14i\n"
-    headers = ("Type","Iteration","Primal","Dual","Dual Gap","Time","It/sec","#ActiveSet","#non-simplex",)
+    headers = ("Type","Iteration","Primal","Dual","Dual Gap","Time","It/sec","#ActiveSet","#non-simplex")
 
     function format_state(state)
         rep = (
