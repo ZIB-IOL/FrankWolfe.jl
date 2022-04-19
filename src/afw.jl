@@ -26,6 +26,7 @@ function away_frank_wolfe(
     gradient=nothing,
     renorm_interval=1000,
     callback=nothing,
+    traj_data=[],
     timeout=Inf,
     linesearch_workspace=nothing,
 )
@@ -52,6 +53,7 @@ function away_frank_wolfe(
         gradient=gradient,
         renorm_interval=renorm_interval,
         callback=callback,
+        traj_data=traj_data,
         timeout= timeout,
         linesearch_workspace=linesearch_workspace,
     )
@@ -110,11 +112,11 @@ function away_frank_wolfe(
     x = get_active_set_iterate(active_set)
     tt = regular
 
-    if trajectory && callback === nothing
-        callback = make_trajectory_callback(callback, traj_data, trajectory)
+    if trajectory
+        callback = make_trajectory_callback(callback, traj_data)
     end
 
-    if verbose 
+    if verbose
         callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
     end
 

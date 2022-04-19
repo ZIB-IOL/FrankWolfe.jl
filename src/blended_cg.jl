@@ -28,7 +28,7 @@ function blended_conditional_gradient(
     weight_purge_threshold=1e-9,
     gradient=nothing,
     callback=nothing,
-    traj_data = [],
+    traj_data=[],
     timeout=Inf,
     linesearch_workspace=nothing,
     linesearch_inner_workspace=nothing,
@@ -37,7 +37,7 @@ function blended_conditional_gradient(
 
     # format string for output of the algorithm
     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i %14i\n"
-    headers = ("Type","Iteration","Primal","Dual","Dual Gap","Time","It/sec","#ActiveSet","#non-simplex",)
+    headers = ("Type","Iteration","Primal","Dual","Dual Gap","Time","It/sec","#ActiveSet","#non-simplex")
 
     function format_state(state)
         rep = (
@@ -69,11 +69,11 @@ function blended_conditional_gradient(
     phi = fast_dot(gradient, x0 - vmax) / 2
     dual_gap = phi
 
-    if trajectory && callback === nothing
-        callback = make_trajectory_callback(callback, traj_data, trajectory)
+    if trajectory
+        callback = make_trajectory_callback(callback, traj_data)
     end
 
-    if verbose 
+    if verbose
         callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
     end
 
@@ -374,7 +374,7 @@ function minimize_over_convex_hull!(
             if L_reduced / mu_reduced > 1.0
                 new_weights, number_of_steps =
                     accelerated_simplex_gradient_descent_over_probability_simplex(
-                        active_set.weights,
+                        active_set,
                         reduced_f,
                         reduced_grad!,
                         tolerance,
@@ -541,7 +541,7 @@ until the Strong-Wolfe gap is below tolerance using Nesterov's
 accelerated gradient descent.
 """
 function accelerated_simplex_gradient_descent_over_probability_simplex(
-    initial_point,
+    active_set,
     reduced_f,
     reduced_grad!,
     tolerance,
@@ -559,6 +559,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
     memory_mode::MemoryEmphasis
 )
     number_of_steps = 0
+    initial_point = active_set.weights
     x = deepcopy(initial_point)
     x_old = deepcopy(initial_point)
     y = deepcopy(initial_point)
@@ -600,6 +601,8 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
                 dual=primal - tolerance,
                 dual_gap=tolerance,
                 time=(time_ns() - time_start) / 1e9,
+                active_set = active_set,
+                non_simplex_iter=non_simplex_iter,
                 x=x,
                 tt=tt,
             )

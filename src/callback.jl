@@ -70,17 +70,17 @@ end
 
 
 """
-    make_trajectory_callback(callback, traj_data, trajectory)
+    make_trajectory_callback(callback, traj_data)
 
 Default trajectory logging callback for fw_algorithms, that wraps around previous callback. 
-If trajectory is true, adds the state to the storage variable.
+Adds the state to the storage variable.
 The state data is only the 5 first fields, usually:
 `(t, primal, dual, dual_gap, time)`
 If the callback to be wrapped is of type nothing, always return true to enforce boolean output for non-nothing callbacks.
 """
-function make_trajectory_callback(callback, traj_data::Vector, trajectory::Bool)
+function make_trajectory_callback(callback, traj_data::Vector)
     return function callback_with_trajectory(state)
-        if trajectory && state.tt !== last
+        if state.tt !== last
             push!(traj_data, Tuple(state)[1:5])
         end
         if callback === nothing
