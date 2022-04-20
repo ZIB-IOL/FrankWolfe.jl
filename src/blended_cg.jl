@@ -374,7 +374,7 @@ function minimize_over_convex_hull!(
             if L_reduced / mu_reduced > 1.0
                 new_weights, number_of_steps =
                     accelerated_simplex_gradient_descent_over_probability_simplex(
-                        active_set,
+                        active_set.weights,
                         reduced_f,
                         reduced_grad!,
                         tolerance,
@@ -541,7 +541,7 @@ until the Strong-Wolfe gap is below tolerance using Nesterov's
 accelerated gradient descent.
 """
 function accelerated_simplex_gradient_descent_over_probability_simplex(
-    active_set,
+    initial_point,
     reduced_f,
     reduced_grad!,
     tolerance,
@@ -559,7 +559,6 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
     non_simplex_iter=0,
 )
     number_of_steps = 0
-    initial_point = active_set.weights
     x = deepcopy(initial_point)
     x_old = deepcopy(initial_point)
     y = deepcopy(initial_point)
