@@ -84,6 +84,19 @@ struct StochasticCallbackState{XT,VT,GT}
     gradient::GT
 end
 
+struct BPCGCallbackActiveSetState{XT,VT,AT<:ActiveSet,GT}
+    t::Int64
+    primal::Float64
+    dual::Float64
+    dual_gap::Float64
+    time::Float64
+    x::XT
+    v::VT
+    gamma::Float64
+    active_set::AT
+    gradient::GT
+end
+
 struct BCGCallbackActiveSetState{XT,VT,AT<:ActiveSet,GT}
     t::Int64
     primal::Float64
@@ -97,7 +110,7 @@ struct BCGCallbackActiveSetState{XT,VT,AT<:ActiveSet,GT}
     gradient::GT
 end
 
-function callback_state(state::Union{CallbackState, CachingCallbackState, StochasticCallbackState, BCGCallbackActiveSetState})
+function callback_state(state::Union{CallbackState, CachingCallbackState, StochasticCallbackState, BCGCallbackActiveSetState, BPCGCallbackActiveSetState})
     return (state.t, state.primal, state.dual, state.dual_gap, state.time)
 end
 
