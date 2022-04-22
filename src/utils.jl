@@ -162,7 +162,7 @@ The state data is only the 5 first fields, usually:
 """
 function trajectory_callback(storage)
     return function push_trajectory!(data)
-        return push!(storage, Tuple(data)[1:5])
+        return push!(storage, callback_state(data))
     end
 end
 
