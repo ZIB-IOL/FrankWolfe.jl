@@ -97,7 +97,7 @@ function build_callback(trajectory_arr)
     return function callback(state)
         return push!(
             trajectory_arr,
-            (Tuple(state)[1:5]..., f_test(state.x), coefficient_errors(state.x)),
+            (callback_state(state)..., f_test(state.x), coefficient_errors(state.x)),
         )
     end
 end

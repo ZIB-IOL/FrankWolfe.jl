@@ -154,20 +154,7 @@ function frank_wolfe(
             memory_mode
         )
         if callback !== nothing
-            state = (
-                t=t,
-                primal=primal,
-                dual=primal - dual_gap,
-                dual_gap=dual_gap,
-                time=tot_time,
-                x=x,
-                v=v,
-                gamma=gamma,
-                f=f,
-                grad! =grad!,
-                lmo=lmo,
-                gradient=gradient,
-            )
+            state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, grad!, lmo, gradient)
             callback(state)
         end
 
@@ -369,21 +356,7 @@ function lazified_conditional_gradient(
         )
 
         if callback !== nothing
-            state = (
-                t=t,
-                primal=primal,
-                dual=primal - dual_gap,
-                dual_gap=dual_gap,
-                time=tot_time,
-                x=x,
-                v=v,
-                gamma=gamma,
-                f=f,
-                grad! =grad!,
-                lmo=lmo,
-                cache_size=length(lmo),
-                gradient=gradient,
-            )
+            state = CachingCallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, grad!, lmo, cache_size, gradient)
             callback(state)
         end
 
@@ -596,21 +569,11 @@ function stochastic_frank_wolfe(
         end
 
         # note: only linesearch methods that do not require full evaluations are supported
-        # so nothing is passed as function 
+        # so nothing is passed as function
         gamma = perform_line_search(line_search, t, nothing, nothing, gradient, x, x - v, 1.0, linesearch_workspace, memory_mode)
 
         if callback !== nothing
-            state = (
-                t=t,
-                primal=primal,
-                dual=primal - dual_gap,
-                dual_gap=dual_gap,
-                time=tot_time,
-                x=x,
-                v=v,
-                gamma=gamma,
-                gradient=gradient,
-            )
+            state = StochasticCallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, gradient)
             callback(state)
         end
 

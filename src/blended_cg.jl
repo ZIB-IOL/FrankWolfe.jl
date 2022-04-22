@@ -184,7 +184,7 @@ function blended_conditional_gradient(
                 linesearch_workspace,
                 memory_mode
             )
-    
+
             if gamma == 1.0
                 active_set_initialize!(active_set, v)
             else
@@ -195,18 +195,7 @@ function blended_conditional_gradient(
         x = get_active_set_iterate(active_set)
         dual_gap = phi
         if callback !== nothing
-            state = (
-                t=t,
-                primal=primal,
-                dual=primal - dual_gap,
-                dual_gap=dual_gap,
-                time=tot_time,
-                x=x,
-                v=v,
-                active_set=active_set,
-                non_simplex_iter=non_simplex_iter,
-                gradient=gradient,
-            )
+            state = BCGCallbackActiveSetState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, active_set, non_simplex_iter, gradient)
             callback(state)
         end
 

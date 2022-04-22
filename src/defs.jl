@@ -41,7 +41,7 @@ const st = (
 )
 
 
-struct CallbackState{XT,VT,FT,GT,LMO<:LinearMinimizationOracle}
+struct CallbackState{XT,VT,FT,GFT,LMO<:LinearMinimizationOracle,GT}
     t::Int64
     primal::Float64
     dual::Float64
@@ -51,9 +51,54 @@ struct CallbackState{XT,VT,FT,GT,LMO<:LinearMinimizationOracle}
     v::VT
     gamma::Float64
     f::FT
-    grad!::GT
+    grad!::GFT
     lmo::LMO
-    gradient::XT
+    gradient::GT
+end
+
+struct CachingCallbackState{XT,VT,FT,GFT,LMO<:LinearMinimizationOracle,GT}
+    t::Int64
+    primal::Float64
+    dual::Float64
+    dual_gap::Float64
+    time::Float64
+    x::XT
+    v::VT
+    gamma::Float64
+    f::FT
+    grad!::GFT
+    lmo::LMO
+    cache_size::Int64
+    gradient::GT
+end
+
+struct StochasticCallbackState{XT,VT,GT}
+    t::Int64
+    primal::Float64
+    dual::Float64
+    dual_gap::Float64
+    time::Float64
+    x::XT
+    v::VT
+    gamma::Float64
+    gradient::GT
+end
+
+struct BCGCallbackActiveSetState{XT,VT,AT<:ActiveSet,GT}
+    t::Int64
+    primal::Float64
+    dual::Float64
+    dual_gap::Float64
+    time::Float64
+    x::XT
+    v::VT
+    active_set::AT
+    non_simplex_iter::Int64
+    gradient::GT
+end
+
+function callback_state(state::Union{CallbackState, CachingCallbackState, StochasticCallbackState, BCGCallbackActiveSetState})
+    return (state.t, state.primal, state.dual, state.dual_gap, state.time)
 end
 
 struct CallbackActiveSetState{AT <: ActiveSet}
@@ -61,7 +106,18 @@ struct CallbackActiveSetState{AT <: ActiveSet}
     active_set::AT
 end
 
-function Base.getproperty(state::CallbackActiveSetState, f::Symbol)
+struct CachingCallbackActiveSetState{AT <: ActiveSet}
+    base_state::CachingCallbackState
+    active_set::AT
+end
+
+struct StochasticCallbackActiveSetState{AT <: ActiveSet}
+    base_state::StochasticCallbackState
+    active_set::AT
+end
+
+
+function Base.getproperty(state::Union{CallbackActiveSetState, CachingCallbackActiveSetState, StochasticCallbackActiveSetState}, f::Symbol)
     if f === :active_set
         return getfield(state, f)
     end
