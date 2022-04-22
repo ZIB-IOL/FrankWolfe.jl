@@ -156,9 +156,9 @@ function blended_pairwise_conditional_gradient(
 
         _, v_local, v_local_loc, _, a_lambda, a, a_loc, _ ,_ =
             active_set_argminmax(active_set, gradient)
-        
+
         local_gap = fast_dot(gradient, a) - fast_dot(gradient, v_local)
-        
+
         if !lazy
             v = compute_extreme_point(lmo, gradient)
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
@@ -216,7 +216,7 @@ function blended_pairwise_conditional_gradient(
                     linesearch_workspace,
                     memory_mode
                 )
-    
+
                 # dropping active set and restarting from singleton
                 if gamma ≈ 1.0
                     active_set_initialize!(active_set, v)
@@ -239,18 +239,7 @@ function blended_pairwise_conditional_gradient(
             primal = f(x)
         end
         if callback !== nothing
-            state = (
-                t=t,
-                primal=primal,
-                dual=primal - dual_gap,
-                dual_gap=phi,
-                time=tot_time,
-                x=x,
-                v=vertex_taken,
-                gamma=gamma,
-                active_set=active_set,
-                gradient=gradient,
-            )
+            state = BCGCallbackActiveSetState(t, primal, primal-dual_gap, phi, tot_time, x, vertex_taken, gamma, active_set, gradient)
             callback(state)
         end
 
