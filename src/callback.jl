@@ -45,7 +45,7 @@ If the callback to be wrapped is of type nothing, always return true to enforce 
 """
 function make_print_callback(callback, print_iter, headers, format_string, format_state)
     return function callback_with_prints(state)
-        if mod(state.t, print_iter) == 0 || state.tt == "LD"
+        if mod(state.t, print_iter) == 0 || state.tt == dualstep
             if state.t == 0
                 state = merge(state,(tt=initial,))
                 print_callback(headers, format_string, print_header=true)
@@ -55,7 +55,7 @@ function make_print_callback(callback, print_iter, headers, format_string, forma
             flush(stdout)
         end 
 
-        if (state.tt == "Last" || state.tt == "PP" )
+        if (state.tt == last || state.tt == pp )
             rep = format_state(state)
             print_callback(rep, format_string)
             print_callback(nothing, format_string, print_footer=true)
