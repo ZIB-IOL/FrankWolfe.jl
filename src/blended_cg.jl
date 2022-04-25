@@ -374,13 +374,13 @@ function minimize_over_convex_hull!(
             if L_reduced / mu_reduced > 1.0
                 new_weights, number_of_steps =
                     accelerated_simplex_gradient_descent_over_probability_simplex(
-                        active_set,
+                        active_set.weights,
                         reduced_f,
                         reduced_grad!,
                         tolerance,
                         t,
                         time_start,
-                        non_simplex_iter,
+                        active_set,
                         verbose=verbose,
                         print_iter=print_iter,
                         L=L_reduced,
@@ -388,8 +388,8 @@ function minimize_over_convex_hull!(
                         max_iteration=max_iteration,
                         callback=callback,
                         timeout=timeout,
-                        format_string=format_string,
-                        memory_mode=memory_mode
+                        memory_mode=memory_mode,
+                        non_simplex_iter=non_simplex_iter,
                     )
                 @. active_set.weights = new_weights
             end
@@ -404,13 +404,13 @@ function minimize_over_convex_hull!(
                 t,
                 time_start,
                 non_simplex_iter,
+                active_set,
                 verbose=verbose,
                 print_iter=print_iter,
                 L=L_reduced,
                 max_iteration=max_iteration,
                 callback=callback,
                 timeout=timeout,
-                format_string=format_string,
             )
             @. active_set.weights = new_weights
         end
@@ -541,13 +541,13 @@ until the Strong-Wolfe gap is below tolerance using Nesterov's
 accelerated gradient descent.
 """
 function accelerated_simplex_gradient_descent_over_probability_simplex(
-    active_set,
+    initial_point,
     reduced_f,
     reduced_grad!,
     tolerance,
     t,
     time_start,
-    non_simplex_iter;
+    active_set::ActiveSet;
     verbose=verbose,
     print_iter=print_iter,
     L=1.0,
@@ -555,11 +555,10 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
     max_iteration,
     callback,
     timeout=Inf,
-    format_string=nothing,
-    memory_mode::MemoryEmphasis
+    memory_mode::MemoryEmphasis,
+    non_simplex_iter=0,
 )
     number_of_steps = 0
-    initial_point = active_set.weights
     x = deepcopy(initial_point)
     x_old = deepcopy(initial_point)
     y = deepcopy(initial_point)
@@ -601,10 +600,10 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
                 dual=primal - tolerance,
                 dual_gap=tolerance,
                 time=(time_ns() - time_start) / 1e9,
-                active_set = active_set,
-                non_simplex_iter=non_simplex_iter,
                 x=x,
+                active_set=active_set,
                 tt=tt,
+                non_simplex_iter=non_simplex_iter,
             )
             if callback(state) === false
                 break
@@ -637,14 +636,14 @@ function simplex_gradient_descent_over_probability_simplex(
     tolerance,
     t,
     time_start,
-    non_simplex_iter;
+    non_simplex_iter,
+    active_set::ActiveSet;
     verbose=verbose,
     print_iter=print_iter,
     L=1.0,
     max_iteration,
     callback,
     timeout=Inf,
-    format_string=nothing,
 )
     number_of_steps = 0
     x = deepcopy(initial_point)
@@ -669,10 +668,12 @@ function simplex_gradient_descent_over_probability_simplex(
                 time=tot_time,
                 x=x,
                 tt=tt,
-                active_set=initial_point,
-                non_simplex_iter = non_simplex_iter,
+                active_set=active_set,
+                non_simplex_iter=non_simplex_iter,
             )
-            callback(state)
+            if callback(state) === false
+                break
+            end
         end
 
         if timeout < Inf

@@ -267,7 +267,9 @@ function blended_pairwise_conditional_gradient(
                 gradient=gradient,
                 tt=tt,
             )
-            callback(state)
+            if callback(state) === false
+                break
+            end
         end
         t += 1
     end
