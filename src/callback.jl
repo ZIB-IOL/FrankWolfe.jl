@@ -81,7 +81,7 @@ If the callback to be wrapped is of type nothing, always return true to enforce 
 """
 function make_trajectory_callback(callback, traj_data::Vector)
     return function callback_with_trajectory(state)
-        if state.tt !== last
+        if state.tt !== last || state.tt !== pp
             push!(traj_data, Tuple(state)[1:5])
         end
         if callback === nothing
