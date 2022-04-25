@@ -683,6 +683,7 @@ function stochastic_frank_wolfe(
     # @show (gradient, primal)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
     tt = last
+    gamma = perform_line_search(line_search, t, nothing, nothing, gradient, x, x - v, 1.0, linesearch_workspace, memory_mode)
     tot_time = (time_ns() - time_start) / 1e9
     if callback !== nothing
         state = (
