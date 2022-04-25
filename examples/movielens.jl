@@ -176,7 +176,7 @@ for _ in 1:k
     @info f_val
     grad!(gradient, xgd)
     xgd_new, vertex = project_nuclear_norm_ball(xgd - gradient / L_estimate, radius=norm_estimation)
-    gamma = FrankWolfe.perform_line_search(ls, 1, f, grad!, gradient, xgd, xgd - xgd_new, 1.0, ls_workspace)
+    gamma = FrankWolfe.perform_line_search(ls, 1, f, grad!, gradient, xgd, xgd - xgd_new, 1.0, ls_workspace, FrankWolfe.InplaceEmphasis())
     @. xgd -= gamma * (xgd - xgd_new)
 end
 
