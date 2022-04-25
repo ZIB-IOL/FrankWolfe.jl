@@ -690,7 +690,7 @@ function stochastic_frank_wolfe(
             primal=primal,
             dual=primal - dual_gap,
             dual_gap=dual_gap,
-            time=tot_time,
+            time=(time_ns() - time_start) / 1e9,
             x=x,
             v=v,
             gamma=gamma,
