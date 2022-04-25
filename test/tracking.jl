@@ -74,9 +74,9 @@ end
     @test length(storage[1]) == 5
 
     niters = length(storage)
-    @test tf.counter == niters + 1
-    @test tgrad!.counter == niters + 1
-    @test tlmo.counter == niters + 2 # x0 computation and initialization
+    @test tf.counter == niters
+    @test tgrad!.counter == niters
+    @test tlmo.counter == niters + 1 # x0 computation and initialization
 end
 
 @testset "Testing lazified Frank-Wolfe with various step size and momentum strategies" begin
@@ -111,8 +111,8 @@ end
     @test length(storage[1]) == 5
 
     niters = length(storage)
-    @test tf.counter == niters + 1
-    @test tgrad!.counter == niters + 1
+    @test tf.counter == niters
+    @test tgrad!.counter == niters
     # lazification
     @test tlmo.counter < niters
 end
