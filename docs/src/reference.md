@@ -60,11 +60,11 @@ implemented in the package and their comparison with projection operators.
 
 ```@docs
 compute_extreme_point(lmo::FrankWolfe.ProductLMO, direction::Tuple; kwargs...)
-compute_extreme_point(lmo::FrankWolfe.ProductLMO{N},direction::AbstractArray;storage=similar(direction),direction_indices,kwargs...,) where {N}
+compute_extreme_point(lmo::FrankWolfe.ProductLMO{N},direction::AbstractArray;storage=similar(direction),direction_indices,kwargs...) where {N}
 compute_extreme_point(lmo::FrankWolfe.UnitSimplexOracle{T}, direction) where {T}
 FrankWolfe.compute_dual_solution(::FrankWolfe.UnitSimplexOracle{T}, direction, primalSolution) where {T}
 compute_extreme_point(lmo::FrankWolfe.ProbabilitySimplexOracle{T}, direction; kwargs...) where {T}
-FrankWolfe.compute_dual_solution(::FrankWolfe.ProbabilitySimplexOracle{T},direction,primal_solution;kwargs...,) where {T}
+FrankWolfe.compute_dual_solution(::FrankWolfe.ProbabilitySimplexOracle{T},direction,primal_solution;kwargs...) where {T}
 FrankWolfe.convert_mathopt
 ```
 

@@ -127,7 +127,7 @@ trajectory_adaptiveLoc2 = []
 callback = build_callback(trajectory_adaptiveLoc2)
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, trajectory_adaptiveLoc2 = FrankWolfe.away_frank_wolfe(
+@time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,

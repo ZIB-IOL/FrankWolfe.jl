@@ -54,28 +54,29 @@ end
     tgrad! = FrankWolfe.TrackingGradient(grad!,0)
     tlmo = FrankWolfe.TrackingLMO(lmo)
 
-    x0 = FrankWolfe.compute_extreme_point(tlmo, spzeros(1000))
     storage = []
-    callback = FrankWolfe.tracking_trajectory_callback(storage)
+    x0 = FrankWolfe.compute_extreme_point(tlmo, spzeros(1000))
 
-    FrankWolfe.frank_wolfe(
+
+        FrankWolfe.frank_wolfe(
         tf,
         tgrad!,
         tlmo,
         x0,
         line_search=FrankWolfe.Agnostic(),
-        max_iteration=5000,
+        max_iteration=50,
         trajectory=true,
-        callback=callback,
+        callback=nothing,
+        traj_data=storage,
         verbose=true,
     )
     
-    @test length(storage[1]) == 9
+    @test length(storage[1]) == 5
 
     niters = length(storage)
-    @test tf.counter == niters + 1
-    @test tgrad!.counter == niters + 1
-    @test tlmo.counter == niters + 2 # x0 computation and initialization
+    @test tf.counter == niters
+    @test tgrad!.counter == niters
+    @test tlmo.counter == niters + 1 # x0 computation and initialization
 end
 
 @testset "Testing lazified Frank-Wolfe with various step size and momentum strategies" begin
@@ -91,27 +92,27 @@ end
     tgrad! = FrankWolfe.TrackingGradient(grad!,0)
     tlmo = FrankWolfe.TrackingLMO(lmo)
 
-    x0 = FrankWolfe.compute_extreme_point(tlmo, spzeros(1000))
     storage = []
-    callback = FrankWolfe.tracking_cached_trajectory_callback(storage)
+    x0 = FrankWolfe.compute_extreme_point(tlmo, spzeros(1000))
 
-    FrankWolfe.lazified_conditional_gradient(
+    results = FrankWolfe.lazified_conditional_gradient(
         tf,
         tgrad!,
         tlmo,
         x0,
         line_search=FrankWolfe.Agnostic(),
-        max_iteration=5000,
+        max_iteration=50,
         trajectory=true,
-        callback=callback,
+        callback=nothing,
+        traj_data=storage,
         verbose=false,
     )
-
-    @test length(storage[1]) == 9
+    
+    @test length(storage[1]) == 5
 
     niters = length(storage)
-    @test tf.counter == niters + 1
-    @test tgrad!.counter == niters + 1
+    @test tf.counter == niters
+    @test tgrad!.counter == niters
     # lazification
     @test tlmo.counter < niters
 end
