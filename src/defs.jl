@@ -10,14 +10,14 @@ Computes step size: `2/(2 + t)` at iteration `t`.
 struct Agnostic <: LineSearchMethod end
 
 """
-Computes step size via the [Backtracking Line
-Search](https://arxiv.org/pdf/1806.05123.pdf) method.
+Computes step size via the
+ [Backtracking Line Search](https://arxiv.org/pdf/1806.05123.pdf) method.
 """
 struct Backtracking <: LineSearchMethod end
 
 """
-Computes a step size via [Golden Section
-Search](https://en.wikipedia.org/wiki/Golden-section_search).
+Computes a step size via
+[Golden Section Search](https://en.wikipedia.org/wiki/Golden-section_search).
 """
 struct Goldenratio <: LineSearchMethod end
 
