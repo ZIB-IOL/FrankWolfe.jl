@@ -11,7 +11,8 @@ struct Agnostic <: LineSearchMethod end
 
 """
 Computes step size via the
- [Backtracking Line Search](https://arxiv.org/pdf/1806.05123.pdf) method.
+ [Backtracking Line Search](https://arxiv.org/pdf/1806.05123.pdf)
+ method.
 """
 struct Backtracking <: LineSearchMethod end
 
