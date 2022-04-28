@@ -8,20 +8,24 @@ abstract type LineSearchMethod end
 Computes step size: `2/(2 + t)` at iteration `t`.
 """
 struct Agnostic <: LineSearchMethod end
+
 """
 Computes step size via the [Backtracking Line
 Search](https://arxiv.org/pdf/1806.05123.pdf) method.
 """
 struct Backtracking <: LineSearchMethod end
+
 """
 Computes a step size via [Golden Section
 Search](https://en.wikipedia.org/wiki/Golden-section_search).
 """
 struct Goldenratio <: LineSearchMethod end
+
 """
 Computes a step size for nonconvex functions: `1/sqrt(t + 1)`.
 """
 struct Nonconvex <: LineSearchMethod end
+
 """
 Computes the 'Short step' step size:
 `dual_gap / (L * norm(x - v)^2)`,
@@ -29,10 +33,12 @@ where `L` is the Lipschitz constant of the gradient, `x` is the
 current iterate, and `v` is the current Frank-Wolfe vertex.
 """
 struct Shortstep <: LineSearchMethod end
+
 """
 Constant step size given by `gamma0`
 """
 struct FixedStep <: LineSearchMethod end
+
 """
 Computes a 'Rational Short step' step size:
 `sum((x - v) .* gradient ) // (L * sum((x - v) .^ 2))`,
@@ -40,6 +46,7 @@ where `L` is the Lipschitz constant of the gradient, `x` is the
 current iterate, and `v` is the current Frank-Wolfe vertex.
 """
 struct RationalShortstep <: LineSearchMethod end
+
 """
 Slight modification of
 Adaptive Step Size strategy from this
