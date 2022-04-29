@@ -1,12 +1,5 @@
 # Utilities and data structures
 
-## Settings
-
-```@autodocs
-Modules = [FrankWolfe]
-Pages = ["defs.jl"]
-```
-
 ## Active set
 
 ```@autodocs
