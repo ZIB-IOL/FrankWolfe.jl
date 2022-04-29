@@ -4,9 +4,12 @@
 The step size dictates how far one traverses along a local descent direction.
 More specifically, the step size $gamma_t$ is used at each iteration to determine
 how much the next iterate moves towards the new vertex:  
-$$x_{t+1} = x_t - \gamma_t (x_t - v_t).$$
+
+```math
+x_{t+1} = x_t - \gamma_t (x_t - v_t).$$
+```
   
-$\gamma_t = 1$ implies that the next iterate is exactly the vertex,
+``\gamma_t = 1`` implies that the next iterate is exactly the vertex,
 a zero $\gamma_t$ implies that the iterate is not moving.  
 
 The following are step size selection rules for Frank Wolfe algorithms.
