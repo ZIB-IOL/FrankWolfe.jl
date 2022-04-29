@@ -23,6 +23,9 @@ function perform_line_search end
 
 build_linesearch_workspace(::LineSearchMethod, x, gradient) = nothing
 
+"""
+Computes step size: `2/(2 + t)` at iteration `t`.
+"""
 struct Agnostic{T <: Real} <: LineSearchMethod end
 
 Agnostic() = Agnostic{Float64}()
@@ -32,6 +35,9 @@ perform_line_search(::Agnostic{T}, t, f, g!, gradient, x, d, gamma_max, workspac
 
 Base.print(io::IO, ::Agnostic) = print(io, "Agnostic")
 
+"""
+Computes a step size for nonconvex functions: `1/sqrt(t + 1)`.
+"""
 struct Nonconvex{T} <: LineSearchMethod end
 Nonconvex() = Nonconvex{Float64}()
 
@@ -39,6 +45,12 @@ perform_line_search(::Nonconvex{T}, t, f, g!, gradient, x, d, gamma_max, workspa
 
 Base.print(io::IO, ::Nonconvex) = print(io, "Nonconvex")
 
+"""
+Computes the 'Short step' step size:
+`dual_gap / (L * norm(x - v)^2)`,
+where `L` is the Lipschitz constant of the gradient, `x` is the
+current iterate, and `v` is the current Frank-Wolfe vertex.
+"""
 struct Shortstep{T} <: LineSearchMethod
     L::T
     function Shortstep(L::T) where {T}
@@ -98,7 +110,9 @@ Base.print(io::IO, ::FixedStep) = print(io, "FixedStep")
     Goldenratio
 
 Simple golden-ratio based line search
-based on boostedFW paper code and adapted.
+[Golden Section Search](https://en.wikipedia.org/wiki/Golden-section_search),
+based on [the Boosted FW paper](http://proceedings.mlr.press/v119/combettes20a/combettes20a.pdf)
+code and adapted.
 """
 struct Goldenratio{T} <: LineSearchMethod
     tol::T
@@ -185,7 +199,8 @@ Base.print(io::IO, ::Goldenratio) = print(io, "Goldenratio")
 """
     Backtracking(limit_num_steps, tol, tau)
 
-Backtracking line search strategy.
+Backtracking line search strategy, see
+[this reference](https://arxiv.org/pdf/1806.05123.pdf).
 """
 struct Backtracking{T} <: LineSearchMethod
     limit_num_steps::Int
@@ -243,11 +258,11 @@ Base.print(io::IO, ::Backtracking) = print(io, "Backtracking")
 
 """
 Slight modification of the
-Adaptive Step Size strategy from https://arxiv.org/pdf/1806.05123.pdf
+Adaptive Step Size strategy from [this paper](https://arxiv.org/abs/1806.05123)
 
-The `Adaptive` struct keeps track of the Lipschitz constant estimate.
+The `Adaptive` struct keeps track of the Lipschitz constant estimate `L_est`.
 `perform_line_search` also has a `should_upgrade` keyword argument on
-whether there should be a temporary upgrade to `BigFloat`.
+whether there should be a temporary upgrade to `BigFloat` for extended precision.
 """
 mutable struct Adaptive{T,TT} <: LineSearchMethod
     eta::T
