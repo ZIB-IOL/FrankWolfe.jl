@@ -1,6 +1,5 @@
 # Line search and step size settings
 
-
 The step size dictates how far one traverses along a local descent direction.
 More specifically, the step size $gamma_t$ is used at each iteration to determine
 how much the next iterate moves towards the new vertex:  
@@ -20,14 +19,23 @@ to local information about the function; the adaptive methods
 often require extra function and/or gradient computations. The
 typical options for convex optimization are `Agnostic` or `Adaptive`.  
 
-All step size computation strategies are subtypes of [LineSearchMethod](@ref).
+All step size computation strategies are subtypes of [FrankWolfe.LineSearchMethod](@ref).
+The key method they have to implement it [FrankWolfe.perform_line_search](@ref)
 
-## Line search and step size methods
+```@docs
+FrankWolfe.LineSearchMethod
+FrankWolfe.perform_line_search
+```
 
 ```@autodocs
 Modules = [FrankWolfe]
 Pages = ["linesearch.jl"]
 ```
+
+See [Pedregosa, Negiar, Askari, Jaggi 2020](https://arxiv.org/abs/1806.05123)
+for the adaptive step size,
+[Carderera, Besançon, Pokutta 2021](https://openreview.net/forum?id=rq_UD6IiBpX)
+for the monotonous step size.
 
 ## Index
 
