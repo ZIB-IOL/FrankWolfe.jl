@@ -19,7 +19,8 @@ often require extra function and/or gradient computations. The
 typical options for convex optimization are `Agnostic` or `Adaptive`.  
 
 All step size computation strategies are subtypes of [`FrankWolfe.LineSearchMethod`](@ref).
-The key method they have to implement it [`FrankWolfe.perform_line_search`](@ref)
+The key method they have to implement is [`FrankWolfe.perform_line_search`](@ref)
+which is called at every iteration to compute the step size gamma.
 
 ```@docs
 FrankWolfe.LineSearchMethod
