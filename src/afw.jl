@@ -156,7 +156,7 @@ function away_frank_wolfe(
     phi_value = max(0, fast_dot(x, gradient) - fast_dot(v, gradient))
     gamma = 1.0
 
-    while t <= max_iteration && dual_gap >= max(epsilon, eps())
+    while t <= max_iteration && phi_value >= max(epsilon, eps())
 
         #####################
         # managing time and Ctrl-C
@@ -191,10 +191,10 @@ function away_frank_wolfe(
         if away_steps
             if lazy
                 d, vertex, index, gamma_max, phi_value, away_step_taken, fw_step_taken, tt =
-                    lazy_afw_step(x, gradient, lmo, active_set, phi_value; K=K)
+                    lazy_afw_step(x, gradient, lmo, active_set, phi_value, epsilon; K=K)
             else
                 d, vertex, index, gamma_max, phi_value, away_step_taken, fw_step_taken, tt =
-                    afw_step(x, gradient, lmo, active_set)
+                    afw_step(x, gradient, lmo, active_set, epsilon)
             end
         else
             d, vertex, index, gamma_max, phi_value, away_step_taken, fw_step_taken, tt =
@@ -325,16 +325,17 @@ function away_frank_wolfe(
 end
 
 
-function lazy_afw_step(x, gradient, lmo, active_set, phi; K=2.0)
+function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon; K=2.0)
     v_lambda, v, v_loc, a_lambda, a, a_loc = active_set_argminmax(active_set, gradient)
     #Do lazy FW step
     grad_dot_lazy_fw_vertex = fast_dot(v, gradient)
     grad_dot_x = fast_dot(x, gradient)
     grad_dot_a = fast_dot(a, gradient)
     if grad_dot_x - grad_dot_lazy_fw_vertex >= grad_dot_a - grad_dot_x &&
-       grad_dot_x - grad_dot_lazy_fw_vertex >= phi / K
+            grad_dot_x - grad_dot_lazy_fw_vertex >= phi / K &&
+            grad_dot_x - grad_dot_lazy_fw_vertex >= epsilon
         tt = lazy
-        gamma_max = 1
+        gamma_max = one(a_lambda)
         d = x - v
         vertex = v
         away_step_taken = false
@@ -359,49 +360,57 @@ function lazy_afw_step(x, gradient, lmo, active_set, phi; K=2.0)
             dual_gap = grad_dot_x - grad_dot_fw_vertex
             if dual_gap >= phi / K
                 tt = regular
-                gamma_max = 1
+                gamma_max = one(a_lambda)
                 d = x - v
                 vertex = v
                 away_step_taken = false
                 fw_step_taken = true
-                index = nothing
+                index = -1
                 #Lower our expectation for progress.
             else
                 tt = dualstep
                 phi = min(dual_gap, phi / 2.0)
-                gamma_max = 0.0
-                d = zeros(length(x))
+                gamma_max = zero(a_lambda)
+                d = zero(x)
                 vertex = v
                 away_step_taken = false
                 fw_step_taken = false
-                index = nothing
+                index = -1
             end
         end
     end
     return d, vertex, index, gamma_max, phi, away_step_taken, fw_step_taken, tt
 end
 
-function afw_step(x, gradient, lmo, active_set)
+function afw_step(x, gradient, lmo, active_set, epsilon)
     local_v_lambda, local_v, local_v_loc, a_lambda, a, a_loc =
         active_set_argminmax(active_set, gradient)
     v = compute_extreme_point(lmo, gradient)
     grad_dot_x = fast_dot(x, gradient)
     away_gap = fast_dot(a, gradient) - grad_dot_x
     dual_gap = grad_dot_x - fast_dot(v, gradient)
-    if dual_gap >= away_gap
+    if dual_gap >= away_gap && dual_gap >= epsilon
         tt = regular
-        gamma_max = 1
+        gamma_max = one(a_lambda)
         d = x - v
         vertex = v
         away_step_taken = false
         fw_step_taken = true
-        index = nothing
-    else
+        index = -1
+    elseif away_gap >= epsilon
         tt = away
         gamma_max = a_lambda / (1 - a_lambda)
         d = a - x
         vertex = a
         away_step_taken = true
+        fw_step_taken = false
+        index = a_loc
+    else
+        tt = away
+        gamma_max = zero(a_lambda)
+        d = zero(x)
+        vertex = a
+        away_step_taken = false
         fw_step_taken = false
         index = a_loc
     end
