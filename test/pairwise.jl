@@ -48,6 +48,7 @@ using SparseArrays
     active_set_afw = res_afw[end]
     storage = copy(active_set_afw.x)
     grad!(storage, active_set_afw.x)
-    @inferred FrankWolfe.afw_step(active_set_afw.x, storage, lmo_prob, active_set_afw, 1e-6)
-    @inferred FrankWolfe.lazy_afw_step(active_set_afw.x, storage, lmo_prob, active_set_afw, epsilon, epsilon)   
+    epsilon = 1e-6
+    @inferred FrankWolfe.afw_step(active_set_afw.x, storage, lmo_prob, active_set_afw, epsilon)
+    @inferred FrankWolfe.lazy_afw_step(active_set_afw.x, storage, lmo_prob, active_set_afw, epsilon, epsilon)
 end
