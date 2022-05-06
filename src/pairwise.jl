@@ -271,6 +271,7 @@ function blended_pairwise_conditional_gradient(
                 break
             end
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
             rep = (
                 st[Symbol(tt)],
@@ -285,6 +286,8 @@ function blended_pairwise_conditional_gradient(
             print_callback(rep, format_string)
             flush(stdout)
 >>>>>>> 7e8e3c8e397e1967220624bd27f0ed537337d278
+=======
+>>>>>>> da39006aae89fa10da0a2121e260f8c7bb7f2ec5
         end
         t += 1
     end
@@ -302,12 +305,15 @@ function blended_pairwise_conditional_gradient(
         phi = fast_dot(x, gradient) - fast_dot(v, gradient)
         tt = last
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> da39006aae89fa10da0a2121e260f8c7bb7f2ec5
         tot_time = (time_ns() - time_start) / 1e9
         if callback !== nothing
             state = (
                 t=t-1,
                 primal=primal,
-                dual=primal - dual_gap,
+                dual=primal - phi,
                 dual_gap=phi,
                 time=tot_time,
                 x=x,
@@ -319,6 +325,7 @@ function blended_pairwise_conditional_gradient(
             )
             callback(state)
         end
+<<<<<<< HEAD
 =======
         rep = (
             st[Symbol(tt)],
@@ -333,6 +340,8 @@ function blended_pairwise_conditional_gradient(
         print_callback(rep, format_string)
         flush(stdout)
 >>>>>>> 7e8e3c8e397e1967220624bd27f0ed537337d278
+=======
+>>>>>>> da39006aae89fa10da0a2121e260f8c7bb7f2ec5
     end
     active_set_renormalize!(active_set)
     active_set_cleanup!(active_set)
