@@ -110,30 +110,6 @@ struct BCGCallbackActiveSetState{XT,VT,AT<:ActiveSet,GT}
     gradient::GT
 end
 
-function callback_state(state::Union{CallbackState, CachingCallbackState, StochasticCallbackState, BCGCallbackActiveSetState, BPCGCallbackActiveSetState})
+function callback_state(state::Union{CallbackState, CachingCallbackState, StochasticCallbackState, BCGCallbackActiveSetState, BPCGCallbackActiveSetState}, args...)
     return (state.t, state.primal, state.dual, state.dual_gap, state.time)
-end
-
-struct CallbackActiveSetState{AT <: ActiveSet}
-    base_state::CallbackState
-    active_set::AT
-end
-
-struct CachingCallbackActiveSetState{AT <: ActiveSet}
-    base_state::CachingCallbackState
-    active_set::AT
-end
-
-struct StochasticCallbackActiveSetState{AT <: ActiveSet}
-    base_state::StochasticCallbackState
-    active_set::AT
-end
-
-
-function Base.getproperty(state::Union{CallbackActiveSetState, CachingCallbackActiveSetState, StochasticCallbackActiveSetState}, f::Symbol)
-    if f === :active_set
-        return getfield(state, f)
-    end
-    base_state = getfield(state, :base_state)
-    return getproperty(base_state, f)
 end
