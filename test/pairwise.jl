@@ -18,7 +18,8 @@ using SparseArrays
         x0,
         max_iteration=6000,
         line_search=FrankWolfe.Adaptive(),
-        verbose=false,
+        verbose=true,
+        epsilon=3e-7,
     )
     res_afw = FrankWolfe.away_frank_wolfe(
         f,
@@ -28,7 +29,8 @@ using SparseArrays
         max_iteration=6000,
         line_search=FrankWolfe.Adaptive(),
         print_iter=100,
-        verbose=false,
+        verbose=true,
+        epsilon=3e-7,
     )
     @test res_afw[3] ≈ res_bpcg[3]
     @test norm(res_afw[1] - res_bpcg[1]) ≈ 0 atol=1e-6
@@ -43,4 +45,10 @@ using SparseArrays
         lazy=true
     )
     @test res_bpcg2[3] ≈ res_bpcg[3] atol=1e-5
+    active_set_afw = res_afw[end]
+    storage = copy(active_set_afw.x)
+    grad!(storage, active_set_afw.x)
+    epsilon = 1e-6
+    @inferred FrankWolfe.afw_step(active_set_afw.x, storage, lmo_prob, active_set_afw, epsilon)
+    @inferred FrankWolfe.lazy_afw_step(active_set_afw.x, storage, lmo_prob, active_set_afw, epsilon, epsilon)
 end

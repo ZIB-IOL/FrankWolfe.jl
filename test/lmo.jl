@@ -475,7 +475,7 @@ end
             MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
             o,
         )
-        optimizer = MOI.Bridges.full_bridge_optimizer(inner_optimizer, Float64)        
+        optimizer = MOI.Bridges.full_bridge_optimizer(inner_optimizer, Float64)
         MOI.set(optimizer, MOI.Silent(), true)
         nrows = 3n
         ncols = n
@@ -719,7 +719,7 @@ end
     end
 
     lmo_dense = FrankWolfe.ScaledBoundL1NormBall(-ones(3), ones(3))
-    lmo_standard = FrankWolfe.LpNormLMO{1}(1.0) 
+    lmo_standard = FrankWolfe.LpNormLMO{1}(1.0)
     x_dense, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad!, lmo_dense, [1.0, 0.0, 0.0])
     x_standard, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad!, lmo_standard, [1.0, 0.0, 0.0])
     @test x_dense == x_standard
@@ -727,6 +727,6 @@ end
     lmo_dense = FrankWolfe.ScaledBoundLInfNormBall(-ones(3), ones(3))
     lmo_standard = FrankWolfe.LpNormLMO{Inf}(1.0)
     x_dense, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad!, lmo_dense, [1.0, 0.0, 0.0])
-    x_standard, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad!, lmo_standard, [1.0, 0.0, 0.0])   
+    x_standard, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad!, lmo_standard, [1.0, 0.0, 0.0])
     @test x_dense == x_standard
 end
