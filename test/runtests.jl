@@ -556,7 +556,7 @@ end
         trajectory=false,
     )
     @test batch_iterator.maxreached
-    # SFW damped momentum 
+    # SFW damped momentum
     momentum_iterator = FrankWolfe.ExpMomentumIterator()
     θ, _, _, _, _ = FrankWolfe.stochastic_frank_wolfe(
         f_stoch,
@@ -591,7 +591,7 @@ end
         @. storage = 2x
     end
     k = 1000
-    active_set = ActiveSet([(1.0, x0)]) 
+    active_set = ActiveSet([(1.0, x0)])
 
     # compute reference from vanilla FW
     xref, _ = FrankWolfe.frank_wolfe(
@@ -723,7 +723,7 @@ end
         print_iter=k / 10,
         verbose=true,
         memory_mode=FrankWolfe.OutplaceEmphasis(),
-    )    
+    )
 end
 
 @testset "Blended conditional gradient" begin

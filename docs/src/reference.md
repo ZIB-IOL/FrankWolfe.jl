@@ -60,11 +60,11 @@ implemented in the package and their comparison with projection operators.
 
 ```@docs
 compute_extreme_point(lmo::FrankWolfe.ProductLMO, direction::Tuple; kwargs...)
-compute_extreme_point(lmo::FrankWolfe.ProductLMO{N},direction::AbstractArray;storage=similar(direction),direction_indices,kwargs...,) where {N}
+compute_extreme_point(lmo::FrankWolfe.ProductLMO{N},direction::AbstractArray;storage=similar(direction),direction_indices,kwargs...) where {N}
 compute_extreme_point(lmo::FrankWolfe.UnitSimplexOracle{T}, direction) where {T}
 FrankWolfe.compute_dual_solution(::FrankWolfe.UnitSimplexOracle{T}, direction, primalSolution) where {T}
 compute_extreme_point(lmo::FrankWolfe.ProbabilitySimplexOracle{T}, direction; kwargs...) where {T}
-FrankWolfe.compute_dual_solution(::FrankWolfe.ProbabilitySimplexOracle{T},direction,primal_solution;kwargs...,) where {T}
+FrankWolfe.compute_dual_solution(::FrankWolfe.ProbabilitySimplexOracle{T},direction,primal_solution;kwargs...) where {T}
 FrankWolfe.convert_mathopt
 ```
 
@@ -88,18 +88,6 @@ For all Frank-Wolfe algorithms, a step size must be determined to move from the
 current iterate to the next one. This step size can be determined by exact line search
 or any other rule represented by a subtype of `LineSearchMethod` which
 must implement `perform_line_search`.
-
-```@docs
-FrankWolfe.LineSearchMethod
-FrankWolfe.perform_line_search
-FrankWolfe.MonotonousStepSize
-FrankWolfe.MonotonousNonConvexStepSize
-```
-
-See [Pedregosa, Negiar, Askari, Jaggi 2020](https://arxiv.org/abs/1806.05123)
-for the adaptive step size,
-[Carderera, Besançon, Pokutta 2021](https://openreview.net/forum?id=rq_UD6IiBpX)
-for the monotonous step size.
 
 ## Functions and Structures
 
