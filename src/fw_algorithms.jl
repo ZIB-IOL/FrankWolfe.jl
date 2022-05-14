@@ -385,34 +385,12 @@ function lazified_conditional_gradient(
         )
 
         if callback !== nothing
-<<<<<<< HEAD
-            state = CachingCallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, grad!, lmo, cache_size, gradient)
+            state = CachingCallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, grad!, lmo, length(lmo), gradient, tt)
             callback(state)
         end
 
-        x = muladd_memory_mode(memory_mode, x, gamma, d)
-=======
-            state = (
-                t=t,
-                primal=primal,
-                dual=primal - dual_gap,
-                dual_gap=dual_gap,
-                time=tot_time,
-                x=x,
-                v=v,
-                gamma=gamma,
-                f=f,
-                grad=grad!,
-                lmo=lmo,
-                cache_size=length(lmo),
-                gradient=gradient,
-                tt=tt,
-            )
->>>>>>> 5f5b411fd02f47ec3110b8d1cc55ed9790d25ff6
-
-            if callback(state) === false
-                break
-            end
+        if callback(state) === false
+            break
         end
 
         x = muladd_memory_mode(memory_mode, x, gamma, d)
@@ -441,22 +419,7 @@ function lazified_conditional_gradient(
         memory_mode
     )
     if callback !== nothing
-        state = (
-            t=t-1,
-            primal=primal,
-            dual=primal - dual_gap,
-            dual_gap=dual_gap,
-            time=tot_time,
-            x=x,
-            v=v,
-            gamma=gamma,
-            f=f,
-            grad=grad!,
-            lmo=lmo,
-            cache_size=length(lmo),
-            gradient=gradient,
-            tt=tt,
-        )
+        state = CachingCallbackState(t-1, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, grad!, lmo, length(lmo), gradient, tt)
         callback(state)
     end
     return x, v, primal, dual_gap, traj_data
@@ -642,27 +605,8 @@ function stochastic_frank_wolfe(
         # so nothing is passed as function
         gamma = perform_line_search(line_search, t, nothing, nothing, gradient, x, x - v, 1.0, linesearch_workspace, memory_mode)
         if callback !== nothing
-<<<<<<< HEAD
-            state = StochasticCallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, gradient)
+            state = StochasticCallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, gradient, tt, batch_size)
             callback(state)
-=======
-            state = (
-                t=t,
-                primal=primal,
-                dual=primal - dual_gap,
-                dual_gap=dual_gap,
-                time=tot_time,
-                x=x,
-                v=v,
-                gamma=gamma,
-                gradient=gradient,
-                tt=tt,
-                batch_size=batch_size,
-            )
-            if callback(state) === false
-                break
-            end
->>>>>>> 5f5b411fd02f47ec3110b8d1cc55ed9790d25ff6
         end
 
         d = muladd_memory_mode(memory_mode, d, x, v)
@@ -683,19 +627,7 @@ function stochastic_frank_wolfe(
     gamma = perform_line_search(line_search, t, nothing, nothing, gradient, x, x - v, 1.0, linesearch_workspace, memory_mode)
     tot_time = (time_ns() - time_start) / 1e9
     if callback !== nothing
-        state = (
-            t=t-1,
-            primal=primal,
-            dual=primal - dual_gap,
-            dual_gap=dual_gap,
-            time=(time_ns() - time_start) / 1e9,
-            x=x,
-            v=v,
-            gamma=gamma,
-            gradient=gradient,
-            tt=tt,
-            batch_size=batch_size,
-        )
+        state = StochasticCallbackState(t-1, primal, primal-dual_gap, dual_gap, (time_ns() - time_start) / 1e9, x, v, gamma, gradient, tt, batch_size)
         callback(state)
     end
     return x, v, primal, dual_gap, traj_data

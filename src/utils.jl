@@ -161,7 +161,7 @@ The state data is only the 5 first fields, usually:
 `(t,primal,dual,dual_gap,time)`
 """
 function trajectory_callback(storage)
-    return function push_trajectory!(data)
+    return function push_trajectory!(data, args...)
         return push!(storage, callback_state(data))
     end
 end

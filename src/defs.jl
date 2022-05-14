@@ -56,7 +56,7 @@ struct CallbackState{XT,VT,FT,GFT,LMO<:LinearMinimizationOracle,GT}
     gradient::GT
 end
 
-struct CachingCallbackState{XT,VT,FT,GFT,LMO<:LinearMinimizationOracle,GT}
+struct CachingCallbackState{XT,VT,FT,GFT,LMO<:LinearMinimizationOracle,GT,TT}
     t::Int64
     primal::Float64
     dual::Float64
@@ -70,9 +70,10 @@ struct CachingCallbackState{XT,VT,FT,GFT,LMO<:LinearMinimizationOracle,GT}
     lmo::LMO
     cache_size::Int64
     gradient::GT
+    tt::TT
 end
 
-struct StochasticCallbackState{XT,VT,GT}
+struct StochasticCallbackState{XT,VT,GT,TT}
     t::Int64
     primal::Float64
     dual::Float64
@@ -82,9 +83,11 @@ struct StochasticCallbackState{XT,VT,GT}
     v::VT
     gamma::Float64
     gradient::GT
+    batch_size::Int64
+    tt::TT
 end
 
-struct BPCGCallbackActiveSetState{XT,VT,AT<:ActiveSet,GT}
+struct BPCGCallbackState{XT,VT,GT,TT}
     t::Int64
     primal::Float64
     dual::Float64
@@ -93,11 +96,11 @@ struct BPCGCallbackActiveSetState{XT,VT,AT<:ActiveSet,GT}
     x::XT
     v::VT
     gamma::Float64
-    active_set::AT
     gradient::GT
+    tt::TT
 end
 
-struct BCGCallbackActiveSetState{XT,VT,AT<:ActiveSet,GT}
+struct BCGCallbackState{XT,VT,GT,TT}
     t::Int64
     primal::Float64
     dual::Float64
@@ -105,11 +108,11 @@ struct BCGCallbackActiveSetState{XT,VT,AT<:ActiveSet,GT}
     time::Float64
     x::XT
     v::VT
-    active_set::AT
     non_simplex_iter::Int64
     gradient::GT
+    tt::TT
 end
 
-function callback_state(state::Union{CallbackState, CachingCallbackState, StochasticCallbackState, BCGCallbackActiveSetState, BPCGCallbackActiveSetState}, args...)
+function callback_state(state::Union{CallbackState, CachingCallbackState, StochasticCallbackState, BCGCallbackActiveSetState, BPCGCallbackActiveSetState})
     return (state.t, state.primal, state.dual, state.dual_gap, state.time)
 end

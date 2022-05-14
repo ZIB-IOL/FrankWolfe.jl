@@ -39,12 +39,12 @@ end
 """
     make_print_callback(callback, print_iter, headers, format_string, format_state)
 
-Default verbose callback for fw_algorithms, that wraps around previous callback. 
+Default verbose callback for fw_algorithms, that wraps around previous callback.
 Prints the state to the console after print_iter iterations.
 If the callback to be wrapped is of type nothing, always return true to enforce boolean output for non-nothing callbacks.
 """
 function make_print_callback(callback, print_iter, headers, format_string, format_state)
-    return function callback_with_prints(state)
+    return function callback_with_prints(state, args...)
 
 
         if (state.tt == last || state.tt == pp )
@@ -60,7 +60,7 @@ function make_print_callback(callback, print_iter, headers, format_string, forma
             rep = format_state(state)
             print_callback(rep, format_string)
             flush(stdout)
-        end 
+        end
 
         if callback === nothing
             return true
@@ -73,14 +73,14 @@ end
 """
     make_trajectory_callback(callback, traj_data)
 
-Default trajectory logging callback for fw_algorithms, that wraps around previous callback. 
+Default trajectory logging callback for fw_algorithms, that wraps around previous callback.
 Adds the state to the storage variable.
 The state data is only the 5 first fields, usually:
 `(t, primal, dual, dual_gap, time)`
 If the callback to be wrapped is of type nothing, always return true to enforce boolean output for non-nothing callbacks.
 """
 function make_trajectory_callback(callback, traj_data::Vector)
-    return function callback_with_trajectory(state)
+    return function callback_with_trajectory(state, args...)
         if state.tt !== last || state.tt !== pp
             push!(traj_data, Tuple(state)[1:5])
         end
