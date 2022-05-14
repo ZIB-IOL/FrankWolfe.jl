@@ -203,8 +203,8 @@ function blended_conditional_gradient(
         x = get_active_set_iterate(active_set)
         dual_gap = phi
         if callback !== nothing
-            state = BCGCallbackActiveSetState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, active_set, non_simplex_iter, gradient)
-            callback(state)
+            state = BCGCallbackActiveSetState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, non_simplex_iter, gradient, tt)
+            callback(state, active_set)
         end
 
         if verbose && mod(t, print_iter) == 0
@@ -227,20 +227,8 @@ function blended_conditional_gradient(
         dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         tot_time = (time_ns() - time_start) / 1e9
         tt = last
-        state = (
-            t=t-1,
-            primal=primal,
-            dual=primal - dual_gap,
-            dual_gap=dual_gap,
-            time=tot_time,
-            x=x,
-            v=v,
-            active_set=active_set,
-            non_simplex_iter=non_simplex_iter,
-            gradient=gradient,
-            tt=tt,
-        )
-        callback(state)
+        state = BCGCallbackActiveSetState(t-1, primal, primal-dual_gap, dual_gap, tot_time, x, v, non_simplex_iter, gradient, tt)
+        callback(state, active_set)
     end
 
     # cleanup the active set, renormalize, and recompute values
@@ -257,20 +245,8 @@ function blended_conditional_gradient(
     if callback !== nothing
         tt = pp
         tot_time = (time_ns() - time_start) / 1e9
-        state = (
-            t=t-1,
-            primal=primal,
-            dual=primal - dual_gap,
-            dual_gap=dual_gap,
-            time=tot_time,
-            x=x,
-            v=v,
-            active_set=active_set,
-            non_simplex_iter=non_simplex_iter,
-            gradient=gradient,
-            tt=tt,
-        )
-        callback(state)
+        state = BCGCallbackActiveSetState(t-1, primal, primal-dual_gap, dual_gap, tot_time, x, v, non_simplex_iter, gradient, tt)
+        callback(state, active_set)
     end
     return x, v, primal, dual_gap, traj_data
 end
