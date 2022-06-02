@@ -41,7 +41,7 @@ const st = (
 )
 
 
-struct CallbackState{XT,VT,FT,GFT,LMO<:LinearMinimizationOracle,GT}
+struct CallbackState{XT,VT,FT,LMO<:LinearMinimizationOracle,GT}
     t::Int64
     primal::Float64
     dual::Float64
@@ -51,68 +51,11 @@ struct CallbackState{XT,VT,FT,GFT,LMO<:LinearMinimizationOracle,GT}
     v::VT
     gamma::Float64
     f::FT
-    grad!::GFT
     lmo::LMO
     gradient::GT
+    tt::FrankWolfe.StepType
 end
 
-struct CachingCallbackState{XT,VT,FT,GFT,LMO<:LinearMinimizationOracle,GT,TT}
-    t::Int64
-    primal::Float64
-    dual::Float64
-    dual_gap::Float64
-    time::Float64
-    x::XT
-    v::VT
-    gamma::Float64
-    f::FT
-    grad!::GFT
-    lmo::LMO
-    cache_size::Int64
-    gradient::GT
-    tt::TT
-end
-
-struct StochasticCallbackState{XT,VT,GT,TT}
-    t::Int64
-    primal::Float64
-    dual::Float64
-    dual_gap::Float64
-    time::Float64
-    x::XT
-    v::VT
-    gamma::Float64
-    gradient::GT
-    batch_size::Int64
-    tt::TT
-end
-
-struct BPCGCallbackState{XT,VT,GT,TT}
-    t::Int64
-    primal::Float64
-    dual::Float64
-    dual_gap::Float64
-    time::Float64
-    x::XT
-    v::VT
-    gamma::Float64
-    gradient::GT
-    tt::TT
-end
-
-struct BCGCallbackState{XT,VT,GT,TT}
-    t::Int64
-    primal::Float64
-    dual::Float64
-    dual_gap::Float64
-    time::Float64
-    x::XT
-    v::VT
-    non_simplex_iter::Int64
-    gradient::GT
-    tt::TT
-end
-
-function callback_state(state::Union{CallbackState, CachingCallbackState, StochasticCallbackState, BCGCallbackActiveSetState, BPCGCallbackActiveSetState})
+function callback_state(state::CallbackState)
     return (state.t, state.primal, state.dual, state.dual_gap, state.time)
 end

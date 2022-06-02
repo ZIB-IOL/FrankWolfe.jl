@@ -254,7 +254,7 @@ function blended_pairwise_conditional_gradient(
             primal = f(x)
         end
         if callback !== nothing
-            state = BPCGCallbackState(t, primal, primal-dual_gap, phi, tot_time, x, vertex_taken, gamma, gradient, tt)
+            state = CallbackState(t, primal, primal-dual_gap, phi, tot_time, x, vertex_taken, gamma, f, lmo, gradient, tt)
             callback(state, active_set)
         end
 
@@ -280,7 +280,7 @@ function blended_pairwise_conditional_gradient(
         tt = last
         tot_time = (time_ns() - time_start) / 1e9
         if callback !== nothing
-            state = BPCGCallbackState(t-1, primal, primal-phi, phi, tot_time, x, v, gamma, gradient, tt)
+            state = CallbackState(t-1, primal, primal-phi, phi, tot_time, x, v, gamma, f, lmo, gradient, tt)
             callback(state, active_set)
         end
     end
@@ -294,7 +294,7 @@ function blended_pairwise_conditional_gradient(
     tt = pp
     tot_time = (time_ns() - time_start) / 1e9
     if callback !== nothing
-        state = BPCGCallbackState(t-1, primal, primal-dual_gap, phi, tot_time, x, v, gamma, gradient, tt)
+        state = CallbackState(t-1, primal, primal-dual_gap, phi, tot_time, x, v, gamma, f, lmo, gradient, tt)
         callback(state, active_set)
     end
 
