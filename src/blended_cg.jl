@@ -109,6 +109,7 @@ function blended_conditional_gradient(
     if linesearch_inner_workspace === nothing
         linesearch_inner_workspace = build_linesearch_workspace(line_search_inner, x, gradient)
     end
+    gamma = NaN
 
     while t <= max_iteration && (phi ≥ epsilon || t == 0) # do at least one iteration for consistency with other algos
         #####################
@@ -203,8 +204,8 @@ function blended_conditional_gradient(
         x = get_active_set_iterate(active_set)
         dual_gap = phi
         if callback !== nothing
-            state = BCGCallbackActiveSetState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, non_simplex_iter, gradient, tt)
-            callback(state, active_set)
+            state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, lmo, gradient, tt)
+            callback(state, active_set, non_simplex_iter)
         end
 
         if verbose && mod(t, print_iter) == 0
@@ -227,8 +228,8 @@ function blended_conditional_gradient(
         dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         tot_time = (time_ns() - time_start) / 1e9
         tt = last
-        state = BCGCallbackActiveSetState(t-1, primal, primal-dual_gap, dual_gap, tot_time, x, v, non_simplex_iter, gradient, tt)
-        callback(state, active_set)
+        state = CallbackState(t-1, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, lmo, gradient, tt)
+        callback(state, active_set, non_simplex_iter)
     end
 
     # cleanup the active set, renormalize, and recompute values
@@ -245,8 +246,8 @@ function blended_conditional_gradient(
     if callback !== nothing
         tt = pp
         tot_time = (time_ns() - time_start) / 1e9
-        state = BCGCallbackActiveSetState(t-1, primal, primal-dual_gap, dual_gap, tot_time, x, v, non_simplex_iter, gradient, tt)
-        callback(state, active_set)
+        state = CallbackState(t-1, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, lmo, gradient, tt)
+        callback(state, active_set, non_simplex_iter)
     end
     return x, v, primal, dual_gap, traj_data
 end
