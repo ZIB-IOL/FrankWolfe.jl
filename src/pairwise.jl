@@ -289,7 +289,7 @@ function blended_pairwise_conditional_gradient(
         tot_time = (time_ns() - time_start) / 1e9
         if callback !== nothing
             state = (
-                t=t-1,
+                t=t,
                 primal=primal,
                 dual=primal - phi,
                 dual_gap=phi,
@@ -315,7 +315,7 @@ function blended_pairwise_conditional_gradient(
     tot_time = (time_ns() - time_start) / 1e9
     if callback !== nothing
         state = (
-            t=t-1,
+            t=t,
             primal=primal,
             dual=primal - dual_gap,
             dual_gap=phi,
