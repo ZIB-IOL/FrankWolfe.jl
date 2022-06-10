@@ -218,7 +218,7 @@ function frank_wolfe(
     )
     if callback !== nothing
         state = (
-            t=t-1,
+            t=t,
             primal=primal,
             dual=primal - dual_gap,
             dual_gap=dual_gap,
@@ -450,7 +450,7 @@ function lazified_conditional_gradient(
     )
     if callback !== nothing
         state = (
-            t=t-1,
+            t=t,
             primal=primal,
             dual=primal - dual_gap,
             dual_gap=dual_gap,
@@ -687,7 +687,7 @@ function stochastic_frank_wolfe(
     tot_time = (time_ns() - time_start) / 1e9
     if callback !== nothing
         state = (
-            t=t-1,
+            t=t,
             primal=primal,
             dual=primal - dual_gap,
             dual_gap=dual_gap,

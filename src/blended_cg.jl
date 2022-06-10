@@ -236,7 +236,7 @@ function blended_conditional_gradient(
         tot_time = (time_ns() - time_start) / 1e9
         tt = last
         state = (
-            t=t-1,
+            t=t,
             primal=primal,
             dual=primal - dual_gap,
             dual_gap=dual_gap,
@@ -266,7 +266,7 @@ function blended_conditional_gradient(
         tt = pp
         tot_time = (time_ns() - time_start) / 1e9
         state = (
-            t=t-1,
+            t=t,
             primal=primal,
             dual=primal - dual_gap,
             dual_gap=dual_gap,
