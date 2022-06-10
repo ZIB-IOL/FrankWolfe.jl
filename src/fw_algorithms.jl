@@ -577,7 +577,7 @@ function stochastic_frank_wolfe(
         end
     end
     first_iter = true
-    gradient = 1
+    gradient = 0
     if linesearch_workspace === nothing
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
     end
