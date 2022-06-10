@@ -106,7 +106,7 @@ function away_frank_wolfe(
         throw(ArgumentError("Empty active set"))
     end
 
-    t = 0
+    t = 1
     dual_gap = Inf
     primal = Inf
     x = get_active_set_iterate(active_set)
@@ -165,7 +165,7 @@ function away_frank_wolfe(
         # managing time and Ctrl-C
         #####################
         time_at_loop = time_ns()
-        if t == 0
+        if t == 1
             time_start = time_at_loop
         end
         # time is measured at beginning of loop for consistency throughout all algorithms
@@ -270,7 +270,7 @@ function away_frank_wolfe(
     tot_time= (time_ns()- time_start) / 1e9
     if callback !== nothing 
         state = (
-            t=t-1,
+            t=t,
             primal=primal,
             dual=primal - dual_gap,
             dual_gap=dual_gap,
@@ -299,7 +299,7 @@ function away_frank_wolfe(
     tot_time= (time_ns()- time_start) / 1e9
     if callback !== nothing 
         state = (
-            t=t-1,
+            t=t,
             primal=primal,
             dual=primal - dual_gap,
             dual_gap=dual_gap,

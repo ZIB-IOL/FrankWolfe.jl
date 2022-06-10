@@ -46,7 +46,7 @@ function frank_wolfe(
         return rep
     end
 
-    t = 0
+    t = 1
     dual_gap = Inf
     primal = Inf
     v = []
@@ -111,7 +111,7 @@ function frank_wolfe(
         # managing time and Ctrl-C
         #####################
         time_at_loop = time_ns()
-        if t == 0
+        if t == 1
             time_start = time_at_loop
         end
         # time is measured at beginning of loop for consistency throughout all algorithms
@@ -218,7 +218,7 @@ function frank_wolfe(
     )
     if callback !== nothing
         state = (
-            t=t-1,
+            t=t,
             primal=primal,
             dual=primal - dual_gap,
             dual_gap=dual_gap,
@@ -293,7 +293,7 @@ function lazified_conditional_gradient(
         lmo = VectorCacheLMO{typeof(lmo_base),VType}(lmo_base)
     end
 
-    t = 0
+    t = 1
     dual_gap = Inf
     primal = Inf
     v = []
@@ -351,7 +351,7 @@ function lazified_conditional_gradient(
         # managing time and Ctrl-C
         #####################
         time_at_loop = time_ns()
-        if t == 0
+        if t == 1
             time_start = time_at_loop
         end
         # time is measured at beginning of loop for consistency throughout all algorithms
@@ -450,7 +450,7 @@ function lazified_conditional_gradient(
     )
     if callback !== nothing
         state = (
-            t=t-1,
+            t=t,
             primal=primal,
             dual=primal - dual_gap,
             dual_gap=dual_gap,
@@ -525,7 +525,7 @@ function stochastic_frank_wolfe(
         return rep
     end
 
-    t = 0
+    t = 1
     dual_gap = Inf
     primal = Inf
     v = []
@@ -577,7 +577,7 @@ function stochastic_frank_wolfe(
         end
     end
     first_iter = true
-    gradient = 0
+    gradient = 1
     if linesearch_workspace === nothing
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
     end
@@ -588,7 +588,7 @@ function stochastic_frank_wolfe(
         # managing time and Ctrl-C
         #####################
         time_at_loop = time_ns()
-        if t == 0
+        if t == 1
             time_start = time_at_loop
         end
         # time is measured at beginning of loop for consistency throughout all algorithms
@@ -687,7 +687,7 @@ function stochastic_frank_wolfe(
     tot_time = (time_ns() - time_start) / 1e9
     if callback !== nothing
         state = (
-            t=t-1,
+            t=t,
             primal=primal,
             dual=primal - dual_gap,
             dual_gap=dual_gap,

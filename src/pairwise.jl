@@ -105,7 +105,7 @@ function blended_pairwise_conditional_gradient(
         callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
     end
 
-    t = 0
+    t = 1
     primal = Inf
     x = get_active_set_iterate(active_set)
     tt = regular
@@ -148,7 +148,7 @@ function blended_pairwise_conditional_gradient(
 
         # managing time limit
         time_at_loop = time_ns()
-        if t == 0
+        if t == 1
             time_start = time_at_loop
         end
         # time is measured at beginning of loop for consistency throughout all algorithms
@@ -289,7 +289,7 @@ function blended_pairwise_conditional_gradient(
         tot_time = (time_ns() - time_start) / 1e9
         if callback !== nothing
             state = (
-                t=t-1,
+                t=t,
                 primal=primal,
                 dual=primal - phi,
                 dual_gap=phi,
@@ -315,7 +315,7 @@ function blended_pairwise_conditional_gradient(
     tot_time = (time_ns() - time_start) / 1e9
     if callback !== nothing
         state = (
-            t=t-1,
+            t=t,
             primal=primal,
             dual=primal - dual_gap,
             dual_gap=phi,

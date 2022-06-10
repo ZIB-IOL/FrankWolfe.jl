@@ -54,7 +54,7 @@ function blended_conditional_gradient(
         return rep
     end
 
-    t = 0
+    t = 1
     primal = Inf
     dual_gap = Inf
     active_set = ActiveSet([(1.0, x0)])
@@ -110,12 +110,12 @@ function blended_conditional_gradient(
         linesearch_inner_workspace = build_linesearch_workspace(line_search_inner, x, gradient)
     end
 
-    while t <= max_iteration && (phi ≥ epsilon || t == 0) # do at least one iteration for consistency with other algos
+    while t <= max_iteration && (phi ≥ epsilon || t == 1) # do at least one iteration for consistency with other algos
         #####################
         # managing time and Ctrl-C
         #####################
         time_at_loop = time_ns()
-        if t == 0
+        if t == 1
             time_start = time_at_loop
         end
         # time is measured at beginning of loop for consistency throughout all algorithms
@@ -236,7 +236,7 @@ function blended_conditional_gradient(
         tot_time = (time_ns() - time_start) / 1e9
         tt = last
         state = (
-            t=t-1,
+            t=t,
             primal=primal,
             dual=primal - dual_gap,
             dual_gap=dual_gap,
@@ -266,7 +266,7 @@ function blended_conditional_gradient(
         tt = pp
         tot_time = (time_ns() - time_start) / 1e9
         state = (
-            t=t-1,
+            t=t,
             primal=primal,
             dual=primal - dual_gap,
             dual_gap=dual_gap,
