@@ -46,7 +46,7 @@ function frank_wolfe(
         return rep
     end
 
-    t = 1
+    t = 0
     dual_gap = Inf
     primal = Inf
     v = []
@@ -111,7 +111,7 @@ function frank_wolfe(
         # managing time and Ctrl-C
         #####################
         time_at_loop = time_ns()
-        if t == 1
+        if t == 0
             time_start = time_at_loop
         end
         # time is measured at beginning of loop for consistency throughout all algorithms
@@ -293,7 +293,7 @@ function lazified_conditional_gradient(
         lmo = VectorCacheLMO{typeof(lmo_base),VType}(lmo_base)
     end
 
-    t = 1
+    t = 0
     dual_gap = Inf
     primal = Inf
     v = []
@@ -351,7 +351,7 @@ function lazified_conditional_gradient(
         # managing time and Ctrl-C
         #####################
         time_at_loop = time_ns()
-        if t == 1
+        if t == 0
             time_start = time_at_loop
         end
         # time is measured at beginning of loop for consistency throughout all algorithms
@@ -525,7 +525,7 @@ function stochastic_frank_wolfe(
         return rep
     end
 
-    t = 1
+    t = 0
     dual_gap = Inf
     primal = Inf
     v = []
@@ -588,7 +588,7 @@ function stochastic_frank_wolfe(
         # managing time and Ctrl-C
         #####################
         time_at_loop = time_ns()
-        if t == 1
+        if t == 0
             time_start = time_at_loop
         end
         # time is measured at beginning of loop for consistency throughout all algorithms
