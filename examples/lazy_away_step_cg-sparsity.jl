@@ -1,4 +1,4 @@
-#= 
+#=
 
 Example demonstrating sparsity control by means of the `lazy_tolerance`-factor passed to the lazy AFW variant
 
@@ -9,7 +9,12 @@ The default for AFW is lazy_tolerance = 2.0
 
 =#
 
-include("activate.jl")
+using FrankWolfe
+using ProgressMeter
+using Arpack
+using Plots
+using DoubleFloats
+using ReverseDiff
 
 using LinearAlgebra
 using Random
@@ -45,7 +50,7 @@ const lmo = FrankWolfe.KSparseLMO(100, 1.0)
 const x00 = FrankWolfe.compute_extreme_point(lmo, rand(n))
 
 
-## example with BirkhoffPolytopeLMO - uses square matrix. 
+## example with BirkhoffPolytopeLMO - uses square matrix.
 # const lmo = FrankWolfe.BirkhoffPolytopeLMO()
 # cost = rand(n, n)
 # const x00 = FrankWolfe.compute_extreme_point(lmo, cost)
@@ -122,7 +127,7 @@ trajectory_adaptiveLoc2 = []
 callback = build_callback(trajectory_adaptiveLoc2)
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, trajectory_adaptiveLoc2 = FrankWolfe.away_frank_wolfe(
+@time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,

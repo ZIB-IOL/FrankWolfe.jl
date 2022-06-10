@@ -23,22 +23,34 @@ function perform_line_search end
 
 build_linesearch_workspace(::LineSearchMethod, x, gradient) = nothing
 
+"""
+Computes step size: `2/(2 + t)` at iteration `t`.
+"""
 struct Agnostic{T <: Real} <: LineSearchMethod end
 
 Agnostic() = Agnostic{Float64}()
 
-perform_line_search(::Agnostic{<:Rational}, t, f, g!, gradient, x, d, gamma_max, workspace) = 2 // (t + 2)
-perform_line_search(::Agnostic{T}, t, f, g!, gradient, x, d, gamma_max, workspace) where {T} = T(2 / (t + 2))
+perform_line_search(::Agnostic{<:Rational}, t, f, g!, gradient, x, d, gamma_max, workspace, memory_mode::MemoryEmphasis) = 2 // (t + 2)
+perform_line_search(::Agnostic{T}, t, f, g!, gradient, x, d, gamma_max, workspace, memory_mode::MemoryEmphasis) where {T} = T(2 / (t + 2))
 
 Base.print(io::IO, ::Agnostic) = print(io, "Agnostic")
 
+"""
+Computes a step size for nonconvex functions: `1/sqrt(t + 1)`.
+"""
 struct Nonconvex{T} <: LineSearchMethod end
 Nonconvex() = Nonconvex{Float64}()
 
-perform_line_search(::Nonconvex{T}, t, f, g!, gradient, x, d, gamma_max, workspace) where {T} = T(1 / sqrt(t + 1))
+perform_line_search(::Nonconvex{T}, t, f, g!, gradient, x, d, gamma_max, workspace, memory_mode) where {T} = T(1 / sqrt(t + 1))
 
 Base.print(io::IO, ::Nonconvex) = print(io, "Nonconvex")
 
+"""
+Computes the 'Short step' step size:
+`dual_gap / (L * norm(x - v)^2)`,
+where `L` is the Lipschitz constant of the gradient, `x` is the
+current iterate, and `v` is the current Frank-Wolfe vertex.
+"""
 struct Shortstep{T} <: LineSearchMethod
     L::T
     function Shortstep(L::T) where {T}
@@ -59,6 +71,7 @@ function perform_line_search(
         d,
         gamma_max,
         workspace,
+        memory_mode
     )
     
     return min(
@@ -86,6 +99,7 @@ function perform_line_search(
         d,
         gamma_max,
         workspace,
+        memory_mode
     )
     return min(line_search.gamma0, gamma_max)
 end
@@ -96,7 +110,9 @@ Base.print(io::IO, ::FixedStep) = print(io, "FixedStep")
     Goldenratio
 
 Simple golden-ratio based line search
-based on boostedFW paper code and adapted.
+[Golden Section Search](https://en.wikipedia.org/wiki/Golden-section_search),
+based on [the Boosted FW paper](http://proceedings.mlr.press/v119/combettes20a/combettes20a.pdf)
+code and adapted.
 """
 struct Goldenratio{T} <: LineSearchMethod
     tol::T
@@ -129,6 +145,7 @@ function perform_line_search(
     d,
     gamma_max,
     workspace::GoldenratioWorkspace,
+    memory_mode
 )
     # restrict segment of search to [x, y]
     @. workspace.y = x - gamma_max * d
@@ -182,7 +199,8 @@ Base.print(io::IO, ::Goldenratio) = print(io, "Goldenratio")
 """
     Backtracking(limit_num_steps, tol, tau)
 
-Backtracking line search strategy.
+Backtracking line search strategy, see
+[this reference](https://arxiv.org/pdf/1806.05123.pdf).
 """
 struct Backtracking{T} <: LineSearchMethod
     limit_num_steps::Int
@@ -206,6 +224,7 @@ function perform_line_search(
     d,
     gamma_max,
     storage,
+    memory_mode,
 )
     gamma = gamma_max * one(line_search.tau)
     i = 0
@@ -217,7 +236,7 @@ function perform_line_search(
     end
 
     old_val = f(x)
-    @. storage = x - gamma * d
+    storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
     new_val = f(storage)
     while new_val - old_val > -line_search.tol * gamma * dot_gdir
         if i > line_search.limit_num_steps
@@ -228,7 +247,7 @@ function perform_line_search(
             end
         end
         gamma *= line_search.tau
-        @. storage = x - gamma * d
+        storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
         new_val = f(storage)
         i += 1
     end
@@ -239,11 +258,11 @@ Base.print(io::IO, ::Backtracking) = print(io, "Backtracking")
 
 """
 Slight modification of the
-Adaptive Step Size strategy from https://arxiv.org/pdf/1806.05123.pdf
+Adaptive Step Size strategy from [this paper](https://arxiv.org/abs/1806.05123)
 
-The `Adaptive` struct keeps track of the Lipschitz constant estimate.
+The `Adaptive` struct keeps track of the Lipschitz constant estimate `L_est`.
 `perform_line_search` also has a `should_upgrade` keyword argument on
-whether there should be a temporary upgrade to `BigFloat`.
+whether there should be a temporary upgrade to `BigFloat` for extended precision.
 """
 mutable struct Adaptive{T,TT} <: LineSearchMethod
     eta::T
@@ -266,7 +285,8 @@ function perform_line_search(
     x::XT,
     d,
     gamma_max,
-    storage::XT;
+    storage::XT,
+    memory_mode::MemoryEmphasis;
     should_upgrade::Val=Val{false}(),
 ) where {XT}
     if norm(d) == 0
@@ -286,11 +306,11 @@ function perform_line_search(
     (dot_dir, ndir2) = _upgrade_accuracy_adaptive(gradient, d, should_upgrade)
     
     gamma = min(max(dot_dir / (M * ndir2), 0), gamma_max)
-    @. storage = x - gamma * d 
+    storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
     while f(storage) - f(x) > -gamma * dot_dir + gamma^2 * ndir2 * M / 2
         M *= line_search.tau
         gamma = min(max(dot_dir / (M * ndir2), 0), gamma_max)
-        @. storage = x - gamma * d 
+        storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
     end
     line_search.L_est = M
     return gamma
@@ -338,14 +358,15 @@ function perform_line_search(
     d,
     gamma_max,
     storage,
+    memory_mode
 )
     gamma = 2.0^(1 - line_search.factor) / (2 + t)
-    @. storage = x - gamma * d
+    storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
     f0 = f(x)
     while !line_search.domain_oracle(storage) || f(storage) > f0
         line_search.factor += 1
         gamma = 2.0^(1 - line_search.factor) / (2 + t)
-        @. storage = x - gamma * d
+        storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
     end
     return gamma
 end
@@ -381,14 +402,15 @@ function perform_line_search(
     d,
     gamma_max,
     storage,
+    memory_mode
 )
     gamma = 2.0^(-line_search.factor) / sqrt(1 + t)
-    @. storage = x - gamma * d
+    storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
     f0 = f(x)
     while !line_search.domain_oracle(storage) || f(storage) > f0
         line_search.factor += 1
         gamma = 2.0^(-line_search.factor) / sqrt(1 + t)
-        @. storage = x - gamma * d
+        storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
     end
     return gamma
 end

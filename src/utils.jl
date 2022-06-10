@@ -13,8 +13,35 @@ macro memory_mode(memory_mode, ex)
     end)
 end
 
+"""
+    muladd_memory_mode(memory_mode::MemoryEmphasis, d, x, v)
+
+Performs `d = x - v` in-place or not depending on MemoryEmphasis
+"""
+function muladd_memory_mode(memory_mode::MemoryEmphasis, d, x, v)
+    @memory_mode(memory_mode, d = x - v)
+end
+
+"""
+    (memory_mode::MemoryEmphasis, x, gamma::Real, d)
+
+Performs `x = x - gamma * d` in-place or not depending on MemoryEmphasis
+"""
+function muladd_memory_mode(memory_mode::MemoryEmphasis, x, gamma::Real, d)
+    @memory_mode(memory_mode, x = x - gamma * d)
+end
+
+"""
+    (memory_mode::MemoryEmphasis, storage, x, gamma::Real, d)
+
+Performs `storage = x - gamma * d` in-place or not depending on MemoryEmphasis
+"""
+function muladd_memory_mode(memory_mode::MemoryEmphasis, storage, x, gamma::Real, d)
+    @memory_mode(memory_mode, storage = x - gamma * d)
+end
+
 ##############################################################
-# simple benchmark of elementary costs of oracles and 
+# simple benchmark of elementary costs of oracles and
 # critical components
 ##############################################################
 
@@ -82,7 +109,9 @@ function benchmark_oracles(f, grad!, x_gen, lmo; k=100, nocache=true)
 end
 
 """
-`isequal` without the checks. Assumes a and b have the same axes.
+    _unsafe_equal(a, b)
+
+Like `isequal` on arrays but without the checks. Assumes a and b have the same axes.
 """
 function _unsafe_equal(a::AbstractArray, b::AbstractArray)
     if a === b
@@ -134,37 +163,6 @@ The state data is only the 5 first fields, usually:
 function trajectory_callback(storage)
     return function push_trajectory!(data)
         return push!(storage, Tuple(data)[1:5])
-    end
-end
-
-function print_callback(data, format_string; print_header=false, print_footer=false)
-    print_formatted(fmt, args...) = @eval @printf($fmt, $(args...))
-    if print_header || print_footer
-        temp = strip(format_string, ['\n'])
-        temp = replace(temp, "%" => "")
-        temp = replace(temp, "e" => "")
-        temp = replace(temp, "i" => "")
-        temp = replace(temp, "s" => "")
-        temp = split(temp, " ")
-        len = 0
-        for i in temp
-            len = len + parse(Int, i)
-        end
-        lenHeaderFooter = len + 2 + length(temp) - 1
-        if print_footer
-            line = "-"^lenHeaderFooter
-            @printf("%s\n\n", line)
-        end
-        if print_header
-            line = "-"^lenHeaderFooter
-            @printf("\n%s\n", line)
-            s_format_string = replace(format_string, "e" => "s")
-            s_format_string = replace(s_format_string, "i" => "s")
-            print_formatted(s_format_string, data...)
-            @printf("%s\n", line)
-        end
-    else
-        print_formatted(format_string, data...)
     end
 end
 
@@ -232,7 +230,7 @@ Batch iterator always returning a constant batch size.
 struct ConstantBatchIterator
     batch_size::Int
 end
- 
+
 batchsize_iterate(cbi::ConstantBatchIterator) = cbi.batch_size
 
 """

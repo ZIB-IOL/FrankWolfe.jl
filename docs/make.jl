@@ -4,44 +4,33 @@ using LinearAlgebra
 
 using Literate, Test
 
-const _EXAMPLE_DIR = joinpath(@__DIR__, "src", "examples")
+EXAMPLE_DIR = joinpath(dirname(@__DIR__), "examples")
+DOCS_EXAMPLE_DIR = joinpath(@__DIR__, "src", "examples")
+DOCS_REFERENCE_DIR = joinpath(@__DIR__, "src", "reference")
 
-"""
-    _include_sandbox(filename)
-Include the `filename` in a temporary module that acts as a sandbox. (Ensuring
-no constants or functions leak into other files.)
-"""
-function _include_sandbox(filename)
-    mod = @eval module $(gensym()) end
-    Base.include(mod, joinpath(dirname(pathof(FrankWolfe)), "../examples/plot_utils.jl"))
-    return Base.include(mod, filename)
+function file_list(dir, extension)
+    return filter(file -> endswith(file, extension), sort(readdir(dir)))
 end
 
-function _file_list(full_dir, relative_dir, extension)
-    return map(
-        file -> joinpath(relative_dir, file),
-        filter(file -> endswith(file, extension), sort(readdir(full_dir))),
-    )
-end
-
-function literate_directory(dir)
-    rm.(_file_list(dir, dir, ".md"))
-    for filename in _file_list(dir, dir, ".jl")
+function literate_directory(jl_dir, md_dir)
+    for filename in file_list(md_dir, ".md")
+        filepath = joinpath(md_dir, filename)
+        rm(filepath)
+    end
+    for filename in file_list(jl_dir, ".jl")
+        filepath = joinpath(jl_dir, filename)
         # `include` the file to test it before `#src` lines are removed. It is
         # in a testset to isolate local variables between files.
-        @testset "$(filename)" begin
-            _include_sandbox(filename)
+        if startswith(filename, "docs")
+            Literate.markdown(
+                filepath, md_dir; documenter=true, flavor=Literate.DocumenterFlavor()
+            )
         end
-        Literate.markdown(
-            filename,
-            dir;
-            documenter = true,
-        )
     end
-    return
+    return nothing
 end
 
-literate_directory(_EXAMPLE_DIR)
+literate_directory(EXAMPLE_DIR, DOCS_EXAMPLE_DIR)
 
 ENV["GKSwstype"] = "100"
 
@@ -65,19 +54,35 @@ open(joinpath(generated_path, "contributing.md"), "w") do io
     end
 end
 
-makedocs(
+open(joinpath(generated_path, "index.md"), "w") do io
+    # Point to source license file
+    println(
+        io,
+        """
+        ```@meta
+        EditURL = "$(base_url)README.md"
+        ```
+        """,
+    )
+    # Write the contents out below the meta block
+    for line in eachline(joinpath(dirname(@__DIR__), "README.md"))
+        println(io, line)
+    end
+end
+
+makedocs(;
     modules=[FrankWolfe],
     sitename="FrankWolfe.jl",
-    format=Documenter.HTML(prettyurls=get(ENV, "CI", nothing) == "true"),
+    format=Documenter.HTML(; prettyurls=get(ENV, "CI", nothing) == "true", collapselevel=1),
     pages=[
         "Home" => "index.md",
-        "Examples" => [
-        joinpath("examples", f) for f in readdir(_EXAMPLE_DIR) if endswith(f, ".md")
-        ],
+        "How does it work?" => "basics.md",
+        "Advanced features" => "advanced.md",
+        "Examples" => [joinpath("examples", f) for f in file_list(DOCS_EXAMPLE_DIR, ".md")],
+        "API reference" =>
+            [joinpath("reference", f) for f in file_list(DOCS_REFERENCE_DIR, ".md")],
         "Contributing" => "contributing.md",
-        "References" => "reference.md",
-        "Index" => "indexlist.md",
     ],
 )
 
-deploydocs(repo="github.com/ZIB-IOL/FrankWolfe.jl.git", push_preview=true)
+deploydocs(; repo="github.com/ZIB-IOL/FrankWolfe.jl.git", push_preview=true)
