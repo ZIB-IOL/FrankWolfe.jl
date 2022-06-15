@@ -179,7 +179,7 @@ end
 
 
 """
-    VectorCacheLMO{N, LMO, VT}
+    VectorCacheLMO{LMO, VT}
 
 Cache for a LMO storing an unbounded number of vertices of type `VT` in the cache.
 `VT`, if provided, must be the type of vertices returned by `LMO`
