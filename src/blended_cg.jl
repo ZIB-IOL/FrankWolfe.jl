@@ -230,7 +230,7 @@ function blended_conditional_gradient(
         dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         tot_time = (time_ns() - time_start) / 1e9
         tt = last
-        state = CallbackState(t-1, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, lmo, gradient, tt)
+        state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, lmo, gradient, tt)
         callback(state, active_set, non_simplex_iter)
     end
 
@@ -248,7 +248,7 @@ function blended_conditional_gradient(
     if callback !== nothing
         tt = pp
         tot_time = (time_ns() - time_start) / 1e9
-        state = CallbackState(t-1, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, lmo, gradient, tt)
+        state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, lmo, gradient, tt)
         callback(state, active_set, non_simplex_iter)
     end
     return x, v, primal, dual_gap, traj_data
