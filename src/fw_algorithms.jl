@@ -172,7 +172,9 @@ function frank_wolfe(
         )
         if callback !== nothing
             state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, lmo, gradient, tt)
-            callback(state)
+            if callback(state) === false
+                break
+            end
         end
 
         x = muladd_memory_mode(memory_mode, x, gamma, d)
@@ -372,11 +374,9 @@ function lazified_conditional_gradient(
 
         if callback !== nothing
             state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, lmo, gradient, tt)
-            callback(state, length(lmo))
-        end
-
-        if callback(state) === false
-            break
+            if callback(state, length(lmo)) === false
+                break
+            end
         end
 
         x = muladd_memory_mode(memory_mode, x, gamma, d)
@@ -592,7 +592,9 @@ function stochastic_frank_wolfe(
         gamma = perform_line_search(line_search, t, nothing, nothing, gradient, x, x - v, 1.0, linesearch_workspace, memory_mode)
         if callback !== nothing
             state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, lmo, gradient, tt)
-            callback(state, batch_size)
+            if callback(state, batch_size) === false
+                break
+            end
         end
 
         d = muladd_memory_mode(memory_mode, d, x, v)
