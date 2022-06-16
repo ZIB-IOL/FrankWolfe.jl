@@ -205,7 +205,9 @@ function blended_conditional_gradient(
         dual_gap = phi
         if callback !== nothing
             state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, lmo, gradient, tt)
-            callback(state, active_set, non_simplex_iter)
+            if callback(state, active_set, non_simplex_iter) === false
+                break
+            end
         end
 
         if verbose && mod(t, print_iter) == 0
