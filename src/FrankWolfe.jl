@@ -21,11 +21,11 @@ import Arpack
 export frank_wolfe, lazified_conditional_gradient, away_frank_wolfe
 export blended_conditional_gradient, compute_extreme_point
 
+include("abstract_oracles.jl")
 include("defs.jl")
 include("utils.jl")
 include("linesearch.jl")
 include("types.jl")
-include("abstract_oracles.jl")
 include("simplex_oracles.jl")
 include("norm_oracles.jl")
 include("polytope_oracles.jl")
