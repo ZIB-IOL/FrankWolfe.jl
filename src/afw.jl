@@ -234,7 +234,7 @@ function away_frank_wolfe(
             primal = f(x)
             dual_gap = phi_value
         end
-
+        t += 1
         if callback !== nothing
             state = (
                 t=t,
@@ -253,7 +253,6 @@ function away_frank_wolfe(
                 break
             end
         end
-        t += 1
     end
 
     # recompute everything once more for final verfication / do not record to trajectory though for now!

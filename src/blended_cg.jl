@@ -202,6 +202,8 @@ function blended_conditional_gradient(
 
         x = get_active_set_iterate(active_set)
         dual_gap = phi
+        t = t + 1
+        non_simplex_iter += 1
         if callback !== nothing
             state = (
                 t=t,
@@ -220,8 +222,6 @@ function blended_conditional_gradient(
                 break
             end
         end
-        t = t + 1
-        non_simplex_iter += 1
     end
 
     ## post-processing and cleanup after loop
