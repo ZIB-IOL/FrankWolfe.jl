@@ -214,7 +214,7 @@ function blended_conditional_gradient(
                 x=x,
                 v=v,
                 active_set=active_set,
-                non_simplex_iter=non_simplex_iter ,
+                non_simplex_iter=non_simplex_iter,
                 gradient=gradient,
                 tt=tt,
             )
