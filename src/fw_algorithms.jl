@@ -170,9 +170,10 @@ function frank_wolfe(
             linesearch_workspace,
             memory_mode
         )
+        t = t + 1
         if callback !== nothing
             state = (
-                t=t,
+                t=t - 1,
                 primal=primal,
                 dual=primal - dual_gap,
                 dual_gap=dual_gap,
@@ -192,8 +193,6 @@ function frank_wolfe(
         end
 
         x = muladd_memory_mode(memory_mode, x, gamma, d)
-
-        t = t + 1
     end
     # recompute everything once for final verfication / do not record to trajectory though for now!
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
@@ -400,9 +399,10 @@ function lazified_conditional_gradient(
             memory_mode
         )
 
+        t += 1
         if callback !== nothing
             state = (
-                t=t,
+                t=t - 1,
                 primal=primal,
                 dual=primal - dual_gap,
                 dual_gap=dual_gap,
@@ -424,7 +424,6 @@ function lazified_conditional_gradient(
         end
 
         x = muladd_memory_mode(memory_mode, x, gamma, d)
-        t += 1
     end
 
     # recompute everything once for final verfication / do not record to trajectory though for now!
@@ -649,9 +648,10 @@ function stochastic_frank_wolfe(
         # note: only linesearch methods that do not require full evaluations are supported
         # so nothing is passed as function 
         gamma = perform_line_search(line_search, t, nothing, nothing, gradient, x, x - v, 1.0, linesearch_workspace, memory_mode)
+        t += 1
         if callback !== nothing
             state = (
-                t=t,
+                t=t - 1,
                 primal=primal,
                 dual=primal - dual_gap,
                 dual_gap=dual_gap,
@@ -670,8 +670,6 @@ function stochastic_frank_wolfe(
 
         d = muladd_memory_mode(memory_mode, d, x, v)
         x = muladd_memory_mode(memory_mode, x, gamma, d)
-
-        t += 1
     end
     # recompute everything once for final verfication / no additional callback call
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
