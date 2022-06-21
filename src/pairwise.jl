@@ -78,6 +78,9 @@ function blended_pairwise_conditional_gradient(
     lazy=false,
     linesearch_workspace=nothing,
     lazy_tolerance=2.0,
+    vertex_storage=nothing,
+    add_dropped_vertices=false,
+    use_vertex_storage=false,
 )
 
     # format string for output of the algorithm
@@ -126,6 +129,9 @@ function blended_pairwise_conditional_gradient(
         if memory_mode isa InplaceEmphasis
             @info("In memory_mode memory iterates are written back into x0!")
         end
+        if use_vertex_storage && !lazy
+            @info("vertex storage only used in lazy mode")
+        end
     end
 
     # likely not needed anymore as now the iterates are provided directly via the active set
@@ -172,8 +178,9 @@ function blended_pairwise_conditional_gradient(
         _, v_local, v_local_loc, _, a_lambda, a, a_loc, _ ,_ =
             active_set_argminmax(active_set, gradient)
         
-        local_gap = fast_dot(gradient, a) - fast_dot(gradient, v_local)
-        
+        dot_forward_vertex = fast_dot(gradient, v_local)
+        dot_away_vertex = fast_dot(gradient, a)
+        local_gap = dot_away_vertex - dot_forward_vertex
         if !lazy
             v = compute_extreme_point(lmo, gradient)
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
@@ -202,6 +209,9 @@ function blended_pairwise_conditional_gradient(
                 tt = drop
                 active_set.weights[v_local_loc] += gamma
                 deleteat!(active_set, a_loc)
+                if add_dropped_vertices
+                    push!(vertex_storage, active_set.atoms[a_loc])
+                end
             else # transfer weight from away to local FW
                 tt = pairwise
                 active_set.weights[a_loc] -= gamma
@@ -211,7 +221,24 @@ function blended_pairwise_conditional_gradient(
             active_set_update_iterate_pairwise!(active_set, gamma, v_local, a)
         else # add to active set
             if lazy # otherwise, v computed above already
-                v = compute_extreme_point(lmo, gradient)
+                # optionally try to use the storage
+                if use_vertex_storage
+                    lazy_threshold = dot_away_vertex - phi / lazy_tolerance
+                    (found_better_vertex, new_forward_vertex) = _find_argmin_vertex(vertex_storage, gradient, lazy_threshold)
+                    if found_better_vertex
+                        if verbose
+                            @debug("Found acceptable lazy vertex in storage")
+                        end
+                        v = new_forward_vertex
+                        tt = lazy
+                    else
+                        v = compute_extreme_point(lmo, gradient)
+                        tt = regular
+                    end
+                else
+                    v = compute_extreme_point(lmo, gradient)
+                    tt = regular
+                end
             end
             vertex_taken = v
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
@@ -229,11 +256,18 @@ function blended_pairwise_conditional_gradient(
                     d,
                     one(eltype(x)),
                     linesearch_workspace,
-                    memory_mode
+                    memory_mode,
                 )
     
                 # dropping active set and restarting from singleton
                 if gamma ≈ 1.0
+                    if add_dropped_vertices
+                        for vtx in active_set.atoms
+                            if vtx != v
+                                push!(vertex_storage, vtx)
+                            end
+                        end
+                    end
                     active_set_initialize!(active_set, v)
                 else
                     renorm = mod(t, renorm_interval) == 0
