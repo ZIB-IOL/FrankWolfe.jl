@@ -253,6 +253,7 @@ function blended_pairwise_conditional_gradient(
         )
             primal = f(x)
         end
+        t += 1
         if callback !== nothing
             state = (
                 t=t,
@@ -271,7 +272,6 @@ function blended_pairwise_conditional_gradient(
                 break
             end
         end
-        t += 1
     end
 
     # recompute everything once more for final verfication / do not record to trajectory though for now!
