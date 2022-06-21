@@ -256,7 +256,7 @@ function blended_pairwise_conditional_gradient(
         t += 1
         if callback !== nothing
             state = (
-                t=t - 1,
+                t=t,
                 primal=primal,
                 dual=primal - phi,
                 dual_gap=phi,
