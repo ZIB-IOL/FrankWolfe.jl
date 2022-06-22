@@ -267,21 +267,49 @@ function batchsize_iterate(ibi::IncrementBatchIterator)
     return new_size
 end
 
+"""
+Vertex storage to store dropped vertices or find a suitable direction in lazy settings.
+The algorithm will look for at most `return_kth` suitable atoms before returning the best.
+"""
 struct DeletedVertexStorage{AT}
     storage::Vector{AT}
+    return_kth::Int
 end
+
+DeletedVertexStorage(storage::Vector) = DeletedVertexStorage(storage, 1)
+DeletedVertexStorage{AT}() where {AT} = DeletedVertexStorage(AT[])
 
 function Base.push!(vertex_storage::DeletedVertexStorage{AT}, atom::AT) where {AT}
     # do not push duplicates
     if !any(v -> _unsafe_equal(atom, v), vertex_storage.storage)
-        push!(atom)
+        push!(vertex_storage.storage, atom)
     end
     return vertex_storage
 end
 
 """
-Give the vertex `v` in the storage that minimizes `s = direction ⋅ v` and whether `s` achieves:
-`s ≤`
+Give the vertex `v` in the storage that minimizes `s = direction ⋅ v` and whether `s` achieves
+`s ≤ lazy_threshold`.
 """
 function _find_argmin_vertex(vertex_storage::DeletedVertexStorage, direction, lazy_threshold)
+    if isempty(vertex_storage.storage)
+        return (false, nothing)
+    end
+    best_idx = 1
+    best_val = lazy_threshold
+    found_good = false
+    counter = 0
+    for (idx, atom) in enumerate(vertex_storage.storage)
+        s = dot(direction, atom)
+        if s < best_val
+            counter += 1
+            best_val = s
+            found_good = true
+            best_idx = idx
+            if counter ≥ vertex_storage.return_kth
+                return (found_good, vertex_storage.storage[best_idx])
+            end
+        end
+    end
+    return (found_good, vertex_storage.storage[best_idx])
 end

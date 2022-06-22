@@ -235,9 +235,7 @@ function blended_pairwise_conditional_gradient(
         else # add to active set
             if lazy # otherwise, v computed above already
                 # optionally try to use the storage
-                @info "here"
                 if use_extra_vertex_storage
-                    @info "there"
                     lazy_threshold = dot_away_vertex - phi / lazy_tolerance
                     (found_better_vertex, new_forward_vertex) = _find_argmin_vertex(extra_vertex_storage, gradient, lazy_threshold)
                     if found_better_vertex
