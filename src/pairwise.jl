@@ -253,19 +253,13 @@ function blended_pairwise_conditional_gradient(
         )
             primal = f(x)
         end
+        t += 1
         if callback !== nothing
             state = CallbackState(t, primal, primal-dual_gap, phi, tot_time, x, vertex_taken, gamma, f, lmo, gradient, tt)
             if callback(state, active_set) === false
                 break
             end
         end
-
-        if verbose && (mod(t, print_iter) == 0 || tt == dualstep)
-            if t == 0
-                tt = initial
-            end
-        end
-        t += 1
     end
 
     # recompute everything once more for final verfication / do not record to trajectory though for now!

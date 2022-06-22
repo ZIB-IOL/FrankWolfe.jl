@@ -203,20 +203,14 @@ function blended_conditional_gradient(
 
         x = get_active_set_iterate(active_set)
         dual_gap = phi
+        t = t + 1
+        non_simplex_iter += 1
         if callback !== nothing
             state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, lmo, gradient, tt)
             if callback(state, active_set, non_simplex_iter) === false
                 break
             end
         end
-
-        if verbose && mod(t, print_iter) == 0
-            if t == 0
-                tt = initial
-            end
-        end
-        t = t + 1
-        non_simplex_iter += 1
     end
 
     ## post-processing and cleanup after loop
