@@ -266,3 +266,22 @@ function batchsize_iterate(ibi::IncrementBatchIterator)
     end
     return new_size
 end
+
+struct DeletedVertexStorage{AT}
+    storage::Vector{AT}
+end
+
+function Base.push!(vertex_storage::DeletedVertexStorage{AT}, atom::AT) where {AT}
+    # do not push duplicates
+    if !any(v -> _unsafe_equal(atom, v), vertex_storage.storage)
+        push!(atom)
+    end
+    return vertex_storage
+end
+
+"""
+Give the vertex `v` in the storage that minimizes `s = direction ⋅ v` and whether `s` achieves:
+`s ≤`
+"""
+function _find_argmin_vertex(vertex_storage::DeletedVertexStorage, direction, lazy_threshold)
+end

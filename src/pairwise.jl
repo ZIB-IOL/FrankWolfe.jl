@@ -26,6 +26,9 @@ function blended_pairwise_conditional_gradient(
     lazy=false,
     linesearch_workspace=nothing,
     lazy_tolerance=2.0,
+    extra_vertex_storage=nothing,
+    add_dropped_vertices=false,
+    use_extra_vertex_storage=false,
 )
     # add the first vertex to active set from initialization
     active_set = ActiveSet([(1.0, x0)])
@@ -50,6 +53,9 @@ function blended_pairwise_conditional_gradient(
         lazy=lazy,
         linesearch_workspace=linesearch_workspace,
         lazy_tolerance=lazy_tolerance,
+        extra_vertex_storage=extra_vertex_storage,
+        add_dropped_vertices=add_dropped_vertices,
+        use_extra_vertex_storage=use_extra_vertex_storage,
     )
 end
 
@@ -78,9 +84,9 @@ function blended_pairwise_conditional_gradient(
     lazy=false,
     linesearch_workspace=nothing,
     lazy_tolerance=2.0,
-    vertex_storage=nothing,
+    extra_vertex_storage=nothing,
     add_dropped_vertices=false,
-    use_vertex_storage=false,
+    use_extra_vertex_storage=false,
 )
 
     # format string for output of the algorithm
@@ -129,8 +135,11 @@ function blended_pairwise_conditional_gradient(
         if memory_mode isa InplaceEmphasis
             @info("In memory_mode memory iterates are written back into x0!")
         end
-        if use_vertex_storage && !lazy
+        if use_extra_vertex_storage && !lazy
             @info("vertex storage only used in lazy mode")
+        end
+        if use_extra_vertex_storage || add_dropped_vertices && extra_vertex_storage === nothing
+            @warn("use_extra_vertex_storage and add_dropped_vertices options are only usable with a extra_vertex_storage storage")
         end
     end
 
@@ -148,6 +157,10 @@ function blended_pairwise_conditional_gradient(
 
     if linesearch_workspace === nothing
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
+    end
+
+    if extra_vertex_storage === nothing
+        use_extra_vertex_storage = add_dropped_vertices = false
     end
 
     while t <= max_iteration && phi >= max(epsilon, eps())
@@ -210,7 +223,7 @@ function blended_pairwise_conditional_gradient(
                 active_set.weights[v_local_loc] += gamma
                 deleteat!(active_set, a_loc)
                 if add_dropped_vertices
-                    push!(vertex_storage, active_set.atoms[a_loc])
+                    push!(extra_vertex_storage, a)
                 end
             else # transfer weight from away to local FW
                 tt = pairwise
@@ -222,9 +235,11 @@ function blended_pairwise_conditional_gradient(
         else # add to active set
             if lazy # otherwise, v computed above already
                 # optionally try to use the storage
-                if use_vertex_storage
+                @info "here"
+                if use_extra_vertex_storage
+                    @info "there"
                     lazy_threshold = dot_away_vertex - phi / lazy_tolerance
-                    (found_better_vertex, new_forward_vertex) = _find_argmin_vertex(vertex_storage, gradient, lazy_threshold)
+                    (found_better_vertex, new_forward_vertex) = _find_argmin_vertex(extra_vertex_storage, gradient, lazy_threshold)
                     if found_better_vertex
                         if verbose
                             @debug("Found acceptable lazy vertex in storage")
@@ -264,7 +279,7 @@ function blended_pairwise_conditional_gradient(
                     if add_dropped_vertices
                         for vtx in active_set.atoms
                             if vtx != v
-                                push!(vertex_storage, vtx)
+                                push!(extra_vertex_storage, vtx)
                             end
                         end
                     end
