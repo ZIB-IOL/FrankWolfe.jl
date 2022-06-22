@@ -109,6 +109,8 @@ function blended_conditional_gradient(
     if linesearch_inner_workspace === nothing
         linesearch_inner_workspace = build_linesearch_workspace(line_search_inner, x, gradient)
     end
+
+    # this is never used and only defines gamma in the scope outside of the loop
     gamma = NaN
 
     while t <= max_iteration && (phi ≥ epsilon || t == 0) # do at least one iteration for consistency with other algos
