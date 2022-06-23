@@ -3,7 +3,6 @@
 using FrankWolfe
 using Test
 using LinearAlgebra
-using FrankWolfe: ActiveSet
 
 const n = 100
 const center0 = 5.0 .+ 3 * rand(n)
@@ -39,7 +38,6 @@ tlmo.counter
 for iter in 1:10
     center = 5.0 .+ 3 * rand(n)
     f_i(x) = 0.5 * norm(x .- center)^2
-    @info "Distance of solution to new center: $(f_i(active_set.x))"
     function grad_i!(storage, x)
         return storage .= x .- center
     end

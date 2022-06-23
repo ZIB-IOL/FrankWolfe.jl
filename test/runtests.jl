@@ -792,4 +792,11 @@ using Test
 end
 end
 
+module VertexStorageTest
+using Test
+@testset "Vertex storage" begin
+    include("extra_storage.jl")
+end
+end
+
 include("generic-arrays.jl")
