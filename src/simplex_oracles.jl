@@ -86,9 +86,6 @@ most improving (or least degrading) direction.
 """
 function compute_extreme_point(lmo::ProbabilitySimplexOracle{T}, direction; v = nothing, kwargs...) where {T}
     idx = argmin(direction)
-    if idx === nothing
-        @show direction
-    end
     return ScaledHotVector(lmo.right_side, idx, length(direction))
 end
 
