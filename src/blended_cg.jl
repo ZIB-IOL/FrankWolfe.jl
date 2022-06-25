@@ -564,7 +564,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
             state = CallbackState(
                 t + number_of_steps, primal, primal-tolerance,
                 tolerance, (time_ns() - time_start) / 1e9,
-                x, y, gamma, f, nothing, gradient, tt,
+                x, y, gamma, reduced_f, nothing, gradient, tt,
             )
             if callback(state, active_set, non_simplex_iter) === false
                 break
