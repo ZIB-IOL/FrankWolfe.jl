@@ -41,11 +41,11 @@ const st = (
 )
 
 
-struct CallbackState{T,TD,TG,XT,VT,FT,LMO<:LinearMinimizationOracle,GT}
+struct CallbackState{TP,TDV,TDG,XT,VT,TG,FT,LMO<:LinearMinimizationOracle,GT}
     t::Int
-    primal::T
-    dual::T
-    dual_gap::TD
+    primal::TP
+    dual::TDV
+    dual_gap::TDG
     time::Float64
     x::XT
     v::VT

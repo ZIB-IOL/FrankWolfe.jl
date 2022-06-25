@@ -39,7 +39,7 @@ function blended_conditional_gradient(
     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i %14i\n"
     headers = ("Type","Iteration","Primal","Dual","Dual Gap","Time","It/sec","#ActiveSet","#non-simplex")
 
-    function format_state(state)
+    function format_state(state, active_set, non_simplex_iter)
         rep = (
             st[Symbol(state.tt)],
             string(state.t),
@@ -48,8 +48,8 @@ function blended_conditional_gradient(
             Float64(state.dual_gap),
             state.time,
             state.t / state.time,
-            length(state.active_set),
-            state.non_simplex_iter,
+            length(active_set),
+            non_simplex_iter,
         )
         return rep
     end
@@ -763,7 +763,7 @@ function simplex_gradient_descent_over_convex_hull(
             c .-= csum / k
             d = c
             descent_direction_product_inner = fast_dot(d, d) + (csum / k) * sum(d)
-            @inbounds if descent_direction_product_inner < 0
+            if descent_direction_product_inner < 0
                 @warn "d non-improving in large precision, forcing FW"
                 @warn "dot value: $descent_direction_product_inner"
                 return number_of_steps
@@ -850,19 +850,12 @@ function simplex_gradient_descent_over_convex_hull(
         dual_gap = tolerance
         tt = simplex_descent
         if callback !== nothing
-            state = (
-                t=t,
-                primal=primal,
-                dual=primal - dual_gap,
-                dual_gap=dual_gap,
-                time=(time_ns() - time_start) / 1e9,
-                x=x,
-                active_set=active_set,
-                non_simplex_iter=non_simplex_iter,
-                gradient=gradient,
-                tt=tt,
+            state = CallbackState(
+                t,primal,primal - dual_gap,dual_gap,
+                (time_ns() - time_start) / 1e9,
+                x, y, η * (1 - gamma), f, lmo, gradient, tt,
             )
-            callback(state)
+            callback(state, active_set, non_simplex_iter)
         end
         if timeout < Inf
             tot_time = (time_ns() - time_start) / 1e9
