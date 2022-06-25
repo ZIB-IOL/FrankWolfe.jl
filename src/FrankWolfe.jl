@@ -8,6 +8,7 @@ using TimerOutputs
 using SparseArrays: spzeros, SparseVector
 import SparseArrays
 import Random
+using Setfield: @set
 
 import MathOptInterface
 const MOI = MathOptInterface
