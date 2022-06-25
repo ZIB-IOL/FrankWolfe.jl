@@ -40,7 +40,7 @@ end
 # Each iteration will then push to this array.
 
 function build_callback(trajectory_arr)
-    return function callback(state)
+    return function callback(state, args...)
         return push!(trajectory_arr, (copy(state.x), copy(state.v), state.gamma))
     end
 end
