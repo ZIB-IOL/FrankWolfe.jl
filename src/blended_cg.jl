@@ -561,18 +561,12 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
         strong_wolfe_gap = strong_frankwolfe_gap_probability_simplex(gradient_x, x)
         tt = simplex_descent
         if callback !== nothing
-            state = (
-                t=t + number_of_steps,
-                primal=primal,
-                dual=primal - tolerance,
-                dual_gap=tolerance,
-                time=(time_ns() - time_start) / 1e9,
-                x=x,
-                active_set=active_set,
-                tt=tt,
-                non_simplex_iter=non_simplex_iter,
+            state = CallbackState(
+                t + number_of_steps, primal, primal-tolerance,
+                tolerance, (time_ns() - time_start) / 1e9,
+                x, y, gamma, f, nothing, gradient, tt,
             )
-            if callback(state) === false
+            if callback(state, active_set, non_simplex_iter) === false
                 break
             end
         end
@@ -627,18 +621,12 @@ function simplex_gradient_descent_over_probability_simplex(
         tot_time = (time_ns() - time_start) / 1e9
         tt = simplex_descent
         if callback !== nothing
-            state = (
-                t=t + number_of_steps,
-                primal=primal,
-                dual=primal - tolerance,
-                dual_gap=tolerance,
-                time=tot_time,
-                x=x,
-                tt=tt,
-                active_set=active_set,
-                non_simplex_iter=non_simplex_iter,
+            state = CallbackState(
+                t + number_of_steps, primal, primal-tolerance,
+                tolerance, tot_time,
+                x, y, inv(L), reduced_f, nothing,  gradient, tt,
             )
-            if callback(state) === false
+            if callback(state, active_set, non_simplex_iter) === false
                 break
             end
         end
