@@ -115,8 +115,8 @@ gradient = spzeros(size(x0)...)
 gradient_aux = spzeros(size(x0)...)
 
 function build_callback(trajectory_arr)
-    return function callback(state)
-        return push!(trajectory_arr, (Tuple(state)[1:5]..., test_loss(state.x)))
+    return function callback(state, args...)
+        return push!(trajectory_arr, (FrankWolfe.callback_state(state)..., test_loss(state.x)))
     end
 end
 

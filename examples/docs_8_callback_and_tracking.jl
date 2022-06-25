@@ -82,7 +82,7 @@ storage = []
 # the five default logged elements `(iterations, primal, dual, dual_gap, time)` with ".counter" field arguments present in the tracking functions.
 
 function push_tracking_state(state, storage)
-    base_tuple = Tuple(state)[1:5]
+    base_tuple = FrankWolfe.callback_state(state)
     if typeof(state.lmo) <: FrankWolfe.CachedLinearMinimizationOracle
         complete_tuple = tuple(base_tuple..., state.gamma, state.f.counter, state.grad.counter, state.lmo.inner.counter)
     else
@@ -95,7 +95,7 @@ end
 # we can return a boolean stop criterion `false`.
 # Here, we will implement a callback that terminates the algorithm if the primal objective function is evaluated more than 500 times.
 function make_callback(storage)
-    return function callback(state)
+    return function callback(state, args...)
         push_tracking_state(state,storage)
         return state.f.counter < 500
     end

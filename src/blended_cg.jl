@@ -39,7 +39,7 @@ function blended_conditional_gradient(
     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i %14i\n"
     headers = ("Type","Iteration","Primal","Dual","Dual Gap","Time","It/sec","#ActiveSet","#non-simplex")
 
-    function format_state(state)
+    function format_state(state, active_set, non_simplex_iter)
         rep = (
             st[Symbol(state.tt)],
             string(state.t),
@@ -48,8 +48,8 @@ function blended_conditional_gradient(
             Float64(state.dual_gap),
             state.time,
             state.t / state.time,
-            length(state.active_set),
-            state.non_simplex_iter,
+            length(active_set),
+            non_simplex_iter,
         )
         return rep
     end
@@ -109,6 +109,9 @@ function blended_conditional_gradient(
     if linesearch_inner_workspace === nothing
         linesearch_inner_workspace = build_linesearch_workspace(line_search_inner, x, gradient)
     end
+
+    # this is never used and only defines gamma in the scope outside of the loop
+    gamma = NaN
 
     while t <= max_iteration && (phi ≥ epsilon || t == 0) # do at least one iteration for consistency with other algos
         #####################
@@ -192,7 +195,7 @@ function blended_conditional_gradient(
                 linesearch_workspace,
                 memory_mode
             )
-    
+
             if gamma == 1.0
                 active_set_initialize!(active_set, v)
             else
@@ -205,20 +208,8 @@ function blended_conditional_gradient(
         t = t + 1
         non_simplex_iter += 1
         if callback !== nothing
-            state = (
-                t=t,
-                primal=primal,
-                dual=primal - dual_gap,
-                dual_gap=dual_gap,
-                time=tot_time,
-                x=x,
-                v=v,
-                active_set=active_set,
-                non_simplex_iter=non_simplex_iter,
-                gradient=gradient,
-                tt=tt,
-            )
-            if callback(state) === false
+            state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, lmo, gradient, tt)
+            if callback(state, active_set, non_simplex_iter) === false
                 break
             end
         end
@@ -227,7 +218,7 @@ function blended_conditional_gradient(
     ## post-processing and cleanup after loop
 
     # report last iteration
-    if callback !== nothing 
+    if callback !== nothing
         x = get_active_set_iterate(active_set)
         grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
@@ -235,20 +226,8 @@ function blended_conditional_gradient(
         dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         tot_time = (time_ns() - time_start) / 1e9
         tt = last
-        state = (
-            t=t,
-            primal=primal,
-            dual=primal - dual_gap,
-            dual_gap=dual_gap,
-            time=tot_time,
-            x=x,
-            v=v,
-            active_set=active_set,
-            non_simplex_iter=non_simplex_iter,
-            gradient=gradient,
-            tt=tt,
-        )
-        callback(state)
+        state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, lmo, gradient, tt)
+        callback(state, active_set, non_simplex_iter)
     end
 
     # cleanup the active set, renormalize, and recompute values
@@ -265,20 +244,8 @@ function blended_conditional_gradient(
     if callback !== nothing
         tt = pp
         tot_time = (time_ns() - time_start) / 1e9
-        state = (
-            t=t,
-            primal=primal,
-            dual=primal - dual_gap,
-            dual_gap=dual_gap,
-            time=tot_time,
-            x=x,
-            v=v,
-            active_set=active_set,
-            non_simplex_iter=non_simplex_iter,
-            gradient=gradient,
-            tt=tt,
-        )
-        callback(state)
+        state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, lmo, gradient, tt)
+        callback(state, active_set, non_simplex_iter)
     end
     return x, v, primal, dual_gap, traj_data
 end
@@ -594,18 +561,12 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
         strong_wolfe_gap = strong_frankwolfe_gap_probability_simplex(gradient_x, x)
         tt = simplex_descent
         if callback !== nothing
-            state = (
-                t=t + number_of_steps,
-                primal=primal,
-                dual=primal - tolerance,
-                dual_gap=tolerance,
-                time=(time_ns() - time_start) / 1e9,
-                x=x,
-                active_set=active_set,
-                tt=tt,
-                non_simplex_iter=non_simplex_iter,
+            state = CallbackState(
+                t + number_of_steps, primal, primal-tolerance,
+                tolerance, (time_ns() - time_start) / 1e9,
+                x, y, gamma, reduced_f, nothing, gradient, tt,
             )
-            if callback(state) === false
+            if callback(state, active_set, non_simplex_iter) === false
                 break
             end
         end
@@ -660,18 +621,12 @@ function simplex_gradient_descent_over_probability_simplex(
         tot_time = (time_ns() - time_start) / 1e9
         tt = simplex_descent
         if callback !== nothing
-            state = (
-                t=t + number_of_steps,
-                primal=primal,
-                dual=primal - tolerance,
-                dual_gap=tolerance,
-                time=tot_time,
-                x=x,
-                tt=tt,
-                active_set=active_set,
-                non_simplex_iter=non_simplex_iter,
+            state = CallbackState(
+                t + number_of_steps, primal, primal-tolerance,
+                tolerance, tot_time,
+                x, y, inv(L), reduced_f, nothing,  gradient, tt,
             )
-            if callback(state) === false
+            if callback(state, active_set, non_simplex_iter) === false
                 break
             end
         end
@@ -796,7 +751,7 @@ function simplex_gradient_descent_over_convex_hull(
             c .-= csum / k
             d = c
             descent_direction_product_inner = fast_dot(d, d) + (csum / k) * sum(d)
-            @inbounds if descent_direction_product_inner < 0
+            if descent_direction_product_inner < 0
                 @warn "d non-improving in large precision, forcing FW"
                 @warn "dot value: $descent_direction_product_inner"
                 return number_of_steps
@@ -820,6 +775,7 @@ function simplex_gradient_descent_over_convex_hull(
         @. active_set.weights -= η * d
         y = copy(compute_active_set_iterate!(active_set))
         number_of_steps += 1
+        gamma = NaN
         if f(x) ≥ f(y)
             active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
         else
@@ -883,19 +839,12 @@ function simplex_gradient_descent_over_convex_hull(
         dual_gap = tolerance
         tt = simplex_descent
         if callback !== nothing
-            state = (
-                t=t,
-                primal=primal,
-                dual=primal - dual_gap,
-                dual_gap=dual_gap,
-                time=(time_ns() - time_start) / 1e9,
-                x=x,
-                active_set=active_set,
-                non_simplex_iter=non_simplex_iter,
-                gradient=gradient,
-                tt=tt,
+            state = CallbackState(
+                t,primal,primal - dual_gap,dual_gap,
+                (time_ns() - time_start) / 1e9,
+                x, y, η * (1 - gamma), f, nothing, gradient, tt,
             )
-            callback(state)
+            callback(state, active_set, non_simplex_iter)
         end
         if timeout < Inf
             tot_time = (time_ns() - time_start) / 1e9

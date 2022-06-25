@@ -92,7 +92,7 @@ function blended_pairwise_conditional_gradient(
     # format string for output of the algorithm
     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
     headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "#ActiveSet")
-    function format_state(state)
+    function format_state(state, active_set)
         rep = (
             st[Symbol(state.tt)],
             string(state.t),
@@ -101,7 +101,7 @@ function blended_pairwise_conditional_gradient(
             Float64(state.dual_gap),
             state.time,
             state.t / state.time,
-            length(state.active_set),
+            length(active_set),
         )
         return rep
     end
@@ -271,7 +271,7 @@ function blended_pairwise_conditional_gradient(
                     linesearch_workspace,
                     memory_mode,
                 )
-    
+
                 # dropping active set and restarting from singleton
                 if gamma ≈ 1.0
                     if add_dropped_vertices
@@ -302,20 +302,8 @@ function blended_pairwise_conditional_gradient(
         end
         t += 1
         if callback !== nothing
-            state = (
-                t=t,
-                primal=primal,
-                dual=primal - phi,
-                dual_gap=phi,
-                time=tot_time,
-                x=x,
-                v=vertex_taken,
-                gamma=gamma,
-                active_set=active_set,
-                gradient=gradient,
-                tt=tt,
-            )
-            if callback(state) === false
+            state = CallbackState(t, primal, primal-dual_gap, phi, tot_time, x, vertex_taken, gamma, f, lmo, gradient, tt)
+            if callback(state, active_set) === false
                 break
             end
         end
@@ -335,20 +323,8 @@ function blended_pairwise_conditional_gradient(
         tt = last
         tot_time = (time_ns() - time_start) / 1e9
         if callback !== nothing
-            state = (
-                t=t,
-                primal=primal,
-                dual=primal - phi,
-                dual_gap=phi,
-                time=tot_time,
-                x=x,
-                v=v,
-                gamma=gamma,
-                active_set=active_set,
-                gradient=gradient,
-                tt=tt,
-            )
-            callback(state)
+            state = CallbackState(t, primal, primal-phi, phi, tot_time, x, v, gamma, f, lmo, gradient, tt)
+            callback(state, active_set)
         end
     end
     active_set_renormalize!(active_set)
@@ -361,20 +337,8 @@ function blended_pairwise_conditional_gradient(
     tt = pp
     tot_time = (time_ns() - time_start) / 1e9
     if callback !== nothing
-        state = (
-            t=t,
-            primal=primal,
-            dual=primal - dual_gap,
-            dual_gap=phi,
-            time=tot_time,
-            x=x,
-            v=v,
-            gamma=gamma,
-            active_set=active_set,
-            gradient=gradient,
-            tt=tt,
-        )
-        callback(state)
+        state = CallbackState(t, primal, primal-dual_gap, phi, tot_time, x, v, gamma, f, lmo, gradient, tt)
+        callback(state, active_set)
     end
 
     return x, v, primal, dual_gap, traj_data, active_set

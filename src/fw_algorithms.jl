@@ -172,21 +172,7 @@ function frank_wolfe(
         )
         t = t + 1
         if callback !== nothing
-            state = (
-                t=t,
-                primal=primal,
-                dual=primal - dual_gap,
-                dual_gap=dual_gap,
-                time=tot_time,
-                x=x,
-                v=v,
-                gamma=gamma,
-                f=f,
-                grad=grad!,
-                lmo=lmo,
-                gradient=gradient,
-                tt=tt,
-            )
+            state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, lmo, gradient, tt)
             if callback(state) === false
                 break
             end
@@ -216,24 +202,10 @@ function frank_wolfe(
         memory_mode
     )
     if callback !== nothing
-        state = (
-            t=t,
-            primal=primal,
-            dual=primal - dual_gap,
-            dual_gap=dual_gap,
-            time=tot_time,
-            x=x,
-            v=v,
-            gamma=gamma,
-            f=f,
-            grad=grad!,
-            lmo=lmo,
-            gradient=gradient,
-            tt=tt,
-        )
+        state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, lmo, gradient, tt)
         callback(state)
     end
-    
+
     return x, v, primal, dual_gap, traj_data
 end
 
@@ -401,23 +373,7 @@ function lazified_conditional_gradient(
 
         t += 1
         if callback !== nothing
-            state = (
-                t=t,
-                primal=primal,
-                dual=primal - dual_gap,
-                dual_gap=dual_gap,
-                time=tot_time,
-                x=x,
-                v=v,
-                gamma=gamma,
-                f=f,
-                grad=grad!,
-                lmo=lmo,
-                cache_size=length(lmo),
-                gradient=gradient,
-                tt=tt,
-            )
-
+            state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, lmo, gradient, tt)
             if callback(state) === false
                 break
             end
@@ -448,22 +404,7 @@ function lazified_conditional_gradient(
         memory_mode
     )
     if callback !== nothing
-        state = (
-            t=t,
-            primal=primal,
-            dual=primal - dual_gap,
-            dual_gap=dual_gap,
-            time=tot_time,
-            x=x,
-            v=v,
-            gamma=gamma,
-            f=f,
-            grad=grad!,
-            lmo=lmo,
-            cache_size=length(lmo),
-            gradient=gradient,
-            tt=tt,
-        )
+        state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, lmo, gradient, tt)
         callback(state)
     end
     return x, v, primal, dual_gap, traj_data
@@ -539,7 +480,7 @@ function stochastic_frank_wolfe(
     if verbose
         callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
     end
-    
+
     time_start = time_ns()
 
     if line_search == Shortstep && L == Inf
@@ -646,24 +587,12 @@ function stochastic_frank_wolfe(
         end
 
         # note: only linesearch methods that do not require full evaluations are supported
-        # so nothing is passed as function 
+        # so nothing is passed as function
         gamma = perform_line_search(line_search, t, nothing, nothing, gradient, x, x - v, 1.0, linesearch_workspace, memory_mode)
         t += 1
         if callback !== nothing
-            state = (
-                t=t,
-                primal=primal,
-                dual=primal - dual_gap,
-                dual_gap=dual_gap,
-                time=tot_time,
-                x=x,
-                v=v,
-                gamma=gamma,
-                gradient=gradient,
-                tt=tt,
-                batch_size=batch_size,
-            )
-            if callback(state) === false
+            state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, lmo, gradient, tt)
+            if callback(state, batch_size) === false
                 break
             end
         end
@@ -684,20 +613,8 @@ function stochastic_frank_wolfe(
     gamma = perform_line_search(line_search, t, nothing, nothing, gradient, x, x - v, 1.0, linesearch_workspace, memory_mode)
     tot_time = (time_ns() - time_start) / 1e9
     if callback !== nothing
-        state = (
-            t=t,
-            primal=primal,
-            dual=primal - dual_gap,
-            dual_gap=dual_gap,
-            time=(time_ns() - time_start) / 1e9,
-            x=x,
-            v=v,
-            gamma=gamma,
-            gradient=gradient,
-            tt=tt,
-            batch_size=batch_size,
-        )
-        callback(state)
+        state = CallbackState(t, primal, primal-dual_gap, dual_gap, (time_ns() - time_start) / 1e9, x, v, gamma, f, lmo, gradient, tt)
+        callback(state, batch_size)
     end
     return x, v, primal, dual_gap, traj_data
 end

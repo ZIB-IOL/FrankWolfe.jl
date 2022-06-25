@@ -39,3 +39,23 @@ const st = (
     last="Last",
     pp="PP",
 )
+
+
+struct CallbackState{TP,TDV,TDG,XT,VT,TG,FT,LMO,GT}
+    t::Int
+    primal::TP
+    dual::TDV
+    dual_gap::TDG
+    time::Float64
+    x::XT
+    v::VT
+    gamma::TG
+    f::FT
+    lmo::LMO
+    gradient::GT
+    tt::FrankWolfe.StepType
+end
+
+function callback_state(state::CallbackState)
+    return (state.t, state.primal, state.dual, state.dual_gap, state.time)
+end
