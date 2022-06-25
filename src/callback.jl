@@ -46,7 +46,7 @@ If the callback to be wrapped is of type nothing, always return true to enforce 
 function make_print_callback(callback, print_iter, headers, format_string, format_state)
     return function callback_with_prints(state, args...)
         if (state.tt == last || state.tt == pp )
-            rep = format_state(state)
+            rep = format_state(state, args...)
             print_callback(rep, format_string)
             print_callback(nothing, format_string, print_footer=true)
             flush(stdout)
@@ -55,7 +55,7 @@ function make_print_callback(callback, print_iter, headers, format_string, forma
                 state = @set state.tt = initial
                 print_callback(headers, format_string, print_header=true)
             end
-            rep = format_state(state)
+            rep = format_state(state, args...)
             print_callback(rep, format_string)
             flush(stdout)
         end
@@ -63,7 +63,7 @@ function make_print_callback(callback, print_iter, headers, format_string, forma
         if callback === nothing
             return true
         end
-        return callback(state)
+        return callback(state, args...)
     end
 end
 
@@ -80,11 +80,11 @@ If the callback to be wrapped is of type nothing, always return true to enforce 
 function make_trajectory_callback(callback, traj_data::Vector)
     return function callback_with_trajectory(state, args...)
         if state.tt !== last || state.tt !== pp
-            push!(traj_data, Tuple(state)[1:5])
+            push!(traj_data, callback_state(state))
         end
         if callback === nothing
             return true
         end
-        return callback(state)
+        return callback(state, args...)
     end
 end

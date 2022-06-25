@@ -374,7 +374,7 @@ function lazified_conditional_gradient(
         t += 1
         if callback !== nothing
             state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, lmo, gradient, tt)
-            if callback(state, length(lmo)) === false
+            if callback(state) === false
                 break
             end
         end
@@ -405,7 +405,7 @@ function lazified_conditional_gradient(
     )
     if callback !== nothing
         state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, lmo, gradient, tt)
-        callback(state, length(lmo))
+        callback(state)
     end
     return x, v, primal, dual_gap, traj_data
 end
