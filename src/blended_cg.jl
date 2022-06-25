@@ -787,6 +787,7 @@ function simplex_gradient_descent_over_convex_hull(
         @. active_set.weights -= η * d
         y = copy(compute_active_set_iterate!(active_set))
         number_of_steps += 1
+        gamma = NaN
         if f(x) ≥ f(y)
             active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
         else
@@ -853,7 +854,7 @@ function simplex_gradient_descent_over_convex_hull(
             state = CallbackState(
                 t,primal,primal - dual_gap,dual_gap,
                 (time_ns() - time_start) / 1e9,
-                x, y, η * (1 - gamma), f, lmo, gradient, tt,
+                x, y, η * (1 - gamma), f, nothing, gradient, tt,
             )
             callback(state, active_set, non_simplex_iter)
         end
