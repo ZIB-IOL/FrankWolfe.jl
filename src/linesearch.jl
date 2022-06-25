@@ -304,13 +304,17 @@ function perform_line_search(
     end
     M = line_search.eta * line_search.L_est
     (dot_dir, ndir2) = _upgrade_accuracy_adaptive(gradient, d, should_upgrade)
-    
     gamma = min(max(dot_dir / (M * ndir2), 0), gamma_max)
     storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
+    niter = 0
     while f(storage) - f(x) > -gamma * dot_dir + gamma^2 * ndir2 * M / 2
         M *= line_search.tau
         gamma = min(max(dot_dir / (M * ndir2), 0), gamma_max)
         storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
+        niter += 1
+    end
+    @debug "LS iterations $niter, $M"
+    if isfinite(line_search.L_est) && !isfinite(M)
     end
     line_search.L_est = M
     return gamma
