@@ -100,7 +100,7 @@ function build_callback(trajectory_arr)
     return function callback(state)
         return push!(
             trajectory_arr,
-            (callback_state(state)..., f_test(state.x), coefficient_errors(state.x)),
+            (FrankWolfe.callback_state(state)..., f_test(state.x), coefficient_errors(state.x)),
         )
     end
 end
