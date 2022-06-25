@@ -95,7 +95,7 @@ end
 # we can return a boolean stop criterion `false`.
 # Here, we will implement a callback that terminates the algorithm if the primal objective function is evaluated more than 500 times.
 function make_callback(storage)
-    return function callback(state)
+    return function callback(state, args...)
         push_tracking_state(state,storage)
         return state.f.counter < 500
     end

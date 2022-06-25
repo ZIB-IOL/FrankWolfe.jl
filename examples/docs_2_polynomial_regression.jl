@@ -97,7 +97,7 @@ function grad!(storage, coefficients)
 end
 
 function build_callback(trajectory_arr)
-    return function callback(state)
+    return function callback(state, args...)
         return push!(
             trajectory_arr,
             (FrankWolfe.callback_state(state)..., f_test(state.x), coefficient_errors(state.x)),
