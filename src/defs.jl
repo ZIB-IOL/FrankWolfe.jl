@@ -41,15 +41,15 @@ const st = (
 )
 
 
-struct CallbackState{XT,VT,FT,LMO<:LinearMinimizationOracle,GT}
-    t::Int64
-    primal::Float64
-    dual::Float64
-    dual_gap::Float64
+struct CallbackState{T,TD,TG,XT,VT,FT,LMO<:LinearMinimizationOracle,GT}
+    t::Int
+    primal::T
+    dual::T
+    dual_gap::TD
     time::Float64
     x::XT
     v::VT
-    gamma::Float64
+    gamma::TG
     f::FT
     lmo::LMO
     gradient::GT

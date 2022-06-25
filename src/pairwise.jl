@@ -83,7 +83,7 @@ function blended_pairwise_conditional_gradient(
     # format string for output of the algorithm
     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
     headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "#ActiveSet")
-    function format_state(state)
+    function format_state(state, active_set)
         rep = (
             st[Symbol(state.tt)],
             string(state.t),
@@ -92,7 +92,7 @@ function blended_pairwise_conditional_gradient(
             Float64(state.dual_gap),
             state.time,
             state.t / state.time,
-            length(state.active_set),
+            length(active_set),
         )
         return rep
     end
