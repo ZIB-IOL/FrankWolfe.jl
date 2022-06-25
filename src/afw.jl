@@ -87,7 +87,7 @@ function away_frank_wolfe(
     # format string for output of the algorithm
     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
     headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "#ActiveSet")
-    function format_state(state)
+    function format_state(state, active_set)
         rep = (
             st[Symbol(state.tt)],
             string(state.t),
@@ -96,7 +96,7 @@ function away_frank_wolfe(
             Float64(state.dual_gap),
             state.time,
             state.t / state.time,
-            length(state.active_set),
+            length(active_set),
         )
         return rep
     end
@@ -236,20 +236,8 @@ function away_frank_wolfe(
         end
         t += 1
         if callback !== nothing
-            state = (
-                t=t,
-                primal=primal,
-                dual=primal - dual_gap,
-                dual_gap=phi_value,
-                time=tot_time,
-                x=x,
-                v=vertex,
-                gamma=gamma,
-                active_set=active_set,
-                gradient=gradient,
-                tt=tt,
-            )
-            if callback(state) === false
+            state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, vertex, gamma, f, lmo, gradient, tt)
+            if callback(state, active_set) === false
                 break
             end
         end
@@ -268,23 +256,8 @@ function away_frank_wolfe(
     tt = last
     tot_time= (time_ns()- time_start) / 1e9
     if callback !== nothing 
-        state = (
-            t=t,
-            primal=primal,
-            dual=primal - dual_gap,
-            dual_gap=dual_gap,
-            time=tot_time,
-            x=x,
-            v=v,
-            gamma=gamma,
-            f=f,
-            grad=grad!,
-            lmo=lmo,
-            active_set=active_set,
-            gradient=gradient,
-            tt=tt,
-        )
-        callback(state)
+        state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, vertex, gamma, f, lmo, gradient, tt)
+        callback(state, active_set)
     end
 
     active_set_renormalize!(active_set)
@@ -297,23 +270,8 @@ function away_frank_wolfe(
     tt = pp
     tot_time= (time_ns()- time_start) / 1e9
     if callback !== nothing 
-        state = (
-            t=t,
-            primal=primal,
-            dual=primal - dual_gap,
-            dual_gap=dual_gap,
-            time=tot_time,
-            x=x,
-            v=v,
-            gamma=gamma,
-            f=f,
-            grad=grad!,
-            lmo=lmo,
-            active_set=active_set,
-            gradient=gradient,
-            tt=tt,
-        )
-        callback(state)
+        state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, vertex, gamma, f, lmo, gradient, tt)
+        callback(state, active_set)
     end
 
     return x, v, primal, dual_gap, traj_data, active_set
