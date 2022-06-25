@@ -12,16 +12,17 @@ Random.seed!(s)
 
 xpi = rand(n);
 total = sum(xpi);
-xp = xpi # ./ total;
+const xp = xpi # ./ total;
 
-f(x) = norm(x - xp)^2
+f(x) = norm(x .- xp)^2
 function grad!(storage, x)
-    @. storage = 2 * (x - xp)
+    @. storage = 2 * (x .- xp)
 end
 
 lmo = FrankWolfe.KSparseLMO(100, 1.0)
 
 x0 = FrankWolfe.compute_extreme_point(lmo, spzeros(size(xp)...))
+gradient = similar(xp)
 
 x, v, primal, dual_gap, _ = FrankWolfe.blended_conditional_gradient(
     f,
@@ -37,6 +38,7 @@ x, v, primal, dual_gap, _ = FrankWolfe.blended_conditional_gradient(
     lazy_tolerance=1.0,
     weight_purge_threshold=1e-10,
     epsilon=1e-9,
+    gradient=gradient,
 )
 
 @test dual_gap ≤ 5e-4
