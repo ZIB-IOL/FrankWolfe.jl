@@ -154,7 +154,7 @@ end
 function compute_active_set_iterate!(active_set)
     active_set.x .= 0
     for (λi, ai) in active_set
-        active_set.x .+= λi * ai
+        @. active_set.x += λi * ai
     end
     return active_set.x
 end
