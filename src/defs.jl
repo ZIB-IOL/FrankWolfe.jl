@@ -41,7 +41,7 @@ const st = (
 )
 
 
-struct CallbackState{TP,TDV,TDG,XT,VT,TG,FT,LMO,GT}
+struct CallbackState{TP,TDV,TDG,XT,VT,TG,FT,GFT,LMO,GT}
     t::Int
     primal::TP
     dual::TDV
@@ -51,6 +51,7 @@ struct CallbackState{TP,TDV,TDG,XT,VT,TG,FT,LMO,GT}
     v::VT
     gamma::TG
     f::FT
+    grad!::GFT
     lmo::LMO
     gradient::GT
     tt::FrankWolfe.StepType

@@ -208,7 +208,7 @@ function blended_conditional_gradient(
         t = t + 1
         non_simplex_iter += 1
         if callback !== nothing
-            state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, lmo, gradient, tt)
+            state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, grad!, lmo, gradient, tt)
             if callback(state, active_set, non_simplex_iter) === false
                 break
             end
@@ -226,7 +226,7 @@ function blended_conditional_gradient(
         dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         tot_time = (time_ns() - time_start) / 1e9
         tt = last
-        state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, lmo, gradient, tt)
+        state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, grad!, lmo, gradient, tt)
         callback(state, active_set, non_simplex_iter)
     end
 
@@ -244,7 +244,7 @@ function blended_conditional_gradient(
     if callback !== nothing
         tt = pp
         tot_time = (time_ns() - time_start) / 1e9
-        state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, lmo, gradient, tt)
+        state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, grad!, lmo, gradient, tt)
         callback(state, active_set, non_simplex_iter)
     end
     return x, v, primal, dual_gap, traj_data
@@ -564,7 +564,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
             state = CallbackState(
                 t + number_of_steps, primal, primal-tolerance,
                 tolerance, (time_ns() - time_start) / 1e9,
-                x, y, gamma, reduced_f, nothing, gradient_x, tt,
+                x, y, gamma, reduced_f, reduced_grad!, nothing, gradient_x, tt,
             )
             if callback(state, active_set, non_simplex_iter) === false
                 break
@@ -624,7 +624,7 @@ function simplex_gradient_descent_over_probability_simplex(
             state = CallbackState(
                 t + number_of_steps, primal, primal-tolerance,
                 tolerance, tot_time,
-                x, y, inv(L), reduced_f, nothing,  gradient, tt,
+                x, y, inv(L), reduced_f, reduced_grad!, nothing,  gradient, tt,
             )
             if callback(state, active_set, non_simplex_iter) === false
                 break
@@ -842,7 +842,7 @@ function simplex_gradient_descent_over_convex_hull(
             state = CallbackState(
                 t,primal,primal - dual_gap,dual_gap,
                 (time_ns() - time_start) / 1e9,
-                x, y, η * (1 - gamma), f, nothing, gradient, tt,
+                x, y, η * (1 - gamma), f, grad!, nothing, gradient, tt,
             )
             callback(state, active_set, non_simplex_iter)
         end
