@@ -270,6 +270,14 @@ end
 """
 Vertex storage to store dropped vertices or find a suitable direction in lazy settings.
 The algorithm will look for at most `return_kth` suitable atoms before returning the best.
+See [Extra-lazification with a vertex storage](@ref) for usage.
+
+A vertex storage can be any type that implements two operations:
+1. `Base.push!(storage, atom)` to add an atom to the storage.
+Note that it is the storage type responsibility to ensure uniqueness of the atoms present.
+2. `storage_find_argmin_vertex(storage, direction, lazy_threshold) -> (found, vertex)`
+returning whether a vertex with sufficient progress was found and the vertex.
+It is up to the storage to remove vertices (or not) when they have been picked up.
 """
 struct DeletedVertexStorage{AT}
     storage::Vector{AT}
@@ -291,7 +299,7 @@ end
 Give the vertex `v` in the storage that minimizes `s = direction ⋅ v` and whether `s` achieves
 `s ≤ lazy_threshold`.
 """
-function _find_argmin_vertex(vertex_storage::DeletedVertexStorage, direction, lazy_threshold)
+function storage_find_argmin_vertex(vertex_storage::DeletedVertexStorage, direction, lazy_threshold)
     if isempty(vertex_storage.storage)
         return (false, nothing)
     end
