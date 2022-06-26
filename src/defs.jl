@@ -40,8 +40,10 @@ const st = (
     pp="PP",
 )
 
-
-struct CallbackState{TP,TDV,TDG,XT,VT,TG,FT,LMO,GT}
+"""
+Main structure created before and passed to the callback in first position.
+"""
+struct CallbackState{TP,TDV,TDG,XT,VT,TG,FT,GFT,LMO,GT}
     t::Int
     primal::TP
     dual::TDV
@@ -51,6 +53,7 @@ struct CallbackState{TP,TDV,TDG,XT,VT,TG,FT,LMO,GT}
     v::VT
     gamma::TG
     f::FT
+    grad!::GFT
     lmo::LMO
     gradient::GT
     tt::FrankWolfe.StepType
