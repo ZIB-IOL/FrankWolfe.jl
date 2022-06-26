@@ -40,7 +40,9 @@ const st = (
     pp="PP",
 )
 
-
+"""
+Main structure created before and passed to the callback in first position.
+"""
 struct CallbackState{TP,TDV,TDG,XT,VT,TG,FT,GFT,LMO,GT}
     t::Int
     primal::TP
