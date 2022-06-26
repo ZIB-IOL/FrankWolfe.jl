@@ -14,7 +14,7 @@ See [Pedregosa, Negiar, Askari, Jaggi (2020)](https://arxiv.org/abs/1806.05123) 
 
 ## Callbacks
 
-All top-level algorithms can take an optional `callback` argument, which must be a function taking a `CallbackState` struct and additional arguments:
+All top-level algorithms can take an optional `callback` argument, which must be a function taking a [`FrankWolfe.CallbackState`](@ref) struct and additional arguments:
 
 ```julia
 callback(state::FrankWolfe.CallbackState, args...)

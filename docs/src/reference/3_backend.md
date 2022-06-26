@@ -14,6 +14,12 @@ Modules = [FrankWolfe]
 Pages = ["function_gradient.jl"]
 ```
 
+## Callbacks
+
+```@docs
+FrankWolfe.CallbackState
+```
+
 ## Custom vertex storage
 
 ```@autodocs
