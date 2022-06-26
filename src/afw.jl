@@ -236,7 +236,7 @@ function away_frank_wolfe(
         end
         t += 1
         if callback !== nothing
-            state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, vertex, gamma, f, lmo, gradient, tt)
+            state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, vertex, gamma, f, grad!, lmo, gradient, tt)
             if callback(state, active_set) === false
                 break
             end
@@ -256,7 +256,7 @@ function away_frank_wolfe(
     tt = last
     tot_time= (time_ns()- time_start) / 1e9
     if callback !== nothing 
-        state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, lmo, gradient, tt)
+        state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, grad!, lmo, gradient, tt)
         callback(state, active_set)
     end
 
@@ -270,7 +270,7 @@ function away_frank_wolfe(
     tt = pp
     tot_time= (time_ns()- time_start) / 1e9
     if callback !== nothing 
-        state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, lmo, gradient, tt)
+        state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, grad!, lmo, gradient, tt)
         callback(state, active_set)
     end
 
