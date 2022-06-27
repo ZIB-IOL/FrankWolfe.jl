@@ -244,7 +244,7 @@ function lazified_conditional_gradient(
     # format string for output of the algorithm
     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
     headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "Cache Size"]
-    function format_state(state)
+    function format_state(state, args...)
         rep = (
             st[Symbol(state.tt)],
             string(state.t),
@@ -401,7 +401,7 @@ function lazified_conditional_gradient(
         d,
         1.0,
         linesearch_workspace,
-        memory_mode
+        memory_mode,
     )
     if callback !== nothing
         state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, grad!, lmo, gradient, tt)
@@ -451,7 +451,7 @@ function stochastic_frank_wolfe(
     format_string = "%6s %13s %14e %14e %14e %14e %14e %6i\n"
     headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "batch size")
 
-    function format_state(state)
+    function format_state(state, batch_size)
         rep = (
             st[Symbol(state.tt)],
             string(state.t),
@@ -460,7 +460,7 @@ function stochastic_frank_wolfe(
             Float64(state.dual_gap),
             state.time,
             state.t / state.time,
-            state.batch_size,
+            batch_size,
         )
         return rep
     end
