@@ -58,7 +58,7 @@ const x00 = FrankWolfe.compute_extreme_point(lmo, rand(n))
 
 function build_callback(trajectory_arr)
     return function callback(state, active_set)
-        return push!(trajectory_arr, (callback_state(state)..., length(active_set)))
+        return push!(trajectory_arr, (FrankWolfe.callback_state(state)..., length(active_set)))
     end
 end
 

@@ -591,7 +591,7 @@ function stochastic_frank_wolfe(
         gamma = perform_line_search(line_search, t, nothing, nothing, gradient, x, x - v, 1.0, linesearch_workspace, memory_mode)
         t += 1
         if callback !== nothing
-            state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, grad!, lmo, gradient, tt)
+            state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, nothing, lmo, gradient, tt)
             if callback(state, batch_size) === false
                 break
             end
@@ -613,7 +613,7 @@ function stochastic_frank_wolfe(
     gamma = perform_line_search(line_search, t, nothing, nothing, gradient, x, x - v, 1.0, linesearch_workspace, memory_mode)
     tot_time = (time_ns() - time_start) / 1e9
     if callback !== nothing
-        state = CallbackState(t, primal, primal-dual_gap, dual_gap, (time_ns() - time_start) / 1e9, x, v, gamma, f, grad!, lmo, gradient, tt)
+        state = CallbackState(t, primal, primal-dual_gap, dual_gap, (time_ns() - time_start) / 1e9, x, v, gamma, f, nothing, lmo, gradient, tt)
         callback(state, batch_size)
     end
     return x, v, primal, dual_gap, traj_data
