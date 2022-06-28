@@ -255,7 +255,7 @@ function blended_pairwise_conditional_gradient(
         end
         t += 1
         if callback !== nothing
-            state = CallbackState(t, primal, primal-dual_gap, phi, tot_time, x, vertex_taken, gamma, f, grad!, lmo, gradient, tt)
+            state = CallbackState(t, primal, primal-phi, phi, tot_time, x, vertex_taken, gamma, f, grad!, lmo, gradient, tt)
             if callback(state, active_set) === false
                 break
             end
