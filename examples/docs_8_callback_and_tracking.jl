@@ -82,7 +82,7 @@ storage = []
 # the five default logged elements `(iterations, primal, dual, dual_gap, time)` with ".counter" field arguments present in the tracking functions.
 
 function push_tracking_state(state, storage)
-    base_tuple = FrankWolfe.callback_state(state, args...)
+    base_tuple = FrankWolfe.callback_state(state)
     if state.lmo isa FrankWolfe.CachedLinearMinimizationOracle
         complete_tuple = tuple(base_tuple..., state.gamma, state.f.counter, state.grad!.counter, state.lmo.inner.counter)
     else
