@@ -38,6 +38,19 @@ Note: the weights in the active set are currently defined as `Float64` in the al
 This means that even with vertices using a lower precision, the iterate `sum_i(lambda_i * v_i)` will be upcast to `Float64`.
 One reason for keeping this as-is for now is the higher precision required by the computation of iterates from their barycentric decomposition.
 
+## Extra-lazification with a vertex storage
+
+One can pass the following keyword arguments to some active set-based Frank-Wolfe algorithms:
+```julia
+add_dropped_vertices=true,
+use_extra_vertex_storage=true,
+extra_vertex_storage=vertex_storage,
+```
+
+`add_dropped_vertices` activates feeding discarded vertices to the storage while `use_extra_vertex_storage`
+determines whether vertices from the storage are used in the algorithm.
+See [Extra-lazification](@ref) for a complete example.
+
 ## Miscellaneous
 
 - Emphasis: All solvers support emphasis (parameter `Emphasis`) to either exploit vectorized linear algebra or be memory efficient, e.g., for large-scale instances
