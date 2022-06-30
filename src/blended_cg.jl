@@ -720,6 +720,9 @@ function simplex_gradient_descent_over_convex_hull(
 )
     number_of_steps = 0
     x = get_active_set_iterate(active_set)
+    if line_search_inner isa Adaptive
+        line_search_inner.L_est = Inf
+    end
     while t + number_of_steps ≤ max_iteration
         grad!(gradient, x)
         #Check if strong Wolfe gap over the convex hull is small enough.

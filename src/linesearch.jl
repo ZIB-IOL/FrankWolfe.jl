@@ -314,17 +314,14 @@ function perform_line_search(
     gamma = min(max(dot_dir / (M * ndir2), 0), gamma_max)
     x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
     niter = 0
-    while f(x_storage) - f(x) > -gamma * dot_dir + gamma^2 * ndir2 * M / 2
+    while f(x_storage) - f(x) > -gamma * dot_dir + gamma^2 * ndir2 * M / 2 && gamma ≥ 100 * eps(gamma) && M ≤ line_search.L_est
         M *= line_search.tau
         gamma = min(max(dot_dir / (M * ndir2), 0), gamma_max)
         x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
         niter += 1
     end
-    if isfinite(M)
-        line_search.L_est = M
-    else
-        error("M is infinite, numerics error. $gamma")
-    end
+    line_search.L_est = min(M, line_search.L_est)
+    gamma = min(max(dot_dir / (line_search.L_est * ndir2), 0), gamma_max)
     return gamma
 end
 
