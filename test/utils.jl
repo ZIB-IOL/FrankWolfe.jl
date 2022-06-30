@@ -86,7 +86,8 @@ end
     @inferred FrankWolfe.perform_line_search(FrankWolfe.Agnostic(), 1, f, grad!, gradient, a, a - b, 1.0, nothing, FrankWolfe.InplaceEmphasis())
     @inferred FrankWolfe.perform_line_search(FrankWolfe.Nonconvex(), 1, f, grad!, gradient, a, a - b, 1.0, nothing, FrankWolfe.InplaceEmphasis())
     @inferred FrankWolfe.perform_line_search(FrankWolfe.Nonconvex(), 1, f, grad!, gradient, a, a - b, 1.0, nothing, FrankWolfe.InplaceEmphasis())
-    @inferred FrankWolfe.perform_line_search(FrankWolfe.Adaptive(), 1, f, grad!, gradient, a, a - b, 1.0, similar(a), FrankWolfe.InplaceEmphasis())
+    ls = @inferred FrankWolfe.Adaptive()
+    @inferred FrankWolfe.perform_line_search(ls, 1, f, grad!, gradient, a, a - b, 1.0, FrankWolfe.build_linesearch_workspace(ls, a, gradient), FrankWolfe.InplaceEmphasis())
 end
 
 @testset "Momentum tests" begin
