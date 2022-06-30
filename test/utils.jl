@@ -74,7 +74,9 @@ end
     gradient = similar(a)
     grad!(gradient, a)
     ls = FrankWolfe.Backtracking()
-    gamma_bt = @inferred FrankWolfe.perform_line_search(ls, 1, f, grad!, gradient, a, a - b, 1.0, similar(a), FrankWolfe.InplaceEmphasis())
+    gamma_bt = @inferred FrankWolfe.perform_line_search(
+        ls, 1, f, grad!, gradient, a, a - b, 1.0, FrankWolfe.build_linesearch_workspace(ls, a, gradient), FrankWolfe.InplaceEmphasis()
+    )
     @test gamma_bt ≈ 0.5
 
     ls_gr = FrankWolfe.Goldenratio()

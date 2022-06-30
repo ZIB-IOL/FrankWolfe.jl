@@ -274,7 +274,12 @@ Adaptive(eta::T, tau::TT) where {T, TT} = Adaptive{T, TT}(eta, tau, T(Inf))
 
 Adaptive(; eta=0.9, tau=2, L_est=Inf) = Adaptive(eta, tau, L_est)
 
-build_linesearch_workspace(::Adaptive, x, gradient) = similar(x)
+struct AdaptiveWorkspace{XT,BT}
+    x::XT
+    xbig::BT
+end
+
+build_linesearch_workspace(::Adaptive, x, gradient) = AdaptiveWorkspace(similar(x), big.(x))
 
 function perform_line_search(
     line_search::Adaptive,
@@ -282,14 +287,14 @@ function perform_line_search(
     f,
     grad!,
     gradient,
-    x::XT,
+    x,
     d,
     gamma_max,
-    storage::XT,
+    storage::AdaptiveWorkspace,
     memory_mode::MemoryEmphasis;
     should_upgrade::Val=Val{false}(),
-) where {XT}
-    if norm(d) == 0
+)
+    if norm(d) ≤ length(d) * eps(eltype(d))
         if should_upgrade isa Val{true}
             return big(zero(promote_type(eltype(d), eltype(gradient))))
         else
@@ -299,40 +304,43 @@ function perform_line_search(
     if !isfinite(line_search.L_est)
         epsilon_step = min(1e-3, gamma_max)
         gradient_stepsize_estimation = similar(gradient)
-        grad!(gradient_stepsize_estimation, x - epsilon_step * d)
+        x_storage = storage.x
+        x_storage = muladd_memory_mode(memory_mode, x_storage, x, epsilon_step, d)
+        grad!(gradient_stepsize_estimation, x_storage)
         line_search.L_est = norm(gradient - gradient_stepsize_estimation) / (epsilon_step * norm(d))
     end
     M = line_search.eta * line_search.L_est
-    (dot_dir, ndir2) = _upgrade_accuracy_adaptive(gradient, d, should_upgrade)
+    (dot_dir, ndir2, x_storage) = _upgrade_accuracy_adaptive(gradient, d, storage, should_upgrade)
     gamma = min(max(dot_dir / (M * ndir2), 0), gamma_max)
-    storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
+    x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
     niter = 0
-    while f(storage) - f(x) > -gamma * dot_dir + gamma^2 * ndir2 * M / 2
+    while f(x_storage) - f(x) > -gamma * dot_dir + gamma^2 * ndir2 * M / 2
         M *= line_search.tau
         gamma = min(max(dot_dir / (M * ndir2), 0), gamma_max)
-        storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
+        x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
         niter += 1
     end
-    @debug "LS iterations $niter, $M"
-    if isfinite(line_search.L_est) && !isfinite(M)
+    if isfinite(M)
+        line_search.L_est = M
+    else
+        error("M is infinite, numerics error. $gamma")
     end
-    line_search.L_est = M
     return gamma
 end
 
 Base.print(io::IO, ::Adaptive) = print(io, "Adaptive")
 
-function _upgrade_accuracy_adaptive(gradient, direction, ::Val{true})
+function _upgrade_accuracy_adaptive(gradient, direction, storage, ::Val{true})
     direction_big = big.(direction)
     dot_dir = fast_dot(big.(gradient), direction_big)
     ndir2 = norm(direction_big)^2
-    return (dot_dir, ndir2)
+    return (dot_dir, ndir2, storage.xbig)
 end
 
-function _upgrade_accuracy_adaptive(gradient, direction, ::Val{false})
+function _upgrade_accuracy_adaptive(gradient, direction, storage, ::Val{false})
     dot_dir = fast_dot(gradient, direction)
     ndir2 = norm(direction)^2
-    return (dot_dir, ndir2)
+    return (dot_dir, ndir2, storage.x)
 end
 
 """
