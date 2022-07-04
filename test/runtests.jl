@@ -129,43 +129,6 @@ include("pairwise.jl")
             memory_mode=FrankWolfe.InplaceEmphasis(),
         )[3] - 0.2,
     ) < 1.0e-3
-    @test abs(
-        FrankWolfe.frank_wolfe(
-            f,
-            grad!,
-            lmo_prob,
-            x0,
-            max_iteration=1000,
-            line_search=FrankWolfe.Adaptive(L_est=100.0),
-            verbose=false,
-            momentum=0.9,
-        )[3] - 0.2,
-    ) < 1.0e-3
-    @test abs(
-        FrankWolfe.frank_wolfe(
-            f,
-            grad!,
-            lmo_prob,
-            x0,
-            max_iteration=1000,
-            line_search=FrankWolfe.Adaptive(L_est=100.0),
-            verbose=false,
-            momentum=0.5,
-        )[3] - 0.2,
-    ) < 1.0e-3
-    @test abs(
-        FrankWolfe.frank_wolfe(
-            f,
-            grad!,
-            lmo_prob,
-            x0,
-            max_iteration=1000,
-            line_search=FrankWolfe.Adaptive(L_est=100.0),
-            verbose=false,
-            momentum=0.9,
-            memory_mode=FrankWolfe.InplaceEmphasis(),
-        )[3] - 0.2,
-    ) < 1.0e-3
 end
 
 @testset "Gradient with momentum correctly updated" begin
@@ -211,6 +174,17 @@ end
             x0,
             max_iteration=1000,
             line_search=FrankWolfe.Shortstep(2.0),
+            verbose=true,
+        )[3] - 0.2,
+    ) < 1.0e-5
+    @test abs(
+        FrankWolfe.lazified_conditional_gradient(
+            f,
+            grad!,
+            lmo_prob,
+            x0,
+            max_iteration=1000,
+            line_search=FrankWolfe.Adaptive(),
             verbose=true,
         )[3] - 0.2,
     ) < 1.0e-5

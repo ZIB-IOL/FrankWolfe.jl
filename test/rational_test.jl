@@ -41,7 +41,7 @@ xmem, vmem, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
     memory_mode=FrankWolfe.InplaceEmphasis(),
 )
 
-@time xstep, _ = FrankWolfe.frank_wolfe(
+xstep, _ = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
