@@ -14,7 +14,12 @@ end
 
 LpNormLMO{p}(right_hand_side::T) where {T,p} = LpNormLMO{T,p}(right_hand_side)
 
-function compute_extreme_point(lmo::LpNormLMO{T,2}, direction; v = similar(direction), kwargs...) where {T}
+function compute_extreme_point(
+    lmo::LpNormLMO{T,2},
+    direction;
+    v=similar(direction),
+    kwargs...,
+) where {T}
     dir_norm = norm(direction, 2)
     n = length(direction)
     # if direction numerically 0
@@ -26,14 +31,19 @@ function compute_extreme_point(lmo::LpNormLMO{T,2}, direction; v = similar(direc
     return v
 end
 
-function compute_extreme_point(lmo::LpNormLMO{T,Inf}, direction; v = similar(direction), kwargs...) where {T}
+function compute_extreme_point(
+    lmo::LpNormLMO{T,Inf},
+    direction;
+    v=similar(direction),
+    kwargs...,
+) where {T}
     for idx in eachindex(direction)
         v[idx] = -lmo.right_hand_side * (1 - 2signbit(direction[idx]))
     end
     return v
 end
 
-function compute_extreme_point(lmo::LpNormLMO{T,1}, direction; v = nothing, kwargs...) where {T}
+function compute_extreme_point(lmo::LpNormLMO{T,1}, direction; v=nothing, kwargs...) where {T}
     idx = 0
     v = -one(eltype(direction))
     for i in eachindex(direction)
@@ -49,10 +59,15 @@ function compute_extreme_point(lmo::LpNormLMO{T,1}, direction; v = nothing, kwar
     return ScaledHotVector(-lmo.right_hand_side * sign_coeff, idx, length(direction))
 end
 
-function compute_extreme_point(lmo::LpNormLMO{T,p}, direction; v = similar(direction), kwargs...) where {T,p}
+function compute_extreme_point(
+    lmo::LpNormLMO{T,p},
+    direction;
+    v=similar(direction),
+    kwargs...,
+) where {T,p}
     # covers the case where the Inf or 1 is of another type
     if p == Inf
-        v = compute_extreme_point(LpNormLMO{T,Inf}(lmo.right_hand_side), direction, v = v)
+        v = compute_extreme_point(LpNormLMO{T,Inf}(lmo.right_hand_side), direction, v=v)
         return v
     elseif p == 1
         v = compute_extreme_point(LpNormLMO{T,1}(lmo.right_hand_side), direction)
@@ -90,7 +105,12 @@ struct KNormBallLMO{T} <: LinearMinimizationOracle
     right_hand_side::T
 end
 
-function compute_extreme_point(lmo::KNormBallLMO{T}, direction; v = similar(direction), kwargs...) where {T}
+function compute_extreme_point(
+    lmo::KNormBallLMO{T},
+    direction;
+    v=similar(direction),
+    kwargs...,
+) where {T}
     K = max(min(lmo.K, length(direction)), 1)
 
     oinf = zero(eltype(direction))
@@ -129,7 +149,12 @@ end
 NuclearNormLMO{T}() where {T} = NuclearNormLMO{T}(one(T))
 NuclearNormLMO() = NuclearNormLMO(1.0)
 
-function compute_extreme_point(lmo::NuclearNormLMO{TL}, direction::AbstractMatrix{TD}; tol=1e-8, kwargs...) where {TL, TD}
+function compute_extreme_point(
+    lmo::NuclearNormLMO{TL},
+    direction::AbstractMatrix{TD};
+    tol=1e-8,
+    kwargs...,
+) where {TL,TD}
     T = promote_type(TD, TL)
     Z = Arpack.svds(direction, nsv=1, tol=tol)[1]
     u = -lmo.radius * view(Z.U, :)
@@ -168,20 +193,23 @@ struct SpectraplexLMO{T,M} <: LinearMinimizationOracle
 end
 
 function SpectraplexLMO(radius::T, side_dimension::Int, ensure_symmetry::Bool=true) where {T}
-    return SpectraplexLMO(
-        radius,
-        Matrix{T}(undef, side_dimension, side_dimension),
-        ensure_symmetry,
-    )
+    return SpectraplexLMO(radius, Matrix{T}(undef, side_dimension, side_dimension), ensure_symmetry)
 end
 
 function SpectraplexLMO(radius::Integer, side_dimension::Int, ensure_symmetry::Bool=true)
     return SpectraplexLMO(float(radius), side_dimension, ensure_symmetry)
 end
 
-function compute_extreme_point(lmo::SpectraplexLMO{T}, direction::M; v = nothing, maxiters=500, kwargs...) where {T,M <: AbstractMatrix}
+function compute_extreme_point(
+    lmo::SpectraplexLMO{T},
+    direction::M;
+    v=nothing,
+    maxiters=500,
+    kwargs...,
+) where {T,M<:AbstractMatrix}
     lmo.gradient_container .= direction
-    if !(M <: Union{LinearAlgebra.Symmetric, LinearAlgebra.Diagonal, LinearAlgebra.UniformScaling}) && lmo.ensure_symmetry
+    if !(M <: Union{LinearAlgebra.Symmetric,LinearAlgebra.Diagonal,LinearAlgebra.UniformScaling}) &&
+       lmo.ensure_symmetry
         # make gradient symmetric
         @. lmo.gradient_container += direction'
     end
@@ -219,17 +247,26 @@ function UnitSpectrahedronLMO(radius::T, side_dimension::Int, ensure_symmetry::B
     )
 end
 
-UnitSpectrahedronLMO(radius::Integer, side_dimension::Int) = UnitSpectrahedronLMO(float(radius), side_dimension)
+UnitSpectrahedronLMO(radius::Integer, side_dimension::Int) =
+    UnitSpectrahedronLMO(float(radius), side_dimension)
 
-function compute_extreme_point(lmo::UnitSpectrahedronLMO{T}, direction::M; v = nothing, maxiters=500, kwargs...) where {T, M <: AbstractMatrix}
+function compute_extreme_point(
+    lmo::UnitSpectrahedronLMO{T},
+    direction::M;
+    v=nothing,
+    maxiters=500,
+    kwargs...,
+) where {T,M<:AbstractMatrix}
     lmo.gradient_container .= direction
-    if !(M <: Union{LinearAlgebra.Symmetric, LinearAlgebra.Diagonal, LinearAlgebra.UniformScaling}) && lmo.ensure_symmetry
+    if !(M <: Union{LinearAlgebra.Symmetric,LinearAlgebra.Diagonal,LinearAlgebra.UniformScaling}) &&
+       lmo.ensure_symmetry
         # make gradient symmetric
         @. lmo.gradient_container += direction'
     end
     lmo.gradient_container .*= -1
 
-    e_val::Vector{T}, evec::Matrix{T} = Arpack.eigs(lmo.gradient_container; nev=1, which=:LR, maxiter=maxiters)
+    e_val::Vector{T}, evec::Matrix{T} =
+        Arpack.eigs(lmo.gradient_container; nev=1, which=:LR, maxiter=maxiters)
     # type annotation because of Arpack instability
     unit_vec::Vector{T} = vec(evec)
     if e_val[1] < 0
@@ -243,19 +280,19 @@ function compute_extreme_point(lmo::UnitSpectrahedronLMO{T}, direction::M; v = n
 end
 
 function convert_mathopt(
-    lmo::Union{SpectraplexLMO{T}, UnitSpectrahedronLMO{T}},
+    lmo::Union{SpectraplexLMO{T},UnitSpectrahedronLMO{T}},
     optimizer::OT;
     side_dimension::Integer,
     use_modify::Bool=true,
     kwargs...,
-) where {T, OT}
+) where {T,OT}
     MOI.empty!(optimizer)
     X = MOI.add_variables(optimizer, side_dimension * side_dimension)
     MOI.add_constraint(optimizer, X, MOI.PositiveSemidefiniteConeSquare(side_dimension))
-    sum_diag_terms = MOI.ScalarAffineFunction{T}([],zero(T))
+    sum_diag_terms = MOI.ScalarAffineFunction{T}([], zero(T))
     # collect diagonal terms of the matrix
     for i in 1:side_dimension
-        push!(sum_diag_terms.terms, MOI.ScalarAffineTerm(one(T), X[i + side_dimension * (i-1)]))
+        push!(sum_diag_terms.terms, MOI.ScalarAffineTerm(one(T), X[i+side_dimension*(i-1)]))
     end
     constraint_set = if lmo isa SpectraplexLMO
         MOI.EqualTo(lmo.radius)

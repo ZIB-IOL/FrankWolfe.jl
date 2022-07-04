@@ -75,19 +75,83 @@ end
     grad!(gradient, a)
     ls = FrankWolfe.Backtracking()
     gamma_bt = @inferred FrankWolfe.perform_line_search(
-        ls, 1, f, grad!, gradient, a, a - b, 1.0, FrankWolfe.build_linesearch_workspace(ls, a, gradient), FrankWolfe.InplaceEmphasis()
+        ls,
+        1,
+        f,
+        grad!,
+        gradient,
+        a,
+        a - b,
+        1.0,
+        FrankWolfe.build_linesearch_workspace(ls, a, gradient),
+        FrankWolfe.InplaceEmphasis(),
     )
     @test gamma_bt ≈ 0.5
 
     ls_gr = FrankWolfe.Goldenratio()
-    gamma_gr = @inferred FrankWolfe.perform_line_search(ls_gr, 1, f, grad!, gradient, a, a - b, 1.0, FrankWolfe.build_linesearch_workspace(ls_gr, a, gradient), FrankWolfe.InplaceEmphasis())
-    @test gamma_gr ≈ 0.5 atol=1e-4
+    gamma_gr = @inferred FrankWolfe.perform_line_search(
+        ls_gr,
+        1,
+        f,
+        grad!,
+        gradient,
+        a,
+        a - b,
+        1.0,
+        FrankWolfe.build_linesearch_workspace(ls_gr, a, gradient),
+        FrankWolfe.InplaceEmphasis(),
+    )
+    @test gamma_gr ≈ 0.5 atol = 1e-4
 
-    @inferred FrankWolfe.perform_line_search(FrankWolfe.Agnostic(), 1, f, grad!, gradient, a, a - b, 1.0, nothing, FrankWolfe.InplaceEmphasis())
-    @inferred FrankWolfe.perform_line_search(FrankWolfe.Nonconvex(), 1, f, grad!, gradient, a, a - b, 1.0, nothing, FrankWolfe.InplaceEmphasis())
-    @inferred FrankWolfe.perform_line_search(FrankWolfe.Nonconvex(), 1, f, grad!, gradient, a, a - b, 1.0, nothing, FrankWolfe.InplaceEmphasis())
+    @inferred FrankWolfe.perform_line_search(
+        FrankWolfe.Agnostic(),
+        1,
+        f,
+        grad!,
+        gradient,
+        a,
+        a - b,
+        1.0,
+        nothing,
+        FrankWolfe.InplaceEmphasis(),
+    )
+    @inferred FrankWolfe.perform_line_search(
+        FrankWolfe.Nonconvex(),
+        1,
+        f,
+        grad!,
+        gradient,
+        a,
+        a - b,
+        1.0,
+        nothing,
+        FrankWolfe.InplaceEmphasis(),
+    )
+    @inferred FrankWolfe.perform_line_search(
+        FrankWolfe.Nonconvex(),
+        1,
+        f,
+        grad!,
+        gradient,
+        a,
+        a - b,
+        1.0,
+        nothing,
+        FrankWolfe.InplaceEmphasis(),
+    )
     ls = @inferred FrankWolfe.Adaptive()
-    @inferred FrankWolfe.perform_line_search(ls, 1, f, grad!, gradient, a, a - b, 1.0, FrankWolfe.build_linesearch_workspace(ls, a, gradient), FrankWolfe.InplaceEmphasis())
+    @inferred FrankWolfe.perform_line_search(
+        ls,
+        1,
+        f,
+        grad!,
+        gradient,
+        a,
+        a - b,
+        1.0,
+        FrankWolfe.build_linesearch_workspace(ls, a, gradient),
+        FrankWolfe.InplaceEmphasis(),
+    )
 end
 
 @testset "Momentum tests" begin

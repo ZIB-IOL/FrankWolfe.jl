@@ -20,7 +20,7 @@ using LinearAlgebra
 n = 100
 k = n
 
-x = fill(big(1)//100, n)
+x = fill(big(1) // 100, n)
 
 f(x) = dot(x, x)
 function grad!(storage, x)
@@ -58,7 +58,7 @@ println("\nOutput type of solution: ", eltype(x))
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.Shortstep(2//1),
+    line_search=FrankWolfe.Shortstep(2 // 1),
     print_iter=k / 10,
     verbose=true,
     memory_mode=FrankWolfe.OutplaceEmphasis(),

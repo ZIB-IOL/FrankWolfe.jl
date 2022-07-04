@@ -63,7 +63,7 @@ results = FrankWolfe.blended_pairwise_conditional_gradient(
 # in addition to warm-starting with the active set of the previous iteration.
 # This allows for a "double-warmstarted" algorithm, reducing the number of LMO
 # calls from one problem to the next.
- 
+
 active_set = results[end]
 tlmo.counter
 

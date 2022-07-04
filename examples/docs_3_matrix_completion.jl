@@ -164,7 +164,18 @@ for _ in 1:k
     @info f_val
     grad!(gradient, xgd)
     xgd_new, vertex = project_nuclear_norm_ball(xgd - gradient / L_estimate, radius=norm_estimation)
-    gamma = FrankWolfe.perform_line_search(ls, 1, f, grad!, gradient, xgd, xgd - xgd_new, 1.0, ls_storage, FrankWolfe.InplaceEmphasis())
+    gamma = FrankWolfe.perform_line_search(
+        ls,
+        1,
+        f,
+        grad!,
+        gradient,
+        xgd,
+        xgd - xgd_new,
+        1.0,
+        ls_storage,
+        FrankWolfe.InplaceEmphasis(),
+    )
     @. xgd -= gamma * (xgd - xgd_new)
 end
 
@@ -223,17 +234,19 @@ xlazy, _, _, _, _ = FrankWolfe.lazified_conditional_gradient(
 fw_test_values = getindex.(trajectory_arr_fw, 6)
 lazy_test_values = getindex.(trajectory_arr_lazy, 6)
 
-results = Dict("svals_gd"=>svdvals(xgd),
-"svals_fw"=>svdvals(xfin),
-"svals_lcg"=>svdvals(xlazy),
-"fw_test_values"=>fw_test_values,
-"lazy_test_values"=>lazy_test_values,
-"trajectory_arr_fw"=>trajectory_arr_fw,
-"trajectory_arr_lazy"=>trajectory_arr_lazy,
-"function_values_gd"=>function_values,
-"function_values_test_gd"=>function_test_values,
-"timing_values_gd"=>timing_values,
-"trajectory_arr_lazy_ref"=>trajectory_arr_lazy_ref)
+results = Dict(
+    "svals_gd" => svdvals(xgd),
+    "svals_fw" => svdvals(xfin),
+    "svals_lcg" => svdvals(xlazy),
+    "fw_test_values" => fw_test_values,
+    "lazy_test_values" => lazy_test_values,
+    "trajectory_arr_fw" => trajectory_arr_fw,
+    "trajectory_arr_lazy" => trajectory_arr_lazy,
+    "function_values_gd" => function_values,
+    "function_values_test_gd" => function_test_values,
+    "timing_values_gd" => timing_values,
+    "trajectory_arr_lazy_ref" => trajectory_arr_lazy_ref,
+)
 
 ref_optimum = results["trajectory_arr_lazy_ref"][end][2]
 
@@ -269,5 +282,5 @@ plot_results(
         L"\textrm{Test Error}",
     ],
     xscalelog=[:log, :identity, :log, :identity],
-    legend_position=[:bottomleft, nothing, nothing, nothing]
+    legend_position=[:bottomleft, nothing, nothing, nothing],
 )

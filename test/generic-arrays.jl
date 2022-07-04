@@ -4,7 +4,7 @@ using Test
 
 
 # necessary for away step
-function Base.convert(::Type{GenericArray{Float64, 1}}, v::FrankWolfe.ScaledHotVector{Float64})
+function Base.convert(::Type{GenericArray{Float64,1}}, v::FrankWolfe.ScaledHotVector{Float64})
     return GenericArray(collect(v))
 end
 
@@ -51,7 +51,7 @@ end
 
     @test f(x) < f(x0)
     @test x isa GenericArray
-    
+
     @test_broken x, v, primal, dual_gap0, trajectory = FrankWolfe.away_frank_wolfe(
         f,
         grad!,

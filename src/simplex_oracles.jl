@@ -21,7 +21,7 @@ LMO for scaled unit simplex:
 Returns either vector of zeros or vector with one active value equal to RHS if
 there exists an improving direction.
 """
-function compute_extreme_point(lmo::UnitSimplexOracle{T}, direction; v = nothing, kwargs...) where {T}
+function compute_extreme_point(lmo::UnitSimplexOracle{T}, direction; v=nothing, kwargs...) where {T}
     idx = argmin(direction)
     if direction[idx] < 0
         return ScaledHotVector(lmo.right_side, idx, length(direction))
@@ -84,7 +84,12 @@ LMO for scaled probability simplex.
 Returns a vector with one active value equal to RHS in the
 most improving (or least degrading) direction.
 """
-function compute_extreme_point(lmo::ProbabilitySimplexOracle{T}, direction; v = nothing, kwargs...) where {T}
+function compute_extreme_point(
+    lmo::ProbabilitySimplexOracle{T},
+    direction;
+    v=nothing,
+    kwargs...,
+) where {T}
     idx = argmin(direction)
     return ScaledHotVector(lmo.right_side, idx, length(direction))
 end

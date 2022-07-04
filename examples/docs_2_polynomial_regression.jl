@@ -321,27 +321,16 @@ iteration_list = [
     [x[1] + 1 for x in trajectory_bcg],
     collect(eachindex(training_gd)),
 ]
-time_list = [
-    [x[5] for x in trajectory_lafw],
-    [x[5] for x in trajectory_bcg],
-    gd_times,
-]
+time_list = [[x[5] for x in trajectory_lafw], [x[5] for x in trajectory_bcg], gd_times]
 primal_list = [
     [x[2] - primal_ref for x in trajectory_lafw],
     [x[2] - primal_ref for x in trajectory_bcg],
     [x - primal_ref for x in training_gd],
 ]
-test_list = [
-    [x[6] for x in trajectory_lafw],
-    [x[6] for x in trajectory_bcg],
-    test_gd,
-]
+test_list = [[x[6] for x in trajectory_lafw], [x[6] for x in trajectory_bcg], test_gd]
 label = [L"\textrm{L-AFW}", L"\textrm{BCG}", L"\textrm{GD}"]
-coefficient_error_values = [
-    [x[7] for x in trajectory_lafw],
-    [x[7] for x in trajectory_bcg],
-    coeff_error,
-]
+coefficient_error_values =
+    [[x[7] for x in trajectory_lafw], [x[7] for x in trajectory_bcg], coeff_error]
 
 
 plot_results(

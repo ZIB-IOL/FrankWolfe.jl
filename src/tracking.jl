@@ -36,11 +36,11 @@ function wrap_objective(to::TrackingObjective)
         to.counter += 1
         return to.f(x)
     end
-    function grad!(storage,x)
+    function grad!(storage, x)
         to.counter += 1
-        return to.g(storage ,x)
+        return to.g(storage, x)
     end
-    return (f,grad!)
+    return (f, grad!)
 end
 
 """

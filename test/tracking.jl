@@ -20,23 +20,23 @@ using FrankWolfe
         tgrad! = FrankWolfe.TrackingGradient(grad!)
         @test tgrad!.counter == 0
         @test tgrad!.grad! === grad!
-        tgrad!(gradient,direction)
+        tgrad!(gradient, direction)
         @test tgrad!.counter == 1
     end
 
     @testset "TrackingObjective" begin
-        tf = FrankWolfe.TrackingObjective(f,0)
+        tf = FrankWolfe.TrackingObjective(f, 0)
         @test tf.counter == 0
         tf(x)
         @test tf.counter == 1
-    
+
     end
 
     @testset "TrackingLMO" begin
-        tlmo_prob = FrankWolfe.TrackingLMO(lmo,0)
+        tlmo_prob = FrankWolfe.TrackingLMO(lmo, 0)
         @test tlmo_prob.counter == 0
-        @test tlmo_prob.lmo ===  lmo
-        compute_extreme_point(tlmo_prob,direction)
+        @test tlmo_prob.lmo === lmo
+        compute_extreme_point(tlmo_prob, direction)
         @test tlmo_prob.counter == 1
     end
 end
@@ -47,18 +47,18 @@ end
     function grad!(storage, x)
         @. storage = 2x
     end
-    
+
     lmo = FrankWolfe.ProbabilitySimplexOracle(1)
 
-    tf = FrankWolfe.TrackingObjective(f,0)
-    tgrad! = FrankWolfe.TrackingGradient(grad!,0)
+    tf = FrankWolfe.TrackingObjective(f, 0)
+    tgrad! = FrankWolfe.TrackingGradient(grad!, 0)
     tlmo = FrankWolfe.TrackingLMO(lmo)
 
     storage = []
     x0 = FrankWolfe.compute_extreme_point(tlmo, spzeros(1000))
 
 
-        FrankWolfe.frank_wolfe(
+    FrankWolfe.frank_wolfe(
         tf,
         tgrad!,
         tlmo,
@@ -70,7 +70,7 @@ end
         traj_data=storage,
         verbose=true,
     )
-    
+
     @test length(storage[1]) == 5
 
     niters = length(storage)
@@ -85,11 +85,11 @@ end
     function grad!(storage, x)
         @. storage = 2x
     end
-    
+
     lmo = FrankWolfe.ProbabilitySimplexOracle(1)
 
-    tf = FrankWolfe.TrackingObjective(f,0)
-    tgrad! = FrankWolfe.TrackingGradient(grad!,0)
+    tf = FrankWolfe.TrackingObjective(f, 0)
+    tgrad! = FrankWolfe.TrackingGradient(grad!, 0)
     tlmo = FrankWolfe.TrackingLMO(lmo)
 
     storage = []
@@ -107,7 +107,7 @@ end
         traj_data=storage,
         verbose=false,
     )
-    
+
     @test length(storage[1]) == 5
 
     niters = length(storage)

@@ -159,8 +159,7 @@ x0 = deepcopy(x00)
 
 # Reduction primal/dual error vs. sparsity of solution
 
-dataSparsity =
-    [trajectory_afw, trajectory_lafw, trajectoryBPCG, trajectoryLBPCG]
+dataSparsity = [trajectory_afw, trajectory_lafw, trajectoryBPCG, trajectoryLBPCG]
 labelSparsity = ["AFW", "LAFW", "BPCG", "LBPCG"]
 
 plot_sparsity(dataSparsity, labelSparsity, legend_position=:topright)
