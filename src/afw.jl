@@ -54,7 +54,7 @@ function away_frank_wolfe(
         renorm_interval=renorm_interval,
         callback=callback,
         traj_data=traj_data,
-        timeout= timeout,
+        timeout=timeout,
         linesearch_workspace=linesearch_workspace,
     )
 end
@@ -194,7 +194,15 @@ function away_frank_wolfe(
         if away_steps
             if lazy
                 d, vertex, index, gamma_max, phi_value, away_step_taken, fw_step_taken, tt =
-                    lazy_afw_step(x, gradient, lmo, active_set, phi_value, epsilon; lazy_tolerance=lazy_tolerance)
+                    lazy_afw_step(
+                        x,
+                        gradient,
+                        lmo,
+                        active_set,
+                        phi_value,
+                        epsilon;
+                        lazy_tolerance=lazy_tolerance,
+                    )
             else
                 d, vertex, index, gamma_max, phi_value, away_step_taken, fw_step_taken, tt =
                     afw_step(x, gradient, lmo, active_set, epsilon)
@@ -215,7 +223,7 @@ function away_frank_wolfe(
                 d,
                 gamma_max,
                 linesearch_workspace,
-                memory_mode
+                memory_mode,
             )
             # cleanup and renormalize every x iterations. Only for the fw steps.
             renorm = mod(t, renorm_interval) == 0
@@ -225,7 +233,7 @@ function away_frank_wolfe(
                 active_set_update!(active_set, gamma, vertex, renorm, index)
             end
         end
-        
+
         if (
             (mod(t, print_iter) == 0 && verbose) ||
             callback !== nothing ||
@@ -236,7 +244,21 @@ function away_frank_wolfe(
         end
         t += 1
         if callback !== nothing
-            state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, vertex, gamma, f, grad!, lmo, gradient, tt)
+            state = CallbackState(
+                t,
+                primal,
+                primal - dual_gap,
+                dual_gap,
+                tot_time,
+                x,
+                vertex,
+                gamma,
+                f,
+                grad!,
+                lmo,
+                gradient,
+                tt,
+            )
             if callback(state, active_set) === false
                 break
             end
@@ -254,9 +276,23 @@ function away_frank_wolfe(
     primal = f(x)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
     tt = last
-    tot_time= (time_ns()- time_start) / 1e9
-    if callback !== nothing 
-        state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, grad!, lmo, gradient, tt)
+    tot_time = (time_ns() - time_start) / 1e9
+    if callback !== nothing
+        state = CallbackState(
+            t,
+            primal,
+            primal - dual_gap,
+            dual_gap,
+            tot_time,
+            x,
+            v,
+            gamma,
+            f,
+            grad!,
+            lmo,
+            gradient,
+            tt,
+        )
         callback(state, active_set)
     end
 
@@ -268,9 +304,23 @@ function away_frank_wolfe(
     primal = f(x)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
     tt = pp
-    tot_time= (time_ns()- time_start) / 1e9
-    if callback !== nothing 
-        state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, grad!, lmo, gradient, tt)
+    tot_time = (time_ns() - time_start) / 1e9
+    if callback !== nothing
+        state = CallbackState(
+            t,
+            primal,
+            primal - dual_gap,
+            dual_gap,
+            tot_time,
+            x,
+            v,
+            gamma,
+            f,
+            grad!,
+            lmo,
+            gradient,
+            tt,
+        )
         callback(state, active_set)
     end
 
@@ -278,15 +328,14 @@ function away_frank_wolfe(
 end
 
 function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon; lazy_tolerance=2.0)
-    _, v, v_loc, _, a_lambda, a, a_loc, _, _ =
-        active_set_argminmax(active_set, gradient)
+    _, v, v_loc, _, a_lambda, a, a_loc, _, _ = active_set_argminmax(active_set, gradient)
     #Do lazy FW step
     grad_dot_lazy_fw_vertex = fast_dot(v, gradient)
     grad_dot_x = fast_dot(x, gradient)
     grad_dot_a = fast_dot(a, gradient)
     if grad_dot_x - grad_dot_lazy_fw_vertex >= grad_dot_a - grad_dot_x &&
-            grad_dot_x - grad_dot_lazy_fw_vertex >= phi / lazy_tolerance &&
-            grad_dot_x - grad_dot_lazy_fw_vertex >= epsilon
+       grad_dot_x - grad_dot_lazy_fw_vertex >= phi / lazy_tolerance &&
+       grad_dot_x - grad_dot_lazy_fw_vertex >= epsilon
         tt = lazy
         gamma_max = one(a_lambda)
         d = x - v

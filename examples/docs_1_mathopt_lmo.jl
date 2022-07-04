@@ -144,5 +144,5 @@ plot_results(
     [L"\textrm{Primal Gap}", "", L"\textrm{Dual Gap}", ""],
     xscalelog=[:log, :identity, :log, :identity],
     yscalelog=[:log, :log, :log, :log],
-    legend_position=[:bottomleft, nothing, nothing, nothing]
+    legend_position=[:bottomleft, nothing, nothing, nothing],
 )

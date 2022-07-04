@@ -147,7 +147,7 @@ xfinBPCG, vmin, _, _, traj_data = FrankWolfe.blended_pairwise_conditional_gradie
     verbose=true,
     line_search=FrankWolfe.Adaptive(),
     memory_mode=FrankWolfe.InplaceEmphasis(),
-#    lazy=true,
+    #    lazy=true,
 )
 
 pit = plot(svdvals(xfin), label="FW", width=3, yaxis=:log)

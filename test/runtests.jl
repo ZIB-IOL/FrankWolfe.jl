@@ -366,7 +366,7 @@ end
         lmo,
         x0,
         max_iteration=15,
-        line_search=FrankWolfe.Shortstep(2//1),
+        line_search=FrankWolfe.Shortstep(2 // 1),
         print_iter=k / 100,
         memory_mode=FrankWolfe.InplaceEmphasis(),
         verbose=true,
@@ -379,7 +379,7 @@ end
         lmo,
         x0,
         max_iteration=15,
-        line_search=FrankWolfe.Shortstep(2//1),
+        line_search=FrankWolfe.Shortstep(2 // 1),
         print_iter=k / 10,
         memory_mode=FrankWolfe.InplaceEmphasis(),
         verbose=true,
@@ -496,7 +496,12 @@ end
     params = rand(6) .- 1 # start params in (-1,0)
 
     data_perfect = [(x, x ⋅ (1:5) + bias) for x in xs]
-    f_stoch = FrankWolfe.StochasticObjective(simple_reg_loss, ∇simple_reg_loss, data_perfect, similar(params))
+    f_stoch = FrankWolfe.StochasticObjective(
+        simple_reg_loss,
+        ∇simple_reg_loss,
+        data_perfect,
+        similar(params),
+    )
     lmo = FrankWolfe.LpNormLMO{2}(1.1 * norm(params_perfect))
 
     θ, _, _, _, _ = FrankWolfe.stochastic_frank_wolfe(
@@ -513,11 +518,8 @@ end
     @test norm(θ - params_perfect) ≤ 0.05 * length(θ)
 
     # SFW with incrementing batch size
-    batch_iterator = FrankWolfe.IncrementBatchIterator(
-        length(f_stoch.xs) ÷ 1000,
-        length(f_stoch.xs) ÷ 10,
-        2,
-    )
+    batch_iterator =
+        FrankWolfe.IncrementBatchIterator(length(f_stoch.xs) ÷ 1000, length(f_stoch.xs) ÷ 10, 2)
     θ, _, _, _, _ = FrankWolfe.stochastic_frank_wolfe(
         f_stoch,
         lmo,
@@ -615,7 +617,7 @@ end
         lmo_prob,
         x0,
         max_iteration=k,
-        away_steps = false,
+        away_steps=false,
         line_search=FrankWolfe.Backtracking(),
         print_iter=k / 10,
         verbose=true,

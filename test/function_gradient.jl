@@ -16,7 +16,7 @@ Random.seed!(123)
         @testset "Simple function" begin
             simple_quad(x) = A * x ⋅ x / 2 + b ⋅ x + c
             function ∇simple_quad(storage, x)
-                storage .= A * x + b
+                return storage .= A * x + b
             end
             f_simple = FrankWolfe.SimpleFunctionObjective(
                 simple_quad,
@@ -57,7 +57,10 @@ Random.seed!(123)
                 data_perfect = [(x, x ⋅ (1:5) + bias) for x in xs]
                 storage = similar(params_perfect)
                 f_stoch = FrankWolfe.StochasticObjective(
-                    simple_reg_loss, ∇simple_reg_loss, data_perfect, storage,
+                    simple_reg_loss,
+                    ∇simple_reg_loss,
+                    data_perfect,
+                    storage,
                 )
                 @test FrankWolfe._random_indices(f_stoch, 33, false)[1] == 33
                 @test FrankWolfe._random_indices(f_stoch, 33, true)[1] == length(xs)
@@ -95,8 +98,12 @@ Random.seed!(123)
             @testset "Noisy data" begin
                 data_noisy = [(x, x ⋅ (1:5) + bias + 0.5 * randn()) for x in xs]
                 storage = similar(params_perfect)
-                f_stoch_noisy =
-                    FrankWolfe.StochasticObjective(simple_reg_loss, ∇simple_reg_loss, data_noisy, storage)
+                f_stoch_noisy = FrankWolfe.StochasticObjective(
+                    simple_reg_loss,
+                    ∇simple_reg_loss,
+                    data_noisy,
+                    storage,
+                )
                 @test compute_value(f_stoch_noisy, params) >
                       compute_value(f_stoch_noisy, params_perfect)
                 # perfect parameters shouldn't have too high of a residual gradient

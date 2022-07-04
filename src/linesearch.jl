@@ -26,12 +26,34 @@ build_linesearch_workspace(::LineSearchMethod, x, gradient) = nothing
 """
 Computes step size: `2/(2 + t)` at iteration `t`.
 """
-struct Agnostic{T <: Real} <: LineSearchMethod end
+struct Agnostic{T<:Real} <: LineSearchMethod end
 
 Agnostic() = Agnostic{Float64}()
 
-perform_line_search(::Agnostic{<:Rational}, t, f, g!, gradient, x, d, gamma_max, workspace, memory_mode::MemoryEmphasis) = 2 // (t + 2)
-perform_line_search(::Agnostic{T}, t, f, g!, gradient, x, d, gamma_max, workspace, memory_mode::MemoryEmphasis) where {T} = T(2 / (t + 2))
+perform_line_search(
+    ::Agnostic{<:Rational},
+    t,
+    f,
+    g!,
+    gradient,
+    x,
+    d,
+    gamma_max,
+    workspace,
+    memory_mode::MemoryEmphasis,
+) = 2 // (t + 2)
+perform_line_search(
+    ::Agnostic{T},
+    t,
+    f,
+    g!,
+    gradient,
+    x,
+    d,
+    gamma_max,
+    workspace,
+    memory_mode::MemoryEmphasis,
+) where {T} = T(2 / (t + 2))
 
 Base.print(io::IO, ::Agnostic) = print(io, "Agnostic")
 
@@ -41,7 +63,18 @@ Computes a step size for nonconvex functions: `1/sqrt(t + 1)`.
 struct Nonconvex{T} <: LineSearchMethod end
 Nonconvex() = Nonconvex{Float64}()
 
-perform_line_search(::Nonconvex{T}, t, f, g!, gradient, x, d, gamma_max, workspace, memory_mode) where {T} = T(1 / sqrt(t + 1))
+perform_line_search(
+    ::Nonconvex{T},
+    t,
+    f,
+    g!,
+    gradient,
+    x,
+    d,
+    gamma_max,
+    workspace,
+    memory_mode,
+) where {T} = T(1 / sqrt(t + 1))
 
 Base.print(io::IO, ::Nonconvex) = print(io, "Nonconvex")
 
@@ -62,22 +95,19 @@ struct Shortstep{T} <: LineSearchMethod
 end
 
 function perform_line_search(
-        line_search::Shortstep,
-        t,
-        f,
-        grad!,
-        gradient,
-        x,
-        d,
-        gamma_max,
-        workspace,
-        memory_mode
-    )
-    
-    return min(
-        max(fast_dot(gradient, d) * inv(line_search.L * fast_dot(d, d)), 0),
-        gamma_max,
-    )
+    line_search::Shortstep,
+    t,
+    f,
+    grad!,
+    gradient,
+    x,
+    d,
+    gamma_max,
+    workspace,
+    memory_mode,
+)
+
+    return min(max(fast_dot(gradient, d) * inv(line_search.L * fast_dot(d, d)), 0), gamma_max)
 end
 
 Base.print(io::IO, ::Shortstep) = print(io, "Shortstep")
@@ -90,17 +120,17 @@ struct FixedStep{T} <: LineSearchMethod
 end
 
 function perform_line_search(
-        line_search::FixedStep,
-        t,
-        f,
-        grad!,
-        gradient,
-        x,
-        d,
-        gamma_max,
-        workspace,
-        memory_mode
-    )
+    line_search::FixedStep,
+    t,
+    f,
+    grad!,
+    gradient,
+    x,
+    d,
+    gamma_max,
+    workspace,
+    memory_mode,
+)
     return min(line_search.gamma0, gamma_max)
 end
 
@@ -120,7 +150,7 @@ end
 
 Goldenratio() = Goldenratio(1e-7)
 
-struct GoldenratioWorkspace{XT, GT}
+struct GoldenratioWorkspace{XT,GT}
     y::XT
     left::XT
     right::XT
@@ -129,9 +159,14 @@ struct GoldenratioWorkspace{XT, GT}
     gradient::GT
 end
 
-function build_linesearch_workspace(::Goldenratio, x::XT, gradient::GT) where {XT, GT}
+function build_linesearch_workspace(::Goldenratio, x::XT, gradient::GT) where {XT,GT}
     return GoldenratioWorkspace{XT,GT}(
-        similar(x), similar(x), similar(x), similar(x), similar(x), similar(gradient),
+        similar(x),
+        similar(x),
+        similar(x),
+        similar(x),
+        similar(x),
+        similar(gradient),
     )
 end
 
@@ -145,7 +180,7 @@ function perform_line_search(
     d,
     gamma_max,
     workspace::GoldenratioWorkspace,
-    memory_mode
+    memory_mode,
 )
     # restrict segment of search to [x, y]
     @. workspace.y = x - gamma_max * d
@@ -270,7 +305,7 @@ mutable struct Adaptive{T,TT} <: LineSearchMethod
     L_est::T
 end
 
-Adaptive(eta::T, tau::TT) where {T, TT} = Adaptive{T, TT}(eta, tau, T(Inf))
+Adaptive(eta::T, tau::TT) where {T,TT} = Adaptive{T,TT}(eta, tau, T(Inf))
 
 Adaptive(; eta=0.9, tau=2, L_est=Inf) = Adaptive(eta, tau, L_est)
 
@@ -314,7 +349,9 @@ function perform_line_search(
     gamma = min(max(dot_dir / (M * ndir2), 0), gamma_max)
     x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
     niter = 0
-    while f(x_storage) - f(x) > -gamma * dot_dir + gamma^2 * ndir2 * M / 2 && gamma ≥ 100 * eps(gamma) && M ≤ line_search.L_est
+    while f(x_storage) - f(x) > -gamma * dot_dir + gamma^2 * ndir2 * M / 2 &&
+              gamma ≥ 100 * eps(gamma) &&
+              M ≤ line_search.L_est
         M *= line_search.tau
         gamma = min(max(dot_dir / (M * ndir2), 0), gamma_max)
         x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
@@ -367,7 +404,7 @@ function perform_line_search(
     d,
     gamma_max,
     storage,
-    memory_mode
+    memory_mode,
 )
     gamma = 2.0^(1 - line_search.factor) / (2 + t)
     storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
@@ -397,7 +434,11 @@ MonotonousNonConvexStepSize() = MonotonousNonConvexStepSize(x -> true, 0)
 
 Base.print(io::IO, ::MonotonousNonConvexStepSize) = print(io, "MonotonousNonConvexStepSize")
 
-function build_linesearch_workspace(::Union{MonotonousStepSize, MonotonousNonConvexStepSize}, x, gradient)
+function build_linesearch_workspace(
+    ::Union{MonotonousStepSize,MonotonousNonConvexStepSize},
+    x,
+    gradient,
+)
     return similar(x)
 end
 
@@ -411,7 +452,7 @@ function perform_line_search(
     d,
     gamma_max,
     storage,
-    memory_mode
+    memory_mode,
 )
     gamma = 2.0^(-line_search.factor) / sqrt(1 + t)
     storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)

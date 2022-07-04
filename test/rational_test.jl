@@ -47,7 +47,7 @@ xstep, _ = FrankWolfe.frank_wolfe(
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.Shortstep(2//1),
+    line_search=FrankWolfe.Shortstep(2 // 1),
     print_iter=k / 10,
     verbose=true,
 )
@@ -56,7 +56,7 @@ xstep, _ = FrankWolfe.frank_wolfe(
 if !(eltype(xmem) <: Rational)
     @test eltype(xmem) == eltype(x)
 end
- 
+
 @test xmem == x
 @test abs(f(xstep) - f(x)) <= 1e-3
 @test vmem == v

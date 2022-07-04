@@ -32,7 +32,7 @@ all_coeffs = map(var_monomials) do m
 end
 random_vector = rand(length(all_coeffs))
 cutoff = quantile(random_vector, 0.95)
-all_coeffs[findall(<(cutoff), random_vector)]  .= 0.0
+all_coeffs[findall(<(cutoff), random_vector)] .= 0.0
 
 const true_poly = dot(all_coeffs, var_monomials)
 

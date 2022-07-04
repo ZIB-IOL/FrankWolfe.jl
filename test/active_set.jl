@@ -54,7 +54,7 @@ using LinearAlgebra: norm
     end
 
     @testset "active set isempty" begin
-        active_set = ActiveSet([(1.0, [1,2,3])])
+        active_set = ActiveSet([(1.0, [1, 2, 3])])
         @test !isempty(active_set)
         empty!(active_set)
         @test isempty(active_set)
@@ -87,7 +87,7 @@ using LinearAlgebra: norm
         active_set = ActiveSet([(0.125, [1, 2, 3]), (0.125, [2, 3, 4]), (0.75, [5, 6, 7])])
         as_copy = copy(active_set)
         # copy is of same type
-        @test as_copy isa ActiveSet{Vector{Int}, Float64, Vector{Float64}}
+        @test as_copy isa ActiveSet{Vector{Int},Float64,Vector{Float64}}
         # copy fields are also copied, same value different location in memory
         @test as_copy.weights !== active_set.weights
         @test as_copy.weights == active_set.weights
@@ -240,13 +240,13 @@ end
 end
 
 @testset "ActiveSet for BigFloat" begin
-  n = Int(1e2)
-  lmo = FrankWolfe.LpNormLMO{BigFloat,1}(rand())
-  x0 = Vector(FrankWolfe.compute_extreme_point(lmo, zeros(n)))
+    n = Int(1e2)
+    lmo = FrankWolfe.LpNormLMO{BigFloat,1}(rand())
+    x0 = Vector(FrankWolfe.compute_extreme_point(lmo, zeros(n)))
 
-  # add the first vertex to active set from initialization
-  active_set = FrankWolfe.ActiveSet([(1.0, x0)])
+    # add the first vertex to active set from initialization
+    active_set = FrankWolfe.ActiveSet([(1.0, x0)])
 
-  # ensure that ActiveSet is created correctly, tests a fix for a bug when x0 is a BigFloat
-  @test length(FrankWolfe.ActiveSet([(1.0, x0)])) == 1
+    # ensure that ActiveSet is created correctly, tests a fix for a bug when x0 is a BigFloat
+    @test length(FrankWolfe.ActiveSet([(1.0, x0)])) == 1
 end

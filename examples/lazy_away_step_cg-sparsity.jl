@@ -187,8 +187,13 @@ x0 = deepcopy(x00)
 
 # Reduction primal/dual error vs. sparsity of solution
 
-dataSparsity =
-    [trajectory_adaptive, trajectory_adaptiveLoc15, trajectory_adaptiveLoc2, trajectory_adaptiveLoc4, trajectory_adaptiveLoc10]
+dataSparsity = [
+    trajectory_adaptive,
+    trajectory_adaptiveLoc15,
+    trajectory_adaptiveLoc2,
+    trajectory_adaptiveLoc4,
+    trajectory_adaptiveLoc10,
+]
 labelSparsity = ["AFW", "LAFW-K-1.5", "LAFW-K-2.0", "LAFW-K-4.0", "LAFW-K-10.0"]
 
 plot_sparsity(dataSparsity, labelSparsity, legend_position=:topright)

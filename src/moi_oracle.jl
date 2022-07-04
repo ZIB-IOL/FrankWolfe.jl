@@ -21,7 +21,11 @@ struct MathOptLMO{OT<:MOI.AbstractOptimizer} <: LinearMinimizationOracle
     end
 end
 
-function compute_extreme_point(lmo::MathOptLMO{OT}, direction::AbstractVector{T}; kwargs...) where {OT,T<:Real}
+function compute_extreme_point(
+    lmo::MathOptLMO{OT},
+    direction::AbstractVector{T};
+    kwargs...,
+) where {OT,T<:Real}
     variables = MOI.get(lmo.o, MOI.ListOfVariableIndices())
     if lmo.use_modify
         for i in eachindex(variables)
@@ -39,7 +43,11 @@ function compute_extreme_point(lmo::MathOptLMO{OT}, direction::AbstractVector{T}
     return _optimize_and_return(lmo, variables)
 end
 
-function compute_extreme_point(lmo::MathOptLMO{OT}, direction::AbstractMatrix{T}; kwargs...) where {OT,T<:Real}
+function compute_extreme_point(
+    lmo::MathOptLMO{OT},
+    direction::AbstractMatrix{T};
+    kwargs...,
+) where {OT,T<:Real}
     n = size(direction, 1)
     v = compute_extreme_point(lmo, vec(direction))
     return reshape(v, n, n)
@@ -58,7 +66,10 @@ function Base.copy(lmo::MathOptLMO{OT}; ensure_identity=true) where {OT}
     return MathOptLMO(opt)
 end
 
-function Base.copy(lmo::MathOptLMO{OT}; ensure_identity=true) where {OTI, OT <: MOIU.CachingOptimizer{OTI}}
+function Base.copy(
+    lmo::MathOptLMO{OT};
+    ensure_identity=true,
+) where {OTI,OT<:MOIU.CachingOptimizer{OTI}}
     opt = MOIU.CachingOptimizer(
         MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
         OTI(),
@@ -78,27 +89,30 @@ end
 function compute_extreme_point(
     lmo::MathOptLMO{OT},
     direction::AbstractVector{MOI.ScalarAffineTerm{T}};
-    kwargs...
+    kwargs...,
 ) where {OT,T}
     if lmo.use_modify
         for d in direction
             MOI.modify(
                 lmo.o,
                 MOI.ObjectiveFunction{MOI.ScalarAffineFunction{T}}(),
-                MOI.ScalarCoefficientChange(d.variable,d.coefficient),
+                MOI.ScalarCoefficientChange(d.variable, d.coefficient),
             )
         end
 
         variables = MOI.get(lmo.o, MOI.ListOfVariableIndices())
         variables_to_zero = setdiff(variables, [dir.variable for dir in direction])
 
-        terms = [MOI.ScalarAffineTerm(d, v) for (d, v) in zip(zeros(length(variables_to_zero)), variables_to_zero)]
-        
+        terms = [
+            MOI.ScalarAffineTerm(d, v) for
+            (d, v) in zip(zeros(length(variables_to_zero)), variables_to_zero)
+        ]
+
         for t in terms
             MOI.modify(
                 lmo.o,
                 MOI.ObjectiveFunction{MOI.ScalarAffineFunction{T}}(),
-                MOI.ScalarCoefficientChange(t.variable,t.coefficient),
+                MOI.ScalarCoefficientChange(t.variable, t.coefficient),
             )
         end
     else

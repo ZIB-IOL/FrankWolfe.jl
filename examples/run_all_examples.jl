@@ -4,7 +4,11 @@ using Random
 ENV["GKSwstype"] = "100"
 
 const example_files = filter(readdir(@__DIR__, join=true)) do f
-    endswith(f, ".jl") && !occursin("large", f) && !occursin("result", f) && !occursin("activate.jl", f) && !occursin("plot_utils.jl", f)
+    return endswith(f, ".jl") &&
+               !occursin("large", f) &&
+               !occursin("result", f) &&
+               !occursin("activate.jl", f) &&
+               !occursin("plot_utils.jl", f)
 end
 
 example_shuffle = randperm(length(example_files))

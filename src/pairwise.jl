@@ -129,9 +129,7 @@ function blended_pairwise_conditional_gradient(
             "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
         )
         grad_type = typeof(gradient)
-        println(
-            "GRADIENTTYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance",
-        )
+        println("GRADIENTTYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance")
         if memory_mode isa InplaceEmphasis
             @info("In memory_mode memory iterates are written back into x0!")
         end
@@ -139,7 +137,9 @@ function blended_pairwise_conditional_gradient(
             @info("vertex storage only used in lazy mode")
         end
         if use_extra_vertex_storage || add_dropped_vertices && extra_vertex_storage === nothing
-            @warn("use_extra_vertex_storage and add_dropped_vertices options are only usable with a extra_vertex_storage storage")
+            @warn(
+                "use_extra_vertex_storage and add_dropped_vertices options are only usable with a extra_vertex_storage storage"
+            )
         end
     end
 
@@ -188,9 +188,9 @@ function blended_pairwise_conditional_gradient(
         x = get_active_set_iterate(active_set)
         grad!(gradient, x)
 
-        _, v_local, v_local_loc, _, a_lambda, a, a_loc, _ ,_ =
+        _, v_local, v_local_loc, _, a_lambda, a, a_loc, _, _ =
             active_set_argminmax(active_set, gradient)
-        
+
         dot_forward_vertex = fast_dot(gradient, v_local)
         dot_away_vertex = fast_dot(gradient, a)
         local_gap = dot_away_vertex - dot_forward_vertex
@@ -215,7 +215,7 @@ function blended_pairwise_conditional_gradient(
                 d,
                 gamma_max,
                 linesearch_workspace,
-                memory_mode
+                memory_mode,
             )
             # reached maximum of lambda -> dropping away vertex
             if gamma ≈ gamma_max
@@ -237,7 +237,8 @@ function blended_pairwise_conditional_gradient(
                 # optionally try to use the storage
                 if use_extra_vertex_storage
                     lazy_threshold = dot_away_vertex - phi / lazy_tolerance
-                    (found_better_vertex, new_forward_vertex) = storage_find_argmin_vertex(extra_vertex_storage, gradient, lazy_threshold)
+                    (found_better_vertex, new_forward_vertex) =
+                        storage_find_argmin_vertex(extra_vertex_storage, gradient, lazy_threshold)
                     if found_better_vertex
                         if verbose
                             @debug("Found acceptable lazy vertex in storage")
@@ -302,7 +303,21 @@ function blended_pairwise_conditional_gradient(
         end
         t += 1
         if callback !== nothing
-            state = CallbackState(t, primal, primal-phi, phi, tot_time, x, vertex_taken, gamma, f, grad!, lmo, gradient, tt)
+            state = CallbackState(
+                t,
+                primal,
+                primal - phi,
+                phi,
+                tot_time,
+                x,
+                vertex_taken,
+                gamma,
+                f,
+                grad!,
+                lmo,
+                gradient,
+                tt,
+            )
             if callback(state, active_set) === false
                 break
             end
@@ -323,7 +338,21 @@ function blended_pairwise_conditional_gradient(
         tt = last
         tot_time = (time_ns() - time_start) / 1e9
         if callback !== nothing
-            state = CallbackState(t, primal, primal-phi, phi, tot_time, x, v, gamma, f, grad!, lmo, gradient, tt)
+            state = CallbackState(
+                t,
+                primal,
+                primal - phi,
+                phi,
+                tot_time,
+                x,
+                v,
+                gamma,
+                f,
+                grad!,
+                lmo,
+                gradient,
+                tt,
+            )
             callback(state, active_set)
         end
     end
@@ -337,7 +366,21 @@ function blended_pairwise_conditional_gradient(
     tt = pp
     tot_time = (time_ns() - time_start) / 1e9
     if callback !== nothing
-        state = CallbackState(t, primal, primal-dual_gap, phi, tot_time, x, v, gamma, f, grad!, lmo, gradient, tt)
+        state = CallbackState(
+            t,
+            primal,
+            primal - dual_gap,
+            phi,
+            tot_time,
+            x,
+            v,
+            gamma,
+            f,
+            grad!,
+            lmo,
+            gradient,
+            tt,
+        )
         callback(state, active_set)
     end
 
