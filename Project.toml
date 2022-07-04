@@ -27,6 +27,8 @@ Plots = "1.10"
 ProgressMeter = "1.4"
 TimerOutputs = "0.5"
 ZipFile = "0.9.4"
+SetField = "1"
+GenericSchur = "0.5.3"
 julia = "1"
 
 [extras]
