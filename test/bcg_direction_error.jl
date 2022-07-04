@@ -31,13 +31,13 @@ x, v, primal, dual_gap, _ = FrankWolfe.blended_conditional_gradient(
     x0,
     max_iteration=k,
     line_search=FrankWolfe.Adaptive(L_est=2.0),
-    print_iter=k / 10,
+    print_iter=100,
     memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=false,
     lazy_tolerance=1.0,
-    weight_purge_threshold=1e-10,
-    epsilon=1e-9,
+    weight_purge_threshold=1e-9,
+    epsilon=1e-8,
     gradient=gradient,
 )
 

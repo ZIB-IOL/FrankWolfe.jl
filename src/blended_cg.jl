@@ -720,6 +720,9 @@ function simplex_gradient_descent_over_convex_hull(
 )
     number_of_steps = 0
     x = get_active_set_iterate(active_set)
+    if line_search_inner isa Adaptive
+        line_search_inner.L_est = Inf
+    end
     while t + number_of_steps ≤ max_iteration
         grad!(gradient, x)
         #Check if strong Wolfe gap over the convex hull is small enough.
@@ -739,7 +742,7 @@ function simplex_gradient_descent_over_convex_hull(
         # Computing the quantity below is the same as computing the <-\nabla f(x), direction>.
         # If <-\nabla f(x), direction>  >= 0 the direction is a descent direction.
         descent_direction_product = fast_dot(d, d) + (csum / k) * sum(d)
-        @inbounds if descent_direction_product < 0
+        @inbounds if descent_direction_product < eps(eltype(d)) * length(d)
             current_iteration = t + number_of_steps
             @warn "Non-improving d ($descent_direction_product) due to numerical instability in iteration $current_iteration. Temporarily upgrading precision to BigFloat for the current iteration."
             # extended warning - we can discuss what to integrate

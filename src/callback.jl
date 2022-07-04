@@ -4,7 +4,6 @@
 
 Handles formating of the callback state into a table format with consistent length independent of state values.
 """
-
 function print_callback(data, format_string; print_header=false, print_footer=false)
     print_formatted(fmt, args...) = @eval @printf($fmt, $(args...))
     if print_header || print_footer
