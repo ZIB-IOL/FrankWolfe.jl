@@ -26,9 +26,9 @@ using SparseArrays
 # ## Setting up the input data, objective, and gradient
 
 # Dimension, number of iterations and number of known entries:
-n = 500
-k = 10000
-n_entries = 50
+n = 1500
+k = 5000
+n_entries = 1000
 
 Random.seed!(41)
 
@@ -38,18 +38,19 @@ const entry_values = randn(length(entry_indices))
 function f(X)
     r = zero(eltype(X))
     for (idx, (i, j)) in enumerate(entry_indices)
-        r += 1/2 * (X[i,j] - entry_values[idx])^2
-        r += 1/2 * (X[j,i] - entry_values[idx])^2
+        r += 1 / 2 * (X[i, j] - entry_values[idx])^2
+        r += 1 / 2 * (X[j, i] - entry_values[idx])^2
     end
-    return r
+    return r / length(entry_values)
 end
 
 function grad!(storage, X)
     storage .= 0
     for (idx, (i, j)) in enumerate(entry_indices)
-        storage[i,j] += (X[i,j] - entry_values[idx])
-        storage[j,i] += (X[j,i] - entry_values[idx])
+        storage[i, j] += (X[i, j] - entry_values[idx])
+        storage[j, i] += (X[j, i] - entry_values[idx])
     end
+    return storage ./= length(entry_values)
 end
 
 # Note that the `ensure_symmetry = false` argument to `SpectraplexLMO`.
@@ -59,11 +60,25 @@ end
 const lmo = FrankWolfe.SpectraplexLMO(1.0, n, false)
 const x0 = FrankWolfe.compute_extreme_point(lmo, spzeros(n, n))
 
-target_tolerance = 1e-6;
+target_tolerance = 1e-8;
 
 #src the following two lines are used only to precompile the functions
-FrankWolfe.frank_wolfe(f, grad!, lmo, x0, max_iteration=2, line_search=FrankWolfe.MonotonousStepSize()) #src
-FrankWolfe.lazified_conditional_gradient(f, grad!, lmo, x0, max_iteration=2, line_search=FrankWolfe.MonotonousStepSize()) #src
+FrankWolfe.frank_wolfe(
+    f,
+    grad!,
+    lmo,
+    x0,
+    max_iteration=2,
+    line_search=FrankWolfe.MonotonousStepSize(),
+) #src
+FrankWolfe.lazified_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    x0,
+    max_iteration=2,
+    line_search=FrankWolfe.MonotonousStepSize(),
+) #src
 
 # ## Running standard and lazified Frank-Wolfe
 
@@ -75,7 +90,7 @@ Xfinal, Vfinal, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
     max_iteration=k,
     line_search=FrankWolfe.MonotonousStepSize(),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
     epsilon=target_tolerance,
@@ -89,14 +104,14 @@ Xfinal, Vfinal, primal, dual_gap, trajectory_lazy = FrankWolfe.lazified_conditio
     max_iteration=k,
     line_search=FrankWolfe.MonotonousStepSize(),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
     epsilon=target_tolerance,
-)
+);
 
 # ## Plotting the resulting trajectories
 
 data = [trajectory, trajectory_lazy]
 label = ["FW", "LCG"]
-FrankWolfe.plot_trajectories(data, label, xscalelog=true)
+plot_trajectories(data, label, xscalelog=true)

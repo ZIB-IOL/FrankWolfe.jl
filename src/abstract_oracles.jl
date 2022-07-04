@@ -52,7 +52,7 @@ SingleLastCachedLMO(lmo::LMO) where {LMO<:LinearMinimizationOracle} =
 function compute_extreme_point(
     lmo::SingleLastCachedLMO,
     direction;
-    v = nothing,
+    v=nothing,
     threshold=-Inf,
     store_cache=true,
     kwargs...,
@@ -125,7 +125,7 @@ below `threshold` or look for the best one.
 function compute_extreme_point(
     lmo::MultiCacheLMO{N},
     direction;
-    v = nothing,
+    v=nothing,
     threshold=-Inf,
     store_cache=true,
     greedy=false,
@@ -179,7 +179,7 @@ end
 
 
 """
-    VectorCacheLMO{N, LMO, VT}
+    VectorCacheLMO{LMO, VT}
 
 Cache for a LMO storing an unbounded number of vertices of type `VT` in the cache.
 `VT`, if provided, must be the type of vertices returned by `LMO`
@@ -208,7 +208,7 @@ Base.length(lmo::VectorCacheLMO) = length(lmo.vertices)
 function compute_extreme_point(
     lmo::VectorCacheLMO,
     direction;
-    v = nothing,
+    v=nothing,
     threshold=-Inf,
     store_cache=true,
     greedy=false,

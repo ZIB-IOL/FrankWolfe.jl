@@ -57,8 +57,8 @@ const x00 = FrankWolfe.compute_extreme_point(lmo, rand(n))
 
 
 function build_callback(trajectory_arr)
-    return function callback(state)
-        return push!(trajectory_arr, (Tuple(state)[1:5]..., length(state.active_set)))
+    return function callback(state, active_set)
+        return push!(trajectory_arr, (FrankWolfe.callback_state(state)..., length(active_set)))
     end
 end
 
@@ -72,10 +72,9 @@ x0 = deepcopy(x00)
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.Shortstep(),
-    L=2,
+    line_search=FrankWolfe.Shortstep(2.0),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
 );
@@ -93,7 +92,7 @@ x0 = deepcopy(x00)
     max_iteration=k,
     line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
     callback=callback,
@@ -112,7 +111,7 @@ x0 = deepcopy(x00)
     max_iteration=k,
     line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     lazy=true,
     trajectory=true,
@@ -131,7 +130,7 @@ x0 = deepcopy(x00)
     max_iteration=k,
     line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
     callback=callback,
@@ -150,7 +149,7 @@ x0 = deepcopy(x00)
     max_iteration=k,
     line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     lazy=true,
     trajectory=true,
@@ -160,8 +159,7 @@ x0 = deepcopy(x00)
 
 # Reduction primal/dual error vs. sparsity of solution
 
-dataSparsity =
-    [trajectory_afw, trajectory_lafw, trajectoryBPCG, trajectoryLBPCG]
+dataSparsity = [trajectory_afw, trajectory_lafw, trajectoryBPCG, trajectoryLBPCG]
 labelSparsity = ["AFW", "LAFW", "BPCG", "LBPCG"]
 
-FrankWolfe.plot_sparsity(dataSparsity, labelSparsity, legend_position=:topright)
+plot_sparsity(dataSparsity, labelSparsity, legend_position=:topright)

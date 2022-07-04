@@ -12,23 +12,23 @@ function blended_pairwise_conditional_gradient(
     lmo,
     x0;
     line_search::LineSearchMethod=Adaptive(),
-    L=Inf,
-    gamma0=0,
-    K=2.0,
-    step_lim=20,
     epsilon=1e-7,
     max_iteration=10000,
     print_iter=1000,
     trajectory=false,
     verbose=false,
-    linesearch_tol=1e-7,
-    emphasis::Emphasis=memory,
+    memory_mode::MemoryEmphasis=InplaceEmphasis(),
     gradient=nothing,
     callback=nothing,
+    traj_data=[],
     timeout=Inf,
-    print_callback=print_callback,
     renorm_interval=1000,
     lazy=false,
+    linesearch_workspace=nothing,
+    lazy_tolerance=2.0,
+    extra_vertex_storage=nothing,
+    add_dropped_vertices=false,
+    use_extra_vertex_storage=false,
 )
     # add the first vertex to active set from initialization
     active_set = ActiveSet([(1.0, x0)])
@@ -39,23 +39,23 @@ function blended_pairwise_conditional_gradient(
         lmo,
         active_set,
         line_search=line_search,
-        L=L,
-        gamma0=gamma0,
-        K=K,
-        step_lim=step_lim,
         epsilon=epsilon,
         max_iteration=max_iteration,
         print_iter=print_iter,
         trajectory=trajectory,
         verbose=verbose,
-        linesearch_tol=linesearch_tol,
-        emphasis=emphasis,
+        memory_mode=memory_mode,
         gradient=gradient,
         callback=callback,
+        traj_data=traj_data,
         timeout=timeout,
-        print_callback=print_callback,
         renorm_interval=renorm_interval,
         lazy=lazy,
+        linesearch_workspace=linesearch_workspace,
+        lazy_tolerance=lazy_tolerance,
+        extra_vertex_storage=extra_vertex_storage,
+        add_dropped_vertices=add_dropped_vertices,
+        use_extra_vertex_storage=use_extra_vertex_storage,
     )
 end
 
@@ -70,64 +70,77 @@ function blended_pairwise_conditional_gradient(
     lmo,
     active_set::ActiveSet;
     line_search::LineSearchMethod=Adaptive(),
-    L=Inf,
-    gamma0=0,
-    K=2.0,
-    step_lim=20,
     epsilon=1e-7,
     max_iteration=10000,
     print_iter=1000,
     trajectory=false,
     verbose=false,
-    linesearch_tol=1e-7,
-    emphasis::Emphasis=memory,
+    memory_mode::MemoryEmphasis=InplaceEmphasis(),
     gradient=nothing,
     callback=nothing,
+    traj_data=[],
     timeout=Inf,
-    print_callback=print_callback,
     renorm_interval=1000,
     lazy=false,
+    linesearch_workspace=nothing,
+    lazy_tolerance=2.0,
+    extra_vertex_storage=nothing,
+    add_dropped_vertices=false,
+    use_extra_vertex_storage=false,
 )
 
     # format string for output of the algorithm
     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
+    headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "#ActiveSet")
+    function format_state(state, active_set)
+        rep = (
+            st[Symbol(state.tt)],
+            string(state.t),
+            Float64(state.primal),
+            Float64(state.primal - state.dual_gap),
+            Float64(state.dual_gap),
+            state.time,
+            state.t / state.time,
+            length(active_set),
+        )
+        return rep
+    end
+
+    if trajectory
+        callback = make_trajectory_callback(callback, traj_data)
+    end
+
+    if verbose
+        callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
+    end
 
     t = 0
     primal = Inf
-    x = compute_active_set_iterate(active_set)
+    x = get_active_set_iterate(active_set)
     tt = regular
-    traj_data = []
-    if trajectory && callback === nothing
-        callback = trajectory_callback(traj_data)
-    end
     time_start = time_ns()
 
     d = similar(x)
 
-    if line_search isa Shortstep && L == Inf
-        println("WARNING: Lipschitz constant not set. Prepare to blow up spectacularly.")
-    end
-
-    if line_search isa FixedStep && gamma0 == 0
-        println("WARNING: gamma0 not set. We are not going to move a single bit.")
-    end
-
     if verbose
         println("\nBlended Pairwise Conditional Gradient Algorithm.")
-        num_type = eltype(x)
+        NumType = eltype(x)
         println(
-            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $num_type",
+            "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
         )
         grad_type = typeof(gradient)
-        println(
-            "GRADIENTTYPE: $grad_type LAZY: $lazy K: $K",
-        )
-        if emphasis == memory
-            println("WARNING: In memory emphasis mode iterates are written back into x0!")
+        println("GRADIENTTYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance")
+        if memory_mode isa InplaceEmphasis
+            @info("In memory_mode memory iterates are written back into x0!")
         end
-        headers =
-            ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "#ActiveSet")
-        print_callback(headers, format_string, print_header=true)
+        if use_extra_vertex_storage && !lazy
+            @info("vertex storage only used in lazy mode")
+        end
+        if use_extra_vertex_storage || add_dropped_vertices && extra_vertex_storage === nothing
+            @warn(
+                "use_extra_vertex_storage and add_dropped_vertices options are only usable with a extra_vertex_storage storage"
+            )
+        end
     end
 
     # likely not needed anymore as now the iterates are provided directly via the active set
@@ -141,6 +154,14 @@ function blended_pairwise_conditional_gradient(
     phi = max(0, fast_dot(x, gradient) - fast_dot(v, gradient))
     local_gap = zero(phi)
     gamma = 1.0
+
+    if linesearch_workspace === nothing
+        linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
+    end
+
+    if extra_vertex_storage === nothing
+        use_extra_vertex_storage = add_dropped_vertices = false
+    end
 
     while t <= max_iteration && phi >= max(epsilon, eps())
 
@@ -164,77 +185,103 @@ function blended_pairwise_conditional_gradient(
         #####################
 
         # compute current iterate from active set
-        x = compute_active_set_iterate(active_set)
+        x = get_active_set_iterate(active_set)
         grad!(gradient, x)
 
-        _, local_v, local_v_loc, a_lambda, a, a_loc =
-        active_set_argminmax(active_set, gradient)
+        _, v_local, v_local_loc, _, a_lambda, a, a_loc, _, _ =
+            active_set_argminmax(active_set, gradient)
 
-        local_gap = fast_dot(gradient, a) - fast_dot(gradient, local_v)
-
+        dot_forward_vertex = fast_dot(gradient, v_local)
+        dot_away_vertex = fast_dot(gradient, a)
+        local_gap = dot_away_vertex - dot_forward_vertex
         if !lazy
             v = compute_extreme_point(lmo, gradient)
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
             phi = dual_gap
         end
-        if local_gap ≥ phi / K # minor modification from original paper for improved sparsity (proof follows with minor modification when estimating the step)
-            @. d = a - local_v
-            w = local_v
+        # minor modification from original paper for improved sparsity
+        # (proof follows with minor modification when estimating the step)
+        if local_gap ≥ phi / lazy_tolerance
+            d = muladd_memory_mode(memory_mode, d, a, v_local)
+            vertex_taken = v_local
             gamma_max = a_lambda
-            gamma, L = line_search_wrapper(
+            gamma = perform_line_search(
                 line_search,
                 t,
                 f,
                 grad!,
+                gradient,
                 x,
                 d,
-                gradient,
-                phi,
-                L,
-                gamma0,
-                linesearch_tol,
-                step_lim,
                 gamma_max,
+                linesearch_workspace,
+                memory_mode,
             )
             # reached maximum of lambda -> dropping away vertex
             if gamma ≈ gamma_max
                 tt = drop
-                active_set.weights[local_v_loc] += gamma
+                active_set.weights[v_local_loc] += gamma
                 deleteat!(active_set, a_loc)
+                if add_dropped_vertices
+                    push!(extra_vertex_storage, a)
+                end
             else # transfer weight from away to local FW
                 tt = pairwise
                 active_set.weights[a_loc] -= gamma
-                active_set.weights[local_v_loc] += gamma
+                active_set.weights[v_local_loc] += gamma
                 @assert active_set_validate(active_set)
             end
-            active_set_update_iterate_pairwise!(active_set, gamma, local_v, a)
+            active_set_update_iterate_pairwise!(active_set, gamma, v_local, a)
         else # add to active set
             if lazy # otherwise, v computed above already
-                v = compute_extreme_point(lmo, gradient)
+                # optionally try to use the storage
+                if use_extra_vertex_storage
+                    lazy_threshold = dot_away_vertex - phi / lazy_tolerance
+                    (found_better_vertex, new_forward_vertex) =
+                        storage_find_argmin_vertex(extra_vertex_storage, gradient, lazy_threshold)
+                    if found_better_vertex
+                        if verbose
+                            @debug("Found acceptable lazy vertex in storage")
+                        end
+                        v = new_forward_vertex
+                        tt = lazy
+                    else
+                        v = compute_extreme_point(lmo, gradient)
+                        tt = regular
+                    end
+                else
+                    v = compute_extreme_point(lmo, gradient)
+                    tt = regular
+                end
             end
-            w = v
+            vertex_taken = v
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
-            if (!lazy || dual_gap ≥ phi / K)
+            if (!lazy || dual_gap ≥ phi / lazy_tolerance)
                 tt = regular
-                @. d = x - v
-                gamma_max = one(eltype(x))
-                gamma, L = line_search_wrapper(
+                d = muladd_memory_mode(memory_mode, d, x, v)
+
+                gamma = perform_line_search(
                     line_search,
                     t,
                     f,
                     grad!,
+                    gradient,
                     x,
                     d,
-                    gradient,
-                    dual_gap,
-                    L,
-                    gamma0,
-                    linesearch_tol,
-                    step_lim,
-                    gamma_max,
+                    one(eltype(x)),
+                    linesearch_workspace,
+                    memory_mode,
                 )
+
                 # dropping active set and restarting from singleton
                 if gamma ≈ 1.0
+                    if add_dropped_vertices
+                        for vtx in active_set.atoms
+                            if vtx != v
+                                push!(extra_vertex_storage, vtx)
+                            end
+                        end
+                    end
                     active_set_initialize!(active_set, v)
                 else
                     renorm = mod(t, renorm_interval) == 0
@@ -242,7 +289,9 @@ function blended_pairwise_conditional_gradient(
                 end
             else # dual step
                 tt = dualstep
-                phi = dual_gap # / 2 # removed the 2 for consistency between the lazy and non-lazy run. That is ok as we scale with the K = 2.0 default anyways
+                # set to computed dual_gap for consistency between the lazy and non-lazy run.
+                # that is ok as we scale with the K = 2.0 default anyways
+                phi = dual_gap
             end
         end
         if (
@@ -252,40 +301,27 @@ function blended_pairwise_conditional_gradient(
         )
             primal = f(x)
         end
-        if callback !== nothing
-            state = (
-                t=t,
-                primal=primal,
-                dual=primal - phi,
-                dual_gap=phi,
-                time=tot_time,
-                x=x,
-                v=w,
-                gamma=gamma,
-                active_set=active_set,
-                gradient=gradient,
-            )
-            callback(state)
-        end
-
-        if verbose && (mod(t, print_iter) == 0 || tt == dualstep)
-            if t == 0
-                tt = initial
-            end
-            rep = (
-                st[Symbol(tt)],
-                string(t),
-                Float64(primal),
-                Float64(primal - phi),
-                Float64(phi),
-                tot_time,
-                t / tot_time,
-                length(active_set),
-            )
-            print_callback(rep, format_string)
-            flush(stdout)
-        end
         t += 1
+        if callback !== nothing
+            state = CallbackState(
+                t,
+                primal,
+                primal - phi,
+                phi,
+                tot_time,
+                x,
+                vertex_taken,
+                gamma,
+                f,
+                grad!,
+                lmo,
+                gradient,
+                tt,
+            )
+            if callback(state, active_set) === false
+                break
+            end
+        end
     end
 
     # recompute everything once more for final verfication / do not record to trajectory though for now!
@@ -294,47 +330,58 @@ function blended_pairwise_conditional_gradient(
     # do also cleanup of active_set due to many operations on the same set
 
     if verbose
-        x = compute_active_set_iterate(active_set)
+        x = get_active_set_iterate(active_set)
         grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
         phi = fast_dot(x, gradient) - fast_dot(v, gradient)
         tt = last
-        rep = (
-            st[Symbol(tt)],
-            string(t - 1),
-            Float64(primal),
-            Float64(primal - phi),
-            Float64(phi),
-            (time_ns() - time_start) / 1.0e9,
-            t / ((time_ns() - time_start) / 1.0e9),
-            length(active_set),
-        )
-        print_callback(rep, format_string)
-        flush(stdout)
+        tot_time = (time_ns() - time_start) / 1e9
+        if callback !== nothing
+            state = CallbackState(
+                t,
+                primal,
+                primal - phi,
+                phi,
+                tot_time,
+                x,
+                v,
+                gamma,
+                f,
+                grad!,
+                lmo,
+                gradient,
+                tt,
+            )
+            callback(state, active_set)
+        end
     end
     active_set_renormalize!(active_set)
     active_set_cleanup!(active_set)
-    x = compute_active_set_iterate(active_set)
+    x = get_active_set_iterate(active_set)
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
-    if verbose
-        tt = pp
-        rep = (
-            st[Symbol(tt)],
-            string(t - 1),
-            Float64(primal),
-            Float64(primal - dual_gap),
-            Float64(dual_gap),
-            (time_ns() - time_start) / 1.0e9,
-            t / ((time_ns() - time_start) / 1.0e9),
-            length(active_set),
+    tt = pp
+    tot_time = (time_ns() - time_start) / 1e9
+    if callback !== nothing
+        state = CallbackState(
+            t,
+            primal,
+            primal - dual_gap,
+            phi,
+            tot_time,
+            x,
+            v,
+            gamma,
+            f,
+            grad!,
+            lmo,
+            gradient,
+            tt,
         )
-        print_callback(rep, format_string)
-        print_callback(nothing, format_string, print_footer=true)
-        flush(stdout)
+        callback(state, active_set)
     end
 
     return x, v, primal, dual_gap, traj_data, active_set

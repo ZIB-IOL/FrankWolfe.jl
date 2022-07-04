@@ -32,7 +32,7 @@ all_coeffs = map(var_monomials) do m
 end
 random_vector = rand(length(all_coeffs))
 cutoff = quantile(random_vector, 0.95)
-all_coeffs[findall(<(cutoff), random_vector)]  .= 0.0
+all_coeffs[findall(<(cutoff), random_vector)] .= 0.0
 
 const true_poly = dot(all_coeffs, var_monomials)
 
@@ -94,19 +94,16 @@ function grad!(storage, coefficients)
 end
 
 function build_callback(trajectory_arr)
-    return function callback(state)
+    return function callback(state, args...)
         return push!(
             trajectory_arr,
-            (Tuple(state)[1:5]..., f_test(state.x), coefficient_errors(state.x)),
+            (FrankWolfe.callback_state(state)..., f_test(state.x), coefficient_errors(state.x)),
         )
     end
 end
 
 #Check the gradient using finite differences just in case
 gradient = similar(all_coeffs)
-
-#Disable for now.
-FrankWolfe.check_gradients(grad!, f, gradient)
 
 max_iter = 100_000
 random_initialization_vector = rand(length(all_coeffs))
@@ -198,14 +195,13 @@ callback = build_callback(trajectory_lafw)
     lmo,
     x0,
     max_iteration=max_iter,
-    line_search=FrankWolfe.Adaptive(),
+    line_search=FrankWolfe.Adaptive(L_est=L_estimate),
     print_iter=max_iter ÷ 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     lazy=true,
     gradient=gradient,
     callback=callback,
-    L=L_estimate,
 );
 
 @info "Lazy AFW training loss $(f(x_lafw))"
@@ -222,13 +218,12 @@ x0 = deepcopy(x00)
     lmo,
     x0,
     max_iteration=max_iter,
-    line_search=FrankWolfe.Adaptive(),
+    line_search=FrankWolfe.Adaptive(L_est=L_estimate),
     print_iter=max_iter ÷ 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     weight_purge_threshold=1e-10,
     callback=callback,
-    L=L_estimate,
 )
 
 @info "BCG training loss $(f(x_bcg))"
@@ -247,14 +242,13 @@ callback = build_callback(trajectory_lafw_ref)
     lmo,
     x0,
     max_iteration=2 * max_iter,
-    line_search=FrankWolfe.Adaptive(),
+    line_search=FrankWolfe.Adaptive(L_est=L_estimate),
     print_iter=max_iter ÷ 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     lazy=true,
     gradient=gradient,
     callback=callback,
-    L=L_estimate,
 );
 
 open(joinpath(@__DIR__, "polynomial_result.json"), "w") do f

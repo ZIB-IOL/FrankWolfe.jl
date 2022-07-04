@@ -14,24 +14,13 @@ See [Pedregosa, Negiar, Askari, Jaggi (2020)](https://arxiv.org/abs/1806.05123) 
 
 ## Callbacks
 
-All top-level algorithms can take an optional `callback` argument, which must be a function taking a named tuple as argument of the form:
+All top-level algorithms can take an optional `callback` argument, which must be a function taking a [`FrankWolfe.CallbackState`](@ref) struct and additional arguments:
 
 ```julia
-state = (
-    t = t,
-    primal = primal,
-    dual = primal - dual_gap,
-    dual_gap = phi_value,
-    time = (time_ns() - time_start) / 1e9,
-    x = x,
-    v = vertex,
-    gamma=gamma,
-    active_set=active_set,
-    gradient=gradient,
-)
+callback(state::FrankWolfe.CallbackState, args...)
 ```
 
-Some fields of the named tuple can vary, but the 6 first are always present in this order. The callback can be used to log additional information or store some values of interest in an external array. If a callback is passed, the `trajectory` keyword is ignored since it is a special case of callback pushing the 5 first elements of the state to an array returned from the algorithm.
+The callback can be used to log additional information or store some values of interest in an external array. If a callback is passed, the `trajectory` keyword is ignored since it is a special case of callback pushing the 5 first elements of the state to an array returned from the algorithm.
 
 ## Custom extreme point types
 
@@ -48,6 +37,19 @@ It maintains a vector of atoms, the corresponding weights, and the current itera
 Note: the weights in the active set are currently defined as `Float64` in the algorithm.
 This means that even with vertices using a lower precision, the iterate `sum_i(lambda_i * v_i)` will be upcast to `Float64`.
 One reason for keeping this as-is for now is the higher precision required by the computation of iterates from their barycentric decomposition.
+
+## Extra-lazification with a vertex storage
+
+One can pass the following keyword arguments to some active set-based Frank-Wolfe algorithms:
+```julia
+add_dropped_vertices=true,
+use_extra_vertex_storage=true,
+extra_vertex_storage=vertex_storage,
+```
+
+`add_dropped_vertices` activates feeding discarded vertices to the storage while `use_extra_vertex_storage`
+determines whether vertices from the storage are used in the algorithm.
+See [Extra-lazification](@ref) for a complete example.
 
 ## Miscellaneous
 

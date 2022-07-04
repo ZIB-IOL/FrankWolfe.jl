@@ -66,7 +66,7 @@ x, v, primal, dual_gap, trajectoryFW = FrankWolfe.frank_wolfe(
     line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
     epsilon=target_accuracy,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     trajectory=true,
     verbose=true,
 );
@@ -85,7 +85,7 @@ x, v, primal, dual_gap, trajectoryLCG = FrankWolfe.lazified_conditional_gradient
     epsilon=target_accuracy,
     line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     trajectory=true,
     verbose=true,
 );
@@ -104,7 +104,7 @@ x, v, primal, dual_gap, trajectoryBLCG = FrankWolfe.lazified_conditional_gradien
     line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
     epsilon=target_accuracy,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     trajectory=true,
     cache_size=500,
     verbose=true,
@@ -122,9 +122,8 @@ x, v, primal, dual_gap, trajectoryLAFW = FrankWolfe.away_frank_wolfe(
     max_iteration=k,
     line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
-    linesearch_tol=1e-9,
     epsilon=target_accuracy,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     lazy=true,
     trajectory=true,
     verbose=true,
@@ -143,9 +142,8 @@ x, v, primal, dual_gap, trajectoryBCG = FrankWolfe.blended_conditional_gradient(
     max_iteration=k,
     line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
-    linesearch_tol=1e-9,
     epsilon=target_accuracy,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     trajectory=true,
     verbose=true,
 );
@@ -164,8 +162,7 @@ x, v, primal, dual_gap, trajectoryBCG_ref = FrankWolfe.blended_conditional_gradi
     line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
     epsilon=target_accuracy / 10.0,
-    linesearch_tol=1e-9,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     trajectory=true,
     verbose=true,
 );
@@ -186,4 +183,4 @@ end
 
 data = [trajectoryFW, trajectoryLCG, trajectoryBLCG, trajectoryLAFW, trajectoryBCG]
 label = ["FW", "L-CG", "BL-CG", "L-AFW", "BCG"]
-FrankWolfe.plot_trajectories(data, label, xscalelog=true)
+plot_trajectories(data, label, xscalelog=true)

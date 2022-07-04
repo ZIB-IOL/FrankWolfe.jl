@@ -37,13 +37,7 @@ x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
 
 gradient = similar(x00)
 
-FrankWolfe.benchmark_oracles(
-    f,
-    grad!,
-    () -> randn(n),
-    lmo;
-    k=100,
-)
+FrankWolfe.benchmark_oracles(f, grad!, () -> randn(n), lmo; k=100)
 
 # 1/t *can be* better than short step
 
@@ -56,10 +50,9 @@ x0 = copy(x00)
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.Shortstep(),
-    L=2,
+    line_search=FrankWolfe.Shortstep(2.0),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
 );
@@ -74,10 +67,9 @@ x0 = copy(x00)
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.Shortstep(),
-    L=2,
+    line_search=FrankWolfe.Shortstep(2.0),
     print_iter=k / 10,
-    emphasis=FrankWolfe.blas,
+    memory_mode=FrankWolfe.OutplaceEmphasis(),
     verbose=true,
     trajectory=true,
     momentum=0.9,
@@ -93,10 +85,9 @@ x0 = copy(x00)
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.Adaptive(),
-    L=100,
+    line_search=FrankWolfe.Adaptive(L_est=100.0),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
 );
@@ -113,7 +104,7 @@ x0 = copy(x00)
     max_iteration=k,
     line_search=FrankWolfe.Agnostic(),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
 );
@@ -124,4 +115,4 @@ data = [trajectory_shortstep, trajectory_adaptive, trajectory_agnostic, trajecto
 label = ["short step" "adaptive" "agnostic" "momentum"]
 
 
-FrankWolfe.plot_trajectories(data, label)
+plot_trajectories(data, label)

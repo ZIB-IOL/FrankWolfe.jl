@@ -38,7 +38,7 @@ FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo; k=100)
     line_search=FrankWolfe.Agnostic(),
     print_iter=k / 10,
     verbose=true,
-    emphasis=FrankWolfe.blas,
+    memory_mode=FrankWolfe.OutplaceEmphasis(),
 );
 
 println("\nOutput type of solution: ", eltype(x))
@@ -52,11 +52,10 @@ println("\nOutput type of solution: ", eltype(x))
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.RationalShortstep(),
-    L=2,
+    line_search=FrankWolfe.Shortstep(2 // 1),
     print_iter=k / 10,
     verbose=true,
-    emphasis=FrankWolfe.blas,
+    memory_mode=FrankWolfe.OutplaceEmphasis(),
 );
 
 println("\nOutput type of solution: ", eltype(x))
@@ -99,7 +98,7 @@ x0 = FrankWolfe.compute_extreme_point(lmo, direction)
     max_iteration=k,
     line_search=FrankWolfe.Agnostic(),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
 )
 println("\nOutput type of solution: ", eltype(x))

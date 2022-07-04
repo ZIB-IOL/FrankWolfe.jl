@@ -1,11 +1,11 @@
 #=
 
-Example demonstrating sparsity control by means of the "K"-factor passed to the lazy AFW variant
+Example demonstrating sparsity control by means of the `lazy_tolerance`-factor passed to the lazy AFW variant
 
-A larger K >= 1 favors sparsity by favoring optimization over the current active set rather than
+A larger lazy_tolerance >= 1 favors sparsity by favoring optimization over the current active set rather than
 adding a new FW vertex.
 
-The default for AFW is K = 2.0
+The default for AFW is lazy_tolerance = 2.0
 
 =#
 
@@ -57,8 +57,8 @@ const x00 = FrankWolfe.compute_extreme_point(lmo, rand(n))
 
 
 function build_callback(trajectory_arr)
-    return function callback(state)
-        return push!(trajectory_arr, (Tuple(state)[1:5]..., length(state.active_set)))
+    return function callback(state, active_set, args...)
+        return push!(trajectory_arr, (FrankWolfe.callback_state(state)..., length(active_set)))
     end
 end
 
@@ -73,10 +73,9 @@ x0 = deepcopy(x00)
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.Shortstep(),
-    L=2,
+    line_search=FrankWolfe.Shortstep(2.0),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
 );
@@ -94,7 +93,7 @@ x0 = deepcopy(x00)
     max_iteration=k,
     line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
     callback=callback,
@@ -115,10 +114,10 @@ x0 = deepcopy(x00)
     max_iteration=k,
     line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     lazy=true,
-    K=1.5,
+    lazy_tolerance=1.5,
     trajectory=true,
     callback=callback,
 );
@@ -128,7 +127,7 @@ trajectory_adaptiveLoc2 = []
 callback = build_callback(trajectory_adaptiveLoc2)
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, trajectory_adaptiveLoc2 = FrankWolfe.away_frank_wolfe(
+@time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
@@ -136,10 +135,10 @@ x0 = deepcopy(x00)
     max_iteration=k,
     line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     lazy=true,
-    K=2.0,
+    lazy_tolerance=2.0,
     trajectory=true,
     callback=callback,
 );
@@ -157,9 +156,9 @@ x0 = deepcopy(x00)
     max_iteration=k,
     line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
-    K=4.0,
+    lazy_tolerance=4.0,
     lazy=true,
     trajectory=true,
     callback=callback,
@@ -177,9 +176,9 @@ x0 = deepcopy(x00)
     max_iteration=k,
     line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     lazy=true,
-    K=10.0,
+    lazy_tolerance=10.0,
     verbose=true,
     trajectory=true,
     callback=callback,
@@ -188,8 +187,13 @@ x0 = deepcopy(x00)
 
 # Reduction primal/dual error vs. sparsity of solution
 
-dataSparsity =
-    [trajectory_adaptive, trajectory_adaptiveLoc15, trajectory_adaptiveLoc2, trajectory_adaptiveLoc4, trajectory_adaptiveLoc10]
+dataSparsity = [
+    trajectory_adaptive,
+    trajectory_adaptiveLoc15,
+    trajectory_adaptiveLoc2,
+    trajectory_adaptiveLoc4,
+    trajectory_adaptiveLoc10,
+]
 labelSparsity = ["AFW", "LAFW-K-1.5", "LAFW-K-2.0", "LAFW-K-4.0", "LAFW-K-10.0"]
 
-FrankWolfe.plot_sparsity(dataSparsity, labelSparsity, legend_position=:topright)
+plot_sparsity(dataSparsity, labelSparsity, legend_position=:topright)

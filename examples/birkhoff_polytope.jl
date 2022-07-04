@@ -68,11 +68,9 @@ x0 = deepcopy(x00)
     lmo,
     x0,
     max_iteration=k,
-    L=100,
-    line_search=FrankWolfe.Adaptive(),
+    line_search=FrankWolfe.Adaptive(L_est=100.0),
     print_iter=k / 10,
-    linesearch_tol=1e-7,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     trajectory=true,
     verbose=true,
 );
@@ -81,4 +79,4 @@ x0 = deepcopy(x00)
 data = [trajectoryBCG]
 label = ["BCG"]
 
-FrankWolfe.plot_trajectories(data, label)
+plot_trajectories(data, label)

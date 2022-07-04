@@ -47,15 +47,14 @@ FrankWolfe.benchmark_oracles(
 x0 = deepcopy(x00)
 
 @time x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
-    x -> cf(x, xp),
-    (str, x) -> cgrad!(str, x, xp),
+    f,
+    grad!,
     lmo,
     x0,
     max_iteration=k,
-    L=100,
-    line_search=FrankWolfe.Adaptive(),
+    line_search=FrankWolfe.Adaptive(L_est=100.0),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
 );
 
@@ -70,10 +69,9 @@ x0 = deepcopy(x00)
     lmo,
     x0,
     max_iteration=k,
-    L=100,
-    line_search=FrankWolfe.Adaptive(),
+    line_search=FrankWolfe.Adaptive(L_est=100.0),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     cache_size=500,
     verbose=true,
 );

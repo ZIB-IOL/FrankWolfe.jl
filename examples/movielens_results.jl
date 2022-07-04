@@ -38,7 +38,7 @@ test_list =
 
 label = [L"\textrm{FW}", L"\textrm{L-CG}", L"\textrm{GD}"]
 
-FrankWolfe.plot_results(
+plot_results(
     [primal_gap_list, primal_gap_list, test_list, test_list],
     [iteration_list, time_list, iteration_list, time_list],
     label,

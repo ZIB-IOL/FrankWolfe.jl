@@ -126,7 +126,12 @@ function compute_value_gradient(
     return (f_val, f.storage)
 end
 
-function _random_indices(f::StochasticObjective, batch_size::Integer, full_evaluation::Bool; rng=Random.GLOBAL_RNG)
+function _random_indices(
+    f::StochasticObjective,
+    batch_size::Integer,
+    full_evaluation::Bool;
+    rng=Random.GLOBAL_RNG,
+)
     if full_evaluation
         return (length(f.xs), eachindex(f.xs))
     end

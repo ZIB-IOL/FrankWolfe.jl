@@ -7,9 +7,9 @@ The oracle call sets the direction and reruns the optimizer.
 
 The `direction` vector has to be set in the same order of variables as the `MOI.ListOfVariableIndices()` getter.
 
-The Boolean `use_modify` determines if the objective in`compute_extreme_point` is updated with 
-`MOI.modify(o, ::MOI.ObjectiveFunction, ::MOI.ScalarCoefficientChange)` or with `MOI.set(o, ::MOI.ObjectiveFunction, f)`. 
-`use_modify = true` decreases the runtime and memory allocation for models created as an optimizer object and defined directly 
+The Boolean `use_modify` determines if the objective in`compute_extreme_point` is updated with
+`MOI.modify(o, ::MOI.ObjectiveFunction, ::MOI.ScalarCoefficientChange)` or with `MOI.set(o, ::MOI.ObjectiveFunction, f)`.
+`use_modify = true` decreases the runtime and memory allocation for models created as an optimizer object and defined directly
 with MathOptInterface. `use_modify = false` should be used for CachingOptimizers.
 """
 struct MathOptLMO{OT<:MOI.AbstractOptimizer} <: LinearMinimizationOracle
@@ -21,7 +21,11 @@ struct MathOptLMO{OT<:MOI.AbstractOptimizer} <: LinearMinimizationOracle
     end
 end
 
-function compute_extreme_point(lmo::MathOptLMO{OT}, direction::AbstractVector{T}; kwargs...) where {OT,T<:Real}
+function compute_extreme_point(
+    lmo::MathOptLMO{OT},
+    direction::AbstractVector{T};
+    kwargs...,
+) where {OT,T<:Real}
     variables = MOI.get(lmo.o, MOI.ListOfVariableIndices())
     if lmo.use_modify
         for i in eachindex(variables)
@@ -39,7 +43,11 @@ function compute_extreme_point(lmo::MathOptLMO{OT}, direction::AbstractVector{T}
     return _optimize_and_return(lmo, variables)
 end
 
-function compute_extreme_point(lmo::MathOptLMO{OT}, direction::AbstractMatrix{T}; kwargs...) where {OT,T<:Real}
+function compute_extreme_point(
+    lmo::MathOptLMO{OT},
+    direction::AbstractMatrix{T};
+    kwargs...,
+) where {OT,T<:Real}
     n = size(direction, 1)
     v = compute_extreme_point(lmo, vec(direction))
     return reshape(v, n, n)
@@ -58,7 +66,10 @@ function Base.copy(lmo::MathOptLMO{OT}; ensure_identity=true) where {OT}
     return MathOptLMO(opt)
 end
 
-function Base.copy(lmo::MathOptLMO{OT}; ensure_identity=true) where {OTI, OT <: MOIU.CachingOptimizer{OTI}}
+function Base.copy(
+    lmo::MathOptLMO{OT};
+    ensure_identity=true,
+) where {OTI,OT<:MOIU.CachingOptimizer{OTI}}
     opt = MOIU.CachingOptimizer(
         MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
         OTI(),
@@ -78,30 +89,33 @@ end
 function compute_extreme_point(
     lmo::MathOptLMO{OT},
     direction::AbstractVector{MOI.ScalarAffineTerm{T}};
-    kwargs...
+    kwargs...,
 ) where {OT,T}
     if lmo.use_modify
         for d in direction
             MOI.modify(
                 lmo.o,
                 MOI.ObjectiveFunction{MOI.ScalarAffineFunction{T}}(),
-                MOI.ScalarCoefficientChange(d.variable,d.coefficient),
+                MOI.ScalarCoefficientChange(d.variable, d.coefficient),
             )
         end
 
         variables = MOI.get(lmo.o, MOI.ListOfVariableIndices())
         variables_to_zero = setdiff(variables, [dir.variable for dir in direction])
 
-        terms = [MOI.ScalarAffineTerm(d, v) for (d, v) in zip(zeros(length(variables_to_zero)), variables_to_zero)]
-        
+        terms = [
+            MOI.ScalarAffineTerm(d, v) for
+            (d, v) in zip(zeros(length(variables_to_zero)), variables_to_zero)
+        ]
+
         for t in terms
             MOI.modify(
                 lmo.o,
-                MOI.ObjectiveFunction{MOI.ScalarAffineFunction{T}}(), 
-                MOI.ScalarCoefficientChange(t.variable,t.coefficient),
+                MOI.ObjectiveFunction{MOI.ScalarAffineFunction{T}}(),
+                MOI.ScalarCoefficientChange(t.variable, t.coefficient),
             )
         end
-    else 
+    else
         variables = [d.variable for d in direction]
         obj = MOI.ScalarAffineFunction(direction, zero(T))
         MOI.set(lmo.o, MOI.ObjectiveFunction{typeof(obj)}(), obj)
