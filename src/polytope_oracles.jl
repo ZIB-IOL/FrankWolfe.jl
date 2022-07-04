@@ -15,7 +15,7 @@ struct KSparseLMO{T} <: LinearMinimizationOracle
     right_hand_side::T
 end
 
-function compute_extreme_point(lmo::KSparseLMO{T}, direction; v = nothing, kwargs...) where {T}
+function compute_extreme_point(lmo::KSparseLMO{T}, direction; v=nothing, kwargs...) where {T}
     K = min(lmo.K, length(direction))
     K_indices = sortperm(direction[1:K], by=abs, rev=true)
     K_values = direction[K_indices]
@@ -79,7 +79,7 @@ struct BirkhoffPolytopeLMO <: LinearMinimizationOracle end
 function compute_extreme_point(
     ::BirkhoffPolytopeLMO,
     direction::AbstractMatrix{T};
-    v = nothing,
+    v=nothing,
     kwargs...,
 ) where {T}
     n = size(direction, 1)
@@ -98,7 +98,7 @@ end
 function compute_extreme_point(
     lmo::BirkhoffPolytopeLMO,
     direction::AbstractVector{T};
-    v = nothing,
+    v=nothing,
     kwargs...,
 ) where {T}
     nsq = length(direction)
@@ -142,12 +142,18 @@ Polytope similar to a L-inf-ball with shifted bounds or general box constraints.
 Lower- and upper-bounds are passed on as abstract vectors, possibly of different types.
 For the standard L-inf ball, all lower- and upper-bounds would be -1 and 1.
 """
-struct ScaledBoundLInfNormBall{T, VT1 <: AbstractVector{T}, VT2 <: AbstractVector{T}} <: LinearMinimizationOracle
+struct ScaledBoundLInfNormBall{T,VT1<:AbstractVector{T},VT2<:AbstractVector{T}} <:
+       LinearMinimizationOracle
     lower_bounds::VT1
     upper_bounds::VT2
 end
 
-function compute_extreme_point(lmo::ScaledBoundLInfNormBall, direction; v = similar(lmo.lower_bounds), kwargs...)
+function compute_extreme_point(
+    lmo::ScaledBoundLInfNormBall,
+    direction;
+    v=similar(lmo.lower_bounds),
+    kwargs...,
+)
     v .= lmo.lower_bounds
     for i in eachindex(direction)
         if direction[i] * lmo.upper_bounds[i] < direction[i] * lmo.lower_bounds[i]
@@ -166,12 +172,18 @@ It is the convex hull of two scaled and shifted unit vectors for each axis (shif
 Lower and upper bounds are passed on as abstract vectors, possibly of different types.
 For the standard L1-ball, all lower and upper bounds would be -1 and 1.
 """
-struct ScaledBoundL1NormBall{T, VT1 <: AbstractVector{T}, VT2 <: AbstractVector{T}} <: LinearMinimizationOracle
+struct ScaledBoundL1NormBall{T,VT1<:AbstractVector{T},VT2<:AbstractVector{T}} <:
+       LinearMinimizationOracle
     lower_bounds::VT1
     upper_bounds::VT2
 end
 
-function compute_extreme_point(lmo::ScaledBoundL1NormBall, direction; v = similar(lmo.lower_bounds), kwargs...)
+function compute_extreme_point(
+    lmo::ScaledBoundL1NormBall,
+    direction;
+    v=similar(lmo.lower_bounds),
+    kwargs...,
+)
     @inbounds for i in eachindex(lmo.lower_bounds)
         v[i] = (lmo.lower_bounds[i] + lmo.upper_bounds[i]) / 2
     end

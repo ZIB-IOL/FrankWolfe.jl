@@ -26,7 +26,7 @@ x, v, primal, dual_gap0, trajectory = FrankWolfe.frank_wolfe(
     line_search=FrankWolfe.Agnostic(),
     print_iter=k / 10,
     verbose=false,
-    emphasis=FrankWolfe.blas,
+    memory_mode=FrankWolfe.OutplaceEmphasis(),
 )
 
 xmem, vmem, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
@@ -38,22 +38,25 @@ xmem, vmem, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
     line_search=FrankWolfe.Agnostic(),
     print_iter=k / 10,
     verbose=true,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
 )
 
-@time xstep, _ = FrankWolfe.frank_wolfe(
+xstep, _ = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.RationalShortstep(),
-    L=2,
+    line_search=FrankWolfe.Shortstep(2 // 1),
     print_iter=k / 10,
     verbose=true,
 )
 
-@test eltype(x) == eltype(xmem) == eltype(xstep) == Rational{BigInt}
+@test eltype(xmem) == eltype(xstep) == Rational{BigInt}
+if !(eltype(xmem) <: Rational)
+    @test eltype(xmem) == eltype(x)
+end
+
 @test xmem == x
 @test abs(f(xstep) - f(x)) <= 1e-3
 @test vmem == v

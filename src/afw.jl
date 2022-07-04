@@ -13,10 +13,7 @@ function away_frank_wolfe(
     lmo,
     x0;
     line_search::LineSearchMethod=Adaptive(),
-    L=Inf,
-    gamma0=0,
-    K=2.0,
-    step_lim=20,
+    lazy_tolerance=2.0,
     epsilon=1e-7,
     away_steps=true,
     lazy=false,
@@ -25,13 +22,13 @@ function away_frank_wolfe(
     print_iter=1000,
     trajectory=false,
     verbose=false,
-    linesearch_tol=1e-7,
-    emphasis::Emphasis=memory,
+    memory_mode::MemoryEmphasis=InplaceEmphasis(),
     gradient=nothing,
     renorm_interval=1000,
     callback=nothing,
+    traj_data=[],
     timeout=Inf,
-    print_callback=print_callback,
+    linesearch_workspace=nothing,
 )
     # add the first vertex to active set from initialization
     active_set = ActiveSet([(1.0, x0)])
@@ -42,11 +39,8 @@ function away_frank_wolfe(
         grad!,
         lmo,
         active_set,
-        line_search = line_search,
-        L=L,
-        gamma0=gamma0,
-        K=K,
-        step_lim=step_lim,
+        line_search=line_search,
+        lazy_tolerance=lazy_tolerance,
         epsilon=epsilon,
         away_steps=away_steps,
         lazy=lazy,
@@ -55,17 +49,17 @@ function away_frank_wolfe(
         print_iter=print_iter,
         trajectory=trajectory,
         verbose=verbose,
-        linesearch_tol=linesearch_tol,
-        emphasis=emphasis,
+        memory_mode=memory_mode,
         gradient=gradient,
         renorm_interval=renorm_interval,
         callback=callback,
-        timeout= timeout,
-        print_callback=print_callback,
+        traj_data=traj_data,
+        timeout=timeout,
+        linesearch_workspace=linesearch_workspace,
     )
 end
 
-# step away FrankWolfe with the active set given as parameter 
+# step away FrankWolfe with the active set given as parameter
 # note: in this case I don't need x0 as it is given by the active set and might otherwise lead to confusion
 function away_frank_wolfe(
     f,
@@ -73,10 +67,7 @@ function away_frank_wolfe(
     lmo,
     active_set::ActiveSet;
     line_search::LineSearchMethod=Adaptive(),
-    L=Inf,
-    gamma0=0,
-    K=2.0,
-    step_lim=20,
+    lazy_tolerance=2.0,
     epsilon=1e-7,
     away_steps=true,
     lazy=false,
@@ -85,59 +76,67 @@ function away_frank_wolfe(
     print_iter=1000,
     trajectory=false,
     verbose=false,
-    linesearch_tol=1e-7,
-    emphasis::Emphasis=memory,
+    memory_mode::MemoryEmphasis=InplaceEmphasis(),
     gradient=nothing,
     renorm_interval=1000,
     callback=nothing,
+    traj_data=[],
     timeout=Inf,
-    print_callback=print_callback,
+    linesearch_workspace=nothing,
 )
-# format string for output of the algorithm
+    # format string for output of the algorithm
     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
+    headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "#ActiveSet")
+    function format_state(state, active_set)
+        rep = (
+            st[Symbol(state.tt)],
+            string(state.t),
+            Float64(state.primal),
+            Float64(state.primal - state.dual_gap),
+            Float64(state.dual_gap),
+            state.time,
+            state.t / state.time,
+            length(active_set),
+        )
+        return rep
+    end
+
 
     if isempty(active_set)
         throw(ArgumentError("Empty active set"))
-    end 
+    end
 
     t = 0
     dual_gap = Inf
     primal = Inf
-    x = compute_active_set_iterate(active_set)
-    #  not need anymore active_set = ActiveSet([(1.0, x0)]) # add the first vertex to active set from initialization
+    x = get_active_set_iterate(active_set)
     tt = regular
-    traj_data = []
-    if trajectory && callback === nothing
-        callback = trajectory_callback(traj_data)
+
+    if trajectory
+        callback = make_trajectory_callback(callback, traj_data)
     end
+
+    if verbose
+        callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
+    end
+
     time_start = time_ns()
 
     d = similar(x)
 
-    if line_search isa Shortstep && L == Inf
-        println("WARNING: Lipschitz constant not set. Prepare to blow up spectacularly.")
-    end
-
-    if line_search isa FixedStep && gamma0 == 0
-        println("WARNING: gamma0 not set. We are not going to move a single bit.")
-    end
-
     if verbose
         println("\nAway-step Frank-Wolfe Algorithm.")
-        numType = eltype(x)
+        NumType = eltype(x)
         println(
-            "EMPHASIS: $emphasis STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $numType",
+            "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
         )
         grad_type = typeof(gradient)
         println(
-            "GRADIENTTYPE: $grad_type LAZY: $lazy K: $K MOMENTUM: $momentum AWAYSTEPS: $away_steps",
+            "GRADIENTTYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance MOMENTUM: $momentum AWAYSTEPS: $away_steps",
         )
-        if emphasis == memory
-            println("WARNING: In memory emphasis mode iterates are written back into x0!")
+        if memory_mode isa InplaceEmphasis
+            @info("In memory_mode memory iterates are written back into x0!")
         end
-        headers =
-            ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "#ActiveSet")
-        print_callback(headers, format_string, print_header=true)
     end
 
     # likely not needed anymore as now the iterates are provided directly via the active set
@@ -150,13 +149,17 @@ function away_frank_wolfe(
         nothing
     end
 
-    x = compute_active_set_iterate(active_set)
+    x = get_active_set_iterate(active_set)
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     phi_value = max(0, fast_dot(x, gradient) - fast_dot(v, gradient))
     gamma = 1.0
 
-    while t <= max_iteration && phi_value >= max(epsilon, eps())
+    if linesearch_workspace === nothing
+        linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
+    end
+
+    while t <= max_iteration && phi_value >= max(epsilon, eps(phi_value))
 
         #####################
         # managing time and Ctrl-C
@@ -180,18 +183,26 @@ function away_frank_wolfe(
         #####################
 
         # compute current iterate from active set
-        x = compute_active_set_iterate(active_set)
+        x = get_active_set_iterate(active_set)
         if isnothing(momentum)
             grad!(gradient, x)
         else
             grad!(gtemp, x)
-            @emphasis(emphasis, gradient = (momentum * gradient) + (1 - momentum) * gtemp)
+            @memory_mode(memory_mode, gradient = (momentum * gradient) + (1 - momentum) * gtemp)
         end
 
         if away_steps
             if lazy
                 d, vertex, index, gamma_max, phi_value, away_step_taken, fw_step_taken, tt =
-                    lazy_afw_step(x, gradient, lmo, active_set, phi_value, epsilon; K=K)
+                    lazy_afw_step(
+                        x,
+                        gradient,
+                        lmo,
+                        active_set,
+                        phi_value,
+                        epsilon;
+                        lazy_tolerance=lazy_tolerance,
+                    )
             else
                 d, vertex, index, gamma_max, phi_value, away_step_taken, fw_step_taken, tt =
                     afw_step(x, gradient, lmo, active_set, epsilon)
@@ -202,20 +213,17 @@ function away_frank_wolfe(
         end
 
         if fw_step_taken || away_step_taken
-            gamma, L = line_search_wrapper(
+            gamma = perform_line_search(
                 line_search,
                 t,
                 f,
                 grad!,
+                gradient,
                 x,
                 d,
-                gradient,
-                dual_gap,
-                L,
-                gamma0,
-                linesearch_tol,
-                step_lim,
                 gamma_max,
+                linesearch_workspace,
+                memory_mode,
             )
             # cleanup and renormalize every x iterations. Only for the fw steps.
             renorm = mod(t, renorm_interval) == 0
@@ -225,7 +233,7 @@ function away_frank_wolfe(
                 active_set_update!(active_set, gamma, vertex, renorm, index)
             end
         end
-        
+
         if (
             (mod(t, print_iter) == 0 && verbose) ||
             callback !== nothing ||
@@ -234,41 +242,27 @@ function away_frank_wolfe(
             primal = f(x)
             dual_gap = phi_value
         end
-
-        if callback !== nothing
-            state = (
-                t=t,
-                primal=primal,
-                dual=primal - dual_gap,
-                dual_gap=phi_value,
-                time=tot_time,
-                x=x,
-                v=vertex,
-                gamma=gamma,
-                active_set=active_set,
-                gradient=gradient,
-            )
-            callback(state)
-        end
-
-        if verbose && (mod(t, print_iter) == 0 || tt == dualstep)
-            if t == 0
-                tt = initial
-            end
-            rep = (
-                st[Symbol(tt)],
-                string(t),
-                Float64(primal),
-                Float64(primal - dual_gap),
-                Float64(dual_gap),
-                tot_time,
-                t / tot_time,
-                length(active_set),
-            )
-            print_callback(rep, format_string)
-            flush(stdout)
-        end
         t += 1
+        if callback !== nothing
+            state = CallbackState(
+                t,
+                primal,
+                primal - dual_gap,
+                dual_gap,
+                tot_time,
+                x,
+                vertex,
+                gamma,
+                f,
+                grad!,
+                lmo,
+                gradient,
+                tt,
+            )
+            if callback(state, active_set) === false
+                break
+            end
+        end
     end
 
     # recompute everything once more for final verfication / do not record to trajectory though for now!
@@ -276,64 +270,72 @@ function away_frank_wolfe(
     # hence the final computation.
     # do also cleanup of active_set due to many operations on the same set
 
-    if verbose
-        x = compute_active_set_iterate(active_set)
-        grad!(gradient, x)
-        v = compute_extreme_point(lmo, gradient)
-        primal = f(x)
-        dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
-        tt = last
-        rep = (
-            st[Symbol(tt)],
-            string(t - 1),
-            Float64(primal),
-            Float64(primal - dual_gap),
-            Float64(dual_gap),
-            (time_ns() - time_start) / 1.0e9,
-            t / ((time_ns() - time_start) / 1.0e9),
-            length(active_set),
-        )
-        print_callback(rep, format_string)
-        flush(stdout)
-    end
-
-    active_set_renormalize!(active_set)
-    active_set_cleanup!(active_set)
-    x = compute_active_set_iterate(active_set)
+    x = get_active_set_iterate(active_set)
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
-    if verbose
-        tt = pp
-        rep = (
-            st[Symbol(tt)],
-            string(t - 1),
-            Float64(primal),
-            Float64(primal - dual_gap),
-            Float64(dual_gap),
-            (time_ns() - time_start) / 1.0e9,
-            t / ((time_ns() - time_start) / 1.0e9),
-            length(active_set),
+    tt = last
+    tot_time = (time_ns() - time_start) / 1e9
+    if callback !== nothing
+        state = CallbackState(
+            t,
+            primal,
+            primal - dual_gap,
+            dual_gap,
+            tot_time,
+            x,
+            v,
+            gamma,
+            f,
+            grad!,
+            lmo,
+            gradient,
+            tt,
         )
-        print_callback(rep, format_string)
-        print_callback(nothing, format_string, print_footer=true)
-        flush(stdout)
+        callback(state, active_set)
+    end
+
+    active_set_renormalize!(active_set)
+    active_set_cleanup!(active_set)
+    x = get_active_set_iterate(active_set)
+    grad!(gradient, x)
+    v = compute_extreme_point(lmo, gradient)
+    primal = f(x)
+    dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
+    tt = pp
+    tot_time = (time_ns() - time_start) / 1e9
+    if callback !== nothing
+        state = CallbackState(
+            t,
+            primal,
+            primal - dual_gap,
+            dual_gap,
+            tot_time,
+            x,
+            v,
+            gamma,
+            f,
+            grad!,
+            lmo,
+            gradient,
+            tt,
+        )
+        callback(state, active_set)
     end
 
     return x, v, primal, dual_gap, traj_data, active_set
 end
 
-
-function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon; K=2.0)
-    v_lambda, v, v_loc, a_lambda, a, a_loc = active_set_argminmax(active_set, gradient)
+function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon; lazy_tolerance=2.0)
+    _, v, v_loc, _, a_lambda, a, a_loc, _, _ = active_set_argminmax(active_set, gradient)
     #Do lazy FW step
     grad_dot_lazy_fw_vertex = fast_dot(v, gradient)
     grad_dot_x = fast_dot(x, gradient)
     grad_dot_a = fast_dot(a, gradient)
     if grad_dot_x - grad_dot_lazy_fw_vertex >= grad_dot_a - grad_dot_x &&
-            grad_dot_x - grad_dot_lazy_fw_vertex >= phi / K &&
-            grad_dot_x - grad_dot_lazy_fw_vertex >= epsilon
+       grad_dot_x - grad_dot_lazy_fw_vertex >= phi / lazy_tolerance &&
+       grad_dot_x - grad_dot_lazy_fw_vertex >= epsilon
         tt = lazy
         gamma_max = one(a_lambda)
         d = x - v
@@ -344,7 +346,7 @@ function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon; K=2.0)
     else
         #Do away step, as it promises enough progress.
         if grad_dot_a - grad_dot_x > grad_dot_x - grad_dot_lazy_fw_vertex &&
-           grad_dot_a - grad_dot_x >= phi / K
+           grad_dot_a - grad_dot_x >= phi / lazy_tolerance
             tt = away
             gamma_max = a_lambda / (1 - a_lambda)
             d = a - x
@@ -358,7 +360,7 @@ function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon; K=2.0)
             # Real dual gap promises enough progress.
             grad_dot_fw_vertex = fast_dot(v, gradient)
             dual_gap = grad_dot_x - grad_dot_fw_vertex
-            if dual_gap >= phi / K
+            if dual_gap >= phi / lazy_tolerance
                 tt = regular
                 gamma_max = one(a_lambda)
                 d = x - v
@@ -383,8 +385,7 @@ function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon; K=2.0)
 end
 
 function afw_step(x, gradient, lmo, active_set, epsilon)
-    local_v_lambda, local_v, local_v_loc, a_lambda, a, a_loc =
-        active_set_argminmax(active_set, gradient)
+    _, _, _, _, a_lambda, a, a_loc = active_set_argminmax(active_set, gradient)
     v = compute_extreme_point(lmo, gradient)
     grad_dot_x = fast_dot(x, gradient)
     away_gap = fast_dot(a, gradient) - grad_dot_x

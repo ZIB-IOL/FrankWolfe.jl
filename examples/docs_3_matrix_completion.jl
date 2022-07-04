@@ -111,20 +111,12 @@ const lmo = FrankWolfe.NuclearNormLMO(norm_estimation)
 const x0 = FrankWolfe.compute_extreme_point(lmo, ones(size(rating_matrix)))
 const k = 10
 
-FrankWolfe.benchmark_oracles(
-    f,
-    (str, x) -> grad!(str, x),
-    () -> randn(size(rating_matrix)),
-    lmo;
-    k=10,
-)
-
 gradient = spzeros(size(x0)...)
 gradient_aux = spzeros(size(x0)...)
 
 function build_callback(trajectory_arr)
-    return function callback(state)
-        return push!(trajectory_arr, (Tuple(state)[1:5]..., test_loss(state.x)))
+    return function callback(state, args...)
+        return push!(trajectory_arr, (FrankWolfe.callback_state(state)..., test_loss(state.x)))
     end
 end
 
@@ -161,6 +153,8 @@ function_values = Float64[]
 timing_values = Float64[]
 function_test_values = Float64[]
 
+ls = FrankWolfe.Backtracking()
+ls_storage = similar(xgd)
 time_start = time_ns()
 for _ in 1:k
     f_val = f(xgd)
@@ -170,7 +164,18 @@ for _ in 1:k
     @info f_val
     grad!(gradient, xgd)
     xgd_new, vertex = project_nuclear_norm_ball(xgd - gradient / L_estimate, radius=norm_estimation)
-    gamma, _ = FrankWolfe.backtrackingLS(f, gradient, xgd, xgd - xgd_new, 1.0)
+    gamma = FrankWolfe.perform_line_search(
+        ls,
+        1,
+        f,
+        grad!,
+        gradient,
+        xgd,
+        xgd - xgd_new,
+        1.0,
+        ls_storage,
+        FrankWolfe.InplaceEmphasis(),
+    )
     @. xgd -= gamma * (xgd - xgd_new)
 end
 
@@ -185,9 +190,8 @@ xfin, _, _, _, traj_data = FrankWolfe.frank_wolfe(
     max_iteration=10 * k,
     print_iter=k / 10,
     verbose=false,
-    linesearch_tol=1e-8,
     line_search=FrankWolfe.Adaptive(),
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     gradient=gradient,
     callback=callback,
 )
@@ -203,9 +207,8 @@ xlazy, _, _, _, _ = FrankWolfe.lazified_conditional_gradient(
     max_iteration=10 * k,
     print_iter=k / 10,
     verbose=false,
-    linesearch_tol=1e-8,
     line_search=FrankWolfe.Adaptive(),
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     gradient=gradient,
     callback=callback,
 )
@@ -222,9 +225,8 @@ xlazy, _, _, _, _ = FrankWolfe.lazified_conditional_gradient(
     max_iteration=50 * k,
     print_iter=k / 10,
     verbose=false,
-    linesearch_tol=1e-8,
     line_search=FrankWolfe.Adaptive(),
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     gradient=gradient,
     callback=callback,
 )
@@ -232,17 +234,19 @@ xlazy, _, _, _, _ = FrankWolfe.lazified_conditional_gradient(
 fw_test_values = getindex.(trajectory_arr_fw, 6)
 lazy_test_values = getindex.(trajectory_arr_lazy, 6)
 
-results = Dict("svals_gd"=>svdvals(xgd),
-"svals_fw"=>svdvals(xfin),
-"svals_lcg"=>svdvals(xlazy),
-"fw_test_values"=>fw_test_values,
-"lazy_test_values"=>lazy_test_values,
-"trajectory_arr_fw"=>trajectory_arr_fw,
-"trajectory_arr_lazy"=>trajectory_arr_lazy,
-"function_values_gd"=>function_values,
-"function_values_test_gd"=>function_test_values,
-"timing_values_gd"=>timing_values,
-"trajectory_arr_lazy_ref"=>trajectory_arr_lazy_ref)
+results = Dict(
+    "svals_gd" => svdvals(xgd),
+    "svals_fw" => svdvals(xfin),
+    "svals_lcg" => svdvals(xlazy),
+    "fw_test_values" => fw_test_values,
+    "lazy_test_values" => lazy_test_values,
+    "trajectory_arr_fw" => trajectory_arr_fw,
+    "trajectory_arr_lazy" => trajectory_arr_lazy,
+    "function_values_gd" => function_values,
+    "function_values_test_gd" => function_test_values,
+    "timing_values_gd" => timing_values,
+    "trajectory_arr_lazy_ref" => trajectory_arr_lazy_ref,
+)
 
 ref_optimum = results["trajectory_arr_lazy_ref"][end][2]
 
@@ -266,7 +270,7 @@ test_list =
 
 label = [L"\textrm{FW}", L"\textrm{L-CG}", L"\textrm{GD}"]
 
-FrankWolfe.plot_results(
+plot_results(
     [primal_gap_list, primal_gap_list, test_list, test_list],
     [iteration_list, time_list, iteration_list, time_list],
     label,
@@ -278,5 +282,5 @@ FrankWolfe.plot_results(
         L"\textrm{Test Error}",
     ],
     xscalelog=[:log, :identity, :log, :identity],
-    legend_position=[:bottomleft, nothing, nothing, nothing]
+    legend_position=[:bottomleft, nothing, nothing, nothing],
 )

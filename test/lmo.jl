@@ -268,9 +268,8 @@ end
         print_iter=100,
         trajectory=false,
         verbose=false,
-        linesearch_tol=1e-7,
         line_search=FrankWolfe.Backtracking(),
-        emphasis=FrankWolfe.memory,
+        memory_mode=FrankWolfe.InplaceEmphasis(),
     )
     @test 1 - (f(x0) - f(xfin)) / f(x0) < 1e-3
     svals_fin = svdvals(xfin)
@@ -285,9 +284,8 @@ end
         print_iter=100,
         trajectory=false,
         verbose=false,
-        linesearch_tol=1e-7,
         line_search=FrankWolfe.Backtracking(),
-        emphasis=FrankWolfe.memory,
+        memory_mode=FrankWolfe.InplaceEmphasis(),
     )
 end
 
@@ -296,7 +294,7 @@ end
     o = Hypatia.Optimizer()
     MOI.set(o, MOI.Silent(), true)
     optimizer = MOI.Bridges.full_bridge_optimizer(
-            MOI.Utilities.CachingOptimizer(
+        MOI.Utilities.CachingOptimizer(
             MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
             o,
         ),
@@ -311,16 +309,19 @@ end
             Random.randn!(direction)
             v = @inferred FrankWolfe.compute_extreme_point(lmo, direction)
             vsym = @inferred FrankWolfe.compute_extreme_point(lmo, direction + direction')
-            vsym2 = @inferred FrankWolfe.compute_extreme_point(lmo, Symmetric(direction + direction'))
-            @test v ≈ vsym atol=1e-6
-            @test v ≈ vsym2 atol=1e-6
+            vsym2 =
+                @inferred FrankWolfe.compute_extreme_point(lmo, Symmetric(direction + direction'))
+            @test v ≈ vsym atol = 1e-6
+            @test v ≈ vsym2 atol = 1e-6
             @testset "Vertex properties" begin
                 eigen_v = eigen(Matrix(v))
                 @test eigmax(Matrix(v)) ≈ radius
-                @test norm(eigen_v.values[1:end-1]) ≈ 0 atol=1e-7
+                @test norm(eigen_v.values[1:end-1]) ≈ 0 atol = 1e-7
                 # u can be sqrt(r) * vec or -sqrt(r) * vec
-                case_pos = ≈(norm(eigen_v.vectors[:,n] * sqrt(eigen_v.values[n]) - v.u), 0, atol=1e-9)
-                case_neg = ≈(norm(eigen_v.vectors[:,n] * sqrt(eigen_v.values[n]) + v.u), 0, atol=1e-9)
+                case_pos =
+                    ≈(norm(eigen_v.vectors[:, n] * sqrt(eigen_v.values[n]) - v.u), 0, atol=1e-9)
+                case_neg =
+                    ≈(norm(eigen_v.vectors[:, n] * sqrt(eigen_v.values[n]) + v.u), 0, atol=1e-9)
                 @test case_pos || case_neg
             end
             @testset "Comparison with SDP solution" begin
@@ -339,7 +340,7 @@ end
             @. direction_sym = direction + direction'
             v = @inferred FrankWolfe.compute_extreme_point(lmo, direction)
             vsym = @inferred FrankWolfe.compute_extreme_point(lmo, direction_sym)
-            @test v ≈ vsym atol=1e-6
+            @test v ≈ vsym atol = 1e-6
             @testset "Vertex properties" begin
                 emin = eigmin(direction_sym)
                 if emin ≥ 0
@@ -347,10 +348,12 @@ end
                 else
                     eigen_v = eigen(Matrix(v))
                     @test eigmax(Matrix(v)) ≈ radius
-                    @test norm(eigen_v.values[1:end-1]) ≈ 0 atol=1e-7
+                    @test norm(eigen_v.values[1:end-1]) ≈ 0 atol = 1e-7
                     # u can be sqrt(r) * vec or -sqrt(r) * vec
-                    case_pos = ≈(norm(eigen_v.vectors[:,n] * sqrt(eigen_v.values[n]) - v.u), 0, atol=1e-9)
-                    case_neg = ≈(norm(eigen_v.vectors[:,n] * sqrt(eigen_v.values[n]) + v.u), 0, atol=1e-9)
+                    case_pos =
+                        ≈(norm(eigen_v.vectors[:, n] * sqrt(eigen_v.values[n]) - v.u), 0, atol=1e-9)
+                    case_neg =
+                        ≈(norm(eigen_v.vectors[:, n] * sqrt(eigen_v.values[n]) + v.u), 0, atol=1e-9)
                     @test case_pos || case_neg
                     # make direction PSD
                     direction_sym += 1.1 * abs(emin) * I
@@ -477,15 +480,20 @@ end
             MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
             o,
         )
-        optimizer = MOI.Bridges.full_bridge_optimizer(inner_optimizer, Float64)        
+        optimizer = MOI.Bridges.full_bridge_optimizer(inner_optimizer, Float64)
         MOI.set(optimizer, MOI.Silent(), true)
         nrows = 3n
         ncols = n
         direction = Matrix{Float64}(undef, nrows, ncols)
         τ = 10.0
         lmo = FrankWolfe.NuclearNormLMO(τ)
-        lmo_moi =
-            FrankWolfe.convert_mathopt(lmo, optimizer, row_dimension=nrows, col_dimension=ncols, use_modify=false)
+        lmo_moi = FrankWolfe.convert_mathopt(
+            lmo,
+            optimizer,
+            row_dimension=nrows,
+            col_dimension=ncols,
+            use_modify=false,
+        )
         nsuccess = 0
         for _ in 1:10
             randn!(direction)
@@ -571,7 +579,8 @@ end
             direction = Vector{Float64}(undef, n)
             lmo_moi = FrankWolfe.MathOptLMO(o, false)
             lmo_ksp = FrankWolfe.KSparseLMO(K, τ)
-            lmo_moi_convert = FrankWolfe.convert_mathopt(lmo_ksp, o_ref, dimension=n, use_modify=false)
+            lmo_moi_convert =
+                FrankWolfe.convert_mathopt(lmo_ksp, o_ref, dimension=n, use_modify=false)
             for _ in 1:20
                 randn!(direction)
                 v_moi =
@@ -644,7 +653,7 @@ end
     @test norm(v) == 1
     # non-uniform scaling
     # validates bugfix
-    lmo_nonunif = FrankWolfe.ScaledBoundL1NormBall([-1.0,-1.0], [3.0,1.0])
+    lmo_nonunif = FrankWolfe.ScaledBoundL1NormBall([-1.0, -1.0], [3.0, 1.0])
     direction = [-0.8272727272727383, -0.977272727272718]
     v = FrankWolfe.compute_extreme_point(lmo_nonunif, direction)
     @test v ≈ [3, 0]
@@ -692,7 +701,6 @@ end
         MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
         Clp.Optimizer(),
     )
-
     for o in (GLPK.Optimizer(), o_clp)
         MOI.set(o, MOI.Silent(), true)
         n = 100
@@ -712,17 +720,17 @@ end
 
 @testset "Inplace LMO correctness" begin
 
-    V = [-6.0,-6.15703,-5.55986]
+    V = [-6.0, -6.15703, -5.55986]
     M = [3.0 2.8464949 2.4178848; 2.8464949 3.0 2.84649498; 2.4178848 2.84649498 3.0]
 
     fun0(p) = dot(V, p) + dot(p, M, p)
     function fun0_grad!(g, p)
         g .= V
-        mul!(g, M, p, 2, 1)
+        return mul!(g, M, p, 2, 1)
     end
 
     lmo_dense = FrankWolfe.ScaledBoundL1NormBall(-ones(3), ones(3))
-    lmo_standard = FrankWolfe.LpNormLMO{1}(1.0) 
+    lmo_standard = FrankWolfe.LpNormLMO{1}(1.0)
     x_dense, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad!, lmo_dense, [1.0, 0.0, 0.0])
     x_standard, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad!, lmo_standard, [1.0, 0.0, 0.0])
     @test x_dense == x_standard
@@ -730,6 +738,6 @@ end
     lmo_dense = FrankWolfe.ScaledBoundLInfNormBall(-ones(3), ones(3))
     lmo_standard = FrankWolfe.LpNormLMO{Inf}(1.0)
     x_dense, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad!, lmo_dense, [1.0, 0.0, 0.0])
-    x_standard, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad!, lmo_standard, [1.0, 0.0, 0.0])   
+    x_standard, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad!, lmo_standard, [1.0, 0.0, 0.0])
     @test x_dense == x_standard
 end

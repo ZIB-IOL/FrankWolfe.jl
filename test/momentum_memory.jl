@@ -25,30 +25,28 @@ end
 lmo = FrankWolfe.UnitSimplexOracle(1.0)
 x0 = FrankWolfe.compute_extreme_point(lmo, rand(n))
 
-@time xblas, _ = FrankWolfe.frank_wolfe(
+xblas, _ = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.Shortstep(),
-    L=2,
-    emphasis=FrankWolfe.blas,
+    line_search=FrankWolfe.Shortstep(2.0),
+    memory_mode=FrankWolfe.OutplaceEmphasis(),
     verbose=false,
     trajectory=false,
     momentum=0.9,
 )
 
 
-@time xmem, _ = FrankWolfe.frank_wolfe(
+xmem, _ = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.Shortstep(),
-    L=2,
-    emphasis=FrankWolfe.memory,
+    line_search=FrankWolfe.Shortstep(2.0),
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
     momentum=0.9,

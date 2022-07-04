@@ -12,16 +12,17 @@ Random.seed!(s)
 
 xpi = rand(n);
 total = sum(xpi);
-xp = xpi # ./ total;
+const xp = xpi # ./ total;
 
-f(x) = norm(x - xp)^2
+f(x) = norm(x .- xp)^2
 function grad!(storage, x)
-    @. storage = 2 * (x - xp)
+    @. storage = 2 * (x .- xp)
 end
 
 lmo = FrankWolfe.KSparseLMO(100, 1.0)
 
 x0 = FrankWolfe.compute_extreme_point(lmo, spzeros(size(xp)...))
+gradient = similar(xp)
 
 x, v, primal, dual_gap, _ = FrankWolfe.blended_conditional_gradient(
     f,
@@ -29,15 +30,15 @@ x, v, primal, dual_gap, _ = FrankWolfe.blended_conditional_gradient(
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.Adaptive(),
-    print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
-    L=2,
+    line_search=FrankWolfe.Adaptive(L_est=2.0),
+    print_iter=100,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=false,
-    K=1.00,
-    weight_purge_threshold=1e-10,
-    epsilon=1e-9,
+    lazy_tolerance=1.0,
+    weight_purge_threshold=1e-9,
+    epsilon=1e-8,
+    gradient=gradient,
 )
 
 @test dual_gap ≤ 5e-4
@@ -51,13 +52,12 @@ x, v, primal_cut, dual_gap, _ = FrankWolfe.blended_conditional_gradient(
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.Adaptive(),
+    line_search=FrankWolfe.Adaptive(L_est=2.0),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
-    L=2,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=false,
-    K=1.00,
+    lazy_tolerance=1.0,
     weight_purge_threshold=1e-10,
     epsilon=1e-9,
     timeout=3.0,

@@ -39,7 +39,8 @@ bias = 4π
 params_perfect = [1:5; bias]
 
 data_perfect = [(x, x ⋅ (1:5) + bias) for x in xs]
-f_stoch = FrankWolfe.StochasticObjective(simple_reg_loss, ∇simple_reg_loss, data_perfect, similar(params))
+f_stoch =
+    FrankWolfe.StochasticObjective(simple_reg_loss, ∇simple_reg_loss, data_perfect, similar(params))
 
 @test FrankWolfe.compute_value(f_stoch, params) > FrankWolfe.compute_value(f_stoch, params_perfect)
 
@@ -57,7 +58,8 @@ end
 
 # similar example with noisy data, Gaussian noise around the linear estimate
 data_noisy = [(x, x ⋅ (1:5) + bias + 0.5 * randn()) for x in xs]
-f_stoch_noisy = FrankWolfe.StochasticObjective(simple_reg_loss, ∇simple_reg_loss, data_noisy, storage)
+f_stoch_noisy =
+    FrankWolfe.StochasticObjective(simple_reg_loss, ∇simple_reg_loss, data_noisy, storage)
 
 params = rand(6) .- 1 # start params in (-1,0)
 
@@ -149,10 +151,9 @@ end
     ff,
     gradf,
     lmo,
-    L=10,
     params,
     verbose=true,
-    line_search=FrankWolfe.Adaptive(),
+    line_search=FrankWolfe.Adaptive(L_est=10.0),
     max_iteration=k,
     print_iter=k / 10,
     trajectory=true,
@@ -161,4 +162,4 @@ end
 data = [trajectory, trajectoryS, trajectory09, trajectory099]
 label = ["exact", "stochastic", "stochM 0.9", "stochM 0.99"]
 
-FrankWolfe.plot_trajectories(data, label)
+plot_trajectories(data, label)

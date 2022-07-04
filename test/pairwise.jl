@@ -33,7 +33,7 @@ using SparseArrays
         epsilon=3e-7,
     )
     @test res_afw[3] ≈ res_bpcg[3]
-    @test norm(res_afw[1] - res_bpcg[1]) ≈ 0 atol=1e-6
+    @test norm(res_afw[1] - res_bpcg[1]) ≈ 0 atol = 1e-6
     res_bpcg2 = FrankWolfe.blended_pairwise_conditional_gradient(
         f,
         grad!,
@@ -42,13 +42,20 @@ using SparseArrays
         max_iteration=6000,
         line_search=FrankWolfe.Adaptive(),
         verbose=false,
-        lazy=true
+        lazy=true,
     )
-    @test res_bpcg2[3] ≈ res_bpcg[3] atol=1e-5
+    @test res_bpcg2[3] ≈ res_bpcg[3] atol = 1e-5
     active_set_afw = res_afw[end]
     storage = copy(active_set_afw.x)
     grad!(storage, active_set_afw.x)
     epsilon = 1e-6
     @inferred FrankWolfe.afw_step(active_set_afw.x, storage, lmo_prob, active_set_afw, epsilon)
-    @inferred FrankWolfe.lazy_afw_step(active_set_afw.x, storage, lmo_prob, active_set_afw, epsilon, epsilon)
+    @inferred FrankWolfe.lazy_afw_step(
+        active_set_afw.x,
+        storage,
+        lmo_prob,
+        active_set_afw,
+        epsilon,
+        epsilon,
+    )
 end

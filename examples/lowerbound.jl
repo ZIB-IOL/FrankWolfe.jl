@@ -69,9 +69,8 @@ FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo; k=100)
     x0,
     max_iteration=k,
     line_search=FrankWolfe.Agnostic(),
-    L=2,
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     epsilon=1e-5,
     trajectory=true,
@@ -85,7 +84,7 @@ FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo; k=100)
     max_iteration=k,
     line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     epsilon=1e-5,
     trajectory=true,
@@ -99,7 +98,7 @@ FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo; k=100)
     max_iteration=k,
     line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
-    emphasis=FrankWolfe.memory,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     epsilon=1e-5,
     trajectory=true,
@@ -117,4 +116,4 @@ data = [trajectory, trajectoryAFW, trajectoryBCG, trajLowerbound]
 label = ["FW", "AFW", "BCG", "Lowerbound"]
 
 # ignore the timing plots - they are not relevant for this example
-FrankWolfe.plot_trajectories(data, label, xscalelog=true, legend_position=:bottomleft)
+plot_trajectories(data, label, xscalelog=true, legend_position=:bottomleft)
