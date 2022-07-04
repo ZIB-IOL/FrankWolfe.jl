@@ -64,9 +64,7 @@ function frank_wolfe(
     time_start = time_ns()
 
     if (momentum !== nothing && line_search isa Union{Shortstep,Adaptive,Backtracking})
-        @warn(
-            "Momentum-averaged gradients should usually be used with agnostic stepsize rules.",
-        )
+        @warn("Momentum-averaged gradients should usually be used with agnostic stepsize rules.",)
     end
 
     if verbose
@@ -168,11 +166,25 @@ function frank_wolfe(
             d,
             1.0,
             linesearch_workspace,
-            memory_mode
+            memory_mode,
         )
         t = t + 1
         if callback !== nothing
-            state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, grad!, lmo, gradient, tt)
+            state = CallbackState(
+                t,
+                primal,
+                primal - dual_gap,
+                dual_gap,
+                tot_time,
+                x,
+                v,
+                gamma,
+                f,
+                grad!,
+                lmo,
+                gradient,
+                tt,
+            )
             if callback(state) === false
                 break
             end
@@ -199,10 +211,24 @@ function frank_wolfe(
         d,
         1.0,
         linesearch_workspace,
-        memory_mode
+        memory_mode,
     )
     if callback !== nothing
-        state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, grad!, lmo, gradient, tt)
+        state = CallbackState(
+            t,
+            primal,
+            primal - dual_gap,
+            dual_gap,
+            tot_time,
+            x,
+            v,
+            gamma,
+            f,
+            grad!,
+            lmo,
+            gradient,
+            tt,
+        )
         callback(state)
     end
 
@@ -344,7 +370,7 @@ function lazified_conditional_gradient(
         threshold = fast_dot(x, gradient) - phi / lazy_tolerance
 
         # go easy on the memory - only compute if really needed
-        if ((mod(t, print_iter) == 0 && verbose ) || callback !== nothing)
+        if ((mod(t, print_iter) == 0 && verbose) || callback !== nothing)
             primal = f(x)
         end
 
@@ -368,12 +394,26 @@ function lazified_conditional_gradient(
             d,
             1.0,
             linesearch_workspace,
-            memory_mode
+            memory_mode,
         )
 
         t += 1
         if callback !== nothing
-            state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, grad!, lmo, gradient, tt)
+            state = CallbackState(
+                t,
+                primal,
+                primal - dual_gap,
+                dual_gap,
+                tot_time,
+                x,
+                v,
+                gamma,
+                f,
+                grad!,
+                lmo,
+                gradient,
+                tt,
+            )
             if callback(state) === false
                 break
             end
@@ -404,7 +444,21 @@ function lazified_conditional_gradient(
         memory_mode,
     )
     if callback !== nothing
-        state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, grad!, lmo, gradient, tt)
+        state = CallbackState(
+            t,
+            primal,
+            primal - dual_gap,
+            dual_gap,
+            tot_time,
+            x,
+            v,
+            gamma,
+            f,
+            grad!,
+            lmo,
+            gradient,
+            tt,
+        )
         callback(state)
     end
     return x, v, primal, dual_gap, traj_data
@@ -503,13 +557,15 @@ function stochastic_frank_wolfe(
         println(
             "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration TYPE: $NumType",
         )
-        println("GRADIENTTYPE: $(typeof(f.storage)) MOMENTUM: $(momentum_iterator !== nothing) batch policy: $(typeof(batch_iterator)) ")
+        println(
+            "GRADIENTTYPE: $(typeof(f.storage)) MOMENTUM: $(momentum_iterator !== nothing) batch policy: $(typeof(batch_iterator)) ",
+        )
         if memory_mode isa InplaceEmphasis
             @info("In memory_mode memory iterates are written back into x0!")
         end
     end
 
-    if memory_mode isa InplaceEmphasis && !isa(x, Union{Array, SparseArrays.AbstractSparseArray})
+    if memory_mode isa InplaceEmphasis && !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
         if eltype(x) <: Integer
             x = copyto!(similar(x, float(eltype(x))), x)
         else
@@ -555,24 +611,20 @@ function stochastic_frank_wolfe(
                 full_evaluation=full_evaluation,
             )
         elseif first_iter
-            gradient = copy(compute_gradient(
-                f,
-                x,
-                rng=rng,
-                batch_size=batch_size,
-                full_evaluation=full_evaluation,
-            ))
+            gradient = copy(
+                compute_gradient(
+                    f,
+                    x,
+                    rng=rng,
+                    batch_size=batch_size,
+                    full_evaluation=full_evaluation,
+                ),
+            )
         else
             momentum = momentum_iterate(momentum_iterator)
-            compute_gradient(
-                f,
-                x,
-                rng=rng,
-                batch_size=batch_size,
-                full_evaluation=full_evaluation,
-            )
+            compute_gradient(f, x, rng=rng, batch_size=batch_size, full_evaluation=full_evaluation)
             # gradient = momentum * gradient + (1 - momentum) * f.storage
-            LinearAlgebra.mul!(gradient, LinearAlgebra.I, f.storage, 1-momentum, momentum)
+            LinearAlgebra.mul!(gradient, LinearAlgebra.I, f.storage, 1 - momentum, momentum)
         end
         first_iter = false
 
@@ -588,10 +640,35 @@ function stochastic_frank_wolfe(
 
         # note: only linesearch methods that do not require full evaluations are supported
         # so nothing is passed as function
-        gamma = perform_line_search(line_search, t, nothing, nothing, gradient, x, x - v, 1.0, linesearch_workspace, memory_mode)
+        gamma = perform_line_search(
+            line_search,
+            t,
+            nothing,
+            nothing,
+            gradient,
+            x,
+            x - v,
+            1.0,
+            linesearch_workspace,
+            memory_mode,
+        )
         t += 1
         if callback !== nothing
-            state = CallbackState(t, primal, primal-dual_gap, dual_gap, tot_time, x, v, gamma, f, nothing, lmo, gradient, tt)
+            state = CallbackState(
+                t,
+                primal,
+                primal - dual_gap,
+                dual_gap,
+                tot_time,
+                x,
+                v,
+                gamma,
+                f,
+                nothing,
+                lmo,
+                gradient,
+                tt,
+            )
             if callback(state, batch_size) === false
                 break
             end
@@ -610,10 +687,35 @@ function stochastic_frank_wolfe(
     # @show (gradient, primal)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
     tt = last
-    gamma = perform_line_search(line_search, t, nothing, nothing, gradient, x, x - v, 1.0, linesearch_workspace, memory_mode)
+    gamma = perform_line_search(
+        line_search,
+        t,
+        nothing,
+        nothing,
+        gradient,
+        x,
+        x - v,
+        1.0,
+        linesearch_workspace,
+        memory_mode,
+    )
     tot_time = (time_ns() - time_start) / 1e9
     if callback !== nothing
-        state = CallbackState(t, primal, primal-dual_gap, dual_gap, (time_ns() - time_start) / 1e9, x, v, gamma, f, nothing, lmo, gradient, tt)
+        state = CallbackState(
+            t,
+            primal,
+            primal - dual_gap,
+            dual_gap,
+            (time_ns() - time_start) / 1e9,
+            x,
+            v,
+            gamma,
+            f,
+            nothing,
+            lmo,
+            gradient,
+            tt,
+        )
         callback(state, batch_size)
     end
     return x, v, primal, dual_gap, traj_data

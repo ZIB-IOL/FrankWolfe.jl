@@ -84,11 +84,23 @@ storage = []
 function push_tracking_state(state, storage)
     base_tuple = FrankWolfe.callback_state(state)
     if state.lmo isa FrankWolfe.CachedLinearMinimizationOracle
-        complete_tuple = tuple(base_tuple..., state.gamma, state.f.counter, state.grad!.counter, state.lmo.inner.counter)
+        complete_tuple = tuple(
+            base_tuple...,
+            state.gamma,
+            state.f.counter,
+            state.grad!.counter,
+            state.lmo.inner.counter,
+        )
     else
-        complete_tuple = tuple(base_tuple..., state.gamma, state.f.counter, state.grad!.counter, state.lmo.counter)
+        complete_tuple = tuple(
+            base_tuple...,
+            state.gamma,
+            state.f.counter,
+            state.grad!.counter,
+            state.lmo.counter,
+        )
     end
-    push!(storage, complete_tuple)
+    return push!(storage, complete_tuple)
 end
 
 # In case we want to stop the frank_wolfe algorithm prematurely after a certain condition is met,
@@ -96,7 +108,7 @@ end
 # Here, we will implement a callback that terminates the algorithm if the primal objective function is evaluated more than 500 times.
 function make_callback(storage)
     return function callback(state, args...)
-        push_tracking_state(state,storage)
+        push_tracking_state(state, storage)
         return state.f.counter < 500
     end
 end
