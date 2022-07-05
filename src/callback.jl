@@ -44,12 +44,12 @@ If the callback to be wrapped is of type nothing, always return true to enforce 
 """
 function make_print_callback(callback, print_iter, headers, format_string, format_state)
     return function callback_with_prints(state, args...)
-        if (state.tt == last)
+        if (state.tt == pp)
             rep = format_state(state, args...)
             print_callback(rep, format_string)
             print_callback(nothing, format_string, print_footer=true)
             flush(stdout)
-        elseif state.t == 1 || mod(state.t, print_iter) == 0 || state.tt == dualstep
+        elseif state.t == 1 || mod(state.t, print_iter) == 0 || state.tt == dualstep || state.tt == last
             if state.t == 1
                 state = @set state.tt = initial
                 print_callback(headers, format_string, print_header=true)
