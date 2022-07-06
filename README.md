@@ -88,6 +88,8 @@ julia> using TestEnv
 julia> TestEnv.activate()
 "/tmp/jl_Ux8wKE/Project.toml"
 
+# necessary for plotting
+julia> include("examples/plot_utils.jl")
 julia> include("examples/linear_regression.jl")
 ...
 ```
