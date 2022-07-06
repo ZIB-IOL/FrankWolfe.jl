@@ -75,7 +75,7 @@ julia> p_opt
  0.3333333286623478
 ```
 
-## Going further
+## Documentation and examples
 
 To explore the content of the package, go to the [documentation](https://zib-iol.github.io/FrankWolfe.jl/dev/).
 
