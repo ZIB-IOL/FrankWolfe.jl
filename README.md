@@ -93,3 +93,12 @@ julia> include("examples/plot_utils.jl")
 julia> include("examples/linear_regression.jl")
 ...
 ```
+
+If you need the plotting utilities in your own code, make sure Plots.jl is included in your current project and run:
+
+```julia
+using Plots
+using FrankWolfe
+
+include(joinpath(dirname(pathof(FiniteDifferences)), "../examples/plot_utils.jl"))
+```
