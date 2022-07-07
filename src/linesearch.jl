@@ -378,24 +378,26 @@ function _upgrade_accuracy_adaptive(gradient, direction, storage, ::Val{false})
 end
 
 """
-    MonotonousStepSize{F}
+    MonotonicStepSize{F}
 
-Represents a monotonous open-loop step size.
+Represents a monotonic open-loop step size.
 Contains a halving factor `N` increased at each iteration until there is primal progress
 `gamma = 2 / (t + 2) * 2^(-N)`.
 """
-mutable struct MonotonousStepSize{F} <: LineSearchMethod
+mutable struct MonotonicStepSize{F} <: LineSearchMethod
     domain_oracle::F
     factor::Int
 end
 
-MonotonousStepSize(f::F) where {F<:Function} = MonotonousStepSize{F}(f, 0)
-MonotonousStepSize() = MonotonousStepSize(x -> true, 0)
+MonotonicStepSize(f::F) where {F<:Function} = MonotonicStepSize{F}(f, 0)
+MonotonicStepSize() = MonotonicStepSize(x -> true, 0)
 
-Base.print(io::IO, ::MonotonousStepSize) = print(io, "MonotonousStepSize")
+@deprecate MonotonousStepSize(args...) MonotonicStepSize(args...) false
+
+Base.print(io::IO, ::MonotonicStepSize) = print(io, "MonotonicStepSize")
 
 function perform_line_search(
-    line_search::MonotonousStepSize,
+    line_search::MonotonicStepSize,
     t,
     f,
     g!,
@@ -418,24 +420,26 @@ function perform_line_search(
 end
 
 """
-    MonotonousNonConvexStepSize{F}
+    MonotonicNonConvexStepSize{F}
 
-Represents a monotonous open-loop non-convex step size.
+Represents a monotonic open-loop non-convex step size.
 Contains a halving factor `N` increased at each iteration until there is primal progress
 `gamma = 1 / sqrt(t + 1) * 2^(-N)`.
 """
-mutable struct MonotonousNonConvexStepSize{F} <: LineSearchMethod
+mutable struct MonotonicNonConvexStepSize{F} <: LineSearchMethod
     domain_oracle::F
     factor::Int
 end
 
-MonotonousNonConvexStepSize(f::F) where {F<:Function} = MonotonousNonConvexStepSize{F}(f, 0)
-MonotonousNonConvexStepSize() = MonotonousNonConvexStepSize(x -> true, 0)
+MonotonicNonConvexStepSize(f::F) where {F<:Function} = MonotonicNonConvexStepSize{F}(f, 0)
+MonotonicNonConvexStepSize() = MonotonicNonConvexStepSize(x -> true, 0)
 
-Base.print(io::IO, ::MonotonousNonConvexStepSize) = print(io, "MonotonousNonConvexStepSize")
+@deprecate MonotonousNonConvexStepSize(args...) MonotonicNonConvexStepSize(args...) false
+
+Base.print(io::IO, ::MonotonicNonConvexStepSize) = print(io, "MonotonicNonConvexStepSize")
 
 function build_linesearch_workspace(
-    ::Union{MonotonousStepSize,MonotonousNonConvexStepSize},
+    ::Union{MonotonicStepSize,MonotonicNonConvexStepSize},
     x,
     gradient,
 )
@@ -443,7 +447,7 @@ function build_linesearch_workspace(
 end
 
 function perform_line_search(
-    line_search::MonotonousNonConvexStepSize,
+    line_search::MonotonicNonConvexStepSize,
     t,
     f,
     g!,
