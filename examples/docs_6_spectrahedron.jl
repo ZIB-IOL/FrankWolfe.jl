@@ -69,7 +69,7 @@ FrankWolfe.frank_wolfe(
     lmo,
     x0,
     max_iteration=2,
-    line_search=FrankWolfe.MonotonousStepSize(),
+    line_search=FrankWolfe.MonotonicStepSize(),
 ) #src
 FrankWolfe.lazified_conditional_gradient(
     f,
@@ -77,7 +77,7 @@ FrankWolfe.lazified_conditional_gradient(
     lmo,
     x0,
     max_iteration=2,
-    line_search=FrankWolfe.MonotonousStepSize(),
+    line_search=FrankWolfe.MonotonicStepSize(),
 ) #src
 
 # ## Running standard and lazified Frank-Wolfe
@@ -88,7 +88,7 @@ Xfinal, Vfinal, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.MonotonousStepSize(),
+    line_search=FrankWolfe.MonotonicStepSize(),
     print_iter=k / 10,
     memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
@@ -102,7 +102,7 @@ Xfinal, Vfinal, primal, dual_gap, trajectory_lazy = FrankWolfe.lazified_conditio
     lmo,
     x0,
     max_iteration=k,
-    line_search=FrankWolfe.MonotonousStepSize(),
+    line_search=FrankWolfe.MonotonicStepSize(),
     print_iter=k / 10,
     memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
