@@ -468,3 +468,58 @@ function perform_line_search(
     end
     return gamma
 end
+
+struct MonotonicGenericStepsize{LS<:LineSearchMethod,F<:Function} <: LineSearchMethod
+    linesearch::LS
+    domain_oracle::F
+end
+
+MonotonicGenericStepsize(linesearch::LS) where {LS <: LineSearchMethod} = MonotonicGenericStepsize(linesearch, x -> true)
+
+Base.print(io::IO, ::MonotonicGenericStepsize) = print(io, "MonotonicGenericStepsize")
+
+struct MonotonicWorkspace{XT,WS}
+    x::XT
+    inner_workspace::WS
+end
+
+function build_linesearch_workspace(
+    ls::MonotonicGenericStepsize,
+    x,
+    gradient,
+)
+    return MonotonicWorkspace(
+        similar(x),
+        build_linesearch_workspace(ls.linesearch, x, gradient),
+    )
+end
+
+function perform_line_search(
+    line_search::MonotonicGenericStepsize,
+    t,
+    f,
+    g!,
+    gradient,
+    x,
+    d,
+    gamma_max,
+    storage::MonotonicWorkspace,
+    memory_mode,
+)
+    f0 = f(x)
+    gamma = perform_line_search(line_search.linesearch, t, f, g!, gradient, x, d, gamma_max, storage.inner_workspace, memory_mode)
+    T = typeof(gamma)
+    xst = storage.x
+    xst = muladd_memory_mode(memory_mode, xst, x, gamma, d)
+    factor = 0
+    while !line_search.domain_oracle(xst) || f(xst) > f0
+        factor += 1
+        gamma /= T(2)^(-factor)
+        xst = muladd_memory_mode(memory_mode, xst, x, gamma, d)
+        if T(2)^(-factor) ≤ 10 * eps(gamma)
+            @error("numerical limit for gamma, invalid direction?")
+            break
+        end
+    end
+    return gamma
+end
