@@ -136,7 +136,7 @@ function blended_pairwise_conditional_gradient(
         if use_extra_vertex_storage && !lazy
             @info("vertex storage only used in lazy mode")
         end
-        if use_extra_vertex_storage || add_dropped_vertices && extra_vertex_storage === nothing
+        if (use_extra_vertex_storage || add_dropped_vertices) && extra_vertex_storage === nothing
             @warn(
                 "use_extra_vertex_storage and add_dropped_vertices options are only usable with a extra_vertex_storage storage"
             )
