@@ -2,6 +2,7 @@
 
 [![Build Status](https://github.com/ZIB-IOL/FrankWolfe.jl/workflows/CI/badge.svg)](https://github.com/ZIB-IOL/FrankWolfe.jl/actions)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://zib-iol.github.io/FrankWolfe.jl/dev/)
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://zib-iol.github.io/FrankWolfe.jl/stable/)
 [![Coverage](https://codecov.io/gh/ZIB-IOL/FrankWolfe.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/ZIB-IOL/FrankWolfe.jl)
 
 This package is a toolbox for Frank-Wolfe and conditional gradients algorithms.
