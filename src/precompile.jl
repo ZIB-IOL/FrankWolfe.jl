@@ -348,7 +348,7 @@ Base.precompile(
 Base.precompile(
     Tuple{
         typeof(active_set_update_iterate_pairwise!),
-        ActiveSet{SparseVector{Float64,Int64},Float64,SparseVector{Float64,Int64}},
+        SparseVector{Float64,Int64},
         Float64,
         SparseVector{Float64,Int64},
         SparseVector{Float64,Int64},
