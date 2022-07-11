@@ -167,3 +167,34 @@ WARNING: In memory emphasis mode iterates are written back into x0!
 As you can see the algorithm ran for about 4600 secs (single-thread run) allocating 112.121 GiB of memory throughout. So how does this average out to the per-iteration cost in terms of memory: `112.121 / 7.45 / 1000 = 0.0151` so about 15.1MiB per iteration which is much less than the size of the gradient and in fact only stems from the reporting here.
 
 **NB.** This example highlights also one of the great features of first-order methods and conditional gradients in particular: we have dimension-independent convergence rates. In fact, we contract the primal gap as `2LD^2 / (t+2)` (for the simple agnostic rule) and, e.g., if the feasible region is the probability simplex with `D = sqrt(2)` and the function has bounded Lipschitzness, e.g., the function `|| x - xp ||^2` has `L = 2`, then the convergence rate is completely independent of the input size. The only thing that limits scaling is how much memory you have available and whether you can stomach the (linear) per-iteration cost.
+
+## Iterate and atom expected interface
+
+Frank-Wolfe can work on iterate beyond plain vectors, for example with any array-like object. Broadly speaking, the iterate type is assumed
+to behave as the member of a Hilbert space and optionally be mutable. Assuming the iterate type is `IT`, some methods must be implemented, with their usual semantics:
+```julia
+Base.similar(::IT)
+Base.similar(::IT, ::Type{T})
+Base.eltype(::IT)
+Base.copy(::IT)
+
+Base.:+(x1::IT, x2::IT)
+Base.:*(scalar::Real, x::IT)
+Base.:-(x1::IT, x2::IT)
+LinearAlgebra.dot(x1::IT, x2::IT)
+```
+
+For methods using an [`FrankWolfe.ActiveSet`](@ref), the atoms or individual extreme points of the feasible region are not necessarily
+of the same type as the iterate. They are assumed to be immutable, must implement `LinearAlgebra.dot` with a gradient object.
+See for example [`FrankWolfe.RankOneMatrix`](@ref) or [`FrankWolfe.ScaledHotVector`](@ref).
+
+The iterate type `IT` must be a broadcastable mutable object or implement [`FrankWolfe.compute_active_set_iterate!`](@ref):
+```julia
+FrankWolfe.compute_active_set_iterate!(active_set::FrankWolfe.ActiveSet{AT, R, IT}) where {AT, R}
+```
+which recomputes the iterate from the current convex decomposition and the following methods
+[`FrankWolfe.active_set_update_scale!`](@ref) and [`FrankWolfe.active_set_update_iterate_pairwise!`](@ref):
+```julia
+FrankWolfe.active_set_update_scale!(x::IT, lambda, atom)
+FrankWolfe.active_set_update_iterate_pairwise!(x::IT, lambda, fw_atom, away_atom)
+```
