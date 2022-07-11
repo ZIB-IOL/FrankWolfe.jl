@@ -130,7 +130,7 @@ end
 
 Operates `x ← x + λ a_fw - λ a_aw`.
 """
-function active_set_update_iterate_pairwise!(x::IT, lambda, fw_atom, away_atom)
+function active_set_update_iterate_pairwise!(x::IT, lambda, fw_atom, away_atom) where {IT}
     @. x += lambda * fw_atom - lambda * away_atom
     return x
 end
