@@ -121,7 +121,7 @@ end
 Operates `x ← (1-λ) x + λ a`.
 """
 function active_set_update_scale!(x::IT, lambda, atom) where {IT}
-    @. x = active_set.x * (1 - lambda) + lambda * atom
+    @. x = x * (1 - lambda) + lambda * atom
     return active_set
 end
 
