@@ -38,7 +38,6 @@ function ActiveSet{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}) 
     @inbounds for idx in 1:n
         weights[idx] = tuple_values[idx][1]
         atoms[idx] = tuple_values[idx][2]
-        x .+= weights[idx] * atoms[idx]
     end
     x = similar(tuple_values[1][2], float(eltype(tuple_values[1][2])))
     as = ActiveSet{AT,R,typeof(x)}(weights, atoms, x)
