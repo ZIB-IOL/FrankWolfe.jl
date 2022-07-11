@@ -188,12 +188,12 @@ For methods using an [`FrankWolfe.ActiveSet`](@ref), the atoms or individual ext
 of the same type as the iterate. They are assumed to be immutable, must implement `LinearAlgebra.dot` with a gradient object.
 See for example [`FrankWolfe.RankOneMatrix`](@ref) or [`FrankWolfe.ScaledHotVector`](@ref).
 
-The iterate type `IT` must be a broadcastable mutable object or implement:
+The iterate type `IT` must be a broadcastable mutable object or implement [`FrankWolfe.compute_active_set_iterate!`](@ref):
 ```julia
 FrankWolfe.compute_active_set_iterate!(active_set::FrankWolfe.ActiveSet{AT, R, IT}) where {AT, R}
 ```
 which recomputes the iterate from the current convex decomposition and the following methods
-[`FrankWolfe.active_set_update_scale!`](@ref) and [`active_set_update_iterate_pairwise!`](@ref):
+[`FrankWolfe.active_set_update_scale!`](@ref) and [`FrankWolfe.active_set_update_iterate_pairwise!`](@ref):
 ```julia
 FrankWolfe.active_set_update_scale!(x::IT, lambda, atom)
 FrankWolfe.active_set_update_iterate_pairwise!(x::IT, lambda, fw_atom, away_atom)
