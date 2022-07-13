@@ -225,6 +225,26 @@ function away_frank_wolfe(
                 linesearch_workspace,
                 memory_mode,
             )
+            if callback !== nothing
+                state = CallbackState(
+                    t,
+                    primal,
+                    primal - dual_gap,
+                    dual_gap,
+                    tot_time,
+                    x,
+                    vertex,
+                    gamma,
+                    f,
+                    grad!,
+                    lmo,
+                    gradient,
+                    tt,
+                )
+                if callback(state, active_set) === false
+                    break
+                end
+            end    
             # cleanup and renormalize every x iterations. Only for the fw steps.
             renorm = mod(t, renorm_interval) == 0
             if away_step_taken
@@ -243,26 +263,6 @@ function away_frank_wolfe(
             dual_gap = phi_value
         end
         t += 1
-        if callback !== nothing
-            state = CallbackState(
-                t,
-                primal,
-                primal - dual_gap,
-                dual_gap,
-                tot_time,
-                x,
-                vertex,
-                gamma,
-                f,
-                grad!,
-                lmo,
-                gradient,
-                tt,
-            )
-            if callback(state, active_set) === false
-                break
-            end
-        end
     end
 
     # recompute everything once more for final verfication / do not record to trajectory though for now!
