@@ -191,6 +191,26 @@ function blended_conditional_gradient(
             tt = dualstep
             # setting gap estimate as ∇f(x) (x - v_FW) / 2
             phi = (xval - value) / 2
+            if callback !== nothing
+                state = CallbackState(
+                    t,
+                    primal,
+                    primal - dual_gap,
+                    dual_gap,
+                    tot_time,
+                    x,
+                    v,
+                    gamma,
+                    f,
+                    grad!,
+                    lmo,
+                    gradient,
+                    tt,
+                )
+                if callback(state, active_set, non_simplex_iter) === false
+                    break
+                end
+            end
         else
             tt = regular
             gamma = perform_line_search(
@@ -206,6 +226,27 @@ function blended_conditional_gradient(
                 memory_mode,
             )
 
+            if callback !== nothing
+                state = CallbackState(
+                    t,
+                    primal,
+                    primal - dual_gap,
+                    dual_gap,
+                    tot_time,
+                    x,
+                    v,
+                    gamma,
+                    f,
+                    grad!,
+                    lmo,
+                    gradient,
+                    tt,
+                )
+                if callback(state, active_set, non_simplex_iter) === false
+                    break
+                end
+            end
+
             if gamma == 1.0
                 active_set_initialize!(active_set, v)
             else
@@ -217,26 +258,6 @@ function blended_conditional_gradient(
         dual_gap = phi
         t = t + 1
         non_simplex_iter += 1
-        if callback !== nothing
-            state = CallbackState(
-                t,
-                primal,
-                primal - dual_gap,
-                dual_gap,
-                tot_time,
-                x,
-                v,
-                gamma,
-                f,
-                grad!,
-                lmo,
-                gradient,
-                tt,
-            )
-            if callback(state, active_set, non_simplex_iter) === false
-                break
-            end
-        end
     end
 
     ## post-processing and cleanup after loop
