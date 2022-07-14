@@ -101,5 +101,5 @@ If you need the plotting utilities in your own code, make sure Plots.jl is inclu
 using Plots
 using FrankWolfe
 
-include(joinpath(dirname(pathof(FiniteDifferences)), "../examples/plot_utils.jl"))
+include(joinpath(dirname(pathof(FrankWolfe)), "../examples/plot_utils.jl"))
 ```
