@@ -65,10 +65,9 @@ Example: `examples/approximateCaratheodory.jl`
 
 We can solve the approximate Carathéodory problem with rational arithmetic to obtain rational approximations; see [Combettes, Pokutta 2019](https://arxiv.org/abs/1911.04415) for some background about approximate Carathéodory and Conditioanl Gradients. We consider the simple instance of approximating the `0` over the probability simplex here:
 
-<p class="aligncenter">
-<img src="https://render.githubusercontent.com/render/math?math=\min_{x \in \Delta(n)} \|x\|^2">
-</p>
-
+```math
+\min_{x \in \Delta(n)} \|x\|^2
+```
 with n = 100.
 
 ```
