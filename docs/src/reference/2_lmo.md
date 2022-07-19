@@ -19,11 +19,6 @@ All of them are subtypes of [`FrankWolfe.LinearMinimizationOracle`](@ref) and im
 compute_extreme_point
 ```
 
-```@autodocs
-Modules = [FrankWolfe]
-Pages = ["abstract_oracles.jl"]
-```
-
 We also provide some meta-LMOs wrapping another one with extended behavior:
 ```@docs
 FrankWolfe.CachedLinearMinimizationOracle
@@ -60,10 +55,6 @@ Pages = ["polytope_oracles.jl"]
 ```@autodocs
 Modules = [FrankWolfe]
 Pages = ["moi_oracle.jl"]
-```
-
-```@docs
-FrankWolfe.convert_mathopt
 ```
 
 ## Index
