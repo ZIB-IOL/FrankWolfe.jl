@@ -3,6 +3,12 @@ using LinearAlgebra
 using Test
 using SparseArrays
 
+function test_callback(state, active_set)
+    grad0 = similar(state.x)
+    state.grad!(grad0, state.x)
+    @test grad0 ≈ state.gradient
+end
+
 @testset "Testing Blended Pairwise Conditional Gradients" begin
     f(x) = norm(x)^2
     function grad!(storage, x)
@@ -57,5 +63,16 @@ using SparseArrays
         active_set_afw,
         epsilon,
         epsilon,
+    )
+    res_bpcg = FrankWolfe.blended_pairwise_conditional_gradient(
+        f,
+        grad!,
+        lmo_prob,
+        x0,
+        max_iteration=6000,
+        line_search=FrankWolfe.Adaptive(),
+        verbose=true,
+        epsilon=3e-7,
+        callback=test_callback,
     )
 end
