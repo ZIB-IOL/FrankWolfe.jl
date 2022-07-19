@@ -53,7 +53,6 @@ The following structures are wrapping given oracles to behave similarly but addi
 FrankWolfe.TrackingObjective
 FrankWolfe.TrackingGradient
 FrankWolfe.TrackingLMO
-FrankWolfe.tracking_trajectory_callback
 ```
 
 Also see the example "Tracking number of calls to different oracles".
