@@ -242,6 +242,6 @@ Resets the active set structure to a single vertex `v` with unit weight.
 function active_set_initialize!(as::ActiveSet{AT,R}, v) where {AT,R}
     empty!(as)
     push!(as, (one(R), v))
-    compute_active_set_iterate!(active_set)
+    compute_active_set_iterate!(as)
     return as
 end

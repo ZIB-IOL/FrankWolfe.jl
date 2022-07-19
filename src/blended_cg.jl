@@ -469,6 +469,7 @@ minimizing the original function over the convex hull of the
 active set. If λ are the barycentric coordinates of dimension
 equal to the cardinality of the active set, the objective
 function is:
+
     f(λ) = reduced_linear^T λ + 0.5 * λ^T reduced_hessian λ
 
 In the case where we find that the current iterate has a strong-Wolfe
