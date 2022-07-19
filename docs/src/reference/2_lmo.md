@@ -31,7 +31,6 @@ FrankWolfe.ProductLMO
 FrankWolfe.SingleLastCachedLMO
 FrankWolfe.MultiCacheLMO
 FrankWolfe.VectorCacheLMO
-FrankWolfe.TrackingLMO
 ```
 
 ## Norm balls
