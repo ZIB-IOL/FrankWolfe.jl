@@ -217,6 +217,26 @@ function blended_pairwise_conditional_gradient(
                 linesearch_workspace,
                 memory_mode,
             )
+            if callback !== nothing
+                state = CallbackState(
+                    t,
+                    primal,
+                    primal - phi,
+                    phi,
+                    tot_time,
+                    x,
+                    vertex_taken,
+                    gamma,
+                    f,
+                    grad!,
+                    lmo,
+                    gradient,
+                    tt,
+                )
+                if callback(state, active_set) === false
+                    break
+                end
+            end
             # reached maximum of lambda -> dropping away vertex
             if gamma ≈ gamma_max
                 tt = drop
@@ -273,6 +293,27 @@ function blended_pairwise_conditional_gradient(
                     memory_mode,
                 )
 
+                if callback !== nothing
+                    state = CallbackState(
+                        t,
+                        primal,
+                        primal - phi,
+                        phi,
+                        tot_time,
+                        x,
+                        vertex_taken,
+                        gamma,
+                        f,
+                        grad!,
+                        lmo,
+                        gradient,
+                        tt,
+                    )
+                    if callback(state, active_set) === false
+                        break
+                    end
+                end
+
                 # dropping active set and restarting from singleton
                 if gamma ≈ 1.0
                     if add_dropped_vertices
@@ -292,6 +333,26 @@ function blended_pairwise_conditional_gradient(
                 # set to computed dual_gap for consistency between the lazy and non-lazy run.
                 # that is ok as we scale with the K = 2.0 default anyways
                 phi = dual_gap
+                if callback !== nothing
+                    state = CallbackState(
+                        t,
+                        primal,
+                        primal - phi,
+                        phi,
+                        tot_time,
+                        x,
+                        vertex_taken,
+                        gamma,
+                        f,
+                        grad!,
+                        lmo,
+                        gradient,
+                        tt,
+                    )
+                    if callback(state, active_set) === false
+                        break
+                    end
+                end    
             end
         end
         if (
@@ -302,26 +363,6 @@ function blended_pairwise_conditional_gradient(
             primal = f(x)
         end
         t += 1
-        if callback !== nothing
-            state = CallbackState(
-                t,
-                primal,
-                primal - phi,
-                phi,
-                tot_time,
-                x,
-                vertex_taken,
-                gamma,
-                f,
-                grad!,
-                lmo,
-                gradient,
-                tt,
-            )
-            if callback(state, active_set) === false
-                break
-            end
-        end
     end
 
     # recompute everything once more for final verfication / do not record to trajectory though for now!
