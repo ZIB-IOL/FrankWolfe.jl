@@ -150,6 +150,7 @@ function away_frank_wolfe(
     end
 
     x = get_active_set_iterate(active_set)
+    primal = f(x)
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     phi_value = max(0, fast_dot(x, gradient) - fast_dot(v, gradient))
