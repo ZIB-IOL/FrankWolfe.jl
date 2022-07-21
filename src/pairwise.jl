@@ -186,6 +186,7 @@ function blended_pairwise_conditional_gradient(
 
         # compute current iterate from active set
         x = get_active_set_iterate(active_set)
+        primal = f(x)
         grad!(gradient, x)
 
         _, v_local, v_local_loc, _, a_lambda, a, a_loc, _, _ =
