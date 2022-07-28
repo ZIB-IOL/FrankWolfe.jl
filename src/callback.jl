@@ -50,7 +50,7 @@ function make_print_callback(callback, print_iter, headers, format_string, forma
             print_callback(nothing, format_string, print_footer=true)
             flush(stdout)
         elseif state.t == 1 || mod(state.t, print_iter) == 0 || state.tt == dualstep || state.tt == last
-            if state.t == 1
+            if state.t == 1 || state.t == 0
                 state = @set state.tt = initial
                 print_callback(headers, format_string, print_header=true)
             end
