@@ -103,7 +103,7 @@ function frank_wolfe(
     else
         similar(x)
     end
-    while t <= max_iteration && dual_gap >= max(epsilon, eps())
+    while t <= max_iteration && dual_gap >= max(epsilon, eps(typeof(dual_gap)))
 
         #####################
         # managing time and Ctrl-C
@@ -578,7 +578,7 @@ function stochastic_frank_wolfe(
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
     end
 
-    while t <= max_iteration && dual_gap >= max(epsilon, eps())
+    while t <= max_iteration && dual_gap >= max(epsilon, eps(typeof(dual_gap)))
 
         #####################
         # managing time and Ctrl-C
