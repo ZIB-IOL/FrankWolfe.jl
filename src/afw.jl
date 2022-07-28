@@ -182,6 +182,7 @@ function away_frank_wolfe(
         end
 
         #####################
+        t += 1
 
         # compute current iterate from active set
         x = get_active_set_iterate(active_set)
@@ -263,7 +264,6 @@ function away_frank_wolfe(
             primal = f(x)
             dual_gap = phi_value
         end
-        t += 1
     end
 
     # recompute everything once more for final verfication / do not record to trajectory though for now!
