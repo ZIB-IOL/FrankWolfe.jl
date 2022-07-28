@@ -29,6 +29,7 @@ function away_frank_wolfe(
     traj_data=[],
     timeout=Inf,
     linesearch_workspace=nothing,
+    recompute_last_vertex=true,
 )
     # add the first vertex to active set from initialization
     active_set = ActiveSet([(1.0, x0)])
@@ -56,6 +57,7 @@ function away_frank_wolfe(
         traj_data=traj_data,
         timeout=timeout,
         linesearch_workspace=linesearch_workspace,
+        recompute_last_vertex=recompute_last_vertex,
     )
 end
 
@@ -83,6 +85,7 @@ function away_frank_wolfe(
     traj_data=[],
     timeout=Inf,
     linesearch_workspace=nothing,
+    recompute_last_vertex=true,
 )
     # format string for output of the algorithm
     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
@@ -151,17 +154,14 @@ function away_frank_wolfe(
 
     x = get_active_set_iterate(active_set)
     primal = f(x)
-    grad!(gradient, x)
-    v = compute_extreme_point(lmo, gradient)
-    phi_value = max(0, fast_dot(x, gradient) - fast_dot(v, gradient))
-    gamma = 1.0
+    v = active_set.atoms[1]
+    phi_value = convert(eltype(x), Inf)
+    gamma = one(phi_value)
 
     if linesearch_workspace === nothing
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
     end
-
-    while t <= max_iteration && phi_value >= max(epsilon, eps(phi_value))
-
+    while t <= max_iteration && phi_value >= eps(float(typeof(phi_value)))
         #####################
         # managing time and Ctrl-C
         #####################
@@ -301,9 +301,11 @@ function away_frank_wolfe(
     active_set_cleanup!(active_set)
     x = get_active_set_iterate(active_set)
     grad!(gradient, x)
-    v = compute_extreme_point(lmo, gradient)
-    primal = f(x)
-    dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
+    if recompute_last_vertex
+        v = compute_extreme_point(lmo, gradient)
+        primal = f(x)
+        dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
+    end
     tt = pp
     tot_time = (time_ns() - time_start) / 1e9
     if callback !== nothing
