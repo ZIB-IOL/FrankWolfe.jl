@@ -144,7 +144,7 @@ function blended_conditional_gradient(
         end
 
         #####################
-
+        t += 1
 
         # TODO replace with single call interface from function_gradient.jl
         #Mininize over the convex hull until strong Wolfe gap is below a given tolerance.
@@ -256,7 +256,6 @@ function blended_conditional_gradient(
 
         x = get_active_set_iterate(active_set)
         dual_gap = phi
-        t = t + 1
         non_simplex_iter += 1
     end
 
