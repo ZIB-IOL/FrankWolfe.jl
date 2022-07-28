@@ -23,7 +23,7 @@ function compute_extreme_point(
     dir_norm = norm(direction, 2)
     n = length(direction)
     # if direction numerically 0
-    if dir_norm <= 10eps(eltype(direction))
+    if dir_norm <= 10eps(float(eltype(direction)))
         @. v = lmo.right_hand_side / sqrt(n)
     else
         @. v = -lmo.right_hand_side * direction / dir_norm
@@ -78,7 +78,7 @@ function compute_extreme_point(
     q_norm = norm(direction, q)^(pow_ratio)
     # handle zero_direction first
     # assuming the direction is a vector of 1
-    if q_norm < eps(T)
+    if q_norm < eps(float(T))
         one_vec = trues(length(direction))
         @. v = -lmo.right_hand_side * one_vec^(pow_ratio) / oftype(q_norm, 1)
         return v
