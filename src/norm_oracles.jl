@@ -78,7 +78,7 @@ function compute_extreme_point(
     q_norm = norm(direction, q)^(pow_ratio)
     # handle zero_direction first
     # assuming the direction is a vector of 1
-    if q_norm < eps()
+    if q_norm < eps(T)
         one_vec = trues(length(direction))
         @. v = -lmo.right_hand_side * one_vec^(pow_ratio) / oftype(q_norm, 1)
         return v
