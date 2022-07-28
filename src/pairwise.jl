@@ -183,6 +183,7 @@ function blended_pairwise_conditional_gradient(
         end
 
         #####################
+        t += 1
 
         # compute current iterate from active set
         x = get_active_set_iterate(active_set)
@@ -363,7 +364,6 @@ function blended_pairwise_conditional_gradient(
         )
             primal = f(x)
         end
-        t += 1
     end
 
     # recompute everything once more for final verfication / do not record to trajectory though for now!
