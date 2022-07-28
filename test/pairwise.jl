@@ -76,3 +76,37 @@ end
         callback=test_callback,
     )
 end
+
+@testset "recompute or not last vertex" begin
+    n = 10
+    f(x) = norm(x)^2
+    function grad!(storage, x)
+        @. storage = 2x
+        return nothing
+    end
+    lmo_prob = FrankWolfe.ProbabilitySimplexOracle(4)
+    lmo = FrankWolfe.TrackingLMO(lmo_prob)
+    x0 = FrankWolfe.compute_extreme_point(lmo_prob, randn(10))
+    FrankWolfe.blended_pairwise_conditional_gradient(
+        f,
+        grad!,
+        lmo,
+        x0,
+        max_iteration=6000,
+        line_search=FrankWolfe.Adaptive(),
+        verbose=false,
+    )
+    @test lmo.counter == 11
+    lmo.counter = 0
+    FrankWolfe.blended_pairwise_conditional_gradient(
+        f,
+        grad!,
+        lmo,
+        x0,
+        max_iteration=6000,
+        line_search=FrankWolfe.Adaptive(),
+        verbose=false,
+        recompute_last_vertex=false,
+    )
+    @test lmo.counter == 10
+end

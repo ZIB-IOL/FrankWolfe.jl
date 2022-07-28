@@ -29,6 +29,7 @@ function blended_pairwise_conditional_gradient(
     extra_vertex_storage=nothing,
     add_dropped_vertices=false,
     use_extra_vertex_storage=false,
+    recompute_last_vertex=true,
 )
     # add the first vertex to active set from initialization
     active_set = ActiveSet([(1.0, x0)])
@@ -56,6 +57,7 @@ function blended_pairwise_conditional_gradient(
         extra_vertex_storage=extra_vertex_storage,
         add_dropped_vertices=add_dropped_vertices,
         use_extra_vertex_storage=use_extra_vertex_storage,
+        recompute_last_vertex=recompute_last_vertex,
     )
 end
 
@@ -87,6 +89,7 @@ function blended_pairwise_conditional_gradient(
     extra_vertex_storage=nothing,
     add_dropped_vertices=false,
     use_extra_vertex_storage=false,
+    recompute_last_vertex=true,
 )
 
     # format string for output of the algorithm
@@ -115,8 +118,8 @@ function blended_pairwise_conditional_gradient(
     end
 
     t = 0
-    primal = Inf
     x = get_active_set_iterate(active_set)
+    primal = convert(eltype(x), Inf)
     tt = regular
     time_start = time_ns()
 
@@ -148,12 +151,11 @@ function blended_pairwise_conditional_gradient(
         gradient = similar(x)
     end
 
-    grad!(gradient, x)
-    v = compute_extreme_point(lmo, gradient)
+    v = active_set.atoms[1]
     # if !lazy, phi is maintained as the global dual gap
-    phi = max(0, fast_dot(x, gradient) - fast_dot(v, gradient))
+    phi = convert(eltype(x), Inf)
     local_gap = zero(phi)
-    gamma = 1.0
+    gamma = one(phi)
 
     if linesearch_workspace === nothing
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
@@ -163,7 +165,7 @@ function blended_pairwise_conditional_gradient(
         use_extra_vertex_storage = add_dropped_vertices = false
     end
 
-    while t <= max_iteration && phi >= max(epsilon, eps())
+    while t <= max_iteration && phi >= max(epsilon, eps(epsilon))
 
         # managing time limit
         time_at_loop = time_ns()
@@ -402,9 +404,12 @@ function blended_pairwise_conditional_gradient(
     active_set_cleanup!(active_set)
     x = get_active_set_iterate(active_set)
     grad!(gradient, x)
-    v = compute_extreme_point(lmo, gradient)
-    primal = f(x)
-    dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
+    # otherwise values are maintained to last iteration
+    if recompute_last_vertex
+        v = compute_extreme_point(lmo, gradient)
+        primal = f(x)
+        dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
+    end
     tt = pp
     tot_time = (time_ns() - time_start) / 1e9
     if callback !== nothing
