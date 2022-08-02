@@ -144,7 +144,7 @@ function blended_conditional_gradient(
         end
 
         #####################
-
+        t += 1
 
         # TODO replace with single call interface from function_gradient.jl
         #Mininize over the convex hull until strong Wolfe gap is below a given tolerance.
@@ -191,6 +191,26 @@ function blended_conditional_gradient(
             tt = dualstep
             # setting gap estimate as ∇f(x) (x - v_FW) / 2
             phi = (xval - value) / 2
+            if callback !== nothing
+                state = CallbackState(
+                    t,
+                    primal,
+                    primal - dual_gap,
+                    dual_gap,
+                    tot_time,
+                    x,
+                    v,
+                    gamma,
+                    f,
+                    grad!,
+                    lmo,
+                    gradient,
+                    tt,
+                )
+                if callback(state, active_set, non_simplex_iter) === false
+                    break
+                end
+            end
         else
             tt = regular
             gamma = perform_line_search(
@@ -206,6 +226,27 @@ function blended_conditional_gradient(
                 memory_mode,
             )
 
+            if callback !== nothing
+                state = CallbackState(
+                    t,
+                    primal,
+                    primal - dual_gap,
+                    dual_gap,
+                    tot_time,
+                    x,
+                    v,
+                    gamma,
+                    f,
+                    grad!,
+                    lmo,
+                    gradient,
+                    tt,
+                )
+                if callback(state, active_set, non_simplex_iter) === false
+                    break
+                end
+            end
+
             if gamma == 1.0
                 active_set_initialize!(active_set, v)
             else
@@ -215,28 +256,7 @@ function blended_conditional_gradient(
 
         x = get_active_set_iterate(active_set)
         dual_gap = phi
-        t = t + 1
         non_simplex_iter += 1
-        if callback !== nothing
-            state = CallbackState(
-                t,
-                primal,
-                primal - dual_gap,
-                dual_gap,
-                tot_time,
-                x,
-                v,
-                gamma,
-                f,
-                grad!,
-                lmo,
-                gradient,
-                tt,
-            )
-            if callback(state, active_set, non_simplex_iter) === false
-                break
-            end
-        end
     end
 
     ## post-processing and cleanup after loop
@@ -448,6 +468,7 @@ minimizing the original function over the convex hull of the
 active set. If λ are the barycentric coordinates of dimension
 equal to the cardinality of the active set, the objective
 function is:
+
     f(λ) = reduced_linear^T λ + 0.5 * λ^T reduced_hessian λ
 
 In the case where we find that the current iterate has a strong-Wolfe
@@ -873,7 +894,7 @@ function simplex_gradient_descent_over_convex_hull(
                 )
                 #If the stepsize is that small we probably need to increase the accuracy of
                 #the types we are using.
-                if gamma < eps(gamma)
+                if gamma < eps(float(gamma))
                     # @warn "Upgrading the accuracy of the adaptive line search."
                     gamma = perform_line_search(
                         line_search_inner,

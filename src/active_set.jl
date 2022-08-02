@@ -35,26 +35,26 @@ function ActiveSet{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}) 
     n = length(tuple_values)
     weights = Vector{R}(undef, n)
     atoms = Vector{AT}(undef, n)
-    x = similar(tuple_values[1][2], float(eltype(tuple_values[1][2])))
-    x .= 0
     @inbounds for idx in 1:n
         weights[idx] = tuple_values[idx][1]
         atoms[idx] = tuple_values[idx][2]
-        x .+= weights[idx] * atoms[idx]
     end
-    return ActiveSet{AT,R,typeof(x)}(weights, atoms, x)
+    x = similar(tuple_values[1][2], float(eltype(tuple_values[1][2])))
+    as = ActiveSet{AT,R,typeof(x)}(weights, atoms, x)
+    compute_active_set_iterate!(as)
+    return as
 end
 
 Base.getindex(as::ActiveSet, i) = (as.weights[i], as.atoms[i])
 Base.size(as::ActiveSet) = size(as.weights)
+
+# these three functions do not update the active set iterate
 
 function Base.push!(as::ActiveSet, (λ, a))
     push!(as.weights, λ)
     push!(as.atoms, a)
     return as
 end
-
-# these two functions do not update the active set iterate
 
 function Base.deleteat!(as::ActiveSet, idx)
     deleteat!(as.weights, idx)
@@ -110,13 +110,28 @@ function active_set_update!(active_set::ActiveSet, lambda, atom, renorm=true, id
         active_set_cleanup!(active_set, update=false)
         active_set_renormalize!(active_set)
     end
-    @. active_set.x = active_set.x * (1 - lambda) + lambda * atom
+    active_set_update_scale!(active_set.x, lambda, atom)
     return active_set
 end
 
-function active_set_update_iterate_pairwise!(active_set::ActiveSet, lambda, fw_atom, away_atom)
-    @. active_set.x += lambda * fw_atom - lambda * away_atom
-    return active_set
+"""
+    active_set_update_scale!(x, lambda, atom)
+
+Operates `x ← (1-λ) x + λ a`.
+"""
+function active_set_update_scale!(x::IT, lambda, atom) where {IT}
+    @. x = x * (1 - lambda) + lambda * atom
+    return x
+end
+
+"""
+    active_set_update_iterate_pairwise!(x, lambda, fw_atom, away_atom)
+
+Operates `x ← x + λ a_fw - λ a_aw`.
+"""
+function active_set_update_iterate_pairwise!(x::IT, lambda, fw_atom, away_atom) where {IT}
+    @. x += lambda * fw_atom - lambda * away_atom
+    return x
 end
 
 function active_set_validate(active_set::ActiveSet)
@@ -227,6 +242,6 @@ Resets the active set structure to a single vertex `v` with unit weight.
 function active_set_initialize!(as::ActiveSet{AT,R}, v) where {AT,R}
     empty!(as)
     push!(as, (one(R), v))
-    @. as.x = one(R) * v
+    compute_active_set_iterate!(as)
     return as
 end
