@@ -151,9 +151,10 @@ function blended_pairwise_conditional_gradient(
         gradient = similar(x)
     end
 
-    v = active_set.atoms[1]
+    grad!(gradient, x)
+    v = compute_extreme_point(lmo, gradient)
     # if !lazy, phi is maintained as the global dual gap
-    phi = convert(eltype(x), Inf)
+    phi = max(0, fast_dot(x, gradient) - fast_dot(v, gradient))
     local_gap = zero(phi)
     gamma = one(phi)
 
