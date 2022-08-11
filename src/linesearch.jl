@@ -346,23 +346,32 @@ function perform_line_search(
     end
     M = line_search.eta * line_search.L_est
     (dot_dir, ndir2, x_storage) = _upgrade_accuracy_adaptive(gradient, d, storage, should_upgrade)
-    gamma = min(max(dot_dir / (M * ndir2), 0), gamma_max)
+    # gamma = min(max(dot_dir / (M * ndir2), 0), gamma_max) ## old
+    gamma = max(dot_dir / (M * ndir2), 0)  # do not truncate -> exact needed for test
     x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
     niter = 0
     # println("M: $M , gamma: $gamma, tau: $(line_search.tau), L_est: $(line_search.L_est), dot_dir: $(dot_dir)")
     @assert dot_dir > 0
-    while f(x_storage) - f(x) > -gamma * dot_dir + gamma^2 * ndir2 * M / 2 # &&
-#              gamma ≥ 100 * eps(float(gamma)) &&
-#              M ≤ line_search.L_est
-        # println("A M: $M , gamma: $gamma, tau: $(line_search.tau), L_est: $(line_search.L_est), eps: $(100 * eps(float(gamma)))")
-        if gamma ≥ 100 * eps()
-            # println("M: $M , gamma: $gamma, tau: $(line_search.tau), L_est: $(line_search.L_est)")
+    #
+    # while f(x_storage) - f(x) > -gamma * dot_dir + gamma^2 * ndir2 * M / 2 &&  ! (f(x_storage) - f(x) ≈ 0)
+    #
+    # threshold = - dot_dir^2 / (2 * ndir2)
+    # while f(x_storage) - f(x) > threshold / M &&  ! (f(x_storage) - f(x) ≈ 0)
+    #
+    threshold = - dot_dir^2 / ndir2
+    while 2 * M * (f(x_storage) - f(x)) > threshold &&  ! (f(x_storage) - f(x) ≈ 0)
+        # DEBUGGING TESTS
+        println("A M: $M , gamma: $gamma, tau: $(line_search.tau), L_est: $(line_search.L_est)")
+        println("test value: $(f(x_storage) - f(x))  $(-gamma * dot_dir + gamma^2 * ndir2 * M / 2) $(f(x_storage) - f(x) ≈ -gamma * dot_dir + gamma^2 * ndir2 * M / 2)")
+
+        if M <= 1e10 
             M *= line_search.tau
-            gamma = min(max(dot_dir / (M * ndir2), 0), gamma_max)
+            # gamma = min(max(dot_dir / (M * ndir2), 0), gamma_max) # old with wrong truncation
+            gamma = max(dot_dir / (M * ndir2), 0)  # do not truncate -> exact needed for test
             x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
             niter += 1
         else
-            @warn "Smoothness estimate run-away -> hard clipping. You might see negative progess, cycling, or stalling.\nPotentially upgrade accuracy or use alternative line search strategy."
+            # @warn "Smoothness estimate run-away -> hard clipping. You might see negative progess, cycling, or stalling.\nPotentially upgrade accuracy or use alternative line search strategy."
             break           
         end
         # println("B M: $M , gamma: $gamma, tau: $(line_search.tau), L_est: $(line_search.L_est)")
@@ -371,6 +380,7 @@ function perform_line_search(
     # gamma = min(max(dot_dir / (line_search.L_est * ndir2), 0), gamma_max)
     gamma = min(max(dot_dir / (M * ndir2), 0), gamma_max)
     return gamma
+    # TODO: M is not returned to use as L_est for next iteration!!
 end
 
 Base.print(io::IO, ::Adaptive) = print(io, "Adaptive")

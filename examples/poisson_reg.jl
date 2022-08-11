@@ -140,12 +140,24 @@ x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     max_iteration=max_iter,
     epsilon=target_tolerance,
     line_search=FrankWolfe.Adaptive(),
-    print_iter=max_iter / max_iter,
+    print_iter=max_iter / 10, #max_iter,
     memory_mode=FrankWolfe.InplaceEmphasis(),
+#    memory_mode=FrankWolfe.OutplaceEmphasis(),
     verbose=true,
     trajectory=true,
     lazy=false,
 )
 
+
+FrankWolfe.frank_wolfe(
+    f,
+    grad!,
+    lmo,
+    x0,
+    max_iteration=max_iter,
+    print_iter=max_iter / 10,# max_iter,
+    line_search=FrankWolfe.Goldenratio(),
+    verbose=true,
+)
 
 end
