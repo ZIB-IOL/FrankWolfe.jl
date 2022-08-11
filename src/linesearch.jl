@@ -349,15 +349,27 @@ function perform_line_search(
     gamma = min(max(dot_dir / (M * ndir2), 0), gamma_max)
     x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
     niter = 0
-    while f(x_storage) - f(x) > -gamma * dot_dir + gamma^2 * ndir2 * M / 2 &&
-              gamma ≥ 100 * eps(float(gamma)) &&
-              M ≤ line_search.L_est
-        M *= line_search.tau
-        gamma = min(max(dot_dir / (M * ndir2), 0), gamma_max)
-        x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
-        niter += 1
+    # println("M: $M , gamma: $gamma, tau: $(line_search.tau), L_est: $(line_search.L_est), dot_dir: $(dot_dir)")
+    @assert dot_dir > 0
+    while f(x_storage) - f(x) > -gamma * dot_dir + gamma^2 * ndir2 * M / 2 # &&
+#              gamma ≥ 100 * eps(float(gamma)) &&
+#              M ≤ line_search.L_est
+        # println("A M: $M , gamma: $gamma, tau: $(line_search.tau), L_est: $(line_search.L_est), eps: $(100 * eps(float(gamma)))")
+        if gamma ≥ 100 * eps()
+            # println("M: $M , gamma: $gamma, tau: $(line_search.tau), L_est: $(line_search.L_est)")
+            M *= line_search.tau
+            gamma = min(max(dot_dir / (M * ndir2), 0), gamma_max)
+            x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
+            niter += 1
+        else
+            @warn "Smoothness estimate run-away -> hard clipping. You might see negative progess, cycling, or stalling.\nPotentially upgrade accuracy or use alternative line search strategy."
+            break           
+        end
+        # println("B M: $M , gamma: $gamma, tau: $(line_search.tau), L_est: $(line_search.L_est)")
     end
-    gamma = min(max(dot_dir / (line_search.L_est * ndir2), 0), gamma_max)
+    # println("C M: $M , gamma: $gamma, tau: $(line_search.tau), L_est: $(line_search.L_est)")
+    # gamma = min(max(dot_dir / (line_search.L_est * ndir2), 0), gamma_max)
+    gamma = min(max(dot_dir / (M * ndir2), 0), gamma_max)
     return gamma
 end
 
