@@ -135,7 +135,7 @@ function active_set_update_iterate_pairwise!(x::IT, lambda, fw_atom, away_atom) 
 end
 
 function active_set_validate(active_set::ActiveSet)
-    return sum(active_set.weights) ≈ 1.0
+    return sum(active_set.weights) ≈ 1.0 && all(>=(0), active_set.weights)
 end
 
 function active_set_renormalize!(active_set::ActiveSet)
