@@ -357,7 +357,6 @@ function perform_line_search(
         x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
         niter += 1
     end
-    line_search.L_est = min(M, line_search.L_est)
     gamma = min(max(dot_dir / (line_search.L_est * ndir2), 0), gamma_max)
     return gamma
 end
