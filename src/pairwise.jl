@@ -226,6 +226,8 @@ function blended_pairwise_conditional_gradient(
                 linesearch_workspace,
                 memory_mode,
             )
+            gamma = min(gamma_max, gamma)
+            tt = gamma ≈ gamma_max ? drop : pairwise
             if callback !== nothing
                 state = CallbackState(
                     t,
@@ -248,14 +250,12 @@ function blended_pairwise_conditional_gradient(
             end
             # reached maximum of lambda -> dropping away vertex
             if gamma ≈ gamma_max
-                tt = drop
                 active_set.weights[v_local_loc] += gamma
                 deleteat!(active_set, a_loc)
                 if add_dropped_vertices
                     push!(extra_vertex_storage, a)
                 end
             else # transfer weight from away to local FW
-                tt = pairwise
                 active_set.weights[a_loc] -= gamma
                 active_set.weights[v_local_loc] += gamma
                 @assert active_set_validate(active_set)
