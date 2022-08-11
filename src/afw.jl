@@ -227,6 +227,7 @@ function away_frank_wolfe(
                 linesearch_workspace,
                 memory_mode,
             )
+            gamma = min(gamma_max, gamma)
             if callback !== nothing
                 state = CallbackState(
                     t,
