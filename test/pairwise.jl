@@ -96,7 +96,7 @@ end
         line_search=FrankWolfe.Adaptive(),
         verbose=false,
     )
-    @test lmo.counter == 12
+    @test lmo.counter == 11
     lmo.counter = 0
     FrankWolfe.blended_pairwise_conditional_gradient(
         f,
@@ -108,5 +108,5 @@ end
         verbose=false,
         recompute_last_vertex=false,
     )
-    @test lmo.counter == 11
+    @test lmo.counter == 10
 end
