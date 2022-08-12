@@ -193,7 +193,7 @@ function perform_line_search(
     # if the minimum is at an endpoint
     if dgx * dgy >= 0
         if f(workspace.y) <= f(x)
-            return one(eltype(d))
+            return gamma_max
         else
             return zero(eltype(d))
         end
