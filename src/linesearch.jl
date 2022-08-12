@@ -303,11 +303,13 @@ mutable struct Adaptive{T,TT} <: LineSearchMethod
     eta::T
     tau::TT
     L_est::T
+    max_estimate::T
+    alpha::T
 end
 
-Adaptive(eta::T, tau::TT) where {T,TT} = Adaptive{T,TT}(eta, tau, T(Inf))
+Adaptive(eta::T, tau::TT) where {T,TT} = Adaptive{T,TT}(eta, tau, T(Inf), T(1e10), T(0.5))
 
-Adaptive(; eta=0.9, tau=2, L_est=Inf) = Adaptive(eta, tau, L_est)
+Adaptive(; eta=0.9, tau=2, L_est=Inf, max_estimate=1e10, alpha=0.5) = Adaptive(eta, tau, L_est, max_estimate, alpha)
 
 struct AdaptiveWorkspace{XT,BT}
     x::XT
@@ -349,12 +351,16 @@ function perform_line_search(
     gamma = min(max(dot_dir / (M * ndir2), 0), gamma_max)
     x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
     niter = 0
-    while f(x_storage) - f(x) > -gamma * dot_dir + gamma^2 * ndir2 * M / 2 &&
+    α = line_search.alpha
+    while f(x_storage) - f(x) > -gamma * α * dot_dir + α^2 * gamma^2 * ndir2 * M / 2 &&
               gamma ≥ 100 * eps(float(gamma))
         M *= line_search.tau
         gamma = min(max(dot_dir / (M * ndir2), 0), gamma_max)
         x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
         niter += 1
+        if M > line_search.max_estimate
+            break
+        end
     end
     line_search.L_est = M
     gamma = min(max(dot_dir / (line_search.L_est * ndir2), 0), gamma_max)

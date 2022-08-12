@@ -98,7 +98,7 @@ end
         epsilon=3e-7,
         verbose=false,
     )
-    @test lmo.counter == 65
+    @test lmo.counter == 51
     prev_counter = lmo.counter
     lmo.counter = 0
     FrankWolfe.blended_pairwise_conditional_gradient(
