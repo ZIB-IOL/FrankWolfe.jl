@@ -359,6 +359,7 @@ function perform_line_search(
         x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
         niter += 1
         if M > line_search.max_estimate
+            @warn "Smoothness estimate run away -> hard clipping. Convergence might be not guaranteed."
             break
         end
     end
