@@ -26,6 +26,7 @@ end
         line_search=FrankWolfe.Adaptive(),
         verbose=true,
         epsilon=3e-7,
+        print_iter=1,
     )
     res_afw = FrankWolfe.away_frank_wolfe(
         f,
@@ -47,8 +48,10 @@ end
         x0,
         max_iteration=6000,
         line_search=FrankWolfe.Adaptive(),
-        verbose=false,
+        verbose=true,
         lazy=true,
+        print_iter=1,
+        epsilon=3e-7,
     )
     @test res_bpcg2[3] ≈ res_bpcg[3] atol = 1e-5
     active_set_afw = res_afw[end]
@@ -96,7 +99,8 @@ end
         line_search=FrankWolfe.Adaptive(),
         verbose=false,
     )
-    @test lmo.counter == 11
+    @test lmo.counter == 67
+    prev_counter = lmo.counter
     lmo.counter = 0
     FrankWolfe.blended_pairwise_conditional_gradient(
         f,
@@ -108,5 +112,5 @@ end
         verbose=false,
         recompute_last_vertex=false,
     )
-    @test lmo.counter == 10
+    @test lmo.counter == prev_counter - 1
 end
