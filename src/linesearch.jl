@@ -350,8 +350,7 @@ function perform_line_search(
     x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
     niter = 0
     while f(x_storage) - f(x) > -gamma * dot_dir + gamma^2 * ndir2 * M / 2 &&
-              gamma ≥ 100 * eps(float(gamma)) &&
-              M ≤ line_search.L_est
+              gamma ≥ 100 * eps(float(gamma))
         M *= line_search.tau
         gamma = min(max(dot_dir / (M * ndir2), 0), gamma_max)
         x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
