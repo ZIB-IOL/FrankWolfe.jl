@@ -353,6 +353,7 @@ function perform_line_search(
     x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
     niter = 0
     α = line_search.alpha
+    clipping = false
     while f(x_storage) - f(x) > -gamma * α * dot_dir + α^2 * gamma^2 * ndir2 * M / 2 + eps(float(gamma)) &&
               gamma ≥ 100 * eps(float(gamma))
         M *= line_search.tau
@@ -365,10 +366,13 @@ function perform_line_search(
             if line_search.verbose
                 @warn "Smoothness estimate run away -> hard clipping. Convergence might be not guaranteed."
             end
+            clipping = true
             break
         end
     end
-    line_search.L_est = M
+    if !clipping
+        line_search.L_est = M
+    end
     gamma = min(max(dot_dir / (line_search.L_est * ndir2), 0), gamma_max)
     return gamma
 end
