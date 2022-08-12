@@ -128,7 +128,7 @@ m = length(v_indices)
 
 x00 = FrankWolfe.compute_extreme_point(lmo, zeros(m))
 target_tolerance = 1e-5
-max_iter = 100
+max_iter = 10000
 
 x0 = deepcopy(x00)
 

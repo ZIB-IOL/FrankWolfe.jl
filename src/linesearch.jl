@@ -359,10 +359,15 @@ function perform_line_search(
     # while f(x_storage) - f(x) > threshold / M &&  ! (f(x_storage) - f(x) ≈ 0)
     #
     threshold = - dot_dir^2 / ndir2
-    while 2 * M * (f(x_storage) - f(x)) > threshold &&  ! (f(x_storage) - f(x) ≈ 0)
+    alpha = 0.50
+    adjustment = alpha * (1 - alpha / 2) 
+    # println(adjustment)
+    # while M * (f(x_storage) - f(x)) > threshold / adjustment &&  ! (f(x_storage) - f(x) ≈ 0)
+    while f(x_storage) - f(x) > -gamma * dot_dir * alpha + alpha^2 * gamma^2 * ndir2 * M / 2 &&  ! (f(x_storage) - f(x) ≈ 0)
         # DEBUGGING TESTS
-        println("A M: $M , gamma: $gamma, tau: $(line_search.tau), L_est: $(line_search.L_est)")
-        println("test value: $(f(x_storage) - f(x))  $(-gamma * dot_dir + gamma^2 * ndir2 * M / 2) $(f(x_storage) - f(x) ≈ -gamma * dot_dir + gamma^2 * ndir2 * M / 2)")
+        # println("A M: $M , gamma: $gamma, tau: $(line_search.tau), L_est: $(line_search.L_est)")
+        # println("test value: $(f(x_storage) - f(x))  $(-gamma * dot_dir + gamma^2 * ndir2 * M / 2) $(f(x_storage) - f(x) ≈ -gamma * dot_dir + gamma^2 * ndir2 * M / 2)")
+        # println("difference: $(f(x_storage) - f(x) - (-gamma * dot_dir * alpha + alpha^2 * gamma^2 * ndir2 * M / 2))")
 
         if M <= 1e10 
             M *= line_search.tau
@@ -371,7 +376,7 @@ function perform_line_search(
             x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
             niter += 1
         else
-            # @warn "Smoothness estimate run-away -> hard clipping. You might see negative progess, cycling, or stalling.\nPotentially upgrade accuracy or use alternative line search strategy."
+            @warn "Smoothness estimate run-away -> hard clipping. You might see negative progess, cycling, or stalling.\nPotentially upgrade accuracy or use alternative line search strategy."
             break           
         end
         # println("B M: $M , gamma: $gamma, tau: $(line_search.tau), L_est: $(line_search.L_est)")
