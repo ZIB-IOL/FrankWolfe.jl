@@ -24,7 +24,7 @@ end
         x0,
         max_iteration=6000,
         line_search=FrankWolfe.Adaptive(),
-        verbose=true,
+        verbose=false,
         epsilon=3e-7,
     )
     res_afw = FrankWolfe.away_frank_wolfe(
@@ -49,6 +49,7 @@ end
         line_search=FrankWolfe.Adaptive(),
         verbose=false,
         lazy=true,
+        epsilon=3e-7,
     )
     @test res_bpcg2[3] ≈ res_bpcg[3] atol = 1e-5
     active_set_afw = res_afw[end]
@@ -86,7 +87,7 @@ end
     end
     lmo_prob = FrankWolfe.ProbabilitySimplexOracle(4)
     lmo = FrankWolfe.TrackingLMO(lmo_prob)
-    x0 = FrankWolfe.compute_extreme_point(lmo_prob, randn(10))
+    x0 = FrankWolfe.compute_extreme_point(lmo_prob, ones(10))
     FrankWolfe.blended_pairwise_conditional_gradient(
         f,
         grad!,
@@ -94,9 +95,11 @@ end
         x0,
         max_iteration=6000,
         line_search=FrankWolfe.Adaptive(),
+        epsilon=3e-7,
         verbose=false,
     )
-    @test lmo.counter == 11
+    @test lmo.counter == 51
+    prev_counter = lmo.counter
     lmo.counter = 0
     FrankWolfe.blended_pairwise_conditional_gradient(
         f,
@@ -105,8 +108,9 @@ end
         x0,
         max_iteration=6000,
         line_search=FrankWolfe.Adaptive(),
+        epsilon=3e-7,
         verbose=false,
         recompute_last_vertex=false,
     )
-    @test lmo.counter == 10
+    @test lmo.counter == prev_counter - 1
 end
