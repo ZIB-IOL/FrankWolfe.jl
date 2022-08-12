@@ -24,9 +24,8 @@ end
         x0,
         max_iteration=6000,
         line_search=FrankWolfe.Adaptive(),
-        verbose=true,
+        verbose=false,
         epsilon=3e-7,
-        print_iter=1,
     )
     res_afw = FrankWolfe.away_frank_wolfe(
         f,
@@ -48,9 +47,8 @@ end
         x0,
         max_iteration=6000,
         line_search=FrankWolfe.Adaptive(),
-        verbose=true,
+        verbose=false,
         lazy=true,
-        print_iter=1,
         epsilon=3e-7,
     )
     @test res_bpcg2[3] ≈ res_bpcg[3] atol = 1e-5
