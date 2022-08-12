@@ -358,9 +358,9 @@ function perform_line_search(
     # threshold = - dot_dir^2 / (2 * ndir2)
     # while f(x_storage) - f(x) > threshold / M &&  ! (f(x_storage) - f(x) ≈ 0)
     #
-    threshold = - dot_dir^2 / ndir2
+    # threshold = - dot_dir^2 / ndir2
     alpha = 0.50
-    adjustment = alpha * (1 - alpha / 2) 
+    # adjustment = alpha * (1 - alpha / 2) 
     # println(adjustment)
     # while M * (f(x_storage) - f(x)) > threshold / adjustment &&  ! (f(x_storage) - f(x) ≈ 0)
     while f(x_storage) - f(x) > -gamma * dot_dir * alpha + alpha^2 * gamma^2 * ndir2 * M / 2 &&  ! (f(x_storage) - f(x) ≈ 0)
