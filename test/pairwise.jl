@@ -89,7 +89,7 @@ end
     end
     lmo_prob = FrankWolfe.ProbabilitySimplexOracle(4)
     lmo = FrankWolfe.TrackingLMO(lmo_prob)
-    x0 = FrankWolfe.compute_extreme_point(lmo_prob, randn(10))
+    x0 = FrankWolfe.compute_extreme_point(lmo_prob, ones(10))
     FrankWolfe.blended_pairwise_conditional_gradient(
         f,
         grad!,
@@ -97,9 +97,10 @@ end
         x0,
         max_iteration=6000,
         line_search=FrankWolfe.Adaptive(),
+        epsilon=3e-7,
         verbose=false,
     )
-    @test lmo.counter == 67
+    @test lmo.counter == 65
     prev_counter = lmo.counter
     lmo.counter = 0
     FrankWolfe.blended_pairwise_conditional_gradient(
@@ -109,6 +110,7 @@ end
         x0,
         max_iteration=6000,
         line_search=FrankWolfe.Adaptive(),
+        epsilon=3e-7,
         verbose=false,
         recompute_last_vertex=false,
     )
