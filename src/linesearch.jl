@@ -193,7 +193,7 @@ function perform_line_search(
     # if the minimum is at an endpoint
     if dgx * dgy >= 0
         if f(workspace.y) <= f(x)
-            return one(eltype(d))
+            return gamma_max
         else
             return zero(eltype(d))
         end
@@ -303,11 +303,14 @@ mutable struct Adaptive{T,TT} <: LineSearchMethod
     eta::T
     tau::TT
     L_est::T
+    max_estimate::T
+    alpha::T
+    verbose::Bool
 end
 
-Adaptive(eta::T, tau::TT) where {T,TT} = Adaptive{T,TT}(eta, tau, T(Inf))
+Adaptive(eta::T, tau::TT) where {T,TT} = Adaptive{T,TT}(eta, tau, T(Inf), T(1e10), T(0.5), true)
 
-Adaptive(; eta=0.9, tau=2, L_est=Inf) = Adaptive(eta, tau, L_est)
+Adaptive(; eta=0.9, tau=2, L_est=Inf, max_estimate=1e10, alpha=0.5, verbose=true) = Adaptive(eta, tau, L_est, max_estimate, alpha, verbose)
 
 struct AdaptiveWorkspace{XT,BT}
     x::XT
@@ -349,15 +352,27 @@ function perform_line_search(
     gamma = min(max(dot_dir / (M * ndir2), 0), gamma_max)
     x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
     niter = 0
-    while f(x_storage) - f(x) > -gamma * dot_dir + gamma^2 * ndir2 * M / 2 &&
-              gamma ≥ 100 * eps(float(gamma)) &&
-              M ≤ line_search.L_est
+    α = line_search.alpha
+    clipping = false
+    while f(x_storage) - f(x) > -gamma * α * dot_dir + α^2 * gamma^2 * ndir2 * M / 2 + eps(float(gamma)) &&
+              gamma ≥ 100 * eps(float(gamma))
         M *= line_search.tau
         gamma = min(max(dot_dir / (M * ndir2), 0), gamma_max)
         x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
         niter += 1
+        if M > line_search.max_estimate
+            # if this warning occurs, one might see negative progess, cycling, or stalling.
+            # Potentially upgrade accuracy or use alternative line search strategy
+            if line_search.verbose
+                @warn "Smoothness estimate run away -> hard clipping. Convergence might be not guaranteed."
+            end
+            clipping = true
+            break
+        end
     end
-    line_search.L_est = min(M, line_search.L_est)
+    if !clipping
+        line_search.L_est = M
+    end
     gamma = min(max(dot_dir / (line_search.L_est * ndir2), 0), gamma_max)
     return gamma
 end

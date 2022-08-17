@@ -151,9 +151,10 @@ function blended_pairwise_conditional_gradient(
         gradient = similar(x)
     end
 
-    v = active_set.atoms[1]
+    grad!(gradient, x)
+    v = compute_extreme_point(lmo, gradient)
     # if !lazy, phi is maintained as the global dual gap
-    phi = convert(eltype(x), Inf)
+    phi = max(0, fast_dot(x, gradient) - fast_dot(v, gradient))
     local_gap = zero(phi)
     gamma = one(phi)
 
@@ -190,7 +191,9 @@ function blended_pairwise_conditional_gradient(
         # compute current iterate from active set
         x = get_active_set_iterate(active_set)
         primal = f(x)
-        grad!(gradient, x)
+        if t > 1
+            grad!(gradient, x)
+        end
 
         _, v_local, v_local_loc, _, a_lambda, a, a_loc, _, _ =
             active_set_argminmax(active_set, gradient)
@@ -199,9 +202,11 @@ function blended_pairwise_conditional_gradient(
         dot_away_vertex = fast_dot(gradient, a)
         local_gap = dot_away_vertex - dot_forward_vertex
         if !lazy
-            v = compute_extreme_point(lmo, gradient)
-            dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
-            phi = dual_gap
+            if t > 1
+                v = compute_extreme_point(lmo, gradient)
+                dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
+                phi = dual_gap
+            end
         end
         # minor modification from original paper for improved sparsity
         # (proof follows with minor modification when estimating the step)
@@ -221,6 +226,8 @@ function blended_pairwise_conditional_gradient(
                 linesearch_workspace,
                 memory_mode,
             )
+            gamma = min(gamma_max, gamma)
+            tt = gamma ≈ gamma_max ? drop : pairwise
             if callback !== nothing
                 state = CallbackState(
                     t,
@@ -243,14 +250,12 @@ function blended_pairwise_conditional_gradient(
             end
             # reached maximum of lambda -> dropping away vertex
             if gamma ≈ gamma_max
-                tt = drop
                 active_set.weights[v_local_loc] += gamma
                 deleteat!(active_set, a_loc)
                 if add_dropped_vertices
                     push!(extra_vertex_storage, a)
                 end
             else # transfer weight from away to local FW
-                tt = pairwise
                 active_set.weights[a_loc] -= gamma
                 active_set.weights[v_local_loc] += gamma
                 @assert active_set_validate(active_set)
@@ -274,7 +279,9 @@ function blended_pairwise_conditional_gradient(
                         tt = regular
                     end
                 else
-                    v = compute_extreme_point(lmo, gradient)
+                    if t > 1
+                        v = compute_extreme_point(lmo, gradient)
+                    end
                     tt = regular
                 end
             end
