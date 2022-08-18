@@ -529,10 +529,10 @@ function perform_line_search(
     factor = 0
     while !line_search.domain_oracle(xst) || f(xst) > f0
         factor += 1
-        gamma /= T(2)^(-factor)
+        gamma *= T(2)^(-factor)
         xst = muladd_memory_mode(memory_mode, xst, x, gamma, d)
         if T(2)^(-factor) ≤ 10 * eps(gamma)
-            @error("numerical limit for gamma, invalid direction?")
+            @error("numerical limit for gamma $gamma, invalid direction?")
             break
         end
     end
