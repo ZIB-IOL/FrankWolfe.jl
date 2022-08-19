@@ -6,7 +6,7 @@ using LinearAlgebra
 using Random
 using Test
 
-Random.seed!(42)
+Random.seed!(48)
 
 n = 1000
 
@@ -23,7 +23,7 @@ x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 const b = n * randn(n)
 
 function f(x)
-    1/2 * dot(x, A, x) + dot(b, x) - 0.5 * log(sum(x)) + 290_000
+    1/2 * dot(x, A, x) + dot(b, x) - 0.5 * log(sum(x)) + 278603
 end
 
 function grad!(storage, x)
@@ -65,8 +65,8 @@ x, v, primal, dual_gap, trajectory_restart = FrankWolfe.frank_wolfe(
     trajectory=true,
 );
 
-plot_trajectories([trajectory_simple[1:end], trajectory_restart[1:end]], ["simple", "stateless"], legend_position=:topright)
+plot_trajectories([trajectory_simple[50:end], trajectory_restart[50:end]], ["simple", "stateless"], legend_position=:topright)
 
 # simple step iterations about 33% faster
 
-@test line_search.factor == 2
+@test line_search.factor == 5
