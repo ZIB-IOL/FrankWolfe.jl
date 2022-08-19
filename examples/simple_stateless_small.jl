@@ -21,7 +21,7 @@ x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 const b = n * randn(n)
 
 function f(x)
-    1/2 * dot(x, A, x) + dot(b, x) - 0.5 * log(sum(x)) + 3600
+    1/2 * dot(x, A, x) + dot(b, x) - 0.5 * log(sum(x)) + 4000
 end
 
 function grad!(storage, x)
