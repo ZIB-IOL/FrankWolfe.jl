@@ -301,6 +301,8 @@ function Base.push!(vertex_storage::DeletedVertexStorage{AT}, atom::AT) where {A
     return vertex_storage
 end
 
+Base.length(storage::DeletedVertexStorage) = length(storage.storage)
+
 """
 Give the vertex `v` in the storage that minimizes `s = direction ⋅ v` and whether `s` achieves
 `s ≤ lazy_threshold`.

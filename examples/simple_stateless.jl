@@ -35,7 +35,7 @@ end
 
 gradient=collect(x0)
 
-k = 10_000
+k = 40_000
 
 line_search = FrankWolfe.MonotonicStepSize(x -> sum(x) > 0)
 x, v, primal, dual_gap, trajectory_simple = FrankWolfe.frank_wolfe(
@@ -65,8 +65,21 @@ x, v, primal, dual_gap, trajectory_restart = FrankWolfe.frank_wolfe(
     trajectory=true,
 );
 
-plot_trajectories([trajectory_simple[50:end], trajectory_restart[50:end]], ["simple", "stateless"], legend_position=:topright)
+plot_trajectories([trajectory_simple[1:end], trajectory_restart[1:end]], ["simple", "stateless"], legend_position=:topright)
 
 # simple step iterations about 33% faster
 
-@test line_search.factor == 5
+@test line_search.factor == 44
+
+x, v, primal, dual_gap, trajectory_restart_highpres = FrankWolfe.frank_wolfe(
+    f,
+    grad!,
+    lmo,
+    FrankWolfe.compute_extreme_point(lmo, zeros(BigFloat, n)),
+    max_iteration=10k,
+    line_search=line_search2,
+    print_iter=k / 10,
+    verbose=true,
+    gradient=big.(gradient),
+    trajectory=true,
+);
