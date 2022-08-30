@@ -22,7 +22,7 @@ Returns either vector of zeros or vector with one active value equal to RHS if
 there exists an improving direction.
 """
 function compute_extreme_point(lmo::UnitSimplexOracle{T}, direction; v=nothing, kwargs...) where {T}
-    idx = argmin(direction)
+    idx = argmin_(direction)
     if direction[idx] < 0
         return ScaledHotVector(lmo.right_side, idx, length(direction))
     end
@@ -90,7 +90,10 @@ function compute_extreme_point(
     v=nothing,
     kwargs...,
 ) where {T}
-    idx = argmin(direction)
+    idx = argmin_(direction)
+    if idx === nothing
+        @show direction
+    end
     return ScaledHotVector(lmo.right_side, idx, length(direction))
 end
 
