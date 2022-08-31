@@ -329,3 +329,30 @@ function storage_find_argmin_vertex(vertex_storage::DeletedVertexStorage, direct
     end
     return (found_good, vertex_storage.storage[best_idx])
 end
+
+# temporary fix because argmin is broken on julia 1.8
+argmin_(v) = argmin(v)
+function argmin_(v::SparseArrays.SparseVector{T}) where {T}
+    if isempty(v.nzind)
+        return 1
+    end
+    idx = -1
+    val = T(Inf)
+    for s_idx in eachindex(v.nzind)
+        if v.nzval[s_idx] < val
+            val = v.nzval[s_idx]
+            idx = s_idx
+        end
+    end
+    # if min value is already negative or the indices were all checked
+    if val < 0 || length(v.nzind) == length(v)
+        return v.nzind[idx]
+    end
+    # otherwise, find the first zero
+    for idx in eachindex(v)
+        if idx ∉ v.nzind
+            return idx
+        end
+    end
+    error("unreachable")
+end
