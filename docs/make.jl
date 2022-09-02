@@ -4,6 +4,8 @@ using LinearAlgebra
 
 using Literate, Test
 
+include(joinpath(dirname(pathof(FrankWolfe)), "../examples/plot_utils.jl"))
+
 EXAMPLE_DIR = joinpath(dirname(@__DIR__), "examples")
 DOCS_EXAMPLE_DIR = joinpath(@__DIR__, "src", "examples")
 DOCS_REFERENCE_DIR = joinpath(@__DIR__, "src", "reference")
