@@ -63,21 +63,21 @@ const x0 = FrankWolfe.compute_extreme_point(lmo, spzeros(n, n))
 target_tolerance = 1e-8;
 
 #src the following two lines are used only to precompile the functions
-FrankWolfe.frank_wolfe(
-    f,
-    grad!,
-    lmo,
-    x0,
-    max_iteration=2,
-    line_search=FrankWolfe.MonotonicStepSize(),
+FrankWolfe.frank_wolfe( #src
+    f,  #src
+    grad!,  #src
+    lmo,  #src
+    x0,  #src
+    max_iteration=2,  #src
+    line_search=FrankWolfe.MonotonicStepSize(),  #src
 ) #src
-FrankWolfe.lazified_conditional_gradient(
-    f,
-    grad!,
-    lmo,
-    x0,
-    max_iteration=2,
-    line_search=FrankWolfe.MonotonicStepSize(),
+FrankWolfe.lazified_conditional_gradient( #src
+    f, #src
+    grad!, #src
+    lmo, #src
+    x0, #src
+    max_iteration=2, #src
+    line_search=FrankWolfe.MonotonicStepSize(), #src
 ) #src
 
 # ## Running standard and lazified Frank-Wolfe
