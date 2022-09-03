@@ -12,6 +12,13 @@ function file_list(dir, extension)
     return filter(file -> endswith(file, extension), sort(readdir(dir)))
 end
 
+# includes plot_utils to the example file before running it
+function include_utils(content)
+    return """
+    import FrankWolfe; include(joinpath(dirname(pathof(FrankWolfe)), "../examples/plot_utils.jl")) # hide
+    """ * content
+end
+
 function literate_directory(jl_dir, md_dir)
     for filename in file_list(md_dir, ".md")
         filepath = joinpath(md_dir, filename)
@@ -23,7 +30,8 @@ function literate_directory(jl_dir, md_dir)
         # in a testset to isolate local variables between files.
         if startswith(filename, "docs")
             Literate.markdown(
-                filepath, md_dir; documenter=true, flavor=Literate.DocumenterFlavor()
+                filepath, md_dir;
+                documenter=true, flavor=Literate.DocumenterFlavor(), preprocess=include_utils,
             )
         end
     end
