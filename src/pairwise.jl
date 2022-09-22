@@ -118,6 +118,7 @@ function blended_pairwise_conditional_gradient(
     end
 
     t = 0
+    compute_active_set_iterate!(active_set)
     x = get_active_set_iterate(active_set)
     primal = convert(eltype(x), Inf)
     tt = regular
@@ -265,7 +266,7 @@ function blended_pairwise_conditional_gradient(
             if lazy # otherwise, v computed above already
                 # optionally try to use the storage
                 if use_extra_vertex_storage
-                    lazy_threshold = dot_away_vertex - phi / lazy_tolerance
+                    lazy_threshold = fast_dot(gradient, x) - phi / lazy_tolerance
                     (found_better_vertex, new_forward_vertex) =
                         storage_find_argmin_vertex(extra_vertex_storage, gradient, lazy_threshold)
                     if found_better_vertex
@@ -273,12 +274,13 @@ function blended_pairwise_conditional_gradient(
                             @debug("Found acceptable lazy vertex in storage")
                         end
                         v = new_forward_vertex
-                        tt = lazy
+                        tt = lazylazy
                     else
                         v = compute_extreme_point(lmo, gradient)
                         tt = regular
                     end
                 else
+                    # for t == 1, v is already computed before first iteration
                     if t > 1
                         v = compute_extreme_point(lmo, gradient)
                     end
@@ -287,8 +289,7 @@ function blended_pairwise_conditional_gradient(
             end
             vertex_taken = v
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
-            if (!lazy || dual_gap ≥ phi / lazy_tolerance)
-                tt = regular
+            if !lazy || dual_gap ≥ phi || (tt == lazylazy && dual_gap ≥ phi / lazy_tolerance)
                 d = muladd_memory_mode(memory_mode, d, x, v)
 
                 gamma = perform_line_search(
@@ -340,10 +341,23 @@ function blended_pairwise_conditional_gradient(
                     active_set_update!(active_set, gamma, v, renorm, nothing)
                 end
             else # dual step
-                tt = dualstep
                 # set to computed dual_gap for consistency between the lazy and non-lazy run.
                 # that is ok as we scale with the K = 2.0 default anyways
-                phi = dual_gap
+                # we only update the dual gap if the step was regular (not lazy from discarded set)
+                if tt != lazylazy
+                    phi = dual_gap
+                    begin
+                        @assert tt == regular
+                        v2 = compute_extreme_point(lmo, gradient)
+                        g = dot(gradient, x-v2)
+                        if abs(g - dual_gap) > sqrt(eps())
+                            error("dual gap estimation error $g $dual_gap")
+                        end
+                    end
+                else
+                    @info "useless step"
+                end
+                tt = dualstep
                 if callback !== nothing
                     state = CallbackState(
                         t,
@@ -381,6 +395,7 @@ function blended_pairwise_conditional_gradient(
     # do also cleanup of active_set due to many operations on the same set
 
     if verbose
+        compute_active_set_iterate!(active_set)
         x = get_active_set_iterate(active_set)
         grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
@@ -409,6 +424,7 @@ function blended_pairwise_conditional_gradient(
     end
     active_set_renormalize!(active_set)
     active_set_cleanup!(active_set)
+    compute_active_set_iterate!(active_set)
     x = get_active_set_iterate(active_set)
     grad!(gradient, x)
     # otherwise values are maintained to last iteration
