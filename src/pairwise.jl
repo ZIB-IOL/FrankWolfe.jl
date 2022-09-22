@@ -363,7 +363,7 @@ function blended_pairwise_conditional_gradient(
                     if callback(state, active_set) === false
                         break
                     end
-                end    
+                end
             end
         end
         if (
