@@ -40,19 +40,13 @@ Let's say we want to minimize the Euclidian norm over the probability simplex `�
 julia> using FrankWolfe
 
 julia> f(p) = sum(abs2, p)  # objective function
-f (generic function with 1 method)
 
 julia> grad!(storage, p) = storage .= 2p  # in-place gradient computation
-grad! (generic function with 1 method)
 
-julia> lmo = FrankWolfe.ProbabilitySimplexOracle(1.)  # function d ⟼ argmin ⟨p,d⟩ st. p ∈ Δ
-FrankWolfe.ProbabilitySimplexOracle{Float64}(1.0)
+# # function d ⟼ argmin ⟨p,d⟩ st. p ∈ Δ
+julia> lmo = FrankWolfe.ProbabilitySimplexOracle(1.)
 
 julia> p0 = [1., 0., 0.]
-3-element Vector{Float64}:
- 1.0
- 0.0
- 0.0
 
 julia> p_opt, _ = frank_wolfe(f, grad!, lmo, p0; verbose=true);
 
