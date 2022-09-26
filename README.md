@@ -40,35 +40,27 @@ Let's say we want to minimize the Euclidian norm over the probability simplex `�
 julia> using FrankWolfe
 
 julia> f(p) = sum(abs2, p)  # objective function
-f (generic function with 1 method)
 
 julia> grad!(storage, p) = storage .= 2p  # in-place gradient computation
-grad! (generic function with 1 method)
 
-julia> lmo = FrankWolfe.ProbabilitySimplexOracle(1.)  # function d ⟼ argmin ⟨p,d⟩ st. p ∈ Δ
-FrankWolfe.ProbabilitySimplexOracle{Float64}(1.0)
+# # function d ⟼ argmin ⟨p,d⟩ st. p ∈ Δ
+julia> lmo = FrankWolfe.ProbabilitySimplexOracle(1.)
 
 julia> p0 = [1., 0., 0.]
-3-element Vector{Float64}:
- 1.0
- 0.0
- 0.0
 
 julia> p_opt, _ = frank_wolfe(f, grad!, lmo, p0; verbose=true);
 
 Vanilla Frank-Wolfe Algorithm.
-EMPHASIS: memory STEPSIZE: Adaptive EPSILON: 1.0e-7 MAXITERATION: 10000 TYPE: Float64
+MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: Adaptive EPSILON: 1.0e-7 MAXITERATION: 10000 TYPE: Float64
 MOMENTUM: nothing GRADIENTTYPE: Nothing
-WARNING: In memory emphasis mode iterates are written back into x0!
+[ Info: In memory_mode memory iterates are written back into x0!
 
 -------------------------------------------------------------------------------------------------
   Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec
 -------------------------------------------------------------------------------------------------
-     I             0   1.000000e+00  -1.000000e+00   2.000000e+00   0.000000e+00            NaN
-    FW          1000   3.333333e-01   3.333333e-01   1.098983e-08   1.468400e-01   6.810132e+03
-  Last          1000   3.333333e-01   3.333333e-01   1.098983e-08   1.470088e-01   6.809116e+03
+     I             1   1.000000e+00  -1.000000e+00   2.000000e+00   0.000000e+00            Inf
+  Last            24   3.333333e-01   3.333332e-01   9.488992e-08   1.533181e+00   1.565373e+01
 -------------------------------------------------------------------------------------------------
-
 
 julia> p_opt
 3-element Vector{Float64}:
