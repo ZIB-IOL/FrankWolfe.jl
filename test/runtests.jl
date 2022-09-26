@@ -403,7 +403,6 @@ end
     test_types = (Float16, Float32, Float64, Double64, BigFloat, Rational{BigInt})
 
     @testset "Multi-precision test for $T" for T in test_types
-        println("\nTesting precision for type: ", T)
         lmo = FrankWolfe.ProbabilitySimplexOracle{T}(rhs)
         direction = rand(n)
         x0 = FrankWolfe.compute_extreme_point(lmo, direction)
@@ -444,7 +443,7 @@ end
             lmo,
             x0,
             max_iteration=k,
-            line_search=FrankWolfe.Adaptive(),
+            line_search=FrankWolfe.Adaptive(verbose=false),
             print_iter=k / 10,
             memory_mode=FrankWolfe.InplaceEmphasis(),
             verbose=true,
