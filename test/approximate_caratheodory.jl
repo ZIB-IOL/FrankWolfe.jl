@@ -29,7 +29,6 @@ using LinearAlgebra
         memory_mode=FrankWolfe.OutplaceEmphasis(),
         trajectory=true
     )
-    print(res1[5][end][1])
     x_true = [0.0003882741215298000420906058020008131649408310609791293789170887356180438746488335,
     0.01980198019801980174204644541789292442808870460109720167417109952972281608614392,
     0.0005824111822947000954662239221379876968608268608067998030881882653408599607928077,
@@ -146,7 +145,6 @@ using LinearAlgebra
         memory_mode=FrankWolfe.OutplaceEmphasis(),
         trajectory=true
     )
-    print(res2[5][end][1])
     x_true = [0.01,
     0.01,
     0.01,
@@ -399,7 +397,6 @@ end
         verbose=false,
         trajectory=true
     )
-    print(res3[5][end][1])
     @test norm(res3[1] - x_true) ≈ 0 atol = 1e-6
     @test res3[3] ≈ primal_true
 end
