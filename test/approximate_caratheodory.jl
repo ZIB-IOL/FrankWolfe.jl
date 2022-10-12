@@ -132,6 +132,7 @@ using LinearAlgebra
     primal_true = 0.01314422099649411305714214236596045839642713180124049726321024688069930261252318
     @test norm(res1[1] - x_true) ≈ 0 atol = 1e-6
     @test res1[3] ≈ primal_true
+    @test res1[5][end][1] == 101
 
     res2 = FrankWolfe.frank_wolfe(
         f,
@@ -249,6 +250,7 @@ using LinearAlgebra
     primal_true = 0.01
     @test norm(res2[1] - x_true) ≈ 0 atol = 1e-6
     @test res2[3] ≈ primal_true
+    @test res2[5][end][1] == 100
 
 end
 
@@ -399,4 +401,5 @@ end
     )
     @test norm(res3[1] - x_true) ≈ 0 atol = 1e-6
     @test res3[3] ≈ primal_true
+    @test res3[5][end][1] == 100001
 end
