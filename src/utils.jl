@@ -45,7 +45,7 @@ end
 # critical components
 ##############################################################
 
-function benchmark_oracles(f, grad!, x_gen, lmo; k=100, nocache=true)
+function benchmark_oracles(f, grad_iip!, x_gen, lmo; k=100, nocache=true)
     x = x_gen()
     sv = sizeof(x) / 1024^2
     println("\nSize of single atom ($(eltype(x))): $sv MB\n")
@@ -57,7 +57,7 @@ function benchmark_oracles(f, grad!, x_gen, lmo; k=100, nocache=true)
     @showprogress 1 "Testing grad... " for i in 1:k
         x = x_gen()
         temp = similar(x)
-        @timeit to "grad" grad!(temp, x)
+        @timeit to "grad" grad_iip!(temp, x)
     end
     @showprogress 1 "Testing lmo... " for i in 1:k
         x = x_gen()
@@ -66,7 +66,7 @@ function benchmark_oracles(f, grad!, x_gen, lmo; k=100, nocache=true)
     @showprogress 1 "Testing dual gap... " for i in 1:k
         x = x_gen()
         gradient = similar(x)
-        grad!(gradient, x)
+        grad_iip!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
         @timeit to "dual gap" begin
             dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
@@ -75,7 +75,7 @@ function benchmark_oracles(f, grad!, x_gen, lmo; k=100, nocache=true)
     @showprogress 1 "Testing update... (Emphasis: OutplaceEmphasis) " for i in 1:k
         x = x_gen()
         gradient = similar(x)
-        grad!(gradient, x)
+        grad_iip!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
         gamma = 1 / 2
         @timeit to "update (OutplaceEmphasis)" @memory_mode(
@@ -86,7 +86,7 @@ function benchmark_oracles(f, grad!, x_gen, lmo; k=100, nocache=true)
     @showprogress 1 "Testing update... (memory_mode: InplaceEmphasis) " for i in 1:k
         x = x_gen()
         gradient = similar(x)
-        grad!(gradient, x)
+        grad_iip!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
         gamma = 1 / 2
         # TODO: to be updated to broadcast version once data structure ScaledHotVector allows for it
@@ -101,7 +101,7 @@ function benchmark_oracles(f, grad!, x_gen, lmo; k=100, nocache=true)
                 cache = [gen_x() for _ in 1:100]
                 x = gen_x()
                 gradient = similar(x)
-                grad!(gradient, x)
+                grad_iip!(gradient, x)
                 v = compute_extreme_point(lmo, gradient)
                 gamma = 1 / 2
                 test = (x -> fast_dot(x, gradient)).(cache)

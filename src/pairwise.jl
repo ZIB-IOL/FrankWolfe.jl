@@ -1,6 +1,6 @@
 
 """
-    blended_pairwise_conditional_gradient(f, grad!, lmo, x0; kwargs...)
+    blended_pairwise_conditional_gradient(f, grad_iip!, lmo, x0; kwargs...)
 
 Implements the BPCG algorithm from [Tsuji, Tanaka, Pokutta](https://arxiv.org/abs/2110.12650).
 The method uses an active set of current vertices.
@@ -8,7 +8,7 @@ Unlike away-step, it transfers weight from an away vertex to another vertex of t
 """
 function blended_pairwise_conditional_gradient(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0;
     line_search::LineSearchMethod=Adaptive(),
@@ -36,7 +36,7 @@ function blended_pairwise_conditional_gradient(
 
     return blended_pairwise_conditional_gradient(
         f,
-        grad!,
+        grad_iip!,
         lmo,
         active_set,
         line_search=line_search,
@@ -62,13 +62,13 @@ function blended_pairwise_conditional_gradient(
 end
 
 """
-    blended_pairwise_conditional_gradient(f, grad!, lmo, active_set::ActiveSet; kwargs...)
+    blended_pairwise_conditional_gradient(f, grad_iip!, lmo, active_set::ActiveSet; kwargs...)
 
 Warm-starts BPCG with a pre-defined `active_set`.
 """
 function blended_pairwise_conditional_gradient(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     active_set::ActiveSet;
     line_search::LineSearchMethod=Adaptive(),
@@ -152,7 +152,7 @@ function blended_pairwise_conditional_gradient(
         gradient = similar(x)
     end
 
-    grad!(gradient, x)
+    grad_iip!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     # if !lazy, phi is maintained as the global dual gap
     phi = max(0, fast_dot(x, gradient) - fast_dot(v, gradient))
@@ -193,7 +193,7 @@ function blended_pairwise_conditional_gradient(
         x = get_active_set_iterate(active_set)
         primal = f(x)
         if t > 1
-            grad!(gradient, x)
+            grad_iip!(gradient, x)
         end
 
         _, v_local, v_local_loc, _, a_lambda, a, a_loc, _, _ =
@@ -219,7 +219,7 @@ function blended_pairwise_conditional_gradient(
                 line_search,
                 t,
                 f,
-                grad!,
+                grad_iip!,
                 gradient,
                 x,
                 d,
@@ -240,7 +240,7 @@ function blended_pairwise_conditional_gradient(
                     vertex_taken,
                     gamma,
                     f,
-                    grad!,
+                    grad_iip!,
                     lmo,
                     gradient,
                     tt,
@@ -296,7 +296,7 @@ function blended_pairwise_conditional_gradient(
                     line_search,
                     t,
                     f,
-                    grad!,
+                    grad_iip!,
                     gradient,
                     x,
                     d,
@@ -316,7 +316,7 @@ function blended_pairwise_conditional_gradient(
                         vertex_taken,
                         gamma,
                         f,
-                        grad!,
+                        grad_iip!,
                         lmo,
                         gradient,
                         tt,
@@ -369,7 +369,7 @@ function blended_pairwise_conditional_gradient(
                         vertex_taken,
                         gamma,
                         f,
-                        grad!,
+                        grad_iip!,
                         lmo,
                         gradient,
                         tt,
@@ -397,7 +397,7 @@ function blended_pairwise_conditional_gradient(
     if verbose
         compute_active_set_iterate!(active_set)
         x = get_active_set_iterate(active_set)
-        grad!(gradient, x)
+        grad_iip!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
         phi = fast_dot(x, gradient) - fast_dot(v, gradient)
@@ -414,7 +414,7 @@ function blended_pairwise_conditional_gradient(
                 v,
                 gamma,
                 f,
-                grad!,
+                grad_iip!,
                 lmo,
                 gradient,
                 tt,
@@ -426,7 +426,7 @@ function blended_pairwise_conditional_gradient(
     active_set_cleanup!(active_set)
     compute_active_set_iterate!(active_set)
     x = get_active_set_iterate(active_set)
-    grad!(gradient, x)
+    grad_iip!(gradient, x)
     # otherwise values are maintained to last iteration
     if recompute_last_vertex
         v = compute_extreme_point(lmo, gradient)
@@ -446,7 +446,7 @@ function blended_pairwise_conditional_gradient(
             v,
             gamma,
             f,
-            grad!,
+            grad_iip!,
             lmo,
             gradient,
             tt,

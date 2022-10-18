@@ -44,13 +44,21 @@ function f(X)
     return r / length(entry_values)
 end
 
-function grad!(storage, X)
+function grad_iip!(storage, X)
     storage .= 0
     for (idx, (i, j)) in enumerate(entry_indices)
         storage[i, j] += (X[i, j] - entry_values[idx])
         storage[j, i] += (X[j, i] - entry_values[idx])
     end
     return storage ./= length(entry_values)
+end
+function grad_oop(storage, X)
+    r = zeros(length(storage))
+    for (idx, (i, j)) in enumerate(entry_indices)
+        r[i, j] += (X[i, j] - entry_values[idx])
+        r[j, i] += (X[j, i] - entry_values[idx])
+    end
+    return r ./= length(entry_values)
 end
 
 # Note that the `ensure_symmetry = false` argument to `SpectraplexLMO`.
@@ -65,7 +73,7 @@ target_tolerance = 1e-8;
 #src the following two lines are used only to precompile the functions
 FrankWolfe.frank_wolfe( #src
     f,  #src
-    grad!,  #src
+    grad_iip!,  #src
     lmo,  #src
     x0,  #src
     max_iteration=2,  #src
@@ -73,7 +81,7 @@ FrankWolfe.frank_wolfe( #src
 ) #src
 FrankWolfe.lazified_conditional_gradient( #src
     f, #src
-    grad!, #src
+    grad_iip!, #src
     lmo, #src
     x0, #src
     max_iteration=2, #src
@@ -84,7 +92,7 @@ FrankWolfe.lazified_conditional_gradient( #src
 
 Xfinal, Vfinal, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,
@@ -98,7 +106,7 @@ Xfinal, Vfinal, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
 
 Xfinal, Vfinal, primal, dual_gap, trajectory_lazy = FrankWolfe.lazified_conditional_gradient(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,

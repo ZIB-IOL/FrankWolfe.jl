@@ -9,7 +9,7 @@ See the [paper](https://arxiv.org/abs/2104.06675) for illustrations of away step
 """
 function away_frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0;
     line_search::LineSearchMethod=Adaptive(),
@@ -37,7 +37,7 @@ function away_frank_wolfe(
     # Call the method using an ActiveSet as input
     return away_frank_wolfe(
         f,
-        grad!,
+        grad_iip!,
         lmo,
         active_set,
         line_search=line_search,
@@ -65,7 +65,7 @@ end
 # note: in this case I don't need x0 as it is given by the active set and might otherwise lead to confusion
 function away_frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     active_set::ActiveSet;
     line_search::LineSearchMethod=Adaptive(),
@@ -187,9 +187,9 @@ function away_frank_wolfe(
         # compute current iterate from active set
         x = get_active_set_iterate(active_set)
         if isnothing(momentum)
-            grad!(gradient, x)
+            grad_iip!(gradient, x)
         else
-            grad!(gtemp, x)
+            grad_iip!(gtemp, x)
             @memory_mode(memory_mode, gradient = (momentum * gradient) + (1 - momentum) * gtemp)
         end
 
@@ -219,7 +219,7 @@ function away_frank_wolfe(
                 line_search,
                 t,
                 f,
-                grad!,
+                grad_iip!,
                 gradient,
                 x,
                 d,
@@ -239,7 +239,7 @@ function away_frank_wolfe(
                     vertex,
                     gamma,
                     f,
-                    grad!,
+                    grad_iip!,
                     lmo,
                     gradient,
                     tt,
@@ -273,7 +273,7 @@ function away_frank_wolfe(
     # do also cleanup of active_set due to many operations on the same set
 
     x = get_active_set_iterate(active_set)
-    grad!(gradient, x)
+    grad_iip!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
@@ -290,7 +290,7 @@ function away_frank_wolfe(
             v,
             gamma,
             f,
-            grad!,
+            grad_iip!,
             lmo,
             gradient,
             tt,
@@ -301,7 +301,7 @@ function away_frank_wolfe(
     active_set_renormalize!(active_set)
     active_set_cleanup!(active_set)
     x = get_active_set_iterate(active_set)
-    grad!(gradient, x)
+    grad_iip!(gradient, x)
     if recompute_last_vertex
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
@@ -320,7 +320,7 @@ function away_frank_wolfe(
             v,
             gamma,
             f,
-            grad!,
+            grad_iip!,
             lmo,
             gradient,
             tt,

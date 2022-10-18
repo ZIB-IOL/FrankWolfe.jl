@@ -27,8 +27,12 @@ y = [3.2, 0.5]
 function f(x)
     return 1 / 2 * norm(x - y)^2
 end
-function grad!(storage, x)
+function grad_iip!(storage, x)
     @. storage = x - y
+    return storage
+end
+function grad_oop(storage, x)
+    return x - y
 end
 
 # ## Custom callback
@@ -84,7 +88,7 @@ x0 = FrankWolfe.compute_extreme_point(lmo_moi, zeros(n))
 
 xfinal, vfinal, primal_value, dual_gap, traj_data = FrankWolfe.frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo_moi,
     copy(x0),
     line_search=FrankWolfe.Adaptive(),

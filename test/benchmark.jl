@@ -10,8 +10,12 @@ const xp = xpi ./ total;
 
 const f(x) = norm(x - xp)^2
 
-function grad!(storage, x)
+function grad_iip!(storage, x)
     @. storage = 2 * (x - xp)
+    return storage
+end
+function grad_oop(storage, x)
+    return 2 * (x - xp)
 end
 
 
@@ -26,7 +30,7 @@ end
 lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1);
 x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n));
 
-FrankWolfe.benchmarkOracles(f, grad!, lmo_prob, n; k=100, T=Float64)
+FrankWolfe.benchmarkOracles(f, grad_iip!, lmo_prob, n; k=100, T=Float64)
 
 FrankWolfe.benchmarkOracles(
     x -> cf(x, xp),

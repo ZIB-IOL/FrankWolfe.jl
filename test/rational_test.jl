@@ -7,8 +7,12 @@ n = Int(1e3)
 k = n
 
 f(x) = dot(x, x)
-function grad!(storage, x)
+function grad_iip!(storage, x)
     @. storage = 2 * x
+    return storage
+end
+function grad_oop(storage, x)
+    return 2 * x
 end
 
 # pick feasible region
@@ -19,7 +23,7 @@ x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
 x, v, primal, dual_gap0, trajectory = FrankWolfe.frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,
@@ -31,7 +35,7 @@ x, v, primal, dual_gap0, trajectory = FrankWolfe.frank_wolfe(
 
 xmem, vmem, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     copy(x0),
     max_iteration=k,
@@ -43,7 +47,7 @@ xmem, vmem, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
 
 xstep, _ = FrankWolfe.frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,

@@ -24,8 +24,11 @@ matrix = rand(n, n)
 hessian = transpose(matrix) * matrix
 linear = rand(n)
 f(x) = dot(linear, x) + 0.5 * transpose(x) * hessian * x
-function grad!(storage, x)
+function grad_iip!(storage, x)
     return storage .= linear + hessian * x
+end
+function grad_oop(storage, x)
+    return linear + hessian * x
 end
 L = eigmax(hessian)
 
@@ -38,7 +41,7 @@ target_tolerance = 1e-5
 x0 = deepcopy(x00)
 x, v, primal, dual_gap, trajectoryBCG_accel_simplex = FrankWolfe.blended_conditional_gradient(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     epsilon=target_tolerance,
@@ -57,7 +60,7 @@ x, v, primal, dual_gap, trajectoryBCG_accel_simplex = FrankWolfe.blended_conditi
 x0 = deepcopy(x00)
 x, v, primal, dual_gap, trajectoryBCG_simplex = FrankWolfe.blended_conditional_gradient(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     epsilon=target_tolerance,
@@ -76,7 +79,7 @@ x, v, primal, dual_gap, trajectoryBCG_simplex = FrankWolfe.blended_conditional_g
 x0 = deepcopy(x00)
 x, v, primal, dual_gap, trajectoryBCG_convex = FrankWolfe.blended_conditional_gradient(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     epsilon=target_tolerance,
@@ -100,8 +103,11 @@ matrix = rand(n, n)
 hessian = transpose(matrix) * matrix
 linear = rand(n)
 f(x) = dot(linear, x) + 0.5 * transpose(x) * hessian * x + 10
-function grad!(storage, x)
+function grad_iip!(storage, x)
     return storage .= linear + hessian * x
+end
+function grad_oop(storage, x)
+    return linear + hessian * x
 end
 L = eigmax(hessian)
 
@@ -112,7 +118,7 @@ x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
 x0 = deepcopy(x00)
 x, v, primal, dual_gap, trajectoryBCG_accel_simplex = FrankWolfe.blended_conditional_gradient(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     epsilon=target_tolerance,
@@ -131,7 +137,7 @@ x, v, primal, dual_gap, trajectoryBCG_accel_simplex = FrankWolfe.blended_conditi
 x0 = deepcopy(x00)
 x, v, primal, dual_gap, trajectoryBCG_simplex = FrankWolfe.blended_conditional_gradient(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     epsilon=target_tolerance,
@@ -150,7 +156,7 @@ x, v, primal, dual_gap, trajectoryBCG_simplex = FrankWolfe.blended_conditional_g
 x0 = deepcopy(x00)
 x, v, primal, dual_gap, trajectoryBCG_convex = FrankWolfe.blended_conditional_gradient(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     epsilon=target_tolerance,
@@ -167,7 +173,7 @@ x, v, primal, dual_gap, trajectoryBCG_convex = FrankWolfe.blended_conditional_gr
 x0 = deepcopy(x00)
 x, v, primal, dual_gap, trajectoryBPCG = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     epsilon=target_tolerance,

@@ -21,8 +21,11 @@ using LinearAlgebra
 const n = 100
 const center0 = 5.0 .+ 3 * rand(n)
 f(x) = 0.5 * norm(x .- center0)^2
-function grad!(storage, x)
+function grad_iip!(storage, x)
     return storage .= x .- center0
+end
+function grad_oop(storage, x)
+    return x .- center0
 end
 
 # The `TrackingLMO` will let us count how many real calls to the LMO are performed
@@ -46,7 +49,7 @@ tlmo.counter = 0
 
 results = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
-    grad!,
+    grad_iip!,
     tlmo,
     x0,
     max_iteration=4000,

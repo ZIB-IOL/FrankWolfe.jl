@@ -53,7 +53,7 @@ struct CallbackState{TP,TDV,TDG,XT,VT,TG,FT,GFT,LMO,GT}
     v::VT
     gamma::TG
     f::FT
-    grad!::GFT
+    grad_iip!::GFT
     lmo::LMO
     gradient::GT
     tt::FrankWolfe.StepType

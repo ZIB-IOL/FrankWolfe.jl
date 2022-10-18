@@ -12,8 +12,12 @@ n = Int(1e2);
 k = n
 
 f(x) = dot(x, x)
-function grad!(storage, x)
+function grad_iip!(storage, x)
     @. storage = 2 * x
+    return storage
+end
+function grad_oop(storage, x)
+    return 2 * x
 end
 
 # pick feasible region
@@ -24,14 +28,14 @@ x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
 
 # benchmarking Oracles
-FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo; k=100)
+FrankWolfe.benchmark_oracles(f, grad_iip!, () -> rand(n), lmo; k=100)
 
 # the algorithm runs in rational arithmetic even if the gradients and the function itself are not rational
 # this is because we replace the descent direction by the directions of the LMO are rational
 
 @time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,
@@ -48,7 +52,7 @@ println("\nOutput type of solution: ", eltype(x))
 
 @time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,
@@ -82,8 +86,12 @@ total = sum(xpi)
 xp = xpi .// total
 
 f(x) = norm(x - xp)^2
-function grad!(storage, x)
+function grad_iip!(storage, x)
     @. storage = 2 * (x - xp)
+    return storage
+end
+function grad_oop(storage, x)
+    return 2 * (x - xp)
 end
 
 lmo = FrankWolfe.ProbabilitySimplexOracle{Rational{BigInt}}(rhs)
@@ -92,7 +100,7 @@ x0 = FrankWolfe.compute_extreme_point(lmo, direction)
 
 @time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,

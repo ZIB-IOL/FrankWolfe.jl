@@ -26,11 +26,20 @@ function f(x)
     1/2 * dot(x, A, x) + dot(b, x) - 0.5 * log(sum(x)) + 278603
 end
 
-function grad!(storage, x)
+function grad_iip!(storage, x)
     mul!(storage, A, x)
     storage .+= b
     s = sum(x)
     storage .-= 0.5 * inv(s)
+    return storage
+end
+function grad_oop(storage, x)
+    r = zeros(length(storage))
+    mul!(r, A, x)
+    r .+= b
+    s = sum(x)
+    r .-= 0.5 * inv(s)
+    return r
 end
 
 gradient=collect(x0)
@@ -40,7 +49,7 @@ k = 40_000
 line_search = FrankWolfe.MonotonicStepSize(x -> sum(x) > 0)
 x, v, primal, dual_gap, trajectory_simple = FrankWolfe.frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     FrankWolfe.compute_extreme_point(lmo, zeros(n)),
     max_iteration=k,
@@ -54,7 +63,7 @@ x, v, primal, dual_gap, trajectory_simple = FrankWolfe.frank_wolfe(
 line_search2 = FrankWolfe.MonotonicGenericStepsize(FrankWolfe.Agnostic(), x -> sum(x) > 0)
 x, v, primal, dual_gap, trajectory_restart = FrankWolfe.frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     FrankWolfe.compute_extreme_point(lmo, zeros(n)),
     max_iteration=k,
@@ -73,7 +82,7 @@ plot_trajectories([trajectory_simple[1:end], trajectory_restart[1:end]], ["simpl
 
 x, v, primal, dual_gap, trajectory_restart_highpres = FrankWolfe.frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     FrankWolfe.compute_extreme_point(lmo, zeros(BigFloat, n)),
     max_iteration=10k,

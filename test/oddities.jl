@@ -4,8 +4,11 @@ using Test
 
 @testset "Testing adaptive LS when already optimal and gradient is 0" begin
     f(x) = norm(x)^2
-    function grad!(storage, x)
+    function grad_iip!(storage, x)
         return storage .= 2x
+    end
+    function grad_oop(storage, x)
+        return 2x
     end
     lmo = FrankWolfe.UnitSimplexOracle(1.0)
     x00 = FrankWolfe.compute_extreme_point(lmo, ones(5))
@@ -14,7 +17,7 @@ using Test
     @test abs(
         FrankWolfe.away_frank_wolfe(
             f,
-            grad!,
+            grad_iip!,
             lmo,
             x0,
             max_iteration=1000,
@@ -27,7 +30,7 @@ using Test
     @test abs(
         FrankWolfe.away_frank_wolfe(
             f,
-            grad!,
+            grad_iip!,
             lmo,
             x0,
             max_iteration=1000,
@@ -41,7 +44,7 @@ using Test
     @test abs(
         FrankWolfe.away_frank_wolfe(
             f,
-            grad!,
+            grad_iip!,
             lmo,
             x0,
             max_iteration=1000,
@@ -55,7 +58,7 @@ using Test
     @test abs(
         FrankWolfe.blended_conditional_gradient(
             f,
-            grad!,
+            grad_iip!,
             lmo,
             x0,
             max_iteration=1000,

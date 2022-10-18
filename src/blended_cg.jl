@@ -1,6 +1,6 @@
 
 """
-    blended_conditional_gradient(f, grad!, lmo, x0)
+    blended_conditional_gradient(f, grad_iip!, lmo, x0)
 
 Entry point for the Blended Conditional Gradient algorithm.
 See Braun, Gábor, et al. "Blended conditonal gradients" ICML 2019.
@@ -11,7 +11,7 @@ by calling the linear oracle in a lazy fashion.
 """
 function blended_conditional_gradient(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0;
     line_search::LineSearchMethod=Adaptive(),
@@ -73,7 +73,7 @@ function blended_conditional_gradient(
         gradient = similar(x0)
     end
     primal = f(x)
-    grad!(gradient, x)
+    grad_iip!(gradient, x)
     # initial gap estimate computation
     vmax = compute_extreme_point(lmo, gradient)
     phi = fast_dot(gradient, x0 - vmax) / 2
@@ -150,7 +150,7 @@ function blended_conditional_gradient(
         #Mininize over the convex hull until strong Wolfe gap is below a given tolerance.
         num_simplex_descent_steps = minimize_over_convex_hull!(
             f,
-            grad!,
+            grad_iip!,
             gradient,
             active_set::ActiveSet,
             phi,
@@ -173,7 +173,7 @@ function blended_conditional_gradient(
         #Take a FW step.
         x = get_active_set_iterate(active_set)
         primal = f(x)
-        grad!(gradient, x)
+        grad_iip!(gradient, x)
         # compute new atom
         (v, value) = lp_separation_oracle(
             lmo,
@@ -202,7 +202,7 @@ function blended_conditional_gradient(
                     v,
                     gamma,
                     f,
-                    grad!,
+                    grad_iip!,
                     lmo,
                     gradient,
                     tt,
@@ -217,7 +217,7 @@ function blended_conditional_gradient(
                 line_search,
                 t,
                 f,
-                grad!,
+                grad_iip!,
                 gradient,
                 x,
                 x - v,
@@ -237,7 +237,7 @@ function blended_conditional_gradient(
                     v,
                     gamma,
                     f,
-                    grad!,
+                    grad_iip!,
                     lmo,
                     gradient,
                     tt,
@@ -264,7 +264,7 @@ function blended_conditional_gradient(
     # report last iteration
     if callback !== nothing
         x = get_active_set_iterate(active_set)
-        grad!(gradient, x)
+        grad_iip!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
         dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
@@ -280,7 +280,7 @@ function blended_conditional_gradient(
             v,
             gamma,
             f,
-            grad!,
+            grad_iip!,
             lmo,
             gradient,
             tt,
@@ -292,7 +292,7 @@ function blended_conditional_gradient(
     active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
     active_set_renormalize!(active_set)
     x = get_active_set_iterate(active_set)
-    grad!(gradient, x)
+    grad_iip!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
     #dual_gap = 2phi
@@ -312,7 +312,7 @@ function blended_conditional_gradient(
             v,
             gamma,
             f,
-            grad!,
+            grad_iip!,
             lmo,
             gradient,
             tt,
@@ -326,7 +326,7 @@ end
 """
     minimize_over_convex_hull!
 
-Given a function f with gradient grad! and an active set
+Given a function f with gradient grad_iip! and an active set
 active_set this function will minimize the function over
 the convex hull of the active set until the strong-wolfe
 gap over the active set is below tolerance.
@@ -339,7 +339,7 @@ accelerated gradient descent.
 """
 function minimize_over_convex_hull!(
     f,
-    grad!,
+    grad_iip!,
     gradient,
     active_set::ActiveSet,
     tolerance,
@@ -363,7 +363,7 @@ function minimize_over_convex_hull!(
     if hessian === nothing
         number_of_steps = simplex_gradient_descent_over_convex_hull(
             f,
-            grad!,
+            grad_iip!,
             gradient,
             active_set::ActiveSet,
             tolerance,
@@ -383,7 +383,7 @@ function minimize_over_convex_hull!(
         )
     else
         x = get_active_set_iterate(active_set)
-        grad!(gradient, x)
+        grad_iip!(gradient, x)
         #Rewrite as problem over the simplex
         M, b = build_reduced_problem(
             active_set.atoms,
@@ -404,8 +404,11 @@ function minimize_over_convex_hull!(
             0.5 * transpose(x) * hessian * x +
             fast_dot(b, y) +
             0.5 * dot(y, M, y)
-        function reduced_grad!(storage, x)
+        function reduced_grad_iip!(storage, x)
             return storage .= b + M * x
+        end
+        function reduced_grad_oop(storage, x)
+            return b + M * x
         end
         #Solve using Nesterov's AGD
         if accelerated
@@ -415,7 +418,7 @@ function minimize_over_convex_hull!(
                     accelerated_simplex_gradient_descent_over_probability_simplex(
                         active_set.weights,
                         reduced_f,
-                        reduced_grad!,
+                        reduced_grad_iip!,
                         tolerance,
                         t,
                         time_start,
@@ -438,7 +441,7 @@ function minimize_over_convex_hull!(
             new_weights, number_of_steps = simplex_gradient_descent_over_probability_simplex(
                 active_set.weights,
                 reduced_f,
-                reduced_grad!,
+                reduced_grad_iip!,
                 tolerance,
                 t,
                 time_start,
@@ -583,7 +586,7 @@ accelerated gradient descent.
 function accelerated_simplex_gradient_descent_over_probability_simplex(
     initial_point,
     reduced_f,
-    reduced_grad!,
+    reduced_grad_iip!,
     tolerance,
     t,
     time_start,
@@ -605,8 +608,8 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
     gradient_x = similar(x)
     gradient_y = similar(x)
     d = similar(x)
-    reduced_grad!(gradient_x, x)
-    reduced_grad!(gradient_y, x)
+    reduced_grad_iip!(gradient_x, x)
+    reduced_grad_iip!(gradient_y, x)
     strong_wolfe_gap = strong_frankwolfe_gap_probability_simplex(gradient_x, x)
     q = mu / L
     # If the problem is close to convex, simply use the accelerated algorithm for convex objective functions.
@@ -618,7 +621,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
     end
     while strong_wolfe_gap > tolerance && t + number_of_steps <= max_iteration
         @. x_old = x
-        reduced_grad!(gradient_y, y)
+        reduced_grad_iip!(gradient_y, y)
         x = projection_simplex_sort(y .- gradient_y / L)
         if mu < 1.0e-3
             alpha_old = alpha
@@ -630,7 +633,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
         y = muladd_memory_mode(memory_mode, y, x, -gamma, diff)
         number_of_steps += 1
         primal = reduced_f(x)
-        reduced_grad!(gradient_x, x)
+        reduced_grad_iip!(gradient_x, x)
         strong_wolfe_gap = strong_frankwolfe_gap_probability_simplex(gradient_x, x)
         tt = simplex_descent
         if callback !== nothing
@@ -644,7 +647,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
                 y,
                 gamma,
                 reduced_f,
-                reduced_grad!,
+                reduced_grad_iip!,
                 nothing,
                 gradient_x,
                 tt,
@@ -676,7 +679,7 @@ until the Strong-Wolfe gap is below tolerance using gradient descent.
 function simplex_gradient_descent_over_probability_simplex(
     initial_point,
     reduced_f,
-    reduced_grad!,
+    reduced_grad_iip!,
     tolerance,
     t,
     time_start,
@@ -693,13 +696,13 @@ function simplex_gradient_descent_over_probability_simplex(
     x = deepcopy(initial_point)
     gradient = similar(x)
     d = similar(x)
-    reduced_grad!(gradient, x)
+    reduced_grad_iip!(gradient, x)
     strong_wolfe_gap = strong_frankwolfe_gap_probability_simplex(gradient, x)
     while strong_wolfe_gap > tolerance && t + number_of_steps <= max_iteration
         x = projection_simplex_sort(x .- gradient / L)
         number_of_steps = number_of_steps + 1
         primal = reduced_f(x)
-        reduced_grad!(gradient, x)
+        reduced_grad_iip!(gradient, x)
         strong_wolfe_gap = strong_frankwolfe_gap_probability_simplex(gradient, x)
         tot_time = (time_ns() - time_start) / 1e9
         tt = simplex_descent
@@ -714,7 +717,7 @@ function simplex_gradient_descent_over_probability_simplex(
                 nothing,
                 inv(L),
                 reduced_f,
-                reduced_grad!,
+                reduced_grad_iip!,
                 nothing,
                 gradient,
                 tt,
@@ -784,7 +787,7 @@ end
 
 
 """
-    simplex_gradient_descent_over_convex_hull(f, grad!, gradient, active_set, tolerance, t, time_start, non_simplex_iter)
+    simplex_gradient_descent_over_convex_hull(f, grad_iip!, gradient, active_set, tolerance, t, time_start, non_simplex_iter)
 
 Minimizes an objective function over the convex hull of the active set
 until the Strong-Wolfe gap is below tolerance using simplex gradient
@@ -792,7 +795,7 @@ descent.
 """
 function simplex_gradient_descent_over_convex_hull(
     f,
-    grad!,
+    grad_iip!,
     gradient,
     active_set::ActiveSet,
     tolerance,
@@ -821,7 +824,7 @@ function simplex_gradient_descent_over_convex_hull(
         line_search_inner.L_est = Inf
     end
     while t + number_of_steps ≤ max_iteration
-        grad!(gradient, x)
+        grad_iip!(gradient, x)
         #Check if strong Wolfe gap over the convex hull is small enough.
         c = [fast_dot(gradient, a) for a in active_set.atoms]
         if maximum(c) - minimum(c) <= tolerance || t + number_of_steps ≥ max_iteration
@@ -884,7 +887,7 @@ function simplex_gradient_descent_over_convex_hull(
                     line_search_inner,
                     t,
                     f,
-                    grad!,
+                    grad_iip!,
                     gradient,
                     x,
                     x - y,
@@ -900,7 +903,7 @@ function simplex_gradient_descent_over_convex_hull(
                         line_search_inner,
                         t,
                         f,
-                        grad!,
+                        grad_iip!,
                         gradient,
                         x,
                         x - y,
@@ -915,7 +918,7 @@ function simplex_gradient_descent_over_convex_hull(
                     line_search_inner,
                     t,
                     f,
-                    grad!,
+                    grad_iip!,
                     gradient,
                     x,
                     x - y,
@@ -949,7 +952,7 @@ function simplex_gradient_descent_over_convex_hull(
                 y,
                 η * (1 - gamma),
                 f,
-                grad!,
+                grad_iip!,
                 nothing,
                 gradient,
                 tt,

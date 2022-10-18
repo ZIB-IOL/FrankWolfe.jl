@@ -39,36 +39,36 @@ compute_value_gradient(f::ObjectiveFunction, x; kwargs...) =
     SimpleFunctionObjective{F,G,S}
 
 An objective function built from separate primal objective `f(x)` and
-in-place gradient function `grad!(storage, x)`.
+in-place gradient function `grad_iip!(storage, x)`.
 It keeps an internal storage of type `s` used to evaluate the gradient in-place.
 """
 struct SimpleFunctionObjective{F,G,S} <: ObjectiveFunction
     f::F
-    grad!::G
+    grad_iip!::G
     storage::S
 end
 
 compute_value(f::SimpleFunctionObjective, x) = f.f(x)
 function compute_gradient(f::SimpleFunctionObjective, x)
-    f.grad!(f.storage, x)
+    f.grad_iip!(f.storage, x)
     return f.storage
 end
 
 """
-    StochasticObjective{F, G, XT, S}(f::F, grad!::G, xs::XT, storage::S)
+    StochasticObjective{F, G, XT, S}(f::F, grad_iip!::G, xs::XT, storage::S)
 
 Represents a composite function evaluated with stochastic gradient.
 `f(θ, x)` evaluates the loss for a single data point `x` and parameter `θ`.
-`grad!(storage, θ, x)` adds to storage the partial gradient with respect to data point `x` at parameter `θ`.
+`grad_iip!(storage, θ, x)` adds to storage the partial gradient with respect to data point `x` at parameter `θ`.
 `xs` must be an indexable iterable (`Vector{Vector{Float64}}` for instance).
 Functions using a `StochasticObjective` have optional keyword arguments `rng`, `batch_size`
 and `full_evaluation` controlling whether the function should be evaluated over all data points.
 
-Note: `grad!` must **not** reset the storage to 0 before adding to it.
+Note: `grad_iip!` must **not** reset the storage to 0 before adding to it.
 """
 struct StochasticObjective{F,G,XT,S} <: ObjectiveFunction
     f::F
-    grad!::G
+    grad_iip!::G
     xs::XT
     storage::S
 end
@@ -99,7 +99,7 @@ function compute_gradient(
 
     f.storage .= 0
     for idx in rand_indices
-        f.grad!(f.storage, θ, f.xs[idx])
+        f.grad_iip!(f.storage, θ, f.xs[idx])
     end
     f.storage ./= batch_size
     return f.storage
@@ -119,7 +119,7 @@ function compute_value_gradient(
     for idx in rand_indices
         @inbounds x = f.xs[idx]
         f_val += f.f(θ, x)
-        f.grad!(f.storage, θ, x)
+        f.grad_iip!(f.storage, θ, x)
     end
     f.storage ./= batch_size
     f_val /= batch_size

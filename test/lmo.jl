@@ -240,7 +240,7 @@ end
     f(X) =
         0.5 *
         sum((X[i, j] - Xreal[i, j])^2 for i in 1:nobs, j in 1:nfeat if (i, j) ∉ missing_entries)
-    function grad!(storage, X)
+    function grad_iip!(storage, X)
         storage .= 0
         for i in 1:nobs
             for j in 1:nfeat
@@ -249,18 +249,29 @@ end
                 end
             end
         end
-        return nothing
+        return storage
+    end
+    function grad_oop(storage, X)
+        r = zeros(length(storage))
+        for i in 1:nobs
+            for j in 1:nfeat
+                if (i, j) ∉ missing_entries
+                    r[i, j] = X[i, j] - Xreal[i, j]
+                end
+            end
+        end
+        return r
     end
     # TODO value of radius?
     lmo = FrankWolfe.NuclearNormLMO(sum(svdvals(Xreal)))
     x0 = @inferred FrankWolfe.compute_extreme_point(lmo, zero(Xreal))
     gradient = similar(x0)
-    grad!(gradient, x0)
+    grad_iip!(gradient, x0)
     v0 = FrankWolfe.compute_extreme_point(lmo, gradient)
     @test dot(v0 - x0, gradient) < 0
     xfin, vmin, _ = FrankWolfe.frank_wolfe(
         f,
-        grad!,
+        grad_iip!,
         lmo,
         x0;
         epsilon=1e-6,
@@ -276,7 +287,7 @@ end
     @test sum(svals_fin[r+1:end]) / sum(svals_fin) ≤ 2e-2
     xfin, vmin, _ = FrankWolfe.lazified_conditional_gradient(
         f,
-        grad!,
+        grad_iip!,
         lmo,
         x0;
         epsilon=1e-6,
@@ -724,20 +735,24 @@ end
     M = [3.0 2.8464949 2.4178848; 2.8464949 3.0 2.84649498; 2.4178848 2.84649498 3.0]
 
     fun0(p) = dot(V, p) + dot(p, M, p)
-    function fun0_grad!(g, p)
+    function fun0_grad_iip!(g, p)
         g .= V
         return mul!(g, M, p, 2, 1)
+    end
+    function fun0_grad_oop(g, p)
+        r .= V
+        return mul!(r, M, p, 2, 1)
     end
 
     lmo_dense = FrankWolfe.ScaledBoundL1NormBall(-ones(3), ones(3))
     lmo_standard = FrankWolfe.LpNormLMO{1}(1.0)
-    x_dense, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad!, lmo_dense, [1.0, 0.0, 0.0])
-    x_standard, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad!, lmo_standard, [1.0, 0.0, 0.0])
+    x_dense, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad_iip!, lmo_dense, [1.0, 0.0, 0.0])
+    x_standard, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad_iip!, lmo_standard, [1.0, 0.0, 0.0])
     @test x_dense == x_standard
 
     lmo_dense = FrankWolfe.ScaledBoundLInfNormBall(-ones(3), ones(3))
     lmo_standard = FrankWolfe.LpNormLMO{Inf}(1.0)
-    x_dense, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad!, lmo_dense, [1.0, 0.0, 0.0])
-    x_standard, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad!, lmo_standard, [1.0, 0.0, 0.0])
+    x_dense, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad_iip!, lmo_dense, [1.0, 0.0, 0.0])
+    x_standard, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad_iip!, lmo_standard, [1.0, 0.0, 0.0])
     @test x_dense == x_standard
 end

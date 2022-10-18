@@ -16,9 +16,12 @@ xp = [2.0, 1.0]
 
 f(x) = norm(x - xp)^2
 
-function grad!(storage, x)
+function grad_iip!(storage, x)
     @. storage = 2 * (x - xp)
-    return nothing
+    return storage
+end
+function grad_oop(storage, x)
+    return 2 * (x - xp)
 end
 
 lower = [-1.0, -1.0]
@@ -33,7 +36,7 @@ gradient = collect(x1)
 
 x_l1, v_1, primal_1, dual_gap_1, trajectory_1 = FrankWolfe.frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     l1,
     collect(copy(x1)),
     max_iteration=k,
@@ -51,7 +54,7 @@ gradient = collect(x2)
 
 x_linf, v_2, primal_2, dual_gap_2, trajectory_2 = FrankWolfe.frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     linf,
     collect(copy(x2)),
     max_iteration=k,

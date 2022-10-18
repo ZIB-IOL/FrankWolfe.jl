@@ -17,9 +17,12 @@ const xp = xpi ./ total;
 
 f(x) = LinearAlgebra.norm(x - xp)^2
 
-function grad!(storage, x)
+function grad_iip!(storage, x)
     storage .= 2 * (x - xp)
-    return nothing
+    return storage
+end
+function grad_oop(storage, x)
+    return 2 * (x - xp)
 end
 
 # better for memory consumption as we do coordinate-wise ops
@@ -37,7 +40,7 @@ x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
 
 gradient = similar(x00)
 
-FrankWolfe.benchmark_oracles(f, grad!, () -> randn(n), lmo; k=100)
+FrankWolfe.benchmark_oracles(f, grad_iip!, () -> randn(n), lmo; k=100)
 
 # 1/t *can be* better than short step
 
@@ -46,7 +49,7 @@ println("\n==> Short Step rule - if you know L.\n")
 x0 = copy(x00)
 @time x, v, primal, dual_gap, trajectory_shortstep = FrankWolfe.frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,
@@ -63,7 +66,7 @@ x0 = copy(x00)
 
 @time x, v, primal, dual_gap, trajectoryM = FrankWolfe.frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,
@@ -81,7 +84,7 @@ x0 = copy(x00)
 
 @time x, v, primal, dual_gap, trajectory_adaptive = FrankWolfe.frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,
@@ -98,7 +101,7 @@ x0 = copy(x00)
 
 @time x, v, primal, dual_gap, trajectory_agnostic = FrankWolfe.frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,

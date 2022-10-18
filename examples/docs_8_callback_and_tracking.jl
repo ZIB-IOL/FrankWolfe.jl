@@ -24,13 +24,16 @@ tf(rand(3))
 ## Resetting the counter
 tf.counter = 0;
 
-# Similarly, the `tgrad!` function tracks the number of gradient calls:
+# Similarly, the `tgrad_iip!` function tracks the number of gradient calls:
 
-function grad!(storage, x)
+function grad_iip!(storage, x)
     return storage .= 2x
 end
-tgrad! = FrankWolfe.TrackingGradient(grad!)
-@show tgrad!.counter;
+function grad_oop(storage, x)
+    return 2x
+end
+tgrad_iip! = FrankWolfe.TrackingGradient(grad_iip!)
+@show tgrad_iip!.counter;
 
 # The tracking LMO operates in a similar fashion and tracks the number of `compute_extreme_point` calls.
 
@@ -46,7 +49,7 @@ tlmo_prob = FrankWolfe.TrackingLMO(lmo_prob)
 x0 = FrankWolfe.compute_extreme_point(tlmo_prob, ones(5))
 fw_results = FrankWolfe.frank_wolfe(
     tf,
-    tgrad!,
+    tgrad_iip!,
     tlmo_prob,
     x0,
     max_iteration=1000,
@@ -55,7 +58,7 @@ fw_results = FrankWolfe.frank_wolfe(
 )
 
 @show tf.counter
-@show tgrad!.counter
+@show tgrad_iip!.counter
 @show tlmo_prob.counter;
 
 
@@ -70,7 +73,7 @@ fw_results = FrankWolfe.frank_wolfe(
 #
 # To reuse the same tracking functions, Let us first reset their counters:
 tf.counter = 0
-tgrad!.counter = 0
+tgrad_iip!.counter = 0
 tlmo_prob.counter = 0;
 
 # The `storage` variable stores in the trajectory array the
@@ -88,7 +91,7 @@ function push_tracking_state(state, storage)
             base_tuple...,
             state.gamma,
             state.f.counter,
-            state.grad!.counter,
+            state.grad_iip!.counter,
             state.lmo.inner.counter,
         )
     else
@@ -96,7 +99,7 @@ function push_tracking_state(state, storage)
             base_tuple...,
             state.gamma,
             state.f.counter,
-            state.grad!.counter,
+            state.grad_iip!.counter,
             state.lmo.counter,
         )
     end
@@ -120,7 +123,7 @@ callback = make_callback(storage)
 
 FrankWolfe.lazified_conditional_gradient(
     tf,
-    tgrad!,
+    tgrad_iip!,
     tlmo_prob,
     x0,
     max_iteration=1000,
@@ -132,5 +135,5 @@ FrankWolfe.lazified_conditional_gradient(
 total_iterations = storage[end][1]
 @show total_iterations
 @show tf.counter
-@show tgrad!.counter
+@show tgrad_iip!.counter
 @show tlmo_prob.counter;

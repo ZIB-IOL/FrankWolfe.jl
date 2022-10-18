@@ -15,8 +15,12 @@ total = sum(xpi);
 const xp = xpi # ./ total;
 
 f(x) = norm(x - xp)^2
-function grad!(storage, x)
+function grad_iip!(storage, x)
     @. storage = 2 * (x - xp)
+    return storage
+end
+function grad_oop(storage, x)
+    return 2 * (x - xp)
 end
 
 # better for memory consumption as we do coordinate-wise ops
@@ -25,8 +29,11 @@ function cf(x, xp)
     return LinearAlgebra.norm(x .- xp)^2
 end
 
-function cgrad!(storage, x, xp)
+function cgrad_iip!(storage, x, xp)
     return @. storage = 2 * (x - xp)
+end
+function cgrad_oop(storage, x, xp)
+    return 2 * (x - xp)
 end
 
 # lmo = FrankWolfe.ProbabilitySimplexOracle(1);
@@ -36,7 +43,7 @@ x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
 FrankWolfe.benchmark_oracles(
     x -> cf(x, xp),
-    (str, x) -> cgrad!(str, x, xp),
+    (str, x) -> cgrad_iip!(str, x, xp),
     () -> randn(n),
     lmo;
     k=100,
@@ -48,7 +55,7 @@ x0 = deepcopy(x00)
 
 @time x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,
@@ -65,7 +72,7 @@ x0 = deepcopy(x00)
 
 @time x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
     x -> cf(x, xp),
-    (str, x) -> cgrad!(str, x, xp),
+    (str, x) -> cgrad_iip!(str, x, xp),
     lmo,
     x0,
     max_iteration=k,

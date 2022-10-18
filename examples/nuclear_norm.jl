@@ -37,33 +37,40 @@ const present_entries = [(i, j) for i in 1:nobs, j in 1:nfeat if (i, j) ∉ miss
 
 f(X) = 0.5 * sum((X[i, j] - Xreal[i, j])^2 for (i, j) in present_entries)
 
-function grad!(storage, X)
+function grad_iip!(storage, X)
     storage .= 0
     for (i, j) in present_entries
         storage[i, j] = X[i, j] - Xreal[i, j]
     end
-    return nothing
+    return storage
+end
+function grad_oop(storage, X)
+    r = zeros(length(storage))
+    for (i, j) in present_entries
+        r[i, j] = X[i, j] - Xreal[i, j]
+    end
+    return r
 end
 
 
 const lmo = FrankWolfe.NuclearNormLMO(275_000.0)
 const x0 = FrankWolfe.compute_extreme_point(lmo, zero(Xreal))
 
-FrankWolfe.benchmark_oracles(f, grad!, () -> randn(size(Xreal)), lmo; k=100)
+FrankWolfe.benchmark_oracles(f, grad_iip!, () -> randn(size(Xreal)), lmo; k=100)
 
 # gradient descent
 gradient = similar(x0)
 xgd = Matrix(x0)
 for _ in 1:5000
     @info f(xgd)
-    grad!(gradient, xgd)
+    grad_iip!(gradient, xgd)
     xgd .-= 0.01 * gradient
     if norm(gradient) ≤ sqrt(eps())
         break
     end
 end
 
-grad!(gradient, x0)
+grad_iip!(gradient, x0)
 v0 = FrankWolfe.compute_extreme_point(lmo, gradient)
 @test dot(v0 - x0, gradient) < 0
 
@@ -73,7 +80,7 @@ x00 = copy(x0)
 
 xfin, vmin, _, _, traj_data = FrankWolfe.frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x00;
     epsilon=1e7,
@@ -88,7 +95,7 @@ xfin, vmin, _, _, traj_data = FrankWolfe.frank_wolfe(
 
 xfinlcg, vmin, _, _, traj_data = FrankWolfe.lazified_conditional_gradient(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x00;
     epsilon=1e7,
@@ -106,7 +113,7 @@ x00 = copy(x0)
 
 xfinAFW, vmin, _, _, traj_data = FrankWolfe.away_frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x00;
     epsilon=1e7,
@@ -123,7 +130,7 @@ x00 = copy(x0)
 
 xfinBCG, vmin, _, _, traj_data = FrankWolfe.blended_conditional_gradient(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x00;
     epsilon=1e7,
@@ -137,7 +144,7 @@ xfinBCG, vmin, _, _, traj_data = FrankWolfe.blended_conditional_gradient(
 
 xfinBPCG, vmin, _, _, traj_data = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x00;
     epsilon=1e7,

@@ -41,14 +41,14 @@ julia> using FrankWolfe
 
 julia> f(p) = sum(abs2, p)  # objective function
 
-julia> grad!(storage, p) = storage .= 2p  # in-place gradient computation
+julia> grad_iip!(storage, p) = storage .= 2p  # in-place gradient computation
 
 # # function d ⟼ argmin ⟨p,d⟩ st. p ∈ Δ
 julia> lmo = FrankWolfe.ProbabilitySimplexOracle(1.)
 
 julia> p0 = [1., 0., 0.]
 
-julia> p_opt, _ = frank_wolfe(f, grad!, lmo, p0; verbose=true);
+julia> p_opt, _ = frank_wolfe(f, grad_iip!, lmo, p0; verbose=true);
 
 Vanilla Frank-Wolfe Algorithm.
 MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: Adaptive EPSILON: 1.0e-7 MAXITERATION: 10000 TYPE: Float64

@@ -26,8 +26,11 @@ function cf(x, xp)
     return LinearAlgebra.norm(x .- xp)^2 / n^2
 end
 
-function cgrad!(storage, x, xp)
+function cgrad_iip!(storage, x, xp)
     return @. storage = 2 * (x - xp) / n^2
+end
+function cgrad_oop(storage, x, xp)
+    return 2 * (x - xp) / n^2
 end
 
 # initial direction for first vertex
@@ -46,7 +49,7 @@ target_accuracy = 1e-7
 
 FrankWolfe.benchmark_oracles(
     x -> cf(x, xp),
-    (str, x) -> cgrad!(str, x, xp),
+    (str, x) -> cgrad_iip!(str, x, xp),
     () -> randn(n, n),
     lmo;
     k=100,
@@ -59,7 +62,7 @@ x0 = copy(x00)
 
 x, v, primal, dual_gap, trajectoryFW = FrankWolfe.frank_wolfe(
     x -> cf(x, xp),
-    (str, x) -> cgrad!(str, x, xp),
+    (str, x) -> cgrad_iip!(str, x, xp),
     lmo,
     x0,
     max_iteration=k,
@@ -78,7 +81,7 @@ x0 = copy(x00)
 
 x, v, primal, dual_gap, trajectoryLCG = FrankWolfe.lazified_conditional_gradient(
     x -> cf(x, xp),
-    (str, x) -> cgrad!(str, x, xp),
+    (str, x) -> cgrad_iip!(str, x, xp),
     lmo,
     x0,
     max_iteration=k,
@@ -97,7 +100,7 @@ x0 = copy(x00)
 
 x, v, primal, dual_gap, trajectoryBLCG = FrankWolfe.lazified_conditional_gradient(
     x -> cf(x, xp),
-    (str, x) -> cgrad!(str, x, xp),
+    (str, x) -> cgrad_iip!(str, x, xp),
     lmo,
     x0,
     max_iteration=k,
@@ -116,7 +119,7 @@ x0 = copy(x00)
 
 x, v, primal, dual_gap, trajectoryLAFW = FrankWolfe.away_frank_wolfe(
     x -> cf(x, xp),
-    (str, x) -> cgrad!(str, x, xp),
+    (str, x) -> cgrad_iip!(str, x, xp),
     lmo,
     x0,
     max_iteration=k,
@@ -136,7 +139,7 @@ x0 = copy(x00)
 
 x, v, primal, dual_gap, trajectoryBCG = FrankWolfe.blended_conditional_gradient(
     x -> cf(x, xp),
-    (str, x) -> cgrad!(str, x, xp),
+    (str, x) -> cgrad_iip!(str, x, xp),
     lmo,
     x0,
     max_iteration=k,
@@ -155,7 +158,7 @@ x0 = copy(x00)
 
 x, v, primal, dual_gap, trajectoryBCG_ref = FrankWolfe.blended_conditional_gradient(
     x -> cf(x, xp),
-    (str, x) -> cgrad!(str, x, xp),
+    (str, x) -> cgrad_iip!(str, x, xp),
     lmo,
     x0,
     max_iteration=2 * k,

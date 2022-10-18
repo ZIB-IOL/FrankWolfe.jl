@@ -4,15 +4,18 @@ using SparseArrays
 
 @testset "Timing out" begin
     f(x) = norm(x)^2
-    function grad!(storage, x)
+    function grad_iip!(storage, x)
         return storage .= 2x
+    end
+    function grad_oop(storage, x)
+        return 2x
     end
     lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
     x0 = FrankWolfe.compute_extreme_point(lmo_prob, spzeros(5))
     @test abs(
         FrankWolfe.frank_wolfe(
             f,
-            grad!,
+            grad_iip!,
             lmo_prob,
             x0,
             max_iteration=1000,
@@ -23,7 +26,7 @@ using SparseArrays
     @test abs(
         FrankWolfe.frank_wolfe(
             f,
-            grad!,
+            grad_iip!,
             lmo_prob,
             x0,
             max_iteration=1000,
@@ -35,7 +38,7 @@ using SparseArrays
     @test abs(
         FrankWolfe.frank_wolfe(
             f,
-            grad!,
+            grad_iip!,
             lmo_prob,
             x0,
             max_iteration=1000,
@@ -46,7 +49,7 @@ using SparseArrays
     @test abs(
         FrankWolfe.frank_wolfe(
             f,
-            grad!,
+            grad_iip!,
             lmo_prob,
             x0,
             max_iteration=1000,
@@ -57,7 +60,7 @@ using SparseArrays
     @test abs(
         FrankWolfe.frank_wolfe(
             f,
-            grad!,
+            grad_iip!,
             lmo_prob,
             x0,
             max_iteration=1000,
@@ -67,7 +70,7 @@ using SparseArrays
     ) < 1.0e-2
     @test FrankWolfe.frank_wolfe(
         f,
-        grad!,
+        grad_iip!,
         lmo_prob,
         x0,
         max_iteration=1000,
@@ -77,7 +80,7 @@ using SparseArrays
     @test abs(
         FrankWolfe.frank_wolfe(
             f,
-            grad!,
+            grad_iip!,
             lmo_prob,
             x0,
             max_iteration=1000,
@@ -88,7 +91,7 @@ using SparseArrays
     @test abs(
         FrankWolfe.frank_wolfe(
             f,
-            grad!,
+            grad_iip!,
             lmo_prob,
             x0,
             max_iteration=1000,
@@ -100,7 +103,7 @@ using SparseArrays
     @test abs(
         FrankWolfe.frank_wolfe(
             f,
-            grad!,
+            grad_iip!,
             lmo_prob,
             x0,
             max_iteration=1000,
@@ -112,7 +115,7 @@ using SparseArrays
     @test abs(
         FrankWolfe.frank_wolfe(
             f,
-            grad!,
+            grad_iip!,
             lmo_prob,
             x0,
             max_iteration=1000,
@@ -125,7 +128,7 @@ using SparseArrays
     @test abs(
         FrankWolfe.frank_wolfe(
             f,
-            grad!,
+            grad_iip!,
             lmo_prob,
             x0,
             max_iteration=1000,
@@ -137,7 +140,7 @@ using SparseArrays
     @test abs(
         FrankWolfe.frank_wolfe(
             f,
-            grad!,
+            grad_iip!,
             lmo_prob,
             x0,
             max_iteration=1000,
@@ -149,7 +152,7 @@ using SparseArrays
     @test abs(
         FrankWolfe.frank_wolfe(
             f,
-            grad!,
+            grad_iip!,
             lmo_prob,
             x0,
             max_iteration=1000,

@@ -3,7 +3,7 @@
 Line search method to apply once the direction is computed.
 A `LineSearchMethod` must implement
 ```
-perform_line_search(ls::LineSearchMethod, t, f, grad!, gradient, x, d, gamma_max, workspace)
+perform_line_search(ls::LineSearchMethod, t, f, grad_iip!, gradient, x, d, gamma_max, workspace)
 ```
 with `d = x - v`.
 It may also implement `build_linesearch_workspace(x, gradient)` which creates a
@@ -15,7 +15,7 @@ abstract type LineSearchMethod end
 Base.print(io::IO, ls::LineSearchMethod) = print(io, split(string(typeof(ls)), ".")[end])
 
 """
-    perform_line_search(ls::LineSearchMethod, t, f, grad!, gradient, x, d, gamma_max, workspace)
+    perform_line_search(ls::LineSearchMethod, t, f, grad_iip!, gradient, x, d, gamma_max, workspace)
 
 Returns the step size `gamma` for step size strategy `ls`.
 """
@@ -98,7 +98,7 @@ function perform_line_search(
     line_search::Shortstep,
     t,
     f,
-    grad!,
+    grad_iip!,
     gradient,
     x,
     d,
@@ -123,7 +123,7 @@ function perform_line_search(
     line_search::FixedStep,
     t,
     f,
-    grad!,
+    grad_iip!,
     gradient,
     x,
     d,
@@ -174,7 +174,7 @@ function perform_line_search(
     line_search::Goldenratio,
     _,
     f,
-    grad!,
+    grad_iip!,
     gradient,
     x,
     d,
@@ -187,7 +187,7 @@ function perform_line_search(
     @. workspace.left = x
     @. workspace.right = workspace.y
     dgx = fast_dot(d, gradient)
-    grad!(workspace.gradient, workspace.y)
+    grad_iip!(workspace.gradient, workspace.y)
     dgy = fast_dot(d, workspace.gradient)
 
     # if the minimum is at an endpoint
@@ -253,7 +253,7 @@ function perform_line_search(
     line_search::Backtracking,
     _,
     f,
-    grad!,
+    grad_iip!,
     gradient,
     x,
     d,
@@ -323,7 +323,7 @@ function perform_line_search(
     line_search::Adaptive,
     t,
     f,
-    grad!,
+    grad_iip!,
     gradient,
     x,
     d,
@@ -344,7 +344,7 @@ function perform_line_search(
         gradient_stepsize_estimation = similar(gradient)
         x_storage = storage.x
         x_storage = muladd_memory_mode(memory_mode, x_storage, x, epsilon_step, d)
-        grad!(gradient_stepsize_estimation, x_storage)
+        grad_iip!(gradient_stepsize_estimation, x_storage)
         line_search.L_est = norm(gradient - gradient_stepsize_estimation) / (epsilon_step * norm(d))
     end
     M = line_search.eta * line_search.L_est

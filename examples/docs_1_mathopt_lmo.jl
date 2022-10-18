@@ -25,9 +25,12 @@ total = sum(xpi);
 const xp = xpi ./ total;
 
 f(x) = norm(x - xp)^2
-function grad!(storage, x)
+function grad_iip!(storage, x)
     @. storage = 2 * (x - xp)
-    return nothing
+    return storage
+end
+function grad_oop(storage, x)
+    return 2 * (x - xp)
 end
 
 lmo_radius = 2.5
@@ -38,7 +41,7 @@ gradient = collect(x00)
 
 x_lmo, v, primal, dual_gap, trajectory_lmo = FrankWolfe.frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     collect(copy(x00)),
     max_iteration=k,
@@ -68,7 +71,7 @@ lmo_moi = FrankWolfe.MathOptLMO(o)
 
 x, v, primal, dual_gap, trajectory_moi = FrankWolfe.frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo_moi,
     collect(copy(x00)),
     max_iteration=k,
@@ -91,7 +94,7 @@ lmo_jump = FrankWolfe.MathOptLMO(m.moi_backend)
 
 x, v, primal, dual_gap, trajectory_jump = FrankWolfe.frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo_jump,
     collect(copy(x00)),
     max_iteration=k,
@@ -104,7 +107,7 @@ x, v, primal, dual_gap, trajectory_jump = FrankWolfe.frank_wolfe(
 
 x_lmo, v, primal, dual_gap, trajectory_lmo_blas = FrankWolfe.frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x00,
     max_iteration=k,
@@ -117,7 +120,7 @@ x_lmo, v, primal, dual_gap, trajectory_lmo_blas = FrankWolfe.frank_wolfe(
 
 x, v, primal, dual_gap, trajectory_jump_blas = FrankWolfe.frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo_jump,
     x00,
     max_iteration=k,

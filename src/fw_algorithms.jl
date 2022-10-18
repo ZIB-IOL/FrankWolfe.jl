@@ -1,6 +1,6 @@
 
 """
-    frank_wolfe(f, grad!, lmo, x0; ...)
+    frank_wolfe(f, grad_iip!, lmo, x0; ...)
 
 Simplest form of the Frank-Wolfe algorithm.
 Returns a tuple `(x, v, primal, dual_gap, traj_data)` with:
@@ -12,7 +12,7 @@ Returns a tuple `(x, v, primal, dual_gap, traj_data)` with:
 """
 function frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0;
     line_search::LineSearchMethod=Adaptive(),
@@ -128,12 +128,12 @@ function frank_wolfe(
 
 
         if momentum === nothing || first_iter
-            grad!(gradient, x)
+            grad_iip!(gradient, x)
             if momentum !== nothing
                 gtemp .= gradient
             end
         else
-            grad!(gtemp, x)
+            grad_iip!(gtemp, x)
             @memory_mode(memory_mode, gradient = (momentum * gradient) + (1 - momentum) * gtemp)
         end
 
@@ -160,7 +160,7 @@ function frank_wolfe(
             line_search,
             t,
             f,
-            grad!,
+            grad_iip!,
             gradient,
             x,
             d,
@@ -180,7 +180,7 @@ function frank_wolfe(
                 v,
                 gamma,
                 f,
-                grad!,
+                grad_iip!,
                 lmo,
                 gradient,
                 tt,
@@ -196,7 +196,7 @@ function frank_wolfe(
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
     # hence the final computation.
     tt = last
-    grad!(gradient, x)
+    grad_iip!(gradient, x)
     v = compute_extreme_point(lmo, gradient, v=v)
     primal = f(x)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
@@ -205,7 +205,7 @@ function frank_wolfe(
         line_search,
         t,
         f,
-        grad!,
+        grad_iip!,
         gradient,
         x,
         d,
@@ -224,7 +224,7 @@ function frank_wolfe(
             v,
             gamma,
             f,
-            grad!,
+            grad_iip!,
             lmo,
             gradient,
             tt,
@@ -246,7 +246,7 @@ depending on whether the provided `cache_size` option is finite.
 """
 function lazified_conditional_gradient(
     f,
-    grad!,
+    gra_iipd!,
     lmo_base,
     x0;
     line_search::LineSearchMethod=Adaptive(),
@@ -365,7 +365,7 @@ function lazified_conditional_gradient(
 
         #####################
 
-        grad!(gradient, x)
+        grad_iip!(gradient, x)
 
         threshold = fast_dot(x, gradient) - phi / lazy_tolerance
 
@@ -388,7 +388,7 @@ function lazified_conditional_gradient(
             line_search,
             t,
             f,
-            grad!,
+            grad_iip!,
             gradient,
             x,
             d,
@@ -409,7 +409,7 @@ function lazified_conditional_gradient(
                 v,
                 gamma,
                 f,
-                grad!,
+                grad_iip!,
                 lmo,
                 gradient,
                 tt,
@@ -426,7 +426,7 @@ function lazified_conditional_gradient(
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
     # hence the final computation.
     tt = last
-    grad!(gradient, x)
+    grad_iip!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
@@ -435,7 +435,7 @@ function lazified_conditional_gradient(
         line_search,
         t,
         f,
-        grad!,
+        grad_iip!,
         gradient,
         x,
         d,
@@ -454,7 +454,7 @@ function lazified_conditional_gradient(
             v,
             gamma,
             f,
-            grad!,
+            grad_iip!,
             lmo,
             gradient,
             tt,

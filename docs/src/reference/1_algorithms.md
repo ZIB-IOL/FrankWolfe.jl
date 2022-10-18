@@ -4,7 +4,7 @@ This section contains all main algorithms of the package. These are the ones typ
 
 The typical signature for these algorithms is:
 ```julia
-my_algorithm(f, grad!, lmo, x0)
+my_algorithm(f, grad_iip!, lmo, x0)
 ```
 
 ## Standard algorithms

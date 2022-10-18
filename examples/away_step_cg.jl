@@ -17,8 +17,12 @@ total = sum(xpi);
 const xp = xpi # ./ total;
 
 f(x) = LinearAlgebra.norm(x - xp)^2
-function grad!(storage, x)
+function grad_iip!(storage, x)
     @. storage = 2 * (x - xp)
+    return storage
+end
+function grad_oop(storage, x)
+    return 2 * (x - xp)
 end
 
 # problem with active set updates and the ksparselmo
@@ -26,11 +30,11 @@ lmo = FrankWolfe.KSparseLMO(40, 1.0);
 # lmo = FrankWolfe.ProbabilitySimplexOracle(1)
 x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
-FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo; k=100)
+FrankWolfe.benchmark_oracles(f, grad_iip!, () -> rand(n), lmo; k=100)
 
 x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,
@@ -44,7 +48,7 @@ x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
 
 x, v, primal, dual_gap, trajectory_away, active_set = FrankWolfe.away_frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,
@@ -59,7 +63,7 @@ x, v, primal, dual_gap, trajectory_away, active_set = FrankWolfe.away_frank_wolf
 
 x, v, primal, dual_gap, trajectory_away_outplace, active_set = FrankWolfe.away_frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,

@@ -11,14 +11,18 @@ using SparseArrays
     xp = xpi ./ total
 
     f(x) = norm(x - xp)^2
-    function grad!(storage, x)
+    function grad_iip!(storage, x)
         @. storage = 2 * (x - xp)
+        return storage
+    end
+    function grad_oop(storage, x)
+        return 2 * (x - xp)
     end
 
     lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
     x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n))
 
-    FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo_prob; k=100)
+    FrankWolfe.benchmark_oracles(f, grad_iip!, () -> rand(n), lmo_prob; k=100)
 end
 
 @testset "RankOneMatrix" begin
@@ -67,18 +71,21 @@ end
 @testset "Line Search methods" begin
     a = [-1.0, -1.0, -1.0]
     b = [1.0, 1.0, 1.0]
-    function grad!(storage, x)
+    function grad_iip!(storage, x)
         return storage .= 2x
+    end
+    function grad_oop(storage, x)
+        return 2x
     end
     f(x) = norm(x)^2
     gradient = similar(a)
-    grad!(gradient, a)
+    grad_iip!(gradient, a)
     ls = FrankWolfe.Backtracking()
     gamma_bt = @inferred FrankWolfe.perform_line_search(
         ls,
         1,
         f,
-        grad!,
+        grad_iip!,
         gradient,
         a,
         a - b,
@@ -93,7 +100,7 @@ end
         ls_gr,
         1,
         f,
-        grad!,
+        grad_iip!,
         gradient,
         a,
         a - b,
@@ -107,7 +114,7 @@ end
         FrankWolfe.Agnostic(),
         1,
         f,
-        grad!,
+        grad_iip!,
         gradient,
         a,
         a - b,
@@ -119,7 +126,7 @@ end
         FrankWolfe.Nonconvex(),
         1,
         f,
-        grad!,
+        grad_iip!,
         gradient,
         a,
         a - b,
@@ -131,7 +138,7 @@ end
         FrankWolfe.Nonconvex(),
         1,
         f,
-        grad!,
+        grad_iip!,
         gradient,
         a,
         a - b,
@@ -144,7 +151,7 @@ end
         ls,
         1,
         f,
-        grad!,
+        grad_iip!,
         gradient,
         a,
         a - b,

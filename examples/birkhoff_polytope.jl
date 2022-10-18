@@ -29,8 +29,11 @@ function cf(x, xp)
     return LinearAlgebra.norm(x .- xp)^2 / n^2
 end
 
-function cgrad!(storage, x, xp)
+function cgrad_iip!(storage, x, xp)
     return @. storage = 2 * (x - xp) / n^2
+end
+function cgrad_oop(storage, x, xp)
+    return 2 * (x - xp) / n^2
 end
 
 # initial direction for first vertex
@@ -51,7 +54,7 @@ x00 = FrankWolfe.compute_extreme_point(lmo, direction_mat)
 
 FrankWolfe.benchmark_oracles(
     x -> cf(x, xp),
-    (str, x) -> cgrad!(str, x, xp),
+    (str, x) -> cgrad_iip!(str, x, xp),
     () -> randn(n, n),
     lmo;
     k=100,
@@ -64,7 +67,7 @@ x0 = deepcopy(x00)
 
 @time x, v, primal, dual_gap, trajectoryBCG = FrankWolfe.blended_conditional_gradient(
     x -> cf(x, xp),
-    (str, x) -> cgrad!(str, x, xp),
+    (str, x) -> cgrad_iip!(str, x, xp),
     lmo,
     x0,
     max_iteration=k,

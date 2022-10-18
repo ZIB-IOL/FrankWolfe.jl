@@ -17,14 +17,18 @@ const xp = xpi ./ total;
 
 f(x) = LinearAlgebra.norm(x - xp)^2
 
-function grad!(storage, x)
+function grad_iip!(storage, x)
     @. storage = 2 * (x - xp)
+    return storage
+end
+function grad_oop(storage, x)
+    return 2 * (x - xp)
 end
 
 lmo = FrankWolfe.KSparseLMO(40, 1.0);
 x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
-FrankWolfe.benchmark_oracles(x -> f(x), (str, x) -> grad!(str, x), () -> randn(n), lmo; k=100)
+FrankWolfe.benchmark_oracles(x -> f(x), (str, x) -> grad_iip!(str, x), () -> randn(n), lmo; k=100)
 
 println("\n==> Short Step rule - if you know L.\n")
 
@@ -32,7 +36,7 @@ x0 = deepcopy(x00)
 
 @time x, v, primal, dual_gap, trajectory_shortstep = FrankWolfe.frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,
@@ -49,7 +53,7 @@ x0 = deepcopy(x00)
 
 @time x, v, primal, dual_gap, trajectory_adaptive = FrankWolfe.frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,
@@ -66,7 +70,7 @@ x0 = deepcopy(x00)
 
 @time x, v, primal, dual_gap, trajectory_agnostic = FrankWolfe.frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,

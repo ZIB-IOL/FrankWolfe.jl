@@ -19,7 +19,7 @@ const xp = xpi ./ total;
 f(x) = 2 * norm(x - xp)^3 - norm(x)^2
 
 # this is just for the example -> better explicitly define your gradient
-grad!(storage, x) = ReverseDiff.gradient!(storage, f, x)
+grad_iip!(storage, x) = ReverseDiff.gradient!(storage, f, x)
 
 # pick feasible region
 lmo = FrankWolfe.ProbabilitySimplexOracle(1.0); #radius needs to be float
@@ -28,11 +28,11 @@ lmo = FrankWolfe.ProbabilitySimplexOracle(1.0); #radius needs to be float
 x0 = collect(FrankWolfe.compute_extreme_point(lmo, zeros(n)))
 
 # benchmarking Oracles
-FrankWolfe.benchmark_oracles(f, grad!, () -> randn(n), lmo; k=100)
+FrankWolfe.benchmark_oracles(f, grad_iip!, () -> randn(n), lmo; k=100)
 
 @time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,

@@ -86,14 +86,23 @@ function coefficient_errors(coeffs)
     end
 end
 
-function grad!(storage, coefficients)
+function grad_iip!(storage, coefficients)
     storage .= 0
     for (x, y) in extended_training_data
         p_i = dot(coefficients, x) - y
         @. storage += x * p_i
     end
     storage ./= length(training_data)
-    return nothing
+    return storage
+end
+function grad_oop(storage, coefficients)
+    r = zeros(length(storage))
+    for (x, y) in extended_training_data
+        p_i = dot(coefficients, x) - y
+        @. r += x * p_i
+    end
+    r ./= length(training_data)
+    return r
 end
 
 function build_callback(trajectory_arr)
@@ -121,8 +130,8 @@ for i in 1:num_pairs # hide
     global L_estimate # hide
     x = compute_extreme_point(lmo, randn(size(all_coeffs))) # hide
     y = compute_extreme_point(lmo, randn(size(all_coeffs))) # hide
-    grad!(gradient, x) # hide
-    grad!(gradient_aux, y) # hide
+    grad_iip!(gradient, x) # hide
+    grad_iip!(gradient_aux, y) # hide
     new_L = norm(gradient - gradient_aux) / norm(x - y) # hide
     if new_L > L_estimate # hide
         L_estimate = new_L # hide
@@ -166,7 +175,7 @@ time_start = time_ns() # hide
 gd_times = Float64[] # hide
 for iter in 1:max_iter # hide
     global xgd # hide
-    grad!(gradient, xgd) # hide
+    grad_iip!(gradient, xgd) # hide
     xgd = projnorm1(xgd - gradient / L_estimate, lmo.right_hand_side) # hide
     push!(training_gd, f(xgd)) # hide
     push!(test_gd, f_test(xgd)) # hide
@@ -181,7 +190,7 @@ trajectory_lafw = [] # hide
 callback = build_callback(trajectory_lafw) # hide
 x_lafw, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe( # hide
     f, # hide
-    grad!, # hide
+    grad_iip!, # hide
     lmo, # hide
     x0, # hide
     max_iteration=max_iter, # hide
@@ -199,7 +208,7 @@ callback = build_callback(trajectory_bcg) # hide
 x0 = deepcopy(x00) # hide
 x_bcg, v, primal, dual_gap, _ = FrankWolfe.blended_conditional_gradient( # hide
     f, # hide
-    grad!, # hide
+    grad_iip!, # hide
     lmo, # hide
     x0, # hide
     max_iteration=max_iter, # hide
@@ -215,7 +224,7 @@ trajectory_lafw_ref = [] # hide
 callback = build_callback(trajectory_lafw_ref) # hide
 _, _, primal_ref, _, _ = FrankWolfe.away_frank_wolfe( # hide
     f, # hide
-    grad!, # hide
+    grad_iip!, # hide
     lmo, # hide
     x0, # hide
     max_iteration=2 * max_iter, # hide
@@ -233,8 +242,8 @@ for i in 1:num_pairs
     global L_estimate
     x = compute_extreme_point(lmo, randn(size(all_coeffs)))
     y = compute_extreme_point(lmo, randn(size(all_coeffs)))
-    grad!(gradient, x)
-    grad!(gradient_aux, y)
+    grad_iip!(gradient, x)
+    grad_iip!(gradient_aux, y)
     new_L = norm(gradient - gradient_aux) / norm(x - y)
     if new_L > L_estimate
         L_estimate = new_L
@@ -251,7 +260,7 @@ time_start = time_ns()
 gd_times = Float64[]
 for iter in 1:max_iter
     global xgd
-    grad!(gradient, xgd)
+    grad_iip!(gradient, xgd)
     xgd = projnorm1(xgd - gradient / L_estimate, lmo.right_hand_side)
     push!(training_gd, f(xgd))
     push!(test_gd, f_test(xgd))
@@ -266,7 +275,7 @@ trajectory_lafw = []
 callback = build_callback(trajectory_lafw)
 x_lafw, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=max_iter,
@@ -285,7 +294,7 @@ callback = build_callback(trajectory_bcg)
 x0 = deepcopy(x00)
 x_bcg, v, primal, dual_gap, _ = FrankWolfe.blended_conditional_gradient(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=max_iter,
@@ -303,7 +312,7 @@ trajectory_lafw_ref = []
 callback = build_callback(trajectory_lafw_ref)
 _, _, primal_ref, _, _ = FrankWolfe.away_frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=2 * max_iter,

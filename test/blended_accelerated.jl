@@ -16,8 +16,11 @@ const matrix = rand(n, n)
 const hessian = transpose(matrix) * matrix
 const linear = rand(n)
 f(x) = dot(linear, x) + 0.5 * transpose(x) * hessian * x
-function grad!(storage, x)
+function grad_iip!(storage, x)
     return storage .= linear + hessian * x
+end
+function grad_oop(storage, x)
+    return linear + hessian * x
 end
 const L = eigmax(hessian)
 
@@ -34,7 +37,7 @@ const L = eigmax(hessian)
 
         x, v, primal_accel, dual_gap_accel, _ = FrankWolfe.blended_conditional_gradient(
             f,
-            grad!,
+            grad_iip!,
             lmo,
             copy(x0),
             epsilon=target_tolerance,
@@ -52,7 +55,7 @@ const L = eigmax(hessian)
 
         x, v, primal_hessian, dual_gap_hessian, _ = FrankWolfe.blended_conditional_gradient(
             f,
-            grad!,
+            grad_iip!,
             lmo,
             copy(x0),
             epsilon=target_tolerance,
@@ -70,7 +73,7 @@ const L = eigmax(hessian)
 
         x, v, primal_bcg, dual_gap_bcg, _ = FrankWolfe.blended_conditional_gradient(
             f,
-            grad!,
+            grad_iip!,
             lmo,
             copy(x0),
             epsilon=target_tolerance,

@@ -35,8 +35,12 @@ total = sum(xpi);
 const xp = xpi ./ total;
 
 f(x) = norm(x - xp)^2
-function grad!(storage, x)
+function grad_iip!(storage, x)
     @. storage = 2 * (x - xp)
+    return storage
+end
+function grad_oop(storage, x)
+    return 2 * (x - xp)
 end
 
 const lmo = FrankWolfe.KSparseLMO(5, 1.0)
@@ -63,12 +67,12 @@ function build_callback(trajectory_arr)
 end
 
 
-FrankWolfe.benchmark_oracles(f, grad!, () -> randn(n), lmo; k=100)
+FrankWolfe.benchmark_oracles(f, grad_iip!, () -> randn(n), lmo; k=100)
 
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, trajectory_shortstep = FrankWolfe.frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,
@@ -86,7 +90,7 @@ callback = build_callback(trajectory_afw)
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,
@@ -105,7 +109,7 @@ callback = build_callback(trajectory_lafw)
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,
@@ -124,7 +128,7 @@ callback = build_callback(trajectoryBPCG)
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,
@@ -143,7 +147,7 @@ callback = build_callback(trajectoryLBPCG)
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,

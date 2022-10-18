@@ -15,8 +15,12 @@ total = sum(xpi);
 const xp = xpi # ./ total;
 
 f(x) = norm(x .- xp)^2
-function grad!(storage, x)
+function grad_iip!(storage, x)
     @. storage = 2 * (x .- xp)
+    return storage
+end
+function grad_oop(storage, x)
+    return 2 * (x .- xp)
 end
 
 lmo = FrankWolfe.KSparseLMO(100, 1.0)
@@ -26,7 +30,7 @@ gradient = similar(xp)
 
 x, v, primal, dual_gap, _ = FrankWolfe.blended_conditional_gradient(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,
@@ -48,7 +52,7 @@ x0 = FrankWolfe.compute_extreme_point(lmo, spzeros(size(xp)...))
 
 x, v, primal_cut, dual_gap, _ = FrankWolfe.blended_conditional_gradient(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,

@@ -35,8 +35,12 @@ total = sum(xpi);
 const xp = xpi ./ total;
 
 f(x) = norm(x - xp)^2
-function grad!(storage, x)
+function grad_iip!(storage, x)
     @. storage = 2 * (x - xp)
+    return storage
+end
+function grad_oop(storage, x)
+    return 2 * (x - xp)
 end
 
 const lmo = FrankWolfe.KSparseLMO(100, 1.0)
@@ -64,12 +68,12 @@ end
 
 
 
-FrankWolfe.benchmark_oracles(f, grad!, () -> randn(n), lmo; k=100)
+FrankWolfe.benchmark_oracles(f, grad_iip!, () -> randn(n), lmo; k=100)
 
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, trajectory_shortstep = FrankWolfe.frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,
@@ -87,7 +91,7 @@ callback = build_callback(trajectory_adaptive)
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,
@@ -108,7 +112,7 @@ callback = build_callback(trajectory_adaptiveLoc15)
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,
@@ -129,7 +133,7 @@ callback = build_callback(trajectory_adaptiveLoc2)
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,
@@ -150,7 +154,7 @@ callback = build_callback(trajectory_adaptiveLoc4)
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,
@@ -170,7 +174,7 @@ callback = build_callback(trajectory_adaptiveLoc10)
 x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,

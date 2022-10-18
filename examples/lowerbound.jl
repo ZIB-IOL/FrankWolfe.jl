@@ -51,8 +51,11 @@ xp = 1 / n * ones(n);
 f(x) = LinearAlgebra.norm(x - xp)^2
 
 # definition of gradient
-function grad!(storage, x)
+function grad_iip!(storage, x)
     @. storage = 2 * (x - xp)
+end
+function grad_oop(storage, x)
+    return 2 * (x - xp)
 end
 
 # define LMO and do initial call to obtain starting point
@@ -60,11 +63,11 @@ lmo = FrankWolfe.ProbabilitySimplexOracle(1)
 x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
 # simple benchmarking of oracles to get an idea how expensive each component is
-FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo; k=100)
+FrankWolfe.benchmark_oracles(f, grad_iip!, () -> rand(n), lmo; k=100)
 
 @time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,
@@ -78,7 +81,7 @@ FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo; k=100)
 
 @time x, v, primal, dual_gap, trajectoryAFW = FrankWolfe.away_frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,
@@ -92,7 +95,7 @@ FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo; k=100)
 
 @time x, v, primal, dual_gap, trajectoryBCG = FrankWolfe.blended_conditional_gradient(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,

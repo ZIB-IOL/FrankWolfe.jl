@@ -1,17 +1,17 @@
 """
-A function acting like the normal `grad!`
+A function acting like the normal `grad_iip!`
 but tracking the number of calls.
 """
 mutable struct TrackingGradient{G} <: Function
-    grad!::G
+    grad_iip!::G
     counter::Int
 end
 
-TrackingGradient(grad!) = TrackingGradient(grad!, 0)
+TrackingGradient(grad_iip!) = TrackingGradient(grad_iip!, 0)
 
 function (tg::TrackingGradient)(storage, x)
     tg.counter += 1
-    return tg.grad!(storage, x)
+    return tg.grad_iip!(storage, x)
 end
 
 
@@ -36,11 +36,11 @@ function wrap_objective(to::TrackingObjective)
         to.counter += 1
         return to.f(x)
     end
-    function grad!(storage, x)
+    function grad_iip!(storage, x)
         to.counter += 1
         return to.g(storage, x)
     end
-    return (f, grad!)
+    return (f, grad_iip!)
 end
 
 """

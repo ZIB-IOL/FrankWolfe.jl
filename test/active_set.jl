@@ -118,12 +118,15 @@ end
     f(x) = (x[1] - 1)^2 + (x[2] - 1)^2
 
     gradient = similar(x)
-    function grad!(storage, x)
+    function grad_iip!(storage, x)
         return storage .= [2 * (x[1] - 1), 2 * (x[2] - 1)]
+    end
+    function grad_oop(storage, x)
+        return [2 * (x[1] - 1), 2 * (x[2] - 1)]
     end
     FrankWolfe.simplex_gradient_descent_over_convex_hull(
         f,
-        grad!,
+        grad_iip!,
         gradient,
         active_set,
         1e-3,
@@ -142,7 +145,7 @@ end
     @test x2 ≈ [0.5, 0]
     FrankWolfe.simplex_gradient_descent_over_convex_hull(
         f,
-        grad!,
+        grad_iip!,
         gradient,
         active_set2,
         1e-3,
@@ -161,7 +164,7 @@ end
         x = FrankWolfe.get_active_set_iterate(as)
         number_of_steps = FrankWolfe.simplex_gradient_descent_over_convex_hull(
             f,
-            grad!,
+            grad_iip!,
             gradient,
             as,
             1.0e-3,

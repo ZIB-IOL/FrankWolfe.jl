@@ -80,12 +80,19 @@ function f(X)
     return r
 end
 
-function grad!(storage, X)
+function grad_iip!(storage, X)
     storage .= 0
     for (i, j) in present_ratings
         storage[i, j] = X[i, j] - rating_matrix[i, j]
     end
-    return nothing
+    return storage
+end
+function grad_oop(storage, x)
+    r = zeros(length(storage))
+    for (i, j) in present_ratings
+        r[i, j] = X[i, j] - rating_matrix[i, j]
+    end
+    return r
 end
 
 function test_loss(X)
@@ -138,8 +145,8 @@ for i in 1:num_pairs
     v2 = rand(size(x0, 2))
     v2 ./= sum(v2)
     y = FrankWolfe.RankOneMatrix(u2, v2)
-    grad!(gradient, x)
-    grad!(gradient_aux, y)
+    grad_iip!(gradient, x)
+    grad_iip!(gradient_aux, y)
     new_L = norm(gradient - gradient_aux) / norm(x - y)
     if new_L > L_estimate
         L_estimate = new_L
@@ -162,13 +169,13 @@ for _ in 1:k
     push!(function_test_values, test_loss(xgd))
     push!(timing_values, (time_ns() - time_start) / 1e9)
     @info f_val
-    grad!(gradient, xgd)
+    grad_iip!(gradient, xgd)
     xgd_new, vertex = project_nuclear_norm_ball(xgd - gradient / L_estimate, radius=norm_estimation)
     gamma = FrankWolfe.perform_line_search(
         ls,
         1,
         f,
-        grad!,
+        grad_iip!,
         gradient,
         xgd,
         xgd - xgd_new,
@@ -183,7 +190,7 @@ trajectory_arr_fw = Vector{Tuple{Int64,Float64,Float64,Float64,Float64,Float64}}
 callback = build_callback(trajectory_arr_fw)
 xfin, _, _, _, traj_data = FrankWolfe.frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0;
     epsilon=1e-9,
@@ -200,7 +207,7 @@ trajectory_arr_lazy = Vector{Tuple{Int64,Float64,Float64,Float64,Float64,Float64
 callback = build_callback(trajectory_arr_lazy)
 xlazy, _, _, _, _ = FrankWolfe.lazified_conditional_gradient(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0;
     epsilon=1e-9,
@@ -218,7 +225,7 @@ trajectory_arr_lazy_ref = Vector{Tuple{Int64,Float64,Float64,Float64,Float64,Flo
 callback = build_callback(trajectory_arr_lazy_ref)
 xlazy, _, _, _, _ = FrankWolfe.lazified_conditional_gradient(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0;
     epsilon=1e-9,

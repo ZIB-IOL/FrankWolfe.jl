@@ -17,9 +17,12 @@ total = sum(xpi);
 const xp = xpi ./ total;
 
 f(x) = LinearAlgebra.norm(x - xp)^2
-function grad!(storage, x)
+function grad_iip!(storage, x)
     @. storage = 2 * (x - xp)
-    return nothing
+    return storage
+end
+function grad_oop(storage, x)
+    return 2 * (x - xp)
 end
 
 lmo = FrankWolfe.UnitSimplexOracle(1.0)
@@ -27,7 +30,7 @@ x0 = FrankWolfe.compute_extreme_point(lmo, rand(n))
 
 xblas, _ = FrankWolfe.frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,
@@ -41,7 +44,7 @@ xblas, _ = FrankWolfe.frank_wolfe(
 
 xmem, _ = FrankWolfe.frank_wolfe(
     f,
-    grad!,
+    grad_iip!,
     lmo,
     x0,
     max_iteration=k,
