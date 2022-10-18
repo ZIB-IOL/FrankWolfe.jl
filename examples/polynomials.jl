@@ -90,7 +90,6 @@ function grad!(storage, coefficients)
         @. storage += x * p_i
     end
     storage ./= length(training_data)
-    return nothing
 end
 
 function build_callback(trajectory_arr)

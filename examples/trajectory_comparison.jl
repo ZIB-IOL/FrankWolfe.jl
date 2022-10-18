@@ -19,7 +19,6 @@ f(x) = LinearAlgebra.norm(x - xp)^2
 
 function grad!(storage, x)
     storage .= 2 * (x - xp)
-    return nothing
 end
 
 # better for memory consumption as we do coordinate-wise ops

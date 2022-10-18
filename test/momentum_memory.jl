@@ -19,7 +19,6 @@ const xp = xpi ./ total;
 f(x) = LinearAlgebra.norm(x - xp)^2
 function grad!(storage, x)
     @. storage = 2 * (x - xp)
-    return nothing
 end
 
 lmo = FrankWolfe.UnitSimplexOracle(1.0)

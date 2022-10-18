@@ -42,7 +42,7 @@ function grad!(storage, X)
     for (i, j) in present_entries
         storage[i, j] = X[i, j] - Xreal[i, j]
     end
-    return nothing
+    return storage
 end
 
 

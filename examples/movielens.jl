@@ -84,7 +84,7 @@ function grad!(storage, X)
     for (i, j) in present_ratings
         storage[i, j] = X[i, j] - rating_matrix[i, j]
     end
-    return nothing
+    return storage
 end
 
 function test_loss(X)

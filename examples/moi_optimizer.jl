@@ -29,7 +29,6 @@ const xp = xpi ./ total;
 f(x) = norm(x - xp)^2
 function grad!(storage, x)
     @. storage = 2 * (x - xp)
-    return nothing
 end
 
 lmo_radius = 2.5

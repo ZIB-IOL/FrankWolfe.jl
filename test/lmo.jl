@@ -249,7 +249,7 @@ end
                 end
             end
         end
-        return nothing
+        return storage
     end
     # TODO value of radius?
     lmo = FrankWolfe.NuclearNormLMO(sum(svdvals(Xreal)))

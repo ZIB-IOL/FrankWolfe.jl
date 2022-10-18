@@ -140,7 +140,6 @@ end
     f(x) = norm(x)^2
     function grad!(storage, x)
         @. storage = 2x
-        return nothing
     end
     lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
     x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(5))
@@ -199,7 +198,6 @@ end
     f(x) = norm(x)^2
     function grad!(storage, x)
         @. storage = 2 * x
-        return nothing
     end
     lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
     x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n))
@@ -253,7 +251,6 @@ end
     f(x) = norm(x - xp)^2
     function grad!(storage, x)
         @. storage = 2 * (x - xp)
-        return nothing
     end
     @testset "Using sparse structure" begin
         lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1.0)
