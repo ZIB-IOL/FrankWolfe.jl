@@ -19,10 +19,8 @@ function grad!(storage, x)
     @. storage = 2 * (x - xp)
 end
 
-# better for memory consumption as we do coordinate-wise ops
-
 function cf(x, xp)
-    return LinearAlgebra.norm(x .- xp)^2
+    return sum((x[idx] - xp[idx])^2 for idx in eachindex(x))
 end
 
 function cgrad!(storage, x, xp)
