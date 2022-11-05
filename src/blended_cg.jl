@@ -76,7 +76,7 @@ function blended_conditional_gradient(
     grad!(gradient, x)
     # initial gap estimate computation
     vmax = compute_extreme_point(lmo, gradient)
-    phi = fast_dot(gradient, x0 - vmax) / 2
+    phi = (fast_dot(gradient, x0) - fast_dot(gradient, vmax)) / 2
     dual_gap = phi
 
     if trajectory
