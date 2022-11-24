@@ -284,10 +284,9 @@ function lazified_conditional_gradient(
         return rep
     end
 
+    lmo = VectorCacheLMO{typeof(lmo_base),VType}(lmo_base)
     if isfinite(cache_size)
-        lmo = MultiCacheLMO{cache_size,typeof(lmo_base),VType}(lmo_base)
-    else
-        lmo = VectorCacheLMO{typeof(lmo_base),VType}(lmo_base)
+        Base.sizehint!(lmo.vertices, cache_size)
     end
 
     t = 0
