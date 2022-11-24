@@ -32,6 +32,7 @@ function blended_conditional_gradient(
     timeout=Inf,
     linesearch_workspace=nothing,
     linesearch_inner_workspace=nothing,
+    renorm_interval=1000,
     lmo_kwargs...,
 )
 
@@ -168,6 +169,7 @@ function blended_conditional_gradient(
             format_string=format_string,
             linesearch_inner_workspace=linesearch_inner_workspace,
             memory_mode=memory_mode,
+            renorm_interval=renorm_interval,
         )
         t += num_simplex_descent_steps
         #Take a FW step.
@@ -358,6 +360,7 @@ function minimize_over_convex_hull!(
     format_string=nothing,
     linesearch_inner_workspace=nothing,
     memory_mode::MemoryEmphasis=InplaceEmphasis(),
+    renorm_interval=1000,
 )
     #No hessian is known, use simplex gradient descent.
     if hessian === nothing
@@ -453,6 +456,10 @@ function minimize_over_convex_hull!(
             )
             @. active_set.weights = new_weights
         end
+    end
+    # if we reached a renorm interval
+    if (t + number_of_steps) ÷ renorm_interval > (t + number_of_steps) ÷ renorm_interval
+        compute_active_set_iterate!(active_set)
     end
     active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
     return number_of_steps
