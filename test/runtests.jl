@@ -780,7 +780,7 @@ include("generic-arrays.jl")
     trajectory_testfiles = readdir(joinpath(@__DIR__, "trajectory_tests"), join=true)
     for file in trajectory_testfiles
         @eval Module() begin
-            Base.include(@__MODULE__, file)
+            Base.include(@__MODULE__, $file)
         end
     end
 end
