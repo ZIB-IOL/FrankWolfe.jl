@@ -457,11 +457,11 @@ function minimize_over_convex_hull!(
             @. active_set.weights = new_weights
         end
     end
+    active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
     # if we reached a renorm interval
-    if (t + number_of_steps) ÷ renorm_interval > (t + number_of_steps) ÷ renorm_interval
+    if (t + number_of_steps) ÷ renorm_interval > t ÷ renorm_interval
         compute_active_set_iterate!(active_set)
     end
-    active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
     return number_of_steps
 end
 
