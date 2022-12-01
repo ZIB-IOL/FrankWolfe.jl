@@ -258,6 +258,7 @@ function away_frank_wolfe(
         end
 
         if mod(t, renorm_interval) == 0
+            active_set_renormalize!(active_set)
             x = compute_active_set_iterate!(active_set)
         end
 
