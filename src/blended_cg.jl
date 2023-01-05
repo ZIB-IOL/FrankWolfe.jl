@@ -73,6 +73,7 @@ function blended_conditional_gradient(
     if gradient === nothing
         gradient = similar(x0)
     end
+    d = similar(x)
     primal = f(x)
     grad!(gradient, x)
     # initial gap estimate computation
@@ -202,6 +203,7 @@ function blended_conditional_gradient(
                     tot_time,
                     x,
                     v,
+                    nothing,
                     gamma,
                     f,
                     grad!,
@@ -215,6 +217,7 @@ function blended_conditional_gradient(
             end
         else
             tt = regular
+            d = muladd_memory_mode(memory_mode, d, x, v)
             gamma = perform_line_search(
                 line_search,
                 t,
@@ -222,7 +225,7 @@ function blended_conditional_gradient(
                 grad!,
                 gradient,
                 x,
-                x - v,
+                d,
                 1.0,
                 linesearch_workspace,
                 memory_mode,
@@ -237,6 +240,7 @@ function blended_conditional_gradient(
                     tot_time,
                     x,
                     v,
+                    d,
                     gamma,
                     f,
                     grad!,
@@ -280,6 +284,7 @@ function blended_conditional_gradient(
             tot_time,
             x,
             v,
+            nothing,
             gamma,
             f,
             grad!,
@@ -312,6 +317,7 @@ function blended_conditional_gradient(
             tot_time,
             x,
             v,
+            nothing,
             gamma,
             f,
             grad!,
@@ -404,7 +410,7 @@ function minimize_over_convex_hull!(
         L_reduced = maximum(S.values)::T
         reduced_f(y) =
             f(x) - fast_dot(gradient, x) +
-            0.5 * transpose(x) * hessian * x +
+            0.5 * dot(x, hessian, x) +
             fast_dot(b, y) +
             0.5 * dot(y, M, y)
         function reduced_grad!(storage, x)
@@ -491,7 +497,7 @@ function build_reduced_problem(
     gradient,
     tolerance,
 )
-    n = atoms[1].len
+    n = length(atoms[1])
     k = length(atoms)
     reduced_linear = [fast_dot(gradient, a) for a in atoms]
     if strong_frankwolfe_gap(reduced_linear) <= tolerance
@@ -612,7 +618,6 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
     y = deepcopy(initial_point)
     gradient_x = similar(x)
     gradient_y = similar(x)
-    d = similar(x)
     reduced_grad!(gradient_x, x)
     reduced_grad!(gradient_y, x)
     strong_wolfe_gap = strong_frankwolfe_gap_probability_simplex(gradient_x, x)
@@ -650,6 +655,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
                 (time_ns() - time_start) / 1e9,
                 x,
                 y,
+                nothing,
                 gamma,
                 reduced_f,
                 reduced_grad!,
@@ -700,7 +706,6 @@ function simplex_gradient_descent_over_probability_simplex(
     number_of_steps = 0
     x = deepcopy(initial_point)
     gradient = similar(x)
-    d = similar(x)
     reduced_grad!(gradient, x)
     strong_wolfe_gap = strong_frankwolfe_gap_probability_simplex(gradient, x)
     while strong_wolfe_gap > tolerance && t + number_of_steps <= max_iteration
@@ -719,6 +724,7 @@ function simplex_gradient_descent_over_probability_simplex(
                 tolerance,
                 tot_time,
                 x,
+                nothing,
                 nothing,
                 inv(L),
                 reduced_f,
@@ -955,6 +961,7 @@ function simplex_gradient_descent_over_convex_hull(
                 (time_ns() - time_start) / 1e9,
                 x,
                 y,
+                nothing,
                 η * (1 - gamma),
                 f,
                 grad!,
