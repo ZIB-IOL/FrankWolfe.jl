@@ -3,7 +3,7 @@ using LinearAlgebra
 using Test
 using SparseArrays
 
-function test_callback(state, active_set)
+function test_callback(state, active_set, args...)
     grad0 = similar(state.x)
     state.grad!(grad0, state.x)
     @test grad0 ≈ state.gradient
