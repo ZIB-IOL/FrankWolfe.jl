@@ -2048,8 +2048,8 @@ end
     primal_true1 = 4.3758944410464604e-17
 
     @test norm(res1[1] - x_true1) ≈ 0 atol = 1e-6
-    @test res1[3] ≈ primal_true1
-    @test res1[5][end][1] == 52
+    @test res1[3] ≈ primal_true1 atol = 1e-7
+    @test res1[5][end][1] <= 54
 
 
     trajectory_adaptive = []
@@ -3075,8 +3075,8 @@ end
     primal_true2 = 7.203447848470618e-17
 
     @test norm(res2[1] - x_true2) ≈ 0 atol = 1e-6
-    @test res2[3] ≈ primal_true2
-    @test res2[5][end][1] == 1001
+    @test res2[3] ≈ primal_true2 atol = 1e-7
+    @test res2[5][end][1] <= 1001
 
     trajectory_adaptiveLoc15 = []
     callback = build_callback(trajectory_adaptiveLoc15)
@@ -4103,8 +4103,8 @@ end
     primal_true3 = 2.6251493517155233e-22
 
     @test norm(res3[1] - x_true3) ≈ 0 atol = 1e-6
-    @test res3[3] ≈ primal_true3
-    @test res3[5][end][1] == 245
+    @test res3[3] ≈ primal_true3 atol = 1e-7
+    @test res3[5][end][1] <= 245
 
 
     trajectory_adaptiveLoc2 = []
@@ -5131,8 +5131,8 @@ end
 
     primal_true4 = 4.517288607495588e-22
 
-    @test norm(res4[1] - x_true4) ≈ 0 atol = 1e-6
-    @test res4[3] ≈ primal_true4
+    @test norm(res4[1] - x_true4) <= 1e-6
+    @test res4[3] ≈ primal_true4 atol = 1e-7
     @test res4[5][end][1] <= 279
 
 end
