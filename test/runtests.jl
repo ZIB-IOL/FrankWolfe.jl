@@ -775,3 +775,12 @@ end
 end
 
 include("generic-arrays.jl")
+
+@testset "End-to-end trajectory tests" begin
+    trajectory_testfiles = readdir(joinpath(@__DIR__, "trajectory_tests"), join=true)
+    for file in trajectory_testfiles
+        @eval Module() begin
+            Base.include(@__MODULE__, $file)
+        end
+    end
+end
