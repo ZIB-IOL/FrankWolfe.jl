@@ -237,6 +237,7 @@ function away_frank_wolfe(
                     tot_time,
                     x,
                     vertex,
+                    d,
                     gamma,
                     f,
                     grad!,
@@ -255,6 +256,11 @@ function away_frank_wolfe(
             else
                 active_set_update!(active_set, gamma, vertex, renorm, index)
             end
+        end
+
+        if mod(t, renorm_interval) == 0
+            active_set_renormalize!(active_set)
+            x = compute_active_set_iterate!(active_set)
         end
 
         if (
@@ -288,6 +294,7 @@ function away_frank_wolfe(
             tot_time,
             x,
             v,
+            nothing,
             gamma,
             f,
             grad!,
@@ -318,6 +325,7 @@ function away_frank_wolfe(
             tot_time,
             x,
             v,
+            nothing,
             gamma,
             f,
             grad!,
