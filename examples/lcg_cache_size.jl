@@ -17,8 +17,6 @@ function grad!(storage, x)
     @. storage = 2 * (x - xp)
 end
 
-# lmo = FrankWolfe.ProbabilitySimplexOracle(1);
-
 lmo = FrankWolfe.KSparseLMO(100, 1.0)
 x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
@@ -37,7 +35,6 @@ x0 = deepcopy(x00)
     memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
 );
-
 
 # fixed cache size
 
