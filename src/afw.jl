@@ -237,6 +237,7 @@ function away_frank_wolfe(
                     tot_time,
                     x,
                     vertex,
+                    d,
                     gamma,
                     f,
                     grad!,
