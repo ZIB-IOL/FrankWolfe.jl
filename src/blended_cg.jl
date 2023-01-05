@@ -73,6 +73,7 @@ function blended_conditional_gradient(
     if gradient === nothing
         gradient = similar(x0)
     end
+    d = similar(x)
     primal = f(x)
     grad!(gradient, x)
     # initial gap estimate computation
@@ -216,8 +217,7 @@ function blended_conditional_gradient(
             end
         else
             tt = regular
-            # todo optimize
-            d = x - v
+            d = muladd_memory_mode(memory_mode, d, x, v)
             gamma = perform_line_search(
                 line_search,
                 t,
@@ -284,7 +284,7 @@ function blended_conditional_gradient(
             tot_time,
             x,
             v,
-            d,
+            nothing,
             gamma,
             f,
             grad!,
@@ -410,7 +410,7 @@ function minimize_over_convex_hull!(
         L_reduced = maximum(S.values)::T
         reduced_f(y) =
             f(x) - fast_dot(gradient, x) +
-            0.5 * transpose(x) * hessian * x +
+            0.5 * dot(x, hessian, x) +
             fast_dot(b, y) +
             0.5 * dot(y, M, y)
         function reduced_grad!(storage, x)
@@ -497,7 +497,7 @@ function build_reduced_problem(
     gradient,
     tolerance,
 )
-    n = atoms[1].len
+    n = length(atoms[1])
     k = length(atoms)
     reduced_linear = [fast_dot(gradient, a) for a in atoms]
     if strong_frankwolfe_gap(reduced_linear) <= tolerance
