@@ -43,7 +43,7 @@ const st = (
 """
 Main structure created before and passed to the callback in first position.
 """
-struct CallbackState{TP,TDV,TDG,XT,VT,TG,FT,GFT,LMO,GT}
+struct CallbackState{TP,TDV,TDG,XT,VT,DT,TG,FT,GFT,LMO,GT}
     t::Int
     primal::TP
     dual::TDV
@@ -51,6 +51,7 @@ struct CallbackState{TP,TDV,TDG,XT,VT,TG,FT,GFT,LMO,GT}
     time::Float64
     x::XT
     v::VT
+    d::DT
     gamma::TG
     f::FT
     grad!::GFT
