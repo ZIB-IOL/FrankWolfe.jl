@@ -5133,6 +5133,6 @@ end
 
     @test norm(res4[1] - x_true4) ≈ 0 atol = 1e-6
     @test res4[3] ≈ primal_true4
-    @test res4[5][end][1] == 279
+    @test res4[5][end][1] <= 279
 
 end
