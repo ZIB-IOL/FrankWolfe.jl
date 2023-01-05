@@ -238,6 +238,7 @@ function blended_pairwise_conditional_gradient(
                     tot_time,
                     x,
                     vertex_taken,
+                    d,
                     gamma,
                     f,
                     grad!,
@@ -245,7 +246,7 @@ function blended_pairwise_conditional_gradient(
                     gradient,
                     tt,
                 )
-                if callback(state, active_set) === false
+                if callback(state, active_set, a) === false
                     break
                 end
             end
@@ -314,6 +315,7 @@ function blended_pairwise_conditional_gradient(
                         tot_time,
                         x,
                         vertex_taken,
+                        d,
                         gamma,
                         f,
                         grad!,
@@ -367,6 +369,7 @@ function blended_pairwise_conditional_gradient(
                         tot_time,
                         x,
                         vertex_taken,
+                        nothing,
                         gamma,
                         f,
                         grad!,
@@ -416,6 +419,7 @@ function blended_pairwise_conditional_gradient(
                 tot_time,
                 x,
                 v,
+                nothing,
                 gamma,
                 f,
                 grad!,
@@ -448,6 +452,7 @@ function blended_pairwise_conditional_gradient(
             tot_time,
             x,
             v,
+            nothing,
             gamma,
             f,
             grad!,
