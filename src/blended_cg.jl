@@ -618,7 +618,6 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
     y = deepcopy(initial_point)
     gradient_x = similar(x)
     gradient_y = similar(x)
-    d = similar(x)
     reduced_grad!(gradient_x, x)
     reduced_grad!(gradient_y, x)
     strong_wolfe_gap = strong_frankwolfe_gap_probability_simplex(gradient_x, x)
@@ -707,7 +706,6 @@ function simplex_gradient_descent_over_probability_simplex(
     number_of_steps = 0
     x = deepcopy(initial_point)
     gradient = similar(x)
-    d = similar(x)
     reduced_grad!(gradient, x)
     strong_wolfe_gap = strong_frankwolfe_gap_probability_simplex(gradient, x)
     while strong_wolfe_gap > tolerance && t + number_of_steps <= max_iteration
