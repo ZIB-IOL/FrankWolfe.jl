@@ -178,6 +178,7 @@ function frank_wolfe(
                 tot_time,
                 x,
                 v,
+                d,
                 gamma,
                 f,
                 grad!,
@@ -222,6 +223,7 @@ function frank_wolfe(
             tot_time,
             x,
             v,
+            d,
             gamma,
             f,
             grad!,
@@ -406,6 +408,7 @@ function lazified_conditional_gradient(
                 tot_time,
                 x,
                 v,
+                d,
                 gamma,
                 f,
                 grad!,
@@ -451,6 +454,7 @@ function lazified_conditional_gradient(
             tot_time,
             x,
             v,
+            d,
             gamma,
             f,
             grad!,
@@ -637,6 +641,8 @@ function stochastic_frank_wolfe(
             dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         end
 
+        # TODO optimize
+        d = x - v
         # note: only linesearch methods that do not require full evaluations are supported
         # so nothing is passed as function
         gamma = perform_line_search(
@@ -646,12 +652,13 @@ function stochastic_frank_wolfe(
             nothing,
             gradient,
             x,
-            x - v,
+            d,
             1.0,
             linesearch_workspace,
             memory_mode,
         )
         t += 1
+        d = muladd_memory_mode(memory_mode, d, x, v)
         if callback !== nothing
             state = CallbackState(
                 t,
@@ -661,6 +668,7 @@ function stochastic_frank_wolfe(
                 tot_time,
                 x,
                 v,
+                d,
                 gamma,
                 f,
                 nothing,
@@ -673,7 +681,6 @@ function stochastic_frank_wolfe(
             end
         end
 
-        d = muladd_memory_mode(memory_mode, d, x, v)
         x = muladd_memory_mode(memory_mode, x, gamma, d)
     end
     # recompute everything once for final verfication / no additional callback call
@@ -686,6 +693,7 @@ function stochastic_frank_wolfe(
     # @show (gradient, primal)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
     tt = last
+    d = muladd_memory_mode(memory_mode, d, x, v)
     gamma = perform_line_search(
         line_search,
         t,
@@ -693,7 +701,7 @@ function stochastic_frank_wolfe(
         nothing,
         gradient,
         x,
-        x - v,
+        d,
         1.0,
         linesearch_workspace,
         memory_mode,
@@ -708,6 +716,7 @@ function stochastic_frank_wolfe(
             (time_ns() - time_start) / 1e9,
             x,
             v,
+            d,
             gamma,
             f,
             nothing,

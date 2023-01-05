@@ -202,6 +202,7 @@ function blended_conditional_gradient(
                     tot_time,
                     x,
                     v,
+                    nothing,
                     gamma,
                     f,
                     grad!,
@@ -215,6 +216,8 @@ function blended_conditional_gradient(
             end
         else
             tt = regular
+            # todo optimize
+            d = x - v
             gamma = perform_line_search(
                 line_search,
                 t,
@@ -222,7 +225,7 @@ function blended_conditional_gradient(
                 grad!,
                 gradient,
                 x,
-                x - v,
+                d,
                 1.0,
                 linesearch_workspace,
                 memory_mode,
@@ -237,6 +240,7 @@ function blended_conditional_gradient(
                     tot_time,
                     x,
                     v,
+                    d,
                     gamma,
                     f,
                     grad!,
@@ -280,6 +284,7 @@ function blended_conditional_gradient(
             tot_time,
             x,
             v,
+            d,
             gamma,
             f,
             grad!,
@@ -312,6 +317,7 @@ function blended_conditional_gradient(
             tot_time,
             x,
             v,
+            nothing,
             gamma,
             f,
             grad!,
@@ -650,6 +656,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
                 (time_ns() - time_start) / 1e9,
                 x,
                 y,
+                nothing,
                 gamma,
                 reduced_f,
                 reduced_grad!,
@@ -719,6 +726,7 @@ function simplex_gradient_descent_over_probability_simplex(
                 tolerance,
                 tot_time,
                 x,
+                nothing,
                 nothing,
                 inv(L),
                 reduced_f,
@@ -955,6 +963,7 @@ function simplex_gradient_descent_over_convex_hull(
                 (time_ns() - time_start) / 1e9,
                 x,
                 y,
+                nothing,
                 η * (1 - gamma),
                 f,
                 grad!,
