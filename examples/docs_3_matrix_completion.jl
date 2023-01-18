@@ -6,9 +6,9 @@
 # [the paper](https://arxiv.org/pdf/2104.06675.pdf).
 # We will try to solve
 # ```math
-# \min_{||X||_*\le \tau} \sum_{(i,j)\in\mathcal{I}} (X_{i,j}iY_{i,j})^2,
+# \min_{||X||_*\le \tau} \sum_{(i,j)\in\mathcal{I}} (X_{i,j}-Y_{i,j})^2,
 # ```
-# where ``\tau>0`` and ``\mathcal{I}`` denote the indices of the observed entries. We will use [`FrankWolfe.NuclearNormLMO`](@ref) and compare our
+# where ``\tau>0``, ``||X||_*`` is the nuclear norm, and ``\mathcal{I}`` denotes the indices of the observed entries. We will use [`FrankWolfe.NuclearNormLMO`](@ref) and compare our
 # Frank-Wolfe implementation with a Projected Gradient Descent (PGD) algorithm which, after each gradient descent step, projects the iterates back onto the nuclear
 # norm ball. We use a movielens dataset for comparison.
 
