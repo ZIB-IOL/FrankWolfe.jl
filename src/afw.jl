@@ -161,7 +161,7 @@ function away_frank_wolfe(
     if linesearch_workspace === nothing
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
     end
-    while t <= max_iteration && phi_value >= eps(float(typeof(phi_value)))
+    while t <= max_iteration && phi_value >= max(eps(float(typeof(phi_value))), epsilon)
         #####################
         # managing time and Ctrl-C
         #####################
