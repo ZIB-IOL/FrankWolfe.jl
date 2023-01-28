@@ -1234,7 +1234,7 @@ Base.precompile(
         typeof(frank_wolfe),
         Function,
         Function,
-        ScaledBoundL1NormBall{Float64,Vector{Float64},Vector{Float64}},
+        ScaledBoundL1NormBall{Float64,1,Vector{Float64},Vector{Float64}},
         Vector{Float64},
     },
 )   # time: 0.19644113
@@ -1248,7 +1248,7 @@ Base.precompile(
         typeof(frank_wolfe),
         Function,
         Function,
-        ScaledBoundLInfNormBall{Float64,Vector{Float64},Vector{Float64}},
+        ScaledBoundLInfNormBall{Float64,1,Vector{Float64},Vector{Float64}},
         Vector{Float64},
     },
 )   # time: 0.046453062
