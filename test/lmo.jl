@@ -694,6 +694,16 @@ end
     vref = FrankWolfe.compute_extreme_point(lmo_ref, d)
     @test v ≈ vref
     @test norm(v, Inf) == 1
+    # test with non-flat array
+    lmo = FrankWolfe.ScaledBoundLInfNormBall(-ones(3,3), ones(3,3))
+    lmo_flat = FrankWolfe.ScaledBoundLInfNormBall(-ones(9), ones(9))
+    for _ in 1:10
+        d = randn(3,3)
+        v = FrankWolfe.compute_extreme_point(lmo, d)
+        vflat = FrankWolfe.compute_extreme_point(lmo_flat, vec(d))
+        @test vec(v) == vflat
+        @test size(d) == size(v)
+    end
 end
 
 @testset "Copy MathOpt LMO" begin
