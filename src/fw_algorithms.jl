@@ -154,7 +154,7 @@ function frank_wolfe(
         if compute_iter
             primal = f(x)
         end
-        if iter %  dual_gap_compute_frequency == 0 || compute_iter
+        if t %  dual_gap_compute_frequency == 0 || compute_iter
             dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         end
         d = muladd_memory_mode(memory_mode, d, x, v)
