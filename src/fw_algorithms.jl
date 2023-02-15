@@ -28,6 +28,7 @@ function frank_wolfe(
     traj_data=[],
     timeout=Inf,
     linesearch_workspace=nothing,
+    dual_gap_compute_frequency=1,
 )
 
     # header and format string for output of the algorithm
@@ -144,16 +145,18 @@ function frank_wolfe(
         end
 
         first_iter = false
-        # go easy on the memory - only compute if really needed
-        if (
+        # go easy on runtime - only compute primal and dual if needed
+        compute_iter = (
             (mod(t, print_iter) == 0 && verbose) ||
             callback !== nothing ||
             line_search isa Shortstep
         )
+        if compute_iter
             primal = f(x)
+        end
+        if iter %  dual_gap_compute_frequency == 0 || compute_iter
             dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         end
-
         d = muladd_memory_mode(memory_mode, d, x, v)
 
         gamma = perform_line_search(
