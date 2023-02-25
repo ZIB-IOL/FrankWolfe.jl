@@ -162,6 +162,12 @@ function get_active_set_iterate(active_set)
     return active_set.x
 end
 
+"""
+    compute_active_set_iterate!(active_set::ActiveSet) -> x
+
+Recomputes from scratch the iterate `x` from the current weights and vertices of the active set.
+Returns the iterate `x`.
+"""
 function compute_active_set_iterate!(active_set)
     active_set.x .= 0
     for (λi, ai) in active_set
