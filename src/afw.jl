@@ -214,6 +214,7 @@ function away_frank_wolfe(
                 fw_step(x, gradient, lmo)
         end
 
+        gamma = 0.0
         if fw_step_taken || away_step_taken
             gamma = perform_line_search(
                 line_search,
@@ -227,28 +228,8 @@ function away_frank_wolfe(
                 linesearch_workspace,
                 memory_mode,
             )
-            gamma = min(gamma_max, gamma)
-            if callback !== nothing
-                state = CallbackState(
-                    t,
-                    primal,
-                    primal - dual_gap,
-                    dual_gap,
-                    tot_time,
-                    x,
-                    vertex,
-                    d,
-                    gamma,
-                    f,
-                    grad!,
-                    lmo,
-                    gradient,
-                    tt,
-                )
-                if callback(state, active_set) === false
-                    break
-                end
-            end    
+            
+            gamma = min(gamma_max, gamma)  
             # cleanup and renormalize every x iterations. Only for the fw steps.
             renorm = mod(t, renorm_interval) == 0
             if away_step_taken
@@ -257,6 +238,28 @@ function away_frank_wolfe(
                 active_set_update!(active_set, gamma, vertex, renorm, index)
             end
         end
+
+        if callback !== nothing
+            state = CallbackState(
+                t,
+                primal,
+                primal - dual_gap,
+                dual_gap,
+                tot_time,
+                x,
+                vertex,
+                d,
+                gamma,
+                f,
+                grad!,
+                lmo,
+                gradient,
+                tt,
+            )
+            if callback(state, active_set) === false
+                break
+            end
+        end  
 
         if mod(t, renorm_interval) == 0
             active_set_renormalize!(active_set)
