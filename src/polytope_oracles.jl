@@ -103,7 +103,7 @@ function compute_extreme_point(
 ) where {T}
     nsq = length(direction)
     n = isqrt(nsq)
-    return compute_extreme_point(lmo, reshape(direction, n, n); kwargs...)
+    return compute_extreme_point(lmo, reshape(direction, n, n); kwargs...)[:]
 end
 
 function convert_mathopt(
