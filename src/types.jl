@@ -205,3 +205,14 @@ Base.@propagate_inbounds function muladd_memory_mode(::InplaceEmphasis, d::Matri
     end
     return d
 end
+
+Base.@propagate_inbounds function muladd_memory_mode(::InplaceEmphasis, x::Matrix, gamma::Real, d::RankOneMatrix)
+    @boundscheck size(d) == size(x) || throw(DimensionMismatch())
+    m, n = size(x)
+    @inbounds for j in 1:n
+        for i in 1:m
+            x[i,j] -= gamma * d[i,j]
+        end
+    end
+    return x
+end
