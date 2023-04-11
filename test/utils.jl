@@ -64,21 +64,21 @@ end
     end
 end
 
-@testset "RankOne muladd_memory_mode" begin
-    for n in (1, 2, 5)
-        for _ in 1:5
-            n = 3
-            m = 5
-            v = rand(n)
-            u = randn(2n)
-            M = u * v'
-            R = FrankWolfe.RankOneMatrix(u, v)
-            X = similar(M)
-            FrankWolfe.muladd_memory_mode(FrankWolfe.InplaceEmphasis(), X, 0.7, R)
-            X2 = similar(M)
-            FrankWolfe.muladd_memory_mode(FrankWolfe.InplaceEmphasis(), X2, 0.7, M)
-            @test norm(X - X2) ≤ 1e-14
-        end
+@testset "RankOne muladd_memory_mode $n" for n in (1, 2, 5)
+    for _ in 1:5
+        n = 5
+        v = rand(n)
+        u = randn(2n)
+        M = u * v'
+        R = FrankWolfe.RankOneMatrix(u, v)
+        X = similar(M)
+        X .= 0
+        FrankWolfe.muladd_memory_mode(FrankWolfe.InplaceEmphasis(), X, 0.7, R)
+        X2 = similar(M)
+        X2 .= 0
+        FrankWolfe.muladd_memory_mode(FrankWolfe.InplaceEmphasis(), X2, 0.7, M)
+        @test norm(M - R) ≤ 1e-14
+        @test norm(X - X2) ≤ 1e-14
     end
 end
 
