@@ -193,3 +193,26 @@ Base.@propagate_inbounds function Base.:+(a::RankOneMatrix, b::RankOneMatrix)
 end
 
 LinearAlgebra.norm(R::RankOneMatrix) = norm(R.u) * norm(R.v)
+
+Base.@propagate_inbounds function muladd_memory_mode(::InplaceEmphasis, d::Matrix, x::Union{RankOneMatrix, Matrix}, v::RankOneMatrix)
+    @boundscheck size(d) == size(x) || throw(DimensionMismatch())
+    @boundscheck size(d) == size(v) || throw(DimensionMismatch())
+    m, n = size(d)
+    @inbounds for j in 1:n
+        for i in 1:m
+            d[i,j] = x[i,j] - v[i,j]
+        end
+    end
+    return d
+end
+
+Base.@propagate_inbounds function muladd_memory_mode(::InplaceEmphasis, x::Matrix, gamma::Real, d::RankOneMatrix)
+    @boundscheck size(d) == size(x) || throw(DimensionMismatch())
+    m, n = size(x)
+    @inbounds for j in 1:n
+        for i in 1:m
+            x[i,j] -= gamma * d[i,j]
+        end
+    end
+    return x
+end
