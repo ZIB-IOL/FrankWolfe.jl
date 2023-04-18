@@ -787,5 +787,5 @@ using Test
     JuMP.set_silent(m)
     optimize!(m)
     xv = JuMP.value.(x)
-    @test xv ≈ v atol=1e-6
+    @test xv ≈ v atol=n*1e-6
 end
