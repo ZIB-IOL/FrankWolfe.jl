@@ -2,15 +2,15 @@ using Test
 using FrankWolfe
 using LinearAlgebra
 import SparseArrays
+using Random
 
 import FrankWolfe: compute_extreme_point, LpNormLMO, KSparseLMO
 
-import GLPK
-import MathOptInterface
-const MOI = MathOptInterface
+import MathOptInterface as MOI
 
+# solvers
+import GLPK
 import Clp
-using Random
 import Hypatia
 
 @testset "Simplex LMOs" begin
