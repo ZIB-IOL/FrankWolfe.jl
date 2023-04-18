@@ -12,6 +12,7 @@ import MathOptInterface as MOI
 import GLPK
 import Clp
 import Hypatia
+using JuMP
 
 @testset "Simplex LMOs" begin
     n = 6
