@@ -302,3 +302,53 @@ function convert_mathopt(
     MOI.add_constraint(optimizer, sum_diag_terms, constraint_set)
     return MathOptLMO(optimizer, use_modify)
 end
+
+"""
+    EllipsoidLMO(A, c, r)
+
+Linear minimization over an ellipsoid centered at `c` of radius `r`:
+```
+x: (x - c)^T A (x - c) ≤ r
+```
+
+The LMO stores the factorization `F` of A that is used to solve linear systems `A⁻¹ x`.
+The result of the linear system solve is stored in `buffer`.
+The ellipsoid is assumed to be full-dimensional -> A is positive definite.
+"""
+struct EllipsoidLMO{AT,FT,CT,T,BT} <: LinearMinimizationOracle
+    A::AT
+    F::FT
+    center::CT
+    radius::T
+    buffer::BT
+end
+
+function EllipsoidLMO(A, center, radius)
+    F = cholesky(A)
+    buffer = radius * similar(center)
+    EllipsoidLMO(A, F, center, radius, buffer)
+end
+
+EllipsoidLMO(A) = EllipsoidLMO(A, zeros(size(A, 1)), true)
+
+function compute_extreme_point(
+    lmo::EllipsoidLMO,
+    direction;
+    v=nothing,
+    kwargs...,
+)
+    if v === nothing
+        # used for type promotion
+        v = lmo.center + false * lmo.radius * direction
+    else
+        copyto!(v, lmo.center)
+    end
+    # # buffer = A⁻¹ direction
+    # ldiv!(lmo.buffer, lmo.F, direction)
+    # # scaling = √radius * 1/√(direction^T A⁻¹ direction) = √radius * 1/√(direction^T buffer)
+    # scaling = sqrt(inv(dot(direction, lmo.buffer))) * sqrt(lmo.radius)
+    # # v = v - I * buffer * scaling
+    # mul!(v, I, lmo.buffer, -scaling, true)
+    v = lmo.center - 1/sqrt(lmo.radius) * lmo.A \ direction / sqrt(dot(direction, inv(lmo.A), direction))
+    return v
+end

@@ -751,3 +751,40 @@ end
     x_standard, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad!, lmo_standard, [1.0, 0.0, 0.0])
     @test x_dense == x_standard
 end
+
+using FrankWolfe
+using LinearAlgebra
+using Test
+
+@testset "Ellipsoid LMO $n" for n in (2, 5, 10)
+    A = zeros(n, n)
+    A[1,1] = 3
+    @test_throws PosDefException FrankWolfe.EllipsoidLMO(A)
+    for i in 1:n
+        A[i,i] = 3
+    end
+    radius = 4 * rand()
+    center = randn(n)
+    lmo = FrankWolfe.EllipsoidLMO(A, center, radius)
+    d = randn(n)
+    v = FrankWolfe.compute_extreme_point(lmo, d)
+    @test dot(v - center, A, v - center) ≈ radius atol=1e-10
+    A = randn(n,n)
+    A += A'
+    while !isposdef(A)
+        A += I
+    end
+    lmo = FrankWolfe.EllipsoidLMO(A, center, radius)
+    d = randn(n)
+    v = FrankWolfe.compute_extreme_point(lmo, d)
+    @test dot(v - center, A, v - center) ≈ radius atol=1e-10
+    
+    m = Model(Hypatia.Optimizer)
+    @variable(m, x[1:n])
+    @constraint(m, dot(x-center, A, x-center) ≤ radius)
+    @objective(m, Min, dot(x, d))
+    JuMP.set_silent(m)
+    optimize!(m)
+    xv = JuMP.value.(x)
+    @test xv ≈ v atol=1e-6
+end
