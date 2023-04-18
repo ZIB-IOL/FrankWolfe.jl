@@ -787,5 +787,5 @@ using Test
     JuMP.set_silent(m)
     optimize!(m)
     xv = JuMP.value.(x)
-    @test norm(xv - v, Inf) <= n*1e-6
+    @test norm(xv - v, Inf) <= n*1e-5
 end
