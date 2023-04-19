@@ -343,12 +343,10 @@ function compute_extreme_point(
     else
         copyto!(v, lmo.center)
     end
-    # # buffer = A⁻¹ direction
-    # ldiv!(lmo.buffer, lmo.F, direction)
-    # # scaling = √radius * 1/√(direction^T A⁻¹ direction) = √radius * 1/√(direction^T buffer)
-    # scaling = sqrt(inv(dot(direction, lmo.buffer))) * sqrt(lmo.radius)
-    # # v = v - I * buffer * scaling
-    # mul!(v, I, lmo.buffer, -scaling, true)
-    v = lmo.center - 1/sqrt(lmo.radius) * lmo.A \ direction / sqrt(dot(direction, inv(lmo.A), direction))
+    # buffer = A⁻¹ direction
+    ldiv!(lmo.buffer, lmo.F, direction)
+    scaling = sqrt(lmo.radius) / sqrt(dot(direction, lmo.buffer))
+    # v = v - I * buffer * scaling
+    mul!(v, I, lmo.buffer, -scaling, true)
     return v
 end

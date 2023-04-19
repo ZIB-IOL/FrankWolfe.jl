@@ -753,10 +753,6 @@ end
     @test x_dense == x_standard
 end
 
-using FrankWolfe
-using LinearAlgebra
-using Test
-
 @testset "Ellipsoid LMO $n" for n in (2, 5, 10)
     A = zeros(n, n)
     A[1,1] = 3
@@ -779,7 +775,6 @@ using Test
     d = randn(n)
     v = FrankWolfe.compute_extreme_point(lmo, d)
     @test dot(v - center, A, v - center) ≈ radius atol=1e-10
-    
     m = Model(Hypatia.Optimizer)
     @variable(m, x[1:n])
     @constraint(m, dot(x-center, A, x-center) ≤ radius)
@@ -787,5 +782,5 @@ using Test
     JuMP.set_silent(m)
     optimize!(m)
     xv = JuMP.value.(x)
-    @test norm(xv - v, Inf) <= 2n*1e-5
+    @test norm(xv - v, Inf) <= 2n*1e-6
 end
