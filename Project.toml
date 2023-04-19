@@ -1,7 +1,7 @@
 name = "FrankWolfe"
 uuid = "f55ce6ea-fdc5-4628-88c5-0087fe54bd30"
 authors = ["ZIB-IOL"]
-version = "0.2.24"
+version = "0.2.23"
 
 [deps]
 Arpack = "7d9fca2a-8960-54d3-9f78-7d1dccf2cb97"
