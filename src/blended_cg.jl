@@ -35,6 +35,63 @@ function blended_conditional_gradient(
     renorm_interval=1000,
     lmo_kwargs...,
 )
+    # add the first vertex to active set from initialization
+    active_set = ActiveSet([(1.0, x0)])
+
+    return blended_conditional_gradient(
+        f,
+        grad!,
+        lmo, 
+        active_set,
+        line_search=line_search,
+        line_search_inner=line_search_inner,
+        hessian=hessian,
+        epsilon=epsilon,
+        max_iteration=max_iteration,
+        print_iter=print_iter,
+        trajectory=trajectory,
+        verbose=verbose,
+        memory_mode=memory_mode,
+        accelerated=accelerated,
+        lazy_tolerance=lazy_tolerance,
+        weight_purge_threshold=weight_purge_threshold,
+        gradient=gradient,
+        callback=callback,
+        traj_data=traj_data,
+        timeout=timeout,
+        linesearch_workspace=linesearch_workspace,
+        linesearch_inner_workspace=linesearch_inner_workspace,
+        renorm_interval=renorm_interval,
+        lmo_kwargs=lmo_kwargs,
+    )
+end
+
+function blended_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    active_set::ActiveSet;
+    line_search::LineSearchMethod=Adaptive(),
+    line_search_inner::LineSearchMethod=Adaptive(),
+    hessian=nothing,
+    epsilon=1e-7,
+    max_iteration=10000,
+    print_iter=1000,
+    trajectory=false,
+    verbose=false,
+    memory_mode::MemoryEmphasis=InplaceEmphasis(),
+    accelerated=false,
+    lazy_tolerance=2.0,
+    weight_purge_threshold=1e-9,
+    gradient=nothing,
+    callback=nothing,
+    traj_data=[],
+    timeout=Inf,
+    linesearch_workspace=nothing,
+    linesearch_inner_workspace=nothing,
+    renorm_interval=1000,
+    lmo_kwargs...,
+)
 
     # format string for output of the algorithm
     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i %14i\n"
@@ -68,7 +125,6 @@ function blended_conditional_gradient(
     t = 0
     primal = Inf
     dual_gap = Inf
-    active_set = ActiveSet([(1.0, x0)])
     x = active_set.x
     if gradient === nothing
         gradient = similar(x0)
