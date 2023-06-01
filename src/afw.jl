@@ -258,7 +258,6 @@ function away_frank_wolfe(
                     push!(extra_vertex_storage, vertex)
                 end
             else
-                active_set_update!(active_set, gamma, vertex, renorm, index)
                 if add_dropped_vertices && gamma == gamma_max
                     for vtx in active_set.atoms
                         if vtx != v
@@ -266,6 +265,7 @@ function away_frank_wolfe(
                         end
                     end
                 end
+                active_set_update!(active_set, gamma, vertex, renorm, index)
             end
         end
 
