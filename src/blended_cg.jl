@@ -262,7 +262,8 @@ function blended_conditional_gradient(
             inplace_loop=(memory_mode isa InplaceEmphasis),
             force_fw_step=force_fw_step,
             use_extra_vertex_storage=use_extra_vertex_storage,
-            extra_vertex_storage=extra_vertex_storage,
+            extra_vertex_storage=extra_vertex_storage,#
+            phi=phi,
             lmo_kwargs...,
         )
         force_fw_step = false
@@ -1087,6 +1088,7 @@ function lp_separation_oracle(
     force_fw_step::Bool=false,
     use_extra_vertex_storage=false,
     extra_vertex_storage=nothing,
+    phi=Inf,
     kwargs...,
 )
     # if FW step forced, ignore active set
