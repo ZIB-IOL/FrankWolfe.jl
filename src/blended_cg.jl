@@ -1123,6 +1123,7 @@ function lp_separation_oracle(
             return (ybest, val_best)
         end
     end
+    y=[]
      # optionally: try vertex storage
      if use_extra_vertex_storage
         lazy_threshold = fast_dot(direction, x) - phi / lazy_tolerance
