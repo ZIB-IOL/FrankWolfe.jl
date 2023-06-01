@@ -213,7 +213,6 @@ function away_frank_wolfe(
 
         if away_steps
             if lazy
-                @show use_extra_vertex_storage
                 d, vertex, index, gamma_max, phi_value, away_step_taken, fw_step_taken, tt =
                     lazy_afw_step(
                         x,
