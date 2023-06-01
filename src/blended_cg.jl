@@ -30,6 +30,9 @@ function blended_conditional_gradient(
     callback=nothing,
     traj_data=[],
     timeout=Inf,
+    extra_vertex_storage=nothing,
+    add_dropped_vertices=false,
+    use_extra_vertex_storage=false,
     linesearch_workspace=nothing,
     linesearch_inner_workspace=nothing,
     renorm_interval=1000,
@@ -59,6 +62,9 @@ function blended_conditional_gradient(
         callback=callback,
         traj_data=traj_data,
         timeout=timeout,
+        extra_vertex_storage=extra_vertex_storage,
+        add_dropped_vertices=add_dropped_vertices,
+        use_extra_vertex_storage=use_extra_vertex_storage,
         linesearch_workspace=linesearch_workspace,
         linesearch_inner_workspace=linesearch_inner_workspace,
         renorm_interval=renorm_interval,
@@ -87,6 +93,9 @@ function blended_conditional_gradient(
     callback=nothing,
     traj_data=[],
     timeout=Inf,
+    extra_vertex_storage=nothing,
+    add_dropped_vertices=false,
+    use_extra_vertex_storage=false,
     linesearch_workspace=nothing,
     linesearch_inner_workspace=nothing,
     renorm_interval=1000,
@@ -162,6 +171,12 @@ function blended_conditional_gradient(
         grad_type = typeof(gradient)
         println("GRADIENTTYPE: $grad_type lazy_tolerance: $lazy_tolerance")
         @info("In memory_mode memory iterates are written back into x0!")
+
+        if (use_extra_vertex_storage || add_dropped_vertices) && extra_vertex_storage === nothing
+            @warn(
+                "use_extra_vertex_storage and add_dropped_vertices options are only usable with a extra_vertex_storage storage"
+            )
+        end
     end
     # ensure x is a mutable type
     if !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
@@ -177,6 +192,10 @@ function blended_conditional_gradient(
     if linesearch_inner_workspace === nothing
         linesearch_inner_workspace = build_linesearch_workspace(line_search_inner, x, gradient)
     end
+    if extra_vertex_storage === nothing
+        use_extra_vertex_storage = add_dropped_vertices = false
+    end
+
 
     # this is never used and only defines gamma in the scope outside of the loop
     gamma = NaN
@@ -242,6 +261,8 @@ function blended_conditional_gradient(
             lazy_tolerance;
             inplace_loop=(memory_mode isa InplaceEmphasis),
             force_fw_step=force_fw_step,
+            use_extra_vertex_storage=use_extra_vertex_storage,
+            extra_vertex_storage=extra_vertex_storage,
             lmo_kwargs...,
         )
         force_fw_step = false
@@ -310,6 +331,13 @@ function blended_conditional_gradient(
             end
 
             if gamma == 1.0
+                if add_dropped_vertices 
+                    for vtx in active_set.atoms
+                        if vtx != v
+                            push!(extra_vertex_storage, vtx)
+                        end
+                    end
+                end
                 active_set_initialize!(active_set, v)
             else
                 active_set_update!(active_set, gamma, v)
@@ -1057,6 +1085,8 @@ function lp_separation_oracle(
     lazy_tolerance;
     inplace_loop=false,
     force_fw_step::Bool=false,
+    use_extra_vertex_storage=false,
+    extra_vertex_storage=nothing,
     kwargs...,
 )
     # if FW step forced, ignore active set
@@ -1091,8 +1121,21 @@ function lp_separation_oracle(
             return (ybest, val_best)
         end
     end
-    # otherwise, call the LMO
-    y = compute_extreme_point(lmo, direction; kwargs...)
+     # optionally: try vertex storage
+     if use_extra_vertex_storage
+        lazy_threshold = fast_dot(gradient, x) - phi / lazy_tolerance
+        (found_better_vertex, new_forward_vertex) =
+            storage_find_argmin_vertex(extra_vertex_storage, gradient, lazy_threshold)
+        if found_better_vertex
+            if verbose
+                @debug("Found acceptable lazy vertex in storage")
+            end
+            y = new_forward_vertex
+        end
+    else
+        # otherwise, call the LMO
+        y = compute_extreme_point(lmo, direction; kwargs...)
+    end
     # don't return nothing but y, fast_dot(direction, y) / use y for step outside / and update phi as in LCG (lines 402 - 406)
     return (y, fast_dot(direction, y))
 end
