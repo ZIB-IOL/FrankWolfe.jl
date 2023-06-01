@@ -127,14 +127,14 @@ function blended_conditional_gradient(
     dual_gap = Inf
     x = active_set.x
     if gradient === nothing
-        gradient = similar(x0)
+        gradient = similar(x)
     end
     d = similar(x)
     primal = f(x)
     grad!(gradient, x)
     # initial gap estimate computation
     vmax = compute_extreme_point(lmo, gradient)
-    phi = (fast_dot(gradient, x0) - fast_dot(gradient, vmax)) / 2
+    phi = (fast_dot(gradient, x) - fast_dot(gradient, vmax)) / 2
     dual_gap = phi
 
     if trajectory
@@ -147,7 +147,7 @@ function blended_conditional_gradient(
 
     tt = regular
     time_start = time_ns()
-    v = x0
+    v = x
 
     if line_search isa Agnostic || line_search isa Nonconvex
         @error("Lazification is not known to converge with open-loop step size strategies.")
@@ -155,7 +155,7 @@ function blended_conditional_gradient(
 
     if verbose
         println("\nBlended Conditional Gradients Algorithm.")
-        NumType = eltype(x0)
+        NumType = eltype(x)
         println(
             "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
         )
