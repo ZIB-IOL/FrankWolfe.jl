@@ -28,6 +28,9 @@ function away_frank_wolfe(
     callback=nothing,
     traj_data=[],
     timeout=Inf,
+    extra_vertex_storage=nothing,
+    add_dropped_vertices=false,
+    use_extra_vertex_storage=false,
     linesearch_workspace=nothing,
     recompute_last_vertex=true,
 )
@@ -56,6 +59,9 @@ function away_frank_wolfe(
         callback=callback,
         traj_data=traj_data,
         timeout=timeout,
+        extra_vertex_storage=extra_vertex_storage,
+        add_dropped_vertices=add_dropped_vertices,
+        use_extra_vertex_storage=use_extra_vertex_storage,
         linesearch_workspace=linesearch_workspace,
         recompute_last_vertex=recompute_last_vertex,
     )
@@ -84,6 +90,9 @@ function away_frank_wolfe(
     callback=nothing,
     traj_data=[],
     timeout=Inf,
+    extra_vertex_storage=nothing,
+    add_dropped_vertices=false,
+    use_extra_vertex_storage=false,
     linesearch_workspace=nothing,
     recompute_last_vertex=true,
 )
@@ -140,6 +149,11 @@ function away_frank_wolfe(
         if memory_mode isa InplaceEmphasis
             @info("In memory_mode memory iterates are written back into x0!")
         end
+        if (use_extra_vertex_storage || add_dropped_vertices) && extra_vertex_storage === nothing
+            @warn(
+                "use_extra_vertex_storage and add_dropped_vertices options are only usable with a extra_vertex_storage storage"
+            )
+        end
     end
 
     # likely not needed anymore as now the iterates are provided directly via the active set
@@ -161,6 +175,10 @@ function away_frank_wolfe(
     if linesearch_workspace === nothing
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
     end
+    if extra_vertex_storage === nothing
+        use_extra_vertex_storage = add_dropped_vertices = false
+    end
+
     while t <= max_iteration && phi_value >= max(eps(float(typeof(phi_value))), epsilon)
         #####################
         # managing time and Ctrl-C
@@ -195,6 +213,7 @@ function away_frank_wolfe(
 
         if away_steps
             if lazy
+                @show use_extra_vertex_storage
                 d, vertex, index, gamma_max, phi_value, away_step_taken, fw_step_taken, tt =
                     lazy_afw_step(
                         x,
@@ -203,6 +222,7 @@ function away_frank_wolfe(
                         active_set,
                         phi_value,
                         epsilon;
+                        use_extra_vertex_storage=use_extra_vertex_storage,
                         lazy_tolerance=lazy_tolerance,
                     )
             else
@@ -234,8 +254,18 @@ function away_frank_wolfe(
             renorm = mod(t, renorm_interval) == 0
             if away_step_taken
                 active_set_update!(active_set, -gamma, vertex, true, index)
+                if add_dropped_vertices && gamma == gamma_max
+                    push!(extra_vertex_storage, vertex)
+                end
             else
                 active_set_update!(active_set, gamma, vertex, renorm, index)
+                if add_dropped_vertices && gamma == gamma_max
+                    for vtx in active_set.atoms
+                        if vtx != v
+                            push!(extra_vertex_storage, vtx)
+                        end
+                    end
+                end
             end
         end
 
@@ -342,7 +372,7 @@ function away_frank_wolfe(
     return x, v, primal, dual_gap, traj_data, active_set
 end
 
-function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon; lazy_tolerance=2.0)
+function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon; use_extra_vertex_storage=false, lazy_tolerance=2.0)
     _, v, v_loc, _, a_lambda, a, a_loc, _, _ = active_set_argminmax(active_set, gradient)
     #Do lazy FW step
     grad_dot_lazy_fw_vertex = fast_dot(v, gradient)
@@ -371,12 +401,29 @@ function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon; lazy_toleranc
             index = a_loc
             #Resort to calling the LMO
         else
-            v = compute_extreme_point(lmo, gradient)
+            # optionally: try vertex storage
+            if use_extra_vertex_storage
+                lazy_threshold = fast_dot(gradient, x) - phi / lazy_tolerance
+                (found_better_vertex, new_forward_vertex) =
+                    storage_find_argmin_vertex(extra_vertex_storage, gradient, lazy_threshold)
+                if found_better_vertex
+                    if verbose
+                        @debug("Found acceptable lazy vertex in storage")
+                    end
+                    v = new_forward_vertex
+                    tt = lazylazy
+                else
+                    v = compute_extreme_point(lmo, gradient)
+                    tt = regular
+                end
+            else
+                v = compute_extreme_point(lmo, gradient)
+                tt = regular
+            end
             # Real dual gap promises enough progress.
             grad_dot_fw_vertex = fast_dot(v, gradient)
             dual_gap = grad_dot_x - grad_dot_fw_vertex
             if dual_gap >= phi / lazy_tolerance
-                tt = regular
                 gamma_max = one(a_lambda)
                 d = x - v
                 vertex = v
