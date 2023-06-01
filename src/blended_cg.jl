@@ -1123,9 +1123,9 @@ function lp_separation_oracle(
     end
      # optionally: try vertex storage
      if use_extra_vertex_storage
-        lazy_threshold = fast_dot(gradient, x) - phi / lazy_tolerance
+        lazy_threshold = fast_dot(direction, x) - phi / lazy_tolerance
         (found_better_vertex, new_forward_vertex) =
-            storage_find_argmin_vertex(extra_vertex_storage, gradient, lazy_threshold)
+            storage_find_argmin_vertex(extra_vertex_storage, direction, lazy_threshold)
         if found_better_vertex
             @debug("Found acceptable lazy vertex in storage")
             y = new_forward_vertex
