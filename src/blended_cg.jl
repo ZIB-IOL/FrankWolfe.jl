@@ -1127,9 +1127,7 @@ function lp_separation_oracle(
         (found_better_vertex, new_forward_vertex) =
             storage_find_argmin_vertex(extra_vertex_storage, gradient, lazy_threshold)
         if found_better_vertex
-            if verbose
-                @debug("Found acceptable lazy vertex in storage")
-            end
+            @debug("Found acceptable lazy vertex in storage")
             y = new_forward_vertex
         end
     else
