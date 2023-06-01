@@ -1135,6 +1135,8 @@ function lp_separation_oracle(
             # otherwise, call the LMO
             y = compute_extreme_point(lmo, direction; kwargs...)
         end
+    else
+        y = compute_extreme_point(lmo, direction; kwargs...)
     end
     # don't return nothing but y, fast_dot(direction, y) / use y for step outside / and update phi as in LCG (lines 402 - 406)
     return (y, fast_dot(direction, y))
