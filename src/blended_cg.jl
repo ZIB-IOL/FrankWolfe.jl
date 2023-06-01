@@ -411,7 +411,7 @@ function blended_conditional_gradient(
         )
         callback(state, active_set, non_simplex_iter)
     end
-    return x, v, primal, dual_gap, traj_data
+    return x, v, primal, dual_gap, traj_data, active_set
 end
 
 

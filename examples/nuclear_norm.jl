@@ -121,7 +121,7 @@ xfinAFW, vmin, _, _, traj_data = FrankWolfe.away_frank_wolfe(
 
 x00 = copy(x0)
 
-xfinBCG, vmin, _, _, traj_data = FrankWolfe.blended_conditional_gradient(
+xfinBCG, vmin, _, _, traj_data, _ = FrankWolfe.blended_conditional_gradient(
     f,
     grad!,
     lmo,

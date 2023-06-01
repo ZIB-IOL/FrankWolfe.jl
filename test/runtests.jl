@@ -452,7 +452,7 @@ end
         @test eltype(x0) == T
         @test primal - 1 // n <= bound
 
-        x, v, primal, dual_gap, trajectory = FrankWolfe.blended_conditional_gradient(
+        x, v, primal, dual_gap, trajectory, _ = FrankWolfe.blended_conditional_gradient(
             f,
             grad!,
             lmo,
@@ -723,7 +723,7 @@ end
         memory_mode=FrankWolfe.OutplaceEmphasis(),
     )
 
-    x, v, primal, dual_gap, trajectory = FrankWolfe.blended_conditional_gradient(
+    x, v, primal, dual_gap, trajectory, _ = FrankWolfe.blended_conditional_gradient(
         f,
         grad!,
         lmo_prob,
