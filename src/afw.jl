@@ -223,6 +223,7 @@ function away_frank_wolfe(
                         phi_value,
                         epsilon;
                         use_extra_vertex_storage=use_extra_vertex_storage,
+                        extra_vertex_storage=extra_vertex_storage,
                         lazy_tolerance=lazy_tolerance,
                     )
             else
@@ -372,7 +373,7 @@ function away_frank_wolfe(
     return x, v, primal, dual_gap, traj_data, active_set
 end
 
-function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon; use_extra_vertex_storage=false, lazy_tolerance=2.0)
+function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon; use_extra_vertex_storage=false, extra_vertex_storage=nothing, lazy_tolerance=2.0)
     _, v, v_loc, _, a_lambda, a, a_loc, _, _ = active_set_argminmax(active_set, gradient)
     #Do lazy FW step
     grad_dot_lazy_fw_vertex = fast_dot(v, gradient)
