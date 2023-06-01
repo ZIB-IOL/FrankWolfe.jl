@@ -1123,19 +1123,18 @@ function lp_separation_oracle(
             return (ybest, val_best)
         end
     end
-    y=[]
      # optionally: try vertex storage
-     if use_extra_vertex_storage
+    if use_extra_vertex_storage
         lazy_threshold = fast_dot(direction, x) - phi / lazy_tolerance
         (found_better_vertex, new_forward_vertex) =
             storage_find_argmin_vertex(extra_vertex_storage, direction, lazy_threshold)
         if found_better_vertex
             @debug("Found acceptable lazy vertex in storage")
             y = new_forward_vertex
+        else
+            # otherwise, call the LMO
+            y = compute_extreme_point(lmo, direction; kwargs...)
         end
-    else
-        # otherwise, call the LMO
-        y = compute_extreme_point(lmo, direction; kwargs...)
     end
     # don't return nothing but y, fast_dot(direction, y) / use y for step outside / and update phi as in LCG (lines 402 - 406)
     return (y, fast_dot(direction, y))
