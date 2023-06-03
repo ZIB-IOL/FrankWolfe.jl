@@ -262,7 +262,7 @@ function blended_conditional_gradient(
             inplace_loop=(memory_mode isa InplaceEmphasis),
             force_fw_step=force_fw_step,
             use_extra_vertex_storage=use_extra_vertex_storage,
-            extra_vertex_storage=extra_vertex_storage,#
+            extra_vertex_storage=extra_vertex_storage,
             phi=phi,
             lmo_kwargs...,
         )
