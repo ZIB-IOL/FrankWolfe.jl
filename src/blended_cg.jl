@@ -246,6 +246,8 @@ function blended_conditional_gradient(
             linesearch_inner_workspace=linesearch_inner_workspace,
             memory_mode=memory_mode,
             renorm_interval=renorm_interval,
+            use_extra_vertex_storage=use_extra_vertex_storage,
+            extra_vertex_storage=extra_vertex_storage,
         )
         t += num_simplex_descent_steps
         #Take a FW step.
@@ -341,7 +343,7 @@ function blended_conditional_gradient(
                 end
                 active_set_initialize!(active_set, v)
             else
-                active_set_update!(active_set, gamma, v)
+                active_set_update!(active_set, gamma, v, add_dropped_vertices=use_extra_vertex_storage, vertex_storage=extra_vertex_storage)
             end
         end
 
@@ -381,7 +383,7 @@ function blended_conditional_gradient(
     end
 
     # cleanup the active set, renormalize, and recompute values
-    active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
+    active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold, add_dropped_vertices=use_extra_vertex_storage, vertex_storage=extra_vertex_storage)
     active_set_renormalize!(active_set)
     x = get_active_set_iterate(active_set)
     grad!(gradient, x)
@@ -452,6 +454,8 @@ function minimize_over_convex_hull!(
     linesearch_inner_workspace=nothing,
     memory_mode::MemoryEmphasis=InplaceEmphasis(),
     renorm_interval=1000,
+    use_extra_vertex_storage=false,
+    extra_vertex_storage=nothing,
 )
     #No hessian is known, use simplex gradient descent.
     if hessian === nothing
@@ -474,6 +478,8 @@ function minimize_over_convex_hull!(
             timeout=timeout,
             format_string=format_string,
             linesearch_inner_workspace=linesearch_inner_workspace,
+            use_extra_vertex_storage=use_extra_vertex_storage,
+            extra_vertex_storage=extra_vertex_storage,
         )
     else
         x = get_active_set_iterate(active_set)
@@ -485,7 +491,7 @@ function minimize_over_convex_hull!(
             active_set.weights,
             gradient,
             tolerance,
-        )
+        )active_set_update_sc
         #Early exit if we have detected that the strong-Wolfe gap is below the desired tolerance while building the reduced problem.
         if isnothing(M)
             return 0
@@ -548,7 +554,7 @@ function minimize_over_convex_hull!(
             @. active_set.weights = new_weights
         end
     end
-    active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
+    active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold, add_dropped_vertices=use_extra_vertex_storage, vertex_storage=extra_vertex_storage)
     # if we reached a renorm interval
     if (t + number_of_steps) ÷ renorm_interval > t ÷ renorm_interval
         active_set_renormalize!(active_set)
@@ -913,6 +919,8 @@ function simplex_gradient_descent_over_convex_hull(
         active_set.x,
         gradient,
     ),
+    use_extra_vertex_storage=false,
+    extra_vertex_storage=nothing,
 )
     number_of_steps = 0
     x = get_active_set_iterate(active_set)
@@ -976,7 +984,7 @@ function simplex_gradient_descent_over_convex_hull(
         number_of_steps += 1
         gamma = NaN
         if f(x) ≥ f(y)
-            active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
+            active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold, add_dropped_vertices=use_extra_vertex_storage, vertex_storage=extra_vertex_storage)
         else
             if line_search_inner isa Adaptive
                 gamma = perform_line_search(
@@ -1027,7 +1035,7 @@ function simplex_gradient_descent_over_convex_hull(
             # step back from y to x by (1 - γ) η d
             # new point is x - γ η d
             if gamma == 1.0
-                active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
+                active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold, add_dropped_vertices=use_extra_vertex_storage, vertex_storage=extra_vertex_storage)
             else
                 @. active_set.weights += η * (1 - gamma) * d
                 @. active_set.x = x + gamma * (y - x)
@@ -1124,7 +1132,7 @@ function lp_separation_oracle(
         end
     end
      # optionally: try vertex storage
-    if use_extra_vertex_storage
+    if use_extra_vertex_storage && extra_vertex_storage !== nothing
         lazy_threshold = fast_dot(direction, x) - phi / lazy_tolerance
         (found_better_vertex, new_forward_vertex) =
             storage_find_argmin_vertex(extra_vertex_storage, direction, lazy_threshold)

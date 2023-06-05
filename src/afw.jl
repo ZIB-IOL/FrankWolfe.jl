@@ -253,10 +253,7 @@ function away_frank_wolfe(
             # cleanup and renormalize every x iterations. Only for the fw steps.
             renorm = mod(t, renorm_interval) == 0
             if away_step_taken
-                active_set_update!(active_set, -gamma, vertex, true, index)
-                if add_dropped_vertices && gamma == gamma_max
-                    push!(extra_vertex_storage, vertex)
-                end
+                active_set_update!(active_set, -gamma, vertex, true, index, add_dropped_vertices=use_extra_vertex_storage, vertex_storage=extra_vertex_storage)
             else
                 if add_dropped_vertices && gamma == gamma_max
                     for vtx in active_set.atoms
@@ -339,7 +336,7 @@ function away_frank_wolfe(
     end
 
     active_set_renormalize!(active_set)
-    active_set_cleanup!(active_set)
+    active_set_cleanup!(active_set, add_dropped_vertices=use_extra_vertex_storage, vertex_storage=extra_vertex_storage)
     x = get_active_set_iterate(active_set)
     grad!(gradient, x)
     if recompute_last_vertex
