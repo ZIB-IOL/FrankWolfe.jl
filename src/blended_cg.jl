@@ -491,7 +491,7 @@ function minimize_over_convex_hull!(
             active_set.weights,
             gradient,
             tolerance,
-        )active_set_update_sc
+        )
         #Early exit if we have detected that the strong-Wolfe gap is below the desired tolerance while building the reduced problem.
         if isnothing(M)
             return 0
