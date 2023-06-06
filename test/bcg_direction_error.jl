@@ -24,7 +24,7 @@ lmo = FrankWolfe.KSparseLMO(100, 1.0)
 x0 = FrankWolfe.compute_extreme_point(lmo, spzeros(size(xp)...))
 gradient = similar(xp)
 
-x, v, primal, dual_gap, _ = FrankWolfe.blended_conditional_gradient(
+x, v, primal, dual_gap, _, _ = FrankWolfe.blended_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -46,7 +46,7 @@ x, v, primal, dual_gap, _ = FrankWolfe.blended_conditional_gradient(
 
 x0 = FrankWolfe.compute_extreme_point(lmo, spzeros(size(xp)...))
 
-x, v, primal_cut, dual_gap, _ = FrankWolfe.blended_conditional_gradient(
+x, v, primal_cut, dual_gap, _, _ = FrankWolfe.blended_conditional_gradient(
     f,
     grad!,
     lmo,

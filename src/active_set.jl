@@ -92,7 +92,7 @@ end
 
 Adds the atom to the active set with weight lambda or adds lambda to existing atom.
 """
-function active_set_update!(active_set::ActiveSet, lambda, atom, renorm=true, idx=nothing)
+function active_set_update!(active_set::ActiveSet, lambda, atom, renorm=true, idx=nothing; add_dropped_vertices=false, vertex_storage=nothing)
     # rescale active set
     active_set.weights .*= (1 - lambda)
     # add value for new atom
@@ -107,7 +107,8 @@ function active_set_update!(active_set::ActiveSet, lambda, atom, renorm=true, id
         push!(active_set, (lambda, atom))
     end
     if renorm
-        active_set_cleanup!(active_set, update=false)
+        add_dropped_vertices = add_dropped_vertices ? vertex_storage !== nothing : add_dropped_vertices
+        active_set_cleanup!(active_set, update=false, add_dropped_vertices=add_dropped_vertices, vertex_storage=vertex_storage)
         active_set_renormalize!(active_set)
     end
     active_set_update_scale!(active_set.x, lambda, atom)
@@ -176,7 +177,15 @@ function compute_active_set_iterate!(active_set)
     return active_set.x
 end
 
-function active_set_cleanup!(active_set; weight_purge_threshold=1e-12, update=true)
+function active_set_cleanup!(active_set; weight_purge_threshold=1e-12, update=true, add_dropped_vertices=false, vertex_storage=nothing)
+    if add_dropped_vertices && vertex_storage !== nothing 
+        for (weight, v) in zip(active_set.weights, active_set.atoms) 
+            if weight <= weight_purge_threshold
+                push!(vertex_storage, v)
+            end
+        end
+    end
+
     filter!(e -> e[1] > weight_purge_threshold, active_set)
     if update
         compute_active_set_iterate!(active_set)
