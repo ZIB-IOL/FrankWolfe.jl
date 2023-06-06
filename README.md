@@ -10,7 +10,7 @@ This package is a toolbox for Frank-Wolfe and conditional gradients algorithms.
 
 ## Overview
 
-Frank-Wolfe algorithms were designed to solve optimization problems of the form `min_{x ∈ C} f(x)`, where `f` is a differentiable convex function and `C` is a convex and compact set.
+Frank-Wolfe algorithms were designed to solve optimization problems of the form $\min_{x ∈ C} f(x)$, where `f` is a differentiable convex function and `C` is a convex and compact set.
 They are especially useful when we know how to optimize a linear function over `C` in an efficient way.
 
 A paper presenting the package with mathematical explanations and numerous examples can be found here:
