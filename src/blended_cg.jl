@@ -30,6 +30,72 @@ function blended_conditional_gradient(
     callback=nothing,
     traj_data=[],
     timeout=Inf,
+    extra_vertex_storage=nothing,
+    add_dropped_vertices=false,
+    use_extra_vertex_storage=false,
+    linesearch_workspace=nothing,
+    linesearch_inner_workspace=nothing,
+    renorm_interval=1000,
+    lmo_kwargs...,
+)
+    # add the first vertex to active set from initialization
+    active_set = ActiveSet([(1.0, x0)])
+
+    return blended_conditional_gradient(
+        f,
+        grad!,
+        lmo, 
+        active_set,
+        line_search=line_search,
+        line_search_inner=line_search_inner,
+        hessian=hessian,
+        epsilon=epsilon,
+        max_iteration=max_iteration,
+        print_iter=print_iter,
+        trajectory=trajectory,
+        verbose=verbose,
+        memory_mode=memory_mode,
+        accelerated=accelerated,
+        lazy_tolerance=lazy_tolerance,
+        weight_purge_threshold=weight_purge_threshold,
+        gradient=gradient,
+        callback=callback,
+        traj_data=traj_data,
+        timeout=timeout,
+        extra_vertex_storage=extra_vertex_storage,
+        add_dropped_vertices=add_dropped_vertices,
+        use_extra_vertex_storage=use_extra_vertex_storage,
+        linesearch_workspace=linesearch_workspace,
+        linesearch_inner_workspace=linesearch_inner_workspace,
+        renorm_interval=renorm_interval,
+        lmo_kwargs=lmo_kwargs,
+    )
+end
+
+function blended_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    active_set::ActiveSet;
+    line_search::LineSearchMethod=Adaptive(),
+    line_search_inner::LineSearchMethod=Adaptive(),
+    hessian=nothing,
+    epsilon=1e-7,
+    max_iteration=10000,
+    print_iter=1000,
+    trajectory=false,
+    verbose=false,
+    memory_mode::MemoryEmphasis=InplaceEmphasis(),
+    accelerated=false,
+    lazy_tolerance=2.0,
+    weight_purge_threshold=1e-9,
+    gradient=nothing,
+    callback=nothing,
+    traj_data=[],
+    timeout=Inf,
+    extra_vertex_storage=nothing,
+    add_dropped_vertices=false,
+    use_extra_vertex_storage=false,
     linesearch_workspace=nothing,
     linesearch_inner_workspace=nothing,
     renorm_interval=1000,
@@ -68,17 +134,16 @@ function blended_conditional_gradient(
     t = 0
     primal = Inf
     dual_gap = Inf
-    active_set = ActiveSet([(1.0, x0)])
     x = active_set.x
     if gradient === nothing
-        gradient = similar(x0)
+        gradient = similar(x)
     end
     d = similar(x)
     primal = f(x)
     grad!(gradient, x)
     # initial gap estimate computation
     vmax = compute_extreme_point(lmo, gradient)
-    phi = (fast_dot(gradient, x0) - fast_dot(gradient, vmax)) / 2
+    phi = (fast_dot(gradient, x) - fast_dot(gradient, vmax)) / 2
     dual_gap = phi
 
     if trajectory
@@ -91,7 +156,7 @@ function blended_conditional_gradient(
 
     tt = regular
     time_start = time_ns()
-    v = x0
+    v = x
 
     if line_search isa Agnostic || line_search isa Nonconvex
         @error("Lazification is not known to converge with open-loop step size strategies.")
@@ -99,13 +164,19 @@ function blended_conditional_gradient(
 
     if verbose
         println("\nBlended Conditional Gradients Algorithm.")
-        NumType = eltype(x0)
+        NumType = eltype(x)
         println(
             "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
         )
         grad_type = typeof(gradient)
         println("GRADIENTTYPE: $grad_type lazy_tolerance: $lazy_tolerance")
         @info("In memory_mode memory iterates are written back into x0!")
+
+        if (use_extra_vertex_storage || add_dropped_vertices) && extra_vertex_storage === nothing
+            @warn(
+                "use_extra_vertex_storage and add_dropped_vertices options are only usable with a extra_vertex_storage storage"
+            )
+        end
     end
     # ensure x is a mutable type
     if !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
@@ -121,6 +192,10 @@ function blended_conditional_gradient(
     if linesearch_inner_workspace === nothing
         linesearch_inner_workspace = build_linesearch_workspace(line_search_inner, x, gradient)
     end
+    if extra_vertex_storage === nothing
+        use_extra_vertex_storage = add_dropped_vertices = false
+    end
+
 
     # this is never used and only defines gamma in the scope outside of the loop
     gamma = NaN
@@ -171,6 +246,8 @@ function blended_conditional_gradient(
             linesearch_inner_workspace=linesearch_inner_workspace,
             memory_mode=memory_mode,
             renorm_interval=renorm_interval,
+            use_extra_vertex_storage=use_extra_vertex_storage,
+            extra_vertex_storage=extra_vertex_storage,
         )
         t += num_simplex_descent_steps
         #Take a FW step.
@@ -186,6 +263,9 @@ function blended_conditional_gradient(
             lazy_tolerance;
             inplace_loop=(memory_mode isa InplaceEmphasis),
             force_fw_step=force_fw_step,
+            use_extra_vertex_storage=use_extra_vertex_storage,
+            extra_vertex_storage=extra_vertex_storage,
+            phi=phi,
             lmo_kwargs...,
         )
         force_fw_step = false
@@ -254,9 +334,16 @@ function blended_conditional_gradient(
             end
 
             if gamma == 1.0
+                if add_dropped_vertices 
+                    for vtx in active_set.atoms
+                        if vtx != v
+                            push!(extra_vertex_storage, vtx)
+                        end
+                    end
+                end
                 active_set_initialize!(active_set, v)
             else
-                active_set_update!(active_set, gamma, v)
+                active_set_update!(active_set, gamma, v, add_dropped_vertices=use_extra_vertex_storage, vertex_storage=extra_vertex_storage)
             end
         end
 
@@ -296,7 +383,7 @@ function blended_conditional_gradient(
     end
 
     # cleanup the active set, renormalize, and recompute values
-    active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
+    active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold, add_dropped_vertices=use_extra_vertex_storage, vertex_storage=extra_vertex_storage)
     active_set_renormalize!(active_set)
     x = get_active_set_iterate(active_set)
     grad!(gradient, x)
@@ -327,7 +414,7 @@ function blended_conditional_gradient(
         )
         callback(state, active_set, non_simplex_iter)
     end
-    return x, v, primal, dual_gap, traj_data
+    return x, v, primal, dual_gap, traj_data, active_set
 end
 
 
@@ -367,6 +454,8 @@ function minimize_over_convex_hull!(
     linesearch_inner_workspace=nothing,
     memory_mode::MemoryEmphasis=InplaceEmphasis(),
     renorm_interval=1000,
+    use_extra_vertex_storage=false,
+    extra_vertex_storage=nothing,
 )
     #No hessian is known, use simplex gradient descent.
     if hessian === nothing
@@ -389,6 +478,8 @@ function minimize_over_convex_hull!(
             timeout=timeout,
             format_string=format_string,
             linesearch_inner_workspace=linesearch_inner_workspace,
+            use_extra_vertex_storage=use_extra_vertex_storage,
+            extra_vertex_storage=extra_vertex_storage,
         )
     else
         x = get_active_set_iterate(active_set)
@@ -463,7 +554,7 @@ function minimize_over_convex_hull!(
             @. active_set.weights = new_weights
         end
     end
-    active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
+    active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold, add_dropped_vertices=use_extra_vertex_storage, vertex_storage=extra_vertex_storage)
     # if we reached a renorm interval
     if (t + number_of_steps) ÷ renorm_interval > t ÷ renorm_interval
         active_set_renormalize!(active_set)
@@ -828,6 +919,8 @@ function simplex_gradient_descent_over_convex_hull(
         active_set.x,
         gradient,
     ),
+    use_extra_vertex_storage=false,
+    extra_vertex_storage=nothing,
 )
     number_of_steps = 0
     x = get_active_set_iterate(active_set)
@@ -891,7 +984,7 @@ function simplex_gradient_descent_over_convex_hull(
         number_of_steps += 1
         gamma = NaN
         if f(x) ≥ f(y)
-            active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
+            active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold, add_dropped_vertices=use_extra_vertex_storage, vertex_storage=extra_vertex_storage)
         else
             if line_search_inner isa Adaptive
                 gamma = perform_line_search(
@@ -942,7 +1035,7 @@ function simplex_gradient_descent_over_convex_hull(
             # step back from y to x by (1 - γ) η d
             # new point is x - γ η d
             if gamma == 1.0
-                active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold)
+                active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold, add_dropped_vertices=use_extra_vertex_storage, vertex_storage=extra_vertex_storage)
             else
                 @. active_set.weights += η * (1 - gamma) * d
                 @. active_set.x = x + gamma * (y - x)
@@ -1001,6 +1094,9 @@ function lp_separation_oracle(
     lazy_tolerance;
     inplace_loop=false,
     force_fw_step::Bool=false,
+    use_extra_vertex_storage=false,
+    extra_vertex_storage=nothing,
+    phi=Inf,
     kwargs...,
 )
     # if FW step forced, ignore active set
@@ -1035,8 +1131,21 @@ function lp_separation_oracle(
             return (ybest, val_best)
         end
     end
-    # otherwise, call the LMO
-    y = compute_extreme_point(lmo, direction; kwargs...)
+     # optionally: try vertex storage
+    if use_extra_vertex_storage && extra_vertex_storage !== nothing
+        lazy_threshold = fast_dot(direction, x) - phi / lazy_tolerance
+        (found_better_vertex, new_forward_vertex) =
+            storage_find_argmin_vertex(extra_vertex_storage, direction, lazy_threshold)
+        if found_better_vertex
+            @debug("Found acceptable lazy vertex in storage")
+            y = new_forward_vertex
+        else
+            # otherwise, call the LMO
+            y = compute_extreme_point(lmo, direction; kwargs...)
+        end
+    else
+        y = compute_extreme_point(lmo, direction; kwargs...)
+    end
     # don't return nothing but y, fast_dot(direction, y) / use y for step outside / and update phi as in LCG (lines 402 - 406)
     return (y, fast_dot(direction, y))
 end
