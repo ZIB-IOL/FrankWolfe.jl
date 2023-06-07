@@ -523,6 +523,7 @@ function perform_line_search(
 )
     f0 = f(x)
     gamma = perform_line_search(line_search.linesearch, t, f, g!, gradient, x, d, gamma_max, storage.inner_workspace, memory_mode)
+    gamma = min(gamma, gamma_max)
     T = typeof(gamma)
     xst = storage.x
     xst = muladd_memory_mode(memory_mode, xst, x, gamma, d)
