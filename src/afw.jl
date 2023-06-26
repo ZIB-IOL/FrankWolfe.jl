@@ -137,6 +137,7 @@ function away_frank_wolfe(
         println(
             "GRADIENTTYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance MOMENTUM: $momentum AWAYSTEPS: $away_steps",
         )
+        println("Linear Minimization Oracle: $(typeof(lmo))")
         if memory_mode isa InplaceEmphasis
             @info("In memory_mode memory iterates are written back into x0!")
         end
