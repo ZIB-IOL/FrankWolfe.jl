@@ -290,6 +290,15 @@ function blended_pairwise_conditional_gradient(
             end
             vertex_taken = v
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
+            # if we are about to exit, compute dual_gap with the cleaned-up x
+            if dual_gap ≤ epsilon
+                active_set_renormalize!(active_set)
+                active_set_cleanup!(active_set)
+                compute_active_set_iterate!(active_set)
+                x = get_active_set_iterate(active_set)
+                grad!(gradient, x)
+                dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
+            end
             if !lazy || dual_gap ≥ phi || (tt == lazylazy && dual_gap ≥ phi / lazy_tolerance)
                 d = muladd_memory_mode(memory_mode, d, x, v)
 

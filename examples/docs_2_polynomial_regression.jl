@@ -53,7 +53,7 @@ const training_data = map(1:500) do _
 end
 
 const extended_training_data = map(training_data) do (x, y)
-    x_ext = getproperty.(MultivariatePolynomials.subs.(var_monomials, X => x), :α)
+    x_ext = MultivariatePolynomials.coefficient.(MultivariatePolynomials.subs.(var_monomials, X => x))
     return (x_ext, y)
 end
 
@@ -64,7 +64,7 @@ const test_data = map(1:1000) do _
 end
 
 const extended_test_data = map(test_data) do (x, y)
-    x_ext = getproperty.(MultivariatePolynomials.subs.(var_monomials, X => x), :α)
+    x_ext = MultivariatePolynomials.coefficient.(MultivariatePolynomials.subs.(var_monomials, X => x))
     return (x_ext, y)
 end
 
