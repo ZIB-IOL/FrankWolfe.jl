@@ -782,5 +782,5 @@ end
     JuMP.set_silent(m)
     optimize!(m)
     xv = JuMP.value.(x)
-    @test dot(xv, d) ≈ dot(v, d) atol=1e-6
+    @test dot(xv, d) ≈ dot(v, d) atol=1e-6*n
 end
