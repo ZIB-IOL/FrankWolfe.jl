@@ -12,8 +12,8 @@ end
     n = Int(1e3)
     k = n
 
-    f(x::GenericArray) = dot(x, x)
-    function grad!(storage, x)
+    f_generic(x::GenericArray) = dot(x, x)
+    function grad_generic!(storage, x)
         @. storage = 2 * x
     end
 
@@ -22,8 +22,8 @@ end
     x0 = GenericArray(collect(FrankWolfe.compute_extreme_point(lmo, zeros(n))))
 
     x, v, primal, dual_gap0, trajectory = FrankWolfe.frank_wolfe(
-        f,
-        grad!,
+        f_generic,
+        grad_generic!,
         lmo,
         x0,
         max_iteration=k,
@@ -33,12 +33,12 @@ end
         memory_mode=FrankWolfe.InplaceEmphasis(),
     )
 
-    @test f(x) < f(x0)
+    @test f_generic(x) < f_generic(x0)
     @test x isa GenericArray
 
     x, v, primal, dual_gap0, trajectory = FrankWolfe.lazified_conditional_gradient(
-        f,
-        grad!,
+        f_generic,
+        grad_generic!,
         lmo,
         x0,
         max_iteration=k,
@@ -49,12 +49,12 @@ end
         VType=FrankWolfe.ScaledHotVector{Float64},
     )
 
-    @test f(x) < f(x0)
+    @test f_generic(x) < f_generic(x0)
     @test x isa GenericArray
 
     @test_broken x, v, primal, dual_gap0, trajectory = FrankWolfe.away_frank_wolfe(
-        f,
-        grad!,
+        f_generic,
+        grad_generic!,
         lmo,
         x0,
         max_iteration=k,
@@ -63,4 +63,28 @@ end
         verbose=true,
         memory_mode=FrankWolfe.InplaceEmphasis(),
     )
+end
+
+@testset "fast_equal special types" begin
+    @testset "ScaledHotVector" begin
+        a = FrankWolfe.ScaledHotVector(3.5, 3, 10)
+        b = FrankWolfe.ScaledHotVector(3.5, 3, 11)
+        @test !isequal(a, b)
+        c = FrankWolfe.ScaledHotVector(3.5, 4, 10)
+        @test !isequal(a, c)
+        d = FrankWolfe.ScaledHotVector(3, 3, 10)
+        @test !isequal(a, d)
+        e = FrankWolfe.ScaledHotVector(3.0, 3, 10)
+        @test isequal(d, e)
+        f = FrankWolfe.ScaledHotVector(big(3.0), 3, 10)
+        @test isequal(e, f)
+    end
+    @testset "RankOneMatrix" begin
+        a = FrankWolfe.RankOneMatrix(ones(3), ones(4))
+        b = FrankWolfe.RankOneMatrix(ones(3), 2 * ones(4))
+        @test !isequal(a, b)
+        @test isequal(2a, b)
+        @test !isequal(2a, b')
+        @test !isequal(2a, FrankWolfe.RankOneMatrix(2 * ones(4), ones(3)))
+    end
 end

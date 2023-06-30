@@ -89,6 +89,10 @@ function Base.convert(::Type{Vector{T}}, v::ScaledHotVector) where {T}
     return vc
 end
 
+function Base.isequal(a::ScaledHotVector, b::ScaledHotVector)
+    return a.len == b.len && a.val_idx == b.val_idx && isequal(a.active_val, b.active_val)
+end
+
 """
     RankOneMatrix{T, UT, VT}
 
@@ -193,6 +197,24 @@ Base.@propagate_inbounds function Base.:+(a::RankOneMatrix, b::RankOneMatrix)
 end
 
 LinearAlgebra.norm(R::RankOneMatrix) = norm(R.u) * norm(R.v)
+
+Base.@propagate_inbounds function Base.isequal(a::RankOneMatrix, b::RankOneMatrix)
+    if size(a) != size(b)
+        return false
+    end
+    if isequal(a.u, b.u) && isequal(a.v, b.v)
+        return true
+    end
+    # needs to check actual values
+    @inbounds for j in 1:size(a, 2)
+        for i in 1:size(a, 1)
+            if !isequal(a.u[i] * a.v[j], b.u[i] * b.v[j])
+                return false
+            end
+        end
+    end
+    return true
+end
 
 Base.@propagate_inbounds function muladd_memory_mode(::InplaceEmphasis, d::Matrix, x::Union{RankOneMatrix, Matrix}, v::RankOneMatrix)
     @boundscheck size(d) == size(x) || throw(DimensionMismatch())
