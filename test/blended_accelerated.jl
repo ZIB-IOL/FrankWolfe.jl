@@ -32,7 +32,7 @@ const L = eigmax(hessian)
 
         target_tolerance = 1e-5
 
-        x, v, primal_accel, dual_gap_accel, _ = FrankWolfe.blended_conditional_gradient(
+        x, v, primal_accel, dual_gap_accel, _, _ = FrankWolfe.blended_conditional_gradient(
             f,
             grad!,
             lmo,
@@ -50,7 +50,7 @@ const L = eigmax(hessian)
             weight_purge_threshold=1e-10,
         )
 
-        x, v, primal_hessian, dual_gap_hessian, _ = FrankWolfe.blended_conditional_gradient(
+        x, v, primal_hessian, dual_gap_hessian, _, _ = FrankWolfe.blended_conditional_gradient(
             f,
             grad!,
             lmo,
@@ -68,7 +68,7 @@ const L = eigmax(hessian)
             weight_purge_threshold=1e-10,
         )
 
-        x, v, primal_bcg, dual_gap_bcg, _ = FrankWolfe.blended_conditional_gradient(
+        x, v, primal_bcg, dual_gap_bcg, _, _ = FrankWolfe.blended_conditional_gradient(
             f,
             grad!,
             lmo,
