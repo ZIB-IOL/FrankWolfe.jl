@@ -212,7 +212,7 @@ trajectory_bcg = []
 callback = build_callback(trajectory_bcg)
 
 x0 = deepcopy(x00)
-@time x_bcg, v, primal, dual_gap, _ = FrankWolfe.blended_conditional_gradient(
+@time x_bcg, v, primal, dual_gap, _, _ = FrankWolfe.blended_conditional_gradient(
     f,
     grad!,
     lmo,
