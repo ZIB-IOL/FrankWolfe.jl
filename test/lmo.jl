@@ -782,5 +782,6 @@ end
     JuMP.set_silent(m)
     optimize!(m)
     xv = JuMP.value.(x)
+    @test dot(xv, d) ≈ dot(v, d)
     @test norm(xv - v, Inf) <= 2n*1e-6 + 1e-4
 end
