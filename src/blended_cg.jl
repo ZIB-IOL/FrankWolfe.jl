@@ -170,6 +170,7 @@ function blended_conditional_gradient(
         )
         grad_type = typeof(gradient)
         println("GRADIENTTYPE: $grad_type lazy_tolerance: $lazy_tolerance")
+        println("Linear Minimization Oracle: $(typeof(lmo))")
         @info("In memory_mode memory iterates are written back into x0!")
 
         if (use_extra_vertex_storage || add_dropped_vertices) && extra_vertex_storage === nothing
