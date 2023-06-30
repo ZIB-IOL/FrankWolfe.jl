@@ -76,6 +76,7 @@ function frank_wolfe(
         )
         grad_type = typeof(gradient)
         println("MOMENTUM: $momentum GRADIENTTYPE: $grad_type")
+        println("Linear Minimization Oracle: $(typeof(lmo))")
         if memory_mode isa InplaceEmphasis
             @info("In memory_mode memory iterates are written back into x0!")
         end
@@ -323,6 +324,7 @@ function lazified_conditional_gradient(
         )
         grad_type = typeof(gradient)
         println("GRADIENTTYPE: $grad_type CACHESIZE $cache_size GREEDYCACHE: $greedy_lazy")
+        println("Linear Minimization Oracle: $(typeof(lmo))")
         if memory_mode isa InplaceEmphasis
             @info("In memory_mode memory iterates are written back into x0!")
         end
@@ -566,6 +568,7 @@ function stochastic_frank_wolfe(
         println(
             "GRADIENTTYPE: $(typeof(f.storage)) MOMENTUM: $(momentum_iterator !== nothing) batch policy: $(typeof(batch_iterator)) ",
         )
+        println("Linear Minimization Oracle: $(typeof(lmo))")
         if memory_mode isa InplaceEmphasis
             @info("In memory_mode memory iterates are written back into x0!")
         end
