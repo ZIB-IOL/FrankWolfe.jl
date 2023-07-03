@@ -261,14 +261,6 @@ function active_set_initialize!(as::ActiveSet{AT,R}, v) where {AT,R}
     return as
 end
 
-function compute_active_set_iterate!(active_set)
-    active_set.x .= 0
-    for (λi, ai) in active_set
-        @. active_set.x += λi * ai
-    end
-    return active_set.x
-end
-
 function compute_active_set_iterate!(active_set::ActiveSet{<:ScaledHotVector, <:Real, <:AbstractVector})
     active_set.x .= 0
     @inbounds for (λi, ai) in active_set
