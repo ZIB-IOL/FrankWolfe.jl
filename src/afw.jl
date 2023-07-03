@@ -221,18 +221,20 @@ function away_frank_wolfe(
                         lmo,
                         active_set,
                         phi_value,
-                        epsilon;
+                        epsilon,
+                        d;
                         use_extra_vertex_storage=use_extra_vertex_storage,
                         extra_vertex_storage=extra_vertex_storage,
                         lazy_tolerance=lazy_tolerance,
+                        memory_mode=memory_mode,
                     )
             else
                 d, vertex, index, gamma_max, phi_value, away_step_taken, fw_step_taken, tt =
-                    afw_step(x, gradient, lmo, active_set, epsilon)
+                    afw_step(x, gradient, lmo, active_set, epsilon, d, memory_mode=memory_mode)
             end
         else
             d, vertex, index, gamma_max, phi_value, away_step_taken, fw_step_taken, tt =
-                fw_step(x, gradient, lmo)
+                fw_step(x, gradient, lmo, d, memory_mode=memory_mode)
         end
 
         gamma = 0.0
