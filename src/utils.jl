@@ -119,7 +119,7 @@ end
 
 Like `isequal` on arrays but without the checks. Assumes a and b have the same axes.
 """
-function _unsafe_equal(a::AbstractArray, b::AbstractArray)
+function _unsafe_equal(a::Array, b::Array)
     if a === b
         return true
     end
@@ -132,6 +132,10 @@ function _unsafe_equal(a::AbstractArray, b::AbstractArray)
 end
 
 _unsafe_equal(a, b) = isequal(a, b)
+
+function _unsafe_equal(a::SparseArrays.AbstractSparseArray, b::SparseArrays.AbstractSparseArray)
+    return a == b
+end
 
 fast_dot(A, B) = dot(A, B)
 
