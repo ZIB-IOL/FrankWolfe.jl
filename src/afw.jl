@@ -370,7 +370,7 @@ function away_frank_wolfe(
     return x, v, primal, dual_gap, traj_data, active_set
 end
 
-function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon; use_extra_vertex_storage=false, extra_vertex_storage=nothing, lazy_tolerance=2.0)
+function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon, d; use_extra_vertex_storage=false, extra_vertex_storage=nothing, lazy_tolerance=2.0, memory_mode::MemoryEmphasis=InplaceEmphasis())
     _, v, v_loc, _, a_lambda, a, a_loc, _, _ = active_set_argminmax(active_set, gradient)
     #Do lazy FW step
     grad_dot_lazy_fw_vertex = fast_dot(v, gradient)
@@ -381,7 +381,7 @@ function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon; use_extra_ver
        grad_dot_x - grad_dot_lazy_fw_vertex >= epsilon
         tt = lazy
         gamma_max = one(a_lambda)
-        d = x - v
+        d = muladd_memory_mode(memory_mode, d, x, v)
         vertex = v
         away_step_taken = false
         fw_step_taken = true
@@ -392,7 +392,7 @@ function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon; use_extra_ver
            grad_dot_a - grad_dot_x >= phi / lazy_tolerance
             tt = away
             gamma_max = a_lambda / (1 - a_lambda)
-            d = a - x
+            d = muladd_memory_mode(memory_mode, d, a, x)
             vertex = a
             away_step_taken = true
             fw_step_taken = false
@@ -421,7 +421,7 @@ function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon; use_extra_ver
             dual_gap = grad_dot_x - grad_dot_fw_vertex
             if dual_gap >= phi / lazy_tolerance
                 gamma_max = one(a_lambda)
-                d = x - v
+                d = muladd_memory_mode(memory_mode, d, x, v)
                 vertex = v
                 away_step_taken = false
                 fw_step_taken = true
@@ -431,7 +431,6 @@ function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon; use_extra_ver
                 tt = dualstep
                 phi = min(dual_gap, phi / 2.0)
                 gamma_max = zero(a_lambda)
-                d = zero(x)
                 vertex = v
                 away_step_taken = false
                 fw_step_taken = false
@@ -442,7 +441,7 @@ function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon; use_extra_ver
     return d, vertex, index, gamma_max, phi, away_step_taken, fw_step_taken, tt
 end
 
-function afw_step(x, gradient, lmo, active_set, epsilon)
+function afw_step(x, gradient, lmo, active_set, epsilon, d; memory_mode::MemoryEmphasis=InplaceEmphasis())
     _, _, _, _, a_lambda, a, a_loc = active_set_argminmax(active_set, gradient)
     v = compute_extreme_point(lmo, gradient)
     grad_dot_x = fast_dot(x, gradient)
@@ -451,7 +450,7 @@ function afw_step(x, gradient, lmo, active_set, epsilon)
     if dual_gap >= away_gap && dual_gap >= epsilon
         tt = regular
         gamma_max = one(a_lambda)
-        d = x - v
+        d = muladd_memory_mode(memory_mode, d, x, v)
         vertex = v
         away_step_taken = false
         fw_step_taken = true
@@ -459,7 +458,7 @@ function afw_step(x, gradient, lmo, active_set, epsilon)
     elseif away_gap >= epsilon
         tt = away
         gamma_max = a_lambda / (1 - a_lambda)
-        d = a - x
+        d = muladd_memory_mode(memory_mode, d, a, x)
         vertex = a
         away_step_taken = true
         fw_step_taken = false
@@ -467,7 +466,6 @@ function afw_step(x, gradient, lmo, active_set, epsilon)
     else
         tt = away
         gamma_max = zero(a_lambda)
-        d = zero(x)
         vertex = a
         away_step_taken = false
         fw_step_taken = false
@@ -476,14 +474,15 @@ function afw_step(x, gradient, lmo, active_set, epsilon)
     return d, vertex, index, gamma_max, dual_gap, away_step_taken, fw_step_taken, tt
 end
 
-function fw_step(x, gradient, lmo)
-    vertex = compute_extreme_point(lmo, gradient)
+function fw_step(x, gradient, lmo, d; memory_mode::MemoryEmphasis = InplaceEmphasis())
+    v = compute_extreme_point(lmo, gradient)
+    d = muladd_memory_mode(memory_mode, d, x, v)
     return (
-        x - vertex,
-        vertex,
+        x - v,
+        v,
         nothing,
         1,
-        fast_dot(x, gradient) - fast_dot(vertex, gradient),
+        fast_dot(x, gradient) - fast_dot(v, gradient),
         false,
         true,
         regular,
