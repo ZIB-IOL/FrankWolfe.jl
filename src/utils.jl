@@ -133,7 +133,7 @@ end
 
 _unsafe_equal(a, b) = isequal(a, b)
 
-function _unsafe_equal(a::AbstractSparseArray, b::AbstractSparseArray)
+function _unsafe_equal(a::SparseArrays.AbstractSparseArray, b::SparseArrays.AbstractSparseArray)
     return a == b
 end
 
