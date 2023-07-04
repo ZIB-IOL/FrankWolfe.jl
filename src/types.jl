@@ -102,6 +102,11 @@ function Base.copyto!(dst::SparseArrays.SparseVector, src::ScaledHotVector)
     return dst
 end
 
+function active_set_update_scale!(x::IT, lambda, atom::ScaledHotVector) where {IT}
+    x[atom.val_idx] = x[atom.val_idx] * (1 - lambda) + lambda * atom.active_val
+    return x
+end
+
 """
     RankOneMatrix{T, UT, VT}
 
