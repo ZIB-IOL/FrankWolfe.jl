@@ -127,6 +127,10 @@ end
     lmo = KSparseLMO(3, 2.0)
     x = 10 * randn(10) # dense vector
     @inferred compute_extreme_point(lmo, x)
+
+    v = FrankWolfe.compute_extreme_point(lmo, zeros(3))
+    SparseArrays.dropzeros!(v)
+    @test norm(v) > 0
 end
 
 @testset "Caching on simplex LMOs" begin
