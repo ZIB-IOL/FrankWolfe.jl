@@ -56,7 +56,8 @@ end
     storage = copy(active_set_afw.x)
     grad!(storage, active_set_afw.x)
     epsilon = 1e-6
-    @inferred FrankWolfe.afw_step(active_set_afw.x, storage, lmo_prob, active_set_afw, epsilon)
+    d = active_set_afw.x * 0
+    @inferred FrankWolfe.afw_step(active_set_afw.x, storage, lmo_prob, active_set_afw, epsilon, d)
     @inferred FrankWolfe.lazy_afw_step(
         active_set_afw.x,
         storage,
@@ -64,6 +65,7 @@ end
         active_set_afw,
         epsilon,
         epsilon,
+        d,
     )
     res_bpcg = FrankWolfe.blended_pairwise_conditional_gradient(
         f,
