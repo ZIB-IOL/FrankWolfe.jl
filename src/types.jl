@@ -93,6 +93,14 @@ function Base.isequal(a::ScaledHotVector, b::ScaledHotVector)
     return a.len == b.len && a.val_idx == b.val_idx && isequal(a.active_val, b.active_val)
 end
 
+function Base.copyto!(dst::AbstractVector, src::ScaledHotVector)
+    for idx in eachindex(src)
+        dst[idx] = 0
+    end
+    dst[src.val_idx] = src.active_val
+    return dst
+end
+
 """
     RankOneMatrix{T, UT, VT}
 
