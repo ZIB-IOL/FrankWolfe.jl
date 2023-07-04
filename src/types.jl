@@ -103,7 +103,8 @@ function Base.copyto!(dst::SparseArrays.SparseVector, src::ScaledHotVector)
 end
 
 function active_set_update_scale!(x::IT, lambda, atom::ScaledHotVector) where {IT}
-    x[atom.val_idx] = x[atom.val_idx] * (1 - lambda) + lambda * atom.active_val
+    x .*= (1 - lambda)
+    x[atom.val_idx] += lambda * atom.active_val
     return x
 end
 
