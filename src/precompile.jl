@@ -307,6 +307,7 @@ Base.precompile(
         KSparseLMO{Float64},
         ActiveSet{SparseVector{Float64,Int64},Float64,SparseVector{Float64,Int64}},
         Float64,
+        SparseVector{Float64,Int64},
     },
 )   # time: 0.032522447
 Base.precompile(
@@ -343,6 +344,7 @@ Base.precompile(
         SparseVector{Float64,Int64},
         KSparseLMO{Float64},
         ActiveSet{SparseVector{Float64,Int64},Float64,SparseVector{Float64,Int64}},
+        SparseVector{Float64,Int64},
     },
 )   # time: 0.002095744
 Base.precompile(
@@ -1120,6 +1122,7 @@ Base.precompile(
         LpNormLMO{Float64,1},
         ActiveSet{ScaledHotVector{Float64},Float64,Vector{Float64}},
         Float64,
+        Vector{Float64},
     },
 )   # time: 0.009450513
 Base.precompile(
@@ -1139,6 +1142,7 @@ Base.precompile(
         Vector{Float64},
         LpNormLMO{Float64,1},
         ActiveSet{ScaledHotVector{Float64},Float64,Vector{Float64}},
+        Vector{Float64},
     },
 )   # time: 0.001109981
 Base.precompile(
