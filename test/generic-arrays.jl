@@ -80,9 +80,12 @@ end
         @test isequal(e, f)
         v = SparseArrays.spzeros(10)
         v[1:5] .= 3
+        v2 = copy(v)
         copyto!(v, e)
         @test norm(v) ≈ 3
         @test norm(v[1:2]) ≈ 0
+        copyto!(v2, collect(e))
+        @test v == v2
     end
     @testset "RankOneMatrix" begin
         a = FrankWolfe.RankOneMatrix(ones(3), ones(4))
