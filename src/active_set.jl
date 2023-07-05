@@ -125,6 +125,16 @@ function active_set_update_scale!(x::IT, lambda, atom) where {IT}
     return x
 end
 
+function active_set_update_scale!(x::IT, lambda, atom::SparseArrays.SparseVector) where {IT}
+    @. x *= (1 - lambda)
+    nzvals = SparseArrays.nonzeros(atom)
+    nzinds = SparseArrays.nonzeroinds(atom)
+    for idx in eachindex(nzvals)
+        x[nzinds[idx]] += lambda * nzvals[idx]
+    end
+    return x
+end
+
 """
     active_set_update_iterate_pairwise!(x, lambda, fw_atom, away_atom)
 
@@ -173,6 +183,19 @@ function compute_active_set_iterate!(active_set)
     active_set.x .= 0
     for (λi, ai) in active_set
         @. active_set.x += λi * ai
+    end
+    return active_set.x
+end
+
+# specialized version for sparse vector
+function compute_active_set_iterate!(active_set::ActiveSet{<:SparseArrays.SparseVector})
+    active_set.x .= 0
+    for (λi, ai) in active_set
+        nzvals = SparseArrays.nonzeros(ai)
+        nzinds = SparseArrays.nonzeroinds(ai)
+        @inbounds for idx in eachindex(nzvals)
+            active_set.x[nzinds[idx]] += λi * nzvals[idx]
+        end
     end
     return active_set.x
 end
