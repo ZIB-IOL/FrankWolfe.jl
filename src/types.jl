@@ -93,6 +93,21 @@ function Base.isequal(a::ScaledHotVector, b::ScaledHotVector)
     return a.len == b.len && a.val_idx == b.val_idx && isequal(a.active_val, b.active_val)
 end
 
+function Base.copyto!(dst::SparseArrays.SparseVector, src::ScaledHotVector)
+    for idx in eachindex(src)
+        dst[idx] = 0
+    end
+    SparseArrays.dropzeros!(dst)
+    dst[src.val_idx] = src.active_val
+    return dst
+end
+
+function active_set_update_scale!(x::IT, lambda, atom::ScaledHotVector) where {IT}
+    x .*= (1 - lambda)
+    x[atom.val_idx] += lambda * atom.active_val
+    return x
+end
+
 """
     RankOneMatrix{T, UT, VT}
 

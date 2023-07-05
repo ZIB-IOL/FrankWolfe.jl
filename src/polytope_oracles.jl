@@ -42,7 +42,10 @@ function compute_extreme_point(lmo::KSparseLMO{T}, direction; v=nothing, kwargs.
     end
     v = spzeros(T, length(direction))
     for (idx, val) in zip(K_indices, K_values)
-        v[idx] = -lmo.right_hand_side * sign(val)
+        # signbit to avoid zeros, ensuring we have a true extreme point
+        # equivalent to sign(val) but without any zero
+        s = 1 - 2 * signbit(val)
+        v[idx] = -lmo.right_hand_side * s
     end
     return v
 end
