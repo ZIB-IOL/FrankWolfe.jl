@@ -53,7 +53,7 @@ const training_data = map(1:500) do _
 end
 
 const extended_training_data = map(training_data) do (x, y)
-    x_ext = getproperty.(MultivariatePolynomials.subs.(var_monomials, X => x), :α)
+    x_ext = MultivariatePolynomials.coefficient.(MultivariatePolynomials.subs.(var_monomials, X => x))
     return (x_ext, y)
 end
 
@@ -64,7 +64,7 @@ const test_data = map(1:1000) do _
 end
 
 const extended_test_data = map(test_data) do (x, y)
-    x_ext = getproperty.(MultivariatePolynomials.subs.(var_monomials, X => x), :α)
+    x_ext = MultivariatePolynomials.coefficient.(MultivariatePolynomials.subs.(var_monomials, X => x))
     return (x_ext, y)
 end
 
@@ -197,7 +197,7 @@ x_lafw, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe( # hide
 trajectory_bcg = [] # hide
 callback = build_callback(trajectory_bcg) # hide
 x0 = deepcopy(x00) # hide
-x_bcg, v, primal, dual_gap, _ = FrankWolfe.blended_conditional_gradient( # hide
+x_bcg, v, primal, dual_gap, _, _ = FrankWolfe.blended_conditional_gradient( # hide
     f, # hide
     grad!, # hide
     lmo, # hide
@@ -283,7 +283,7 @@ trajectory_bcg = []
 callback = build_callback(trajectory_bcg)
 
 x0 = deepcopy(x00)
-x_bcg, v, primal, dual_gap, _ = FrankWolfe.blended_conditional_gradient(
+x_bcg, v, primal, dual_gap, _, _ = FrankWolfe.blended_conditional_gradient(
     f,
     grad!,
     lmo,

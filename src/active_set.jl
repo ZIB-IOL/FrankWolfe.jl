@@ -7,7 +7,7 @@ along with their coefficients `(λ_i, a_i)`.
 `R` is the type of the `λ_i`, `AT` is the type of the atoms `a_i`.
 The iterate `x = ∑λ_i a_i` is stored in x with type `IT`.
 """
-struct ActiveSet{AT,R,IT} <: AbstractVector{Tuple{R,AT}}
+struct ActiveSet{AT, R <: Real, IT} <: AbstractVector{Tuple{R,AT}}
     weights::Vector{R}
     atoms::Vector{AT}
     x::IT
@@ -92,7 +92,7 @@ end
 
 Adds the atom to the active set with weight lambda or adds lambda to existing atom.
 """
-function active_set_update!(active_set::ActiveSet, lambda, atom, renorm=true, idx=nothing)
+function active_set_update!(active_set::ActiveSet, lambda, atom, renorm=true, idx=nothing; add_dropped_vertices=false, vertex_storage=nothing)
     # rescale active set
     active_set.weights .*= (1 - lambda)
     # add value for new atom
@@ -107,7 +107,8 @@ function active_set_update!(active_set::ActiveSet, lambda, atom, renorm=true, id
         push!(active_set, (lambda, atom))
     end
     if renorm
-        active_set_cleanup!(active_set, update=false)
+        add_dropped_vertices = add_dropped_vertices ? vertex_storage !== nothing : add_dropped_vertices
+        active_set_cleanup!(active_set, update=false, add_dropped_vertices=add_dropped_vertices, vertex_storage=vertex_storage)
         active_set_renormalize!(active_set)
     end
     active_set_update_scale!(active_set.x, lambda, atom)
@@ -121,6 +122,16 @@ Operates `x ← (1-λ) x + λ a`.
 """
 function active_set_update_scale!(x::IT, lambda, atom) where {IT}
     @. x = x * (1 - lambda) + lambda * atom
+    return x
+end
+
+function active_set_update_scale!(x::IT, lambda, atom::SparseArrays.SparseVector) where {IT}
+    @. x *= (1 - lambda)
+    nzvals = SparseArrays.nonzeros(atom)
+    nzinds = SparseArrays.nonzeroinds(atom)
+    for idx in eachindex(nzvals)
+        x[nzinds[idx]] += lambda * nzvals[idx]
+    end
     return x
 end
 
@@ -176,7 +187,28 @@ function compute_active_set_iterate!(active_set)
     return active_set.x
 end
 
-function active_set_cleanup!(active_set; weight_purge_threshold=1e-12, update=true)
+# specialized version for sparse vector
+function compute_active_set_iterate!(active_set::ActiveSet{<:SparseArrays.SparseVector})
+    active_set.x .= 0
+    for (λi, ai) in active_set
+        nzvals = SparseArrays.nonzeros(ai)
+        nzinds = SparseArrays.nonzeroinds(ai)
+        @inbounds for idx in eachindex(nzvals)
+            active_set.x[nzinds[idx]] += λi * nzvals[idx]
+        end
+    end
+    return active_set.x
+end
+
+function active_set_cleanup!(active_set; weight_purge_threshold=1e-12, update=true, add_dropped_vertices=false, vertex_storage=nothing)
+    if add_dropped_vertices && vertex_storage !== nothing 
+        for (weight, v) in zip(active_set.weights, active_set.atoms) 
+            if weight <= weight_purge_threshold
+                push!(vertex_storage, v)
+            end
+        end
+    end
+
     filter!(e -> e[1] > weight_purge_threshold, active_set)
     if update
         compute_active_set_iterate!(active_set)
@@ -250,4 +282,12 @@ function active_set_initialize!(as::ActiveSet{AT,R}, v) where {AT,R}
     push!(as, (one(R), v))
     compute_active_set_iterate!(as)
     return as
+end
+
+function compute_active_set_iterate!(active_set::ActiveSet{<:ScaledHotVector, <:Real, <:AbstractVector})
+    active_set.x .= 0
+    @inbounds for (λi, ai) in active_set
+        active_set.x[ai.val_idx] += λi * ai.active_val
+    end
+    return active_set.x
 end

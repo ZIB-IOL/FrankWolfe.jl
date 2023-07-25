@@ -62,7 +62,7 @@ FrankWolfe.benchmark_oracles(
 
 x0 = deepcopy(x00)
 
-@time x, v, primal, dual_gap, trajectoryBCG = FrankWolfe.blended_conditional_gradient(
+@time x, v, primal, dual_gap, trajectoryBCG, _ = FrankWolfe.blended_conditional_gradient(
     x -> cf(x, xp),
     (str, x) -> cgrad!(str, x, xp),
     lmo,
