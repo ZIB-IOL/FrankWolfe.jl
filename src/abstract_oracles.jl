@@ -87,7 +87,7 @@ function compute_weak_separation_point(lmo::SingleLastCachedLMO, direction, max_
         lmo.last_vertex = v
     end
     T = promote_type(eltype(v), eltype(direction))
-    return (v, zero(T))
+    return v, zero(T)
 end
 
 function compute_extreme_point(
@@ -294,7 +294,7 @@ function compute_weak_separation_point(lmo::VectorCacheLMO, direction, max_value
         push!(lmo.vertices, v)
     end
     T = promote_type(eltype(v), eltype(direction))
-    return v, zero(v)
+    return v, zero(T)
 end
 
 function compute_extreme_point(
