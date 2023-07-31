@@ -293,6 +293,7 @@ function lazified_conditional_gradient(
     end
 
     lmo = VectorCacheLMO{typeof(lmo_base),VType}(lmo_base)
+    lmo.greedy = greedy_lazy
     if isfinite(cache_size)
         Base.sizehint!(lmo.vertices, cache_size)
     end
@@ -300,7 +301,7 @@ function lazified_conditional_gradient(
     t = 0
     dual_gap = Inf
     primal = Inf
-    v = []
+    v = x0
     x = x0
     phi = Inf
     tt = regular
@@ -353,7 +354,7 @@ function lazified_conditional_gradient(
     while t <= max_iteration && dual_gap >= max(epsilon, eps(float(eltype(x))))
 
         #####################
-        # managing time and Ctrl-C
+        # managing time
         #####################
         time_at_loop = time_ns()
         if t == 0
@@ -382,12 +383,18 @@ function lazified_conditional_gradient(
             primal = f(x)
         end
 
-        v = compute_extreme_point(lmo, gradient, threshold=threshold, greedy=greedy_lazy)
-        tt = lazy
-        if fast_dot(v, gradient) > threshold
-            tt = dualstep
+        v, gap = compute_weak_separation_point(lmo, gradient, threshold)
+        if gap > 0
+            tt = lazy
+            if fast_dot(v, gradient) > threshold
+                tt = dualstep
+                dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
+                phi = min(dual_gap, phi / 2)
+            end
+        else
+            tt = regular
             dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
-            phi = min(dual_gap, phi / 2)
+            phi = dual_gap
         end
 
         d = muladd_memory_mode(memory_mode, d, x, v)

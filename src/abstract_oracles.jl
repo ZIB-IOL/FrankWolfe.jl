@@ -18,6 +18,29 @@ All LMOs should accept keyword arguments that they can ignore.
 function compute_extreme_point end
 
 """
+    compute_weak_separation_point(lmo, direction, max_value) -> (vertex, gap)
+
+Weak separation algorithm for a given oracle.
+Unlike `compute_extreme_point`, `compute_weak_separation_point` may provide a suboptimal `vertex` with the following conditions:
+- `vertex` is still a valid extreme point of the polytope.
+IF an inexact vertex is computed:
+- `⟨v, d⟩ ≤ max_value`, the pre-specified required improvement.
+- `⟨v, d⟩ ≤ ⟨v_opt, d⟩ + gap`, with `v_opt` a vertex computed with the exact oracle.
+- If the algorithm used to compute the inexact vertex provides a bound on optimality, the `gap` value must be valid.
+- Otherwise, e.g. if the vertex is computed with a heuristic, `gap = ∞`.
+ELSE (the oracle computes an optimal vertex):
+- `⟨v, d⟩` may be greater than `max_value`, `gap` must be 0.
+"""
+function compute_weak_separation_point(lmo, direction, max_value; kwargs...) end
+
+# default to computing an exact vertex.
+function compute_weak_separation_point(lmo::LinearMinimizationOracle, direction, max_value; kwargs...)
+    v = compute_extreme_point(lmo, direction; kwargs...)
+    gap = zero(eltype(v)) * zero(eltype(direction))
+    return v, gap
+end
+
+"""
     CachedLinearMinimizationOracle{LMO}
 
 Oracle wrapping another one of type lmo.
@@ -43,11 +66,29 @@ Vertices of `LMO` have to be of type `VT` if provided.
 mutable struct SingleLastCachedLMO{LMO,A} <: CachedLinearMinimizationOracle{LMO}
     last_vertex::Union{Nothing,A}
     inner::LMO
+    store_cache::Bool
 end
 
 # initializes with no cache by default
 SingleLastCachedLMO(lmo::LMO) where {LMO<:LinearMinimizationOracle} =
-    SingleLastCachedLMO{LMO,AbstractVector}(nothing, lmo)
+    SingleLastCachedLMO{LMO,AbstractVector}(nothing, lmo, true)
+
+# gap is 0 if exact, ∞ if cached point
+function compute_weak_separation_point(lmo::SingleLastCachedLMO, direction, max_value; kwargs...)
+    if lmo.last_vertex !== nothing && isfinite(max_value)
+        # cache is a sufficiently-decreasing direction
+        if fast_dot(lmo.last_vertex, direction) ≤ max_value
+            T = promote_type(eltype(lmo.last_vertex), eltype(direction))
+            return lmo.last_vertex, T(Inf)
+        end
+    end
+    v = compute_extreme_point(lmo.inner, direction, kwargs...)
+    if lmo.store_cache
+        lmo.last_vertex = v
+    end
+    T = promote_type(eltype(v), eltype(direction))
+    return (v, zero(T))
+end
 
 function compute_extreme_point(
     lmo::SingleLastCachedLMO,
@@ -62,7 +103,7 @@ function compute_extreme_point(
             return lmo.last_vertex
         end
     end
-    v = compute_extreme_point(lmo.inner, direction, kwargs...)
+    v = compute_extreme_point(lmo.inner, direction, v=v, kwargs...)
     if store_cache
         lmo.last_vertex = v
     end
@@ -188,14 +229,16 @@ mutable struct VectorCacheLMO{LMO<:LinearMinimizationOracle,VT} <:
                CachedLinearMinimizationOracle{LMO}
     vertices::Vector{VT}
     inner::LMO
+    store_cache::Bool
+    greedy::Bool
 end
 
 function VectorCacheLMO{LMO,VT}(lmo::LMO) where {VT,LMO<:LinearMinimizationOracle}
-    return VectorCacheLMO{LMO,VT}(VT[], lmo)
+    return VectorCacheLMO{LMO,VT}(VT[], lmo, true, false)
 end
 
 function VectorCacheLMO(lmo::LMO) where {LMO<:LinearMinimizationOracle}
-    return VectorCacheLMO{LMO,Vector{Float64}}(AbstractVector[], lmo)
+    return VectorCacheLMO{LMO,Vector{Float64}}(AbstractVector[], lmo, true, false)
 end
 
 function Base.empty!(lmo::VectorCacheLMO)
@@ -204,6 +247,55 @@ function Base.empty!(lmo::VectorCacheLMO)
 end
 
 Base.length(lmo::VectorCacheLMO) = length(lmo.vertices)
+
+function compute_weak_separation_point(lmo::VectorCacheLMO, direction, max_value; kwargs...)
+    if isempty(lmo.vertices)
+        v = compute_extreme_point(lmo.inner, direction)
+        T = promote_type(eltype(v), eltype(direction))
+        if lmo.store_cache
+            push!(lmo.vertices, v)
+        end
+        return v, zero(T)
+    end
+    best_idx = -1
+    best_val = Inf
+    best_v = nothing
+    for idx in reverse(eachindex(lmo.vertices))
+        @inbounds v = lmo.vertices[idx]
+        new_val = fast_dot(v, direction)
+        if new_val ≤ max_value
+            T = promote_type(eltype(v), eltype(direction))
+            # stop and return
+            if lmo.greedy
+                return v, T(Inf)
+            end
+            # otherwise, compare to incumbent
+            if new_val < best_val
+                best_v = v
+                best_val = new_val
+                best_idx = idx
+            end
+        end
+    end
+    if best_idx > 0
+        T = promote_type(eltype(best_v), eltype(direction))
+        return best_v, T(Inf)
+    end
+    # no satisfactory vertex found
+    v = compute_extreme_point(lmo.inner, direction)
+    if lmo.store_cache
+        # note: we do not check for duplicates. hence you might end up with more vertices,
+        # in fact up to number of dual steps many, that might be already in the cache
+        # in order to reach this point, if v was already in the cache is must not meet the threshold (otherwise we would have returned it)
+        # and it is the best possible, hence we will perform a dual step on the outside.
+        #
+        # note: another possibility could be to test against that in the if statement but then you might end you recalculating the same vertex a few times.
+        # as such this might be a better tradeoff, i.e., to not check the set for duplicates and potentially accept #dual_steps many duplicates.
+        push!(lmo.vertices, v)
+    end
+    T = promote_type(eltype(v), eltype(direction))
+    return v, zero(v)
+end
 
 function compute_extreme_point(
     lmo::VectorCacheLMO,
@@ -228,7 +320,7 @@ function compute_extreme_point(
         @inbounds v = lmo.vertices[idx]
         new_val = fast_dot(v, direction)
         if new_val ≤ threshold
-            # stop, store and return
+            # stop and return
             if greedy
                 return v
             end
