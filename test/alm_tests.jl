@@ -19,7 +19,8 @@ lmo2 = FrankWolfe.ScaledBoundLInfNormBall(zeros(n), ones(n))
 
 
 x,_,_,_,_=FrankWolfe.alm(
-    FrankWolfe.BCFW(),
+    FrankWolfe.BCFW(
+        line_search=line_search=FrankWolfe.Adaptive(verbose=false),),
     f,
     grad!,
     (lmoNB, lmoProb),
@@ -100,9 +101,44 @@ x,_,_,_,_=FrankWolfe.alm(
 @test abs(x[1,1]) < 1e-6
 @test abs(x[1,2] - 1/n) < 1e-6
 
-x,_,_,_,_=FrankWolfe.alm(
+for order in instances(FrankWolfe.UpdateOrder)
+
+    x,_,_,_,_=FrankWolfe.alm(
+        FrankWolfe.BCFW(
+            line_search=line_search=FrankWolfe.Adaptive(verbose=false),
+            update_order = order
+        ),
+        f,
+        grad!,
+        (lmo2, lmoProb),
+        ones(n),
+        lambda=1,
+    )
+
+    @test abs(x[1,1] - 0.5/n) < 1e-6
+    @test abs(x[1,2] - 1/n) < 1e-6
+
+    x,_,_,_,_,_=FrankWolfe.alm(
+        FrankWolfe.BCFW(
+            line_search=line_search=FrankWolfe.Agnostic(),
+            momentum=0.9
+        ),
+        f,
+        grad!,
+        (lmo2, lmoProb),
+        ones(n),
+        lambda=1,
+    )
+
+    @test abs(x[1,1] - 0.5/n) < 1e-4
+    @test abs(x[1,2] - 1/n) < 1e-4
+end
+
+_,_,_,_,_,traj_data=FrankWolfe.alm(
     FrankWolfe.BCFW(
         line_search=line_search=FrankWolfe.Adaptive(verbose=false),
+        verbose=true,
+        trajectory=true
     ),
     f,
     grad!,
@@ -111,6 +147,9 @@ x,_,_,_,_=FrankWolfe.alm(
     lambda=1,
 )
 
-@test abs(x[1,1] - 0.5/n) < 1e-6
-@test abs(x[1,2] - 1/n) < 1e-6
+@test traj_data != []
+@test length(traj_data[1]) == 6
+@test length(traj_data) >= 2
+@test length(traj_data) <= 10001
+
 end
