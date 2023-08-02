@@ -10,7 +10,7 @@ Returns a tuple `(x, v, primal, dual_gap, infeas, traj_data)` with:
 - `infeas` sum of squared, pairwise distances between iterates 
 - `traj_data` vector of trajectory information.
 """
-function alm(
+function alternating_linear_minimization(
     bc_algo::BlockCoordinateMethod,
     f,
     grad!,

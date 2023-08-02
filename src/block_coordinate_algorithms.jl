@@ -208,7 +208,7 @@ function perform_bc_updates(bc_algo::BCFW, f, grad!, lmo, x0)
                 memory_mode,
             )
 
-            dual_gap = sum(x.*gradient) - sum(v.*gradient)
+            dual_gap = fast_dot(x-v, gradient)
     
             x = muladd_memory_mode(memory_mode, x, gamma, d)
         else
@@ -253,8 +253,8 @@ function perform_bc_updates(bc_algo::BCFW, f, grad!, lmo, x0)
                 gamma = perform_line_search(
                     line_search,
                     t,
-                    (x) -> f(x),
-                    (storage, x) -> grad!(storage, x),
+                    f,
+                    grad!,
                     gradient,
                     x,
                     d,
@@ -313,9 +313,9 @@ function perform_bc_updates(bc_algo::BCFW, f, grad!, lmo, x0)
 
     grad!(gradient, x)
     v = cat(compute_extreme_point(lmo, tuple([selectdim(gradient, ndim, i) for i=1:l]...))... , dims=ndim)
-    infeas = sum([fast_dot(selectdim(x,ndim,i) - selectdim(x,ndim,j), selectdim(x,ndim,i) - selectdim(x,ndim,j)) for i in 1:l for j in 1:i-1])
+    infeas = sum(fast_dot(selectdim(x,ndim,i) - selectdim(x,ndim,j), selectdim(x,ndim,i) - selectdim(x,ndim,j)) for i in 1:l for j in 1:i-1)
     primal = f(x)
-    dual_gap = sum(x.*gradient) - sum(v.*gradient)
+    dual_gap = fast_dot(x-v, gradient)
 
     tot_time = (time_ns() - time_start) / 1.0e9
     gamma = perform_line_search(

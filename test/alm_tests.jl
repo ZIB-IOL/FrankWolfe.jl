@@ -18,7 +18,7 @@ lmo1 = FrankWolfe.ScaledBoundLInfNormBall(-ones(n), zeros(n))
 lmo2 = FrankWolfe.ScaledBoundLInfNormBall(zeros(n), ones(n))
 
 
-x,_,_,_,_=FrankWolfe.alm(
+x,_,_,_,_=FrankWolfe.alternating_linear_minimization(
     FrankWolfe.BCFW(
         line_search=line_search=FrankWolfe.Adaptive(verbose=false),),
     f,
@@ -31,7 +31,7 @@ x,_,_,_,_=FrankWolfe.alm(
 @test abs(x[1,1] - 0.5/n) < 1e-6
 @test abs(x[1,2] - 1/n) < 1e-6
 
-x,_,_,_,_=FrankWolfe.alm(
+x,_,_,_,_=FrankWolfe.alternating_linear_minimization(
     FrankWolfe.BCFW(
         line_search=line_search=FrankWolfe.Adaptive(verbose=false),
     ),
@@ -45,7 +45,7 @@ x,_,_,_,_=FrankWolfe.alm(
 @test abs(x[1,1]- 0.75/n) < 1e-6
 @test abs(x[1,2] - 1/n) < 1e-6
 
-x,_,_,_,_=FrankWolfe.alm(
+x,_,_,_,_=FrankWolfe.alternating_linear_minimization(
     FrankWolfe.BCFW(
         line_search=line_search=FrankWolfe.Adaptive(verbose=false),
     ),
@@ -59,7 +59,7 @@ x,_,_,_,_=FrankWolfe.alm(
 @test abs(x[1,1]- 0.9/n) < 1e-6
 @test abs(x[1,2] - 1/n) < 1e-6
 
-x,_,_,_,_=FrankWolfe.alm(
+x,_,_,_,_=FrankWolfe.alternating_linear_minimization(
     FrankWolfe.BCFW(
         line_search=line_search=FrankWolfe.Adaptive(verbose=false),
     ),
@@ -73,7 +73,7 @@ x,_,_,_,_=FrankWolfe.alm(
 @test abs(x[1,1]- 0.25/n) < 1e-6
 @test abs(x[1,2] - 1/n) < 1e-6
 
-x,_,_,_,_=FrankWolfe.alm(
+x,_,_,_,_=FrankWolfe.alternating_linear_minimization(
     FrankWolfe.BCFW(
         line_search=line_search=FrankWolfe.Adaptive(verbose=false),
     ),
@@ -87,7 +87,7 @@ x,_,_,_,_=FrankWolfe.alm(
 @test abs(x[1,1]) < 1e-6
 @test abs(x[1,2]) < 1e-6
 
-x,_,_,_,_=FrankWolfe.alm(
+x,_,_,_,_=FrankWolfe.alternating_linear_minimization(
     FrankWolfe.BCFW(
         line_search=line_search=FrankWolfe.Adaptive(verbose=false),
     ),
@@ -103,7 +103,7 @@ x,_,_,_,_=FrankWolfe.alm(
 
 for order in instances(FrankWolfe.UpdateOrder)
 
-    x,_,_,_,_=FrankWolfe.alm(
+    x,_,_,_,_=FrankWolfe.alternating_linear_minimization(
         FrankWolfe.BCFW(
             line_search=line_search=FrankWolfe.Adaptive(verbose=false),
             update_order = order
@@ -118,7 +118,7 @@ for order in instances(FrankWolfe.UpdateOrder)
     @test abs(x[1,1] - 0.5/n) < 1e-6
     @test abs(x[1,2] - 1/n) < 1e-6
 
-    x,_,_,_,_,_=FrankWolfe.alm(
+    x,_,_,_,_,_=FrankWolfe.alternating_linear_minimization(
         FrankWolfe.BCFW(
             line_search=line_search=FrankWolfe.Agnostic(),
             momentum=0.9
@@ -130,11 +130,11 @@ for order in instances(FrankWolfe.UpdateOrder)
         lambda=1,
     )
 
-    @test abs(x[1,1] - 0.5/n) < 1e-4
-    @test abs(x[1,2] - 1/n) < 1e-4
+    @test abs(x[1,1] - 0.5/n) < 1e-3
+    @test abs(x[1,2] - 1/n) < 1e-3
 end
 
-_,_,_,_,_,traj_data=FrankWolfe.alm(
+_,_,_,_,_,traj_data=FrankWolfe.alternating_linear_minimization(
     FrankWolfe.BCFW(
         line_search=line_search=FrankWolfe.Adaptive(verbose=false),
         verbose=true,

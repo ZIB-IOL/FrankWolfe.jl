@@ -1,5 +1,4 @@
 using FrankWolfe
-using Plots
 using LinearAlgebra
 using JuMP
 const MOI = JuMP.MOI
@@ -30,7 +29,7 @@ trajectories = []
 
 for order in instances(FrankWolfe.UpdateOrder)
 
-    _,_,_,_,_,traj_data = FrankWolfe.alm(
+    _,_,_,_,_,traj_data = FrankWolfe.alternating_linear_minimization(
         FrankWolfe.BCFW(
             update_order=order,
             verbose=true,
