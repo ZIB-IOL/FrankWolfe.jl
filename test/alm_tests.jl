@@ -4,7 +4,7 @@ using Test
 
 @testset "Testing alternating linear minimization with block coordinate FW for different LMO-pairs " begin
 
-    f(x) = fast_dot(x,x)
+    f(x) = dot(x,x)
 
     function grad!(storage, x)
         @. storage = 2 * x
