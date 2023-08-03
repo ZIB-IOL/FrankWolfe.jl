@@ -35,13 +35,13 @@ function alternating_linear_minimization(
     end
 
     function f_bc(x)
-        return sum([f(selectdim(x, ndim, i)) for i in 1:l]) +
-               lambda * sum([
+        return sum(f(selectdim(x, ndim, i)) for i in 1:l) +
+               lambda * sum(
             fast_dot(
                 selectdim(x, ndim, i) - selectdim(x, ndim, j),
                 selectdim(x, ndim, i) - selectdim(x, ndim, j),
             ) for i in 1:l for j in 1:i-1
-        ])
+        )
     end
 
     x, v, primal, dual_gap, infeas, traj_data =
