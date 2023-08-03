@@ -300,12 +300,13 @@ function blended_pairwise_conditional_gradient(
                 grad!(gradient, x)
                 dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
             end
-            # Note: In the following we differentiate between lazy and non-lazy updates. the reason is that the non-lazy version
-            # does not use the phi but the lazy one heavily depends on it. it is important that the phi is only updated after dropping
+            # Note: In the following, we differentiate between lazy and non-lazy updates.
+            # The reason is that the non-lazy version does not use phi but the lazy one heavily depends on it.
+            # It is important that the phi is only updated after dropping
             # below phi / lazy_tolerance, as otherwise we simply have a "lagging" dual_gap estimate that just slows down convergence.
-            # the logic is as following
-            # for non-lazy: we accept everything and there are no dual steps
-            # for lazy: we accept accept also slightly weaker vertices, those satisfying phi / lazy_tolerance
+            # The logic is as follows:
+            # - for non-lazy: we accept everything and there are no dual steps
+            # - for lazy: we also accept slightly weaker vertices, those satisfying phi / lazy_tolerance
             # this should simplify the criterion.
             # DO NOT CHANGE without good reason and talk to Sebastian first for the logic behind this.
             if !lazy || dual_gap ≥ phi / lazy_tolerance                  
