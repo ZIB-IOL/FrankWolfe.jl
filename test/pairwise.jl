@@ -35,7 +35,7 @@ end
         max_iteration=6000,
         line_search=FrankWolfe.Adaptive(),
         print_iter=100,
-        verbose=true,
+        verbose=false,
         epsilon=3e-7,
     )
     @test res_afw[3] ≈ res_bpcg[3]
@@ -74,7 +74,7 @@ end
         x0,
         max_iteration=6000,
         line_search=FrankWolfe.Adaptive(),
-        verbose=true,
+        verbose=false,
         epsilon=3e-7,
         callback=test_callback,
     )
