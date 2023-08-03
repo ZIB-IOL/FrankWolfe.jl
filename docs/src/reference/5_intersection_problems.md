@@ -1,4 +1,5 @@
 # Intersection problems
+
 Problems over intersections of convex sets, i.e. 
 ```math
 \min_{x \in \bigcap_{i=1}^n P_i} f(x),
