@@ -299,12 +299,12 @@ function perform_bc_updates(bc_algo::BCFW, f, grad!, lmo, x0)
             callback !== nothing ||
             line_search isa Shortstep
         )
-            infeas = sum([
+            infeas = sum(
                 fast_dot(
                     selectdim(x, ndim, i) - selectdim(x, ndim, j),
                     selectdim(x, ndim, i) - selectdim(x, ndim, j),
                 ) for i in 1:l for j in 1:i-1
-            ])
+            )
             primal = f(x)
 
         end
