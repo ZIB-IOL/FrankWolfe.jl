@@ -4,10 +4,23 @@ function perform_bc_updates end
 
 abstract type BlockCoordinateUpdateOrder end
 
-struct Full <: BlockCoordinateUpdateOrder end
-struct Cyclic <: BlockCoordinateUpdateOrder end
-struct Stochastic <: BlockCoordinateUpdateOrder end
-struct Progressive <: BlockCoordinateUpdateOrder end
+function select_update_indices end
+
+struct FullUpdate <: BlockCoordinateUpdateOrder end
+struct CyclicUpdate <: BlockCoordinateUpdateOrder end
+struct StochasticUpdate <: BlockCoordinateUpdateOrder end
+
+function select_update_indices(::FullUpdate, l)
+    return [1:l]
+end
+
+function select_update_indices(::CyclicUpdate, l)
+    return [[i] for i in 1:l]
+end
+
+function select_update_indices(::StochasticUpdate, l)
+    return [[rand(1:l)] for i in 1:l]
+end
 
 
 mutable struct BCFW{MT,GT,CT,TT,LT} <: BlockCoordinateMethod
@@ -28,7 +41,7 @@ mutable struct BCFW{MT,GT,CT,TT,LT} <: BlockCoordinateMethod
 end
 
 BCFW(;
-    update_order=Cyclic(),
+    update_order=CyclicUpdate(),
     line_search=Adaptive(),
     momentum=nothing,
     epsilon=1e-7,
@@ -106,7 +119,6 @@ function perform_bc_updates(bc_algo::BCFW, f, grad!, lmo, x0)
     t = 0
     dual_gap = Inf
     dual_gaps = fill(Inf, l)
-    progress = ones(l)
     primal = Inf
     x = copy(x0)
     tt = regular
@@ -197,9 +209,9 @@ function perform_bc_updates(bc_algo::BCFW, f, grad!, lmo, x0)
 
         first_iter = false
 
-        # Update all dimensions simulatenously
-        if update_order isa Full
-
+        for update_indices in select_update_indices(update_order, l)
+            
+            # Update gradients
             if momentum === nothing || first_iter
                 grad!(gradient, x)
                 if momentum !== nothing
@@ -207,13 +219,24 @@ function perform_bc_updates(bc_algo::BCFW, f, grad!, lmo, x0)
                 end
             else
                 grad!(gtemp, x)
-                @memory_mode(memory_mode, gradient = (momentum * gradient) + (1 - momentum) * gtemp)
+                @memory_mode(
+                    memory_mode,
+                    gradient = (momentum * gradient) + (1 - momentum) * gtemp
+                )
             end
 
-            v = cat(
-                compute_extreme_point(lmo, tuple([selectdim(gradient, ndim, i) for i in 1:l]...))...,
-                dims=ndim,
-            )
+            v = copy(x) # This is equivalent to setting the rest of d to zero
+
+            for i in update_indices
+                multi_index = [idx < ndim ? Colon() : i for idx in 1:ndim]
+                v[multi_index...] = compute_extreme_point(lmo.lmos[i], gradient[multi_index...])
+                dual_gaps[i] = 
+                    fast_dot(x[multi_index...], gradient[multi_index...]) -
+                    fast_dot(v[multi_index...], gradient[multi_index...])
+            end
+
+            dual_gap = sum(dual_gaps)
+
             d = muladd_memory_mode(memory_mode, d, x, v)
             gamma = perform_line_search(
                 line_search,
@@ -228,70 +251,8 @@ function perform_bc_updates(bc_algo::BCFW, f, grad!, lmo, x0)
                 memory_mode,
             )
 
-            dual_gap = fast_dot(x - v, gradient)
-
             x = muladd_memory_mode(memory_mode, x, gamma, d)
-        else
-            for j in 1:l
-
-                if momentum === nothing || first_iter
-                    grad!(gradient, x)
-                    if momentum !== nothing
-                        gtemp .= gradient
-                    end
-                else
-                    grad!(gtemp, x)
-                    @memory_mode(
-                        memory_mode,
-                        gradient = (momentum * gradient) + (1 - momentum) * gtemp
-                    )
-                end
-
-                if update_order isa Cyclic
-                    i = j
-                elseif update_order isa Stochastic
-                    i = rand(1:l)
-                elseif update_order isa Progressive
-                    weights = progress ./ sum(progress)
-                    i = findfirst(cumsum(weights) .>= rand())
-                else
-                    @warn "Unknown update_order: $(update_order)"
-                end
-
-
-                v = copy(x) # This is equivalent to setting the rest of d to zero
-                indices = [idx < ndim ? Colon() : i for idx in 1:ndim]
-                v[indices...] = compute_extreme_point(lmo.lmos[i], gradient[indices...])
-
-                dgi =
-                    fast_dot(x[indices...], gradient[indices...]) -
-                    fast_dot(v[indices...], gradient[indices...])
-
-                if dual_gap != Inf
-                    progress[i] = copy(dual_gaps[i]) - dgi
-                end
-
-                dual_gaps[i] = dgi
-                dual_gap = sum(dual_gaps)
-
-                d = muladd_memory_mode(memory_mode, d, x, v)
-                gamma = perform_line_search(
-                    line_search,
-                    t,
-                    f,
-                    grad!,
-                    gradient,
-                    x,
-                    d,
-                    1.0,
-                    linesearch_workspace,
-                    memory_mode,
-                )
-
-                x = muladd_memory_mode(memory_mode, x, gamma, d)
-            end
         end
-
 
         # go easy on the memory - only compute if really needed
         if (
@@ -299,12 +260,12 @@ function perform_bc_updates(bc_algo::BCFW, f, grad!, lmo, x0)
             callback !== nothing ||
             line_search isa Shortstep
         )
-            infeas = sum([
+            infeas = sum(
                 fast_dot(
                     selectdim(x, ndim, i) - selectdim(x, ndim, j),
                     selectdim(x, ndim, i) - selectdim(x, ndim, j),
                 ) for i in 1:l for j in 1:i-1
-            ])
+            )
             primal = f(x)
 
         end

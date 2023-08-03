@@ -28,7 +28,7 @@ x0 = rand(dim, dim)
 trajectories = []
 
 for order in
-    [FrankWolfe.Full(), FrankWolfe.Cyclic(), FrankWolfe.Stochastic(), FrankWolfe.Progressive()]
+    [FrankWolfe.FullUpdate(), FrankWolfe.CyclicUpdate(), FrankWolfe.StochasticUpdate()]
 
     _, _, _, _, _, traj_data = FrankWolfe.alternating_linear_minimization(
         FrankWolfe.BCFW(update_order=order, verbose=true, trajectory=true),
@@ -41,7 +41,7 @@ for order in
     push!(trajectories, traj_data)
 end
 
-labels = ["Full", "Cyclic", "Stochastic", "Progressive"]
+labels = ["Full", "Cyclic", "Stochastic"]
 
 fp = plot_trajectories(trajectories, labels, legend_position=:best, xscalelog=true)
 

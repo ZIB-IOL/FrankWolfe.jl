@@ -1,7 +1,7 @@
 """
 alm(bc_algo, f, grad!, lmos, x0; ...)
 
-Alternating Linear Mnimizations Frank-Wolfe algorithm.
+Alternating Linear Minimizations Frank-Wolfe algorithm.
 Returns a tuple `(x, v, primal, dual_gap, infeas, traj_data)` with:
 - `x` cartesian product of final iterates
 - `v` cartesian product of last vertices of the LMOs
@@ -24,8 +24,10 @@ function alternating_linear_minimization(
     prod_lmo = ProductLMO(lmos)
     x0_bc = cat(compute_extreme_point(prod_lmo, tuple([x0 for i in 1:l]...))..., dims=ndim)
 
+    # workspace for the gradient
+    gradf = similar(x0_bc)
+
     function grad_bc!(storage, x)
-        gradf = similar(storage)
         for i in 1:l
             grad!(selectdim(gradf, ndim, i), selectdim(x, ndim, i))
         end

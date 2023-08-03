@@ -4,7 +4,7 @@ using Test
 
 @testset "Testing alternating linear minimization with block coordinate FW for different LMO-pairs " begin
 
-    f(x) = fast_dot(x,x)
+    f(x) = dot(x,x)
 
     function grad!(storage, x)
         @. storage = 2 * x
@@ -91,7 +91,7 @@ using Test
     @test abs(x[1, 2] - 1 / n) < 1e-6
 
     for order in
-        [FrankWolfe.Full(), FrankWolfe.Cyclic(), FrankWolfe.Stochastic(), FrankWolfe.Progressive()]
+        [FrankWolfe.FullUpdate(), FrankWolfe.CyclicUpdate(), FrankWolfe.StochasticUpdate()]
 
         x, _, _, _, _ = FrankWolfe.alternating_linear_minimization(
             FrankWolfe.BCFW(
