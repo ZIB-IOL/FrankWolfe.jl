@@ -1,7 +1,7 @@
 """
 alm(bc_algo, f, grad!, lmos, x0; ...)
 
-Alternating Linear Mnimizations Frank-Wolfe algorithm.
+Alternating Linear Minimizations Frank-Wolfe algorithm.
 Returns a tuple `(x, v, primal, dual_gap, infeas, traj_data)` with:
 - `x` cartesian product of final iterates
 - `v` cartesian product of last vertices of the LMOs
