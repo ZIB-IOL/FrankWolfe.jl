@@ -2,7 +2,13 @@ abstract type BlockCoordinateMethod end
 
 function perform_bc_updates end
 
-@enum UpdateOrder full cyclic stochastic progressive
+abstract type UpdateOrder end
+
+struct Full <: UpdateOrder end
+struct Cyclic <: UpdateOrder end
+struct Stochastic <: UpdateOrder end
+struct Progressive <: UpdateOrder end
+
 
 mutable struct BCFW{MT,GT,CT,TT,LT} <: BlockCoordinateMethod
     update_order::UpdateOrder
@@ -21,7 +27,7 @@ mutable struct BCFW{MT,GT,CT,TT,LT} <: BlockCoordinateMethod
     linesearch_workspace::LT
 end
 
-BCFW(; update_order=cyclic,
+BCFW(; update_order=Cyclic(),
     line_search=Adaptive(),
     momentum=nothing,
     epsilon=1e-7,
@@ -83,7 +89,7 @@ function perform_bc_updates(bc_algo::BCFW, f, grad!, lmo, x0)
     ndim = ndims(x0)
     t = 0
     dual_gap = Inf
-    dual_gaps = [Inf for _=1:l]
+    dual_gaps = fill(Inf, l)
     progress = ones(l)
     primal = Inf
     x = copy(x0)
@@ -181,7 +187,7 @@ function perform_bc_updates(bc_algo::BCFW, f, grad!, lmo, x0)
         first_iter = false
 
         # Update all dimensions simulatenously
-        if update_order == full
+        if isa(update_order, Full)
 
             if momentum === nothing || first_iter
                 grad!(gradient, x)
@@ -224,11 +230,11 @@ function perform_bc_updates(bc_algo::BCFW, f, grad!, lmo, x0)
                     @memory_mode(memory_mode, gradient = (momentum * gradient) + (1 - momentum) * gtemp)
                 end
                     
-                if update_order == cyclic
+                if isa(update_order, Cyclic)
                     i = j
-                elseif update_order == stochastic
+                elseif isa(update_order, Stochastic)
                     i = rand(1:l)
-                elseif update_order == progressive
+                elseif isa(update_order, Progressive)
                     weights = progress ./sum(progress)
                     i = findfirst(cumsum(weights) .>= rand())
                 else

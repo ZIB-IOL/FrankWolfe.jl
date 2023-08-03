@@ -101,7 +101,7 @@ x,_,_,_,_=FrankWolfe.alternating_linear_minimization(
 @test abs(x[1,1]) < 1e-6
 @test abs(x[1,2] - 1/n) < 1e-6
 
-for order in instances(FrankWolfe.UpdateOrder)
+for order in [FrankWolfe.Full(), FrankWolfe.Cyclic(), FrankWolfe.Stochastic(), FrankWolfe.Progressive()]
 
     x,_,_,_,_=FrankWolfe.alternating_linear_minimization(
         FrankWolfe.BCFW(
