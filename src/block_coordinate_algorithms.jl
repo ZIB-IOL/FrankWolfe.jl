@@ -2,16 +2,16 @@ abstract type BlockCoordinateMethod end
 
 function perform_bc_updates end
 
-abstract type UpdateOrder end
+abstract type BlockCoordinateUpdateOrder end
 
-struct Full <: UpdateOrder end
-struct Cyclic <: UpdateOrder end
-struct Stochastic <: UpdateOrder end
-struct Progressive <: UpdateOrder end
+struct Full <: BlockCoordinateUpdateOrder end
+struct Cyclic <: BlockCoordinateUpdateOrder end
+struct Stochastic <: BlockCoordinateUpdateOrder end
+struct Progressive <: BlockCoordinateUpdateOrder end
 
 
 mutable struct BCFW{MT,GT,CT,TT,LT} <: BlockCoordinateMethod
-    update_order::UpdateOrder
+    update_order::BlockCoordinateUpdateOrder
     line_search::LineSearchMethod
     momentum::MT
     epsilon::Float64
@@ -327,8 +327,8 @@ function perform_bc_updates(bc_algo::BCFW, f, grad!, lmo, x0)
     gamma = perform_line_search(
         line_search,
         t,
-        (x) -> f(x),
-        (storage, x) -> grad!(storage, x),
+        f,
+        grad!,
         gradient,
         x,
         d,

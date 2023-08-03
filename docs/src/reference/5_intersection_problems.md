@@ -1,4 +1,5 @@
 # Intersection problems
+
 Problems over intersections of convex sets, i.e. 
 ```math
 \min_{x \in \bigcap_{i=1}^n P_i} f(x),
@@ -19,7 +20,7 @@ Modules = [FrankWolfe]
 Pages = ["alm.jl", "block_coordinate_algorithms.jl"]
 ```
 
-See [Braun, Pokutta, Weismantel 2023](https://arxiv.org/abs/2212.02933) for more details about the underlying theory.
+See [Beck, Pauwels, Sabach 2015](https://arxiv.org/abs/1502.03716) for more details about the underlying theory.
 
 ## Index
 
