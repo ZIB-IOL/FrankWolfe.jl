@@ -23,9 +23,10 @@ function alternating_linear_minimization(
     ndim = ndims(x0) + 1 # New product dimension
     prod_lmo = ProductLMO(lmos)
     x0_bc = cat(compute_extreme_point(prod_lmo, tuple([x0 for i in 1:l]...))..., dims=ndim)
+    # workspace for the gradient
+    gradf = similar(storage)
 
     function grad_bc!(storage, x)
-        gradf = similar(storage)
         for i in 1:l
             grad!(selectdim(gradf, ndim, i), selectdim(x, ndim, i))
         end
