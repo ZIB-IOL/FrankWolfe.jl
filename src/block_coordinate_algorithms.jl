@@ -15,8 +15,8 @@ mutable struct BCFW{MT,GT,CT,TT,LT} <: BlockCoordinateMethod
     line_search::LineSearchMethod
     momentum::MT
     epsilon::Float64
-    max_iteration
-    print_iter
+    max_iteration::Any
+    print_iter::Any
     trajectory::Bool
     verbose::Bool
     memory_mode::MemoryEmphasis
@@ -27,7 +27,8 @@ mutable struct BCFW{MT,GT,CT,TT,LT} <: BlockCoordinateMethod
     linesearch_workspace::LT
 end
 
-BCFW(; update_order=Cyclic(),
+BCFW(;
+    update_order=Cyclic(),
     line_search=Adaptive(),
     momentum=nothing,
     epsilon=1e-7,
@@ -40,8 +41,23 @@ BCFW(; update_order=Cyclic(),
     callback=nothing,
     traj_data=[],
     timeout=Inf,
-    linesearch_workspace=nothing) = BCFW(update_order, line_search, momentum, epsilon, max_iteration, print_iter, trajectory, verbose, 
-                                        memory_mode, gradient, callback, traj_data, timeout, linesearch_workspace)
+    linesearch_workspace=nothing,
+) = BCFW(
+    update_order,
+    line_search,
+    momentum,
+    epsilon,
+    max_iteration,
+    print_iter,
+    trajectory,
+    verbose,
+    memory_mode,
+    gradient,
+    callback,
+    traj_data,
+    timeout,
+    linesearch_workspace,
+)
 
 struct CallbackStateBCFW{TP,TDV,TDG,XT,VT,TG,FT,GFT,LMO,GT}
     t::Int
@@ -128,22 +144,17 @@ function perform_bc_updates(bc_algo::BCFW, f, grad!, lmo, x0)
 
     if verbose
         println("\nBlock coordinate Frank-Wolfe (BCFW).")
-        NumType = eltype(x0[1])
-        println("MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",)
+        num_type = eltype(x0[1])
+        println(
+            "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $num_type",
+        )
         grad_type = typeof(gradient)
         println("MOMENTUM: $momentum GRADIENTTYPE: $grad_type")
         if memory_mode isa InplaceEmphasis
             @info("In memory_mode memory iterates are written back into x0!")
         end
     end
-    # if memory_mode isa InplaceEmphasis && !isa(xP, Union{Array,SparseArrays.AbstractSparseArray})
-    #     # if integer, convert element type to most appropriate float
-    #     if eltype(x) <: Integer
-    #         xx = copyto!(similar(x, float(eltype(x))), x)
-    #     else
-    #         x = copyto!(similar(x), x)
-    #     end
-    # end
+
     first_iter = true
     # instanciating container for gradient
     if gradient === nothing
@@ -187,7 +198,7 @@ function perform_bc_updates(bc_algo::BCFW, f, grad!, lmo, x0)
         first_iter = false
 
         # Update all dimensions simulatenously
-        if isa(update_order, Full)
+        if update_order isa Full
 
             if momentum === nothing || first_iter
                 grad!(gradient, x)
@@ -199,13 +210,16 @@ function perform_bc_updates(bc_algo::BCFW, f, grad!, lmo, x0)
                 @memory_mode(memory_mode, gradient = (momentum * gradient) + (1 - momentum) * gtemp)
             end
 
-            v = cat(compute_extreme_point(lmo, tuple([selectdim(gradient, ndim, i) for i=1:l]...))..., dims = ndim)
+            v = cat(
+                compute_extreme_point(lmo, tuple([selectdim(gradient, ndim, i) for i in 1:l]...))...,
+                dims=ndim,
+            )
             d = muladd_memory_mode(memory_mode, d, x, v)
             gamma = perform_line_search(
                 line_search,
                 t,
-                (x) -> f(x),
-                (storage, x) -> grad!(storage, x),
+                f,
+                grad!,
                 gradient,
                 x,
                 d,
@@ -214,11 +228,11 @@ function perform_bc_updates(bc_algo::BCFW, f, grad!, lmo, x0)
                 memory_mode,
             )
 
-            dual_gap = fast_dot(x-v, gradient)
-    
+            dual_gap = fast_dot(x - v, gradient)
+
             x = muladd_memory_mode(memory_mode, x, gamma, d)
         else
-            for j=1:l
+            for j in 1:l
 
                 if momentum === nothing || first_iter
                     grad!(gradient, x)
@@ -227,31 +241,36 @@ function perform_bc_updates(bc_algo::BCFW, f, grad!, lmo, x0)
                     end
                 else
                     grad!(gtemp, x)
-                    @memory_mode(memory_mode, gradient = (momentum * gradient) + (1 - momentum) * gtemp)
+                    @memory_mode(
+                        memory_mode,
+                        gradient = (momentum * gradient) + (1 - momentum) * gtemp
+                    )
                 end
-                    
-                if isa(update_order, Cyclic)
+
+                if update_order isa Cyclic
                     i = j
-                elseif isa(update_order, Stochastic)
+                elseif update_order isa Stochastic
                     i = rand(1:l)
-                elseif isa(update_order, Progressive)
-                    weights = progress ./sum(progress)
+                elseif update_order isa Progressive
+                    weights = progress ./ sum(progress)
                     i = findfirst(cumsum(weights) .>= rand())
                 else
                     @warn "Unknown update_order: $(update_order)"
                 end
-                
-                
+
+
                 v = copy(x) # This is equivalent to setting the rest of d to zero
-                indices = [idx < ndim ? Colon() : i for idx=1:ndim]
+                indices = [idx < ndim ? Colon() : i for idx in 1:ndim]
                 v[indices...] = compute_extreme_point(lmo.lmos[i], gradient[indices...])
 
-                dgi = fast_dot(x[indices...], gradient[indices...]) - fast_dot(v[indices...], gradient[indices...])
+                dgi =
+                    fast_dot(x[indices...], gradient[indices...]) -
+                    fast_dot(v[indices...], gradient[indices...])
 
                 if dual_gap != Inf
                     progress[i] = copy(dual_gaps[i]) - dgi
                 end
-                
+
                 dual_gaps[i] = dgi
                 dual_gap = sum(dual_gaps)
 
@@ -267,24 +286,29 @@ function perform_bc_updates(bc_algo::BCFW, f, grad!, lmo, x0)
                     1.0,
                     linesearch_workspace,
                     memory_mode,
-                )      
-                
+                )
+
                 x = muladd_memory_mode(memory_mode, x, gamma, d)
             end
         end
 
-        
+
         # go easy on the memory - only compute if really needed
         if (
             (mod(t, print_iter) == 0 && verbose) ||
             callback !== nothing ||
             line_search isa Shortstep
         )
-            infeas = sum([fast_dot(selectdim(x,ndim,i) - selectdim(x,ndim,j), selectdim(x,ndim,i) - selectdim(x,ndim,j)) for i in 1:l for j in 1:i-1])
+            infeas = sum([
+                fast_dot(
+                    selectdim(x, ndim, i) - selectdim(x, ndim, j),
+                    selectdim(x, ndim, i) - selectdim(x, ndim, j),
+                ) for i in 1:l for j in 1:i-1
+            ])
             primal = f(x)
 
         end
-       
+
 
         t = t + 1
         if callback !== nothing
@@ -309,8 +333,8 @@ function perform_bc_updates(bc_algo::BCFW, f, grad!, lmo, x0)
                 break
             end
         end
-        
-        
+
+
     end
     # recompute everything once for final verfication / do not record to trajectory though for now!
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
@@ -318,10 +342,18 @@ function perform_bc_updates(bc_algo::BCFW, f, grad!, lmo, x0)
     tt = last
 
     grad!(gradient, x)
-    v = cat(compute_extreme_point(lmo, tuple([selectdim(gradient, ndim, i) for i=1:l]...))... , dims=ndim)
-    infeas = sum(fast_dot(selectdim(x,ndim,i) - selectdim(x,ndim,j), selectdim(x,ndim,i) - selectdim(x,ndim,j)) for i in 1:l for j in 1:i-1)
+    v = cat(
+        compute_extreme_point(lmo, tuple([selectdim(gradient, ndim, i) for i in 1:l]...))...,
+        dims=ndim,
+    )
+    infeas = sum(
+        fast_dot(
+            selectdim(x, ndim, i) - selectdim(x, ndim, j),
+            selectdim(x, ndim, i) - selectdim(x, ndim, j),
+        ) for i in 1:l for j in 1:i-1
+    )
     primal = f(x)
-    dual_gap = fast_dot(x-v, gradient)
+    dual_gap = fast_dot(x - v, gradient)
 
     tot_time = (time_ns() - time_start) / 1.0e9
     gamma = perform_line_search(
@@ -357,5 +389,5 @@ function perform_bc_updates(bc_algo::BCFW, f, grad!, lmo, x0)
         callback(state)
     end
 
-return x, v, primal, dual_gap, infeas, traj_data
+    return x, v, primal, dual_gap, infeas, traj_data
 end

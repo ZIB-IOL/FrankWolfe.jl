@@ -27,20 +27,17 @@ x0 = rand(dim, dim)
 
 trajectories = []
 
-for order in [FrankWolfe.Full(), FrankWolfe.Cyclic(), FrankWolfe.Stochastic(), FrankWolfe.Progressive()]
+for order in
+    [FrankWolfe.Full(), FrankWolfe.Cyclic(), FrankWolfe.Stochastic(), FrankWolfe.Progressive()]
 
-    _,_,_,_,_,traj_data = FrankWolfe.alternating_linear_minimization(
-        FrankWolfe.BCFW(
-            update_order=order,
-            verbose=true,
-            trajectory=true,
-        ),
+    _, _, _, _, _, traj_data = FrankWolfe.alternating_linear_minimization(
+        FrankWolfe.BCFW(update_order=order, verbose=true, trajectory=true),
         f,
         grad!,
         lmos,
         x0,
         lambda=1.0,
-    );
+    )
     push!(trajectories, traj_data)
 end
 
