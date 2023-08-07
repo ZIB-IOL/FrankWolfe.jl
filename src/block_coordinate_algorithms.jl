@@ -33,7 +33,8 @@ abstract type BlockCoordinateUpdateOrder end
 """
     select_update_indices(::BlockCoordinateUpdateOrder, l)
 
-Returns a set of subsets of the indices 1,...,l which should be updated during the corresponding iteration.
+Returns a list of lists of the indices. Each list represents one round of updates in an iteration. The indices in a list show which blocks should be updated parallely in one round.
+For example, a full update is given by `[1:l]` and a blockwise update by `[[i] for i=1:l]`.
 """
 function select_update_indices end
 
