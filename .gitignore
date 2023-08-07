@@ -27,3 +27,4 @@ cc/libloporacle.so
 cc/*
 docs/src/contributing.md
 docs/src/index.md
+.DS_Store

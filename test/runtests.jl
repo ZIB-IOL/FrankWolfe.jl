@@ -417,7 +417,7 @@ end
             line_search=FrankWolfe.Agnostic(),
             print_iter=k / 10,
             memory_mode=FrankWolfe.OutplaceEmphasis(),
-            verbose=true,
+            verbose=false,
         )
 
         @test eltype(x0) == T
@@ -432,7 +432,7 @@ end
             line_search=FrankWolfe.Agnostic(),
             print_iter=k / 10,
             memory_mode=FrankWolfe.InplaceEmphasis(),
-            verbose=true,
+            verbose=false,
         )
 
         @test eltype(x0) == T
