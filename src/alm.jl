@@ -1,5 +1,5 @@
 """
-    alm(bc_algo, f, grad!, lmos, x0; ...)
+alternating_linear_minimization(bc_algo, f, grad!, lmos, x0; ...)
 
 Alternating Linear Minimizations Frank-Wolfe algorithm.
 Returns a tuple `(x, v, primal, dual_gap, infeas, traj_data)` with:

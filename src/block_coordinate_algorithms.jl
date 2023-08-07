@@ -1,9 +1,40 @@
+"""
+Block-coordinate method to apply to a given objective function and product-lmo.
+A `BlockCoordinateMethod` must implement
+```
+perform_bc_updates(bc_algo::BlockCoordinateMethod, f, grad!, lmo::ProductLMO, x0)
+```
+"""
 abstract type BlockCoordinateMethod end
 
+"""
+    perform_bc_updates(bc_algo::BlockCoordinateMethod, f, grad!, lmo::ProductLMO, x0)
+
+Returns the results of running `bc_alog` on the product-lmo `lmo` with objective function `f` and starting point `x0`.
+The return value is a tuple `(x, v, primal, dual_gap, infeas, traj_data)` with:
+- `x` cartesian product of final iterates
+- `v` cartesian product of last vertices of the LMOs
+- `primal` primal value `f(x)`
+- `dual_gap` final Frank-Wolfe gap
+- `infeas` sum of squared, pairwise distances between iterates 
+- `traj_data` vector of trajectory information.
+"""
 function perform_bc_updates end
 
+"""
+Update order for a block-coordinate method.
+A `BlockCoordinateUpdateOrder` must implement
+```
+select_update_indices(::BlockCoordinateUpdateOrder, l)
+```
+"""
 abstract type BlockCoordinateUpdateOrder end
 
+"""
+    select_update_indices(::BlockCoordinateUpdateOrder, l)
+
+Returns a set of subsets of the indices 1,...,l which should be updated during the corresponding iteration.
+"""
 function select_update_indices end
 
 struct FullUpdate <: BlockCoordinateUpdateOrder end
