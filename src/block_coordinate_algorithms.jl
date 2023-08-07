@@ -210,7 +210,7 @@ function perform_bc_updates(bc_algo::BCFW, f, grad!, lmo, x0)
         first_iter = false
 
         for update_indices in select_update_indices(update_order, l)
-            
+
             # Update gradients
             if momentum === nothing || first_iter
                 grad!(gradient, x)
@@ -219,10 +219,7 @@ function perform_bc_updates(bc_algo::BCFW, f, grad!, lmo, x0)
                 end
             else
                 grad!(gtemp, x)
-                @memory_mode(
-                    memory_mode,
-                    gradient = (momentum * gradient) + (1 - momentum) * gtemp
-                )
+                @memory_mode(memory_mode, gradient = (momentum * gradient) + (1 - momentum) * gtemp)
             end
 
             v = copy(x) # This is equivalent to setting the rest of d to zero
@@ -230,7 +227,7 @@ function perform_bc_updates(bc_algo::BCFW, f, grad!, lmo, x0)
             for i in update_indices
                 multi_index = [idx < ndim ? Colon() : i for idx in 1:ndim]
                 v[multi_index...] = compute_extreme_point(lmo.lmos[i], gradient[multi_index...])
-                dual_gaps[i] = 
+                dual_gaps[i] =
                     fast_dot(x[multi_index...], gradient[multi_index...]) -
                     fast_dot(v[multi_index...], gradient[multi_index...])
             end
