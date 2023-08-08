@@ -76,7 +76,7 @@ It is implemented in the [`blended_conditional_gradient`](@ref) function, with a
 
 See [Braun, Pokutta, Tu, Wright (2018)](https://arxiv.org/abs/1805.07311).
 
-### Blended Pairwise Conditional Gradients
+### Blended Pairwise Conditional Gradients (BPCG)
 
 It is implemented in the [`FrankWolfe.blended_pairwise_conditional_gradient`](@ref) function, with a minor [modification](https://hackmd.io/@spokutta/B14MTMsLF) to improve sparsity.
 
@@ -90,7 +90,7 @@ The following table compares the characteristics of the algorithms presented in 
 | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
 | **FW** | Low | Low | Low | High | No | Yes |
 | **AFW** | Medium | Medium-High | Medium | Medium-High | Yes | Yes |
-| **BCG** | High | Medium-High | High | Medium | Yes | By design |
+| **B(P)CG** | High | Medium-High | High | Medium | Yes | By design |
 | **SFW** | Low | Low | Low | High | No | No |
 
 While the standard Frank-Wolfe algorithm can only move _towards_ extreme points of the compact convex set $\mathcal{C}$, Away-step Frank-Wolfe can move _away_ from them. The following figure from our paper illustrates this behaviour:
