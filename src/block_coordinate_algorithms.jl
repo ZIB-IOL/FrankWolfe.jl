@@ -57,6 +57,7 @@ end
     block_coordinate_frank_wolfe(f, grad!, lmo::ProductLMO, x0; ...)
 
 Block-coordinate version of the vanilla Frank-Wolfe algorithm.
+Minimizes objective `f` over product of feasible domains specified by the `lmo`.
 The optional argument the `update_order` controls the order in which the blocks are updated (see [`FrankWolfe.BlockCoordinateUpdateOrder`](@ref)).
 
 The method returns a tuple `(x, v, primal, dual_gap, infeas, traj_data)` with:
@@ -69,14 +70,14 @@ The method returns a tuple `(x, v, primal, dual_gap, infeas, traj_data)` with:
 function block_coordinate_frank_wolfe(
     f,
     grad!,
-    lmo::ProductLMO,
+    lmo::ProductLMO{N},
     x0;
-    update_order=CyclicUpdate(),
-    line_search=Adaptive(),
+    update_order::BlockCoordinateUpdateOrder=CyclicUpdate(),
+    line_search::LineSearchMethod=Adaptive(),
     momentum=nothing,
     epsilon=1e-7,
     max_iteration=10000,
-    print_iter=1000.0,
+    print_iter=1000,
     trajectory=false,
     verbose=false,
     memory_mode=InplaceEmphasis(),
@@ -85,7 +86,7 @@ function block_coordinate_frank_wolfe(
     traj_data=[],
     timeout=Inf,
     linesearch_workspace=nothing,
-)
+) where {N}
 
     # header and format string for output of the algorithm
     headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Infeas", "Time", "It/sec"]
@@ -104,11 +105,10 @@ function block_coordinate_frank_wolfe(
         return rep
     end
 
-    l = length(lmo.lmos)
     ndim = ndims(x0)
     t = 0
     dual_gap = Inf
-    dual_gaps = fill(Inf, l)
+    dual_gaps = fill(Inf, N)
     primal = Inf
     x = copy(x0)
     tt = regular
@@ -183,7 +183,7 @@ function block_coordinate_frank_wolfe(
 
         first_iter = false
 
-        for update_indices in select_update_indices(update_order, l)
+        for update_indices in select_update_indices(update_order, N)
 
             # Update gradients
             if momentum === nothing || first_iter
@@ -235,7 +235,7 @@ function block_coordinate_frank_wolfe(
                 fast_dot(
                     selectdim(x, ndim, i) - selectdim(x, ndim, j),
                     selectdim(x, ndim, i) - selectdim(x, ndim, j),
-                ) for i in 1:l for j in 1:i-1
+                ) for i in 1:N for j in 1:i-1
             )
             primal = f(x)
 
@@ -275,14 +275,14 @@ function block_coordinate_frank_wolfe(
 
     grad!(gradient, x)
     v = cat(
-        compute_extreme_point(lmo, tuple([selectdim(gradient, ndim, i) for i in 1:l]...))...,
+        compute_extreme_point(lmo, tuple([selectdim(gradient, ndim, i) for i in 1:N]...))...,
         dims=ndim,
     )
     infeas = sum(
         fast_dot(
             selectdim(x, ndim, i) - selectdim(x, ndim, j),
             selectdim(x, ndim, i) - selectdim(x, ndim, j),
-        ) for i in 1:l for j in 1:i-1
+        ) for i in 1:N for j in 1:i-1
     )
     primal = f(x)
     dual_gap = fast_dot(x - v, gradient)
