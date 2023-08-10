@@ -64,7 +64,6 @@ The method returns a tuple `(x, v, primal, dual_gap, infeas, traj_data)` with:
 - `v` cartesian product of last vertices of the LMOs
 - `primal` primal value `f(x)`
 - `dual_gap` final Frank-Wolfe gap
-- `infeas` sum of squared, pairwise distances between iterates 
 - `traj_data` vector of trajectory information.
 """
 function block_coordinate_frank_wolfe(
@@ -322,5 +321,5 @@ function block_coordinate_frank_wolfe(
         callback(state)
     end
 
-    return x, v, primal, dual_gap, infeas, traj_data
+    return x, v, primal, dual_gap, traj_data
 end

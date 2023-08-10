@@ -145,6 +145,25 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2*ones(n))
 
 end
 
+@testset "Testing alternating linear minimization with different FW methods" begin
+
+    methods = [FrankWolfe.frank_wolfe, FrankWolfe.away_frank_wolfe, FrankWolfe.lazified_conditional_gradient]
+
+    for fw_method in methods
+        x, _, _, _, _ = FrankWolfe.alternating_linear_minimization(
+            fw_method,
+            f,
+            grad!,
+            (lmo2, lmo_prob),
+            ones(n),
+            lambda=1,
+        )
+
+        @test abs(x[1, 1] - 0.5 / n) < 1e-6
+        @test abs(x[1, 2] - 1 / n) < 1e-6
+    end
+end
+
 @testset "Testing alternating projections for different LMO-pairs " begin
 
     x, _, _, _, _, _ = FrankWolfe.alternating_projections((lmo1, lmo_prob), ones(n))

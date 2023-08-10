@@ -34,21 +34,20 @@ function alternating_linear_minimization(
         t = lambda * 2.0 * (N * x .- sum(x, dims=ndim))
         @. storage = gradf + t
     end
+    
+    infeasibility(x) = sum(
+        fast_dot(
+            selectdim(x, ndim, i) - selectdim(x, ndim, j),
+            selectdim(x, ndim, i) - selectdim(x, ndim, j),
+        ) for i in 1:N for j in 1:i-1
+    )
 
-    function f_bc(x)
-        return sum(f(selectdim(x, ndim, i)) for i in 1:N) +
-               lambda * sum(
-            fast_dot(
-                selectdim(x, ndim, i) - selectdim(x, ndim, j),
-                selectdim(x, ndim, i) - selectdim(x, ndim, j),
-            ) for i in 1:N for j in 1:i-1
-        )
-    end
+    f_bc(x) = sum(f(selectdim(x, ndim, i)) for i in 1:N) + lambda * infeasibility(x)
 
-    x, v, primal, dual_gap, infeas, traj_data =
+    x, v, primal, dual_gap, traj_data =
         bc_method(f_bc, grad_bc!, prod_lmo, x0_bc; kwargs...)
-
-    return x, v, primal, dual_gap, infeas, traj_data
+    
+    return x, v, primal, dual_gap, infeasibility(x), traj_data
 end
 
 
