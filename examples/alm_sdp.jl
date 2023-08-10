@@ -30,12 +30,15 @@ trajectories = []
 for order in [FrankWolfe.FullUpdate(), FrankWolfe.CyclicUpdate(), FrankWolfe.StochasticUpdate()]
 
     _, _, _, _, _, traj_data = FrankWolfe.alternating_linear_minimization(
-        FrankWolfe.BCFW(update_order=order, verbose=true, trajectory=true),
+        FrankWolfe.block_coordinate_frank_wolfe,
         f,
         grad!,
         lmos,
         x0,
         lambda=1.0,
+        update_order=order, 
+        verbose=true, 
+        trajectory=true
     )
     push!(trajectories, traj_data)
 end

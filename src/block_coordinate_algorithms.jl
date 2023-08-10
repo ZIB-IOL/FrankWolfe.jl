@@ -1,27 +1,4 @@
 """
-Block-coordinate method to apply to a given objective function and product-lmo.
-A `BlockCoordinateMethod` must implement
-```
-perform_bc_updates(bc_algo::BlockCoordinateMethod, f, grad!, lmo::ProductLMO, x0)
-```
-"""
-abstract type BlockCoordinateMethod end
-
-"""
-    perform_bc_updates(bc_algo::BlockCoordinateMethod, f, grad!, lmo::ProductLMO, x0)
-
-Returns the results of running `bc_alog` on the product-lmo `lmo` with objective function `f` and starting point `x0`.
-The return value is a tuple `(x, v, primal, dual_gap, infeas, traj_data)` with:
-- `x` cartesian product of final iterates
-- `v` cartesian product of last vertices of the LMOs
-- `primal` primal value `f(x)`
-- `dual_gap` final Frank-Wolfe gap
-- `infeas` sum of squared, pairwise distances between iterates 
-- `traj_data` vector of trajectory information.
-"""
-function perform_bc_updates end
-
-"""
 Update order for a block-coordinate method.
 A `BlockCoordinateUpdateOrder` must implement
 ```
@@ -33,7 +10,7 @@ abstract type BlockCoordinateUpdateOrder end
 """
     select_update_indices(::BlockCoordinateUpdateOrder, l)
 
-Returns a list of lists of the indices. Each list represents one round of updates in an iteration. The indices in a list show which blocks should be updated parallely in one round.
+Returns a list of lists of the indices, where `l` is largest index i.e. the number of blocks. Each list represents one round of updates in an iteration. The indices in a list show which blocks should be updated parallely in one round.
 For example, a full update is given by `[1:l]` and a blockwise update by `[[i] for i=1:l]`.
 """
 function select_update_indices end
@@ -54,57 +31,7 @@ function select_update_indices(::StochasticUpdate, l)
     return [[rand(1:l)] for i in 1:l]
 end
 
-
-mutable struct BCFW{MT,GT,CT,TT,LT} <: BlockCoordinateMethod
-    update_order::BlockCoordinateUpdateOrder
-    line_search::LineSearchMethod
-    momentum::MT
-    epsilon::Float64
-    max_iteration::Any
-    print_iter::Any
-    trajectory::Bool
-    verbose::Bool
-    memory_mode::MemoryEmphasis
-    gradient::GT
-    callback::CT
-    traj_data::TT
-    timeout::Float64
-    linesearch_workspace::LT
-end
-
-BCFW(;
-    update_order=CyclicUpdate(),
-    line_search=Adaptive(),
-    momentum=nothing,
-    epsilon=1e-7,
-    max_iteration=10000,
-    print_iter=1000.0,
-    trajectory=false,
-    verbose=false,
-    memory_mode=InplaceEmphasis(),
-    gradient=nothing,
-    callback=nothing,
-    traj_data=[],
-    timeout=Inf,
-    linesearch_workspace=nothing,
-) = BCFW(
-    update_order,
-    line_search,
-    momentum,
-    epsilon,
-    max_iteration,
-    print_iter,
-    trajectory,
-    verbose,
-    memory_mode,
-    gradient,
-    callback,
-    traj_data,
-    timeout,
-    linesearch_workspace,
-)
-
-struct CallbackStateBCFW{TP,TDV,TDG,XT,VT,TG,FT,GFT,LMO,GT}
+struct CallbackStateBlockCoordinateMethod{TP,TDV,TDG,XT,VT,TG,FT,GFT,LMO,GT}
     t::Int
     primal::TP
     dual::TDV
@@ -122,12 +49,44 @@ struct CallbackStateBCFW{TP,TDV,TDG,XT,VT,TG,FT,GFT,LMO,GT}
 end
 
 
-function callback_state(state::CallbackStateBCFW)
+function callback_state(state::CallbackStateBlockCoordinateMethod)
     return (state.t, state.primal, state.dual, state.dual_gap, state.time, state.infeas)
 end
 
-function perform_bc_updates(bc_algo::BCFW, f, grad!, lmo, x0)
+"""
+    block_coordinate_frank_wolfe(f, grad!, lmo::ProductLMO, x0; ...)
 
+Block-coordinate version of the vanilla Frank-Wolfe algorithm.
+The optional argument the `update_order` controls the order in which the blocks are updated (see [`FrankWolfe.BlockCoordinateUpdateOrder`](@ref)).
+
+The method returns a tuple `(x, v, primal, dual_gap, infeas, traj_data)` with:
+- `x` cartesian product of final iterates
+- `v` cartesian product of last vertices of the LMOs
+- `primal` primal value `f(x)`
+- `dual_gap` final Frank-Wolfe gap
+- `infeas` sum of squared, pairwise distances between iterates 
+- `traj_data` vector of trajectory information.
+"""
+function block_coordinate_frank_wolfe(
+    f,
+    grad!,
+    lmo::ProductLMO,
+    x0;
+    update_order=CyclicUpdate(),
+    line_search=Adaptive(),
+    momentum=nothing,
+    epsilon=1e-7,
+    max_iteration=10000,
+    print_iter=1000.0,
+    trajectory=false,
+    verbose=false,
+    memory_mode=InplaceEmphasis(),
+    gradient=nothing,
+    callback=nothing,
+    traj_data=[],
+    timeout=Inf,
+    linesearch_workspace=nothing,
+)
 
     # header and format string for output of the algorithm
     headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Infeas", "Time", "It/sec"]
@@ -154,22 +113,6 @@ function perform_bc_updates(bc_algo::BCFW, f, grad!, lmo, x0)
     primal = Inf
     x = copy(x0)
     tt = regular
-
-    line_search = bc_algo.line_search
-    update_order = bc_algo.update_order
-    verbose = bc_algo.verbose
-    momentum = bc_algo.momentum
-    epsilon = bc_algo.epsilon
-    max_iteration = bc_algo.max_iteration
-    print_iter = bc_algo.print_iter
-    trajectory = bc_algo.trajectory
-    verbose = bc_algo.verbose
-    memory_mode = bc_algo.memory_mode
-    gradient = bc_algo.gradient
-    callback = bc_algo.callback
-    traj_data = bc_algo.traj_data
-    timeout = bc_algo.timeout
-    linesearch_workspace = bc_algo.linesearch_workspace
 
 
     if trajectory
@@ -302,7 +245,7 @@ function perform_bc_updates(bc_algo::BCFW, f, grad!, lmo, x0)
 
         t = t + 1
         if callback !== nothing
-            state = CallbackStateBCFW(
+            state = CallbackStateBlockCoordinateMethod(
                 t,
                 primal,
                 primal - dual_gap,
@@ -360,7 +303,7 @@ function perform_bc_updates(bc_algo::BCFW, f, grad!, lmo, x0)
     )
 
     if callback !== nothing
-        state = CallbackStateBCFW(
+        state = CallbackStateBlockCoordinateMethod(
             t,
             primal,
             primal - dual_gap,

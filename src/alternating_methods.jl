@@ -11,12 +11,13 @@ Returns a tuple `(x, v, primal, dual_gap, infeas, traj_data)` with:
 - `traj_data` vector of trajectory information.
 """
 function alternating_linear_minimization(
-    bc_algo::BlockCoordinateMethod,
+    bc_method,
     f,
     grad!,
     lmos::TL,
     x0;
     lambda=1.0,
+    kwargs...
 ) where {N,TL<:NTuple{N,LinearMinimizationOracle}}
 
     ndim = ndims(x0) + 1 # New product dimension
@@ -45,8 +46,7 @@ function alternating_linear_minimization(
     end
 
     x, v, primal, dual_gap, infeas, traj_data =
-        perform_bc_updates(bc_algo, f_bc, grad_bc!, prod_lmo, x0_bc)
-
+        bc_method(f_bc, grad_bc!, prod_lmo, x0_bc; kwargs...)
 
     return x, v, primal, dual_gap, infeas, traj_data
 end
@@ -65,6 +65,7 @@ function ProjectionFW(y, lmo; max_iter=10000, eps=1e-3)
         epsilon=eps,
         max_iteration=max_iter,
         trajectory=true,
+        line_search=FrankWolfe.Adaptive(verbose=false)
     )
     return x_opt
 end

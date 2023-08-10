@@ -18,75 +18,79 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2*ones(n))
 
 @testset "Testing alternating linear minimization with block coordinate FW for different LMO-pairs " begin
 
-    bcfw = FrankWolfe.BCFW(line_search=line_search = FrankWolfe.Adaptive(verbose=false))
-
     x, _, _, _, _ = FrankWolfe.alternating_linear_minimization(
-        bcfw,
+        FrankWolfe.block_coordinate_frank_wolfe,
         f,
         grad!,
         (lmo_nb, lmo_prob),
         ones(n),
         lambda=1.0,
+        line_search=FrankWolfe.Adaptive(verbose=false)
     )
 
     @test abs(x[1, 1] - 0.5 / n) < 1e-6
     @test abs(x[1, 2] - 1 / n) < 1e-6
 
     x, _, _, _, _ = FrankWolfe.alternating_linear_minimization(
-        bcfw,
+        FrankWolfe.block_coordinate_frank_wolfe,
         f,
         grad!,
         (lmo_nb, lmo_prob),
         ones(n),
         lambda=3.0,
+        line_search=FrankWolfe.Adaptive(verbose=false)
     )
 
     @test abs(x[1, 1] - 0.75 / n) < 1e-6
     @test abs(x[1, 2] - 1 / n) < 1e-6
 
     x, _, _, _, _ = FrankWolfe.alternating_linear_minimization(
-        bcfw,
+        FrankWolfe.block_coordinate_frank_wolfe,
         f,
         grad!,
         (lmo_nb, lmo_prob),
         ones(n),
         lambda=9.0,
+        line_search=FrankWolfe.Adaptive(verbose=false)
     )
 
     @test abs(x[1, 1] - 0.9 / n) < 1e-6
     @test abs(x[1, 2] - 1 / n) < 1e-6
 
     x, _, _, _, _ = FrankWolfe.alternating_linear_minimization(
-        bcfw,
+        FrankWolfe.block_coordinate_frank_wolfe,
         f,
         grad!,
         (lmo_nb, lmo_prob),
         ones(n),
         lambda=1 / 3,
+        line_search=FrankWolfe.Adaptive(verbose=false)
     )
 
     @test abs(x[1, 1] - 0.25 / n) < 1e-6
     @test abs(x[1, 2] - 1 / n) < 1e-6
 
     x, _, _, _, _ = FrankWolfe.alternating_linear_minimization(
-        bcfw,
+        FrankWolfe.block_coordinate_frank_wolfe,
         f,
         grad!,
         (lmo1, lmo2),
         ones(n),
         lambda=1,
+        line_search=FrankWolfe.Adaptive(verbose=false)
     )
 
     @test abs(x[1, 1]) < 1e-6
     @test abs(x[1, 2]) < 1e-6
 
     x, _, _, _, _ = FrankWolfe.alternating_linear_minimization(
-        bcfw,
+        FrankWolfe.block_coordinate_frank_wolfe,
         f,
         grad!,
         (lmo1, lmo_prob),
         ones(n),
         lambda=1,
+        line_search=FrankWolfe.Adaptive(verbose=false)
     )
 
     @test abs(x[1, 1]) < 1e-6
@@ -95,27 +99,28 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2*ones(n))
     for order in [FrankWolfe.FullUpdate(), FrankWolfe.CyclicUpdate(), FrankWolfe.StochasticUpdate()]
 
         x, _, _, _, _ = FrankWolfe.alternating_linear_minimization(
-            FrankWolfe.BCFW(
-                line_search=line_search = FrankWolfe.Adaptive(verbose=false),
-                update_order=order,
-            ),
+            FrankWolfe.block_coordinate_frank_wolfe,
             f,
             grad!,
             (lmo2, lmo_prob),
             ones(n),
             lambda=1,
+            line_search=FrankWolfe.Adaptive(verbose=false),
+            update_order=order
         )
 
         @test abs(x[1, 1] - 0.5 / n) < 1e-6
         @test abs(x[1, 2] - 1 / n) < 1e-6
 
         x, _, _, _, _, _ = FrankWolfe.alternating_linear_minimization(
-            FrankWolfe.BCFW(line_search=line_search = FrankWolfe.Agnostic(), momentum=0.9),
+            FrankWolfe.block_coordinate_frank_wolfe,
             f,
             grad!,
             (lmo2, lmo_prob),
             ones(n),
             lambda=1,
+            line_search= FrankWolfe.Agnostic(),
+            momentum=0.9
         )
 
         @test abs(x[1, 1] - 0.5 / n) < 1e-3
@@ -123,16 +128,14 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2*ones(n))
     end
 
     _, _, _, _, _, traj_data = FrankWolfe.alternating_linear_minimization(
-        FrankWolfe.BCFW(
-            line_search=line_search = FrankWolfe.Adaptive(verbose=false),
-            verbose=true,
-            trajectory=true,
-        ),
+        FrankWolfe.block_coordinate_frank_wolfe,
         f,
         grad!,
         (lmo2, lmo_prob),
         ones(n),
         lambda=1,
+        line_search=FrankWolfe.Adaptive(verbose=false),
+        trajectory=true,
     )
 
     @test traj_data != []
@@ -144,12 +147,12 @@ end
 
 @testset "Testing alternating projections for different LMO-pairs " begin
 
-    x, _, _, _, _, _ = FrankWolfe.alternating_projections((lmo1, lmo_prob), ones(n), verbose=true)
+    x, _, _, _, _, _ = FrankWolfe.alternating_projections((lmo1, lmo_prob), ones(n))
 
     @test abs(x[1][1]) < 1e-6
     @test abs(x[2][1] - 1 / n) < 1e-6
 
-    x, _, _, _, _, _ = FrankWolfe.alternating_projections((lmo3, lmo_prob), ones(n),verbose=true)
+    x, _, _, _, _, _ = FrankWolfe.alternating_projections((lmo3, lmo_prob), ones(n))
 
     @test abs(x[1][1] - 1) < 1e-6
     @test abs(x[2][1] - 1 / n) < 1e-6
