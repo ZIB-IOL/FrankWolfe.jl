@@ -14,7 +14,7 @@ lmo_nb = FrankWolfe.ScaledBoundL1NormBall(-ones(n), ones(n))
 lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1.0)
 lmo1 = FrankWolfe.ScaledBoundLInfNormBall(-ones(n), zeros(n))
 lmo2 = FrankWolfe.ScaledBoundLInfNormBall(zeros(n), ones(n))
-lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2*ones(n))
+lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
 
 @testset "Testing alternating linear minimization with block coordinate FW for different LMO-pairs " begin
 
@@ -25,7 +25,7 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2*ones(n))
         (lmo_nb, lmo_prob),
         ones(n),
         lambda=1.0,
-        line_search=FrankWolfe.Adaptive(verbose=false)
+        line_search=FrankWolfe.Adaptive(verbose=false),
     )
 
     @test abs(x[1, 1] - 0.5 / n) < 1e-6
@@ -38,7 +38,7 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2*ones(n))
         (lmo_nb, lmo_prob),
         ones(n),
         lambda=3.0,
-        line_search=FrankWolfe.Adaptive(verbose=false)
+        line_search=FrankWolfe.Adaptive(verbose=false),
     )
 
     @test abs(x[1, 1] - 0.75 / n) < 1e-6
@@ -51,7 +51,7 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2*ones(n))
         (lmo_nb, lmo_prob),
         ones(n),
         lambda=9.0,
-        line_search=FrankWolfe.Adaptive(verbose=false)
+        line_search=FrankWolfe.Adaptive(verbose=false),
     )
 
     @test abs(x[1, 1] - 0.9 / n) < 1e-6
@@ -64,7 +64,7 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2*ones(n))
         (lmo_nb, lmo_prob),
         ones(n),
         lambda=1 / 3,
-        line_search=FrankWolfe.Adaptive(verbose=false)
+        line_search=FrankWolfe.Adaptive(verbose=false),
     )
 
     @test abs(x[1, 1] - 0.25 / n) < 1e-6
@@ -77,7 +77,7 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2*ones(n))
         (lmo1, lmo2),
         ones(n),
         lambda=1,
-        line_search=FrankWolfe.Adaptive(verbose=false)
+        line_search=FrankWolfe.Adaptive(verbose=false),
     )
 
     @test abs(x[1, 1]) < 1e-6
@@ -90,7 +90,7 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2*ones(n))
         (lmo1, lmo_prob),
         ones(n),
         lambda=1,
-        line_search=FrankWolfe.Adaptive(verbose=false)
+        line_search=FrankWolfe.Adaptive(verbose=false),
     )
 
     @test abs(x[1, 1]) < 1e-6
@@ -106,7 +106,7 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2*ones(n))
             ones(n),
             lambda=1,
             line_search=FrankWolfe.Adaptive(verbose=false),
-            update_order=order
+            update_order=order,
         )
 
         @test abs(x[1, 1] - 0.5 / n) < 1e-6
@@ -119,8 +119,8 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2*ones(n))
             (lmo2, lmo_prob),
             ones(n),
             lambda=1,
-            line_search= FrankWolfe.Agnostic(),
-            momentum=0.9
+            line_search=FrankWolfe.Agnostic(),
+            momentum=0.9,
         )
 
         @test abs(x[1, 1] - 0.5 / n) < 1e-3
@@ -136,6 +136,7 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2*ones(n))
         lambda=1,
         line_search=FrankWolfe.Adaptive(verbose=false),
         trajectory=true,
+        verbose=true,
     )
 
     @test traj_data != []
@@ -147,7 +148,11 @@ end
 
 @testset "Testing alternating linear minimization with different FW methods" begin
 
-    methods = [FrankWolfe.frank_wolfe, FrankWolfe.away_frank_wolfe, FrankWolfe.lazified_conditional_gradient]
+    methods = [
+        FrankWolfe.frank_wolfe,
+        FrankWolfe.away_frank_wolfe,
+        FrankWolfe.lazified_conditional_gradient,
+    ]
 
     for fw_method in methods
         x, _, _, _, _ = FrankWolfe.alternating_linear_minimization(
@@ -192,4 +197,12 @@ end
 
     @test abs(x[1][1]) < 1e-6
     @test abs(x[2][1] - 1) < 1e-6
+
+    _, _, _, _, _, traj_data =
+        FrankWolfe.alternating_projections((lmo1, lmo3), zeros(n), trajectory=true, verbose=true)
+
+    @test traj_data != []
+    @test length(traj_data[1]) == 6
+    @test length(traj_data) >= 2
+    @test length(traj_data) <= 10001
 end

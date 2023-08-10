@@ -17,7 +17,7 @@ function alternating_linear_minimization(
     lmos::TL,
     x0;
     lambda=1.0,
-    kwargs...
+    kwargs...,
 ) where {N,TL<:NTuple{N,LinearMinimizationOracle}}
 
     ndim = ndims(x0) + 1 # New product dimension
@@ -34,7 +34,7 @@ function alternating_linear_minimization(
         t = lambda * 2.0 * (N * x .- sum(x, dims=ndim))
         @. storage = gradf + t
     end
-    
+
     infeasibility(x) = sum(
         fast_dot(
             selectdim(x, ndim, i) - selectdim(x, ndim, j),
@@ -44,9 +44,8 @@ function alternating_linear_minimization(
 
     f_bc(x) = sum(f(selectdim(x, ndim, i)) for i in 1:N) + lambda * infeasibility(x)
 
-    x, v, primal, dual_gap, traj_data =
-        bc_method(f_bc, grad_bc!, prod_lmo, x0_bc; kwargs...)
-    
+    x, v, primal, dual_gap, traj_data = bc_method(f_bc, grad_bc!, prod_lmo, x0_bc; kwargs...)
+
     return x, v, primal, dual_gap, infeasibility(x), traj_data
 end
 
@@ -64,7 +63,7 @@ function ProjectionFW(y, lmo; max_iter=10000, eps=1e-3)
         epsilon=eps,
         max_iteration=max_iter,
         trajectory=true,
-        line_search=FrankWolfe.Adaptive(verbose=false)
+        line_search=FrankWolfe.Adaptive(verbose=false),
     )
     return x_opt
 end
@@ -136,16 +135,16 @@ function alternating_projections(
     v = similar(x)
     tt = regular
     gradient = similar(x)
-    
+
     f(x) = 0
     infeasibility(x) = sum(fast_dot(x[i] - x[j], x[i] - x[j]) for i in 1:N for j in 1:i-1)
 
     function grad!(storage, x)
         s = sum(x)
-        storage[:] =  [N * xi - s for xi in x]
+        return storage[:] = [N * xi - s for xi in x]
     end
 
-    projection_step(x, i, t) = ProjectionFW(x, lmo.lmos[i]; eps = 1/(t^2 + 1))
+    projection_step(x, i, t) = ProjectionFW(x, lmo.lmos[i]; eps=1 / (t^2 + 1))
 
 
     if trajectory
@@ -197,7 +196,7 @@ function alternating_projections(
         # Projection step: 
         for i in 1:N
             # project the previous iterate on the i-th feasible region
-            x[i]= projection_step(x[mod(i - 2, N)+1], i, t)
+            x[i] = projection_step(x[mod(i - 2, N)+1], i, t)
         end
 
         # Update gradients
