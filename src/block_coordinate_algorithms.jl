@@ -57,7 +57,7 @@ end
     block_coordinate_frank_wolfe(f, grad!, lmo::ProductLMO, x0; ...)
 
 Block-coordinate version of the Frank-Wolfe algorithm.
-Minimizes objective `f` over product of feasible domains specified by the `lmo`.
+Minimizes objective `f` over the product of feasible domains specified by the `lmo`.
 The optional argument the `update_order::BlockCoordinateUpdateOrder` controls the order in which the blocks are updated.
 
 The method returns a tuple `(x, v, primal, dual_gap, infeas, traj_data)` with:

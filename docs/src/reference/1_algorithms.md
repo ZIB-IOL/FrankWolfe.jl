@@ -57,7 +57,7 @@ pose a challenge as one has to combine the information of two or more LMOs.
 
 [`FrankWolfe.alternating_projections`](@ref) solves feasibility problems over intersections of feasible regions.
 
-```
+```@auto_docs
 Modules = [FrankWolfe]
 Pages = ["alternating_methods.jl"]
 ```
