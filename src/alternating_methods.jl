@@ -68,6 +68,20 @@ function ProjectionFW(y, lmo; max_iter=10000, eps=1e-3)
     return x_opt
 end
 
+
+
+"""
+    alternating_projections(lmos::NTuple{N,LinearMinimizationOracle}, x0; ...) where {N}
+
+Computes a point in the intersection of feasible domains specified by `lmos`.
+Returns a tuple `(x, v, primal, dual_gap, infeas, traj_data)` with:
+- `x` cartesian product of final iterates
+- `v` cartesian product of last vertices of the LMOs
+- `primal` primal value `f(x)`
+- `dual_gap` final Frank-Wolfe gap
+- `infeas` sum of squared, pairwise distances between iterates 
+- `traj_data` vector of trajectory information.
+"""
 function alternating_projections(
     lmos::NTuple{N,LinearMinimizationOracle},
     x0;
