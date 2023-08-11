@@ -68,6 +68,21 @@ function ProjectionFW(y, lmo; max_iter=10000, eps=1e-3)
     return x_opt
 end
 
+struct CallbackStateAlternatingProjections{TDG,XT}
+    t::Int
+    dual_gap::TDG
+    infeas::Float64
+    time::Float64
+    x::XT
+    lmo::LinearMinimizationOracle
+    tt::FrankWolfe.StepType
+end
+
+
+function callback_state(state::CallbackStateAlternatingProjections)
+    return (state.t, state.dual_gap, state.time, state.infeas)
+end
+
 
 
 """
@@ -77,7 +92,6 @@ Computes a point in the intersection of feasible domains specified by `lmos`.
 Returns a tuple `(x, v, primal, dual_gap, infeas, traj_data)` with:
 - `x` cartesian product of final iterates
 - `v` cartesian product of last vertices of the LMOs
-- `primal` primal value `f(x)`
 - `dual_gap` final Frank-Wolfe gap
 - `infeas` sum of squared, pairwise distances between iterates 
 - `traj_data` vector of trajectory information.
@@ -126,14 +140,12 @@ function alternating_projections(
 ) where {N}
 
     # header and format string for output of the algorithm
-    headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Infeas", "Time", "It/sec"]
-    format_string = "%6s %13s %14e %14e %14e %14e %14e %14e\n"
+    headers = ["Type", "Iteration", "Dual Gap", "Infeas", "Time", "It/sec"]
+    format_string = "%6s %13s %14e %14e %14e %14e\n"
     function format_state(state)
         rep = (
             st[Symbol(state.tt)],
             string(state.t),
-            Float64(state.primal),
-            Float64(state.primal - state.dual_gap),
             Float64(state.dual_gap),
             Float64(state.infeas),
             state.time,
@@ -144,18 +156,15 @@ function alternating_projections(
 
     t = 0
     dual_gap = Inf
-    primal = Inf
     x = fill(x0, N)
     v = similar(x)
     tt = regular
     gradient = similar(x)
 
-    f(x) = 0
-    infeasibility(x) = sum(fast_dot(x[i] - x[j], x[i] - x[j]) for i in 1:N for j in 1:i-1)
+    infeasibility(x) = sum(fast_dot(x[mod(i - 2, N)+1] - x[i], x[mod(i - 2, N)+1] - x[i]) for i in 1:N)
 
     function grad!(storage, x)
-        s = sum(x)
-        return storage[:] = [N * xi - s for xi in x]
+        @. storage = [2 * (x[i] - x[mod(i - 2, N)+1]) for i=1:N]
     end
 
     projection_step(x, i, t) = ProjectionFW(x, lmo.lmos[i]; eps=1 / (t^2 + 1))
@@ -223,27 +232,19 @@ function alternating_projections(
         # go easy on the memory - only compute if really needed
         if ((mod(t, print_iter) == 0 && verbose) || callback !== nothing)
             infeas = infeasibility(x)
-            primal = f(x)
         end
 
         first_iter = false
 
         t = t + 1
         if callback !== nothing
-            state = CallbackStateBlockCoordinateMethod(
+            state = CallbackStateAlternatingProjections(
                 t,
-                primal,
-                primal - dual_gap,
                 dual_gap,
                 infeas,
                 tot_time,
                 x,
-                v,
-                nothing,
-                f,
-                grad!,
                 lmo,
-                gradient,
                 tt,
             )
             # @show state
@@ -258,35 +259,26 @@ function alternating_projections(
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
     # hence the final computation.
     tt = last
-
+    infeas = infeasibility(x)
     grad!(gradient, x)
     v = compute_extreme_point.(lmo.lmos, gradient)
-    infeas = infeasibility(x)
-    primal = f(x)
     dual_gap = fast_dot(x - v, gradient)
 
     tot_time = (time_ns() - time_start) / 1.0e9
 
     if callback !== nothing
-        state = CallbackStateBlockCoordinateMethod(
-            t,
-            primal,
-            primal - dual_gap,
-            dual_gap,
-            infeas,
-            tot_time,
-            x,
-            v,
-            nothing,
-            f,
-            grad!,
-            lmo,
-            gradient,
-            tt,
-        )
+        state = CallbackStateAlternatingProjections(
+                t,
+                dual_gap,
+                infeas,
+                tot_time,
+                x,
+                lmo,
+                tt,
+            )
         callback(state)
     end
 
-    return x, v, primal, dual_gap, infeas, traj_data
+    return x, v, dual_gap, infeas, traj_data
 
 end

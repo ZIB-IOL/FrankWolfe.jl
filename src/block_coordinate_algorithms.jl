@@ -31,7 +31,7 @@ function select_update_indices(::StochasticUpdate, l)
     return [[rand(1:l)] for i in 1:l]
 end
 
-struct CallbackStateBlockCoordinateMethod{TP,TDV,TDG,XT,VT,TG,FT,GFT,LMO,GT}
+struct CallbackStateBlockCoordinateMethod{TP,TDV,TDG,XT,VT,TG,FT,GFT,GT}
     t::Int
     primal::TP
     dual::TDV
@@ -43,7 +43,7 @@ struct CallbackStateBlockCoordinateMethod{TP,TDV,TDG,XT,VT,TG,FT,GFT,LMO,GT}
     gamma::TG
     f::FT
     grad!::GFT
-    lmo::LMO
+    lmo::LinearMinimizationOracle
     gradient::GT
     tt::FrankWolfe.StepType
 end
