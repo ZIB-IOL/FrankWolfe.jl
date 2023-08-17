@@ -3,12 +3,16 @@ using LinearAlgebra
 using Test
 
 """
-A test LMO representing the feasible set [0,1]^n
+A test LMO representing the feasible set [0,1]^n.
+`nops` tracks the number of operations performed.
 """
-struct Hypercube <: FrankWolfe.LinearMinimizationOracle
+mutable struct Hypercube <: FrankWolfe.LinearMinimizationOracle
+    nops::Int
 end
 
-function FrankWolfe.compute_extreme_point(::Hypercube, direction::AbstractArray{T}) where {T}
+Hypercube() = Hypercube(0)
+
+function FrankWolfe.compute_extreme_point(lmo::Hypercube, direction::AbstractArray{T}) where {T}
     v = similar(direction, T)
     v .= 0
     for idx in eachindex(v)
@@ -16,6 +20,7 @@ function FrankWolfe.compute_extreme_point(::Hypercube, direction::AbstractArray{
             v[idx] = 1
         end
     end
+    lmo.nops += length(v)
     return v
 end
 
@@ -26,7 +31,9 @@ function FrankWolfe.compute_weak_separation_point(::Hypercube, direction::Abstra
     v .= 0
     res = zero(T)
     gap = zero(T)
+    nops = 0
     for idx in eachindex(v)
+        nops += 1
         if direction[idx] < 0
             v[idx] = 1
             res += direction[idx]
@@ -34,9 +41,9 @@ function FrankWolfe.compute_weak_separation_point(::Hypercube, direction::Abstra
         if res <= max_value && idx != lastindex(v)
             gap = T(Inf)
             break
-            @info "avoided $(length(v) - idx) iterations"
         end
     end
+    lmo.nops += nops
     return v, gap
 end
 
@@ -74,12 +81,11 @@ end
         storage .-= ref_point
         storage ./= n
     end
-    lmo = Hypercube()
-    x0 = FrankWolfe.compute_extreme_point(lmo, -ones(n))
+    x0 = FrankWolfe.compute_extreme_point(Hypercube(), -ones(n))
     for lazy in (false, true)
-        tracking_lmo = FrankWolfe.TrackingLMO(lmo)
+        tracking_lmo = FrankWolfe.TrackingLMO(Hypercube())
         x, v, primal, dual_gap, trajectory_exact, active_set_exact = FrankWolfe.away_frank_wolfe(f, grad!, tracking_lmo, x0, verbose=false, weak_separation=false, lazy=lazy)
-        tracking_weak = FrankWolfe.TrackingLMO(lmo)
+        tracking_weak = FrankWolfe.TrackingLMO(Hypercube())
         x, v, primal, dual_gap, trajectory_weak, active_set_weak = FrankWolfe.away_frank_wolfe(f, grad!, tracking_weak, x0, verbose=false, weak_separation=true, lazy=lazy)
         @test tracking_lmo.counter <= tracking_weak.counter
     end

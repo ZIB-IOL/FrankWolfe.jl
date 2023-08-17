@@ -787,6 +787,7 @@ include("generic-arrays.jl")
 end
 
 module WeakSeparation
+using Test
 @testset "weak separation oracles" begin
     include("weak_separation.jl")
 end
