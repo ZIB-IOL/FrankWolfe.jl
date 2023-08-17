@@ -26,7 +26,7 @@ end
 
 # a very naive implementation of a weak separation oracle without a gap (a heuristic)
 # we stop iterating through the indices whenever we obtain sufficient progress
-function FrankWolfe.compute_weak_separation_point(::Hypercube, direction::AbstractArray{T}, max_value) where {T}
+function FrankWolfe.compute_weak_separation_point(lmo::Hypercube, direction::AbstractArray{T}, max_value) where {T}
     v = similar(direction, T)
     v .= 0
     res = zero(T)
