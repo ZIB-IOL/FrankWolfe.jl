@@ -136,6 +136,15 @@ function away_frank_wolfe(
 
     d = similar(x)
 
+    if gradient === nothing
+        gradient = collect(x)
+    end
+    gtemp = if momentum !== nothing
+        similar(gradient)
+    else
+        nothing
+    end
+    
     if verbose
         println("\nAway-step Frank-Wolfe Algorithm.")
         NumType = eltype(x)
@@ -147,24 +156,11 @@ function away_frank_wolfe(
             "GRADIENTTYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance MOMENTUM: $momentum AWAYSTEPS: $away_steps",
         )
         println("Linear Minimization Oracle: $(typeof(lmo))")
-        if memory_mode isa InplaceEmphasis
-            @info("In memory_mode memory iterates are written back into x0!")
-        end
         if (use_extra_vertex_storage || add_dropped_vertices) && extra_vertex_storage === nothing
             @warn(
                 "use_extra_vertex_storage and add_dropped_vertices options are only usable with a extra_vertex_storage storage"
             )
         end
-    end
-
-    # likely not needed anymore as now the iterates are provided directly via the active set
-    if gradient === nothing
-        gradient = similar(x)
-    end
-    gtemp = if momentum !== nothing
-        similar(gradient)
-    else
-        nothing
     end
 
     x = get_active_set_iterate(active_set)
