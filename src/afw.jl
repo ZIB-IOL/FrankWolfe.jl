@@ -33,6 +33,7 @@ function away_frank_wolfe(
     use_extra_vertex_storage=false,
     linesearch_workspace=nothing,
     recompute_last_vertex=true,
+    weak_separation=false,
 )
     # add the first vertex to active set from initialization
     active_set = ActiveSet([(1.0, x0)])
@@ -64,6 +65,7 @@ function away_frank_wolfe(
         use_extra_vertex_storage=use_extra_vertex_storage,
         linesearch_workspace=linesearch_workspace,
         recompute_last_vertex=recompute_last_vertex,
+        weak_separation=weak_separation,
     )
 end
 
@@ -95,6 +97,7 @@ function away_frank_wolfe(
     use_extra_vertex_storage=false,
     linesearch_workspace=nothing,
     recompute_last_vertex=true,
+    weak_separation=false,
 )
     # format string for output of the algorithm
     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
@@ -153,7 +156,7 @@ function away_frank_wolfe(
         )
         grad_type = typeof(gradient)
         println(
-            "GRADIENTTYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance MOMENTUM: $momentum AWAYSTEPS: $away_steps",
+            "GRADIENT TYPE: $grad_type LAZY: $lazy LAZY_TOLERANCE: $lazy_tolerance WEAK_SEPARATION: $weak_separation MOMENTUM: $momentum AWAYSTEPS: $away_steps",
         )
         println("Linear Minimization Oracle: $(typeof(lmo))")
         if (use_extra_vertex_storage || add_dropped_vertices) && extra_vertex_storage === nothing
@@ -223,10 +226,16 @@ function away_frank_wolfe(
                         extra_vertex_storage=extra_vertex_storage,
                         lazy_tolerance=lazy_tolerance,
                         memory_mode=memory_mode,
+                        weak_separation=weak_separation,
                     )
             else
                 d, vertex, index, gamma_max, phi_value, away_step_taken, fw_step_taken, tt =
-                    afw_step(x, gradient, lmo, active_set, epsilon, d, memory_mode=memory_mode)
+                    afw_step(
+                        x, gradient, lmo, active_set, epsilon, d,
+                        memory_mode=memory_mode,
+                        weak_separation=weak_separation,
+                        lazy_tolerance=lazy_tolerance,
+                    )
             end
         else
             d, vertex, index, gamma_max, phi_value, away_step_taken, fw_step_taken, tt =
@@ -248,7 +257,7 @@ function away_frank_wolfe(
                 memory_mode,
             )
             
-            gamma = min(gamma_max, gamma)  
+            gamma = min(gamma_max, gamma)
             # cleanup and renormalize every x iterations. Only for the fw steps.
             renorm = mod(t, renorm_interval) == 0
             if away_step_taken
@@ -368,9 +377,9 @@ function away_frank_wolfe(
     return x, v, primal, dual_gap, traj_data, active_set
 end
 
-function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon, d; use_extra_vertex_storage=false, extra_vertex_storage=nothing, lazy_tolerance=2.0, memory_mode::MemoryEmphasis=InplaceEmphasis())
+function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon, d; use_extra_vertex_storage=false, extra_vertex_storage=nothing, lazy_tolerance=2.0, memory_mode::MemoryEmphasis=InplaceEmphasis(), weak_separation::Bool=true)
     _, v, v_loc, _, a_lambda, a, a_loc, _, _ = active_set_argminmax(active_set, gradient)
-    #Do lazy FW step
+    # do lazy FW step
     grad_dot_lazy_fw_vertex = fast_dot(v, gradient)
     grad_dot_x = fast_dot(x, gradient)
     grad_dot_a = fast_dot(a, gradient)
@@ -385,7 +394,7 @@ function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon, d; use_extra_
         fw_step_taken = true
         index = v_loc
     else
-        #Do away step, as it promises enough progress.
+        # do away step, as it promises enough progress.
         if grad_dot_a - grad_dot_x > grad_dot_x - grad_dot_lazy_fw_vertex &&
            grad_dot_a - grad_dot_x >= phi / lazy_tolerance
             tt = away
@@ -395,7 +404,7 @@ function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon, d; use_extra_
             away_step_taken = true
             fw_step_taken = false
             index = a_loc
-            #Resort to calling the LMO
+            # resort to calling the LMO
         else
             # optionally: try vertex storage
             if use_extra_vertex_storage
@@ -406,13 +415,20 @@ function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon, d; use_extra_
                     @debug("Found acceptable lazy vertex in storage")
                     v = new_forward_vertex
                     tt = lazylazy
+                end
+            else
+                found_better_vertex = false
+            end
+            if !found_better_vertex
+                # compute new vertex with normal or weak oracle
+                if weak_separation
+                    lazy_threshold = fast_dot(gradient, x) - phi / lazy_tolerance
+                    (v, _) = compute_weak_separation_point(lmo, gradient, lazy_threshold)
+                    tt = weaksep
                 else
                     v = compute_extreme_point(lmo, gradient)
                     tt = regular
                 end
-            else
-                v = compute_extreme_point(lmo, gradient)
-                tt = regular
             end
             # Real dual gap promises enough progress.
             grad_dot_fw_vertex = fast_dot(v, gradient)
@@ -439,14 +455,25 @@ function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon, d; use_extra_
     return d, vertex, index, gamma_max, phi, away_step_taken, fw_step_taken, tt
 end
 
-function afw_step(x, gradient, lmo, active_set, epsilon, d; memory_mode::MemoryEmphasis=InplaceEmphasis())
+function afw_step(x, gradient, lmo, active_set, epsilon, d; memory_mode::MemoryEmphasis=InplaceEmphasis(), weak_separation::Bool=false, lazy_tolerance=2.0)
     _, _, _, _, a_lambda, a, a_loc = active_set_argminmax(active_set, gradient)
-    v = compute_extreme_point(lmo, gradient)
     grad_dot_x = fast_dot(x, gradient)
     away_gap = fast_dot(a, gradient) - grad_dot_x
-    dual_gap = grad_dot_x - fast_dot(v, gradient)
-    if dual_gap >= away_gap && dual_gap >= epsilon
-        tt = regular
+    (v, gap) = if weak_separation
+        # Condition for taking a FW step
+        # ⟨∇f, x-v⟩ ≥ gₐ
+        # ⟨∇f, v⟩ ≤ ⟨∇f, x⟩ - gₐ
+        # We ask for a bit more on the FW step
+        # to promote away steps when we can (and therefore sparsity)
+        # ⟨∇f, v⟩ ≤ ⟨∇f, x⟩ - K gₐ
+        lazy_threshold = grad_dot_x - lazy_tolerance * away_gap
+        compute_weak_separation_point(lmo, gradient, lazy_threshold)
+    else
+        (compute_extreme_point(lmo, gradient), 0.0)
+    end
+    dual_gap = grad_dot_x - fast_dot(v, gradient) + gap
+    if dual_gap > away_gap && dual_gap >= epsilon
+        tt = gap == 0.0 ? regular : weaksep
         gamma_max = one(a_lambda)
         d = muladd_memory_mode(memory_mode, d, x, v)
         vertex = v
