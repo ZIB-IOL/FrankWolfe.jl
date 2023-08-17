@@ -68,6 +68,12 @@ function frank_wolfe(
         @warn("Momentum-averaged gradients should usually be used with agnostic stepsize rules.",)
     end
 
+    # instanciating container for gradient
+    if gradient === nothing
+        gradient = collect(x)
+    end
+    
+
     if verbose
         println("\nVanilla Frank-Wolfe Algorithm.")
         NumType = eltype(x0)
@@ -90,10 +96,6 @@ function frank_wolfe(
         end
     end
     first_iter = true
-    # instanciating container for gradient
-    if gradient === nothing
-        gradient = similar(x)
-    end
     if linesearch_workspace === nothing
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
     end
@@ -316,6 +318,10 @@ function lazified_conditional_gradient(
         @warn("Lazification is not known to converge with open-loop step size strategies.")
     end
 
+    if gradient === nothing
+        gradient = collect(x)
+    end
+
     if verbose
         println("\nLazified Conditional Gradient (Frank-Wolfe + Lazification).")
         NumType = eltype(x0)
@@ -336,10 +342,6 @@ function lazified_conditional_gradient(
         else
             x = copyto!(similar(x), x)
         end
-    end
-
-    if gradient === nothing
-        gradient = similar(x)
     end
 
     # container for direction

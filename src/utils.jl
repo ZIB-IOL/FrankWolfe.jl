@@ -65,7 +65,7 @@ function benchmark_oracles(f, grad!, x_gen, lmo; k=100, nocache=true)
     end
     @showprogress 1 "Testing dual gap... " for i in 1:k
         x = x_gen()
-        gradient = similar(x)
+        gradient = collect(x)
         grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
         @timeit to "dual gap" begin
@@ -74,7 +74,7 @@ function benchmark_oracles(f, grad!, x_gen, lmo; k=100, nocache=true)
     end
     @showprogress 1 "Testing update... (Emphasis: OutplaceEmphasis) " for i in 1:k
         x = x_gen()
-        gradient = similar(x)
+        gradient = collect(x)
         grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
         gamma = 1 / 2
@@ -85,7 +85,7 @@ function benchmark_oracles(f, grad!, x_gen, lmo; k=100, nocache=true)
     end
     @showprogress 1 "Testing update... (memory_mode: InplaceEmphasis) " for i in 1:k
         x = x_gen()
-        gradient = similar(x)
+        gradient = collect(x)
         grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
         gamma = 1 / 2
@@ -100,7 +100,7 @@ function benchmark_oracles(f, grad!, x_gen, lmo; k=100, nocache=true)
             @timeit to "caching 100 points" begin
                 cache = [gen_x() for _ in 1:100]
                 x = gen_x()
-                gradient = similar(x)
+                gradient = collect(x)
                 grad!(gradient, x)
                 v = compute_extreme_point(lmo, gradient)
                 gamma = 1 / 2

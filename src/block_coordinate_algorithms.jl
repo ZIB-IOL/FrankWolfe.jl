@@ -154,6 +154,11 @@ function perform_bc_updates(bc_algo::BCFW, f, grad!, lmo, x0)
         @warn("Momentum-averaged gradients should usually be used with agnostic stepsize rules.",)
     end
 
+    # instanciating container for gradient
+    if gradient === nothing
+        gradient = collect(x)
+    end
+    
     if verbose
         println("\nBlock coordinate Frank-Wolfe (BCFW).")
         num_type = eltype(x0[1])
@@ -168,10 +173,6 @@ function perform_bc_updates(bc_algo::BCFW, f, grad!, lmo, x0)
     end
 
     first_iter = true
-    # instanciating container for gradient
-    if gradient === nothing
-        gradient = similar(x)
-    end
     if linesearch_workspace === nothing
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient) # TODO: might not be really needed - hence hack
     end
