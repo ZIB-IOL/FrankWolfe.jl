@@ -5,7 +5,7 @@ The Linear Minimization Oracle (LMO) is a key component called at each iteration
 v\in \argmin_{x\in \mathcal{C}} \langle d,x \rangle.
 ```
 
-See [Combettes, Pokutta 2021](https://arxiv.org/abs/2101.10040) for references on most LMOs
+See [Combettes, Pokutta 2021](https://arxiv.org/abs/2101.10040) for references on essential LMOs
 implemented in the package and their comparison with projection operators.
 
 ## Interface and wrappers
@@ -18,6 +18,13 @@ All of them are subtypes of [`FrankWolfe.LinearMinimizationOracle`](@ref) and im
 ```@docs
 compute_extreme_point
 ```
+
+Optionally, an LMO can implement a weak separation procedure based either on a heuristic or on an approximation algorithm:
+```@docs
+compute_weak_separation_point
+```
+
+Weak separation procedures will be used in the methods using an active set and lazified variants only.
 
 We also provide some meta-LMOs wrapping another one with extended behavior:
 ```@docs

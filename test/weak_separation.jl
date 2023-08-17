@@ -76,10 +76,11 @@ end
     end
     lmo = Hypercube()
     x0 = FrankWolfe.compute_extreme_point(lmo, -ones(n))
-    tracking_lmo = FrankWolfe.TrackingLMO(lmo)
     for lazy in (false, true)
-        x, v, primal, dual_gap, trajectory_exact, active_set_exact = FrankWolfe.away_frank_wolfe(f, grad!, tracking_lmo, x0, verbose=true, weak_separation=false, lazy=lazy)
+        tracking_lmo = FrankWolfe.TrackingLMO(lmo)
+        x, v, primal, dual_gap, trajectory_exact, active_set_exact = FrankWolfe.away_frank_wolfe(f, grad!, tracking_lmo, x0, verbose=false, weak_separation=false, lazy=lazy)
         tracking_weak = FrankWolfe.TrackingLMO(lmo)
-        x, v, primal, dual_gap, trajectory_weak, active_set_weak = FrankWolfe.away_frank_wolfe(f, grad!, tracking_weak, x0, verbose=true, weak_separation=true, lazy=lazy)
+        x, v, primal, dual_gap, trajectory_weak, active_set_weak = FrankWolfe.away_frank_wolfe(f, grad!, tracking_weak, x0, verbose=false, weak_separation=true, lazy=lazy)
+        @test tracking_lmo.counter <= tracking_weak.counter
     end
 end
