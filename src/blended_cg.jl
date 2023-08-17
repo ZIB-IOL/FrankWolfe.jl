@@ -136,7 +136,7 @@ function blended_conditional_gradient(
     dual_gap = Inf
     x = active_set.x
     if gradient === nothing
-        gradient = similar(x)
+        gradient = collect(x)
     end
     d = similar(x)
     primal = f(x)
@@ -171,7 +171,6 @@ function blended_conditional_gradient(
         grad_type = typeof(gradient)
         println("GRADIENTTYPE: $grad_type lazy_tolerance: $lazy_tolerance")
         println("Linear Minimization Oracle: $(typeof(lmo))")
-        @info("In memory_mode memory iterates are written back into x0!")
 
         if (use_extra_vertex_storage || add_dropped_vertices) && extra_vertex_storage === nothing
             @warn(
@@ -797,7 +796,7 @@ function simplex_gradient_descent_over_probability_simplex(
 )
     number_of_steps = 0
     x = deepcopy(initial_point)
-    gradient = similar(x)
+    gradient = collect(x)
     reduced_grad!(gradient, x)
     strong_wolfe_gap = strong_frankwolfe_gap_probability_simplex(gradient, x)
     while strong_wolfe_gap > tolerance && t + number_of_steps <= max_iteration

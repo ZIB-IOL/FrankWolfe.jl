@@ -126,6 +126,10 @@ function blended_pairwise_conditional_gradient(
 
     d = similar(x)
 
+    if gradient === nothing
+        gradient = collect(x)
+    end
+
     if verbose
         println("\nBlended Pairwise Conditional Gradient Algorithm.")
         NumType = eltype(x)
@@ -135,9 +139,6 @@ function blended_pairwise_conditional_gradient(
         grad_type = typeof(gradient)
         println("GRADIENTTYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance")
         println("Linear Minimization Oracle: $(typeof(lmo))")
-        if memory_mode isa InplaceEmphasis
-            @info("In memory_mode memory iterates are written back into x0!")
-        end
         if use_extra_vertex_storage && !lazy
             @info("vertex storage only used in lazy mode")
         end
@@ -146,11 +147,6 @@ function blended_pairwise_conditional_gradient(
                 "use_extra_vertex_storage and add_dropped_vertices options are only usable with a extra_vertex_storage storage"
             )
         end
-    end
-
-    # likely not needed anymore as now the iterates are provided directly via the active set
-    if gradient === nothing
-        gradient = similar(x)
     end
 
     grad!(gradient, x)
