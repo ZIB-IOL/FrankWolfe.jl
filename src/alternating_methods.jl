@@ -89,7 +89,7 @@ end
     alternating_projections(lmos::NTuple{N,LinearMinimizationOracle}, x0; ...) where {N}
 
 Computes a point in the intersection of feasible domains specified by `lmos`.
-Returns a tuple `(x, v, primal, dual_gap, infeas, traj_data)` with:
+Returns a tuple `(x, v, dual_gap, infeas, traj_data)` with:
 - `x` cartesian product of final iterates
 - `v` cartesian product of last vertices of the LMOs
 - `dual_gap` final Frank-Wolfe gap
