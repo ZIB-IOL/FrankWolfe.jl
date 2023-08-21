@@ -30,6 +30,7 @@ function blended_pairwise_conditional_gradient(
     add_dropped_vertices=false,
     use_extra_vertex_storage=false,
     recompute_last_vertex=true,
+    weak_separation=false,
 )
     # add the first vertex to active set from initialization
     active_set = ActiveSet([(1.0, x0)])
@@ -58,6 +59,7 @@ function blended_pairwise_conditional_gradient(
         add_dropped_vertices=add_dropped_vertices,
         use_extra_vertex_storage=use_extra_vertex_storage,
         recompute_last_vertex=recompute_last_vertex,
+        weak_separation=weak_separation,
     )
 end
 
@@ -90,6 +92,7 @@ function blended_pairwise_conditional_gradient(
     add_dropped_vertices=false,
     use_extra_vertex_storage=false,
     recompute_last_vertex=true,
+    weak_separation=false,
 )
 
     # format string for output of the algorithm
@@ -137,7 +140,7 @@ function blended_pairwise_conditional_gradient(
             "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
         )
         grad_type = typeof(gradient)
-        println("GRADIENTTYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance")
+        println("GRADIENTTYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance WEAK_SEPARATION: $weak_separation")
         println("Linear Minimization Oracle: $(typeof(lmo))")
         if use_extra_vertex_storage && !lazy
             @info("vertex storage only used in lazy mode")
