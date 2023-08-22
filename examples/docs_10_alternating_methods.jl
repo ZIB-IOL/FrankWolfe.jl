@@ -18,7 +18,7 @@ using FrankWolfe
 
 include("../examples/plot_utils.jl")
 
-# ## Setting up objective, gradient and domains
+# ## Setting up objective, gradient and linear minimization oracles
 # Since we only consider the feasibility problem the objective function as well as the gradient are zero.
 
 n = 20
@@ -61,7 +61,7 @@ for order in [FrankWolfe.FullUpdate(), FrankWolfe.CyclicUpdate(), FrankWolfe.Sto
 end
 
 # Alternatively one can also run alternating linear minimization with standard Frank-Wolfe algorithm.
-# These methods perform then the full (simulatenous) update at each iteration. In this example we also run it with [`FrankWolfe.away_frank_wolfe`](@ref).
+# These methods perform then the full (simulatenous) update at each iteration. In this example we also use [`FrankWolfe.away_frank_wolfe`](@ref).
 
 _, _, _, _, _, afw_trajectory = FrankWolfe.alternating_linear_minimization(
     FrankWolfe.away_frank_wolfe,
@@ -76,7 +76,6 @@ _, _, _, _, _, afw_trajectory = FrankWolfe.alternating_linear_minimization(
 push!(trajectories, afw_trajectory)
 
 # ## Running alternating projections
-
 _, _, _, _, ap_trajectory = FrankWolfe.alternating_projections(lmos, x0, trajectory=true, verbose=true, print_iter=100, epsilon=target_tolerance)
 push!(trajectories, ap_trajectory)
 

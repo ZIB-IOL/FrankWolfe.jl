@@ -187,7 +187,7 @@ end
     @test abs(x[1][1]) < 1e-6
     @test abs(x[2][1] - 1) < 1e-6
     @test traj_data != []
-    @test length(traj_data[1]) == 4
+    @test length(traj_data[1]) == 6
     @test length(traj_data) >= 2
     @test length(traj_data) <= 10001
 end
