@@ -285,30 +285,12 @@ function compute_extreme_point(lmo::ProductLMO, direction::Tuple; kwargs...)
 end
 
 """
-    compute_extreme_point(lmo::ProductLMO, direction::AbstractArray)
-
-Extreme point computation, with a direction array but without `direction_indices`.
-The direction array is sliced along the last dimension and such that:
-`direction[:, ... ,:, i]` is passed to the i-th LMO.
-
-All keyword arguments are passed to all LMOs.
-"""
-
-# function compute_extreme_point(
-#     lmo::ProductLMO{N},
-#     direction::AbstractArray;
-#     kwargs...,
-# ) where {N}
-#     ndim = ndims(direction)
-#     direction_array = [direction[[idx < ndim ? Colon() : i for idx=1:ndim]...] for i=1:N]
-#     return cat(compute_extreme_point.(lmo.lmos, direction_array)..., dims=ndim)
-# end
-
-"""
     compute_extreme_point(lmo::ProductLMO, direction::AbstractArray, direction_indices; storage=similar(direction))
 
 Extreme point computation, with a direction array and `direction_indices` provided such that:
 `direction[direction_indices[i]]` is passed to the i-th LMO.
+If no `direction_indices` are provided, the direction array is sliced along the last dimension and such that:
+`direction[:, ... ,:, i]` is passed to the i-th LMO.
 The result is stored in the optional `storage` container.
 
 All keyword arguments are passed to all LMOs.

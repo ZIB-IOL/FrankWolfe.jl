@@ -68,23 +68,6 @@ function ProjectionFW(y, lmo; max_iter=10000, eps=1e-3)
     return x_opt
 end
 
-struct CallbackStateAlternatingProjections{TDG,XT}
-    t::Int
-    dual_gap::TDG
-    infeas::Float64
-    time::Float64
-    x::XT
-    lmo::LinearMinimizationOracle
-    tt::FrankWolfe.StepType
-end
-
-
-function callback_state(state::CallbackStateAlternatingProjections)
-    return (state.t, state.dual_gap, state.time, state.infeas)
-end
-
-
-
 """
     alternating_projections(lmos::NTuple{N,LinearMinimizationOracle}, x0; ...) where {N}
 
@@ -160,8 +143,16 @@ function alternating_projections(
     v = similar(x)
     tt = regular
     gradient = similar(x)
+    ndim = ndims(x)
 
-    infeasibility(x) = sum(fast_dot(x[mod(i - 2, N)+1] - x[i], x[mod(i - 2, N)+1] - x[i]) for i in 1:N)
+    infeasibility(x) = sum(
+        fast_dot(
+            selectdim(x, ndim, i) - selectdim(x, ndim, j),
+            selectdim(x, ndim, i) - selectdim(x, ndim, j),
+        ) for i in 1:N for j in 1:i-1
+    )
+
+    partial_infeasibility(x) = sum(fast_dot(x[mod(i - 2, N)+1] - x[i], x[mod(i - 2, N)+1] - x[i]) for i in 1:N)
 
     function grad!(storage, x)
         @. storage = [2 * (x[i] - x[mod(i - 2, N)+1]) for i=1:N]
@@ -238,13 +229,20 @@ function alternating_projections(
 
         t = t + 1
         if callback !== nothing
-            state = CallbackStateAlternatingProjections(
+            state = CallbackStateBlockCoordinateMethod(
                 t,
+                infeas,
+                infeas-dual_gap,
                 dual_gap,
                 infeas,
                 tot_time,
                 x,
+                v,
+                nothing,
+                nothing,
+                nothing,
                 lmo,
+                gradient,
                 tt,
             )
             # @show state
@@ -267,13 +265,20 @@ function alternating_projections(
     tot_time = (time_ns() - time_start) / 1.0e9
 
     if callback !== nothing
-        state = CallbackStateAlternatingProjections(
+        state = CallbackStateBlockCoordinateMethod(
                 t,
+                infeas,
+                infeas-dual_gap,
                 dual_gap,
                 infeas,
                 tot_time,
                 x,
+                v,
+                nothing,
+                nothing,
+                nothing,
                 lmo,
+                gradient,
                 tt,
             )
         callback(state)
