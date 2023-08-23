@@ -34,7 +34,7 @@ for order in [FrankWolfe.FullUpdate(), FrankWolfe.CyclicUpdate(), FrankWolfe.Sto
         f,
         grad!,
         lmos,
-        x0,
+        x0;
         lambda=1.0,
         update_order=order,
         verbose=true,
