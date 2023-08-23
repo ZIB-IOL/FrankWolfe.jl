@@ -1,6 +1,7 @@
 # # Alternating methods
 
 # In this example we will compare [`FrankWolfe.alternating_linear_minimization`](@ref) and [`FrankWolfe.alternating_projections`](@ref) for a very simple feasibility problem.
+
 # We consider the probability simplex
 # ```math
 # P = \{ x \in \mathbb{R}^n \colon \sum_{i=1}^n x_i = 1, x_i \geq 0 ~~ i=1,\dots,n\} ~.
@@ -15,6 +16,7 @@
 # ```
 
 using FrankWolfe
+include("../examples/plot_utils.jl")
 
 # ## Setting up objective, gradient and linear minimization oracles
 # Since we only consider the feasibility problem the objective function as well as the gradient are zero.
@@ -36,7 +38,7 @@ x0 = rand(n)
 
 target_tolerance = 1e-6
 
-trajectories = []
+trajectories = [];
 
 # ## Running Alternating Linear Minimization
 # We run Alternating Linear Minimization (ALM) with [`FrankWolfe.block_coordinate_frank_wolfe`](@ref).
@@ -54,7 +56,7 @@ for order in [FrankWolfe.FullUpdate(), FrankWolfe.CyclicUpdate(), FrankWolfe.Sto
         update_order=order,
         verbose=true,
         trajectory=true,
-        epsilon=target_tolerance
+        epsilon=target_tolerance,
     )
     push!(trajectories, alm_trajectory)
 end
@@ -70,13 +72,20 @@ _, _, _, _, _, afw_trajectory = FrankWolfe.alternating_linear_minimization(
     x0,
     verbose=true,
     trajectory=true,
-    epsilon=target_tolerance
+    epsilon=target_tolerance,
 )
 push!(trajectories, afw_trajectory);
 
 # ## Running Alternating Projections
 # Unlike ALM, Alternating Projections (AP) is only suitable for feasibility problems. One omits the objective and gradient as parameters.
-_, _, _, _, ap_trajectory = FrankWolfe.alternating_projections(lmos, x0, trajectory=true, verbose=true, print_iter=100, epsilon=target_tolerance)
+_, _, _, _, ap_trajectory = FrankWolfe.alternating_projections(
+    lmos,
+    x0,
+    trajectory=true,
+    verbose=true,
+    print_iter=100,
+    epsilon=target_tolerance,
+)
 push!(trajectories, ap_trajectory);
 
 # ## Plotting the resulting trajectories
@@ -84,6 +93,3 @@ push!(trajectories, ap_trajectory);
 labels = ["BCFW - Full", "BCFW - Cyclic", "BCFW - Stochastic", "AFW", "AP"]
 
 plot_trajectories(trajectories, labels, xscalelog=true)
-
-
-

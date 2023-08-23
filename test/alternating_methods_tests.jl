@@ -131,7 +131,7 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
 
         @test abs(x[1, 1] - 0.5 / n) < 1e-3
         @test abs(x[1, 2] - 1 / n) < 1e-3
-    end    
+    end
 
 end
 
@@ -182,7 +182,8 @@ end
     @test abs(x[2][1] - 1) < 1e-6
     @test infeas < 1e-6
 
-    x, _, _, infeas, traj_data = FrankWolfe.alternating_projections((lmo1, lmo3), rand(n), trajectory=true)
+    x, _, _, infeas, traj_data =
+        FrankWolfe.alternating_projections((lmo1, lmo3), rand(n), trajectory=true)
 
     @test abs(x[1][1]) < 1e-6
     @test abs(x[2][1] - 1) < 1e-6

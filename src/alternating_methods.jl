@@ -152,10 +152,11 @@ function alternating_projections(
         ) for i in 1:N for j in 1:i-1
     )
 
-    partial_infeasibility(x) = sum(fast_dot(x[mod(i - 2, N)+1] - x[i], x[mod(i - 2, N)+1] - x[i]) for i in 1:N)
+    partial_infeasibility(x) =
+        sum(fast_dot(x[mod(i - 2, N)+1] - x[i], x[mod(i - 2, N)+1] - x[i]) for i in 1:N)
 
     function grad!(storage, x)
-        @. storage = [2 * (x[i] - x[mod(i - 2, N)+1]) for i=1:N]
+        @. storage = [2 * (x[i] - x[mod(i - 2, N)+1]) for i in 1:N]
     end
 
     projection_step(x, i, t) = ProjectionFW(x, lmo.lmos[i]; eps=1 / (t^2 + 1))
@@ -232,7 +233,7 @@ function alternating_projections(
             state = CallbackStateBlockCoordinateMethod(
                 t,
                 infeas,
-                infeas-dual_gap,
+                infeas - dual_gap,
                 dual_gap,
                 infeas,
                 tot_time,
@@ -266,21 +267,21 @@ function alternating_projections(
 
     if callback !== nothing
         state = CallbackStateBlockCoordinateMethod(
-                t,
-                infeas,
-                infeas-dual_gap,
-                dual_gap,
-                infeas,
-                tot_time,
-                x,
-                v,
-                nothing,
-                nothing,
-                nothing,
-                lmo,
-                gradient,
-                tt,
-            )
+            t,
+            infeas,
+            infeas - dual_gap,
+            dual_gap,
+            infeas,
+            tot_time,
+            x,
+            v,
+            nothing,
+            nothing,
+            nothing,
+            lmo,
+            gradient,
+            tt,
+        )
         callback(state)
     end
 

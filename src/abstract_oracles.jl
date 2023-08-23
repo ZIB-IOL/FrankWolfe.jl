@@ -309,9 +309,8 @@ function compute_extreme_point(
         end
     else
         ndim = ndims(direction)
-        direction_array = [direction[[idx < ndim ? Colon() : i for idx=1:ndim]...] for i=1:N]
+        direction_array = [direction[[idx < ndim ? Colon() : i for idx in 1:ndim]...] for i in 1:N]
         storage = cat(compute_extreme_point.(lmo.lmos, direction_array)..., dims=ndim)
     end
     return storage
 end
-
