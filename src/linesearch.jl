@@ -359,7 +359,7 @@ function perform_line_search(
     clipping = false
     relaxed_smoothness = line_search.relaxed_smoothness
 
-    gradient_storage = zero(gradient)
+    gradient_storage = similar(gradient)
     grad!(gradient_storage, x_storage)
     dott = -fast_dot(gradient_storage-gradient, d)
 
