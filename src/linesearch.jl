@@ -296,6 +296,8 @@ Slight modification of the
 Adaptive Step Size strategy from [this paper](https://arxiv.org/abs/1806.05123)
 
 The `Adaptive` struct keeps track of the Lipschitz constant estimate `L_est`.
+The keyword argument `relaxed_smoothness` allows testing with a relaxed alternative smoothness condition, which yields
+potentially smaller and more stable estimation of the Lipschitz constant while being more computationally expensive.
 `perform_line_search` also has a `should_upgrade` keyword argument on
 whether there should be a temporary upgrade to `BigFloat` for extended precision.
 """
@@ -306,11 +308,12 @@ mutable struct Adaptive{T,TT} <: LineSearchMethod
     max_estimate::T
     alpha::T
     verbose::Bool
+    relaxed_smoothness::Bool
 end
 
-Adaptive(eta::T, tau::TT) where {T,TT} = Adaptive{T,TT}(eta, tau, T(Inf), T(1e10), T(0.5), true)
+Adaptive(eta::T, tau::TT) where {T,TT} = Adaptive{T,TT}(eta, tau, T(Inf), T(1e10), T(0.5), true, false)
 
-Adaptive(; eta=0.9, tau=2, L_est=Inf, max_estimate=1e10, alpha=0.5, verbose=true) = Adaptive(eta, tau, L_est, max_estimate, alpha, verbose)
+Adaptive(; eta=0.9, tau=2, L_est=Inf, max_estimate=1e10, alpha=0.5, verbose=true, relaxed_smoothness=false) = Adaptive(eta, tau, L_est, max_estimate, alpha, verbose, relaxed_smoothness)
 
 struct AdaptiveWorkspace{XT,BT}
     x::XT
@@ -354,11 +357,25 @@ function perform_line_search(
     niter = 0
     α = line_search.alpha
     clipping = false
-    while f(x_storage) - f(x) > -gamma * α * dot_dir + α^2 * gamma^2 * ndir2 * M / 2 + eps(float(gamma)) &&
-              gamma ≥ 100 * eps(float(gamma))
+    relaxed_smoothness = line_search.relaxed_smoothness
+
+    gradient_storage = zero(gradient)
+    grad!(gradient_storage, x_storage)
+    dott = -fast_dot(gradient_storage-gradient, d)
+
+    while (relaxed_smoothness || f(x_storage) - f(x) > -gamma * α * dot_dir + α^2 * gamma^2 * ndir2 * M / 2 + eps(float(gamma))) &&
+        (!relaxed_smoothness || dott > gamma * M * ndir2 + eps(float(gamma))) &&
+        gamma ≥ 100 * eps(float(gamma))
         M *= line_search.tau
         gamma = min(max(dot_dir / (M * ndir2), 0), gamma_max)
         x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
+
+        # Compute new gradient only if necessary
+        if relaxed_smoothness 
+            grad!(gradient_storage, x_storage)
+            dott = -fast_dot(gradient_storage-gradient, d)
+        end
+
         niter += 1
         if M > line_search.max_estimate
             # if this warning occurs, one might see negative progess, cycling, or stalling.

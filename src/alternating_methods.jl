@@ -63,7 +63,7 @@ function ProjectionFW(y, lmo; max_iter=10000, eps=1e-3)
         epsilon=eps,
         max_iteration=max_iter,
         trajectory=true,
-        line_search=FrankWolfe.Adaptive(verbose=false),
+        line_search=FrankWolfe.Adaptive(verbose=false, relaxed_smoothness=true),
     )
     return x_opt
 end
