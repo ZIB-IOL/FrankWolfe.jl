@@ -361,7 +361,7 @@ function perform_line_search(
 
     gradient_storage = similar(gradient)
     grad!(gradient_storage, x_storage)
-    dott = -fast_dot(gradient_storage-gradient, d)
+    dott = fast_dot(gradient, d) - fast_dot(gradient_storage, d)
 
     while (relaxed_smoothness || f(x_storage) - f(x) > -gamma * α * dot_dir + α^2 * gamma^2 * ndir2 * M / 2 + eps(float(gamma))) &&
         (!relaxed_smoothness || dott > gamma * M * ndir2 + eps(float(gamma))) &&
