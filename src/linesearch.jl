@@ -351,10 +351,10 @@ function perform_line_search(
             return zero(promote_type(eltype(d), eltype(gradient)))
         end
     end
+    x_storage = storage.x
     if !isfinite(line_search.L_est)
         epsilon_step = min(1e-3, gamma_max)
         gradient_stepsize_estimation = similar(gradient)
-        x_storage = storage.x
         x_storage = muladd_memory_mode(memory_mode, x_storage, x, epsilon_step, d)
         grad!(gradient_stepsize_estimation, x_storage)
         line_search.L_est = norm(gradient - gradient_stepsize_estimation) / (epsilon_step * norm(d))
@@ -366,7 +366,6 @@ function perform_line_search(
     niter = 0
     α = line_search.alpha
     clipping = false
-    relaxed_smoothness = line_search.relaxed_smoothness
 
     gradient_storage = similar(gradient)
 
@@ -375,10 +374,9 @@ function perform_line_search(
         gamma ≥ 100 * eps(float(gamma))
 
         # Additional smoothness condition
-        if relaxed_smoothness
+        if line_search.relaxed_smoothness
             grad!(gradient_storage, x_storage)
             dott = fast_dot(gradient, d) - fast_dot(gradient_storage, d)
-
             if dott > gamma * M * ndir2 + eps(float(gamma))
                 break
             end
