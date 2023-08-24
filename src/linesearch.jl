@@ -311,9 +311,18 @@ mutable struct Adaptive{T,TT} <: LineSearchMethod
     relaxed_smoothness::Bool
 end
 
-Adaptive(eta::T, tau::TT) where {T,TT} = Adaptive{T,TT}(eta, tau, T(Inf), T(1e10), T(0.5), true, false)
+Adaptive(eta::T, tau::TT) where {T,TT} =
+    Adaptive{T,TT}(eta, tau, T(Inf), T(1e10), T(0.5), true, false)
 
-Adaptive(; eta=0.9, tau=2, L_est=Inf, max_estimate=1e10, alpha=0.5, verbose=true, relaxed_smoothness=false) = Adaptive(eta, tau, L_est, max_estimate, alpha, verbose, relaxed_smoothness)
+Adaptive(;
+    eta=0.9,
+    tau=2,
+    L_est=Inf,
+    max_estimate=1e10,
+    alpha=0.5,
+    verbose=true,
+    relaxed_smoothness=false,
+) = Adaptive(eta, tau, L_est, max_estimate, alpha, verbose, relaxed_smoothness)
 
 struct AdaptiveWorkspace{XT,BT}
     x::XT
@@ -360,21 +369,24 @@ function perform_line_search(
     relaxed_smoothness = line_search.relaxed_smoothness
 
     gradient_storage = similar(gradient)
-    grad!(gradient_storage, x_storage)
-    dott = fast_dot(gradient, d) - fast_dot(gradient_storage, d)
 
-    while (relaxed_smoothness || f(x_storage) - f(x) > -gamma * α * dot_dir + α^2 * gamma^2 * ndir2 * M / 2 + eps(float(gamma))) &&
-        (!relaxed_smoothness || dott > gamma * M * ndir2 + eps(float(gamma))) &&
+    while f(x_storage) - f(x) >
+          -gamma * α * dot_dir + α^2 * gamma^2 * ndir2 * M / 2 + eps(float(gamma)) &&
         gamma ≥ 100 * eps(float(gamma))
+
+        # Additional smoothness condition
+        if relaxed_smoothness
+            grad!(gradient_storage, x_storage)
+            dott = fast_dot(gradient, d) - fast_dot(gradient_storage, d)
+
+            if dott > gamma * M * ndir2 + eps(float(gamma))
+                break
+            end
+        end
+
         M *= line_search.tau
         gamma = min(max(dot_dir / (M * ndir2), 0), gamma_max)
         x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
-
-        # Compute new gradient only if necessary
-        if relaxed_smoothness 
-            grad!(gradient_storage, x_storage)
-            dott = -fast_dot(gradient_storage-gradient, d)
-        end
 
         niter += 1
         if M > line_search.max_estimate
@@ -506,7 +518,8 @@ struct MonotonicGenericStepsize{LS<:LineSearchMethod,F<:Function} <: LineSearchM
     domain_oracle::F
 end
 
-MonotonicGenericStepsize(linesearch::LS) where {LS <: LineSearchMethod} = MonotonicGenericStepsize(linesearch, x -> true)
+MonotonicGenericStepsize(linesearch::LS) where {LS<:LineSearchMethod} =
+    MonotonicGenericStepsize(linesearch, x -> true)
 
 Base.print(io::IO, ::MonotonicGenericStepsize) = print(io, "MonotonicGenericStepsize")
 
@@ -515,15 +528,8 @@ struct MonotonicWorkspace{XT,WS}
     inner_workspace::WS
 end
 
-function build_linesearch_workspace(
-    ls::MonotonicGenericStepsize,
-    x,
-    gradient,
-)
-    return MonotonicWorkspace(
-        similar(x),
-        build_linesearch_workspace(ls.linesearch, x, gradient),
-    )
+function build_linesearch_workspace(ls::MonotonicGenericStepsize, x, gradient)
+    return MonotonicWorkspace(similar(x), build_linesearch_workspace(ls.linesearch, x, gradient))
 end
 
 function perform_line_search(
@@ -539,7 +545,18 @@ function perform_line_search(
     memory_mode,
 )
     f0 = f(x)
-    gamma = perform_line_search(line_search.linesearch, t, f, g!, gradient, x, d, gamma_max, storage.inner_workspace, memory_mode)
+    gamma = perform_line_search(
+        line_search.linesearch,
+        t,
+        f,
+        g!,
+        gradient,
+        x,
+        d,
+        gamma_max,
+        storage.inner_workspace,
+        memory_mode,
+    )
     gamma = min(gamma, gamma_max)
     T = typeof(gamma)
     xst = storage.x
