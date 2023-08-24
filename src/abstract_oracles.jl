@@ -285,7 +285,7 @@ function compute_extreme_point(lmo::ProductLMO, direction::Tuple; kwargs...)
 end
 
 """
-    compute_extreme_point(lmo::ProductLMO, direction::AbstractArray, direction_indices; storage=similar(direction))
+    compute_extreme_point(lmo::ProductLMO, direction::AbstractArray; direction_indices, storage=similar(direction))
 
 Extreme point computation, with a direction array and `direction_indices` provided such that:
 `direction[direction_indices[i]]` is passed to the i-th LMO.
