@@ -14,6 +14,11 @@ Modules = [FrankWolfe]
 Pages = ["fw_algorithms.jl"]
 ```
 
+```@docs
+FrankWolfe.block_coordinate_frank_wolfe
+```
+See [ S. Lacoste-Julien, M. Jaggi, M. Schmidt, and P. Pletscher 2013](https://arxiv.org/abs/1207.4747) for more details about Block-Coordinate Frank-Wolfe.
+
 ## Active-set based methods
 
 The following algorithms maintain the representation of the iterates
@@ -38,6 +43,23 @@ Pages = ["blended_cg.jl"]
 ```@autodocs
 Modules = [FrankWolfe]
 Pages = ["pairwise.jl"]
+```
+
+## Alternating Methods
+
+Problems over intersections of convex sets, i.e. 
+```math
+\min_{x \in \bigcap_{i=1}^n P_i} f(x),
+```
+pose a challenge as one has to combine the information of two or more LMOs.
+
+[`FrankWolfe.alternating_linear_minimization`](@ref) converts the problem into a series of subproblems over single sets. To find a point within the intersection, one minimizes both the distance to the iterates of the other subproblems and the original objective function. 
+
+[`FrankWolfe.alternating_projections`](@ref) solves feasibility problems over intersections of feasible regions.
+
+```@autodocs
+Modules = [FrankWolfe]
+Pages = ["alternating_methods.jl"]
 ```
 
 ## Index

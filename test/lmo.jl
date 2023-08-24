@@ -630,7 +630,7 @@ end
     @test sum(abs, vinf) ≈ 10 * 3.0
     @test sum(!iszero, v1) == 1
 
-    vvec = FrankWolfe.compute_extreme_point(lmo, [dinf; d1]; direction_indices=(1:10, 11:15))
+    vvec = FrankWolfe.compute_extreme_point(lmo, [dinf; d1], direction_indices=(1:10, 11:15))
     @test vvec ≈ [vinf; v1]
 end
 
