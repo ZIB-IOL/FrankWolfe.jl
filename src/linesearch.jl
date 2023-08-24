@@ -294,10 +294,18 @@ Base.print(io::IO, ::Backtracking) = print(io, "Backtracking")
 """
 Slight modification of the
 Adaptive Step Size strategy from [this paper](https://arxiv.org/abs/1806.05123)
+```math
+    f(x + \gamma d) - f(x) \leq - \gamma \alpha \langle \nabla f(x), d \rangle + \frac{\alpha^2 \gamma^2 \|d\|^2}{2} \cdot M ~.
+``` 
 
 The `Adaptive` struct keeps track of the Lipschitz constant estimate `L_est`.
-The keyword argument `relaxed_smoothness` allows testing with a relaxed alternative smoothness condition, which yields
-potentially smaller and more stable estimation of the Lipschitz constant while being more computationally expensive.
+The keyword argument `relaxed_smoothness` allows testing with an alternative smoothness condition, 
+```math
+    \langle \nabla f(x + \gamma d) - \nabla f(x), d \rangle \leq \gamma M \|d\|^2 ~.
+```
+This condition yields potentially smaller and more stable estimations of the Lipschitz constant
+while being more computationally expensive due to the additional gradient computation.
+
 `perform_line_search` also has a `should_upgrade` keyword argument on
 whether there should be a temporary upgrade to `BigFloat` for extended precision.
 """
