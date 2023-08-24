@@ -24,11 +24,12 @@ lmo_pairs = [(lmo_prob, lmo_sparse), (lmo_prob, lmo_ball), (lmo_prob, lmo_nb), (
 for pair in lmo_pairs
 
     @time FrankWolfe.alternating_linear_minimization(
-        FrankWolfe.BCFW(verbose=true),
+        FrankWolfe.block_coordinate_frank_wolfe,
         f,
         grad!,
         pair,
-        zeros(n),
+        zeros(n);
         lambda=1.0,
+        verbose=true,
     )
 end
