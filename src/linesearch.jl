@@ -377,7 +377,7 @@ function perform_line_search(
         if line_search.relaxed_smoothness
             grad!(gradient_storage, x_storage)
             dott = fast_dot(gradient, d) - fast_dot(gradient_storage, d)
-            if dott > gamma * M * ndir2 + eps(float(gamma))
+            if dott <= gamma * M * ndir2 + eps(float(gamma))
                 break
             end
         end
