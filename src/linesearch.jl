@@ -294,10 +294,17 @@ Base.print(io::IO, ::Backtracking) = print(io, "Backtracking")
 """
 Slight modification of the
 Adaptive Step Size strategy from [this paper](https://arxiv.org/abs/1806.05123)
-
+```math
+    f(x_t + \\gamma_t (x_t - v_t)) - f(x_t) \\leq - \\alpha \\gamma_t \\langle \\nabla f(x_t), x_t - v_t \\rangle + \\alpha^2  \\frac{\\gamma_t^2 \\|x_t - v_t\\|^2}{2} M ~.
+```
 The `Adaptive` struct keeps track of the Lipschitz constant estimate `L_est`.
-The keyword argument `relaxed_smoothness` allows testing with a relaxed alternative smoothness condition, which yields
-potentially smaller and more stable estimation of the Lipschitz constant while being more computationally expensive.
+The keyword argument `relaxed_smoothness` allows testing with an alternative smoothness condition, 
+```math
+    \\langle \\nabla f(x_t + \\gamma_t (x_t - v_t) ) - \\nabla f(x_t), x_t - v_t \\rangle \\leq \\gamma_t M \\|x_t - v_t\\|^2 ~.
+```
+This condition yields potentially smaller and more stable estimations of the Lipschitz constant
+while being more computationally expensive due to the additional gradient computation.
+
 `perform_line_search` also has a `should_upgrade` keyword argument on
 whether there should be a temporary upgrade to `BigFloat` for extended precision.
 """
@@ -376,8 +383,7 @@ function perform_line_search(
         # Additional smoothness condition
         if line_search.relaxed_smoothness
             grad!(gradient_storage, x_storage)
-            dott = fast_dot(gradient, d) - fast_dot(gradient_storage, d)
-            if dott <= gamma * M * ndir2 + eps(float(gamma))
+            if fast_dot(gradient, d) - fast_dot(gradient_storage, d) <= gamma * M * ndir2 + eps(float(gamma))
                 break
             end
         end
