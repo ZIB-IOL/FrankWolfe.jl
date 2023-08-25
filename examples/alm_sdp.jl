@@ -37,6 +37,7 @@ for order in [FrankWolfe.FullUpdate(), FrankWolfe.CyclicUpdate(), FrankWolfe.Sto
         x0;
         lambda=1.0,
         update_order=order,
+        line_search=FrankWolfe.Adaptive(relaxed_smoothness=true),
         verbose=true,
         trajectory=true,
     )

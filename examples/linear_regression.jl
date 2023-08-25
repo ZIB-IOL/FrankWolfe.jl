@@ -15,6 +15,8 @@ using LinearAlgebra
 
 using Test
 
+include("../examples/plot_utils.jl")
+
 # user-provided loss function and gradient
 
 function simple_reg_loss(θ, data_point)
@@ -153,7 +155,7 @@ end
     lmo,
     params,
     verbose=true,
-    line_search=FrankWolfe.Adaptive(L_est=10.0),
+    line_search=FrankWolfe.Adaptive(L_est=10.0, relaxed_smoothness=true),
     max_iteration=k,
     print_iter=k / 10,
     trajectory=true,

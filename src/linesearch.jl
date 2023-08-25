@@ -296,6 +296,8 @@ Slight modification of the
 Adaptive Step Size strategy from [this paper](https://arxiv.org/abs/1806.05123)
 
 The `Adaptive` struct keeps track of the Lipschitz constant estimate `L_est`.
+The keyword argument `relaxed_smoothness` allows testing with a relaxed alternative smoothness condition, which yields
+potentially smaller and more stable estimation of the Lipschitz constant while being more computationally expensive.
 `perform_line_search` also has a `should_upgrade` keyword argument on
 whether there should be a temporary upgrade to `BigFloat` for extended precision.
 """
@@ -306,11 +308,21 @@ mutable struct Adaptive{T,TT} <: LineSearchMethod
     max_estimate::T
     alpha::T
     verbose::Bool
+    relaxed_smoothness::Bool
 end
 
-Adaptive(eta::T, tau::TT) where {T,TT} = Adaptive{T,TT}(eta, tau, T(Inf), T(1e10), T(0.5), true)
+Adaptive(eta::T, tau::TT) where {T,TT} =
+    Adaptive{T,TT}(eta, tau, T(Inf), T(1e10), T(0.5), true, false)
 
-Adaptive(; eta=0.9, tau=2, L_est=Inf, max_estimate=1e10, alpha=0.5, verbose=true) = Adaptive(eta, tau, L_est, max_estimate, alpha, verbose)
+Adaptive(;
+    eta=0.9,
+    tau=2,
+    L_est=Inf,
+    max_estimate=1e10,
+    alpha=0.5,
+    verbose=true,
+    relaxed_smoothness=false,
+) = Adaptive(eta, tau, L_est, max_estimate, alpha, verbose, relaxed_smoothness)
 
 struct AdaptiveWorkspace{XT,BT}
     x::XT
@@ -339,10 +351,10 @@ function perform_line_search(
             return zero(promote_type(eltype(d), eltype(gradient)))
         end
     end
+    x_storage = storage.x
     if !isfinite(line_search.L_est)
         epsilon_step = min(1e-3, gamma_max)
         gradient_stepsize_estimation = similar(gradient)
-        x_storage = storage.x
         x_storage = muladd_memory_mode(memory_mode, x_storage, x, epsilon_step, d)
         grad!(gradient_stepsize_estimation, x_storage)
         line_search.L_est = norm(gradient - gradient_stepsize_estimation) / (epsilon_step * norm(d))
@@ -354,11 +366,26 @@ function perform_line_search(
     niter = 0
     α = line_search.alpha
     clipping = false
-    while f(x_storage) - f(x) > -gamma * α * dot_dir + α^2 * gamma^2 * ndir2 * M / 2 + eps(float(gamma)) &&
-              gamma ≥ 100 * eps(float(gamma))
+
+    gradient_storage = similar(gradient)
+
+    while f(x_storage) - f(x) >
+          -gamma * α * dot_dir + α^2 * gamma^2 * ndir2 * M / 2 + eps(float(gamma)) &&
+        gamma ≥ 100 * eps(float(gamma))
+
+        # Additional smoothness condition
+        if line_search.relaxed_smoothness
+            grad!(gradient_storage, x_storage)
+            dott = fast_dot(gradient, d) - fast_dot(gradient_storage, d)
+            if dott <= gamma * M * ndir2 + eps(float(gamma))
+                break
+            end
+        end
+
         M *= line_search.tau
         gamma = min(max(dot_dir / (M * ndir2), 0), gamma_max)
         x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
+
         niter += 1
         if M > line_search.max_estimate
             # if this warning occurs, one might see negative progess, cycling, or stalling.
@@ -489,7 +516,8 @@ struct MonotonicGenericStepsize{LS<:LineSearchMethod,F<:Function} <: LineSearchM
     domain_oracle::F
 end
 
-MonotonicGenericStepsize(linesearch::LS) where {LS <: LineSearchMethod} = MonotonicGenericStepsize(linesearch, x -> true)
+MonotonicGenericStepsize(linesearch::LS) where {LS<:LineSearchMethod} =
+    MonotonicGenericStepsize(linesearch, x -> true)
 
 Base.print(io::IO, ::MonotonicGenericStepsize) = print(io, "MonotonicGenericStepsize")
 
@@ -498,15 +526,8 @@ struct MonotonicWorkspace{XT,WS}
     inner_workspace::WS
 end
 
-function build_linesearch_workspace(
-    ls::MonotonicGenericStepsize,
-    x,
-    gradient,
-)
-    return MonotonicWorkspace(
-        similar(x),
-        build_linesearch_workspace(ls.linesearch, x, gradient),
-    )
+function build_linesearch_workspace(ls::MonotonicGenericStepsize, x, gradient)
+    return MonotonicWorkspace(similar(x), build_linesearch_workspace(ls.linesearch, x, gradient))
 end
 
 function perform_line_search(
@@ -522,7 +543,18 @@ function perform_line_search(
     memory_mode,
 )
     f0 = f(x)
-    gamma = perform_line_search(line_search.linesearch, t, f, g!, gradient, x, d, gamma_max, storage.inner_workspace, memory_mode)
+    gamma = perform_line_search(
+        line_search.linesearch,
+        t,
+        f,
+        g!,
+        gradient,
+        x,
+        d,
+        gamma_max,
+        storage.inner_workspace,
+        memory_mode,
+    )
     gamma = min(gamma, gamma_max)
     T = typeof(gamma)
     xst = storage.x
