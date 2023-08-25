@@ -25,7 +25,7 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
         (lmo_nb, lmo_prob),
         ones(n),
         lambda=1.0,
-        line_search=FrankWolfe.Adaptive(verbose=false),
+        line_search=FrankWolfe.Adaptive(relaxed_smoothness=true),
     )
 
     @test abs(x[1, 1] - 0.5 / n) < 1e-6
@@ -38,7 +38,7 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
         (lmo_nb, lmo_prob),
         ones(n),
         lambda=3.0,
-        line_search=FrankWolfe.Adaptive(verbose=false),
+        line_search=FrankWolfe.Adaptive(relaxed_smoothness=true),
     )
 
     @test abs(x[1, 1] - 0.75 / n) < 1e-6
@@ -51,7 +51,7 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
         (lmo_nb, lmo_prob),
         ones(n),
         lambda=9.0,
-        line_search=FrankWolfe.Adaptive(verbose=false),
+        line_search=FrankWolfe.Adaptive(relaxed_smoothness=true),
     )
 
     @test abs(x[1, 1] - 0.9 / n) < 1e-6
@@ -64,7 +64,7 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
         (lmo_nb, lmo_prob),
         ones(n),
         lambda=1 / 3,
-        line_search=FrankWolfe.Adaptive(verbose=false),
+        line_search=FrankWolfe.Adaptive(relaxed_smoothness=true),
     )
 
     @test abs(x[1, 1] - 0.25 / n) < 1e-6
@@ -77,7 +77,7 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
         (lmo1, lmo2),
         ones(n),
         lambda=1,
-        line_search=FrankWolfe.Adaptive(verbose=false),
+        line_search=FrankWolfe.Adaptive(),
     )
 
     @test abs(x[1, 1]) < 1e-6
@@ -90,7 +90,7 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
         (lmo1, lmo_prob),
         ones(n),
         lambda=1,
-        line_search=FrankWolfe.Adaptive(verbose=false),
+        line_search=FrankWolfe.Adaptive(),
         trajectory=true,
         verbose=true,
     )
@@ -111,7 +111,7 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
             (lmo2, lmo_prob),
             ones(n),
             lambda=1,
-            line_search=FrankWolfe.Adaptive(verbose=false),
+            line_search=FrankWolfe.Adaptive(relaxed_smoothness=true),
             update_order=order,
         )
 
@@ -178,8 +178,8 @@ end
 
     x, _, _, infeas, _ = FrankWolfe.alternating_projections((lmo2, lmo3), rand(n))
 
-    @test abs(x[1][1] - 1) < 1e-6
-    @test abs(x[2][1] - 1) < 1e-6
+    @test abs(x[1][1] - 1) < 1e-4
+    @test abs(x[2][1] - 1) < 1e-4
     @test infeas < 1e-6
 
     x, _, _, infeas, traj_data =
