@@ -400,7 +400,7 @@ function perform_line_search(
             # if we were not using the relaxed smoothness, we try it first as a stable fallback
             # note that the smoothness estimate is not updated at this iteration.
             if !line_search.relaxed_smoothness
-                linesearch_fallback = copy(line_search)
+                linesearch_fallback = deepcopy(line_search)
                 linesearch_fallback.relaxed_smoothness = true
                 return perform_line_search(
                     linesearch_fallback, t, f, grad!, gradient, x, d, gamma_max, storage, memory_mode;
