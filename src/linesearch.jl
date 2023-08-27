@@ -305,6 +305,8 @@ The keyword argument `relaxed_smoothness` allows testing with an alternative smo
 This condition yields potentially smaller and more stable estimations of the Lipschitz constant
 while being more computationally expensive due to the additional gradient computation.
 
+It is also the fallback when the Lipschitz constant estimation fails due to numerical errors.
+
 `perform_line_search` also has a `should_upgrade` keyword argument on
 whether there should be a temporary upgrade to `BigFloat` for extended precision.
 """
@@ -368,8 +370,8 @@ function perform_line_search(
     end
     M = line_search.eta * line_search.L_est
     (dot_dir, ndir2, x_storage) = _upgrade_accuracy_adaptive(gradient, d, storage, should_upgrade)
-    gamma = min(max(dot_dir / (M * ndir2), 0), gamma_max)
-    x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
+    γ = min(max(dot_dir / (M * ndir2), 0), gamma_max)
+    x_storage = muladd_memory_mode(memory_mode, x_storage, x, γ, d)
     niter = 0
     α = line_search.alpha
     clipping = false
@@ -377,25 +379,37 @@ function perform_line_search(
     gradient_storage = similar(gradient)
 
     while f(x_storage) - f(x) >
-          -gamma * α * dot_dir + α^2 * gamma^2 * ndir2 * M / 2 + eps(float(gamma)) &&
-        gamma ≥ 100 * eps(float(gamma))
+          -γ * α * dot_dir + α^2 * γ^2 * ndir2 * M / 2 + eps(float(γ)) &&
+          γ ≥ 100 * eps(float(γ))
 
         # Additional smoothness condition
         if line_search.relaxed_smoothness
             grad!(gradient_storage, x_storage)
-            if fast_dot(gradient, d) - fast_dot(gradient_storage, d) <= gamma * M * ndir2 + eps(float(gamma))
+            if fast_dot(gradient, d) - fast_dot(gradient_storage, d) <= γ * M * ndir2 + eps(float(γ))
                 break
             end
         end
 
         M *= line_search.tau
-        gamma = min(max(dot_dir / (M * ndir2), 0), gamma_max)
-        x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
+        γ = min(max(dot_dir / (M * ndir2), 0), gamma_max)
+        x_storage = muladd_memory_mode(memory_mode, x_storage, x, γ, d)
 
         niter += 1
         if M > line_search.max_estimate
-            # if this warning occurs, one might see negative progess, cycling, or stalling.
-            # Potentially upgrade accuracy or use alternative line search strategy
+            # if this occurs, we hit numerical troubles
+            # if we were not using the relaxed smoothness, we try it first as a stable fallback
+            # note that the smoothness estimate is not updated at this iteration.
+            if !line_search.relaxed_smoothness
+                linesearch_fallback = copy(line_search)
+                linesearch_fallback.relaxed_smoothness = true
+                return perform_line_search(
+                    linesearch_fallback, t, f, grad!, gradient, x, d, gamma_max, storage, memory_mode;
+                    should_upgrade=should_upgrade,
+                )
+            end
+            # if we are already in relaxed smoothness, produce a warning:
+            # one might see negative progess, cycling, or stalling.
+            # Potentially upgrade accuracy or use an alternative line search strategy
             if line_search.verbose
                 @warn "Smoothness estimate run away -> hard clipping. Convergence might be not guaranteed."
             end
@@ -406,8 +420,8 @@ function perform_line_search(
     if !clipping
         line_search.L_est = M
     end
-    gamma = min(max(dot_dir / (line_search.L_est * ndir2), 0), gamma_max)
-    return gamma
+    γ = min(max(dot_dir / (line_search.L_est * ndir2), 0), gamma_max)
+    return γ
 end
 
 Base.print(io::IO, ::Adaptive) = print(io, "Adaptive")
