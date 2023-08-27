@@ -444,7 +444,7 @@ end
             lmo,
             x0,
             max_iteration=k,
-            line_search=FrankWolfe.Adaptive(verbose=false),
+            line_search=FrankWolfe.Adaptive(),
             print_iter=k / 10,
             memory_mode=FrankWolfe.InplaceEmphasis(),
             verbose=true,
