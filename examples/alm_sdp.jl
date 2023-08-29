@@ -46,6 +46,6 @@ end
 
 labels = ["Full", "Cyclic", "Stochastic"]
 
-fp = plot_trajectories(trajectories, labels, legend_position=:best, xscalelog=true)
+fp = plot_trajectories(trajectories, labels, legend_position=:best, xscalelog=true, reduce_size=true)
 
 display(fp)
