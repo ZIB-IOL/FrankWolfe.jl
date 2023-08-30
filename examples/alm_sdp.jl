@@ -47,6 +47,6 @@ end
 
 labels = ["Full", "Cyclic", "Stochastic"]
 
-fp = plot_trajectories(trajectories, labels, legend_position=:best, xscalelog=true, reduce_size=true, marker_shapes=[:dtriangle, :rect, :cross])
+fp = plot_trajectories(trajectories, labels, legend_position=:best, xscalelog=true, reduce_size=true, marker_shapes=[:dtriangle, :rect, :circle])
 
 display(fp)

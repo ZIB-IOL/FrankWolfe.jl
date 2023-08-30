@@ -205,18 +205,18 @@ function plot_results(
     return fp
 end
 
-
-@recipe function f(::Type{Val{:samplemarkers}}, x, y, z; n_markers = 10, log=false)
+# Recipe for plotting markers in plot_trajectories
+@recipe function f(::Type{Val{:samplemarkers}}, x, y, z; n_markers=10, log=false)
     n = length(y)
 
     # Choose datapoints for markers
     if log
         xmin = log10(x[1])
         xmax = log10(x[end])
-        thresholds = collect(xmin:(xmax-xmin)/(n_markers - 1):xmax)
-        indices = [argmin(i -> abs(t-log10(x[i])), eachindex(x)) for t in thresholds]        
+        thresholds = collect(xmin:(xmax-xmin)/(n_markers-1):xmax)
+        indices = [argmin(i -> abs(t - log10(x[i])), eachindex(x)) for t in thresholds]
     else
-        indices = 1:ceil(length(x)/n_markers):n
+        indices = 1:ceil(length(x) / n_markers):n
     end
     sx, sy = x[indices], y[indices]
 
@@ -241,7 +241,7 @@ end
     seriestype := :scatter
     markershape --> :auto
     x := sx
-    y := sy
+    return y := sy
 end
 
 function plot_trajectories(
@@ -251,8 +251,8 @@ function plot_trajectories(
     xscalelog=false,
     legend_position=:topright,
     lstyle=fill(:solid, length(data)),
-    marker_shapes = nothing,
-    n_markers = 10,
+    marker_shapes=nothing,
+    n_markers=10,
     reduce_size=false,
 )
     # theme(:dark)
@@ -262,26 +262,27 @@ function plot_trajectories(
     x = []
     y = []
     offset = 2
-    xscale = xscalelog ? :log : :identity
 
     function sub_plot(idx_x, idx_y; legend=false, xlabel="", ylabel="")
-        
+
         function marker_alpha(x)
             if xscalelog
                 xmin = log10(x[1])
                 xmax = log10(x[end])
-                thresholds = collect(xmin:(xmax-xmin)/(n_markers - 1):xmax)
-                return [xi in [argmin(y -> abs(t-log10(y)), x) for t in thresholds] ? 1 : 0 for xi in x]
+                thresholds = collect(xmin:(xmax-xmin)/(n_markers-1):xmax)
+                return [
+                    xi in [argmin(y -> abs(t - log10(y)), x) for t in thresholds] ? 1 : 0 for
+                    xi in x
+                ]
             else
-                return [i in 1:ceil(length(x)/n_markers):length(x) ? 1 : 0 for i in eachindex(x)]
+                return [i in 1:ceil(length(x) / n_markers):length(x) ? 1 : 0 for i in eachindex(x)]
             end
         end
 
         fig = nothing
 
-        for i in eachindex(data)
+        for (i, trajectory) in enumerate(data)
 
-            trajectory = data[i]
             l = length(trajectory)
             if reduce_size && l > 1000
                 indices = Int.(round.(collect(1:l/1000:l)))
@@ -291,21 +292,23 @@ function plot_trajectories(
             x = [trajectory[j][idx_x] for j in offset:length(trajectory)]
             y = [trajectory[j][idx_y] for j in offset:length(trajectory)]
 
-
             if marker_shapes !== nothing && n_markers >= 2
-                marker_args = Dict(:st => :samplemarkers, :n_markers => n_markers, :shape => marker_shapes[i], :log => xscalelog)
+                marker_args = Dict(
+                    :st => :samplemarkers,
+                    :n_markers => n_markers,
+                    :shape => marker_shapes[i],
+                    :log => xscalelog,
+                )
             else
                 marker_args = Dict()
             end
-
-            println(marker_args)
 
             if i == 1
                 fig = plot(
                     x,
                     y,
                     label=label[i],
-                    xaxis=xscale,
+                    xaxis=xscalelog ? :log : :identity,
                     yaxis=:log,
                     xlabel=xlabel,
                     ylabel=ylabel,
@@ -314,11 +317,11 @@ function plot_trajectories(
                     xguidefontsize=8,
                     legendfontsize=8,
                     width=1.3,
-                    linestyle=lstyle[i],
-                    marker_args...
+                    linestyle=lstyle[i];
+                    marker_args...,
                 )
             else
-                plot!(x, y, label=label[i], width=1.3, linestyle=lstyle[i], marker_args...)
+                plot!(x, y, label=label[i], width=1.3, linestyle=lstyle[i]; marker_args...)
             end
         end
         return fig
