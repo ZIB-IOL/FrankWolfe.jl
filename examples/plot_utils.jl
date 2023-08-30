@@ -241,7 +241,7 @@ end
     seriestype := :scatter
     markershape --> :auto
     x := sx
-    return y := sy
+    y := sy
 end
 
 function plot_trajectories(
