@@ -31,12 +31,12 @@ function select_update_indices(::StochasticUpdate, l)
     return [[rand(1:l)] for i in 1:l]
 end
 
-struct CallbackStateBlockCoordinateMethod{TP,TDV,TDG,XT,VT,TG,FT,GFT,GT}
+struct CallbackStateBlockCoordinateMethod{TP,TDV,TDG,TIN,XT,VT,TG,FT,GFT,GT}
     t::Int
     primal::TP
     dual::TDV
     dual_gap::TDG
-    infeas::Float64
+    infeas::TIN
     time::Float64
     x::XT
     v::VT
