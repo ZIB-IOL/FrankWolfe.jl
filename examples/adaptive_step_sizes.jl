@@ -7,6 +7,7 @@ using ReverseDiff
 
 import LinearAlgebra
 
+include("../examples/plot_utils.jl")
 
 n = Int(1e5)
 k = 1000
