@@ -206,6 +206,44 @@ function plot_results(
 end
 
 
+@recipe function f(::Type{Val{:samplemarkers}}, x, y, z; n_markers = 10, log=false)
+    n = length(y)
+
+    # Choose datapoints for markers
+    if log
+        xmin = log10(x[1])
+        xmax = log10(x[end])
+        thresholds = collect(xmin:(xmax-xmin)/(n_markers - 1):xmax)
+        indices = [argmin(i -> abs(t-log10(x[i])), eachindex(x)) for t in thresholds]        
+    else
+        indices = 1:ceil(length(x)/n_markers):n
+    end
+    sx, sy = x[indices], y[indices]
+
+    # add an empty series with the correct type for legend markers
+    @series begin
+        seriestype := :path
+        markershape --> :auto
+        x := []
+        y := []
+    end
+    # add a series for the line
+    @series begin
+        primary := false # no legend entry
+        markershape := :none # ensure no markers
+        seriestype := :path
+        seriescolor := get(plotattributes, :seriescolor, :auto)
+        x := x
+        y := y
+    end
+    # return  a series for the sampled markers
+    primary := false
+    seriestype := :scatter
+    markershape --> :auto
+    x := sx
+    y := sy
+end
+
 function plot_trajectories(
     data,
     label;
@@ -255,47 +293,32 @@ function plot_trajectories(
 
 
             if marker_shapes !== nothing && n_markers >= 2
-                if i == 1
-                    fig = plot(
-                        x,
-                        y,
-                        label=label[i],
-                        xaxis=xscale,
-                        yaxis=:log,
-                        xlabel=xlabel,
-                        ylabel=ylabel,
-                        legend=legend,
-                        yguidefontsize=8,
-                        xguidefontsize=8,
-                        legendfontsize=8,
-                        width=1.3,
-                        linestyle=lstyle[i],
-                        markershape=marker_shapes[i],
-                        markeralpha = marker_alpha(x)
-                    )
-                else
-                    plot!(x, y, label=label[i], width=1.3, linestyle=lstyle[i], markershape=marker_shapes[i], markeralpha = marker_alpha(x))
-                end
+                marker_args = Dict(:st => :samplemarkers, :n_markers => n_markers, :shape => marker_shapes[i], :log => xscalelog)
             else
-                if i == 1
-                    fig = plot(
-                        x,
-                        y,
-                        label=label[i],
-                        xaxis=xscale,
-                        yaxis=:log,
-                        xlabel=xlabel,
-                        ylabel=ylabel,
-                        legend=legend,
-                        yguidefontsize=8,
-                        xguidefontsize=8,
-                        legendfontsize=8,
-                        width=1.3,
-                        linestyle=lstyle[i],
-                    )
-                else
-                    plot!(x, y, label=label[i], width=1.3, linestyle=lstyle[i])
-                end
+                marker_args = Dict()
+            end
+
+            println(marker_args)
+
+            if i == 1
+                fig = plot(
+                    x,
+                    y,
+                    label=label[i],
+                    xaxis=xscale,
+                    yaxis=:log,
+                    xlabel=xlabel,
+                    ylabel=ylabel,
+                    legend=legend,
+                    yguidefontsize=8,
+                    xguidefontsize=8,
+                    legendfontsize=8,
+                    width=1.3,
+                    linestyle=lstyle[i],
+                    marker_args...
+                )
+            else
+                plot!(x, y, label=label[i], width=1.3, linestyle=lstyle[i], marker_args...)
             end
         end
         return fig

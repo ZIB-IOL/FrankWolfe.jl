@@ -40,12 +40,13 @@ for order in [FrankWolfe.FullUpdate(), FrankWolfe.CyclicUpdate(), FrankWolfe.Sto
         line_search=FrankWolfe.Adaptive(relaxed_smoothness=true),
         verbose=true,
         trajectory=true,
+        max_iteration=10000,
     )
     push!(trajectories, traj_data)
 end
 
 labels = ["Full", "Cyclic", "Stochastic"]
 
-fp = plot_trajectories(trajectories, labels, legend_position=:best, xscalelog=true, reduce_size=true)
+fp = plot_trajectories(trajectories, labels, legend_position=:best, xscalelog=true, reduce_size=true, marker_shapes=[:dtriangle, :rect, :cross])
 
 display(fp)
