@@ -470,7 +470,7 @@ function afw_step(x, gradient, lmo, active_set, epsilon, d; memory_mode::MemoryE
     else
         (compute_extreme_point(lmo, gradient), 0.0)
     end
-    dual_gap = grad_dot_x - fast_dot(v, gradient) - gap
+    dual_gap = grad_dot_x - fast_dot(v, gradient)
     if dual_gap > away_gap && dual_gap >= epsilon
         tt = gap == 0.0 ? regular : weaksep
         gamma_max = one(a_lambda)
@@ -488,7 +488,6 @@ function afw_step(x, gradient, lmo, active_set, epsilon, d; memory_mode::MemoryE
         fw_step_taken = false
         index = a_loc
     else
-        @assert gap == 0.0
         tt = away
         gamma_max = zero(a_lambda)
         vertex = a
@@ -496,7 +495,7 @@ function afw_step(x, gradient, lmo, active_set, epsilon, d; memory_mode::MemoryE
         fw_step_taken = false
         index = a_loc
     end
-    return d, vertex, index, gamma_max, dual_gap, away_step_taken, fw_step_taken, tt
+    return d, vertex, index, gamma_max, dual_gap + gap, away_step_taken, fw_step_taken, tt
 end
 
 function fw_step(x, gradient, lmo, d; memory_mode::MemoryEmphasis = InplaceEmphasis())
