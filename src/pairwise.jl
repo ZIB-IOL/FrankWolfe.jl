@@ -291,10 +291,11 @@ function blended_pairwise_conditional_gradient(
                     else
                         (v, gap) = if weak_separation
                             lazy_threshold = fast_dot(gradient, x) - phi / lazy_tolerance
-                            (v, gap) = compute_weak_separation_point(lmo, gradient, lazy_threshold)
+                            compute_weak_separation_point(lmo, gradient, lazy_threshold)
                         else
                             v = compute_extreme_point(lmo, gradient)
                             gap = 0.0
+                            (v, gap)
                         end
                     end
                     tt = gap == 0.0 ? regular : weaksep
@@ -303,13 +304,13 @@ function blended_pairwise_conditional_gradient(
             vertex_taken = v
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
             # if we are about to exit, compute dual_gap with the cleaned-up x
-            if dual_gap + gap ≤ epsilon
+            if dual_gap ≤ epsilon
                 active_set_renormalize!(active_set)
                 active_set_cleanup!(active_set)
                 compute_active_set_iterate!(active_set)
                 x = get_active_set_iterate(active_set)
                 grad!(gradient, x)
-                dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v) + gap
+                dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
             end
             # Note: In the following, we differentiate between lazy and non-lazy updates.
             # The reason is that the non-lazy version does not use phi but the lazy one heavily depends on it.
@@ -320,7 +321,7 @@ function blended_pairwise_conditional_gradient(
             # - for lazy: we also accept slightly weaker vertices, those satisfying phi / lazy_tolerance
             # this should simplify the criterion.
             # DO NOT CHANGE without good reason and talk to Sebastian first for the logic behind this.
-            if !lazy || dual_gap ≥ phi / lazy_tolerance                  
+            if !lazy || dual_gap ≥ phi / lazy_tolerance
                 d = muladd_memory_mode(memory_mode, d, x, v)
 
                 gamma = perform_line_search(
