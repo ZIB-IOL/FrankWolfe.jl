@@ -440,8 +440,7 @@ function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon, d; use_extra_
                 away_step_taken = false
                 fw_step_taken = true
                 index = -1
-                #Lower our expectation for progress.
-            else
+            else # lower our expectation for progress.
                 tt = dualstep
                 phi = min(dual_gap, phi / 2.0)
                 gamma_max = zero(a_lambda)
@@ -471,7 +470,7 @@ function afw_step(x, gradient, lmo, active_set, epsilon, d; memory_mode::MemoryE
     else
         (compute_extreme_point(lmo, gradient), 0.0)
     end
-    dual_gap = grad_dot_x - fast_dot(v, gradient) + gap
+    dual_gap = grad_dot_x - fast_dot(v, gradient) - gap
     if dual_gap > away_gap && dual_gap >= epsilon
         tt = gap == 0.0 ? regular : weaksep
         gamma_max = one(a_lambda)
@@ -489,6 +488,7 @@ function afw_step(x, gradient, lmo, active_set, epsilon, d; memory_mode::MemoryE
         fw_step_taken = false
         index = a_loc
     else
+        @assert gap == 0.0
         tt = away
         gamma_max = zero(a_lambda)
         vertex = a

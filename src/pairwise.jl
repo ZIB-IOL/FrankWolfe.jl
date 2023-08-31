@@ -277,27 +277,39 @@ function blended_pairwise_conditional_gradient(
                         v = new_forward_vertex
                         tt = lazylazy
                     else
-                        v = compute_extreme_point(lmo, gradient)
-                        tt = regular
+                        (v, gap) = if weak_separation
+                            compute_weak_separation_point(lmo, gradient, lazy_threshold)
+                        else
+                            (compute_extreme_point(lmo, gradient), 0.0)
+                        end
+                        tt = gap == 0.0 ? regular : weaksep
                     end
                 else
                     # for t == 1, v is already computed before first iteration
-                    if t > 1
-                        v = compute_extreme_point(lmo, gradient)
+                    if t == 1
+                        gap = 0.0
+                    else
+                        (v, gap) = if weak_separation
+                            lazy_threshold = fast_dot(gradient, x) - phi / lazy_tolerance
+                            (v, gap) = compute_weak_separation_point(lmo, gradient, lazy_threshold)
+                        else
+                            v = compute_extreme_point(lmo, gradient)
+                            gap = 0.0
+                        end
                     end
-                    tt = regular
+                    tt = gap == 0.0 ? regular : weaksep
                 end
             end
             vertex_taken = v
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
             # if we are about to exit, compute dual_gap with the cleaned-up x
-            if dual_gap ≤ epsilon
+            if dual_gap + gap ≤ epsilon
                 active_set_renormalize!(active_set)
                 active_set_cleanup!(active_set)
                 compute_active_set_iterate!(active_set)
                 x = get_active_set_iterate(active_set)
                 grad!(gradient, x)
-                dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
+                dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v) + gap
             end
             # Note: In the following, we differentiate between lazy and non-lazy updates.
             # The reason is that the non-lazy version does not use phi but the lazy one heavily depends on it.
@@ -365,7 +377,8 @@ function blended_pairwise_conditional_gradient(
                 # that is ok as we scale with the K = 2.0 default anyways
                 # we only update the dual gap if the step was regular (not lazy from discarded set)
                 if tt != lazylazy
-                    phi = dual_gap
+                    @assert dual_gap + gap < phi
+                    phi = dual_gap + gap
                     @debug begin
                         @assert tt == regular
                         v2 = compute_extreme_point(lmo, gradient)
