@@ -9,6 +9,8 @@ using LinearAlgebra
 using Random
 import GLPK
 
+include("../examples/plot_utils.jl")
+
 s = rand(1:100)
 s = 98
 @info "Seed $s"

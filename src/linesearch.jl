@@ -307,7 +307,6 @@ This condition yields potentially smaller and more stable estimations of the Lip
 while being more computationally expensive due to the additional gradient computation.
 
 It is also the fallback when the Lipschitz constant estimation fails due to numerical errors.
-
 `perform_line_search` also has a `should_upgrade` keyword argument on
 whether there should be a temporary upgrade to `BigFloat` for extended precision.
 """
