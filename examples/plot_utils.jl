@@ -265,20 +265,6 @@ function plot_trajectories(
 
     function sub_plot(idx_x, idx_y; legend=false, xlabel="", ylabel="")
 
-        function marker_alpha(x)
-            if xscalelog
-                xmin = log10(x[1])
-                xmax = log10(x[end])
-                thresholds = collect(xmin:(xmax-xmin)/(n_markers-1):xmax)
-                return [
-                    xi in [argmin(y -> abs(t - log10(y)), x) for t in thresholds] ? 1 : 0 for
-                    xi in x
-                ]
-            else
-                return [i in 1:ceil(length(x) / n_markers):length(x) ? 1 : 0 for i in eachindex(x)]
-            end
-        end
-
         fig = nothing
 
         for (i, trajectory) in enumerate(data)
