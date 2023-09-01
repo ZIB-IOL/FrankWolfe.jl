@@ -4,6 +4,8 @@ using LinearAlgebra
 using Random
 using Test
 
+include("../examples/plot_utils.jl")
+
 Random.seed!(42)
 
 n = 30

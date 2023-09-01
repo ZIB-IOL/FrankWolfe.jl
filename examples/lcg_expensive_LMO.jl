@@ -10,6 +10,8 @@ using Random
 import GLPK
 using JSON
 
+include("../examples/plot_utils.jl")
+
 n = 200
 k = 3000
 #k = 500

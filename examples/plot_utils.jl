@@ -205,6 +205,44 @@ function plot_results(
     return fp
 end
 
+# Recipe for plotting markers in plot_trajectories
+@recipe function f(::Type{Val{:samplemarkers}}, x, y, z; n_markers=10, log=false)
+    n = length(y)
+
+    # Choose datapoints for markers
+    if log
+        xmin = log10(x[1])
+        xmax = log10(x[end])
+        thresholds = collect(xmin:(xmax-xmin)/(n_markers-1):xmax)
+        indices = [argmin(i -> abs(t - log10(x[i])), eachindex(x)) for t in thresholds]
+    else
+        indices = 1:ceil(length(x) / n_markers):n
+    end
+    sx, sy = x[indices], y[indices]
+
+    # add an empty series with the correct type for legend markers
+    @series begin
+        seriestype := :path
+        markershape --> :auto
+        x := []
+        y := []
+    end
+    # add a series for the line
+    @series begin
+        primary := false # no legend entry
+        markershape := :none # ensure no markers
+        seriestype := :path
+        seriescolor := get(plotattributes, :seriescolor, :auto)
+        x := x
+        y := y
+    end
+    # return  a series for the sampled markers
+    primary := false
+    seriestype := :scatter
+    markershape --> :auto
+    x := sx
+    y := sy
+end
 
 function plot_trajectories(
     data,
@@ -213,6 +251,9 @@ function plot_trajectories(
     xscalelog=false,
     legend_position=:topright,
     lstyle=fill(:solid, length(data)),
+    marker_shapes=nothing,
+    n_markers=10,
+    reduce_size=false,
 )
     # theme(:dark)
     # theme(:vibrant)
@@ -220,101 +261,63 @@ function plot_trajectories(
 
     x = []
     y = []
-    pit = nothing
-    pti = nothing
-    dit = nothing
-    dti = nothing
     offset = 2
-    xscale = xscalelog ? :log : :identity
-    for i in 1:length(data)
-        trajectory = data[i]
-        x = [trajectory[j][1] for j in offset:length(trajectory)]
-        y = [trajectory[j][2] for j in offset:length(trajectory)]
-        if i == 1
-            pit = plot(
-                x,
-                y,
-                label=label[i],
-                xaxis=xscale,
-                yaxis=:log,
-                ylabel="Primal",
-                legend=legend_position,
-                yguidefontsize=8,
-                xguidefontsize=8,
-                legendfontsize=8,
-                width=1.3,
-                linestyle=lstyle[i],
-            )
-        else
-            plot!(x, y, label=label[i], width=1.3, linestyle=lstyle[i])
+
+    function sub_plot(idx_x, idx_y; legend=false, xlabel="", ylabel="")
+
+        fig = nothing
+
+        for (i, trajectory) in enumerate(data)
+
+            l = length(trajectory)
+            if reduce_size && l > 1000
+                indices = Int.(round.(collect(1:l/1000:l)))
+                trajectory = trajectory[indices]
+            end
+
+            x = [trajectory[j][idx_x] for j in offset:length(trajectory)]
+            y = [trajectory[j][idx_y] for j in offset:length(trajectory)]
+
+            if marker_shapes !== nothing && n_markers >= 2
+                marker_args = Dict(
+                    :st => :samplemarkers,
+                    :n_markers => n_markers,
+                    :shape => marker_shapes[i],
+                    :log => xscalelog,
+                )
+            else
+                marker_args = Dict()
+            end
+
+            if i == 1
+                fig = plot(
+                    x,
+                    y,
+                    label=label[i],
+                    xaxis=xscalelog ? :log : :identity,
+                    yaxis=:log,
+                    xlabel=xlabel,
+                    ylabel=ylabel,
+                    legend=legend,
+                    yguidefontsize=8,
+                    xguidefontsize=8,
+                    legendfontsize=8,
+                    width=1.3,
+                    linestyle=lstyle[i];
+                    marker_args...,
+                )
+            else
+                plot!(x, y, label=label[i], width=1.3, linestyle=lstyle[i]; marker_args...)
+            end
         end
+        return fig
     end
-    for i in 1:length(data)
-        trajectory = data[i]
-        x = [trajectory[j][5] for j in offset:length(trajectory)]
-        y = [trajectory[j][2] for j in offset:length(trajectory)]
-        if i == 1
-            pti = plot(
-                x,
-                y,
-                label=label[i],
-                legend=false,
-                xaxis=xscale,
-                yaxis=:log,
-                yguidefontsize=8,
-                xguidefontsize=8,
-                width=1.3,
-                linestyle=lstyle[i],
-            )
-        else
-            plot!(x, y, label=label[i], width=1.3, linestyle=lstyle[i])
-        end
-    end
-    for i in 1:length(data)
-        trajectory = data[i]
-        x = [trajectory[j][1] for j in offset:length(trajectory)]
-        y = [trajectory[j][4] for j in offset:length(trajectory)]
-        if i == 1
-            dit = plot(
-                x,
-                y,
-                label=label[i],
-                legend=false,
-                xaxis=xscale,
-                yaxis=:log,
-                ylabel="Dual Gap",
-                xlabel="Iterations",
-                yguidefontsize=8,
-                xguidefontsize=8,
-                width=1.3,
-                linestyle=lstyle[i],
-            )
-        else
-            plot!(x, y, label=label[i], width=1.3, linestyle=lstyle[i])
-        end
-    end
-    for i in 1:length(data)
-        trajectory = data[i]
-        x = [trajectory[j][5] for j in offset:length(trajectory)]
-        y = [trajectory[j][4] for j in offset:length(trajectory)]
-        if i == 1
-            dti = plot(
-                x,
-                y,
-                label=label[i],
-                legend=false,
-                xaxis=xscale,
-                yaxis=:log,
-                xlabel="Time",
-                yguidefontsize=8,
-                xguidefontsize=8,
-                width=1.3,
-                linestyle=lstyle[i],
-            )
-        else
-            plot!(x, y, label=label[i], width=1.3, linestyle=lstyle[i])
-        end
-    end
+
+    pit = sub_plot(1, 2; legend=legend_position, ylabel="Primal")
+    pti = sub_plot(5, 2)
+    dit = sub_plot(1, 4; xlabel="Iterations", ylabel="Dual Gap")
+    dti = sub_plot(5, 4; xlabel="Time")
+
     fp = plot(pit, pti, dit, dti, layout=(2, 2)) # layout = @layout([A{0.01h}; [B C; D E]]))
     plot!(size=(600, 400))
     if filename !== nothing

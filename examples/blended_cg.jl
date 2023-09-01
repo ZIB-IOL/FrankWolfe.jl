@@ -9,6 +9,8 @@ using LinearAlgebra
 using Random
 using SparseArrays
 
+include("../examples/plot_utils.jl")
+
 n = 1000
 k = 10000
 

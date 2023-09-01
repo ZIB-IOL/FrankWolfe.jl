@@ -6,6 +6,8 @@ using LinearAlgebra
 using Random
 using Test
 
+include("../examples/plot_utils.jl")
+
 Random.seed!(48)
 
 n = 1000
