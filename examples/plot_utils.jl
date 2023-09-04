@@ -216,7 +216,7 @@ end
         thresholds = collect(xmin:(xmax-xmin)/(n_markers-1):xmax)
         indices = [argmin(i -> abs(t - log10(x[i])), eachindex(x)) for t in thresholds]
     else
-        indices = 1:ceil(length(x) / n_markers):n
+        indices = 1:Int(ceil(length(x) / n_markers)):n
     end
     sx, sy = x[indices], y[indices]
 
@@ -254,6 +254,7 @@ function plot_trajectories(
     marker_shapes=nothing,
     n_markers=10,
     reduce_size=false,
+    primal_offset=1e-8,
 )
     # theme(:dark)
     # theme(:vibrant)
@@ -275,7 +276,7 @@ function plot_trajectories(
                 trajectory = trajectory[indices]
             end
 
-            x = [trajectory[j][idx_x] for j in offset:length(trajectory)]
+            x = [trajectory[j][idx_x] + primal_offset for j in offset:length(trajectory)]
             y = [trajectory[j][idx_y] for j in offset:length(trajectory)]
 
             if marker_shapes !== nothing && n_markers >= 2
