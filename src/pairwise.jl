@@ -376,7 +376,7 @@ function blended_pairwise_conditional_gradient(
             else # dual step
                 # set to computed dual_gap for consistency between the lazy and non-lazy run.
                 # that is ok as we scale with the K = 2.0 default anyways
-                # we only update the dual gap if the step was regular (not lazy from discarded set)
+                # we only update the dual gap if the step was regular or weaksep (not lazy from discarded set)
                 if tt != lazylazy
                     @assert dual_gap + gap < phi
                     phi = dual_gap + gap

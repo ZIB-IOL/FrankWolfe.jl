@@ -423,16 +423,17 @@ function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon, d; use_extra_
                 # compute new vertex with normal or weak oracle
                 if weak_separation
                     lazy_threshold = fast_dot(gradient, x) - phi / lazy_tolerance
-                    (v, _) = compute_weak_separation_point(lmo, gradient, lazy_threshold)
-                    tt = weaksep
+                    (v, gap) = compute_weak_separation_point(lmo, gradient, lazy_threshold)
+                    tt = gap == 0.0 ? regular : weaksep
                 else
                     v = compute_extreme_point(lmo, gradient)
+                    gap = zero(eltype(v))
                     tt = regular
                 end
             end
-            # Real dual gap promises enough progress.
             grad_dot_fw_vertex = fast_dot(v, gradient)
             dual_gap = grad_dot_x - grad_dot_fw_vertex
+            # Real dual gap promises enough progress.
             if dual_gap >= phi / lazy_tolerance
                 gamma_max = one(a_lambda)
                 d = muladd_memory_mode(memory_mode, d, x, v)
@@ -441,6 +442,7 @@ function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon, d; use_extra_
                 fw_step_taken = true
                 index = -1
             else # lower our expectation for progress.
+                @assert tt != weaksep
                 tt = dualstep
                 phi = min(dual_gap, phi / 2.0)
                 gamma_max = zero(a_lambda)
@@ -460,15 +462,15 @@ function afw_step(x, gradient, lmo, active_set, epsilon, d; memory_mode::MemoryE
     away_gap = fast_dot(a, gradient) - grad_dot_x
     (v, gap) = if weak_separation
         # Condition for taking a FW step
-        # ⟨∇f, x-v⟩ ≥ gₐ
+        # ⟨∇f, x-v⟩ ≥ gₐ  <=>
         # ⟨∇f, v⟩ ≤ ⟨∇f, x⟩ - gₐ
-        # We ask for a bit more on the FW step
+        # We ask for a bit more progress on the FW step
         # to promote away steps when we can (and therefore sparsity)
         # ⟨∇f, v⟩ ≤ ⟨∇f, x⟩ - K gₐ
         lazy_threshold = grad_dot_x - lazy_tolerance * away_gap
         compute_weak_separation_point(lmo, gradient, lazy_threshold)
     else
-        (compute_extreme_point(lmo, gradient), 0.0)
+        (compute_extreme_point(lmo, gradient), zero(away_gap))
     end
     dual_gap = grad_dot_x - fast_dot(v, gradient)
     if dual_gap > away_gap && dual_gap >= epsilon
