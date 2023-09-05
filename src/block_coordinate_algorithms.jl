@@ -10,13 +10,27 @@ abstract type BlockCoordinateUpdateOrder end
 """
     select_update_indices(::BlockCoordinateUpdateOrder, l)
 
-Returns a list of lists of the indices, where `l` is largest index i.e. the number of blocks. Each list represents one round of updates in an iteration. The indices in a list show which blocks should be updated parallely in one round.
+Returns a list of lists of the indices, where `l` is largest index i.e. the number of blocks.
+Each sublist represents one round of updates in an iteration. The indices in a list show which blocks should be updated parallely in one round.
 For example, a full update is given by `[1:l]` and a blockwise update by `[[i] for i=1:l]`.
 """
 function select_update_indices end
 
+"""
+The full update initiates a parallel update of all blocks in one single round.
+"""
 struct FullUpdate <: BlockCoordinateUpdateOrder end
+
+"""
+The cyclic update initiates a sequence of update rounds.
+In each round only one block is updated. The order of the blocks is determined by the given order of the LMOs.
+"""
 struct CyclicUpdate <: BlockCoordinateUpdateOrder end
+
+"""
+The stochastic update initiates a sequence of update rounds.
+In each round only one block is updated. The order of the blocks is a random.
+"""
 struct StochasticUpdate <: BlockCoordinateUpdateOrder end
 
 function select_update_indices(::FullUpdate, l)
@@ -54,11 +68,11 @@ function callback_state(state::CallbackStateBlockCoordinateMethod)
 end
 
 """
-    block_coordinate_frank_wolfe(f, grad!, lmo::ProductLMO, x0; ...)
+    block_coordinate_frank_wolfe(f, grad!, lmo::ProductLMO{N}, x0; ...) where {N}
 
 Block-coordinate version of the Frank-Wolfe algorithm.
 Minimizes objective `f` over the product of feasible domains specified by the `lmo`.
-The optional argument the `update_order::BlockCoordinateUpdateOrder` controls the order in which the blocks are updated.
+The optional argument the `update_order` is of type [FrankWolfe.BlockCoordinateUpdateOrder](@ref) and controls the order in which the blocks are updated.
 
 The method returns a tuple `(x, v, primal, dual_gap, infeas, traj_data)` with:
 - `x` cartesian product of final iterates
@@ -66,6 +80,9 @@ The method returns a tuple `(x, v, primal, dual_gap, infeas, traj_data)` with:
 - `primal` primal value `f(x)`
 - `dual_gap` final Frank-Wolfe gap
 - `traj_data` vector of trajectory information.
+
+See [ S. Lacoste-Julien, M. Jaggi, M. Schmidt, and P. Pletscher 2013](https://arxiv.org/abs/1207.4747)
+and [A. Beck, E. Pauwels and S. Sabach 2015](https://arxiv.org/abs/1502.03716) for more details about Block-Coordinate Frank-Wolfe.
 """
 function block_coordinate_frank_wolfe(
     f,

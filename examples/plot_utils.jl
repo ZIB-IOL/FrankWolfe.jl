@@ -216,7 +216,7 @@ end
         thresholds = collect(xmin:(xmax-xmin)/(n_markers-1):xmax)
         indices = [argmin(i -> abs(t - log10(x[i])), eachindex(x)) for t in thresholds]
     else
-        indices = 1:ceil(length(x) / n_markers):n
+        indices = 1:Int(ceil(length(x) / n_markers)):n
     end
     sx, sy = x[indices], y[indices]
 
@@ -254,6 +254,7 @@ function plot_trajectories(
     marker_shapes=nothing,
     n_markers=10,
     reduce_size=false,
+    primal_offset=1e-8,
 )
     # theme(:dark)
     # theme(:vibrant)
@@ -263,7 +264,7 @@ function plot_trajectories(
     y = []
     offset = 2
 
-    function sub_plot(idx_x, idx_y; legend=false, xlabel="", ylabel="")
+    function sub_plot(idx_x, idx_y; legend=false, xlabel="", ylabel="", y_offset=0)
 
         fig = nothing
 
@@ -276,7 +277,7 @@ function plot_trajectories(
             end
 
             x = [trajectory[j][idx_x] for j in offset:length(trajectory)]
-            y = [trajectory[j][idx_y] for j in offset:length(trajectory)]
+            y = [trajectory[j][idx_y] + y_offset for j in offset:length(trajectory)]
 
             if marker_shapes !== nothing && n_markers >= 2
                 marker_args = Dict(
@@ -313,8 +314,8 @@ function plot_trajectories(
         return fig
     end
 
-    pit = sub_plot(1, 2; legend=legend_position, ylabel="Primal")
-    pti = sub_plot(5, 2)
+    pit = sub_plot(1, 2; legend=legend_position, ylabel="Primal", y_offset=primal_offset)
+    pti = sub_plot(5, 2; y_offset=primal_offset)
     dit = sub_plot(1, 4; xlabel="Iterations", ylabel="Dual Gap")
     dti = sub_plot(5, 4; xlabel="Time")
 

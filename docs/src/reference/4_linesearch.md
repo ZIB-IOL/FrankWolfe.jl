@@ -1,7 +1,7 @@
 # Line search and step size settings
 
 The step size dictates how far one traverses along a local descent direction.
-More specifically, the step size $gamma_t$ is used at each iteration to determine
+More specifically, the step size $\gamma_t$ is used at each iteration to determine
 how much the next iterate moves towards the new vertex:  
 ```math
 x_{t+1} = x_t - \gamma_t (x_t - v_t).
@@ -32,9 +32,9 @@ Modules = [FrankWolfe]
 Pages = ["linesearch.jl"]
 ```
 
-See [Pedregosa, Negiar, Askari, Jaggi 2020](https://arxiv.org/abs/1806.05123)
+See [Pedregosa, Negiar, Askari, Jaggi (2020)](https://arxiv.org/abs/1806.05123)
 for the adaptive step size,
-[Carderera, Besançon, Pokutta 2021](https://openreview.net/forum?id=rq_UD6IiBpX)
+[Carderera, Besançon, Pokutta (2021)](https://openreview.net/forum?id=rq_UD6IiBpX)
 for the monotonic step size.
 
 ## Index

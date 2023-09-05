@@ -98,3 +98,15 @@ While the standard Frank-Wolfe algorithm can only move _towards_ extreme points 
 ![FW vs AFW](./fw_vs_afw.PNG).
 
 Both algorithms minimize a quadratic function (whose contour lines are depicted) over a simple polytope (the black square). When the minimizer lies on a face, the standard Frank-Wolfe algorithm zig-zags towards the solution, while its Away-step variant converges more quickly.
+
+
+### Block-Coordinate Frank-Wolfe (BCFW)
+
+It is implemented in the [`FrankWolfe.block_coordinate_frank_wolfe`](@ref) function.
+
+See [Lacoste-Julien, Jaggi, Schmidt, Pletscher (2013)](https://arxiv.org/abs/1207.4747)
+and [Beck, Pauwels, Sabach (2015)](https://arxiv.org/abs/1502.03716) for more details about different variants of Block-Coordinate Frank-Wolfe.
+
+### Alternating Linear Minimization (ALM)
+
+It is implemented in the [`FrankWolfe.alternating_linear_minimization`](@ref) function.

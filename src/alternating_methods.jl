@@ -1,5 +1,5 @@
 """
-    alternating_linear_minimization(bc_algo::BlockCoordinateMethod, f, grad!, lmos::Tuple{LinearMinimizationOracle}, x0; ...)
+    alternating_linear_minimization(bc_algo::BlockCoordinateMethod, f, grad!, lmos::NTuple{N,LinearMinimizationOracle}, x0; ...) where {N}
 
 Alternating Linear Minimization minimizes the objective `f` over the intersections of the feasible domains specified by `lmos`.
 Returns a tuple `(x, v, primal, dual_gap, infeas, traj_data)` with:
@@ -14,11 +14,11 @@ function alternating_linear_minimization(
     bc_method,
     f,
     grad!,
-    lmos::TL,
+    lmos::NTuple{N,LinearMinimizationOracle},
     x0;
     lambda=1.0,
     kwargs...,
-) where {N,TL<:NTuple{N,LinearMinimizationOracle}}
+) where {N}
 
     ndim = ndims(x0) + 1 # New product dimension
     prod_lmo = ProductLMO(lmos)

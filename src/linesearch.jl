@@ -141,7 +141,7 @@ Base.print(io::IO, ::FixedStep) = print(io, "FixedStep")
 
 Simple golden-ratio based line search
 [Golden Section Search](https://en.wikipedia.org/wiki/Golden-section_search),
-based on [the Boosted FW paper](http://proceedings.mlr.press/v119/combettes20a/combettes20a.pdf)
+based on [Combettes, Pokutta (2020)](http://proceedings.mlr.press/v119/combettes20a/combettes20a.pdf)
 code and adapted.
 """
 struct Goldenratio{T} <: LineSearchMethod
@@ -235,7 +235,7 @@ Base.print(io::IO, ::Goldenratio) = print(io, "Goldenratio")
     Backtracking(limit_num_steps, tol, tau)
 
 Backtracking line search strategy, see
-[this reference](https://arxiv.org/pdf/1806.05123.pdf).
+[Pedregosa, Negiar, Askari, Jaggi (2018)](https://arxiv.org/pdf/1806.05123).
 """
 struct Backtracking{T} <: LineSearchMethod
     limit_num_steps::Int
@@ -293,7 +293,7 @@ Base.print(io::IO, ::Backtracking) = print(io, "Backtracking")
 
 """
 Slight modification of the
-Adaptive Step Size strategy from [this paper](https://arxiv.org/abs/1806.05123)
+Adaptive Step Size strategy from [Pedregosa, Negiar, Askari, Jaggi (2018)](https://arxiv.org/abs/1806.05123)
 ```math
     f(x_t + \\gamma_t (x_t - v_t)) - f(x_t) \\leq - \\alpha \\gamma_t \\langle \\nabla f(x_t), x_t - v_t \\rangle + \\alpha^2  \\frac{\\gamma_t^2 \\|x_t - v_t\\|^2}{2} M ~.
 ```
