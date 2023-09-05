@@ -17,7 +17,6 @@ Pages = ["fw_algorithms.jl"]
 ```@docs
 FrankWolfe.block_coordinate_frank_wolfe
 ```
-See [ S. Lacoste-Julien, M. Jaggi, M. Schmidt, and P. Pletscher 2013](https://arxiv.org/abs/1207.4747) for more details about Block-Coordinate Frank-Wolfe.
 
 ## Active-set based methods
 

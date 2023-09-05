@@ -1,7 +1,7 @@
 # Line search and step size settings
 
 The step size dictates how far one traverses along a local descent direction.
-More specifically, the step size $gamma_t$ is used at each iteration to determine
+More specifically, the step size $\gamma_t$ is used at each iteration to determine
 how much the next iterate moves towards the new vertex:  
 ```math
 x_{t+1} = x_t - \gamma_t (x_t - v_t).
