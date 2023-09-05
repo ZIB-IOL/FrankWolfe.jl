@@ -73,8 +73,8 @@ end
 
 @testset "AFW and BPCG with weak separation" begin
     n = 1000
-    # reference point to get an optimum on a face
-    ref_point = [0.6 + mod(idx, 2) for idx in 1:n]
+    # reference point to get an optimum with many vertices
+    ref_point = [0.4 + idx / n * mod(idx, 2) for idx in 1:n]
     f(x) = 1/2 / n * sum((x[i] - ref_point[i])^2 for i in eachindex(x))
     function grad!(storage, x)
         storage .= x
@@ -87,13 +87,12 @@ end
         x, v, primal, dual_gap, trajectory_exact, active_set_exact = FrankWolfe.away_frank_wolfe(f, grad!, tracking_lmo, x0, verbose=false, weak_separation=false, lazy=lazy)
         tracking_weak = FrankWolfe.TrackingLMO(Hypercube())
         x, v, primal, dual_gap, trajectory_weak, active_set_weak = FrankWolfe.away_frank_wolfe(f, grad!, tracking_weak, x0, verbose=false, weak_separation=true, lazy=lazy)
-        @test tracking_lmo.counter <= tracking_weak.counter
+        @test tracking_lmo.counter < tracking_weak.counter
 
         tracking_lmo = FrankWolfe.TrackingLMO(Hypercube())
         x, v, primal, dual_gap, trajectory_exact, active_set_exact = FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, tracking_lmo, x0, verbose=false, weak_separation=false, lazy=lazy)
         tracking_weak = FrankWolfe.TrackingLMO(Hypercube())
         x, v, primal, dual_gap, trajectory_weak, active_set_weak = FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, tracking_weak, x0, verbose=false, weak_separation=true, lazy=lazy)
-        @test tracking_lmo.counter <= tracking_weak.counter
-
+        @test tracking_lmo.counter < tracking_weak.counter
     end
 end
