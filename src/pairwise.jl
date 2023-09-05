@@ -204,14 +204,24 @@ function blended_pairwise_conditional_gradient(
         local_gap = dot_away_vertex - dot_forward_vertex
         if !lazy
             if t > 1
-                v = compute_extreme_point(lmo, gradient)
-                dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
-                phi = dual_gap
+                dot_x = fast_dot(gradient, x)
+                (v, weak_gap) = if weak_separation
+                    # we need a separation point v
+                    # ⟨∇f(x), x-v⟩ ≥ local_gap * lazy_threshold
+                    # ⟨∇f(x), v⟩ ≤ ⟨∇f(x), x⟩ - local_gap * lazy_threshold
+                    threshold = dot_x - local_gap * lazy_threshold
+                    compute_weak_separation_point(lmo, gradient, threshold)
+                else
+                    v = compute_extreme_point(lmo, gradient)
+                    (v, zero(phi))
+                end
+                dual_gap = dot_x - fast_dot(gradient, v)
+                phi = dual_gap + weak_gap
             end
         end
         # minor modification from original paper for improved sparsity
         # (proof follows with minor modification when estimating the step)
-        if local_gap ≥ phi / lazy_tolerance
+        if local_gap ≥ phi / lazy_tolerance # pairwise step
             d = muladd_memory_mode(memory_mode, d, a, v_local)
             vertex_taken = v_local
             gamma_max = a_lambda
