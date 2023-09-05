@@ -32,9 +32,9 @@ Modules = [FrankWolfe]
 Pages = ["linesearch.jl"]
 ```
 
-See [Pedregosa, Negiar, Askari, Jaggi 2020](https://arxiv.org/abs/1806.05123)
+See [Pedregosa, Negiar, Askari, Jaggi (2020)](https://arxiv.org/abs/1806.05123)
 for the adaptive step size,
-[Carderera, Besançon, Pokutta 2021](https://openreview.net/forum?id=rq_UD6IiBpX)
+[Carderera, Besançon, Pokutta (2021)](https://openreview.net/forum?id=rq_UD6IiBpX)
 for the monotonic step size.
 
 ## Index

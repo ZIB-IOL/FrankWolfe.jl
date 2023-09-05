@@ -54,7 +54,7 @@ Most of the algorithms listed below also have a lazified version: see [Braun, Po
 
 ### Standard Frank-Wolfe (FW)
 
-It is implemented in the [`FrankWolfe.frank_wolfe`](@ref) function.
+It is implemented in the [`frank_wolfe`](@ref) function.
 
 See [Jaggi (2013)](http://proceedings.mlr.press/v28/jaggi13.html) for an overview.
 
@@ -62,7 +62,7 @@ This algorithm works both for convex and non-convex functions (use step size rul
 
 ### Away-step Frank-Wolfe (AFW)
 
-It is implemented in the [`FrankWolfe.away_frank_wolfe`](@ref) function.
+It is implemented in the [`away_frank_wolfe`](@ref) function.
 
 See [Lacoste-Julien, Jaggi (2015)](https://arxiv.org/abs/1511.05932) for an overview.
 
@@ -72,7 +72,7 @@ It is implemented in the [`FrankWolfe.stochastic_frank_wolfe`](@ref) function.
 
 ### Blended Conditional Gradients (BCG)
 
-It is implemented in the [`FrankWolfe.blended_conditional_gradient`](@ref) function, with a built-in stability feature that temporarily increases accuracy.
+It is implemented in the [`blended_conditional_gradient`](@ref) function, with a built-in stability feature that temporarily increases accuracy.
 
 See [Braun, Pokutta, Tu, Wright (2018)](https://arxiv.org/abs/1805.07311).
 
