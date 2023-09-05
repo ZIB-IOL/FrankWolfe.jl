@@ -207,9 +207,9 @@ function blended_pairwise_conditional_gradient(
                 dot_x = fast_dot(gradient, x)
                 (v, weak_gap) = if weak_separation
                     # we need a separation point v
-                    # ⟨∇f(x), x-v⟩ ≥ local_gap * lazy_threshold
-                    # ⟨∇f(x), v⟩ ≤ ⟨∇f(x), x⟩ - local_gap * lazy_threshold
-                    threshold = dot_x - local_gap * lazy_threshold
+                    # ⟨∇f(x), x-v⟩ ≥ local_gap * lazy_tolerance
+                    # ⟨∇f(x), v⟩ ≤ ⟨∇f(x), x⟩ - local_gap * lazy_tolerance
+                    threshold = dot_x - local_gap * lazy_tolerance
                     compute_weak_separation_point(lmo, gradient, threshold)
                 else
                     v = compute_extreme_point(lmo, gradient)
