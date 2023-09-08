@@ -268,8 +268,8 @@ function active_set_argminmax(active_set::ActiveSet, direction; Φ=0.5)
             idxM = i
         end
     end
-    if !isfinite(val) || !isfinite(valM)
-        @warn "Infinite minimum $val or maximum $valM in the active set. Does the gradient contain invalid (NaN / Inf) entries?"
+    if idx == -1 || idxM == -1
+        error("Infinite minimum $val or maximum $valM in the active set. Does the gradient contain invalid (NaN / Inf) entries?")
     end
     return (active_set[idx]..., idx, val, active_set[idxM]..., idxM, valM, valM - val ≥ Φ)
 end
