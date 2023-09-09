@@ -218,6 +218,7 @@ end
         FrankWolfe.active_set_argminmax(active_set::ActiveSet, [1, 1.5])
     @test i_min == 1
     @test i_max == 2
+    @test_throws ErrorException FrankWolfe.active_set_argminmax(active_set::ActiveSet, [NaN])
 end
 
 @testset "LPseparationWithScaledHotVector" begin
