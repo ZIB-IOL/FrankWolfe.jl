@@ -96,3 +96,22 @@ end
         @test tracking_lmo.counter < tracking_weak.counter
     end
 end
+
+@testset "Lazy-FW with weak separation" begin
+    n = 1000
+    # reference point to get an optimum with many vertices
+    ref_point = [0.4 + idx / n * mod(idx, 2) for idx in 1:n]
+    f(x) = 1/2 / n * sum((x[i] - ref_point[i])^2 for i in eachindex(x))
+    function grad!(storage, x)
+        storage .= x
+        storage .-= ref_point
+        storage ./= n
+    end
+    x0 = FrankWolfe.compute_extreme_point(Hypercube(), -ones(n))
+    tracking_lmo = FrankWolfe.TrackingLMO(Hypercube())
+    x, v, primal, dual_gap, trajectory_exact = FrankWolfe.lazified_conditional_gradient(f, grad!, tracking_lmo, x0, verbose=true, weak_separation=false)
+    x0 = FrankWolfe.compute_extreme_point(Hypercube(), -ones(n))
+    tracking_weak = FrankWolfe.TrackingLMO(Hypercube())
+    x, v, primal, dual_gap, trajectory_weak = FrankWolfe.lazified_conditional_gradient(f, grad!, tracking_weak, x0, verbose=true, weak_separation=true)
+    @test tracking_lmo.counter < tracking_weak.counter
+end

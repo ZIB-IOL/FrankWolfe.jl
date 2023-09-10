@@ -273,6 +273,7 @@ function lazified_conditional_gradient(
     VType=typeof(x0),
     timeout=Inf,
     linesearch_workspace=nothing,
+    weak_separation=false,
 )
 
     # format string for output of the algorithm
@@ -297,6 +298,7 @@ function lazified_conditional_gradient(
     if isfinite(cache_size)
         Base.sizehint!(lmo.vertices, cache_size)
     end
+    lmo.weak_separation = weak_separation
 
     t = 0
     dual_gap = Inf
@@ -351,7 +353,7 @@ function lazified_conditional_gradient(
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
     end
 
-    while t <= max_iteration && dual_gap >= max(epsilon, eps(float(eltype(x))))
+    while t <= max_iteration && phi >= max(epsilon, eps(float(eltype(x))))
 
         #####################
         # managing time
@@ -383,18 +385,17 @@ function lazified_conditional_gradient(
             primal = f(x)
         end
 
-        v, gap = compute_weak_separation_point(lmo, gradient, threshold)
-        if gap > 0
-            tt = lazy
-            if fast_dot(v, gradient) > threshold
-                tt = dualstep
-                dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
-                phi = min(dual_gap, phi / 2)
-            end
-        else
-            tt = regular
+        v, weak_gap = compute_weak_separation_point(lmo, gradient, threshold)
+        tt = lazy
+        if fast_dot(v, gradient) > threshold
+            tt = dualstep
             dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
-            phi = dual_gap
+            @assert weak_gap == 0
+            phi = min(dual_gap, phi / 2)
+        else
+            tt = weak_gap > 0 ? weaksep : regular
+            dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
+            phi = min(phi, dual_gap + weak_gap)
         end
 
         d = muladd_memory_mode(memory_mode, d, x, v)

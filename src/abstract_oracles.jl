@@ -231,14 +231,15 @@ mutable struct VectorCacheLMO{LMO<:LinearMinimizationOracle,VT} <:
     inner::LMO
     store_cache::Bool
     greedy::Bool
+    weak_separation::Bool
 end
 
 function VectorCacheLMO{LMO,VT}(lmo::LMO) where {VT,LMO<:LinearMinimizationOracle}
-    return VectorCacheLMO{LMO,VT}(VT[], lmo, true, false)
+    return VectorCacheLMO{LMO,VT}(VT[], lmo, true, false, false)
 end
 
 function VectorCacheLMO(lmo::LMO) where {LMO<:LinearMinimizationOracle}
-    return VectorCacheLMO{LMO,Vector{Float64}}(AbstractVector[], lmo, true, false)
+    return VectorCacheLMO{LMO,Vector{Float64}}(AbstractVector[], lmo, true, false, false)
 end
 
 function Base.empty!(lmo::VectorCacheLMO)
@@ -250,12 +251,17 @@ Base.length(lmo::VectorCacheLMO) = length(lmo.vertices)
 
 function compute_weak_separation_point(lmo::VectorCacheLMO, direction, max_value; kwargs...)
     if isempty(lmo.vertices)
-        v = compute_extreme_point(lmo.inner, direction)
+        v, gap = if lmo.weak_separation
+            compute_weak_separation_point(lmo.inner, direction, max_value; kwargs...)
+        else
+            v = compute_extreme_point(lmo.inner, direction; kwargs...)
+            v, zero(eltype(v))
+        end
         T = promote_type(eltype(v), eltype(direction))
         if lmo.store_cache
             push!(lmo.vertices, v)
         end
-        return v, zero(T)
+        return v, T(gap)
     end
     best_idx = -1
     best_val = Inf
@@ -281,8 +287,13 @@ function compute_weak_separation_point(lmo::VectorCacheLMO, direction, max_value
         T = promote_type(eltype(best_v), eltype(direction))
         return best_v, T(Inf)
     end
-    # no satisfactory vertex found
-    v = compute_extreme_point(lmo.inner, direction)
+    # no satisfactory vertex found, call oracle
+    v, gap = if lmo.weak_separation
+        compute_weak_separation_point(lmo.inner, direction, max_value; kwargs...)
+    else
+        v = compute_extreme_point(lmo.inner, direction; kwargs...)
+        v, zero(eltype(v))
+    end
     if lmo.store_cache
         # note: we do not check for duplicates. hence you might end up with more vertices,
         # in fact up to number of dual steps many, that might be already in the cache
@@ -294,7 +305,7 @@ function compute_weak_separation_point(lmo::VectorCacheLMO, direction, max_value
         push!(lmo.vertices, v)
     end
     T = promote_type(eltype(v), eltype(direction))
-    return v, zero(T)
+    return v, T(gap)
 end
 
 function compute_extreme_point(
