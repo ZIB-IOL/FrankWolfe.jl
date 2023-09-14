@@ -61,18 +61,18 @@ function plot_results(
         :hline,
     ],
     number_markers_per_line=10,
+    line_width=3.0,
+    marker_size=5.0,
+    transparency_markers=0.45,
+    font_size_axis=12,
+    font_size_legend=9,
 )
-    line_width = 3.0
-    marker_size = 5.0
-    transparency_markers = 0.45
-    font_size_axis = 12
-    font_size_legend = 9
     gr()
     plt = nothing
     list_plots = Plots.Plot{Plots.GRBackend}[]
     #Plot an appropiate number of plots
-    for i in 1:length(list_data_x)
-        for j in 1:length(list_data_x[i])
+    for i in eachindex(list_data_x)
+        for j in eachindex(list_data_x[i])
             if isnothing(xscalelog)
                 xscale = :identity
             else
@@ -255,6 +255,7 @@ function plot_trajectories(
     n_markers=10,
     reduce_size=false,
     primal_offset=1e-8,
+    line_width=1.3,
 )
     # theme(:dark)
     # theme(:vibrant)
@@ -303,12 +304,12 @@ function plot_trajectories(
                     yguidefontsize=8,
                     xguidefontsize=8,
                     legendfontsize=8,
-                    width=1.3,
+                    width=line_width,
                     linestyle=lstyle[i];
                     marker_args...,
                 )
             else
-                plot!(x, y, label=label[i], width=1.3, linestyle=lstyle[i]; marker_args...)
+                plot!(x, y, label=label[i], width=line_width, linestyle=lstyle[i]; marker_args...)
             end
         end
         return fig
