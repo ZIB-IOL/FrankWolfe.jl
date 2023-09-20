@@ -24,14 +24,22 @@ function perform_line_search end
 build_linesearch_workspace(::LineSearchMethod, x, gradient) = nothing
 
 """
-Computes step size: `2/(2 + t)` at iteration `t`.
+Computes step size: `l/(l + t)` at iteration `t`, given `l > 0`.
+
+See:
+> Acceleration of Frank-Wolfe Algorithms with Open-Loop Step-Sizes, Wirth, Kerdreux, Pokutta, 2023.
+
 """
-struct Agnostic{T<:Real} <: LineSearchMethod end
+struct Agnostic{T<:Real} <: LineSearchMethod
+    l::Int
+end
 
-Agnostic() = Agnostic{Float64}()
+Agnostic() = Agnostic{Float64}(2)
+
+Agnostic{T}() where {T} = Agnostic{T}(2)
 
 perform_line_search(
-    ::Agnostic{<:Rational},
+    ls::Agnostic{<:Rational},
     t,
     f,
     g!,
@@ -41,9 +49,10 @@ perform_line_search(
     gamma_max,
     workspace,
     memory_mode::MemoryEmphasis,
-) = 2 // (t + 2)
+) = ls.l // (t + ls.l)
+
 perform_line_search(
-    ::Agnostic{T},
+    ls::Agnostic{T},
     t,
     f,
     g!,
@@ -53,7 +62,7 @@ perform_line_search(
     gamma_max,
     workspace,
     memory_mode::MemoryEmphasis,
-) where {T} = T(2 / (t + 2))
+) where {T} = T(ls.l / (t + ls.l))
 
 Base.print(io::IO, ::Agnostic) = print(io, "Agnostic")
 
