@@ -30,6 +30,7 @@ function blended_pairwise_conditional_gradient(
     add_dropped_vertices=false,
     use_extra_vertex_storage=false,
     recompute_last_vertex=true,
+    weak_separation=false,
 )
     # add the first vertex to active set from initialization
     active_set = ActiveSet([(1.0, x0)])
@@ -58,6 +59,7 @@ function blended_pairwise_conditional_gradient(
         add_dropped_vertices=add_dropped_vertices,
         use_extra_vertex_storage=use_extra_vertex_storage,
         recompute_last_vertex=recompute_last_vertex,
+        weak_separation=weak_separation,
     )
 end
 
@@ -90,6 +92,7 @@ function blended_pairwise_conditional_gradient(
     add_dropped_vertices=false,
     use_extra_vertex_storage=false,
     recompute_last_vertex=true,
+    weak_separation=false,
 )
 
     # format string for output of the algorithm
@@ -137,7 +140,7 @@ function blended_pairwise_conditional_gradient(
             "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
         )
         grad_type = typeof(gradient)
-        println("GRADIENTTYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance")
+        println("GRADIENTTYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance WEAK_SEPARATION: $weak_separation")
         println("Linear Minimization Oracle: $(typeof(lmo))")
         if use_extra_vertex_storage && !lazy
             @info("vertex storage only used in lazy mode")
@@ -201,14 +204,24 @@ function blended_pairwise_conditional_gradient(
         local_gap = dot_away_vertex - dot_forward_vertex
         if !lazy
             if t > 1
-                v = compute_extreme_point(lmo, gradient)
-                dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
-                phi = dual_gap
+                dot_x = fast_dot(gradient, x)
+                (v, weak_gap) = if weak_separation
+                    # we need a separation point v
+                    # ⟨∇f(x), x-v⟩ ≥ local_gap * lazy_tolerance
+                    # ⟨∇f(x), v⟩ ≤ ⟨∇f(x), x⟩ - local_gap * lazy_tolerance
+                    threshold = dot_x - local_gap * lazy_tolerance
+                    compute_weak_separation_point(lmo, gradient, threshold)
+                else
+                    v = compute_extreme_point(lmo, gradient)
+                    (v, zero(phi))
+                end
+                dual_gap = dot_x - fast_dot(gradient, v)
+                phi = dual_gap + weak_gap
             end
         end
         # minor modification from original paper for improved sparsity
         # (proof follows with minor modification when estimating the step)
-        if local_gap ≥ phi / lazy_tolerance
+        if local_gap ≥ phi / lazy_tolerance # pairwise step
             d = muladd_memory_mode(memory_mode, d, a, v_local)
             vertex_taken = v_local
             gamma_max = a_lambda
@@ -274,15 +287,28 @@ function blended_pairwise_conditional_gradient(
                         v = new_forward_vertex
                         tt = lazylazy
                     else
-                        v = compute_extreme_point(lmo, gradient)
-                        tt = regular
+                        (v, gap) = if weak_separation
+                            compute_weak_separation_point(lmo, gradient, lazy_threshold)
+                        else
+                            (compute_extreme_point(lmo, gradient), 0.0)
+                        end
+                        tt = gap == 0.0 ? regular : weaksep
                     end
                 else
                     # for t == 1, v is already computed before first iteration
-                    if t > 1
-                        v = compute_extreme_point(lmo, gradient)
+                    if t == 1
+                        gap = 0.0
+                    else
+                        (v, gap) = if weak_separation
+                            lazy_threshold = fast_dot(gradient, x) - phi / lazy_tolerance
+                            compute_weak_separation_point(lmo, gradient, lazy_threshold)
+                        else
+                            v = compute_extreme_point(lmo, gradient)
+                            gap = 0.0
+                            (v, gap)
+                        end
                     end
-                    tt = regular
+                    tt = gap == 0.0 ? regular : weaksep
                 end
             end
             vertex_taken = v
@@ -305,7 +331,7 @@ function blended_pairwise_conditional_gradient(
             # - for lazy: we also accept slightly weaker vertices, those satisfying phi / lazy_tolerance
             # this should simplify the criterion.
             # DO NOT CHANGE without good reason and talk to Sebastian first for the logic behind this.
-            if !lazy || dual_gap ≥ phi / lazy_tolerance                  
+            if !lazy || dual_gap ≥ phi / lazy_tolerance
                 d = muladd_memory_mode(memory_mode, d, x, v)
 
                 gamma = perform_line_search(
@@ -360,9 +386,10 @@ function blended_pairwise_conditional_gradient(
             else # dual step
                 # set to computed dual_gap for consistency between the lazy and non-lazy run.
                 # that is ok as we scale with the K = 2.0 default anyways
-                # we only update the dual gap if the step was regular (not lazy from discarded set)
+                # we only update the dual gap if the step was regular or weaksep (not lazy from discarded set)
                 if tt != lazylazy
-                    phi = dual_gap
+                    @assert dual_gap + gap < phi
+                    phi = dual_gap + gap
                     @debug begin
                         @assert tt == regular
                         v2 = compute_extreme_point(lmo, gradient)

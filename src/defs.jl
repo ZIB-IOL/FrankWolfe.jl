@@ -19,6 +19,7 @@ struct OutplaceEmphasis <: MemoryEmphasis end
     away = 6
     pairwise = 7
     drop = 8
+    weaksep = 9
     simplex_descent = 101
     gap_step = 102
     last = 1000
@@ -34,6 +35,7 @@ const st = (
     away="A",
     pairwise="P",
     drop="D",
+    weaksep="W",
     simplex_descent="SD",
     gap_step="GS",
     last="Last",

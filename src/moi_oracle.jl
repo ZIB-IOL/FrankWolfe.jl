@@ -128,7 +128,6 @@ function _optimize_and_return(lmo, variables)
     term_st = MOI.get(lmo.o, MOI.TerminationStatus())
     if term_st ∉ (MOI.OPTIMAL, MOI.ALMOST_OPTIMAL, MOI.SLOW_PROGRESS)
         @error "Unexpected termination: $term_st"
-        return MOI.get.(lmo.o, MOI.VariablePrimal(), variables)
     end
     return MOI.get.(lmo.o, MOI.VariablePrimal(), variables)
 end

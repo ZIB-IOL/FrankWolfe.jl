@@ -55,7 +55,12 @@ end
 
 function compute_extreme_point(lmo::TrackingLMO, x; kwargs...)
     lmo.counter += 1
-    return compute_extreme_point(lmo.lmo, x)
+    return compute_extreme_point(lmo.lmo, x; kwargs...)
+end
+
+function compute_weak_separation_point(lmo::TrackingLMO, direction, max_value)
+    lmo.counter += 1
+    return compute_weak_separation_point(lmo.lmo, direction, max_value)
 end
 
 is_tracking_lmo(lmo) = false
