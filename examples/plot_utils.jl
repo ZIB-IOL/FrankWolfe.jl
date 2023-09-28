@@ -317,8 +317,8 @@ function plot_trajectories(
 
     pit = sub_plot(1, 2; legend=legend_position, ylabel="Primal", y_offset=primal_offset)
     pti = sub_plot(5, 2; y_offset=primal_offset)
-    dit = sub_plot(1, 4; xlabel="Iterations", ylabel="Dual Gap")
-    dti = sub_plot(5, 4; xlabel="Time")
+    dit = sub_plot(1, 4; xlabel="Iterations", ylabel="FW gap")
+    dti = sub_plot(5, 4; xlabel="Time (s)")
 
     fp = plot(pit, pti, dit, dti, layout=(2, 2)) # layout = @layout([A{0.01h}; [B C; D E]]))
     plot!(size=(600, 400))
@@ -372,7 +372,7 @@ function plot_sparsity(data, label; filename=nothing, xscalelog=false, legend_po
                 legend=false,
                 xaxis=xscale,
                 yaxis=:log,
-                ylabel="Dual",
+                ylabel="FW gap",
                 yguidefontsize=8,
                 xguidefontsize=8,
             )
