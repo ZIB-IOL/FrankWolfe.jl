@@ -26,15 +26,15 @@ build_linesearch_workspace(::LineSearchMethod, x, gradient) = nothing
 """
 Computes step size: `l/(l + t)` at iteration `t`, given `l > 0`.
 
-See:
+Using `l ≥ 4` is advised only for strongly convex sets, see:
 > Acceleration of Frank-Wolfe Algorithms with Open-Loop Step-Sizes, Wirth, Kerdreux, Pokutta, 2023.
-
 """
 struct Agnostic{T<:Real} <: LineSearchMethod
     l::Int
 end
 
 Agnostic() = Agnostic{Float64}(2)
+Agnostic(l::Int) = Agnostic{Float64}(l)
 
 Agnostic{T}() where {T} = Agnostic{T}(2)
 
