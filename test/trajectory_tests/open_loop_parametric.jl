@@ -2,7 +2,6 @@ using FrankWolfe
 
 using Test
 using LinearAlgebra
-using SparseArrays
 
 @testset "Open-loop FW on polytope" begin
     n = Int(1e2)
@@ -50,7 +49,7 @@ using SparseArrays
     # strongly convex set
     xp2 = 10 * ones(n)
     diag_term = 100 * rand(n)
-    covariance_matrix = spzeros(n,n) + LinearAlgebra.Diagonal(diag_term)
+    covariance_matrix = zeros(n,n) + LinearAlgebra.Diagonal(diag_term)
     lmo2 = FrankWolfe.EllipsoidLMO(covariance_matrix)
 
     f2(x) = norm(x - xp2)^2
