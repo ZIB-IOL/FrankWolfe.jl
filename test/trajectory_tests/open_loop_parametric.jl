@@ -2,6 +2,7 @@ using FrankWolfe
 
 using Test
 using LinearAlgebra
+using SparseArrays
 
 @testset "Open-loop FW on polytope" begin
     n = Int(1e2)
