@@ -1,0 +1,77 @@
+using LinearAlgebra
+using FrankWolfe
+
+include("../examples/plot_utils.jl")
+
+n = 10000
+k = 500
+@info "Seed $s"
+Random.seed!(s)
+
+
+# strongly convex set
+xp2 = 10 * ones(n)
+diag_term = 100 * rand(n)
+covariance_matrix = zeros(n,n) + LinearAlgebra.Diagonal(diag_term)
+lmo2 = FrankWolfe.EllipsoidLMO(covariance_matrix)
+
+f2(x) = norm(x - xp2)^2
+function grad2!(storage, x)
+    @. storage = 2 * (x - xp2)
+end
+
+x0 = FrankWolfe.compute_extreme_point(lmo2, randn(n))
+
+res_2 = FrankWolfe.frank_wolfe(
+    f2,
+    grad2!,
+    lmo2,
+    copy(x0),
+    max_iteration=k,
+    line_search=FrankWolfe.Agnostic(2),
+    print_iter= k / 10,
+    epsilon=1e-5,
+    verbose=true,
+    trajectory=true,
+)
+
+res_4 = FrankWolfe.frank_wolfe(
+    f2,
+    grad2!,
+    lmo2,
+    copy(x0),
+    max_iteration=k,
+    line_search=FrankWolfe.Agnostic(4),
+    print_iter= k / 10,
+    epsilon=1e-5,
+    verbose=true,
+    trajectory=true,
+)
+
+res_6 = FrankWolfe.frank_wolfe(
+    f2,
+    grad2!,
+    lmo2,
+    copy(x0),
+    max_iteration=k,
+    line_search=FrankWolfe.Agnostic(6),
+    print_iter= k / 10,
+    epsilon=1e-5,
+    verbose=true,
+    trajectory=true,
+)
+
+res_10 = FrankWolfe.frank_wolfe(
+    f2,
+    grad2!,
+    lmo2,
+    copy(x0),
+    max_iteration=k,
+    line_search=FrankWolfe.Agnostic(10),
+    print_iter=k / 10,
+    epsilon=1e-5,
+    verbose=true,
+    trajectory=true,
+)
+
+plot_trajectories([res_2[end], res_4[end], res_6[end], res_10[end]], ["ell = 2 (default)", "ell = 4", "ell = 6", "ell = 10"], marker_shapes=[:dtriangle, :rect, :circle, :pentagon])
