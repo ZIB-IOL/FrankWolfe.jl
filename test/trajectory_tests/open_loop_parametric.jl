@@ -49,7 +49,7 @@ using LinearAlgebra
     # strongly convex set
     xp2 = 10 * ones(n)
     diag_term = 100 * rand(n)
-    covariance_matrix = LinearAlgebra.Diagonal(diag_term)
+    covariance_matrix = spzeros(n,n) + LinearAlgebra.Diagonal(diag_term)
     lmo2 = FrankWolfe.EllipsoidLMO(covariance_matrix)
 
     f2(x) = norm(x - xp2)^2
