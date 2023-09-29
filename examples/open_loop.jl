@@ -5,6 +5,7 @@ include("../examples/plot_utils.jl")
 
 n = 10000
 k = 500
+s = 97
 @info "Seed $s"
 Random.seed!(s)
 
