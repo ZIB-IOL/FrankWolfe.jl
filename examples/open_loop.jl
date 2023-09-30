@@ -1,5 +1,6 @@
 using LinearAlgebra
 using FrankWolfe
+using Random
 
 include("../examples/plot_utils.jl")
 
