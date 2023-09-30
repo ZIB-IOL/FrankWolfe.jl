@@ -81,4 +81,4 @@ x0 = deepcopy(x00)
 data = [trajectoryBCG]
 label = ["BCG"]
 
-plot_trajectories(data, label)
+plot_trajectories(data, label, reduce_size=true, marker_shapes=[:dtriangle])

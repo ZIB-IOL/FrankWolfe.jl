@@ -138,7 +138,7 @@ function blended_pairwise_conditional_gradient(
         )
         grad_type = typeof(gradient)
         println("GRADIENTTYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance")
-        println("Linear Minimization Oracle: $(typeof(lmo))")
+        println("LMO: $(typeof(lmo))")
         if use_extra_vertex_storage && !lazy
             @info("vertex storage only used in lazy mode")
         end
