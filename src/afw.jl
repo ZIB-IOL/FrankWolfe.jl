@@ -155,7 +155,7 @@ function away_frank_wolfe(
         println(
             "GRADIENTTYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance MOMENTUM: $momentum AWAYSTEPS: $away_steps",
         )
-        println("Linear Minimization Oracle: $(typeof(lmo))")
+        println("LMO: $(typeof(lmo))")
         if (use_extra_vertex_storage || add_dropped_vertices) && extra_vertex_storage === nothing
             @warn(
                 "use_extra_vertex_storage and add_dropped_vertices options are only usable with a extra_vertex_storage storage"
