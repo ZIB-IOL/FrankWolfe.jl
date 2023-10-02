@@ -62,7 +62,7 @@ perform_line_search(
     gamma_max,
     workspace,
     memory_mode::MemoryEmphasis,
-) where {T} = T(ls.l / (t + ls.l))
+) where {T} = ls.l == -1 ? T((2 + log(t+1)) / (t + 2 + log(t+1))) : T(ls.l / (t + ls.l))
 
 Base.print(io::IO, ::Agnostic) = print(io, "Agnostic")
 
@@ -387,21 +387,26 @@ function perform_line_search(
 
     gradient_storage = similar(gradient)
 
-    while f(x_storage) - f(x) >
-          -γ * α * dot_dir + α^2 * γ^2 * ndir2 * M / 2 + eps(float(γ)) &&
-          γ ≥ 100 * eps(float(γ))
-
+    # while f(x_storage) - f(x) >
+    #       -γ * α * dot_dir + α^2 * γ^2 * ndir2 * M / 2 + eps(float(γ)) &&
+    #       γ ≥ 100 * eps(float(γ))
+    grad!(gradient_storage, x_storage)
+    
+    # d = v_t - x_t 
+    while fast_dot(gradient, d) / 2 > fast_dot(gradient_storage, d) && γ ≥ 100 * eps(float(γ))
+        
         # Additional smoothness condition
-        if line_search.relaxed_smoothness
-            grad!(gradient_storage, x_storage)
-            if fast_dot(gradient, d) - fast_dot(gradient_storage, d) <= γ * M * ndir2 + eps(float(γ))
-                break
-            end
-        end
+        # if line_search.relaxed_smoothness
+        #     grad!(gradient_storage, x_storage)
+        #     if fast_dot(gradient, d) - fast_dot(gradient_storage, d) <= γ * M * ndir2 + eps(float(γ))
+        #         break
+        #     end
+        # end
 
         M *= line_search.tau
         γ = min(max(dot_dir / (M * ndir2), 0), gamma_max)
         x_storage = muladd_memory_mode(memory_mode, x_storage, x, γ, d)
+        grad!(gradient_storage, x_storage)
 
         niter += 1
         if M > line_search.max_estimate
