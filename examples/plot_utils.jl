@@ -328,9 +328,13 @@ function plot_trajectories(
     return fp
 end
 
-function plot_sparsity(data, label; filename=nothing, xscalelog=false, legend_position=:topright)
-    # theme(:dark)
-    # theme(:vibrant)
+function plot_sparsity(
+        data, label;
+        filename=nothing, xscalelog=false, legend_position=:topright,
+        lstyle=fill(:solid, length(data)),
+        marker_shapes=nothing,
+        n_markers=10,
+    )
     gr()
 
     x = []
@@ -339,10 +343,21 @@ function plot_sparsity(data, label; filename=nothing, xscalelog=false, legend_po
     ds = nothing
     offset = 2
     xscale = xscalelog ? :log : :identity
-    for i in 1:length(data)
+    for i in eachindex(data)
         trajectory = data[i]
         x = [trajectory[j][6] for j in offset:length(trajectory)]
         y = [trajectory[j][2] for j in offset:length(trajectory)]
+        if marker_shapes !== nothing && n_markers >= 2
+            marker_args = Dict(
+                :st => :samplemarkers,
+                :n_markers => n_markers,
+                :shape => marker_shapes[i],
+                :log => xscalelog,
+                :startmark => 5+20*(i-1),
+            )
+        else
+            marker_args = Dict()
+        end
         if i == 1
             ps = plot(
                 x,
@@ -355,15 +370,28 @@ function plot_sparsity(data, label; filename=nothing, xscalelog=false, legend_po
                 yguidefontsize=8,
                 xguidefontsize=8,
                 legendfontsize=8,
+                linestyle=lstyle[i],
+                marker_args...
             )
         else
-            plot!(x, y, label=label[i])
+            plot!(x, y, label=label[i], linestyle=lstyle[i], marker_args...)
         end
     end
-    for i in 1:length(data)
+    for i in eachindex(data)
         trajectory = data[i]
         x = [trajectory[j][6] for j in offset:length(trajectory)]
         y = [trajectory[j][4] for j in offset:length(trajectory)]
+        if marker_shapes !== nothing && n_markers >= 2
+            marker_args = Dict(
+                :st => :samplemarkers,
+                :n_markers => n_markers,
+                :shape => marker_shapes[i],
+                :log => xscalelog,
+                :startmark => 5+20*(i-1),
+            )
+        else
+            marker_args = Dict()
+        end
         if i == 1
             ds = plot(
                 x,
@@ -375,9 +403,11 @@ function plot_sparsity(data, label; filename=nothing, xscalelog=false, legend_po
                 ylabel="FW gap",
                 yguidefontsize=8,
                 xguidefontsize=8,
+                linestyle=lstyle[i],
+                marker_args...
             )
         else
-            plot!(x, y, label=label[i])
+            plot!(x, y, label=label[i], linestyle=lstyle[i], marker_args...)
         end
     end
 
