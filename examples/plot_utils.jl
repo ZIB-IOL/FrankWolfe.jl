@@ -257,6 +257,7 @@ function plot_trajectories(
     reduce_size=false,
     primal_offset=1e-8,
     line_width=1.3,
+    empty_marker=true,
 )
     # theme(:dark)
     # theme(:vibrant)
@@ -287,6 +288,8 @@ function plot_trajectories(
                     :n_markers => n_markers,
                     :shape => marker_shapes[i],
                     :log => xscalelog,
+                    :markercolor => empty_marker ? :white : :match,
+                    :markerstrokecolor => empty_marker ? i : :match,
                 )
             else
                 marker_args = Dict()
