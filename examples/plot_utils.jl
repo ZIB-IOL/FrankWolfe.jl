@@ -335,7 +335,7 @@ function plot_sparsity(
         marker_shapes=nothing,
         n_markers=10,
     )
-    gr()
+    Plots.gr()
 
     x = []
     y = []
@@ -361,7 +361,7 @@ function plot_sparsity(
         if i == 1
             ps = plot(
                 x,
-                y,
+                y;
                 label=label[i],
                 xaxis=xscale,
                 yaxis=:log,
@@ -374,7 +374,7 @@ function plot_sparsity(
                 marker_args...
             )
         else
-            plot!(x, y, label=label[i], linestyle=lstyle[i], marker_args...)
+            plot!(x, y; label=label[i], linestyle=lstyle[i], marker_args...)
         end
     end
     for i in eachindex(data)
@@ -395,7 +395,7 @@ function plot_sparsity(
         if i == 1
             ds = plot(
                 x,
-                y,
+                y;
                 label=label[i],
                 legend=false,
                 xaxis=xscale,
@@ -407,7 +407,7 @@ function plot_sparsity(
                 marker_args...
             )
         else
-            plot!(x, y, label=label[i], linestyle=lstyle[i], marker_args...)
+            plot!(x, y; label=label[i], linestyle=lstyle[i], marker_args...)
         end
     end
 
