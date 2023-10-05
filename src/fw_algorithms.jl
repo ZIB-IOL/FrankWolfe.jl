@@ -513,7 +513,7 @@ function stochastic_frank_wolfe(
 
     # format string for output of the algorithm
     format_string = "%6s %13s %14e %14e %14e %14e %14e %6i\n"
-    headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "batch size")
+    headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "Batch")
 
     function format_state(state, batch_size)
         rep = (
