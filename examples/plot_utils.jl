@@ -335,7 +335,8 @@ end
 
 function plot_sparsity(
         data, label;
-        filename=nothing, xscalelog=false, legend_position=:topright, yscalelog=true,
+        filename=nothing, xscalelog=false,
+        legend_position=:topright, yscalelog=true,
         lstyle=fill(:solid, length(data)),
         marker_shapes=nothing,
         n_markers=10,
