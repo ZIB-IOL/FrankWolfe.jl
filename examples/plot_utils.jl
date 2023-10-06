@@ -242,6 +242,7 @@ end
     markershape --> :auto
     x := sx
     y := sy
+    z_order := 1
 end
 
 function plot_trajectories(
@@ -359,6 +360,8 @@ function plot_sparsity(
                 :shape => marker_shapes[i],
                 :log => xscalelog,
                 :startmark => 5+20*(i-1),
+                :markercolor => empty_marker ? :white : :match,
+                :markerstrokecolor => empty_marker ? i : :match,
             )
         else
             marker_args = Dict()
