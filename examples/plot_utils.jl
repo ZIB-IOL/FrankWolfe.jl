@@ -258,7 +258,7 @@ function plot_trajectories(
     reduce_size=false,
     primal_offset=1e-8,
     line_width=1.3,
-    empty_marker=true,
+    empty_marker=false,
 )
     # theme(:dark)
     # theme(:vibrant)
@@ -339,6 +339,7 @@ function plot_sparsity(
         lstyle=fill(:solid, length(data)),
         marker_shapes=nothing,
         n_markers=10,
+        empty_marker=false,
     )
     Plots.gr()
 
@@ -396,6 +397,8 @@ function plot_sparsity(
                 :shape => marker_shapes[i],
                 :log => xscalelog,
                 :startmark => 5+20*(i-1),
+                :markercolor => empty_marker ? :white : :match,
+                :markerstrokecolor => empty_marker ? i : :match,
             )
         else
             marker_args = Dict()
