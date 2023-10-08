@@ -19,6 +19,8 @@ using ReverseDiff
 using LinearAlgebra
 using Random
 
+include("../examples/plot_utils.jl")
+
 n = Int(1e3)
 k = 10000
 

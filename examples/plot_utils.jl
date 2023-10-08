@@ -61,18 +61,18 @@ function plot_results(
         :hline,
     ],
     number_markers_per_line=10,
+    line_width=3.0,
+    marker_size=5.0,
+    transparency_markers=0.45,
+    font_size_axis=12,
+    font_size_legend=9,
 )
-    line_width = 3.0
-    marker_size = 5.0
-    transparency_markers = 0.45
-    font_size_axis = 12
-    font_size_legend = 9
     gr()
     plt = nothing
     list_plots = Plots.Plot{Plots.GRBackend}[]
     #Plot an appropiate number of plots
-    for i in 1:length(list_data_x)
-        for j in 1:length(list_data_x[i])
+    for i in eachindex(list_data_x)
+        for j in eachindex(list_data_x[i])
             if isnothing(xscalelog)
                 xscale = :identity
             else
@@ -242,6 +242,7 @@ end
     markershape --> :auto
     x := sx
     y := sy
+    z_order := 1
 end
 
 function plot_trajectories(
@@ -249,12 +250,15 @@ function plot_trajectories(
     label;
     filename=nothing,
     xscalelog=false,
+    yscalelog=true,
     legend_position=:topright,
     lstyle=fill(:solid, length(data)),
     marker_shapes=nothing,
     n_markers=10,
     reduce_size=false,
     primal_offset=1e-8,
+    line_width=1.3,
+    empty_marker=false,
 )
     # theme(:dark)
     # theme(:vibrant)
@@ -285,6 +289,8 @@ function plot_trajectories(
                     :n_markers => n_markers,
                     :shape => marker_shapes[i],
                     :log => xscalelog,
+                    :markercolor => empty_marker ? :white : :match,
+                    :markerstrokecolor => empty_marker ? i : :match,
                 )
             else
                 marker_args = Dict()
@@ -296,19 +302,19 @@ function plot_trajectories(
                     y,
                     label=label[i],
                     xaxis=xscalelog ? :log : :identity,
-                    yaxis=:log,
+                    yaxis=yscalelog ? :log : :identity,
                     xlabel=xlabel,
                     ylabel=ylabel,
                     legend=legend,
                     yguidefontsize=8,
                     xguidefontsize=8,
                     legendfontsize=8,
-                    width=1.3,
+                    width=line_width,
                     linestyle=lstyle[i];
                     marker_args...,
                 )
             else
-                plot!(x, y, label=label[i], width=1.3, linestyle=lstyle[i]; marker_args...)
+                plot!(x, y, label=label[i], width=line_width, linestyle=lstyle[i]; marker_args...)
             end
         end
         return fig
@@ -316,8 +322,8 @@ function plot_trajectories(
 
     pit = sub_plot(1, 2; legend=legend_position, ylabel="Primal", y_offset=primal_offset)
     pti = sub_plot(5, 2; y_offset=primal_offset)
-    dit = sub_plot(1, 4; xlabel="Iterations", ylabel="Dual Gap")
-    dti = sub_plot(5, 4; xlabel="Time")
+    dit = sub_plot(1, 4; xlabel="Iterations", ylabel="FW gap")
+    dti = sub_plot(5, 4; xlabel="Time (s)")
 
     fp = plot(pit, pti, dit, dti, layout=(2, 2)) # layout = @layout([A{0.01h}; [B C; D E]]))
     plot!(size=(600, 400))
@@ -327,10 +333,16 @@ function plot_trajectories(
     return fp
 end
 
-function plot_sparsity(data, label; filename=nothing, xscalelog=false, legend_position=:topright)
-    # theme(:dark)
-    # theme(:vibrant)
-    gr()
+function plot_sparsity(
+        data, label;
+        filename=nothing, xscalelog=false,
+        legend_position=:topright, yscalelog=true,
+        lstyle=fill(:solid, length(data)),
+        marker_shapes=nothing,
+        n_markers=10,
+        empty_marker=false,
+    )
+    Plots.gr()
 
     x = []
     y = []
@@ -338,45 +350,76 @@ function plot_sparsity(data, label; filename=nothing, xscalelog=false, legend_po
     ds = nothing
     offset = 2
     xscale = xscalelog ? :log : :identity
-    for i in 1:length(data)
+    yscale = yscalelog ? :log : :identity
+    for i in eachindex(data)
         trajectory = data[i]
         x = [trajectory[j][6] for j in offset:length(trajectory)]
         y = [trajectory[j][2] for j in offset:length(trajectory)]
+        if marker_shapes !== nothing && n_markers >= 2
+            marker_args = Dict(
+                :st => :samplemarkers,
+                :n_markers => n_markers,
+                :shape => marker_shapes[i],
+                :log => xscalelog,
+                :startmark => 5+20*(i-1),
+                :markercolor => empty_marker ? :white : :match,
+                :markerstrokecolor => empty_marker ? i : :match,
+            )
+        else
+            marker_args = Dict()
+        end
         if i == 1
             ps = plot(
                 x,
-                y,
+                y;
                 label=label[i],
                 xaxis=xscale,
-                yaxis=:log,
+                yaxis=yscale,
                 ylabel="Primal",
                 legend=legend_position,
                 yguidefontsize=8,
                 xguidefontsize=8,
                 legendfontsize=8,
+                linestyle=lstyle[i],
+                marker_args...
             )
         else
-            plot!(x, y, label=label[i])
+            plot!(x, y; label=label[i], linestyle=lstyle[i], marker_args...)
         end
     end
-    for i in 1:length(data)
+    for i in eachindex(data)
         trajectory = data[i]
         x = [trajectory[j][6] for j in offset:length(trajectory)]
         y = [trajectory[j][4] for j in offset:length(trajectory)]
+        if marker_shapes !== nothing && n_markers >= 2
+            marker_args = Dict(
+                :st => :samplemarkers,
+                :n_markers => n_markers,
+                :shape => marker_shapes[i],
+                :log => xscalelog,
+                :startmark => 5+20*(i-1),
+                :markercolor => empty_marker ? :white : :match,
+                :markerstrokecolor => empty_marker ? i : :match,
+            )
+        else
+            marker_args = Dict()
+        end
         if i == 1
             ds = plot(
                 x,
-                y,
+                y;
                 label=label[i],
                 legend=false,
                 xaxis=xscale,
-                yaxis=:log,
-                ylabel="Dual",
+                yaxis=yscale,
+                ylabel="FW gap",
                 yguidefontsize=8,
                 xguidefontsize=8,
+                linestyle=lstyle[i],
+                marker_args...
             )
         else
-            plot!(x, y, label=label[i])
+            plot!(x, y; label=label[i], linestyle=lstyle[i], marker_args...)
         end
     end
 
