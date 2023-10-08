@@ -158,6 +158,14 @@ function ProductLMO(lmos::NT) where {N, LMO <: FrankWolfe.LinearMinimizationOrac
     return ProductLMO{N, NT}(lmos)
 end
 
+function ProductLMO{N}(lmos::TL) where {N,TL<:NTuple{N,LinearMinimizationOracle}}
+    return ProductLMO{N,TL}(lmos)
+end
+
+function ProductLMO(lmos::Vararg{LinearMinimizationOracle,N}) where {N}
+    return ProductLMO{N}(lmos)
+end
+
 function FrankWolfe.compute_extreme_point(lmo::ProductLMO, direction::BlockVector; kwargs...)
     @assert length(direction.blocks) == length(lmo.lmos)
     blocks = [FrankWolfe.compute_extreme_point(lmo.lmos[idx], direction.blocks[idx]; kwargs...) for idx in eachindex(lmo.lmos)]
