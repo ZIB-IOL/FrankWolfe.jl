@@ -85,5 +85,4 @@ end
         @. x_copy += λi * ai
     end
     @test norm(x_copy - x) ≤ 1e-12
-
 end
