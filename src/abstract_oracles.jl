@@ -256,20 +256,3 @@ function compute_extreme_point(
     end
     return v
 end
-
-"""
-    ProductLMO(lmos...)
-
-Linear minimization oracle over the Cartesian product of multiple LMOs.
-"""
-struct ProductLMO{N,TL<:NTuple{N,LinearMinimizationOracle}} <: LinearMinimizationOracle
-    lmos::TL
-end
-
-function ProductLMO{N}(lmos::TL) where {N,TL<:NTuple{N,LinearMinimizationOracle}}
-    return ProductLMO{N,TL}(lmos)
-end
-
-function ProductLMO(lmos::Vararg{LinearMinimizationOracle,N}) where {N}
-    return ProductLMO{N}(lmos)
-end
