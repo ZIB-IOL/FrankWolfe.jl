@@ -116,8 +116,8 @@ function perform_line_search(
     memory_mode,
 )
     dd = fast_dot(d, d)
-    if dd == 0
-        return 0
+    if dd <= eps(eltype(dd))
+        return dd
     end
 
     return min(max(fast_dot(gradient, d) * inv(line_search.L * dd), 0), gamma_max)
