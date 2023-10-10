@@ -788,3 +788,20 @@ end
     xv = JuMP.value.(x)
     @test dot(xv, d) ≈ dot(v, d) atol=1e-5*n
 end
+
+@testset "Convex hull" begin
+    lmo = FrankWolfe.ConvexHullOracle([
+        [1, 0, 0],
+        [0, 1, 0],
+        [0, 0, 1],
+    ])
+    for _ in 1:100
+        d = randn(3)
+        v = FrankWolfe.compute_extreme_point(lmo, d)
+        v_simplex = FrankWolfe.compute_extreme_point(FrankWolfe.ProbabilitySimplexOracle(1), d)
+        @test v == v_simplex
+    end
+    d = zeros(3)
+    v = FrankWolfe.compute_extreme_point(lmo, d)
+    @test v == lmo.vertices[1]
+end
