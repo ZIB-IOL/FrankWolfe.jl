@@ -83,6 +83,19 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
     @test abs(x[1, 1]) < 1e-6
     @test abs(x[1, 2]) < 1e-6
 
+    # test the edge case with a zero vector as direction for the step size computation
+    x, _, _, _, _ = FrankWolfe.alternating_linear_minimization(
+        FrankWolfe.block_coordinate_frank_wolfe,
+        x -> 0,
+        (storage, x) -> zero(x),
+        (lmo1, lmo3),
+        ones(n),
+        line_search=FrankWolfe.Shortstep(2),
+    )
+
+    @test norm(x[:,1] - zeros(n)) < 1e-6
+    @test norm(x[:,2] - ones(n)) < 1e-6
+
     x, _, _, _, _, traj_data = FrankWolfe.alternating_linear_minimization(
         FrankWolfe.block_coordinate_frank_wolfe,
         f,
