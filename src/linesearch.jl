@@ -116,7 +116,7 @@ function perform_line_search(
     memory_mode,
 )
     dd = fast_dot(d, d)
-    if dd <= eps(eltype(dd))
+    if dd <= eps(float(dd))
         return dd
     end
 
