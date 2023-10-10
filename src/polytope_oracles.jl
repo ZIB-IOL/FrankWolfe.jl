@@ -216,3 +216,26 @@ function compute_extreme_point(
     v[idx] = ifelse(lower, lmo.lower_bounds[idx], lmo.upper_bounds[idx])
     return v
 end
+
+"""
+    ConvexHullOracle{AT,VT}
+
+Convex hull of a finite number of vertices of type `AT`, stored in a vector of type `VT`.
+"""
+struct ConvexHullOracle{AT, VT <: AbstractVector{AT}}
+    vertices::VT
+end
+
+function compute_extreme_point(lmo::ConvexHullOracle{AT}, direction; v=nothing, kwargs...) where {AT}
+    T = promote_type(eltype(direction), eltype(AT))
+    best_val = T(Inf)
+    best_vertex = first(lmo.vertices)
+    for vertex in lmo.vertices
+        val = dot(vertex, direction)
+        if val < best_val
+            best_val = val
+            best_vertex = vertex
+        end
+    end
+    return best_vertex
+end
