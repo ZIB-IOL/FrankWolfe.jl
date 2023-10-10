@@ -45,12 +45,11 @@ function select_update_indices(::StochasticUpdate, l)
     return [[rand(1:l)] for i in 1:l]
 end
 
-struct CallbackStateBlockCoordinateMethod{TP,TDV,TDG,TIN,XT,VT,TG,FT,GFT,GT}
+struct CallbackStateBlockCoordinateMethod{TP,TDV,TDG,XT,VT,TG,FT,GFT,GT}
     t::Int
     primal::TP
     dual::TDV
     dual_gap::TDG
-    infeas::TIN
     time::Float64
     x::XT
     v::VT
@@ -64,7 +63,7 @@ end
 
 
 function callback_state(state::CallbackStateBlockCoordinateMethod)
-    return (state.t, state.primal, state.dual, state.dual_gap, state.time, state.infeas)
+    return (state.t, state.primal, state.dual, state.dual_gap, state.time)
 end
 
 """
@@ -74,7 +73,7 @@ Block-coordinate version of the Frank-Wolfe algorithm.
 Minimizes objective `f` over the product of feasible domains specified by the `lmo`.
 The optional argument the `update_order` is of type [FrankWolfe.BlockCoordinateUpdateOrder](@ref) and controls the order in which the blocks are updated.
 
-The method returns a tuple `(x, v, primal, dual_gap, infeas, traj_data)` with:
+The method returns a tuple `(x, v, primal, dual_gap, traj_data)` with:
 - `x` cartesian product of final iterates
 - `v` cartesian product of last vertices of the LMOs
 - `primal` primal value `f(x)`
@@ -106,8 +105,8 @@ function block_coordinate_frank_wolfe(
 ) where {N}
 
     # header and format string for output of the algorithm
-    headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Infeas", "Time", "It/sec"]
-    format_string = "%6s %13s %14e %14e %14e %14e %14e %14e\n"
+    headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec"]
+    format_string = "%6s %13s %14e %14e %14e %14e %14e\n"
     function format_state(state)
         rep = (
             st[Symbol(state.tt)],
@@ -115,7 +114,6 @@ function block_coordinate_frank_wolfe(
             Float64(state.primal),
             Float64(state.primal - state.dual_gap),
             Float64(state.dual_gap),
-            Float64(state.infeas),
             state.time,
             state.t / state.time,
         )
@@ -249,14 +247,7 @@ function block_coordinate_frank_wolfe(
             callback !== nothing ||
             line_search isa Shortstep
         )
-            infeas = sum(
-                fast_dot(
-                    selectdim(x, ndim, i) - selectdim(x, ndim, j),
-                    selectdim(x, ndim, i) - selectdim(x, ndim, j),
-                ) for i in 1:N for j in 1:i-1
-            )
             primal = f(x)
-
         end
 
 
@@ -267,7 +258,6 @@ function block_coordinate_frank_wolfe(
                 primal,
                 primal - dual_gap,
                 dual_gap,
-                infeas,
                 tot_time,
                 x,
                 v,
@@ -296,12 +286,7 @@ function block_coordinate_frank_wolfe(
         compute_extreme_point(lmo, tuple([selectdim(gradient, ndim, i) for i in 1:N]...))...,
         dims=ndim,
     )
-    infeas = sum(
-        fast_dot(
-            selectdim(x, ndim, i) - selectdim(x, ndim, j),
-            selectdim(x, ndim, i) - selectdim(x, ndim, j),
-        ) for i in 1:N for j in 1:i-1
-    )
+
     primal = f(x)
     dual_gap = fast_dot(x - v, gradient)
 
@@ -325,7 +310,6 @@ function block_coordinate_frank_wolfe(
             primal,
             primal - dual_gap,
             dual_gap,
-            infeas,
             tot_time,
             x,
             v,
