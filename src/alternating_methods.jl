@@ -154,12 +154,12 @@ function alternating_projections(
     # header and format string for output of the algorithm
     headers = ["Type", "Iteration", "Dual Gap", "Infeas", "Time", "It/sec"]
     format_string = "%6s %13s %14e %14e %14e %14e\n"
-    function format_state(state)
+    function format_state(state, infeas)
         rep = (
             st[Symbol(state.tt)],
             string(state.t),
             Float64(state.dual_gap),
-            Float64(state.infeas),
+            Float64(infeas),
             state.time,
             state.t / state.time,
         )
@@ -275,7 +275,7 @@ function alternating_projections(
                 tt,
             )
             # @show state
-            if callback(state) === false
+            if callback(state, infeas) === false
                 break
             end
         end
@@ -309,7 +309,7 @@ function alternating_projections(
             gradient,
             tt,
         )
-        callback(state)
+        callback(state, infeas)
     end
 
     return x, v, dual_gap, infeas, traj_data
