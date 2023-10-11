@@ -393,7 +393,8 @@ function perform_line_search(
     grad!(gradient_storage, x_storage)
     
     # d = v_t - x_t 
-    while fast_dot(gradient, d) / 2 > fast_dot(gradient_storage, d) && γ ≥ 100 * eps(float(γ))
+    # second better modification: while fast_dot(gradient, d) / 2 > fast_dot(gradient_storage, d) && γ ≥ 100 * eps(float(γ))
+    while 0 > fast_dot(gradient_storage, d) && γ ≥ 100 * eps(float(γ))
         
         # Additional smoothness condition
         # if line_search.relaxed_smoothness
