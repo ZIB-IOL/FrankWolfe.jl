@@ -46,7 +46,7 @@ Prints the state to the console after print_iter iterations.
 If the callback to be wrapped is of type nothing, always return true to enforce boolean output for non-nothing callbacks.
 """
 function make_print_callback(callback, print_iter, headers, format_string, format_state)
-    return function callback_with_prints(state, args...)
+    return function callback_with_prints(state, args...; kwargs...)
         length_prev_msg = 0
         if (state.tt == pp || state.tt == last)
             if state.t == 0 && state.tt == last
@@ -69,12 +69,12 @@ function make_print_callback(callback, print_iter, headers, format_string, forma
         if callback === nothing
             return true
         end
-        return callback(state, length_prev_msg=length_prev_msg, args...)
+        return callback(state, args...; length_prev_msg=length_prev_msg, kwargs...)
     end
 end
 
 function make_print_callback_extension(callback, print_iter, headers, format_string, format_state)
-    return function callback_with_prints(state; length_prev_msg=length_prev_msg, args...)
+    return function callback_with_prints(state, args...; length_prev_msg=length_prev_msg, kwargs...)
         tab() = print("\e["*string(length_prev_msg)*"C")
         if (state.tt == pp || state.tt == last)
             if state.t == 0 && state.tt == last
@@ -109,7 +109,7 @@ function make_print_callback_extension(callback, print_iter, headers, format_str
         if callback === nothing
             return true
         end
-        return callback(state; args...)
+        return callback(state, args...; kwargs...)
     end
 end
 
@@ -124,13 +124,13 @@ The state data is only the 5 first fields, usually:
 If the callback to be wrapped is of type nothing, always return true to enforce boolean output for non-nothing callbacks.
 """
 function make_trajectory_callback(callback, traj_data::Vector)
-    return function callback_with_trajectory(state; args...)
+    return function callback_with_trajectory(state, args...; kwargs...)
         if state.tt !== last || state.tt !== pp
             push!(traj_data, callback_state(state))
         end
         if callback === nothing
             return true
         end
-        return callback(state; args...)
+        return callback(state, args...; kwargs...)
     end
 end

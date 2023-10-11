@@ -20,9 +20,9 @@ x0 = compute_extreme_point(prod_lmo, ones(n, 2))
 trajectories = []
 
 # Example for creating a custome block coordinate update order
-struct CustomeOrder <: FrankWolfe.BlockCoordinateUpdateOrder end
+struct CustomOrder <: FrankWolfe.BlockCoordinateUpdateOrder end
 
-function FrankWolfe.select_update_indices(::CustomeOrder, l)
+function FrankWolfe.select_update_indices(::CustomOrder, l)
     return [rand() < 1 / n ? 1 : 2 for _ in 1:l]
 end
 
@@ -30,7 +30,7 @@ for order in [
     FrankWolfe.FullUpdate(),
     FrankWolfe.CyclicUpdate(),
     FrankWolfe.StochasticUpdate(),
-    CustomeOrder(),
+    CustomOrder(),
 ]
 
     _, _, _, _, traj_data = FrankWolfe.block_coordinate_frank_wolfe(
@@ -45,5 +45,5 @@ for order in [
     push!(trajectories, traj_data)
 end
 
-labels = ["Full update", "Cyclic order", "Stochstic order", "Custom eorder"]
+labels = ["Full update", "Cyclic order", "Stochstic order", "Custom order"]
 plot_trajectories(trajectories, labels, xscalelog=true)
