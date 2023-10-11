@@ -98,7 +98,7 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
     @test abs(x[1, 1]) < 1e-6
     @test abs(x[1, 2] - 1 / n) < 1e-6
     @test traj_data != []
-    @test length(traj_data[1]) == 6
+    @test length(traj_data[1]) == 5
     @test length(traj_data) >= 2
     @test length(traj_data) <= 10001
 
