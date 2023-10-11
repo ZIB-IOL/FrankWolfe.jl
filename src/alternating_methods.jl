@@ -53,7 +53,7 @@ function alternating_linear_minimization(
 
         format_string = "%14e\n"
         headers = ("Infeas",)
-        format_state(state) = (Float64(infeasibility(state.x)),)
+        format_state(state, args...) = (Float64(infeasibility(state.x)),)
 
         callback = make_print_callback_extension(
             callback,
