@@ -155,7 +155,8 @@ function block_coordinate_frank_wolfe(
             "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $num_type",
         )
         grad_type = typeof(gradient)
-        println("MOMENTUM: $momentum GRADIENTTYPE: $grad_type")
+        order_type = typeof(update_order)
+        println("MOMENTUM: $momentum GRADIENTTYPE: $grad_type UPDATE_ORDER: $order_type")
         if memory_mode isa InplaceEmphasis
             @info("In memory_mode memory iterates are written back into x0!")
         end
