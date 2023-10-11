@@ -55,10 +55,25 @@ function alternating_linear_minimization(
         headers = ("Infeas",)
         format_state(state) = (Float64(infeasibility(state.x)),)
 
-        callback = make_print_callback_extension(callback, print_iter, headers, format_string, format_state)
+        callback = make_print_callback_extension(
+            callback,
+            print_iter,
+            headers,
+            format_string,
+            format_state,
+        )
     end
 
-    x, v, primal, dual_gap, traj_data = bc_method(f_bc, grad_bc!, prod_lmo, x0_bc; verbose=verbose, callback=callback, print_iter=print_iter, kwargs...)
+    x, v, primal, dual_gap, traj_data = bc_method(
+        f_bc,
+        grad_bc!,
+        prod_lmo,
+        x0_bc;
+        verbose=verbose,
+        callback=callback,
+        print_iter=print_iter,
+        kwargs...,
+    )
 
     return x, v, primal, dual_gap, infeasibility(x), traj_data
 end

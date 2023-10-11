@@ -147,7 +147,7 @@ function block_coordinate_frank_wolfe(
     if gradient === nothing
         gradient = collect(x)
     end
-    
+
     if verbose
         println("\nBlock coordinate Frank-Wolfe (BCFW).")
         num_type = eltype(x0[1])
