@@ -76,8 +76,6 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
         grad!,
         (lmo1, lmo2),
         ones(n),
-        lambda=1,
-        line_search=FrankWolfe.Adaptive(),
     )
 
     @test abs(x[1, 1]) < 1e-6
@@ -89,8 +87,6 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
         grad!,
         (lmo1, lmo_prob),
         ones(n),
-        lambda=1,
-        line_search=FrankWolfe.Adaptive(),
         trajectory=true,
         verbose=true,
     )
