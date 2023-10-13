@@ -98,7 +98,7 @@ function make_print_callback_extension(callback, print_iter, headers, format_str
                 @printf("%s\n\n", line)             
             end
             rep = format_state(state, args...)
-            print("\e[F\e["*string(length_prev_msg)*"C")
+            print("\e[F\e["*string(length_prev_msg) * "C")
             print_callback(rep, format_string)
             flush(stdout)
         end
