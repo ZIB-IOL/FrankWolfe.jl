@@ -5,10 +5,7 @@ function compute_line_length(format_string)
     temp = replace(temp, "i" => "")
     temp = replace(temp, "s" => "")
     temp = split(temp, " ")
-    len = 0
-    for i in temp
-        len += parse(Int, i)
-    end
+    len = sum(parse(Int, i) for i in temp)
     return len + 2 + length(temp) - 1
 end
 
