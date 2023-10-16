@@ -21,7 +21,7 @@ Handles formating of the callback state into a table format with consistent leng
 """
 function print_callback(data, format_string; print_header=false, print_footer=false)
     print_formatted(fmt, args...) = @eval @printf($fmt, $(args...))
-    
+
     lenHeaderFooter = compute_line_length(format_string)
 
     if print_footer
@@ -58,8 +58,11 @@ function make_print_callback(callback, print_iter, headers, format_string, forma
             print_callback(rep, format_string)
             length_prev_msg = print_callback(nothing, format_string, print_footer=true)
             flush(stdout)
-        elseif state.t == 1 || mod(state.t, print_iter) == 0 || state.tt == dualstep || state.tt == last
-            if state.t == 1 
+        elseif state.t == 1 ||
+               mod(state.t, print_iter) == 0 ||
+               state.tt == dualstep ||
+               state.tt == last
+            if state.t == 1
                 state = @set state.tt = initial
                 print_callback(headers, format_string, print_header=true)
             end
@@ -77,7 +80,7 @@ end
 
 function make_print_callback_extension(callback, print_iter, headers, format_string, format_state)
     return function callback_with_prints(state, args...; length_prev_msg=length_prev_msg, kwargs...)
-        tab() = print("\e["*string(length_prev_msg)*"C")
+        tab() = print("\e[" * string(length_prev_msg) * "C")
         if (state.tt == pp || state.tt == last)
             if state.t == 0 && state.tt == last
                 print_callback(headers, format_string, print_header=true)
@@ -89,7 +92,10 @@ function make_print_callback_extension(callback, print_iter, headers, format_str
             tab()
             print_callback(nothing, format_string, print_footer=true)
             flush(stdout)
-        elseif state.t == 1 || mod(state.t, print_iter) == 0 || state.tt == dualstep || state.tt == last
+        elseif state.t == 1 ||
+               mod(state.t, print_iter) == 0 ||
+               state.tt == dualstep ||
+               state.tt == last
             if state.t == 1
                 print("\e[F\e[F\e[F\e[F")
                 tab()
@@ -100,10 +106,10 @@ function make_print_callback_extension(callback, print_iter, headers, format_str
                 s_format_string = replace(s_format_string, "i" => "s")
                 @eval @printf($s_format_string, $(headers...))
                 tab()
-                @printf("%s\n\n", line)             
+                @printf("%s\n\n", line)
             end
             rep = format_state(state, args...)
-            print("\e[F\e["*string(length_prev_msg) * "C")
+            print("\e[F\e[" * string(length_prev_msg) * "C")
             print_callback(rep, format_string)
             flush(stdout)
         end
