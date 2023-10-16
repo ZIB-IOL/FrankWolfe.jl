@@ -633,7 +633,7 @@ end
     vvec = FrankWolfe.compute_extreme_point(lmo, [dinf; d1], direction_indices=(1:10, 11:15))
     @test vvec ≈ [vinf; v1]
 
-    # Test different constructor for ProductLMO
+    # Test different constructor for ProductLMO and and direction as BlockVector
     lmo2 = FrankWolfe.ProductLMO([FrankWolfe.LpNormLMO{Inf}(3.0), FrankWolfe.LpNormLMO{1}(2.0)])
     v_block = FrankWolfe.compute_extreme_point(lmo2, FrankWolfe.BlockVector([dinf, d1]))
     @test FrankWolfe.BlockVector([vinf, v1]) == v_block 
@@ -736,6 +736,25 @@ end
             @test v ≈ v2
         end
     end
+end
+
+@testset "MathOpt LMO with BlockVector" begin
+    o = GLPK.Optimizer()
+    MOI.set(o, MOI.Silent(), true)
+    x = MOI.add_variables(o, 10)
+    y = MOI.add_variables(o, 10)
+    MOI.add_constraint.(o, x, MOI.GreaterThan.(-ones(10)))
+    MOI.add_constraint.(o, x, MOI.LessThan.(ones(10)))
+    MOI.add_constraint.(o, y, MOI.GreaterThan.(-2*ones(10)))
+    MOI.add_constraint.(o, y, MOI.LessThan.(2*ones(10)))
+    lmo = FrankWolfe.MathOptLMO(o)
+
+    direction = FrankWolfe.BlockVector([ones(10), -ones(10)])
+
+    v = FrankWolfe.compute_extreme_point(lmo, direction)
+    v_ref = FrankWolfe.BlockVector([-ones(10), 2*ones(10)])
+    @test v == v_ref
+
 end
 
 @testset "Inplace LMO correctness" begin
