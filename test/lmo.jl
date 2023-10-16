@@ -632,6 +632,11 @@ end
 
     vvec = FrankWolfe.compute_extreme_point(lmo, [dinf; d1], direction_indices=(1:10, 11:15))
     @test vvec ≈ [vinf; v1]
+
+    # Test different constructor for ProductLMO
+    lmo2 = FrankWolfe.ProductLMO([FrankWolfe.LpNormLMO{Inf}(3.0), FrankWolfe.LpNormLMO{1}(2.0)])
+    v_block = FrankWolfe.compute_extreme_point(lmo2, FrankWolfe.BlockVector([dinf, d1]))
+    @test FrankWolfe.BlockVector([vinf, v1]) == v_block 
 end
 
 @testset "Scaled L-1 norm polytopes" begin
