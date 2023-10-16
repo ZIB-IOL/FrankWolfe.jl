@@ -777,6 +777,8 @@ end
 
 include("generic-arrays.jl")
 
+include("blocks.jl")
+
 @testset "End-to-end trajectory tests" begin
     trajectory_testfiles = readdir(joinpath(@__DIR__, "trajectory_tests"), join=true)
     for file in trajectory_testfiles
