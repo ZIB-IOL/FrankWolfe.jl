@@ -1,3 +1,8 @@
+"""
+    compute_line_length(format_string)
+
+Calculates the line length for the table format of a print callback.
+"""
 function compute_line_length(format_string)
     temp = strip(format_string, ['\n'])
     temp = replace(temp, "%" => "")

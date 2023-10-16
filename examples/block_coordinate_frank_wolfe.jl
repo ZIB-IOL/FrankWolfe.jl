@@ -1,4 +1,5 @@
 using FrankWolfe
+using LinearAlgebra
 
 include("plot_utils.jl")
 
