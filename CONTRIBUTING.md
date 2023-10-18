@@ -9,7 +9,7 @@ We list below some guidelines to help you contribute to the package.
 
 Interactions on this repository must follow the Julia [Community Standards](https://julialang.org/community/standards/) including Pull Requests and issues.
 
-## Where can I get an overview
+## Where can I get an overview?
 
 Check out the [paper](https://arxiv.org/abs/2104.06675) presenting the package
 for a high-level overview of the feature and algorithms and
@@ -18,13 +18,13 @@ the [documentation](https://zib-iol.github.io/FrankWolfe.jl/dev/) for more detai
 ## I just have a question
 
 If your question is related to Julia, its syntax or tooling, the best places to get help will be tied to the Julia community,
-see [the Julia community page](https://julialang.org/community/) for a number of communication channels.
+see [the Julia community page](https://julialang.org/community/) for a number of communication channels (Slack, Zulip, and Discourse being the most active).
 
-For now, the best way to ask a question is to reach out to [Mathieu Besançon](https://github/matbesancon) or [Sebastian Pokutta](https://github.com/pokutta).
+For now, the best way to ask a question is to file an issue or reach out to [Mathieu Besançon](https://github/matbesancon) or [Sebastian Pokutta](https://github.com/pokutta).
 You can also ask your question on [discourse.julialang.org](https://discourse.julialang.org) in the optimization topic or on the Julia Slack
 on `#mathematical-optimization`, see [the Julia community page](https://julialang.org/community/) to gain access.
 
-## How can I file an issue
+## How can I file an issue?
 
 If you found a bug or want to propose a feature, we track our issues within the [GitHub repository](https://github.com/ZIB-IOL/FrankWolfe.jl/issues).
 Once opened, you can edit the issue or add new comments to continue the conversation.
@@ -51,8 +51,8 @@ Do not run the formatter on the whole repository except if your PR is specifical
 
 The documentation can be improved by changing the files in `docs/src`,
 for example to add a section in the documentation, expand a paragraph or add a plot.
-The documentation attached to a given type of function can be modified in the source files directly, it appears above the thing you try to document
-with three double quotations mark like this:
+The documentation attached to a given type of function can be modified in the source files directly, it appears above the function / type / thingy you try to document
+with three double quotation marks like this:
 ```julia
 """
 This explains what the function `f` does, it supports markdown.
