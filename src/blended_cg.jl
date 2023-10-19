@@ -521,7 +521,6 @@ function minimize_over_convex_hull!(
                         time_start,
                         active_set,
                         verbose=verbose,
-                        print_iter=print_iter,
                         L=L_reduced,
                         mu=mu_reduced,
                         max_iteration=max_iteration,
@@ -693,8 +692,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
     t,
     time_start,
     active_set::ActiveSet;
-    verbose=verbose,
-    print_iter=print_iter,
+    verbose=false,
     L=1.0,
     mu=1.0,
     max_iteration,
