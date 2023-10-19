@@ -17,6 +17,9 @@ function alternating_linear_minimization(
     lmos::NTuple{N,LinearMinimizationOracle},
     x0;
     lambda=1.0,
+    verbose=false,
+    callback=nothing,
+    print_iter=1e3,
     kwargs...,
 ) where {N}
 
@@ -44,7 +47,33 @@ function alternating_linear_minimization(
 
     f_bc(x) = sum(f(selectdim(x, ndim, i)) for i in 1:N) + lambda * infeasibility(x)
 
-    x, v, primal, dual_gap, traj_data = bc_method(f_bc, grad_bc!, prod_lmo, x0_bc; kwargs...)
+    if verbose
+        println("\nAlternating Linear Minimization.")
+        print("LAMBDA: $lambda")
+
+        format_string = "%14e\n"
+        headers = ("Infeas",)
+        format_state(state, args...) = (Float64(infeasibility(state.x)),)
+
+        callback = make_print_callback_extension(
+            callback,
+            print_iter,
+            headers,
+            format_string,
+            format_state,
+        )
+    end
+
+    x, v, primal, dual_gap, traj_data = bc_method(
+        f_bc,
+        grad_bc!,
+        prod_lmo,
+        x0_bc;
+        verbose=verbose,
+        callback=callback,
+        print_iter=print_iter,
+        kwargs...,
+    )
 
     return x, v, primal, dual_gap, infeasibility(x), traj_data
 end
@@ -125,12 +154,12 @@ function alternating_projections(
     # header and format string for output of the algorithm
     headers = ["Type", "Iteration", "Dual Gap", "Infeas", "Time", "It/sec"]
     format_string = "%6s %13s %14e %14e %14e %14e\n"
-    function format_state(state)
+    function format_state(state, infeas)
         rep = (
             st[Symbol(state.tt)],
             string(state.t),
             Float64(state.dual_gap),
-            Float64(state.infeas),
+            Float64(infeas),
             state.time,
             state.t / state.time,
         )
@@ -235,7 +264,6 @@ function alternating_projections(
                 infeas,
                 infeas - dual_gap,
                 dual_gap,
-                infeas,
                 tot_time,
                 x,
                 v,
@@ -247,7 +275,7 @@ function alternating_projections(
                 tt,
             )
             # @show state
-            if callback(state) === false
+            if callback(state, infeas) === false
                 break
             end
         end
@@ -271,7 +299,6 @@ function alternating_projections(
             infeas,
             infeas - dual_gap,
             dual_gap,
-            infeas,
             tot_time,
             x,
             v,
@@ -282,7 +309,7 @@ function alternating_projections(
             gradient,
             tt,
         )
-        callback(state)
+        callback(state, infeas)
     end
 
     return x, v, dual_gap, infeas, traj_data
