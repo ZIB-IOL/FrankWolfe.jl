@@ -64,7 +64,7 @@ perform_line_search(
     memory_mode::MemoryEmphasis,
 ) where {T} = T(ls.l / (t + ls.l))
 
-Base.print(io::IO, ::Agnostic) = print(io, "Agnostic")
+Base.print(io::IO, ls::Agnostic) = print(io, "Agnostic($(ls.l))")
 
 """
 Computes a step size for nonconvex functions: `1/sqrt(t + 1)`.
