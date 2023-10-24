@@ -74,7 +74,7 @@ function make_print_callback(callback, print_iter, headers, format_string, forma
         if callback === nothing
             return true
         end
-        return callback(state, args...; length_prev_msg=length_prev_msg, kwargs...)
+        return callback(state, args...; kwargs...)
     end
 end
 
