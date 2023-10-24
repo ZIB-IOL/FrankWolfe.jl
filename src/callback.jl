@@ -79,7 +79,7 @@ function make_print_callback(callback, print_iter, headers, format_string, forma
 end
 
 function make_print_callback_extension(callback, print_iter, headers, format_string, format_state)
-    return function callback_with_prints(state, args...; length_prev_msg=length_prev_msg, kwargs...)
+    return function callback_with_prints(state, args...; length_prev_msg=nothing, kwargs...)
         tab() = print("\e[" * string(length_prev_msg) * "C")
         if (state.tt == pp || state.tt == last)
             if state.t == 0 && state.tt == last
