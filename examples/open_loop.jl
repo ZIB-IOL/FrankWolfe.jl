@@ -90,4 +90,4 @@ res_adapt = FrankWolfe.frank_wolfe(
     trajectory=true,
 )
 
-plot_trajectories([res_2[end], res_4[end], res_6[end], res_log[end], res_adapt[end]], ["ell = 2 (default)", "ell = 4", "ell = 6", "ell = log t", "adaptive"], filename = "open_loop.pdf", marker_shapes=[:dtriangle, :rect, :circle, :pentagon, :octagon], xscalelog=true, reduce_size=true)
+plot_trajectories([res_2[end], res_4[end], res_6[end], res_log[end], res_adapt[end]], ["ell = 2 (default)", "ell = 4", "ell = 6", "ell = log t", "adaptive"], marker_shapes=[:dtriangle, :rect, :circle, :pentagon, :octagon], xscalelog=true, reduce_size=true)
