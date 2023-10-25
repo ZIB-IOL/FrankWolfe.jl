@@ -200,6 +200,17 @@ function compute_active_set_iterate!(active_set::ActiveSet{<:SparseArrays.Sparse
     return active_set.x
 end
 
+function compute_active_set_iterate!(active_set::FrankWolfe.ActiveSet{<:SparseArrays.AbstractSparseMatrix})
+    active_set.x .= 0
+    for (λi, ai) in active_set
+        (I, J, V) = SparseArrays.findnz(ai)
+        @inbounds for idx in eachindex(I)
+            active_set.x[I[idx], J[idx]] += λi * V[idx]
+        end
+    end
+    return active_set.x
+end
+
 function active_set_cleanup!(active_set; weight_purge_threshold=1e-12, update=true, add_dropped_vertices=false, vertex_storage=nothing)
     if add_dropped_vertices && vertex_storage !== nothing 
         for (weight, v) in zip(active_set.weights, active_set.atoms) 
