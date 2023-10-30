@@ -45,27 +45,6 @@ function select_update_indices(::StochasticUpdate, l)
     return [[rand(1:l)] for i in 1:l]
 end
 
-struct CallbackStateBlockCoordinateMethod{TP,TDV,TDG,XT,VT,TG,FT,GFT,GT}
-    t::Int
-    primal::TP
-    dual::TDV
-    dual_gap::TDG
-    time::Float64
-    x::XT
-    v::VT
-    gamma::TG
-    f::FT
-    grad!::GFT
-    lmo::LinearMinimizationOracle
-    gradient::GT
-    tt::FrankWolfe.StepType
-end
-
-
-function callback_state(state::CallbackStateBlockCoordinateMethod)
-    return (state.t, state.primal, state.dual, state.dual_gap, state.time)
-end
-
 """
     block_coordinate_frank_wolfe(f, grad!, lmo::ProductLMO{N}, x0; ...) where {N}
 
@@ -253,7 +232,7 @@ function block_coordinate_frank_wolfe(
 
         t = t + 1
         if callback !== nothing
-            state = CallbackStateBlockCoordinateMethod(
+            state = CallbackState(
                 t,
                 primal,
                 primal - dual_gap,
@@ -305,7 +284,7 @@ function block_coordinate_frank_wolfe(
     )
 
     if callback !== nothing
-        state = CallbackStateBlockCoordinateMethod(
+        state = CallbackState(
             t,
             primal,
             primal - dual_gap,
