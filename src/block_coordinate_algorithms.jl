@@ -45,6 +45,48 @@ function select_update_indices(::StochasticUpdate, l)
     return [[rand(1:l)] for i in 1:l]
 end
 
+abstract type UpdateStep end
+
+struct FrankWolfeStep <: UpdateStep end
+struct BPFGStep <: UpdateStep end
+
+function update_step(
+    ::FrankWolfeStep,
+    x,
+    lmo,
+    f,
+    gradient,
+    grad!,
+    t,
+    line_search,
+    linesearch_workspace,
+    memory_mode,
+)
+    linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
+    d = similar(x)
+    v = compute_extreme_point(lmo, gradient)
+    dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
+
+    d = muladd_memory_mode(memory_mode, d, x, v)
+
+    gamma = perform_line_search(
+        line_search,
+        t,
+        f,
+        grad!,
+        gradient,
+        x,
+        d,
+        1.0,
+        linesearch_workspace,
+        memory_mode,
+    )
+
+    x = muladd_memory_mode(memory_mode, x, gamma, d)
+
+    return (x, dual_gap, v, d, gamma)
+end
+
 """
     block_coordinate_frank_wolfe(f, grad!, lmo::ProductLMO{N}, x0; ...) where {N}
 
@@ -69,6 +111,7 @@ function block_coordinate_frank_wolfe(
     x0;
     update_order::BlockCoordinateUpdateOrder=CyclicUpdate(),
     line_search::LineSearchMethod=Adaptive(),
+    update_steps::US=FrankWolfeStep(),
     momentum=nothing,
     epsilon=1e-7,
     max_iteration=10000,
@@ -81,7 +124,7 @@ function block_coordinate_frank_wolfe(
     traj_data=[],
     timeout=Inf,
     linesearch_workspace=nothing,
-) where {N}
+) where {N,US<:Union{FrankWolfeStep,NTuple{N,FrankWolfeStep}}}
 
     # header and format string for output of the algorithm
     headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec"]
@@ -115,6 +158,13 @@ function block_coordinate_frank_wolfe(
     if verbose
         callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
     end
+
+    if update_steps isa FrankWolfeStep
+        update_steps = [update_steps for _ in 1:N]
+    end
+
+    gamma = nothing
+    v = similar(x)
 
     time_start = time_ns()
 
@@ -191,33 +241,39 @@ function block_coordinate_frank_wolfe(
                 @memory_mode(memory_mode, gradient = (momentum * gradient) + (1 - momentum) * gtemp)
             end
 
-            v = copy(x) # This is equivalent to setting the rest of d to zero
-
+            xold = copy(x)
             for i in update_indices
                 multi_index = [idx < ndim ? Colon() : i for idx in 1:ndim]
-                v[multi_index...] = compute_extreme_point(lmo.lmos[i], gradient[multi_index...])
-                dual_gaps[i] =
-                    fast_dot(x[multi_index...], gradient[multi_index...]) -
-                    fast_dot(v[multi_index...], gradient[multi_index...])
+                pre_index = [idx < ndim ? Colon() : 1:i-1 for idx in 1:ndim]
+                x_pre = xold[pre_index...]
+                post_index = [idx < ndim ? Colon() : i+1:N for idx in 1:ndim]
+                x_post = xold[post_index...]
+
+                function temp_grad!(storage, y, i)
+                    x = cat(x_pre, y, x_post; dims=ndim)
+                    big_storage = similar(x)
+                    grad!(big_storage, x),
+                    @. storage = big_storage[i]
+                end
+
+                x_i, dual_gap_i, v, d, gamma = update_step(
+                    update_steps[i],
+                    xold[multi_index...],
+                    lmo.lmos[i],
+                    y -> f(cat(x_pre, y, x_post; dims=ndim)),
+                    gradient[multi_index...],
+                    (storage, y) -> temp_grad!(storage, y, i),
+                    t,
+                    line_search,
+                    linesearch_workspace,
+                    memory_mode,
+                )
+
+                dual_gaps[i] = dual_gap_i
+                x[multi_index...] = x_i
             end
 
             dual_gap = sum(dual_gaps)
-
-            d = muladd_memory_mode(memory_mode, d, x, v)
-            gamma = perform_line_search(
-                line_search,
-                t,
-                f,
-                grad!,
-                gradient,
-                x,
-                d,
-                1.0,
-                linesearch_workspace,
-                memory_mode,
-            )
-
-            x = muladd_memory_mode(memory_mode, x, gamma, d)
         end
 
         # go easy on the memory - only compute if really needed
@@ -240,6 +296,7 @@ function block_coordinate_frank_wolfe(
                 tot_time,
                 x,
                 v,
+                d,
                 gamma,
                 f,
                 grad!,
@@ -265,6 +322,8 @@ function block_coordinate_frank_wolfe(
         compute_extreme_point(lmo, tuple([selectdim(gradient, ndim, i) for i in 1:N]...))...,
         dims=ndim,
     )
+    d = similar(x)
+    d = muladd_memory_mode(memory_mode, d, x, v)
 
     primal = f(x)
     dual_gap = fast_dot(x - v, gradient)
@@ -292,6 +351,7 @@ function block_coordinate_frank_wolfe(
             tot_time,
             x,
             v,
+            d,
             gamma,
             f,
             grad!,
