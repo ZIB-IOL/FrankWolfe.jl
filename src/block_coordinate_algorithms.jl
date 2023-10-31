@@ -50,7 +50,7 @@ abstract type UpdateStep end
 struct FrankWolfeStep <: UpdateStep end
 struct BPFGStep <: UpdateStep end
 
-function update_step(
+function update(
     ::FrankWolfeStep,
     x,
     lmo,
@@ -110,8 +110,8 @@ function block_coordinate_frank_wolfe(
     lmo::ProductLMO{N},
     x0;
     update_order::BlockCoordinateUpdateOrder=CyclicUpdate(),
-    line_search::LineSearchMethod=Adaptive(),
-    update_steps::US=FrankWolfeStep(),
+    line_search::LS=Adaptive(),
+    update_step::US=FrankWolfeStep(),
     momentum=nothing,
     epsilon=1e-7,
     max_iteration=10000,
@@ -124,7 +124,7 @@ function block_coordinate_frank_wolfe(
     traj_data=[],
     timeout=Inf,
     linesearch_workspace=nothing,
-) where {N,US<:Union{FrankWolfeStep,NTuple{N,FrankWolfeStep}}}
+) where {N,US<:Union{FrankWolfeStep,NTuple{N,FrankWolfeStep}}, LS<:Union{LineSearchMethod,NTuple{N,LineSearchMethod}}}
 
     # header and format string for output of the algorithm
     headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec"]
@@ -159,8 +159,12 @@ function block_coordinate_frank_wolfe(
         callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
     end
 
-    if update_steps isa FrankWolfeStep
-        update_steps = [update_steps for _ in 1:N]
+    if update_step isa FrankWolfeStep
+        update_step = [update_step for _ in 1:N]
+    end
+
+    if line_search isa LineSearchMethod
+        line_search = [line_search for _ in 1:N]
     end
 
     gamma = nothing
@@ -180,8 +184,9 @@ function block_coordinate_frank_wolfe(
     if verbose
         println("\nBlock coordinate Frank-Wolfe (BCFW).")
         num_type = eltype(x0[1])
+        line_search_type = [typeof(a) for a in line_search]
         println(
-            "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $num_type",
+            "MEMORY_MODE: $memory_mode STEPSIZE: $line_search_type EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $num_type",
         )
         grad_type = typeof(gradient)
         println("MOMENTUM: $momentum GRADIENTTYPE: $grad_type UPDATE_ORDER: $update_order")
@@ -192,7 +197,7 @@ function block_coordinate_frank_wolfe(
 
     first_iter = true
     if linesearch_workspace === nothing
-        linesearch_workspace = build_linesearch_workspace(line_search, x, gradient) # TODO: might not be really needed - hence hack
+        linesearch_workspace = [build_linesearch_workspace(line_search[i], x, gradient) for i=1:N] # TODO: might not be really needed - hence hack
     end
 
     # container for direction
@@ -250,22 +255,22 @@ function block_coordinate_frank_wolfe(
                 x_post = xold[post_index...]
 
                 function temp_grad!(storage, y, i)
-                    x = cat(x_pre, y, x_post; dims=ndim)
-                    big_storage = similar(x)
-                    grad!(big_storage, x),
+                    z = cat(x_pre, y, x_post; dims=ndim)
+                    big_storage = similar(z)
+                    grad!(big_storage, z),
                     @. storage = big_storage[i]
                 end
 
-                x_i, dual_gap_i, v, d, gamma = update_step(
-                    update_steps[i],
+                x_i, dual_gap_i, v, d, gamma = update(
+                    update_step[i],
                     xold[multi_index...],
                     lmo.lmos[i],
                     y -> f(cat(x_pre, y, x_post; dims=ndim)),
                     gradient[multi_index...],
                     (storage, y) -> temp_grad!(storage, y, i),
                     t,
-                    line_search,
-                    linesearch_workspace,
+                    line_search[i],
+                    linesearch_workspace[i],
                     memory_mode,
                 )
 
@@ -322,25 +327,11 @@ function block_coordinate_frank_wolfe(
         compute_extreme_point(lmo, tuple([selectdim(gradient, ndim, i) for i in 1:N]...))...,
         dims=ndim,
     )
-    d = similar(x)
-    d = muladd_memory_mode(memory_mode, d, x, v)
 
     primal = f(x)
     dual_gap = fast_dot(x - v, gradient)
 
     tot_time = (time_ns() - time_start) / 1.0e9
-    gamma = perform_line_search(
-        line_search,
-        t,
-        f,
-        grad!,
-        gradient,
-        x,
-        d,
-        1.0,
-        linesearch_workspace,
-        memory_mode,
-    )
 
     if callback !== nothing
         state = CallbackState(
