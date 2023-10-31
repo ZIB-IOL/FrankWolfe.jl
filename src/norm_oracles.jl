@@ -190,21 +190,21 @@ struct SpectraplexLMO{T,M} <: LinearMinimizationOracle
     radius::T
     gradient_container::M
     ensure_symmetry::Bool
+    maxiters::Int
 end
 
-function SpectraplexLMO(radius::T, side_dimension::Int, ensure_symmetry::Bool=true) where {T}
-    return SpectraplexLMO(radius, Matrix{T}(undef, side_dimension, side_dimension), ensure_symmetry)
+function SpectraplexLMO(radius::T, side_dimension::Int, ensure_symmetry::Bool=true, maxiters::Int=500) where {T}
+    return SpectraplexLMO(radius, Matrix{T}(undef, side_dimension, side_dimension), ensure_symmetry, maxiters)
 end
 
-function SpectraplexLMO(radius::Integer, side_dimension::Int, ensure_symmetry::Bool=true)
-    return SpectraplexLMO(float(radius), side_dimension, ensure_symmetry)
+function SpectraplexLMO(radius::Integer, side_dimension::Int, ensure_symmetry::Bool=true, maxiters::Int=500)
+    return SpectraplexLMO(float(radius), side_dimension, ensure_symmetry, maxiters)
 end
 
 function compute_extreme_point(
     lmo::SpectraplexLMO{T},
     direction::M;
     v=nothing,
-    maxiters=500,
     kwargs...,
 ) where {T,M<:AbstractMatrix}
     lmo.gradient_container .= direction
@@ -215,7 +215,7 @@ function compute_extreme_point(
     end
     lmo.gradient_container .*= -1
 
-    _, evec = Arpack.eigs(lmo.gradient_container; nev=1, which=:LR, maxiter=maxiters)
+    _, evec = Arpack.eigs(lmo.gradient_container; nev=1, which=:LR, maxiter=lmo.maxiters)
     # type annotation because of Arpack instability
     unit_vec::Vector{T} = vec(evec)
     # scaling by sqrt(radius) so that x x^T has spectral norm radius while using a single vector
