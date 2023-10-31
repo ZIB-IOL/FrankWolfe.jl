@@ -13,7 +13,7 @@ function grad!(storage, x)
     @. storage = 0
 end
 
-dim = 30
+dim = 20
 
 m = JuMP.Model(GLPK.Optimizer)
 @variable(m, x[1:dim, 1:dim])
@@ -22,7 +22,7 @@ m = JuMP.Model(GLPK.Optimizer)
 @constraint(m, x .>= 0)
 
 
-lmos = (FrankWolfe.SpectraplexLMO(1.0, dim, true), FrankWolfe.MathOptLMO(m.moi_backend))
+lmos = (FrankWolfe.SpectraplexLMO(1.0, dim, true, 100000), FrankWolfe.MathOptLMO(m.moi_backend))
 x0 = rand(dim, dim)
 
 trajectories = []
@@ -38,6 +38,7 @@ for order in [FrankWolfe.FullUpdate(), FrankWolfe.CyclicUpdate(), FrankWolfe.Sto
         update_order=order,
         line_search=FrankWolfe.Adaptive(relaxed_smoothness=true),
         verbose=true,
+        print_iter=100,
         trajectory=true,
     )
     push!(trajectories, traj_data)
