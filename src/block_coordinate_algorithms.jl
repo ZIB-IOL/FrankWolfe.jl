@@ -263,7 +263,8 @@ function block_coordinate_frank_wolfe(
                 function temp_grad!(storage, y, i)
                     z = extend(y)
                     big_storage = similar(z)
-                    return grad!(big_storage, z), @. storage = big_storage.blocks[i]
+                    grad!(big_storage, z)
+                    @. storage = big_storage.blocks[i]
                 end
 
                 dual_gaps[i], v, d, gamma = update(

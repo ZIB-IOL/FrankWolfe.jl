@@ -23,7 +23,6 @@ function alternating_linear_minimization(
     kwargs...,
 ) where {N}
 
-    ndim = ndims(x0) + 1 # New product dimension
     prod_lmo = ProductLMO(lmos)
     direction = BlockVector([x0 for _=1:N], [size(x0) for _=1:N], length(x0)*N)
     x0_bc = compute_extreme_point(prod_lmo, direction)

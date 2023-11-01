@@ -10,7 +10,7 @@ include("../examples/plot_utils.jl")
 f(x) = 0.0
 
 function grad!(storage, x)
-    storage = zero(x)
+    @. storage = zero(x)
 end
 
 dim = 10
