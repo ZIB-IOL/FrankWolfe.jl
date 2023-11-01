@@ -25,27 +25,28 @@ function alternating_linear_minimization(
 
     ndim = ndims(x0) + 1 # New product dimension
     prod_lmo = ProductLMO(lmos)
-    x0_bc = cat(compute_extreme_point(prod_lmo, tuple([x0 for i in 1:N]...))..., dims=ndim)
+    direction = BlockVector([x0 for _=1:N], [size(x0) for _=1:N], length(x0)*N)
+    x0_bc = compute_extreme_point(prod_lmo, direction)
 
     # workspace for the gradient
     gradf = similar(x0_bc)
 
     function grad_bc!(storage, x)
         for i in 1:N
-            grad!(selectdim(gradf, ndim, i), selectdim(x, ndim, i))
+            grad!(gradf.blocks[i], x.blocks[i])
         end
-        t = lambda * 2.0 * (N * x .- sum(x, dims=ndim))
-        @. storage = gradf + t
+        t = [lambda * 2.0 * (N * b - sum(x.blocks)) for b in x.blocks]
+        storage.blocks = gradf.blocks + t
     end
 
     infeasibility(x) = sum(
         fast_dot(
-            selectdim(x, ndim, i) - selectdim(x, ndim, j),
-            selectdim(x, ndim, i) - selectdim(x, ndim, j),
+            x.blocks[i] - x.blocks[j],
+            x.blocks[i] - x.blocks[j],
         ) for i in 1:N for j in 1:i-1
     )
 
-    f_bc(x) = sum(f(selectdim(x, ndim, i)) for i in 1:N) + lambda * infeasibility(x)
+    f_bc(x) = sum(f(x.blocks[i]) for i in 1:N) + lambda * infeasibility(x)
 
     if verbose
         println("\nAlternating Linear Minimization.")

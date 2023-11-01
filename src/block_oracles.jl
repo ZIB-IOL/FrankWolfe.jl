@@ -64,6 +64,15 @@ end
 
 Base.similar(src::BlockVector{T, MT}) where {T, MT} = similar(src, T)
 
+function Base.zero(src::BlockVector)
+    blocks = [zero(b) for b in src.blocks]
+    return BlockVector(
+        blocks,
+        src.block_sizes,
+        src.tot_size,
+    )
+end
+
 function Base.convert(::Type{BlockVector{T, MT}}, bmv::BlockVector) where {T, MT}
     cblocks = convert.(MT, bmv.blocks)
     return BlockVector(

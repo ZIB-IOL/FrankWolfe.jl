@@ -1,6 +1,6 @@
 using FrankWolfe
 
-n = Int(1e4)
+n = Int(1e1)
 
 xpi = rand(1:100, n)
 total = sum(xpi)
@@ -29,7 +29,7 @@ for pair in lmo_pairs
         grad!,
         pair,
         zeros(n);
-        lambda=1.0,
+        update_order=FrankWolfe.FullUpdate(),
         verbose=true,
     )
 end

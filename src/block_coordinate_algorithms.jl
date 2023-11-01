@@ -62,7 +62,6 @@ function update(
     linesearch_workspace,
     memory_mode,
 )
-    linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
     d = similar(x)
     v = compute_extreme_point(lmo, gradient)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
@@ -84,7 +83,7 @@ function update(
 
     x = muladd_memory_mode(memory_mode, x, gamma, d)
 
-    return (x, dual_gap, v, d, gamma)
+    return (dual_gap, v, d, gamma)
 end
 
 """
@@ -108,7 +107,7 @@ function block_coordinate_frank_wolfe(
     f,
     grad!,
     lmo::ProductLMO{N},
-    x0;
+    x0::BlockVector;
     update_order::BlockCoordinateUpdateOrder=CyclicUpdate(),
     line_search::LS=Adaptive(),
     update_step::US=FrankWolfeStep(),
@@ -124,7 +123,11 @@ function block_coordinate_frank_wolfe(
     traj_data=[],
     timeout=Inf,
     linesearch_workspace=nothing,
-) where {N,US<:Union{FrankWolfeStep,NTuple{N,FrankWolfeStep}}, LS<:Union{LineSearchMethod,NTuple{N,LineSearchMethod}}}
+) where {
+    N,
+    US<:Union{FrankWolfeStep,NTuple{N,FrankWolfeStep}},
+    LS<:Union{LineSearchMethod,NTuple{N,LineSearchMethod}},
+}
 
     # header and format string for output of the algorithm
     headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec"]
@@ -142,7 +145,7 @@ function block_coordinate_frank_wolfe(
         return rep
     end
 
-    ndim = ndims(x0)
+    #ndim = ndims(x0)
     t = 0
     dual_gap = Inf
     dual_gaps = fill(Inf, N)
@@ -178,7 +181,7 @@ function block_coordinate_frank_wolfe(
 
     # instanciating container for gradient
     if gradient === nothing
-        gradient = collect(x)
+        gradient = similar(x)
     end
 
     if verbose
@@ -197,7 +200,9 @@ function block_coordinate_frank_wolfe(
 
     first_iter = true
     if linesearch_workspace === nothing
-        linesearch_workspace = [build_linesearch_workspace(line_search[i], x, gradient) for i=1:N] # TODO: might not be really needed - hence hack
+        linesearch_workspace = [
+            build_linesearch_workspace(line_search[i], x.blocks[i], gradient.blocks[i]) for i in 1:N
+        ] # TODO: might not be really needed - hence hack
     end
 
     # container for direction
@@ -231,8 +236,6 @@ function block_coordinate_frank_wolfe(
 
         #####################
 
-        first_iter = false
-
         for update_indices in select_update_indices(update_order, N)
 
             # Update gradients
@@ -246,36 +249,35 @@ function block_coordinate_frank_wolfe(
                 @memory_mode(memory_mode, gradient = (momentum * gradient) + (1 - momentum) * gtemp)
             end
 
+            first_iter = false
+
             xold = copy(x)
             for i in update_indices
-                multi_index = [idx < ndim ? Colon() : i for idx in 1:ndim]
-                pre_index = [idx < ndim ? Colon() : 1:i-1 for idx in 1:ndim]
-                x_pre = xold[pre_index...]
-                post_index = [idx < ndim ? Colon() : i+1:N for idx in 1:ndim]
-                x_post = xold[post_index...]
 
-                function temp_grad!(storage, y, i)
-                    z = cat(x_pre, y, x_post; dims=ndim)
-                    big_storage = similar(z)
-                    grad!(big_storage, z),
-                    @. storage = big_storage[i]
+                function extend(y)
+                    bv = copy(xold)
+                    bv.blocks[i] = y
+                    return bv
                 end
 
-                x_i, dual_gap_i, v, d, gamma = update(
+                function temp_grad!(storage, y, i)
+                    z = extend(y)
+                    big_storage = similar(z)
+                    return grad!(big_storage, z), @. storage = big_storage.blocks[i]
+                end
+
+                dual_gaps[i], v, d, gamma = update(
                     update_step[i],
-                    xold[multi_index...],
+                    x.blocks[i],
                     lmo.lmos[i],
-                    y -> f(cat(x_pre, y, x_post; dims=ndim)),
-                    gradient[multi_index...],
+                    y -> f(extend(y)),
+                    gradient.blocks[i],
                     (storage, y) -> temp_grad!(storage, y, i),
                     t,
                     line_search[i],
                     linesearch_workspace[i],
                     memory_mode,
                 )
-
-                dual_gaps[i] = dual_gap_i
-                x[multi_index...] = x_i
             end
 
             dual_gap = sum(dual_gaps)
@@ -323,10 +325,7 @@ function block_coordinate_frank_wolfe(
     tt = last
 
     grad!(gradient, x)
-    v = cat(
-        compute_extreme_point(lmo, tuple([selectdim(gradient, ndim, i) for i in 1:N]...))...,
-        dims=ndim,
-    )
+    v = compute_extreme_point(lmo, gradient)
 
     primal = f(x)
     dual_gap = fast_dot(x - v, gradient)
