@@ -265,9 +265,9 @@ function FrankWolfe.compute_extreme_point(lmo::AbsSmoothLMO, direction; kwargs..
     end
 end
 
-struct Agnostic <: FrankWolfe.LineSearchMethod end 
+struct Agnostic <: FrankWolfe.LineSearchMethod end
 FrankWolfe.perform_line_search(
-    ls::Agnostic, 
+    ls::Agnostic,
     t,
     f,
     g!,
@@ -326,9 +326,9 @@ x0 = [-1.0, -1-0]
 # TODO: build LMO
 # TODO: add asm to compute_extreme_point
 x, v, primal, dual_gap, traj_data = as_frank_wolfe(
-    f, 
-    grad!, 
-    lmo_moi, 
+    f,
+    grad!,
+    lmo_moi,
     x0;
     gradient = ones(n+s),
     line_search = FrankWolfe.Agnostic(),

@@ -44,7 +44,7 @@ function blended_conditional_gradient(
     return blended_conditional_gradient(
         f,
         grad!,
-        lmo, 
+        lmo,
         active_set,
         line_search=line_search,
         line_search_inner=line_search_inner,
@@ -334,7 +334,7 @@ function blended_conditional_gradient(
             end
 
             if gamma == 1.0
-                if add_dropped_vertices 
+                if add_dropped_vertices
                     for vtx in active_set.atoms
                         if vtx != v
                             push!(extra_vertex_storage, vtx)

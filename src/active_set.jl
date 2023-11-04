@@ -212,8 +212,8 @@ function compute_active_set_iterate!(active_set::FrankWolfe.ActiveSet{<:SparseAr
 end
 
 function active_set_cleanup!(active_set; weight_purge_threshold=1e-12, update=true, add_dropped_vertices=false, vertex_storage=nothing)
-    if add_dropped_vertices && vertex_storage !== nothing 
-        for (weight, v) in zip(active_set.weights, active_set.atoms) 
+    if add_dropped_vertices && vertex_storage !== nothing
+        for (weight, v) in zip(active_set.weights, active_set.atoms)
             if weight <= weight_purge_threshold
                 push!(vertex_storage, v)
             end

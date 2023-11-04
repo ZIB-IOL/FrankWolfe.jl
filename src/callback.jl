@@ -35,7 +35,7 @@ function print_callback(data, format_string; print_header=false, print_footer=fa
         s_format_string = replace(format_string, "e" => "s")
         s_format_string = replace(s_format_string, "i" => "s")
         print_formatted(s_format_string, data...)
-        @printf("%s\e[s\n", line) # \e[s stores the cursor position at the end of the line    
+        @printf("%s\e[s\n", line) # \e[s stores the cursor position at the end of the line
     else
         print_formatted(format_string, data...)
     end

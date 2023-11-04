@@ -312,7 +312,7 @@ Adaptive Step Size strategy from [Pedregosa, Negiar, Askari, Jaggi (2018)](https
 ```
 The parameter `alpha ∈ (0,1]` relaxes the original smoothness condition to mitigate issues with nummerical errors. Its default value is `0.5`.
 The `Adaptive` struct keeps track of the Lipschitz constant estimate `L_est`.
-The keyword argument `relaxed_smoothness` allows testing with an alternative smoothness condition, 
+The keyword argument `relaxed_smoothness` allows testing with an alternative smoothness condition,
 ```math
     \\langle \\nabla f(x_t + \\gamma_t (x_t - v_t) ) - \\nabla f(x_t), x_t - v_t \\rangle \\leq \\gamma_t M \\|x_t - v_t\\|^2 ~.
 ```

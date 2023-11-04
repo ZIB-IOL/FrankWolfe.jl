@@ -46,13 +46,13 @@ Pages = ["pairwise.jl"]
 
 ## Alternating Methods
 
-Problems over intersections of convex sets, i.e. 
+Problems over intersections of convex sets, i.e.
 ```math
 \min_{x \in \bigcap_{i=1}^n P_i} f(x),
 ```
 pose a challenge as one has to combine the information of two or more LMOs.
 
-[`FrankWolfe.alternating_linear_minimization`](@ref) converts the problem into a series of subproblems over single sets. To find a point within the intersection, one minimizes both the distance to the iterates of the other subproblems and the original objective function. 
+[`FrankWolfe.alternating_linear_minimization`](@ref) converts the problem into a series of subproblems over single sets. To find a point within the intersection, one minimizes both the distance to the iterates of the other subproblems and the original objective function.
 
 [`FrankWolfe.alternating_projections`](@ref) solves feasibility problems over intersections of feasible regions.
 

@@ -305,7 +305,7 @@ function blended_pairwise_conditional_gradient(
             # - for lazy: we also accept slightly weaker vertices, those satisfying phi / lazy_tolerance
             # this should simplify the criterion.
             # DO NOT CHANGE without good reason and talk to Sebastian first for the logic behind this.
-            if !lazy || dual_gap ≥ phi / lazy_tolerance                  
+            if !lazy || dual_gap ≥ phi / lazy_tolerance
                 d = muladd_memory_mode(memory_mode, d, x, v)
 
                 gamma = perform_line_search(

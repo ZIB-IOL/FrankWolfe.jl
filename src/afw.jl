@@ -144,7 +144,7 @@ function away_frank_wolfe(
     else
         nothing
     end
-    
+
     if verbose
         println("\nAway-step Frank-Wolfe Algorithm.")
         NumType = eltype(x)
@@ -247,8 +247,8 @@ function away_frank_wolfe(
                 linesearch_workspace,
                 memory_mode,
             )
-            
-            gamma = min(gamma_max, gamma)  
+
+            gamma = min(gamma_max, gamma)
             # cleanup and renormalize every x iterations. Only for the fw steps.
             renorm = mod(t, renorm_interval) == 0
             if away_step_taken
@@ -285,7 +285,7 @@ function away_frank_wolfe(
             if callback(state, active_set) === false
                 break
             end
-        end  
+        end
 
         if mod(t, renorm_interval) == 0
             active_set_renormalize!(active_set)
