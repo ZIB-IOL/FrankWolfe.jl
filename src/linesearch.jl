@@ -63,6 +63,11 @@ perform_line_search(
     workspace,
     memory_mode::MemoryEmphasis,
 ) where {T} = ls.l == -1 ? T((2 + log(t+1)) / (t + 2 + log(t+1))) : T(ls.l / (t + ls.l))
+#################
+# additional dynamic open-loop strategy gamma_t = (2 + log(t+1)) / (t + 2 + log(t+1)) from
+# S. Pokutta "The Frank-Wolfe algorith: a short introduction" (2023), preprint
+#################
+
 
 Base.print(io::IO, ls::Agnostic) = print(io, "Agnostic($(ls.l))")
 
@@ -396,10 +401,15 @@ function perform_line_search(
     #       γ ≥ 100 * eps(float(γ))
     grad!(gradient_storage, x_storage)
     
-    # d = v_t - x_t 
-    # second better modification: while fast_dot(gradient, d) / 2 > fast_dot(gradient_storage, d) && γ ≥ 100 * eps(float(γ))
+    #################
+    # modified adaptive line search test from:
+    # S. Pokutta "The Frank-Wolfe algorith: a short introduction" (2023), preprint
+    # replaces the original test from:
+    # Pedregosa, F., Negiar, G., Askari, A., and Jaggi, M. (2020). "Linearly convergent Frank–Wolfe with backtracking line-search", Proceedings of AISTATS.
+    #################
     while 0 > fast_dot(gradient_storage, d) && γ ≥ 100 * eps(float(γ))
         
+        # DEPRECATED / remove in future versions
         # Additional smoothness condition
         # if line_search.relaxed_smoothness
         #     grad!(gradient_storage, x_storage)
