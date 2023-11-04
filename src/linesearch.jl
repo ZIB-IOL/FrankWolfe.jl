@@ -399,25 +399,25 @@ function perform_line_search(
     # while f(x_storage) - f(x) >
     #       -γ * α * dot_dir + α^2 * γ^2 * ndir2 * M / 2 + eps(float(γ)) &&
     #       γ ≥ 100 * eps(float(γ))
-    grad!(gradient_storage, x_storage)
-    
+
+    # # DEPRECATED / remove in future versions
+    #     # Additional smoothness condition
+    #     if line_search.relaxed_smoothness
+    #         grad!(gradient_storage, x_storage)
+    #         if fast_dot(gradient, d) - fast_dot(gradient_storage, d) <= γ * M * ndir2 + eps(float(γ))
+    #             break
+    #         end
+    #     end
+
     #################
     # modified adaptive line search test from:
     # S. Pokutta "The Frank-Wolfe algorith: a short introduction" (2023), preprint
     # replaces the original test from:
     # Pedregosa, F., Negiar, G., Askari, A., and Jaggi, M. (2020). "Linearly convergent Frank–Wolfe with backtracking line-search", Proceedings of AISTATS.
     #################
+    grad!(gradient_storage, x_storage)
     while 0 > fast_dot(gradient_storage, d) && γ ≥ 100 * eps(float(γ))
         
-        # DEPRECATED / remove in future versions
-        # Additional smoothness condition
-        # if line_search.relaxed_smoothness
-        #     grad!(gradient_storage, x_storage)
-        #     if fast_dot(gradient, d) - fast_dot(gradient_storage, d) <= γ * M * ndir2 + eps(float(γ))
-        #         break
-        #     end
-        # end
-
         M *= line_search.tau
         γ = min(max(dot_dir / (M * ndir2), 0), gamma_max)
         x_storage = muladd_memory_mode(memory_mode, x_storage, x, γ, d)
