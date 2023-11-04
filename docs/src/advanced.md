@@ -174,13 +174,16 @@ to behave as the member of a Hilbert space and optionally be mutable. Assuming t
 ```julia
 Base.similar(::IT)
 Base.similar(::IT, ::Type{T})
+Base.collect(::IT)
+Base.length(::IT)
 Base.eltype(::IT)
-Base.copy(::IT)
+Base.copyto!(dest::IT, src::IT)
 
 Base.:+(x1::IT, x2::IT)
 Base.:*(scalar::Real, x::IT)
 Base.:-(x1::IT, x2::IT)
 LinearAlgebra.dot(x1::IT, x2::IT)
+LinearAlgebra.norm(::IT)
 ```
 
 For methods using an [`FrankWolfe.ActiveSet`](@ref), the atoms or individual extreme points of the feasible region are not necessarily
