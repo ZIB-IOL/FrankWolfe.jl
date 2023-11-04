@@ -68,12 +68,6 @@ function frank_wolfe(
         @warn("Momentum-averaged gradients should usually be used with agnostic stepsize rules.",)
     end
 
-    # instanciating container for gradient
-    if gradient === nothing
-        gradient = collect(x)
-    end
-    
-
     if verbose
         println("\nVanilla Frank-Wolfe Algorithm.")
         NumType = eltype(x0)
@@ -95,6 +89,12 @@ function frank_wolfe(
             x = copyto!(similar(x), x)
         end
     end
+
+    # instanciating container for gradient
+    if gradient === nothing
+        gradient = collect(x)
+    end
+
     first_iter = true
     if linesearch_workspace === nothing
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
@@ -102,11 +102,8 @@ function frank_wolfe(
 
     # container for direction
     d = similar(x)
-    gtemp = if momentum === nothing
-        d
-    else
-        similar(x)
-    end
+    gtemp = momentum === nothing ? d : similar(x)
+
     while t <= max_iteration && dual_gap >= max(epsilon, eps(float(typeof(dual_gap))))
 
         #####################
@@ -513,7 +510,7 @@ function stochastic_frank_wolfe(
 
     # format string for output of the algorithm
     format_string = "%6s %13s %14e %14e %14e %14e %14e %6i\n"
-    headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "batch size")
+    headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "Batch")
 
     function format_state(state, batch_size)
         rep = (

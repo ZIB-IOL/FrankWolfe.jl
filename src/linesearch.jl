@@ -64,7 +64,7 @@ perform_line_search(
     memory_mode::MemoryEmphasis,
 ) where {T} = ls.l == -1 ? T((2 + log(t+1)) / (t + 2 + log(t+1))) : T(ls.l / (t + ls.l))
 
-Base.print(io::IO, ::Agnostic) = print(io, "Agnostic")
+Base.print(io::IO, ls::Agnostic) = print(io, "Agnostic($(ls.l))")
 
 """
 Computes a step size for nonconvex functions: `1/sqrt(t + 1)`.
@@ -115,8 +115,12 @@ function perform_line_search(
     workspace,
     memory_mode,
 )
+    dd = fast_dot(d, d)
+    if dd <= eps(float(dd))
+        return dd
+    end
 
-    return min(max(fast_dot(gradient, d) * inv(line_search.L * fast_dot(d, d)), 0), gamma_max)
+    return min(max(fast_dot(gradient, d) * inv(line_search.L * dd), 0), gamma_max)
 end
 
 Base.print(io::IO, ::Shortstep) = print(io, "Shortstep")
