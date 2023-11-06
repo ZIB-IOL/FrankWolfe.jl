@@ -175,7 +175,7 @@ to behave as the member of a Hilbert space and optionally be mutable. Assuming t
 Base.similar(::IT)
 Base.similar(::IT, ::Type{T})
 Base.collect(::IT)
-Base.length(::IT)
+Base.size(::IT)
 Base.eltype(::IT)
 Base.copyto!(dest::IT, src::IT)
 
