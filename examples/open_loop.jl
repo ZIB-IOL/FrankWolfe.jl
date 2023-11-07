@@ -10,7 +10,7 @@ s = 97
 @info "Seed $s"
 Random.seed!(s)
 
-eps=1e-10
+epsilon=1e-10
 
 # strongly convex set
 xp2 = 10 * ones(n)
@@ -33,7 +33,7 @@ res_2 = FrankWolfe.frank_wolfe(
     max_iteration=k,
     line_search=FrankWolfe.Agnostic(2),
     print_iter= k / 10,
-    epsilon=eps,
+    epsilon=epsilon,
     verbose=true,
     trajectory=true,
 )
@@ -46,7 +46,7 @@ res_4 = FrankWolfe.frank_wolfe(
     max_iteration=k,
     line_search=FrankWolfe.Agnostic(4),
     print_iter= k / 10,
-    epsilon=eps,
+    epsilon=epsilon,
     verbose=true,
     trajectory=true,
 )
@@ -59,7 +59,7 @@ res_6 = FrankWolfe.frank_wolfe(
     max_iteration=k,
     line_search=FrankWolfe.Agnostic(6),
     print_iter= k / 10,
-    epsilon=eps,
+    epsilon=epsilon,
     verbose=true,
     trajectory=true,
 )
@@ -72,7 +72,7 @@ res_log = FrankWolfe.frank_wolfe(
     max_iteration=k,
     line_search=FrankWolfe.Agnostic(-1),
     print_iter= k / 10,
-    epsilon=eps,
+    epsilon=epsilon,
     verbose=true,
     trajectory=true,
 )
@@ -85,7 +85,7 @@ res_adapt = FrankWolfe.frank_wolfe(
     max_iteration=k,
     line_search=FrankWolfe.Adaptive(relaxed_smoothness=true),
     print_iter=k / 10,
-    epsilon=eps,
+    epsilon=epsilon,
     verbose=true,
     trajectory=true,
 )
