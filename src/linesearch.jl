@@ -28,6 +28,9 @@ Computes step size: `l/(l + t)` at iteration `t`, given `l > 0`.
 
 Using `l ≥ 4` is advised only for strongly convex sets, see:
 > Acceleration of Frank-Wolfe Algorithms with Open-Loop Step-Sizes, Wirth, Kerdreux, Pokutta, 2023.
+
+Fixing l = -1, results in the step size gamma_t = (2 + log(t+1)) / (t + 2 + log(t+1))
+# S. Pokutta "The Frank-Wolfe algorith: a short introduction" (2023), preprint
 """
 struct Agnostic{T<:Real} <: LineSearchMethod
     l::Int
@@ -51,7 +54,7 @@ perform_line_search(
     memory_mode::MemoryEmphasis,
 ) = ls.l // (t + ls.l)
 
-perform_line_search(
+function perform_line_search(
     ls::Agnostic{T},
     t,
     f,
@@ -62,11 +65,13 @@ perform_line_search(
     gamma_max,
     workspace,
     memory_mode::MemoryEmphasis,
-) where {T} = ls.l == -1 ? T((2 + log(t+1)) / (t + 2 + log(t+1))) : T(ls.l / (t + ls.l))
-#################
-# additional dynamic open-loop strategy gamma_t = (2 + log(t+1)) / (t + 2 + log(t+1)) from
-# S. Pokutta "The Frank-Wolfe algorith: a short introduction" (2023), preprint
-#################
+) where {T}
+    return if ls.l == -1
+        T((2 + log(t+1)) / (t + 2 + log(t+1)))
+    else
+        T(ls.l / (t + ls.l))
+    end
+end
 
 
 Base.print(io::IO, ls::Agnostic) = print(io, "Agnostic($(ls.l))")
