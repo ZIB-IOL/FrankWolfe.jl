@@ -276,7 +276,7 @@ using LinearAlgebra
         lmo,
         x0,
         max_iteration=k,
-        line_search=FrankWolfe.Adaptive(),
+        line_search=FrankWolfe.AdaptiveZerothOrder(),
         print_iter=k / 10,
         verbose=false,
         memory_mode=FrankWolfe.OutplaceEmphasis(),
