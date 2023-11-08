@@ -462,6 +462,13 @@ function _upgrade_accuracy_adaptive(gradient, direction, storage, ::Val{false})
     return (dot_dir, ndir2, storage.x)
 end
 
+"""
+Modified adaptive line search test from:
+> S. Pokutta "The Frank-Wolfe algorith: a short introduction" (2023), preprint
+
+It replaces the original test implemented in the AdaptiveZerothOrder line search based on:
+> Pedregosa, F., Negiar, G., Askari, A., and Jaggi, M. (2020). "Linearly convergent Frank–Wolfe with backtracking line-search", Proceedings of AISTATS.
+"""
 mutable struct Adaptive{T,TT} <: LineSearchMethod
     eta::T
     tau::TT
