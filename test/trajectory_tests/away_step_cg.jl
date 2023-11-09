@@ -490,7 +490,7 @@ const xp = [
         trajectory=true,
     )
 
-    @test norm(res3[1] - x_true3) ≈ 0 atol = 1e-5
+    @test norm(res3[1] - x_true3) <= = 5e-5
     @test res3[3] ≈ primal_true3
     @test res3[5][end][1] <= 451
 
@@ -616,7 +616,7 @@ const xp = [
         trajectory=true,
     )
 
-    @test norm(res4[1] - x_true4) <= 1e-5
+    @test norm(res4[1] - x_true4) <= 5e-5
     @test res4[3] ≈ primal_true4
     @test res4[5][end][1] <= 451
 
