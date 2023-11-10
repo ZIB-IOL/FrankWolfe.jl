@@ -30,7 +30,7 @@ Using `l ≥ 4` is advised only for strongly convex sets, see:
 > Acceleration of Frank-Wolfe Algorithms with Open-Loop Step-Sizes, Wirth, Kerdreux, Pokutta, 2023.
 
 Fixing l = -1, results in the step size gamma_t = (2 + log(t+1)) / (t + 2 + log(t+1))
-# S. Pokutta "The Frank-Wolfe algorith: a short introduction" (2023), preprint
+# S. Pokutta "The Frank-Wolfe algorith: a short introduction" (2023), preprint, https://arxiv.org/abs/2311.05313
 """
 struct Agnostic{T<:Real} <: LineSearchMethod
     l::Int
