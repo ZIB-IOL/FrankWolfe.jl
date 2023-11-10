@@ -283,6 +283,19 @@ using LinearAlgebra
         trajectory=true,
     )
 
+    res4_adaptive = FrankWolfe.blended_conditional_gradient(
+        f,
+        grad!,
+        lmo,
+        x0,
+        max_iteration=2k,
+        line_search=FrankWolfe.Adaptive(),
+        print_iter=k / 10,
+        verbose=false,
+        memory_mode=FrankWolfe.OutplaceEmphasis(),
+        trajectory=true,
+    )
+
     x_true = [
         0.0110488779224248954979881176541312015615403652191162109375,
         0.01116382439959395615758364073144548456184566020965576171875,
@@ -391,6 +404,9 @@ using LinearAlgebra
     @test norm(res4[1] - x_true) ≈ 0 atol = 1e-6
     @test res4[3] ≈ primal_true
     @test res4[5][end][1] == 101
+
+    @test res4_adaptive[3] ≈ 0.01 atol=1e-8
+    @test res4_adaptive[5][end][1] == 138
 
 end
 

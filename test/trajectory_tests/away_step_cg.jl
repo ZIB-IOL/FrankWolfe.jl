@@ -241,9 +241,25 @@ const xp = [
         trajectory=true,
     )
 
+    res1_adaptive = FrankWolfe.away_frank_wolfe(
+        f,
+        grad!,
+        lmo,
+        x0,
+        max_iteration=k,
+        line_search=FrankWolfe.Adaptive(L_est=100.0),
+        print_iter=k / 10,
+        epsilon=1e-5,
+        memory_mode=FrankWolfe.InplaceEmphasis(),
+        verbose=false,
+        away_steps=true,
+        trajectory=true,
+    )
+
     @test norm(res1[1] - x_true) ≈ 0 atol = 1e-5
     @test res1[3] ≈ primal_true
     @test res1[5][end][1] <= niters
+    @test res1_adaptive[3] ≈ primal_true
 
     x_true2 = [
         0.12350325628679909,
