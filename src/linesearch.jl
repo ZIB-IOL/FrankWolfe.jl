@@ -27,10 +27,10 @@ build_linesearch_workspace(::LineSearchMethod, x, gradient) = nothing
 Computes step size: `l/(l + t)` at iteration `t`, given `l > 0`.
 
 Using `l ≥ 4` is advised only for strongly convex sets, see:
-> Acceleration of Frank-Wolfe Algorithms with Open-Loop Step-Sizes, Wirth, Kerdreux, Pokutta, 2023.
+> Acceleration of Frank-Wolfe Algorithms with Open-Loop Step-Sizes, Wirth, Kerdreux, Pokutta, (2023), https://arxiv.org/abs/2205.12838
 
 Fixing l = -1, results in the step size gamma_t = (2 + log(t+1)) / (t + 2 + log(t+1))
-# S. Pokutta "The Frank-Wolfe algorith: a short introduction" (2023), preprint
+# S. Pokutta "The Frank-Wolfe algorith: a short introduction" (2023), https://arxiv.org/abs/2311.05313
 """
 struct Agnostic{T<:Real} <: LineSearchMethod
     l::Int
@@ -464,7 +464,7 @@ end
 
 """
 Modified adaptive line search test from:
-> S. Pokutta "The Frank-Wolfe algorith: a short introduction" (2023), preprint
+> S. Pokutta "The Frank-Wolfe algorith: a short introduction" (2023), preprint, https://arxiv.org/abs/2311.05313
 
 It replaces the original test implemented in the AdaptiveZerothOrder line search based on:
 > Pedregosa, F., Negiar, G., Askari, A., and Jaggi, M. (2020). "Linearly convergent Frank–Wolfe with backtracking line-search", Proceedings of AISTATS.
