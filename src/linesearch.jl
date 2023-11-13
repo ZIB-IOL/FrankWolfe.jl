@@ -27,7 +27,10 @@ build_linesearch_workspace(::LineSearchMethod, x, gradient) = nothing
 Computes step size: `l/(l + t)` at iteration `t`, given `l > 0`.
 
 Using `l ≥ 4` is advised only for strongly convex sets, see:
-> Acceleration of Frank-Wolfe Algorithms with Open-Loop Step-Sizes, Wirth, Kerdreux, Pokutta, 2023.
+> Acceleration of Frank-Wolfe Algorithms with Open-Loop Step-Sizes, Wirth, Kerdreux, Pokutta, (2023), https://arxiv.org/abs/2205.12838
+
+Fixing l = -1, results in the step size gamma_t = (2 + log(t+1)) / (t + 2 + log(t+1))
+# S. Pokutta "The Frank-Wolfe algorith: a short introduction" (2023), https://arxiv.org/abs/2311.05313
 """
 struct Agnostic{T<:Real} <: LineSearchMethod
     l::Int
@@ -51,7 +54,7 @@ perform_line_search(
     memory_mode::MemoryEmphasis,
 ) = ls.l // (t + ls.l)
 
-perform_line_search(
+function perform_line_search(
     ls::Agnostic{T},
     t,
     f,
@@ -62,7 +65,14 @@ perform_line_search(
     gamma_max,
     workspace,
     memory_mode::MemoryEmphasis,
-) where {T} = T(ls.l / (t + ls.l))
+) where {T}
+    return if ls.l == -1
+        T((2 + log(t+1)) / (t + 2 + log(t+1)))
+    else
+        T(ls.l / (t + ls.l))
+    end
+end
+
 
 Base.print(io::IO, ls::Agnostic) = print(io, "Agnostic($(ls.l))")
 
@@ -323,7 +333,7 @@ It is also the fallback when the Lipschitz constant estimation fails due to nume
 `perform_line_search` also has a `should_upgrade` keyword argument on
 whether there should be a temporary upgrade to `BigFloat` for extended precision.
 """
-mutable struct Adaptive{T,TT} <: LineSearchMethod
+mutable struct AdaptiveZerothOrder{T,TT} <: LineSearchMethod
     eta::T
     tau::TT
     L_est::T
@@ -333,10 +343,10 @@ mutable struct Adaptive{T,TT} <: LineSearchMethod
     relaxed_smoothness::Bool
 end
 
-Adaptive(eta::T, tau::TT) where {T,TT} =
-    Adaptive{T,TT}(eta, tau, T(Inf), T(1e10), T(0.5), true, false)
+AdaptiveZerothOrder(eta::T, tau::TT) where {T,TT} =
+    AdaptiveZerothOrder{T,TT}(eta, tau, T(Inf), T(1e10), T(0.5), true, false)
 
-Adaptive(;
+AdaptiveZerothOrder(;
     eta=0.9,
     tau=2,
     L_est=Inf,
@@ -344,17 +354,17 @@ Adaptive(;
     alpha=0.5,
     verbose=true,
     relaxed_smoothness=false,
-) = Adaptive(eta, tau, L_est, max_estimate, alpha, verbose, relaxed_smoothness)
+) = AdaptiveZerothOrder(eta, tau, L_est, max_estimate, alpha, verbose, relaxed_smoothness)
 
-struct AdaptiveWorkspace{XT,BT}
+struct AdaptiveZerothOrderWorkspace{XT,BT}
     x::XT
     xbig::BT
 end
 
-build_linesearch_workspace(::Adaptive, x, gradient) = AdaptiveWorkspace(similar(x), big.(x))
+build_linesearch_workspace(::AdaptiveZerothOrder, x, gradient) = AdaptiveZerothOrderWorkspace(similar(x), big.(x))
 
 function perform_line_search(
-    line_search::Adaptive,
+    line_search::AdaptiveZerothOrder,
     t,
     f,
     grad!,
@@ -362,7 +372,7 @@ function perform_line_search(
     x,
     d,
     gamma_max,
-    storage::AdaptiveWorkspace,
+    storage::AdaptiveZerothOrderWorkspace,
     memory_mode::MemoryEmphasis;
     should_upgrade::Val=Val{false}(),
 )
@@ -392,16 +402,16 @@ function perform_line_search(
     gradient_storage = similar(gradient)
 
     while f(x_storage) - f(x) >
-          -γ * α * dot_dir + α^2 * γ^2 * ndir2 * M / 2 + eps(float(γ)) &&
-          γ ≥ 100 * eps(float(γ))
+        -γ * α * dot_dir + α^2 * γ^2 * ndir2 * M / 2 + eps(float(γ)) &&
+        γ ≥ 100 * eps(float(γ))
 
-        # Additional smoothness condition
-        if line_search.relaxed_smoothness
-            grad!(gradient_storage, x_storage)
-            if fast_dot(gradient, d) - fast_dot(gradient_storage, d) <= γ * M * ndir2 + eps(float(γ))
-                break
-            end
-        end
+      # Additional smoothness condition
+      if line_search.relaxed_smoothness
+          grad!(gradient_storage, x_storage)
+          if fast_dot(gradient, d) - fast_dot(gradient_storage, d) <= γ * M * ndir2 + eps(float(γ))
+              break
+          end
+      end
 
         M *= line_search.tau
         γ = min(max(dot_dir / (M * ndir2), 0), gamma_max)
@@ -437,7 +447,7 @@ function perform_line_search(
     return γ
 end
 
-Base.print(io::IO, ::Adaptive) = print(io, "Adaptive")
+Base.print(io::IO, ::AdaptiveZerothOrder) = print(io, "AdaptiveZerothOrder")
 
 function _upgrade_accuracy_adaptive(gradient, direction, storage, ::Val{true})
     direction_big = big.(direction)
@@ -450,6 +460,115 @@ function _upgrade_accuracy_adaptive(gradient, direction, storage, ::Val{false})
     dot_dir = fast_dot(gradient, direction)
     ndir2 = norm(direction)^2
     return (dot_dir, ndir2, storage.x)
+end
+
+"""
+Modified adaptive line search test from:
+> S. Pokutta "The Frank-Wolfe algorith: a short introduction" (2023), preprint, https://arxiv.org/abs/2311.05313
+
+It replaces the original test implemented in the AdaptiveZerothOrder line search based on:
+> Pedregosa, F., Negiar, G., Askari, A., and Jaggi, M. (2020). "Linearly convergent Frank–Wolfe with backtracking line-search", Proceedings of AISTATS.
+"""
+mutable struct Adaptive{T,TT} <: LineSearchMethod
+    eta::T
+    tau::TT
+    L_est::T
+    max_estimate::T
+    verbose::Bool
+    relaxed_smoothness::Bool
+end
+
+Adaptive(eta::T, tau::TT) where {T,TT} =
+    Adaptive{T,TT}(eta, tau, T(Inf), T(1e10), T(0.5), true, false)
+
+Adaptive(;
+    eta=0.9,
+    tau=2,
+    L_est=Inf,
+    max_estimate=1e10,
+    verbose=true,
+    relaxed_smoothness=false,
+) = Adaptive(eta, tau, L_est, max_estimate, verbose, relaxed_smoothness)
+
+struct AdaptiveWorkspace{XT,BT}
+    x::XT
+    xbig::BT
+    gradient_storage::XT
+end
+
+build_linesearch_workspace(::Adaptive, x, gradient) = AdaptiveWorkspace(similar(x), big.(x), similar(x))
+
+function perform_line_search(
+    line_search::Adaptive,
+    t,
+    f,
+    grad!,
+    gradient,
+    x,
+    d,
+    gamma_max,
+    storage::AdaptiveWorkspace,
+    memory_mode::MemoryEmphasis;
+    should_upgrade::Val=Val{false}(),
+)
+    if norm(d) ≤ length(d) * eps(float(eltype(d)))
+        if should_upgrade isa Val{true}
+            return big(zero(promote_type(eltype(d), eltype(gradient))))
+        else
+            return zero(promote_type(eltype(d), eltype(gradient)))
+        end
+    end
+    x_storage = storage.x
+    if !isfinite(line_search.L_est)
+        epsilon_step = min(1e-3, gamma_max)
+        gradient_stepsize_estimation = storage.gradient_storage
+        x_storage = muladd_memory_mode(memory_mode, x_storage, x, epsilon_step, d)
+        grad!(gradient_stepsize_estimation, x_storage)
+        line_search.L_est = norm(gradient - gradient_stepsize_estimation) / (epsilon_step * norm(d))
+    end
+    M = line_search.eta * line_search.L_est
+    (dot_dir, ndir2, x_storage) = _upgrade_accuracy_adaptive(gradient, d, storage, should_upgrade)
+    γ = min(max(dot_dir / (M * ndir2), 0), gamma_max)
+    x_storage = muladd_memory_mode(memory_mode, x_storage, x, γ, d)
+    niter = 0
+    clipping = false
+    gradient_storage = storage.gradient_storage
+
+    grad!(gradient_storage, x_storage)
+    while 0 > fast_dot(gradient_storage, d) && γ ≥ 100 * eps(float(γ))
+        M *= line_search.tau
+        γ = min(max(dot_dir / (M * ndir2), 0), gamma_max)
+        x_storage = muladd_memory_mode(memory_mode, x_storage, x, γ, d)
+        grad!(gradient_storage, x_storage)
+
+        niter += 1
+        if M > line_search.max_estimate
+            # if this occurs, we hit numerical troubles
+            # if we were not using the relaxed smoothness, we try it first as a stable fallback
+            # note that the smoothness estimate is not updated at this iteration.
+            if !line_search.relaxed_smoothness
+                linesearch_fallback = deepcopy(line_search)
+                linesearch_fallback.relaxed_smoothness = true
+                return perform_line_search(
+                    linesearch_fallback, t, f, grad!, gradient, x, d, gamma_max, storage, memory_mode;
+                    should_upgrade=should_upgrade,
+                )
+            end
+            # if we are already in relaxed smoothness, produce a warning:
+            # one might see negative progess, cycling, or stalling.
+            # Potentially upgrade accuracy or use an alternative line search strategy
+            if line_search.verbose
+                @warn "Smoothness estimate run away -> hard clipping. Convergence might be not guaranteed."
+            end
+            clipping = true
+            break
+        end
+    end
+    if !clipping
+        line_search.L_est = M
+    end
+    γ = min(max(dot_dir / (line_search.L_est * ndir2), 0), gamma_max)
+    return γ
 end
 
 """

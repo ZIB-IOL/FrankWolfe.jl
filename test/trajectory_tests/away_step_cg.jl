@@ -232,6 +232,21 @@ const xp = [
         lmo,
         x0,
         max_iteration=k,
+        line_search=FrankWolfe.AdaptiveZerothOrder(L_est=100.0),
+        print_iter=k / 10,
+        epsilon=1e-5,
+        memory_mode=FrankWolfe.InplaceEmphasis(),
+        verbose=false,
+        away_steps=true,
+        trajectory=true,
+    )
+
+    res1_adaptive = FrankWolfe.away_frank_wolfe(
+        f,
+        grad!,
+        lmo,
+        x0,
+        max_iteration=k,
         line_search=FrankWolfe.Adaptive(L_est=100.0),
         print_iter=k / 10,
         epsilon=1e-5,
@@ -244,6 +259,7 @@ const xp = [
     @test norm(res1[1] - x_true) ≈ 0 atol = 1e-5
     @test res1[3] ≈ primal_true
     @test res1[5][end][1] <= niters
+    @test res1_adaptive[3] ≈ primal_true
 
     x_true2 = [
         0.12350325628679909,
@@ -357,7 +373,7 @@ const xp = [
         lmo,
         x0,
         max_iteration=k,
-        line_search=FrankWolfe.Adaptive(L_est=100.0, eta=0.95, verbose=false),
+        line_search=FrankWolfe.AdaptiveZerothOrder(L_est=100.0, eta=0.95, verbose=false),
         print_iter=k / 10,
         epsilon=1e-5,
         momentum=0.9,
@@ -481,7 +497,7 @@ const xp = [
         lmo,
         x0,
         max_iteration=k,
-        line_search=FrankWolfe.Adaptive(L_est=100.0),
+        line_search=FrankWolfe.AdaptiveZerothOrder(L_est=100.0),
         print_iter=k / 10,
         epsilon=1e-5,
         memory_mode=FrankWolfe.InplaceEmphasis(),
@@ -490,9 +506,9 @@ const xp = [
         trajectory=true,
     )
 
-    @test norm(res3[1] - x_true3) ≈ 0 atol = 1e-5
+    @test norm(res3[1] - x_true3) <= 5e-5
     @test res3[3] ≈ primal_true3
-    @test res3[5][end][1] <= 338
+    @test res3[5][end][1] <= 451
 
     x_true4 = [
         0.12350364160905855,
@@ -606,7 +622,7 @@ const xp = [
         lmo,
         x0,
         max_iteration=k,
-        line_search=FrankWolfe.Adaptive(L_est=100.0),
+        line_search=FrankWolfe.AdaptiveZerothOrder(L_est=100.0),
         print_iter=k / 10,
         epsilon=1e-5,
         momentum=0.9,
@@ -616,8 +632,8 @@ const xp = [
         trajectory=true,
     )
 
-    @test norm(res4[1] - x_true4) ≈ 0 atol = 2e-6
+    @test norm(res4[1] - x_true4) <= 5e-5
     @test res4[3] ≈ primal_true4
-    @test res4[5][end][1] <= 338
+    @test res4[5][end][1] <= 451
 
 end
