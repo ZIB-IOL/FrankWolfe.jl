@@ -129,6 +129,18 @@ using SparseArrays
             lmo_prob,
             x0,
             max_iteration=1000,
+            line_search=FrankWolfe.AdaptiveZerothOrder(L_est=100.0),
+            verbose=false,
+            momentum=0.9,
+        )[3] - 0.2,
+    ) < 1.0e-3
+    @test abs(
+        FrankWolfe.frank_wolfe(
+            f,
+            grad!,
+            lmo_prob,
+            x0,
+            max_iteration=1000,
             line_search=FrankWolfe.Adaptive(L_est=100.0),
             verbose=false,
             momentum=0.9,
@@ -142,6 +154,18 @@ using SparseArrays
             x0,
             max_iteration=1000,
             line_search=FrankWolfe.Adaptive(L_est=100.0),
+            verbose=false,
+            momentum=0.5,
+        )[3] - 0.2,
+    ) < 1.0e-3
+    @test abs(
+        FrankWolfe.frank_wolfe(
+            f,
+            grad!,
+            lmo_prob,
+            x0,
+            max_iteration=1000,
+            line_search=FrankWolfe.AdaptiveZerothOrder(L_est=100.0),
             verbose=false,
             momentum=0.5,
         )[3] - 0.2,

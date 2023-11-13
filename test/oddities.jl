@@ -31,6 +31,17 @@ using Test
             lmo,
             x0,
             max_iteration=1000,
+            line_search=FrankWolfe.AdaptiveZerothOrder(),
+            verbose=true,
+        )[3],
+    ) < 1.0e-10
+    @test abs(
+        FrankWolfe.away_frank_wolfe(
+            f,
+            grad!,
+            lmo,
+            x0,
+            max_iteration=1000,
             line_search=FrankWolfe.Adaptive(),
             verbose=true,
         )[3],
@@ -38,6 +49,18 @@ using Test
 
 
     x0 = copy(x00)
+    @test abs(
+        FrankWolfe.away_frank_wolfe(
+            f,
+            grad!,
+            lmo,
+            x0,
+            max_iteration=1000,
+            lazy=true,
+            line_search=FrankWolfe.AdaptiveZerothOrder(),
+            verbose=true,
+        )[3],
+    ) < 1.0e-10
     @test abs(
         FrankWolfe.away_frank_wolfe(
             f,
