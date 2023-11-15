@@ -31,5 +31,6 @@ for pair in lmo_pairs
         zeros(n);
         update_order=FrankWolfe.FullUpdate(),
         verbose=true,
+        update_step=FrankWolfe.BPCGStep(),
     )
 end
