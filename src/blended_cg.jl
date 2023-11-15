@@ -76,7 +76,7 @@ function blended_conditional_gradient(
     f,
     grad!,
     lmo,
-    active_set::ActiveSet;
+    active_set::AbstractActiveSet;
     line_search::LineSearchMethod=Adaptive(),
     line_search_inner::LineSearchMethod=Adaptive(),
     hessian=nothing,
@@ -229,7 +229,7 @@ function blended_conditional_gradient(
             f,
             grad!,
             gradient,
-            active_set::ActiveSet,
+            active_set::AbstractActiveSet,
             phi,
             t,
             time_start,
@@ -436,7 +436,7 @@ function minimize_over_convex_hull!(
     f,
     grad!,
     gradient,
-    active_set::ActiveSet,
+    active_set::AbstractActiveSet,
     tolerance,
     t,
     time_start,
@@ -463,7 +463,7 @@ function minimize_over_convex_hull!(
             f,
             grad!,
             gradient,
-            active_set::ActiveSet,
+            active_set::AbstractActiveSet,
             tolerance,
             t,
             time_start,
@@ -691,7 +691,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
     tolerance,
     t,
     time_start,
-    active_set::ActiveSet;
+    active_set::AbstractActiveSet;
     verbose=false,
     L=1.0,
     mu=1.0,
@@ -784,7 +784,7 @@ function simplex_gradient_descent_over_probability_simplex(
     t,
     time_start,
     non_simplex_iter,
-    active_set::ActiveSet;
+    active_set::AbstractActiveSet;
     verbose=verbose,
     print_iter=print_iter,
     L=1.0,
@@ -897,7 +897,7 @@ function simplex_gradient_descent_over_convex_hull(
     f,
     grad!,
     gradient,
-    active_set::ActiveSet,
+    active_set::AbstractActiveSet,
     tolerance,
     t,
     time_start,
@@ -1086,7 +1086,7 @@ or the same tuple with `y` from the LMO.
 """
 function lp_separation_oracle(
     lmo::LinearMinimizationOracle,
-    active_set::ActiveSet,
+    active_set::AbstractActiveSet,
     direction,
     min_gap,
     lazy_tolerance;

@@ -1,5 +1,14 @@
 
 """
+    AbstractActiveSet{AT, R, IT}
+
+Abstract type for an active set of atoms of type `AT` with weights of type `R` and iterate of type `IT`.
+An active set is typically expected to have a field `weights`, a field `atoms`, and a field `x`.
+Otherwise, all active set methods from `src/active_set.jl` can be overwritten.
+"""
+abstract type AbstractActiveSet{AT, R <: Real, IT} <: AbstractVector{Tuple{R,AT}} end
+
+"""
     ActiveSet{AT, R, IT}
 
 Represents an active set of extreme vertices collected in a FW algorithm,
@@ -7,7 +16,7 @@ along with their coefficients `(λ_i, a_i)`.
 `R` is the type of the `λ_i`, `AT` is the type of the atoms `a_i`.
 The iterate `x = ∑λ_i a_i` is stored in x with type `IT`.
 """
-struct ActiveSet{AT, R <: Real, IT} <: AbstractVector{Tuple{R,AT}}
+struct ActiveSet{AT, R <: Real, IT} <: AbstractActiveSet{AT,R,IT}
     weights::Vector{R}
     atoms::Vector{AT}
     x::IT
@@ -45,37 +54,37 @@ function ActiveSet{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}) 
     return as
 end
 
-Base.getindex(as::ActiveSet, i) = (as.weights[i], as.atoms[i])
-Base.size(as::ActiveSet) = size(as.weights)
+Base.getindex(as::AbstractActiveSet, i) = (as.weights[i], as.atoms[i])
+Base.size(as::AbstractActiveSet) = size(as.weights)
 
 # these three functions do not update the active set iterate
 
-function Base.push!(as::ActiveSet, (λ, a))
+function Base.push!(as::AbstractActiveSet, (λ, a))
     push!(as.weights, λ)
     push!(as.atoms, a)
     return as
 end
 
-function Base.deleteat!(as::ActiveSet, idx)
+function Base.deleteat!(as::AbstractActiveSet, idx)
     deleteat!(as.weights, idx)
     deleteat!(as.atoms, idx)
     return as
 end
 
-function Base.setindex!(as::ActiveSet, tup::Tuple, idx)
+function Base.setindex!(as::AbstractActiveSet, tup::Tuple, idx)
     as.weights[idx] = tup[1]
     as.atoms[idx] = tup[2]
     return tup
 end
 
-function Base.empty!(as::ActiveSet)
+function Base.empty!(as::AbstractActiveSet)
     empty!(as.atoms)
     empty!(as.weights)
     as.x .= 0
     return as
 end
 
-function Base.isempty(as::ActiveSet)
+function Base.isempty(as::AbstractActiveSet)
     return isempty(as.atoms)
 end
 
@@ -83,16 +92,16 @@ end
 Copies an active set, the weight and atom vectors and the iterate.
 Individual atoms are not copied.
 """
-function Base.copy(as::ActiveSet{AT,R,IT}) where {AT,R,IT}
+function Base.copy(as::AbstractActiveSet{AT,R,IT}) where {AT,R,IT}
     return ActiveSet{AT,R,IT}(copy(as.weights), copy(as.atoms), copy(as.x))
 end
 
 """
-    active_set_update!(active_set::ActiveSet, lambda, atom)
+    active_set_update!(active_set::AbstractActiveSet, lambda, atom)
 
 Adds the atom to the active set with weight lambda or adds lambda to existing atom.
 """
-function active_set_update!(active_set::ActiveSet, lambda, atom, renorm=true, idx=nothing; add_dropped_vertices=false, vertex_storage=nothing)
+function active_set_update!(active_set::AbstractActiveSet, lambda, atom, renorm=true, idx=nothing; add_dropped_vertices=false, vertex_storage=nothing)
     # rescale active set
     active_set.weights .*= (1 - lambda)
     # add value for new atom
@@ -145,17 +154,17 @@ function active_set_update_iterate_pairwise!(x::IT, lambda::Real, fw_atom::A, aw
     return x
 end
 
-function active_set_validate(active_set::ActiveSet)
+function active_set_validate(active_set::AbstractActiveSet)
     return sum(active_set.weights) ≈ 1.0 && all(>=(0), active_set.weights)
 end
 
-function active_set_renormalize!(active_set::ActiveSet)
+function active_set_renormalize!(active_set::AbstractActiveSet)
     renorm = sum(active_set.weights)
     active_set.weights ./= renorm
     return active_set
 end
 
-function weight_from_atom(active_set::ActiveSet, atom)
+function weight_from_atom(active_set::AbstractActiveSet, atom)
     idx = find_atom(active_set, atom)
     if idx > 0
         return active_set.weights[idx]
@@ -174,7 +183,7 @@ function get_active_set_iterate(active_set)
 end
 
 """
-    compute_active_set_iterate!(active_set::ActiveSet) -> x
+    compute_active_set_iterate!(active_set::AbstractActiveSet) -> x
 
 Recomputes from scratch the iterate `x` from the current weights and vertices of the active set.
 Returns the iterate `x`.
@@ -188,7 +197,7 @@ function compute_active_set_iterate!(active_set)
 end
 
 # specialized version for sparse vector
-function compute_active_set_iterate!(active_set::ActiveSet{<:SparseArrays.SparseVector})
+function compute_active_set_iterate!(active_set::AbstractActiveSet{<:SparseArrays.SparseVector})
     active_set.x .= 0
     for (λi, ai) in active_set
         nzvals = SparseArrays.nonzeros(ai)
@@ -227,7 +236,7 @@ function active_set_cleanup!(active_set; weight_purge_threshold=1e-12, update=tr
     return nothing
 end
 
-function find_atom(active_set::ActiveSet, atom)
+function find_atom(active_set::AbstractActiveSet, atom)
     @inbounds for idx in eachindex(active_set)
         if _unsafe_equal(active_set.atoms[idx], atom)
             return idx
@@ -237,12 +246,12 @@ function find_atom(active_set::ActiveSet, atom)
 end
 
 """
-    active_set_argmin(active_set::ActiveSet, direction)
+    active_set_argmin(active_set::AbstractActiveSet, direction)
 
 Computes the linear minimizer in the direction on the active set.
 Returns `(λ_i, a_i, i)`
 """
-function active_set_argmin(active_set::ActiveSet, direction)
+function active_set_argmin(active_set::AbstractActiveSet, direction)
     val = dot(active_set.atoms[1], direction)
     idx = 1
     temp = 0
@@ -258,12 +267,12 @@ function active_set_argmin(active_set::ActiveSet, direction)
 end
 
 """
-    active_set_argminmax(active_set::ActiveSet, direction)
+    active_set_argminmax(active_set::AbstractActiveSet, direction)
 
 Computes the linear minimizer in the direction on the active set.
 Returns `(λ_min, a_min, i_min, val_min, λ_max, a_max, i_max, val_max, val_max-val_min ≥ Φ)`
 """
-function active_set_argminmax(active_set::ActiveSet, direction; Φ=0.5)
+function active_set_argminmax(active_set::AbstractActiveSet, direction; Φ=0.5)
     val = Inf
     valM = -Inf
     idx = -1
@@ -291,14 +300,14 @@ end
 
 Resets the active set structure to a single vertex `v` with unit weight.
 """
-function active_set_initialize!(as::ActiveSet{AT,R}, v) where {AT,R}
+function active_set_initialize!(as::AbstractActiveSet{AT,R}, v) where {AT,R}
     empty!(as)
     push!(as, (one(R), v))
     compute_active_set_iterate!(as)
     return as
 end
 
-function compute_active_set_iterate!(active_set::ActiveSet{<:ScaledHotVector, <:Real, <:AbstractVector})
+function compute_active_set_iterate!(active_set::AbstractActiveSet{<:ScaledHotVector, <:Real, <:AbstractVector})
     active_set.x .= 0
     @inbounds for (λi, ai) in active_set
         active_set.x[ai.val_idx] += λi * ai.active_val
