@@ -73,7 +73,7 @@ function away_frank_wolfe(
     f,
     grad!,
     lmo,
-    active_set::ActiveSet;
+    active_set::AbstractActiveSet;
     line_search::LineSearchMethod=Adaptive(),
     lazy_tolerance=2.0,
     epsilon=1e-7,
