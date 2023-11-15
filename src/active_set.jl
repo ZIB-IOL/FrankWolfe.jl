@@ -16,7 +16,7 @@ along with their coefficients `(λ_i, a_i)`.
 `R` is the type of the `λ_i`, `AT` is the type of the atoms `a_i`.
 The iterate `x = ∑λ_i a_i` is stored in x with type `IT`.
 """
-struct ActiveSet{AT, R <: Real, IT} <: AbstractActiveSet{AT, R <: Real, IT}
+struct ActiveSet{AT, R <: Real, IT} <: AbstractActiveSet{AT,R,IT}
     weights::Vector{R}
     atoms::Vector{AT}
     x::IT
