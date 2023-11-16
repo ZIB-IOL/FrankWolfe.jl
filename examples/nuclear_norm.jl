@@ -1,10 +1,4 @@
 using FrankWolfe
-using ProgressMeter
-using Arpack
-using Plots
-using DoubleFloats
-using ReverseDiff
-
 import Random
 using SparseArrays, LinearAlgebra
 using Test

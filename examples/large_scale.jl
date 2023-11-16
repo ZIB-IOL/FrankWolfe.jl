@@ -11,12 +11,6 @@ NOTE.
 =#
 
 using FrankWolfe
-using ProgressMeter
-using Arpack
-using Plots
-using DoubleFloats
-using ReverseDiff
-
 using LinearAlgebra
 
 n = Int(1e7)
