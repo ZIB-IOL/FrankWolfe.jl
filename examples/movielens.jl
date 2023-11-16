@@ -1,4 +1,5 @@
 using FrankWolfe
+import Arpack
 
 # download movielens data
 using ZipFile, DataFrames, CSV
