@@ -1,8 +1,4 @@
 using FrankWolfe
-using ProgressMeter
-using Arpack
-using Plots
-
 using LinearAlgebra
 
 n = Int(1e4)

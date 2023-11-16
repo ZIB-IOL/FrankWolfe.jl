@@ -4,12 +4,6 @@ using the stochastic version of Frank-Wolfe.
 """
 
 using FrankWolfe
-using ProgressMeter
-using Arpack
-using Plots
-using DoubleFloats
-using ReverseDiff
-
 using Random
 using LinearAlgebra
 

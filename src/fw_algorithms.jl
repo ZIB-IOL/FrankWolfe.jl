@@ -237,7 +237,7 @@ function frank_wolfe(
         callback(state)
     end
 
-    return x, v, primal, dual_gap, traj_data
+    return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data)
 end
 
 
@@ -468,7 +468,7 @@ function lazified_conditional_gradient(
         )
         callback(state)
     end
-    return x, v, primal, dual_gap, traj_data
+    return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data)
 end
 
 """
@@ -730,5 +730,5 @@ function stochastic_frank_wolfe(
         )
         callback(state, batch_size)
     end
-    return x, v, primal, dual_gap, traj_data
+    return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data)
 end

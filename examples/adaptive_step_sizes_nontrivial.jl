@@ -1,7 +1,5 @@
 using FrankWolfe
-using ProgressMeter
 using Random
-using Plots
 
 using LinearAlgebra
 

@@ -5,12 +5,6 @@
 # to get accurate timings it is important to run twice so that the compile time of Julia for the first run
 # is not tainting the results
 using FrankWolfe
-using ProgressMeter
-using Arpack
-using Plots
-using DoubleFloats
-using ReverseDiff
-
 using LinearAlgebra
 using LaTeXStrings
 

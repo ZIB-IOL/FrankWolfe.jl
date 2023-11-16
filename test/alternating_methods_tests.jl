@@ -1,6 +1,9 @@
 import FrankWolfe
 using LinearAlgebra
 using Test
+using Random
+
+Random.seed!(100)
 
 f(x) = dot(x, x)
 

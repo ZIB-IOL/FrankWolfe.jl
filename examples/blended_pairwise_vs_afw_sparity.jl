@@ -10,12 +10,6 @@ The default for AFW is K = 2.0
 =#
 
 using FrankWolfe
-using ProgressMeter
-using Arpack
-using Plots
-using DoubleFloats
-using ReverseDiff
-
 using LinearAlgebra
 using Random
 

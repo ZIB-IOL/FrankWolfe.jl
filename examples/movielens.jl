@@ -1,9 +1,5 @@
 using FrankWolfe
-using ProgressMeter
-using Arpack
-using Plots
-using DoubleFloats
-using ReverseDiff
+import Arpack
 
 # download movielens data
 using ZipFile, DataFrames, CSV
