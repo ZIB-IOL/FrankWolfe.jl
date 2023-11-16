@@ -2,9 +2,6 @@ module FrankWolfe
 
 using GenericSchur
 using LinearAlgebra
-using Printf
-using ProgressMeter
-using TimerOutputs
 using SparseArrays: spzeros, SparseVector
 import SparseArrays
 import Random

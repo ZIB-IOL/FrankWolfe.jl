@@ -6,14 +6,9 @@
 # is not tainting the results
 
 using FrankWolfe
-using ProgressMeter
-using Arpack
-using Plots
-using DoubleFloats
-using ReverseDiff
-
 using JSON
 using LaTeXStrings
+
 results = JSON.Parser.parsefile("movielens_result.json")
 
 ref_optimum = results["trajectory_arr_lazy_ref"][end][2]
