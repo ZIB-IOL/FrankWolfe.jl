@@ -249,6 +249,7 @@ function away_frank_wolfe(
             )
 
             gamma = min(gamma_max, gamma)
+            tt = gamma ≈ gamma_max ? drop : tt
             # cleanup and renormalize every x iterations. Only for the fw steps.
             renorm = mod(t, renorm_interval) == 0
             if away_step_taken
