@@ -22,30 +22,27 @@ m = JuMP.Model(GLPK.Optimizer)
 @constraint(m, x .>= 0)
 
 
-lmos = (FrankWolfe.SpectraplexLMO(1.0, dim, true, 1000), FrankWolfe.MathOptLMO(m.moi_backend))
-x0 = rand(dim, dim)
+lmos = (FrankWolfe.SpectraplexLMO(1.0, dim), FrankWolfe.MathOptLMO(m.moi_backend))
+x0 = (zeros(dim, dim), Matrix(I(dim)./dim)) #rand(dim, dim)
 
 trajectories = []
 
 for order in [FrankWolfe.FullUpdate(), FrankWolfe.CyclicUpdate(), FrankWolfe.StochasticUpdate()]
-    for step in [FrankWolfe.FrankWolfeStep(), FrankWolfe.BPCGStep()]
-        _, _, _, _, _, traj_data = FrankWolfe.alternating_linear_minimization(
-            FrankWolfe.block_coordinate_frank_wolfe,
-            f,
-            grad!,
-            lmos,
-            x0;
-            update_order=order,
-            #line_search=FrankWolfe.Adaptive(relaxed_smoothness=true),
-            verbose=true,
-            trajectory=true,
-            update_step=step,
-        )
-        push!(trajectories, traj_data)
-    end
+    _, _, _, _, _, traj_data = FrankWolfe.alternating_linear_minimization(
+        FrankWolfe.block_coordinate_frank_wolfe,
+        f,
+        grad!,
+        lmos,
+        x0;
+        update_order=order,
+        verbose=true,
+        trajectory=true,
+        update_step=FrankWolfe.BPCGStep(),
+    )
+    push!(trajectories, traj_data)
 end
 
-labels = ["Full - Vanilla", "Full - BPCG", "Cyclic - Vanilla", "Cyclic - BPCG", "Stochastic - Vanilla", "Stochastic - BPCG"]
+labels = ["Full", "Cyclic", "Stochastic"]
 
 fp = plot_trajectories(
     trajectories,

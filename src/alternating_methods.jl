@@ -1,7 +1,38 @@
+function alternating_linear_minimization(
+    bc_method,
+    f,
+    grad!,
+    lmos::NTuple{N,LinearMinimizationOracle},
+    start_direction::T;
+    lambda=1.0,
+    verbose=false,
+    callback=nothing,
+    print_iter=1e3,
+    kwargs...,
+) where {N,T<:AbstractArray}
+    
+    x0 = compute_extreme_point(ProductLMO(lmos), tuple(fill(start_direction, N)))
+
+    return alternating_linear_minimization(
+        bc_method,
+        f,
+        grad!,
+        lmos,
+        x0;
+        lambda=lambda,
+        verbose=verbose,
+        callback=callback,
+        print_iter=print_iter,
+        kwargs...
+    )
+
+end
+
 """
     alternating_linear_minimization(bc_algo::BlockCoordinateMethod, f, grad!, lmos::NTuple{N,LinearMinimizationOracle}, x0; ...) where {N}
 
 Alternating Linear Minimization minimizes the objective `f` over the intersections of the feasible domains specified by `lmos`.
+The tuple `x0` defines the initial points for each domain.
 Returns a tuple `(x, v, primal, dual_gap, infeas, traj_data)` with:
 - `x` cartesian product of final iterates
 - `v` cartesian product of last vertices of the LMOs
@@ -15,7 +46,7 @@ function alternating_linear_minimization(
     f,
     grad!,
     lmos::NTuple{N,LinearMinimizationOracle},
-    x0;
+    x0::Tuple{Vararg{Any,N}};
     lambda=1.0,
     verbose=false,
     callback=nothing,
@@ -23,12 +54,9 @@ function alternating_linear_minimization(
     kwargs...,
 ) where {N}
 
-    prod_lmo = ProductLMO(lmos)
-    direction = BlockVector([x0 for _=1:N], [size(x0) for _=1:N], length(x0)*N)
-    x0_bc = compute_extreme_point(prod_lmo, direction)
-
-    # workspace for the gradient
+    x0_bc = BlockVector([x0[i] for i=1:N], [size(x0[i]) for i=1:N], sum(length, x0))
     gradf = similar(x0_bc)
+    prod_lmo = ProductLMO(lmos)
 
     function grad_bc!(storage, x)
         for i in 1:N
@@ -48,7 +76,7 @@ function alternating_linear_minimization(
     f_bc(x) = sum(f(x.blocks[i]) for i in 1:N) + lambda * infeasibility(x)
 
     if verbose
-        println("\nAlternating Linear Minimization.")
+        println("\nAlternating Linear Minimization (ALM).")
         print("LAMBDA: $lambda")
 
         format_string = "%14e\n"
