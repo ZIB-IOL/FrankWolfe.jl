@@ -11,7 +11,7 @@ function alternating_linear_minimization(
     kwargs...,
 ) where {N,T<:AbstractArray}
     
-    x0 = compute_extreme_point(ProductLMO(lmos), tuple(fill(start_direction, N)))
+    x0 = compute_extreme_point(ProductLMO(lmos), tuple(fill(start_direction, N)...))
 
     return alternating_linear_minimization(
         bc_method,
