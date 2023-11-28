@@ -50,11 +50,23 @@ abstract type UpdateStep end
 struct FrankWolfeStep <: UpdateStep end
 mutable struct BPCGStep <: UpdateStep
     active_set::Union{FrankWolfe.ActiveSet, Nothing}
-    lazy::Bool
-    lazy_tolerance::Float
+    renorm_interval::Int
+    lazy_tolerance::Float64
 end
 
-BPCGStep() = BPCGStep(nothing, false, 2.0)
+function Base.copy(obj::FrankWolfeStep)
+    return FrankWolfeStep()
+end
+
+function Base.copy(obj::BPCGStep)
+    if obj.active_set === nothing
+        return BPCGStep(nothing, obj.renorm_interval, obj.lazy_tolerance)
+    else
+        return BPCGStep(copy(obj.active_set), obj.renorm_interval, obj.lazy_tolerance)
+    end
+end
+
+BPCGStep() = BPCGStep(nothing, 1000, 2.0)
 
 function update(
     ::FrankWolfeStep,
@@ -68,6 +80,7 @@ function update(
     line_search,
     linesearch_workspace,
     memory_mode,
+    epsilon,
 )
     d = similar(x)
     v = compute_extreme_point(lmo, gradient)
@@ -90,7 +103,9 @@ function update(
 
     x = muladd_memory_mode(memory_mode, x, gamma, d)
 
-    return (dual_gap, v, d, gamma)
+    tt = regular
+
+    return (dual_gap, v, d, gamma, tt)
 end
 
 function update(
@@ -105,15 +120,11 @@ function update(
     line_search,
     linesearch_workspace,
     memory_mode,
+    epsilon,
 )
-    if s.active_set === nothing
-        s.active_set = ActiveSet([(1.0, x)])
-    else
-        # compute current iterate from active set
-        x = get_active_set_iterate(s.active_set)
-    end
 
-    phi = dual_gap
+    d = similar(x)
+    tt = regular
 
     _, v_local, v_local_loc, _, a_lambda, a, a_loc, _, _ =
         active_set_argminmax(s.active_set, gradient)
@@ -121,16 +132,15 @@ function update(
     dot_forward_vertex = fast_dot(gradient, v_local)
     dot_away_vertex = fast_dot(gradient, a)
     local_gap = dot_away_vertex - dot_forward_vertex
-    if !s.lazy
-        if t > 1
-            v = compute_extreme_point(lmo, gradient)
-            dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
-            phi = dual_gap
-        end
-    end
+    
+    v = compute_extreme_point(lmo, gradient)
+    dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
+
     # minor modification from original paper for improved sparsity
     # (proof follows with minor modification when estimating the step)
-    if local_gap ≥ phi / s.lazy_tolerance
+    #println("Gaps: ", local_gap, " ", dual_gap)
+    #println(fast_dot(gradient, x), " ", fast_dot(gradient, v))
+    if t > 1 && local_gap ≥ dual_gap/s.lazy_tolerance
         d = muladd_memory_mode(memory_mode, d, a, v_local)
         vertex_taken = v_local
         gamma_max = a_lambda
@@ -153,39 +163,14 @@ function update(
         if gamma ≈ gamma_max
             s.active_set.weights[v_local_loc] += gamma
             deleteat!(s.active_set, a_loc)
-            if add_dropped_vertices
-                push!(extra_vertex_storage, a)
-            end
         else # transfer weight from away to local FW
             s.active_set.weights[a_loc] -= gamma
             s.active_set.weights[v_local_loc] += gamma
             @assert active_set_validate(s.active_set)
         end
-        active_set_update_iterate_pairwise!(active_set.x, gamma, v_local, a)
+        active_set_update_iterate_pairwise!(s.active_set.x, gamma, v_local, a)
     else # add to active set
-        if lazy # otherwise, v computed above already
-            # optionally try to use the storage
-            if use_extra_vertex_storage
-                lazy_threshold = fast_dot(gradient, x) - phi / s.lazy_tolerance
-                (found_better_vertex, new_forward_vertex) =
-                    storage_find_argmin_vertex(extra_vertex_storage, gradient, lazy_threshold)
-                if found_better_vertex
-                    v = new_forward_vertex
-                    tt = lazylazy
-                else
-                    v = compute_extreme_point(lmo, gradient)
-                    tt = regular
-                end
-            else
-                # for t == 1, v is already computed before first iteration
-                if t > 1
-                    v = compute_extreme_point(lmo, gradient)
-                end
-                tt = regular
-            end
-        end
         vertex_taken = v
-        dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
         # if we are about to exit, compute dual_gap with the cleaned-up x
         if dual_gap ≤ epsilon
             active_set_renormalize!(s.active_set)
@@ -195,71 +180,37 @@ function update(
             grad!(gradient, x)
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
         end
-        # Note: In the following, we differentiate between lazy and non-lazy updates.
-        # The reason is that the non-lazy version does not use phi but the lazy one heavily depends on it.
-        # It is important that the phi is only updated after dropping
-        # below phi / s.lazy_tolerance, as otherwise we simply have a "lagging" dual_gap estimate that just slows down convergence.
-        # The logic is as follows:
-        # - for non-lazy: we accept everything and there are no dual steps
-        # - for lazy: we also accept slightly weaker vertices, those satisfying phi / s.lazy_tolerance
-        # this should simplify the criterion.
-        # DO NOT CHANGE without good reason and talk to Sebastian first for the logic behind this.
-        if !lazy || dual_gap ≥ phi / s.lazy_tolerance                  
-            d = muladd_memory_mode(memory_mode, d, x, v)
 
-            gamma = perform_line_search(
-                line_search,
-                t,
-                f,
-                grad!,
-                gradient,
-                x,
-                d,
-                one(eltype(x)),
-                linesearch_workspace,
-                memory_mode,
-            )
+        d = muladd_memory_mode(memory_mode, d, x, v)
 
-            # dropping active set and restarting from singleton
-            if gamma ≈ 1.0
-                if add_dropped_vertices
-                    for vtx in s.active_set.atoms
-                        if vtx != v
-                            push!(extra_vertex_storage, vtx)
-                        end
-                    end
-                end
-                active_set_initialize!(s.active_set, v)
-            else
-                renorm = mod(t, renorm_interval) == 0
-                active_set_update!(s.active_set, gamma, v, renorm, nothing)
-            end
-        else # dual step
-            # set to computed dual_gap for consistency between the lazy and non-lazy run.
-            # that is ok as we scale with the K = 2.0 default anyways
-            # we only update the dual gap if the step was regular (not lazy from discarded set)
-            if tt != lazylazy
-                phi = dual_gap
-                @debug begin
-                    @assert tt == regular
-                    v2 = compute_extreme_point(lmo, gradient)
-                    g = dot(gradient, x-v2)
-                    if abs(g - dual_gap) > 100 * sqrt(eps())
-                        error("dual gap estimation error $g $dual_gap")
-                    end
-                end
-            else
-                @info "useless step"
-            end
-            tt = dualstep
+        gamma = perform_line_search(
+            line_search,
+            t,
+            f,
+            grad!,
+            gradient,
+            x,
+            d,
+            one(eltype(x)),
+            linesearch_workspace,
+            memory_mode,
+        )
+
+        # dropping active set and restarting from singleton
+        if gamma ≈ 1.0
+            active_set_initialize!(s.active_set, v)
+        else
+            renorm = mod(t, s.renorm_interval) == 0
+            active_set_update!(s.active_set, gamma, v, renorm, nothing)
         end
     end
-    if mod(t, renorm_interval) == 0
+    if mod(t, s.renorm_interval) == 0
         active_set_renormalize!(s.active_set)
-        x = compute_active_set_iterate!(s.active_set)
     end
+    
+    x = muladd_memory_mode(memory_mode, x, gamma, d)
 
-    return (phi, v, d, gamma)
+    return (dual_gap, vertex_taken, d, gamma, tt)
 end
 
 """
@@ -329,7 +280,6 @@ function block_coordinate_frank_wolfe(
     x = copy(x0)
     tt = regular
 
-
     if trajectory
         callback = make_trajectory_callback(callback, traj_data)
     end
@@ -339,7 +289,13 @@ function block_coordinate_frank_wolfe(
     end
 
     if update_step isa UpdateStep
-        update_step = [update_step for _ in 1:N]
+        update_step = [copy(update_step) for _ in 1:N]
+    end
+
+    for (i,s) in enumerate(update_step)
+        if s isa BPCGStep && s.active_set === nothing
+            s.active_set = ActiveSet([(1.0, copy(x0.blocks[i]))])
+        end
     end
 
     if line_search isa LineSearchMethod
@@ -443,7 +399,7 @@ function block_coordinate_frank_wolfe(
                     @. storage = big_storage.blocks[i]
                 end
 
-                dual_gaps[i], v, d, gamma = update(
+                dual_gaps[i], v, d, gamma, tt = update(
                     update_step[i],
                     x.blocks[i],
                     lmo.lmos[i],
@@ -455,6 +411,7 @@ function block_coordinate_frank_wolfe(
                     line_search[i],
                     linesearch_workspace[i],
                     memory_mode,
+                    epsilon,
                 )
             end
 

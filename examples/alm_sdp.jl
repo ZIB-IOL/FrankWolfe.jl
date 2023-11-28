@@ -28,22 +28,24 @@ x0 = rand(dim, dim)
 trajectories = []
 
 for order in [FrankWolfe.FullUpdate(), FrankWolfe.CyclicUpdate(), FrankWolfe.StochasticUpdate()]
-
-    _, _, _, _, _, traj_data = FrankWolfe.alternating_linear_minimization(
-        FrankWolfe.block_coordinate_frank_wolfe,
-        f,
-        grad!,
-        lmos,
-        x0;
-        update_order=order,
-        line_search=FrankWolfe.Adaptive(relaxed_smoothness=true),
-        verbose=true,
-        trajectory=true,
-    )
-    push!(trajectories, traj_data)
+    for step in [FrankWolfe.FrankWolfeStep(), FrankWolfe.BPCGStep()]
+        _, _, _, _, _, traj_data = FrankWolfe.alternating_linear_minimization(
+            FrankWolfe.block_coordinate_frank_wolfe,
+            f,
+            grad!,
+            lmos,
+            x0;
+            update_order=order,
+            #line_search=FrankWolfe.Adaptive(relaxed_smoothness=true),
+            verbose=true,
+            trajectory=true,
+            update_step=step,
+        )
+        push!(trajectories, traj_data)
+    end
 end
 
-labels = ["Full", "Cyclic", "Stochastic"]
+labels = ["Full - Vanilla", "Full - BPCG", "Cyclic - Vanilla", "Cyclic - BPCG", "Stochastic - Vanilla", "Stochastic - BPCG"]
 
 fp = plot_trajectories(
     trajectories,
@@ -51,7 +53,7 @@ fp = plot_trajectories(
     legend_position=:best,
     xscalelog=true,
     reduce_size=true,
-    marker_shapes=[:dtriangle, :rect, :circle],
+    marker_shapes=[:dtriangle, :rect, :circle, :dtriangle, :rect, :circle],
 )
 
 display(fp)
