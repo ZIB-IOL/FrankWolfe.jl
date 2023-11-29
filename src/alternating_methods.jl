@@ -287,7 +287,7 @@ function alternating_projections(
 
         t = t + 1
         if callback !== nothing
-            state = CallbackStateBlockCoordinateMethod(
+            state = CallbackState(
                 t,
                 infeas,
                 infeas - dual_gap,
@@ -295,6 +295,7 @@ function alternating_projections(
                 tot_time,
                 x,
                 v,
+                nothing,
                 nothing,
                 nothing,
                 nothing,
@@ -322,7 +323,7 @@ function alternating_projections(
     tot_time = (time_ns() - time_start) / 1.0e9
 
     if callback !== nothing
-        state = CallbackStateBlockCoordinateMethod(
+        state = CallbackState(
             t,
             infeas,
             infeas - dual_gap,
@@ -330,6 +331,7 @@ function alternating_projections(
             tot_time,
             x,
             v,
+            nothing,
             nothing,
             nothing,
             nothing,
