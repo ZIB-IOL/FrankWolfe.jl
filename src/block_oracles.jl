@@ -64,6 +64,17 @@ end
 
 Base.similar(src::BlockVector{T, MT}) where {T, MT} = similar(src, T)
 
+function Base.collect(::Type{T}, src::BlockVector{T1, MT}) where {T1, MT, T}
+    blocks = [collect(T, src.blocks[i]) for i in eachindex(src.blocks)]
+    return BlockVector(
+        blocks,
+        src.block_sizes,
+        src.tot_size,
+    )
+end
+
+Base.collect(src::BlockVector{T, MT}) where {T, MT} = collect(T, src)
+
 function Base.zero(src::BlockVector)
     blocks = [zero(b) for b in src.blocks]
     return BlockVector(
