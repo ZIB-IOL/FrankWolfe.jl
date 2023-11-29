@@ -62,7 +62,7 @@ function blended_pairwise_conditional_gradient(
 end
 
 """
-    blended_pairwise_conditional_gradient(f, grad!, lmo, active_set::ActiveSet; kwargs...)
+    blended_pairwise_conditional_gradient(f, grad!, lmo, active_set::AbstractActiveSet; kwargs...)
 
 Warm-starts BPCG with a pre-defined `active_set`.
 """
@@ -70,7 +70,7 @@ function blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
-    active_set::ActiveSet;
+    active_set::AbstractActiveSet;
     line_search::LineSearchMethod=Adaptive(),
     epsilon=1e-7,
     max_iteration=10000,
@@ -305,7 +305,7 @@ function blended_pairwise_conditional_gradient(
             # - for lazy: we also accept slightly weaker vertices, those satisfying phi / lazy_tolerance
             # this should simplify the criterion.
             # DO NOT CHANGE without good reason and talk to Sebastian first for the logic behind this.
-            if !lazy || dual_gap ≥ phi / lazy_tolerance                  
+            if !lazy || dual_gap ≥ phi / lazy_tolerance
                 d = muladd_memory_mode(memory_mode, d, x, v)
 
                 gamma = perform_line_search(
@@ -478,5 +478,5 @@ function blended_pairwise_conditional_gradient(
         callback(state, active_set)
     end
 
-    return x, v, primal, dual_gap, traj_data, active_set
+    return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data, active_set=active_set)
 end

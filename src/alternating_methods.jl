@@ -38,7 +38,7 @@ Returns a tuple `(x, v, primal, dual_gap, infeas, traj_data)` with:
 - `v` cartesian product of last vertices of the LMOs
 - `primal` primal value `f(x)`
 - `dual_gap` final Frank-Wolfe gap
-- `infeas` sum of squared, pairwise distances between iterates 
+- `infeas` sum of squared, pairwise distances between iterates
 - `traj_data` vector of trajectory information.
 """
 function alternating_linear_minimization(
@@ -117,7 +117,7 @@ function ProjectionFW(y, lmo; max_iter=10000, eps=1e-3)
         epsilon=eps,
         max_iteration=max_iter,
         trajectory=true,
-        line_search=FrankWolfe.Adaptive(verbose=false, relaxed_smoothness=true),
+        line_search=FrankWolfe.Adaptive(verbose=false, relaxed_smoothness=false),
     )
     return x_opt
 end
@@ -130,7 +130,7 @@ Returns a tuple `(x, v, dual_gap, infeas, traj_data)` with:
 - `x` cartesian product of final iterates
 - `v` cartesian product of last vertices of the LMOs
 - `dual_gap` final Frank-Wolfe gap
-- `infeas` sum of squared, pairwise distances between iterates 
+- `infeas` sum of squared, pairwise distances between iterates
 - `traj_data` vector of trajectory information.
 """
 function alternating_projections(
@@ -262,7 +262,7 @@ function alternating_projections(
             end
         end
 
-        # Projection step: 
+        # Projection step:
         for i in 1:N
             # project the previous iterate on the i-th feasible region
             x[i] = projection_step(x[mod(i - 2, N)+1], i, t)

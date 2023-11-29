@@ -10,7 +10,7 @@
 # ```math
 # Q = [-1,0]^n ~.
 # ```
-# The goal is to find either a point in the intersection, `` x \in P \cap Q``, or a pair of points, ``(x_P, x_Q) \in P \times Q``, which attains minimal distance between ``P`` and ``Q``, 
+# The goal is to find either a point in the intersection, `` x \in P \cap Q``, or a pair of points, ``(x_P, x_Q) \in P \times Q``, which attains minimal distance between ``P`` and ``Q``,
 # ```math
 # \|x_P - x_Q\|_2 = \min_{(x,y) \in P \times Q} \|x - y \|_2 ~.
 # ```

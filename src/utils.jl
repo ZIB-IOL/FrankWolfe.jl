@@ -83,14 +83,14 @@ function benchmark_oracles(f, grad!, x_gen, lmo; k=100, nocache=true)
             x = (1 - gamma) * x + gamma * v
         )
     end
-    @showprogress 1 "Testing update... (memory_mode: InplaceEmphasis) " for i in 1:k
+    @showprogress 1 "Testing update... (Emphasis: InplaceEmphasis) " for i in 1:k
         x = x_gen()
         gradient = collect(x)
         grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
         gamma = 1 / 2
         # TODO: to be updated to broadcast version once data structure ScaledHotVector allows for it
-        @timeit to "update (memory_mode)" @memory_mode(
+        @timeit to "update (InplaceEmphasis)" @memory_mode(
             InplaceEmphasis(),
             x = (1 - gamma) * x + gamma * v
         )

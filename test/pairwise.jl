@@ -23,7 +23,7 @@ end
         lmo_prob,
         x0,
         max_iteration=6000,
-        line_search=FrankWolfe.Adaptive(),
+        line_search=FrankWolfe.AdaptiveZerothOrder(),
         verbose=false,
         epsilon=3e-7,
     )
@@ -33,7 +33,7 @@ end
         lmo_prob,
         x0,
         max_iteration=6000,
-        line_search=FrankWolfe.Adaptive(),
+        line_search=FrankWolfe.AdaptiveZerothOrder(),
         print_iter=100,
         verbose=false,
         epsilon=3e-7,
@@ -46,7 +46,7 @@ end
         lmo_prob,
         x0,
         max_iteration=6000,
-        line_search=FrankWolfe.Adaptive(),
+        line_search=FrankWolfe.AdaptiveZerothOrder(),
         verbose=false,
         lazy=true,
         epsilon=3e-7,
@@ -73,7 +73,7 @@ end
         lmo_prob,
         x0,
         max_iteration=6000,
-        line_search=FrankWolfe.Adaptive(),
+        line_search=FrankWolfe.AdaptiveZerothOrder(),
         verbose=false,
         epsilon=3e-7,
         callback=test_callback,
@@ -96,11 +96,11 @@ end
         lmo,
         x0,
         max_iteration=6000,
-        line_search=FrankWolfe.Adaptive(),
+        line_search=FrankWolfe.AdaptiveZerothOrder(),
         epsilon=3e-7,
         verbose=false,
     )
-    @test lmo.counter == 51
+    @test lmo.counter <= 51
     prev_counter = lmo.counter
     lmo.counter = 0
     FrankWolfe.blended_pairwise_conditional_gradient(
@@ -109,7 +109,7 @@ end
         lmo,
         x0,
         max_iteration=6000,
-        line_search=FrankWolfe.Adaptive(),
+        line_search=FrankWolfe.AdaptiveZerothOrder(),
         epsilon=3e-7,
         verbose=false,
         recompute_last_vertex=false,

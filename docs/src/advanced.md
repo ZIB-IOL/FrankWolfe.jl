@@ -10,7 +10,7 @@ For all Frank-Wolfe algorithms, a step size must be determined to move from the 
 This step size can be determined by exact line search or any other rule represented by a subtype of [`FrankWolfe.LineSearchMethod`](@ref), which must implement [`FrankWolfe.line_search_wrapper`](@ref).
 
 Multiple line search and step size determination rules are already  available.
-See [Pedregosa, Negiar, Askari, Jaggi (2020)](https://arxiv.org/abs/1806.05123) for the adaptive step size and [Carderera, Besançon, Pokutta (2021)](https://openreview.net/forum?id=rq_UD6IiBpX) for the monotonic step size.
+See [Pedregosa, Negiar, Askari, Jaggi (2020)](https://arxiv.org/abs/1806.05123) and [Pokutta (2023)](https://arxiv.org/abs/2311.05313) for the adaptive step size and [Carderera, Besançon, Pokutta (2021)](https://openreview.net/forum?id=rq_UD6IiBpX) for the monotonic step size.
 
 ## Callbacks
 
@@ -174,13 +174,16 @@ to behave as the member of a Hilbert space and optionally be mutable. Assuming t
 ```julia
 Base.similar(::IT)
 Base.similar(::IT, ::Type{T})
+Base.collect(::IT)
+Base.size(::IT)
 Base.eltype(::IT)
-Base.copy(::IT)
+Base.copyto!(dest::IT, src::IT)
 
 Base.:+(x1::IT, x2::IT)
 Base.:*(scalar::Real, x::IT)
 Base.:-(x1::IT, x2::IT)
 LinearAlgebra.dot(x1::IT, x2::IT)
+LinearAlgebra.norm(::IT)
 ```
 
 For methods using an [`FrankWolfe.ActiveSet`](@ref), the atoms or individual extreme points of the feasible region are not necessarily

@@ -73,7 +73,7 @@ function away_frank_wolfe(
     f,
     grad!,
     lmo,
-    active_set::ActiveSet;
+    active_set::AbstractActiveSet;
     line_search::LineSearchMethod=Adaptive(),
     lazy_tolerance=2.0,
     epsilon=1e-7,
@@ -144,7 +144,7 @@ function away_frank_wolfe(
     else
         nothing
     end
-    
+
     if verbose
         println("\nAway-step Frank-Wolfe Algorithm.")
         NumType = eltype(x)
@@ -247,8 +247,9 @@ function away_frank_wolfe(
                 linesearch_workspace,
                 memory_mode,
             )
-            
-            gamma = min(gamma_max, gamma)  
+
+            gamma = min(gamma_max, gamma)
+            tt = gamma ≈ gamma_max ? drop : tt
             # cleanup and renormalize every x iterations. Only for the fw steps.
             renorm = mod(t, renorm_interval) == 0
             if away_step_taken
@@ -285,7 +286,7 @@ function away_frank_wolfe(
             if callback(state, active_set) === false
                 break
             end
-        end  
+        end
 
         if mod(t, renorm_interval) == 0
             active_set_renormalize!(active_set)
@@ -365,7 +366,7 @@ function away_frank_wolfe(
         callback(state, active_set)
     end
 
-    return x, v, primal, dual_gap, traj_data, active_set
+    return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data, active_set=active_set)
 end
 
 function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon, d; use_extra_vertex_storage=false, extra_vertex_storage=nothing, lazy_tolerance=2.0, memory_mode::MemoryEmphasis=InplaceEmphasis())

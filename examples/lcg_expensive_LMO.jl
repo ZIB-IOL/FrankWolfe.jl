@@ -1,9 +1,5 @@
 using FrankWolfe
-using ProgressMeter
-using Arpack
 using Plots
-using DoubleFloats
-using ReverseDiff
 
 using LinearAlgebra
 using Random
@@ -25,7 +21,7 @@ const xp = xpi # ./ total;
 # better for memory consumption as we do coordinate-wise ops
 
 function cf(x, xp)
-    return LinearAlgebra.norm(x .- xp)^2 / n^2
+    return norm(x .- xp)^2 / n^2
 end
 
 function cgrad!(storage, x, xp)

@@ -32,13 +32,7 @@ NOTE:
 =#
 
 using FrankWolfe
-using ProgressMeter
-using Arpack
-using Plots
-using DoubleFloats
-using ReverseDiff
-
-import LinearAlgebra
+using LinearAlgebra
 
 include("../examples/plot_utils.jl")
 
@@ -49,7 +43,7 @@ k = Int(1e3)
 xp = 1 / n * ones(n);
 
 # definition of objective
-f(x) = LinearAlgebra.norm(x - xp)^2
+f(x) = norm(x - xp)^2
 
 # definition of gradient
 function grad!(storage, x)

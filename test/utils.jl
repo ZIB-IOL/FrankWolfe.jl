@@ -157,6 +157,19 @@ end
         nothing,
         FrankWolfe.InplaceEmphasis(),
     )
+    ls = @inferred FrankWolfe.AdaptiveZerothOrder()
+    @inferred FrankWolfe.perform_line_search(
+        ls,
+        1,
+        f,
+        grad!,
+        gradient,
+        a,
+        a - b,
+        1.0,
+        FrankWolfe.build_linesearch_workspace(ls, a, gradient),
+        FrankWolfe.InplaceEmphasis(),
+    )
     ls = @inferred FrankWolfe.Adaptive()
     @inferred FrankWolfe.perform_line_search(
         ls,

@@ -32,7 +32,7 @@ using SparseArrays
     @test typeof(similar(arr)) == typeof(arr)
     @test norm(arr) == norm(collect(arr))
     @test dot(arr, arr) == dot(collect(arr), collect(arr))
-    
+
     arr3 = FrankWolfe.BlockVector([3 * ones(2, 2), ones(3, 3)],)
     @test dot(arr3, arr) ≈ dot(arr, arr3)
     @test dot(arr3, arr) ≈ dot(collect(arr3), collect(arr))
