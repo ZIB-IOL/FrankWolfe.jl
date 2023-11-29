@@ -23,7 +23,7 @@ m = JuMP.Model(GLPK.Optimizer)
 
 
 lmos = (FrankWolfe.SpectraplexLMO(1.0, dim), FrankWolfe.MathOptLMO(m.moi_backend))
-x0 = (zeros(dim, dim), Matrix(I(dim)./dim)) #rand(dim, dim)
+x0 = (zeros(dim, dim), Matrix(I(dim) ./ dim))
 
 trajectories = []
 

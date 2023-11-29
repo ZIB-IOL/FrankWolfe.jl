@@ -10,7 +10,7 @@ function alternating_linear_minimization(
     print_iter=1e3,
     kwargs...,
 ) where {N,T<:AbstractArray}
-    
+
     x0 = compute_extreme_point(ProductLMO(lmos), tuple(fill(start_direction, N)...))
 
     return alternating_linear_minimization(
@@ -23,7 +23,7 @@ function alternating_linear_minimization(
         verbose=verbose,
         callback=callback,
         print_iter=print_iter,
-        kwargs...
+        kwargs...,
     )
 
 end
@@ -54,7 +54,7 @@ function alternating_linear_minimization(
     kwargs...,
 ) where {N}
 
-    x0_bc = BlockVector([x0[i] for i=1:N], [size(x0[i]) for i=1:N], sum(length, x0))
+    x0_bc = BlockVector([x0[i] for i in 1:N], [size(x0[i]) for i in 1:N], sum(length, x0))
     gradf = similar(x0_bc)
     prod_lmo = ProductLMO(lmos)
 
@@ -63,14 +63,11 @@ function alternating_linear_minimization(
             grad!(gradf.blocks[i], x.blocks[i])
         end
         t = [lambda * 2.0 * (N * b - sum(x.blocks)) for b in x.blocks]
-        storage.blocks = gradf.blocks + t
+        return storage.blocks = gradf.blocks + t
     end
 
     infeasibility(x) = sum(
-        fast_dot(
-            x.blocks[i] - x.blocks[j],
-            x.blocks[i] - x.blocks[j],
-        ) for i in 1:N for j in 1:i-1
+        fast_dot(x.blocks[i] - x.blocks[j], x.blocks[i] - x.blocks[j]) for i in 1:N for j in 1:i-1
     )
 
     f_bc(x) = sum(f(x.blocks[i]) for i in 1:N) + lambda * infeasibility(x)

@@ -242,7 +242,7 @@ end
     markershape --> :auto
     x := sx
     y := sy
-    z_order := 1
+    return z_order := 1
 end
 
 function plot_trajectories(
@@ -334,15 +334,18 @@ function plot_trajectories(
 end
 
 function plot_sparsity(
-        data, label;
-        filename=nothing, xscalelog=false,
-        legend_position=:topright, yscalelog=true,
-        lstyle=fill(:solid, length(data)),
-        marker_shapes=nothing,
-        n_markers=10,
-        empty_marker=false,
-        reduce_size=false,
-    )
+    data,
+    label;
+    filename=nothing,
+    xscalelog=false,
+    legend_position=:topright,
+    yscalelog=true,
+    lstyle=fill(:solid, length(data)),
+    marker_shapes=nothing,
+    n_markers=10,
+    empty_marker=false,
+    reduce_size=false,
+)
     Plots.gr()
 
     xscale = xscalelog ? :log : :identity
@@ -353,7 +356,7 @@ function plot_sparsity(
 
         fig = nothing
         for (i, trajectory) in enumerate(data)
-            
+
             l = length(trajectory)
             if reduce_size && l > 1000
                 indices = Int.(round.(collect(1:l/1000:l)))
@@ -369,7 +372,7 @@ function plot_sparsity(
                     :n_markers => n_markers,
                     :shape => marker_shapes[i],
                     :log => xscalelog,
-                    :startmark => 5+20*(i-1),
+                    :startmark => 5 + 20 * (i - 1),
                     :markercolor => empty_marker ? :white : :match,
                     :markerstrokecolor => empty_marker ? i : :match,
                 )
@@ -389,7 +392,7 @@ function plot_sparsity(
                     xguidefontsize=8,
                     legendfontsize=8,
                     linestyle=lstyle[i],
-                    marker_args...
+                    marker_args...,
                 )
             else
                 plot!(x, y; label=label[i], linestyle=lstyle[i], marker_args...)
@@ -398,7 +401,7 @@ function plot_sparsity(
 
         return fig
     end
-    
+
     ps = subplot(6, 2, "Primal")
     ds = subplot(6, 4, "FW gap")
 

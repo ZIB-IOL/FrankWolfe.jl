@@ -193,11 +193,26 @@ struct SpectraplexLMO{T,M} <: LinearMinimizationOracle
     maxiters::Int
 end
 
-function SpectraplexLMO(radius::T, side_dimension::Int, ensure_symmetry::Bool=true, maxiters::Int=500) where {T}
-    return SpectraplexLMO(radius, Matrix{T}(undef, side_dimension, side_dimension), ensure_symmetry, maxiters)
+function SpectraplexLMO(
+    radius::T,
+    side_dimension::Int,
+    ensure_symmetry::Bool=true,
+    maxiters::Int=500,
+) where {T}
+    return SpectraplexLMO(
+        radius,
+        Matrix{T}(undef, side_dimension, side_dimension),
+        ensure_symmetry,
+        maxiters,
+    )
 end
 
-function SpectraplexLMO(radius::Integer, side_dimension::Int, ensure_symmetry::Bool=true, maxiters::Int=500)
+function SpectraplexLMO(
+    radius::Integer,
+    side_dimension::Int,
+    ensure_symmetry::Bool=true,
+    maxiters::Int=500,
+)
     return SpectraplexLMO(float(radius), side_dimension, ensure_symmetry, maxiters)
 end
 
@@ -326,17 +341,12 @@ end
 function EllipsoidLMO(A, center, radius)
     F = cholesky(A)
     buffer = radius * similar(center)
-    EllipsoidLMO(A, F, center, radius, buffer)
+    return EllipsoidLMO(A, F, center, radius, buffer)
 end
 
 EllipsoidLMO(A) = EllipsoidLMO(A, zeros(size(A, 1)), true)
 
-function compute_extreme_point(
-    lmo::EllipsoidLMO,
-    direction;
-    v=nothing,
-    kwargs...,
-)
+function compute_extreme_point(lmo::EllipsoidLMO, direction; v=nothing, kwargs...)
     if v === nothing
         # used for type promotion
         v = lmo.center + false * lmo.radius * direction

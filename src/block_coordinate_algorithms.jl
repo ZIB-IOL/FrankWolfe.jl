@@ -49,7 +49,7 @@ abstract type UpdateStep end
 
 struct FrankWolfeStep <: UpdateStep end
 mutable struct BPCGStep <: UpdateStep
-    active_set::Union{FrankWolfe.ActiveSet, Nothing}
+    active_set::Union{FrankWolfe.ActiveSet,Nothing}
     renorm_interval::Int
     lazy_tolerance::Float64
 end
@@ -132,7 +132,7 @@ function update(
     dot_forward_vertex = fast_dot(gradient, v_local)
     dot_away_vertex = fast_dot(gradient, a)
     local_gap = dot_away_vertex - dot_forward_vertex
-    
+
     v = compute_extreme_point(lmo, gradient)
     dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
 
@@ -140,7 +140,7 @@ function update(
     # (proof follows with minor modification when estimating the step)
     #println("Gaps: ", local_gap, " ", dual_gap)
     #println(fast_dot(gradient, x), " ", fast_dot(gradient, v))
-    if t > 1 && local_gap ≥ dual_gap/s.lazy_tolerance
+    if t > 1 && local_gap ≥ dual_gap / s.lazy_tolerance
         d = muladd_memory_mode(memory_mode, d, a, v_local)
         vertex_taken = v_local
         gamma_max = a_lambda
@@ -158,7 +158,7 @@ function update(
         )
         gamma = min(gamma_max, gamma)
         tt = gamma ≈ gamma_max ? drop : pairwise
-        
+
         # reached maximum of lambda -> dropping away vertex
         if gamma ≈ gamma_max
             s.active_set.weights[v_local_loc] += gamma
@@ -207,7 +207,7 @@ function update(
     if mod(t, s.renorm_interval) == 0
         active_set_renormalize!(s.active_set)
     end
-    
+
     x = muladd_memory_mode(memory_mode, x, gamma, d)
 
     return (dual_gap, vertex_taken, d, gamma, tt)
@@ -292,7 +292,7 @@ function block_coordinate_frank_wolfe(
         update_step = [copy(update_step) for _ in 1:N]
     end
 
-    for (i,s) in enumerate(update_step)
+    for (i, s) in enumerate(update_step)
         if s isa BPCGStep && s.active_set === nothing
             s.active_set = ActiveSet([(1.0, copy(x0.blocks[i]))])
         end
