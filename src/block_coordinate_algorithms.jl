@@ -69,20 +69,21 @@ update_iterate(
 abstract type UpdateStep end
 
 """
-update_iterate(
-    step::UpdateStep,
-    x,
-    lmo,
-    f,
-    gradient,
-    grad!,
-    dual_gap,
-    t,
-    line_search,
-    linesearch_workspace,
-    memory_mode,
-    epsilon,
-)
+    update_iterate(
+        step::UpdateStep,
+        x,
+        lmo,
+        f,
+        gradient,
+        grad!,
+        dual_gap,
+        t,
+        line_search,
+        linesearch_workspace,
+        memory_mode,
+        epsilon,
+    )
+    
 Executes one iteration of the defined UpdateStep and updates the iterate x implicitly.
 The function returns a tuple (dual_gap, v, d, gamma, tt):
 - `dual_gap` is the updated FrankWolfe gap
