@@ -3,10 +3,11 @@ using LinearAlgebra
 
 include("plot_utils.jl")
 
-f(x) = dot(x[:, 1] - x[:, 2], x[:, 1] - x[:, 2])
+f(x) = dot(x.blocks[1] - x.blocks[2], x.blocks[1] - x.blocks[2])
 
 function grad!(storage, x)
-    g = 2 * hcat(x[:, 1] - x[:, 2], x[:, 2] - x[:, 1])
+    g = copy(x)
+    g.blocks = [x.blocks[1] - x.blocks[2], x.blocks[2] - x.blocks[1]]
     @. storage = g
 end
 
@@ -16,7 +17,7 @@ lmo1 = FrankWolfe.ScaledBoundLInfNormBall(-ones(n), zeros(n))
 lmo2 = FrankWolfe.ProbabilitySimplexOracle(1.0)
 prod_lmo = FrankWolfe.ProductLMO((lmo1, lmo2))
 
-x0 = compute_extreme_point(prod_lmo, ones(n, 2))
+x0 = FrankWolfe.BlockVector([-ones(n), [i == 1 ? 1 : 0 for i in 1:n]], [(n,), (n,)], 2 * n)
 
 trajectories = []
 
@@ -49,18 +50,21 @@ end
 labels = ["Full update", "Cyclic order", "Stochstic order", "Custom order"]
 display(plot_trajectories(trajectories, labels, xscalelog=true))
 
+# Example for running BCFW with different update methods
+trajectories = []
 
-# Example for running BCFW with different update methods and linesearches on different blocks
+for us in [(FrankWolfe.BPCGStep(), FrankWolfe.FrankWolfeStep()), (FrankWolfe.FrankWolfeStep(), FrankWolfe.BPCGStep()), FrankWolfe.BPCGStep(), FrankWolfe.FrankWolfeStep()]
 
-_, _, _, _, traj_data = FrankWolfe.block_coordinate_frank_wolfe(
-    f,
-    grad!,
-    prod_lmo,
-    x0;
-    verbose=true,
-    trajectory=true,
-    line_search = [FrankWolfe.Agnostic(), FrankWolfe.Adaptive()],
-    update_step = [FrankWolfe.BPCGStep(), FrankWolfe.FrankWolfeStep()]
-)
+    _, _, _, _, traj_data = FrankWolfe.block_coordinate_frank_wolfe(
+        f,
+        grad!,
+        prod_lmo,
+        x0;
+        verbose=true,
+        trajectory=true,
+        update_step=us,
+    )
+    push!(trajectories, traj_data)
+end
 
-display(plot_trajectories([traj_Data], [""], xscalelog=true))
+display(plot_trajectories(trajectories, ["BPCG FW", "FW BPCG", "BPCG", "FW"], xscalelog=true))

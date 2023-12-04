@@ -378,7 +378,8 @@ function block_coordinate_frank_wolfe(
             "MEMORY_MODE: $memory_mode STEPSIZE: $line_search_type EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $num_type",
         )
         grad_type = typeof(gradient)
-        println("MOMENTUM: $momentum GRADIENTTYPE: $grad_type UPDATE_ORDER: $update_order")
+        update_step_type = [typeof(s) for s in update_step]
+        println("MOMENTUM: $momentum GRADIENTTYPE: $grad_type UPDATE_ORDER: $update_order UPDATE_STEP: $update_step_type")
         if memory_mode isa InplaceEmphasis
             @info("In memory_mode memory iterates are written back into x0!")
         end
@@ -517,7 +518,7 @@ function block_coordinate_frank_wolfe(
     v = compute_extreme_point(lmo, gradient)
 
     primal = f(x)
-    dual_gap = fast_dot(x - v, gradient)
+    dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
 
     tot_time = (time_ns() - time_start) / 1.0e9
 
