@@ -45,16 +45,69 @@ function select_update_indices(::StochasticUpdate, l)
     return [[rand(1:l)] for i in 1:l]
 end
 
+"""
+Update step for block-coordinate Frank-Wolfe.
+These are implementations of different FW-algorithms to be used in a blockwise manner.
+Each update step must implement
+```
+update_iterate(
+    step::UpdateStep,
+    x,
+    lmo,
+    f,
+    gradient,
+    grad!,
+    dual_gap,
+    t,
+    line_search,
+    linesearch_workspace,
+    memory_mode,
+    epsilon,
+)
+```
+"""
 abstract type UpdateStep end
 
+"""
+update_iterate(
+    step::UpdateStep,
+    x,
+    lmo,
+    f,
+    gradient,
+    grad!,
+    dual_gap,
+    t,
+    line_search,
+    linesearch_workspace,
+    memory_mode,
+    epsilon,
+)
+Executes one iteration of the defined UpdateStep and updates the iterate x implicitly.
+The function returns a tuple (dual_gap, v, d, gamma, tt):
+- `dual_gap` is the updated FrankWolfe gap
+- `v` is the used vertex
+- `d` is the update direction
+- `gamma` is the applied step-size
+- `tt` is the applied step-type
+"""
+function update_iterate end
+
+"""
+Implementation of the vanilla Frank-Wolfe algorithm as an update step for block-coordinate Frank-Wolfe.
+"""
 struct FrankWolfeStep <: UpdateStep end
+
+"""
+Implementation of the blended pairwise conditional gradient (BPCG) method as an update step for block-coordinate Frank-Wolfe.
+"""
 mutable struct BPCGStep <: UpdateStep
     active_set::Union{FrankWolfe.ActiveSet,Nothing}
     renorm_interval::Int
     lazy_tolerance::Float64
 end
 
-function Base.copy(obj::FrankWolfeStep)
+function Base.copy(::FrankWolfeStep)
     return FrankWolfeStep()
 end
 
@@ -68,7 +121,7 @@ end
 
 BPCGStep() = BPCGStep(nothing, 1000, 2.0)
 
-function update(
+function update_iterate(
     ::FrankWolfeStep,
     x,
     lmo,
@@ -108,7 +161,7 @@ function update(
     return (dual_gap, v, d, gamma, tt)
 end
 
-function update(
+function update_iterate(
     s::BPCGStep,
     x,
     lmo,
@@ -219,6 +272,7 @@ end
 Block-coordinate version of the Frank-Wolfe algorithm.
 Minimizes objective `f` over the product of feasible domains specified by the `lmo`.
 The optional argument the `update_order` is of type [FrankWolfe.BlockCoordinateUpdateOrder](@ref) and controls the order in which the blocks are updated.
+The argument `update_step` is a single instance or tuple of [FrankWolfe.UpdateStep][(@ref)] and defines which FW-algorithms to use to update the iterates in the different blocks.
 
 The method returns a tuple `(x, v, primal, dual_gap, traj_data)` with:
 - `x` cartesian product of final iterates
@@ -399,7 +453,7 @@ function block_coordinate_frank_wolfe(
                     @. storage = big_storage.blocks[i]
                 end
 
-                dual_gaps[i], v, d, gamma, tt = update(
+                dual_gaps[i], v, d, gamma, tt = update_iterate(
                     update_step[i],
                     x.blocks[i],
                     lmo.lmos[i],

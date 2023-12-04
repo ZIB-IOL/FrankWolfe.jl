@@ -1,3 +1,5 @@
+# Alternating Linear Minimization with a start direction instead of an initial point x0
+# The is for the case of unknown feasible points.
 function alternating_linear_minimization(
     bc_method,
     f,
