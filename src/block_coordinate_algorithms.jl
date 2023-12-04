@@ -84,8 +84,8 @@ abstract type UpdateStep end
         epsilon,
     )
     
-Executes one iteration of the defined UpdateStep and updates the iterate x implicitly.
-The function returns a tuple (dual_gap, v, d, gamma, tt):
+Executes one iteration of the defined [`FrankWolfe.UpdateStep`](@ref) and updates the iterate `x` implicitly.
+The function returns a tuple `(dual_gap, v, d, gamma, tt)`:
 - `dual_gap` is the updated FrankWolfe gap
 - `v` is the used vertex
 - `d` is the update direction
