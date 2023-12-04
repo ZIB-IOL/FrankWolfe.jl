@@ -47,4 +47,20 @@ for order in [
 end
 
 labels = ["Full update", "Cyclic order", "Stochstic order", "Custom order"]
-plot_trajectories(trajectories, labels, xscalelog=true)
+display(plot_trajectories(trajectories, labels, xscalelog=true))
+
+
+# Example for running BCFW with different update methods and linesearches on different blocks
+
+_, _, _, _, traj_data = FrankWolfe.block_coordinate_frank_wolfe(
+    f,
+    grad!,
+    prod_lmo,
+    x0;
+    verbose=true,
+    trajectory=true,
+    line_search = [FrankWolfe.Agnostic(), FrankWolfe.Adaptive()],
+    update_step = [FrankWolfe.BPCGStep(), FrankWolfe.FrankWolfeStep()]
+)
+
+display(plot_trajectories([traj_Data], [""], xscalelog=true))
