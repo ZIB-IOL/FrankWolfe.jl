@@ -271,8 +271,8 @@ end
 
 Block-coordinate version of the Frank-Wolfe algorithm.
 Minimizes objective `f` over the product of feasible domains specified by the `lmo`.
-The optional argument the `update_order` is of type [FrankWolfe.BlockCoordinateUpdateOrder](@ref) and controls the order in which the blocks are updated.
-The argument `update_step` is a single instance or tuple of [FrankWolfe.UpdateStep][(@ref)] and defines which FW-algorithms to use to update the iterates in the different blocks.
+The optional argument the `update_order` is of type [`FrankWolfe.BlockCoordinateUpdateOrder`](@ref) and controls the order in which the blocks are updated.
+The argument `update_step` is a single instance or tuple of [`FrankWolfe.UpdateStep`][(@ref)] and defines which FW-algorithms to use to update the iterates in the different blocks.
 
 The method returns a tuple `(x, v, primal, dual_gap, traj_data)` with:
 - `x` cartesian product of final iterates
