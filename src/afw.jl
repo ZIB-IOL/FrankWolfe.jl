@@ -335,8 +335,10 @@ function away_frank_wolfe(
         callback(state, active_set)
     end
 
-    active_set_renormalize!(active_set)
-    active_set_cleanup!(active_set, add_dropped_vertices=use_extra_vertex_storage, vertex_storage=extra_vertex_storage)
+    if recompute_last_vertex
+        active_set_renormalize!(active_set)
+        active_set_cleanup!(active_set, add_dropped_vertices=use_extra_vertex_storage, vertex_storage=extra_vertex_storage)
+    end
     x = get_active_set_iterate(active_set)
     grad!(gradient, x)
     if recompute_last_vertex
