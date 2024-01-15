@@ -64,6 +64,26 @@ end
 
 Base.similar(src::BlockVector{T, MT}) where {T, MT} = similar(src, T)
 
+function Base.collect(::Type{T}, src::BlockVector{T1, MT}) where {T1, MT, T}
+    blocks = [collect(T, src.blocks[i]) for i in eachindex(src.blocks)]
+    return BlockVector(
+        blocks,
+        src.block_sizes,
+        src.tot_size,
+    )
+end
+
+Base.collect(src::BlockVector{T, MT}) where {T, MT} = collect(T, src)
+
+function Base.zero(src::BlockVector)
+    blocks = [zero(b) for b in src.blocks]
+    return BlockVector(
+        blocks,
+        src.block_sizes,
+        src.tot_size,
+    )
+end
+
 function Base.convert(::Type{BlockVector{T, MT}}, bmv::BlockVector) where {T, MT}
     cblocks = convert.(MT, bmv.blocks)
     return BlockVector(
@@ -166,7 +186,7 @@ function ProductLMO(lmos::Vararg{LinearMinimizationOracle,N}) where {N}
     return ProductLMO{N}(lmos)
 end
 
-function FrankWolfe.compute_extreme_point(lmo::ProductLMO, direction::BlockVector; kwargs...)
+function FrankWolfe.compute_extreme_point(lmo::ProductLMO, direction::BlockVector; v=nothing, kwargs...)
     @assert length(direction.blocks) == length(lmo.lmos)
     blocks = [FrankWolfe.compute_extreme_point(lmo.lmos[idx], direction.blocks[idx]; kwargs...) for idx in eachindex(lmo.lmos)]
     v = BlockVector(blocks, direction.block_sizes, direction.tot_size)
