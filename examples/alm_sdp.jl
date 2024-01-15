@@ -10,10 +10,10 @@ include("../examples/plot_utils.jl")
 f(x) = 0.0
 
 function grad!(storage, x)
-    @. storage = 0
+    @. storage = zero(x)
 end
 
-dim = 30
+dim = 10
 
 m = JuMP.Model(GLPK.Optimizer)
 @variable(m, x[1:dim, 1:dim])
@@ -22,13 +22,12 @@ m = JuMP.Model(GLPK.Optimizer)
 @constraint(m, x .>= 0)
 
 
-lmos = (FrankWolfe.SpectraplexLMO(1.0, dim, true), FrankWolfe.MathOptLMO(m.moi_backend))
-x0 = rand(dim, dim)
+lmos = (FrankWolfe.SpectraplexLMO(1.0, dim), FrankWolfe.MathOptLMO(m.moi_backend))
+x0 = (zeros(dim, dim), Matrix(I(dim) ./ dim))
 
 trajectories = []
 
 for order in [FrankWolfe.FullUpdate(), FrankWolfe.CyclicUpdate(), FrankWolfe.StochasticUpdate()]
-
     _, _, _, _, _, traj_data = FrankWolfe.alternating_linear_minimization(
         FrankWolfe.block_coordinate_frank_wolfe,
         f,
@@ -36,9 +35,9 @@ for order in [FrankWolfe.FullUpdate(), FrankWolfe.CyclicUpdate(), FrankWolfe.Sto
         lmos,
         x0;
         update_order=order,
-        line_search=FrankWolfe.Adaptive(relaxed_smoothness=true),
         verbose=true,
         trajectory=true,
+        update_step=FrankWolfe.BPCGStep(),
     )
     push!(trajectories, traj_data)
 end
@@ -51,7 +50,7 @@ fp = plot_trajectories(
     legend_position=:best,
     xscalelog=true,
     reduce_size=true,
-    marker_shapes=[:dtriangle, :rect, :circle],
+    marker_shapes=[:dtriangle, :rect, :circle, :dtriangle, :rect, :circle],
 )
 
 display(fp)
