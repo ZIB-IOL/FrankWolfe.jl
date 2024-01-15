@@ -334,94 +334,76 @@ function plot_trajectories(
 end
 
 function plot_sparsity(
-        data, label;
-        filename=nothing, xscalelog=false,
-        legend_position=:topright, yscalelog=true,
-        lstyle=fill(:solid, length(data)),
-        marker_shapes=nothing,
-        n_markers=10,
-        empty_marker=false,
-    )
+    data,
+    label;
+    filename=nothing,
+    xscalelog=false,
+    legend_position=:topright,
+    yscalelog=true,
+    lstyle=fill(:solid, length(data)),
+    marker_shapes=nothing,
+    n_markers=10,
+    empty_marker=false,
+    reduce_size=false,
+)
     Plots.gr()
 
-    x = []
-    y = []
-    ps = nothing
-    ds = nothing
-    offset = 2
     xscale = xscalelog ? :log : :identity
     yscale = yscalelog ? :log : :identity
-    for i in eachindex(data)
-        trajectory = data[i]
-        x = [trajectory[j][6] for j in offset:length(trajectory)]
-        y = [trajectory[j][2] for j in offset:length(trajectory)]
-        if marker_shapes !== nothing && n_markers >= 2
-            marker_args = Dict(
-                :st => :samplemarkers,
-                :n_markers => n_markers,
-                :shape => marker_shapes[i],
-                :log => xscalelog,
-                :startmark => 5+20*(i-1),
-                :markercolor => empty_marker ? :white : :match,
-                :markerstrokecolor => empty_marker ? i : :match,
-            )
-        else
-            marker_args = Dict()
+    offset = 2
+
+    function subplot(idx_x, idx_y, ylabel)
+
+        fig = nothing
+        for (i, trajectory) in enumerate(data)
+
+            l = length(trajectory)
+            if reduce_size && l > 1000
+                indices = Int.(round.(collect(1:l/1000:l)))
+                trajectory = trajectory[indices]
+            end
+
+
+            x = [trajectory[j][idx_x] for j in offset:length(trajectory)]
+            y = [trajectory[j][idx_y] for j in offset:length(trajectory)]
+            if marker_shapes !== nothing && n_markers >= 2
+                marker_args = Dict(
+                    :st => :samplemarkers,
+                    :n_markers => n_markers,
+                    :shape => marker_shapes[i],
+                    :log => xscalelog,
+                    :startmark => 5 + 20 * (i - 1),
+                    :markercolor => empty_marker ? :white : :match,
+                    :markerstrokecolor => empty_marker ? i : :match,
+                )
+            else
+                marker_args = Dict()
+            end
+            if i == 1
+                fig = plot(
+                    x,
+                    y;
+                    label=label[i],
+                    xaxis=xscale,
+                    yaxis=yscale,
+                    ylabel=ylabel,
+                    legend=legend_position,
+                    yguidefontsize=8,
+                    xguidefontsize=8,
+                    legendfontsize=8,
+                    linestyle=lstyle[i],
+                    marker_args...,
+                )
+            else
+                plot!(x, y; label=label[i], linestyle=lstyle[i], marker_args...)
+            end
         end
-        if i == 1
-            ps = plot(
-                x,
-                y;
-                label=label[i],
-                xaxis=xscale,
-                yaxis=yscale,
-                ylabel="Primal",
-                legend=legend_position,
-                yguidefontsize=8,
-                xguidefontsize=8,
-                legendfontsize=8,
-                linestyle=lstyle[i],
-                marker_args...
-            )
-        else
-            plot!(x, y; label=label[i], linestyle=lstyle[i], marker_args...)
-        end
+
+        return fig
     end
-    for i in eachindex(data)
-        trajectory = data[i]
-        x = [trajectory[j][6] for j in offset:length(trajectory)]
-        y = [trajectory[j][4] for j in offset:length(trajectory)]
-        if marker_shapes !== nothing && n_markers >= 2
-            marker_args = Dict(
-                :st => :samplemarkers,
-                :n_markers => n_markers,
-                :shape => marker_shapes[i],
-                :log => xscalelog,
-                :startmark => 5+20*(i-1),
-                :markercolor => empty_marker ? :white : :match,
-                :markerstrokecolor => empty_marker ? i : :match,
-            )
-        else
-            marker_args = Dict()
-        end
-        if i == 1
-            ds = plot(
-                x,
-                y;
-                label=label[i],
-                legend=false,
-                xaxis=xscale,
-                yaxis=yscale,
-                ylabel="FW gap",
-                yguidefontsize=8,
-                xguidefontsize=8,
-                linestyle=lstyle[i],
-                marker_args...
-            )
-        else
-            plot!(x, y; label=label[i], linestyle=lstyle[i], marker_args...)
-        end
-    end
+
+    ps = subplot(6, 2, "Primal")
+    ds = subplot(6, 4, "FW gap")
 
     fp = plot(ps, ds, layout=(1, 2)) # layout = @layout([A{0.01h}; [B C; D E]]))
     plot!(size=(600, 200))
