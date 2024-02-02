@@ -44,6 +44,8 @@ end
 
 labels = ["Full", "Cyclic", "Stochastic"]
 
+println(trajectories[1][1])
+
 fp = plot_trajectories(
     trajectories,
     labels,
@@ -51,6 +53,8 @@ fp = plot_trajectories(
     xscalelog=true,
     reduce_size=true,
     marker_shapes=[:dtriangle, :rect, :circle, :dtriangle, :rect, :circle],
+    extra_plot=true,
+    extra_plot_label="infeasibility",
 )
 
 display(fp)

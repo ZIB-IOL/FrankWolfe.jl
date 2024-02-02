@@ -51,6 +51,7 @@ function alternating_linear_minimization(
     x0::Tuple{Vararg{Any,N}};
     lambda=1.0,
     verbose=false,
+    trajectory=false,
     callback=nothing,
     print_iter=1e3,
     kwargs...,
@@ -73,6 +74,21 @@ function alternating_linear_minimization(
     )
 
     f_bc(x) = sum(f(x.blocks[i]) for i in 1:N) + lambda * infeasibility(x)
+
+    infeasibilities = []
+    if trajectory
+        function make_infeasibitly_callback(callback)
+            return function callback_infeasibility(state, args...)
+                push!(infeasibilities, infeasibility(state.x))
+                if callback === nothing
+                    return true
+                end
+                return callback(state, args...)
+            end
+        end
+
+        callback = make_infeasibitly_callback(callback)
+    end
 
     if verbose
         println("\nAlternating Linear Minimization (ALM).")
@@ -97,12 +113,18 @@ function alternating_linear_minimization(
         prod_lmo,
         x0_bc;
         verbose=verbose,
+        trajectory=trajectory,
         callback=callback,
         print_iter=print_iter,
         kwargs...,
     )
 
-    return x, v, primal, dual_gap, infeasibility(x), traj_data
+    if trajectory
+        traj_data = [(t...,infeasibilities[i]) for (i,t) in enumerate(traj_data)]
+        return x, v, primal, dual_gap, infeasibility(x), traj_data
+    else
+        return x, v, primal, dual_gap, infeasibility(x), traj_data
+    end
 end
 
 
