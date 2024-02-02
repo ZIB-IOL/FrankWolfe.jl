@@ -259,6 +259,8 @@ function plot_trajectories(
     primal_offset=1e-8,
     line_width=1.3,
     empty_marker=false,
+    extra_plot=false,
+    extra_plot_label="",
 )
     # theme(:dark)
     # theme(:vibrant)
@@ -325,8 +327,15 @@ function plot_trajectories(
     dit = sub_plot(1, 4; xlabel="Iterations", ylabel="FW gap")
     dti = sub_plot(5, 4; xlabel="Time (s)")
 
-    fp = plot(pit, pti, dit, dti, layout=(2, 2)) # layout = @layout([A{0.01h}; [B C; D E]]))
-    plot!(size=(600, 400))
+    if extra_plot
+        iit = sub_plot(1, 6; ylabel=extra_plot_label)
+        iti = sub_plot(5, 6)
+        fp = plot(pit, pti, iit, iti, dit, dti, layout=(3, 2)) # layout = @layout([A{0.01h}; [B C; D E]]))
+        plot!(size=(600, 600))
+    else        
+        fp = plot(pit, pti, dit, dti, layout=(2, 2)) # layout = @layout([A{0.01h}; [B C; D E]]))
+        plot!(size=(600, 400))
+    end
     if filename !== nothing
         savefig(fp, filename)
     end
