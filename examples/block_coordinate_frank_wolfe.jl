@@ -24,8 +24,8 @@ trajectories = []
 # Example for creating a custome block coordinate update order
 struct CustomOrder <: FrankWolfe.BlockCoordinateUpdateOrder end
 
-function FrankWolfe.select_update_indices(::CustomOrder, l)
-    return [rand() < 1 / n ? 1 : 2 for _ in 1:l]
+function FrankWolfe.select_update_indices(::CustomOrder, state::CallbackState, dual_gaps)
+    return [rand() < 1 / n ? 1 : 2 for _ in 1:length(state.lmo.lmos)]
 end
 
 for order in [

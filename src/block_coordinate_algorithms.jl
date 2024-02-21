@@ -2,17 +2,17 @@
 Update order for a block-coordinate method.
 A `BlockCoordinateUpdateOrder` must implement
 ```
-select_update_indices(::BlockCoordinateUpdateOrder, l)
+select_update_indices(::BlockCoordinateUpdateOrder, s::CallbackState, dual_gaps)
 ```
 """
 abstract type BlockCoordinateUpdateOrder end
 
 """
-    select_update_indices(::BlockCoordinateUpdateOrder, l)
+    select_update_indices(::BlockCoordinateUpdateOrder, s::CallbackState, dual_gaps)
 
-Returns a list of lists of the indices, where `l` is largest index i.e. the number of blocks.
+Returns a list of lists of the block indices.
 Each sublist represents one round of updates in an iteration. The indices in a list show which blocks should be updated parallely in one round.
-For example, a full update is given by `[1:l]` and a blockwise update by `[[i] for i=1:l]`.
+For example, a full update is given by `[1:l]` and a blockwise update by `[[i] for i=1:l]`, where `l` is the number of blocks.
 """
 function select_update_indices end
 
@@ -33,15 +33,16 @@ In each round only one block is updated. The order of the blocks is a random.
 """
 struct StochasticUpdate <: BlockCoordinateUpdateOrder end
 
-function select_update_indices(::FullUpdate, l)
-    return [1:l]
+function select_update_indices(::FullUpdate, s::CallbackState, dual_gaps)
+    return [1:length(s.lmo.lmos)]
 end
 
-function select_update_indices(::CyclicUpdate, l)
-    return [[i] for i in 1:l]
+function select_update_indices(::CyclicUpdate, s::CallbackState, dual_gaps)
+    return [[i] for i in 1:length(s.lmo.lmos)]
 end
 
-function select_update_indices(::StochasticUpdate, l)
+function select_update_indices(::StochasticUpdate, s::CallbackState, dual_gaps)
+    l = length(s.lmo.lmos)
     return [[rand(1:l)] for i in 1:l]
 end
 
@@ -273,7 +274,7 @@ end
 Block-coordinate version of the Frank-Wolfe algorithm.
 Minimizes objective `f` over the product of feasible domains specified by the `lmo`.
 The optional argument the `update_order` is of type [`FrankWolfe.BlockCoordinateUpdateOrder`](@ref) and controls the order in which the blocks are updated.
-The argument `update_step` is a single instance or tuple of [`FrankWolfe.UpdateStep`][(@ref)] and defines which FW-algorithms to use to update the iterates in the different blocks.
+The argument `update_step` is a single instance or tuple of [`FrankWolfe.UpdateStep`](@ref) and defines which FW-algorithms to use to update the iterates in the different blocks.
 
 The method returns a tuple `(x, v, primal, dual_gap, traj_data)` with:
 - `x` cartesian product of final iterates
@@ -282,7 +283,7 @@ The method returns a tuple `(x, v, primal, dual_gap, traj_data)` with:
 - `dual_gap` final Frank-Wolfe gap
 - `traj_data` vector of trajectory information.
 
-See [ S. Lacoste-Julien, M. Jaggi, M. Schmidt, and P. Pletscher 2013](https://arxiv.org/abs/1207.4747)
+See [S. Lacoste-Julien, M. Jaggi, M. Schmidt, and P. Pletscher 2013](https://arxiv.org/abs/1207.4747)
 and [A. Beck, E. Pauwels and S. Sabach 2015](https://arxiv.org/abs/1502.03716) for more details about Block-Coordinate Frank-Wolfe.
 """
 function block_coordinate_frank_wolfe(
@@ -314,7 +315,7 @@ function block_coordinate_frank_wolfe(
     # header and format string for output of the algorithm
     headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec"]
     format_string = "%6s %13s %14e %14e %14e %14e %14e\n"
-    function format_state(state)
+    function format_state(state, args...)
         rep = (
             st[Symbol(state.tt)],
             string(state.t),
@@ -380,7 +381,9 @@ function block_coordinate_frank_wolfe(
         )
         grad_type = typeof(gradient)
         update_step_type = [typeof(s) for s in update_step]
-        println("MOMENTUM: $momentum GRADIENTTYPE: $grad_type UPDATE_ORDER: $update_order UPDATE_STEP: $update_step_type")
+        println(
+            "MOMENTUM: $momentum GRADIENTTYPE: $grad_type UPDATE_ORDER: $update_order UPDATE_STEP: $update_step_type",
+        )
         if memory_mode isa InplaceEmphasis
             @info("In memory_mode memory iterates are written back into x0!")
         end
@@ -400,6 +403,24 @@ function block_coordinate_frank_wolfe(
     else
         similar(x)
     end
+
+    # container for state
+    state = CallbackState(
+        t,
+        primal,
+        primal - dual_gap,
+        dual_gap,
+        0.0,
+        x,
+        v,
+        d,
+        gamma,
+        f,
+        grad!,
+        lmo,
+        gradient,
+        tt,
+    )
 
     while t <= max_iteration && dual_gap >= max(epsilon, eps(float(typeof(dual_gap))))
 
@@ -424,7 +445,7 @@ function block_coordinate_frank_wolfe(
 
         #####################
 
-        for update_indices in select_update_indices(update_order, N)
+        for update_indices in select_update_indices(update_order, state, dual_gaps)
 
             # Update gradients
             if momentum === nothing || first_iter
@@ -503,11 +524,10 @@ function block_coordinate_frank_wolfe(
                 tt,
             )
             # @show state
-            if callback(state) === false
+            if callback(state, dual_gaps) === false
                 break
             end
         end
-
 
     end
     # recompute everything once for final verfication / do not record to trajectory though for now!
@@ -540,7 +560,7 @@ function block_coordinate_frank_wolfe(
             gradient,
             tt,
         )
-        callback(state)
+        callback(state, dual_gaps)
     end
 
     return x, v, primal, dual_gap, traj_data
