@@ -360,3 +360,5 @@ function argmin_(v::SparseArrays.SparseVector{T}) where {T}
     end
     error("unreachable")
 end
+
+function nothing!(x, lmo) end
