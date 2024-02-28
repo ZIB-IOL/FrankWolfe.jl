@@ -200,15 +200,3 @@ which recomputes the iterate from the current convex decomposition and the follo
 FrankWolfe.active_set_update_scale!(x::IT, lambda, atom)
 FrankWolfe.active_set_update_iterate_pairwise!(x::IT, lambda, fw_atom, away_atom)
 ```
-
-## Symmetry reduction
-
-Suppose that there is a group $G$ acting on the underlying vector space and such that for all $x\in\mathcal{C}$ and $g\in G$
-```math
-f(g\cdot x)=f(x)\quad\text{and}\quad g\cdot x\in\mathcal{C}.
-```
-Then the computations can be performed in the subspace invariant under $G$.
-This subspace is the image of the Reynolds operator defined by
-```math
-\mathcal{R}(x)=\frac{1}{|G|}\sum_{g\in G}g\cdot x.
-```

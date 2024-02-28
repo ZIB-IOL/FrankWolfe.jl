@@ -30,8 +30,6 @@ function blended_pairwise_conditional_gradient(
     add_dropped_vertices=false,
     use_extra_vertex_storage=false,
     recompute_last_vertex=true,
-    reynolds!=nothing!,
-    reynolds_adjoint!=reynolds!,
 )
     # add the first vertex to active set from initialization
     active_set = ActiveSet([(1.0, x0)])
@@ -60,13 +58,11 @@ function blended_pairwise_conditional_gradient(
         add_dropped_vertices=add_dropped_vertices,
         use_extra_vertex_storage=use_extra_vertex_storage,
         recompute_last_vertex=recompute_last_vertex,
-        reynolds!=reynolds!,
-        reynolds_adjoint!=reynolds_adjoint!,
     )
 end
 
 """
-    blended_pairwise_conditional_gradient(f, grad!, lmo, active_set::ActiveSet; kwargs...)
+    blended_pairwise_conditional_gradient(f, grad!, lmo, active_set::AbstractActiveSet; kwargs...)
 
 Warm-starts BPCG with a pre-defined `active_set`.
 """
@@ -74,7 +70,7 @@ function blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
-    active_set::ActiveSet;
+    active_set::AbstractActiveSet;
     line_search::LineSearchMethod=Adaptive(),
     epsilon=1e-7,
     max_iteration=10000,
@@ -94,8 +90,6 @@ function blended_pairwise_conditional_gradient(
     add_dropped_vertices=false,
     use_extra_vertex_storage=false,
     recompute_last_vertex=true,
-    reynolds!=nothing!,
-    reynolds_adjoint!=reynolds!,
 )
 
     # format string for output of the algorithm
@@ -156,9 +150,7 @@ function blended_pairwise_conditional_gradient(
     end
 
     grad!(gradient, x)
-    reynolds_adjoint!(gradient, lmo)
     v = compute_extreme_point(lmo, gradient)
-    reynolds!(v, lmo)
     # if !lazy, phi is maintained as the global dual gap
     phi = max(0, fast_dot(x, gradient) - fast_dot(v, gradient))
     local_gap = zero(phi)
@@ -199,7 +191,6 @@ function blended_pairwise_conditional_gradient(
         primal = f(x)
         if t > 1
             grad!(gradient, x)
-            reynolds_adjoint!(gradient, lmo)
         end
 
         _, v_local, v_local_loc, _, a_lambda, a, a_loc, _, _ =
@@ -211,7 +202,6 @@ function blended_pairwise_conditional_gradient(
         if !lazy
             if t > 1
                 v = compute_extreme_point(lmo, gradient)
-                reynolds!(v, lmo)
                 dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
                 phi = dual_gap
             end
@@ -285,14 +275,12 @@ function blended_pairwise_conditional_gradient(
                         tt = lazylazy
                     else
                         v = compute_extreme_point(lmo, gradient)
-                        reynolds!(v, lmo)
                         tt = regular
                     end
                 else
                     # for t == 1, v is already computed before first iteration
                     if t > 1
                         v = compute_extreme_point(lmo, gradient)
-                        reynolds!(v, lmo)
                     end
                     tt = regular
                 end
@@ -306,7 +294,6 @@ function blended_pairwise_conditional_gradient(
                 compute_active_set_iterate!(active_set)
                 x = get_active_set_iterate(active_set)
                 grad!(gradient, x)
-                reynolds_adjoint!(gradient, lmo)
                 dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
             end
             # Note: In the following, we differentiate between lazy and non-lazy updates.
@@ -318,7 +305,7 @@ function blended_pairwise_conditional_gradient(
             # - for lazy: we also accept slightly weaker vertices, those satisfying phi / lazy_tolerance
             # this should simplify the criterion.
             # DO NOT CHANGE without good reason and talk to Sebastian first for the logic behind this.
-            if !lazy || dual_gap ≥ phi / lazy_tolerance                  
+            if !lazy || dual_gap ≥ phi / lazy_tolerance
                 d = muladd_memory_mode(memory_mode, d, x, v)
 
                 gamma = perform_line_search(
@@ -379,7 +366,6 @@ function blended_pairwise_conditional_gradient(
                     @debug begin
                         @assert tt == regular
                         v2 = compute_extreme_point(lmo, gradient)
-                        reynolds!(v2, lmo)
                         g = dot(gradient, x-v2)
                         if abs(g - dual_gap) > 100 * sqrt(eps())
                             error("dual gap estimation error $g $dual_gap")
@@ -434,9 +420,7 @@ function blended_pairwise_conditional_gradient(
         compute_active_set_iterate!(active_set)
         x = get_active_set_iterate(active_set)
         grad!(gradient, x)
-        reynolds_adjoint!(gradient, lmo)
         v = compute_extreme_point(lmo, gradient)
-        reynolds!(v, lmo)
         primal = f(x)
         phi = fast_dot(x, gradient) - fast_dot(v, gradient)
         tt = last
@@ -466,11 +450,9 @@ function blended_pairwise_conditional_gradient(
     compute_active_set_iterate!(active_set)
     x = get_active_set_iterate(active_set)
     grad!(gradient, x)
-    reynolds_adjoint!(gradient, lmo)
     # otherwise values are maintained to last iteration
     if recompute_last_vertex
         v = compute_extreme_point(lmo, gradient)
-        reynolds!(v, lmo)
         primal = f(x)
         dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
     end
@@ -496,5 +478,5 @@ function blended_pairwise_conditional_gradient(
         callback(state, active_set)
     end
 
-    return x, v, primal, dual_gap, traj_data, active_set
+    return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data, active_set=active_set)
 end
