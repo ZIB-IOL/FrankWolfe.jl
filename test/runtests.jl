@@ -23,6 +23,29 @@ include("alternating_methods_tests.jl")
             grad!,
             lmo_prob,
             x0,
+            max_iteration=10000,
+            line_search=FrankWolfe.GeneralizedAgnostic(),
+            verbose=true,
+        )[3] - 0.2,
+    ) < 1.0e-5
+    g(x) = 2 + log(1 + log(x + 1))
+    @test abs(
+        FrankWolfe.frank_wolfe(
+            f,
+            grad!,
+            lmo_prob,
+            x0,
+            max_iteration=10000,
+            line_search=FrankWolfe.GeneralizedAgnostic(g),
+            verbose=true,
+        )[3] - 0.2,
+    ) < 1.0e-5
+    @test abs(
+        FrankWolfe.frank_wolfe(
+            f,
+            grad!,
+            lmo_prob,
+            x0,
             max_iteration=1000,
             line_search=FrankWolfe.Agnostic(),
             verbose=true,
