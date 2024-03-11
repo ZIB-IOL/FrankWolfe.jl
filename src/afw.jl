@@ -166,7 +166,7 @@ function away_frank_wolfe(
     x = get_active_set_iterate(active_set)
     primal = f(x)
     v = active_set.atoms[1]
-    phi_value = convert(eltype(x), Inf)
+    phi_value = convert(real(eltype(x)), Inf)
     gamma = one(phi_value)
 
     if linesearch_workspace === nothing
@@ -176,7 +176,7 @@ function away_frank_wolfe(
         use_extra_vertex_storage = add_dropped_vertices = false
     end
 
-    while t <= max_iteration && phi_value >= max(eps(float(typeof(phi_value))), epsilon)
+    while t <= max_iteration && phi_value >= max(eps(float(real(typeof(phi_value)))), epsilon)
         #####################
         # managing time and Ctrl-C
         #####################
