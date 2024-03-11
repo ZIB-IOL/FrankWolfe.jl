@@ -141,7 +141,7 @@ fast_dot(A, B) = dot(A, B)
 
 fast_dot(B::SparseArrays.SparseMatrixCSC, A::Matrix) = conj(fast_dot(A, B))
 
-function fast_dot(A::Matrix{T1}, B::SparseArrays.SparseMatrixCSC{T2}) where {T1,T2}
+function fast_dot(A::Matrix{T1}, B::SparseArrays.SparseMatrixCSC{T2}) where {T1 <: Real,T2 <: Real}
     T = promote_type(T1, T2)
     (m, n) = size(A)
     if (m, n) != size(B)
