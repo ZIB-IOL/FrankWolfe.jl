@@ -256,3 +256,21 @@ function compute_extreme_point(
     end
     return v
 end
+
+"""
+    SymLMO{LMO, R, RA}
+
+Symmetric LMO for the Reynolds operator defined by `R`.
+"""
+struct SymLMO{LMO<:LinearMinimizationOracle,R,RA} <: LinearMinimizationOracle
+    lmo::LMO
+    reynolds::R
+    reynolds_adjoint::RA
+end
+
+SymLMO(lmo::LMO, reynolds, reynolds_adjoint=reynolds) where {LMO<:LinearMinimizationOracle} =
+    SymLMO{typeof(lmo),typeof(reynolds),typeof(reynolds_adjoint)}(lmo, reynolds, reynolds_adjoint)
+
+function compute_extreme_point(sym::SymLMO, direction; kwargs...)
+    return sym.reynolds(compute_extreme_point(sym.lmo, sym.reynolds_adjoint(direction, sym.lmo)), sym.lmo)
+end

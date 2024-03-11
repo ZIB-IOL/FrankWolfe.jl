@@ -203,6 +203,8 @@ FrankWolfe.active_set_update_iterate_pairwise!(x::IT, lambda, fw_atom, away_atom
 
 ## Symmetry reduction
 
+Example: `examples/reynolds.jl`
+
 Suppose that there is a group $G$ acting on the underlying vector space and such that for all $x\in\mathcal{C}$ and $g\in G$
 ```math
 f(g\cdot x)=f(x)\quad\text{and}\quad g\cdot x\in\mathcal{C}.
