@@ -316,7 +316,7 @@ function blended_pairwise_conditional_gradient(
                     gradient,
                     x,
                     d,
-                    one(eltype(x)),
+                    one(real(eltype(x))),
                     linesearch_workspace,
                     memory_mode,
                 )
