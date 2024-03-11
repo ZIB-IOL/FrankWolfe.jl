@@ -103,8 +103,6 @@ x = Rational{BigInt}[1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//100, 1//
 
 ## Complex support
 
-Example: `examples/hermitian.jl`
-
 The package handles data structures with complex entries with the following caveat: the scalar product is assumed to remain real within the course of the algorithm. Since this assumption is natural in the case of hermitian matrices but could have undesirable consequences in general, the user is expected to add this line of code and to understand its implications.
 
 ```julia
