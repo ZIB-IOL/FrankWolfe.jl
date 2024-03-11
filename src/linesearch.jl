@@ -548,7 +548,7 @@ function perform_line_search(
     memory_mode::MemoryEmphasis;
     should_upgrade::Val=Val{false}(),
 )
-    if norm(d) ≤ length(d) * eps(float(eltype(d)))
+    if norm(d) ≤ length(d) * eps(float(real(eltype(d))))
         if should_upgrade isa Val{true}
             return big(zero(promote_type(eltype(d), eltype(gradient))))
         else
