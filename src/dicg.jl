@@ -68,6 +68,26 @@ function dicg_unfix_variable!(lmo::ZeroOneHypercube, variable_idx::Int, lb=0, ub
     return nothing
 end
 
+"""
+Find the maximum step size γ such that `x - γ d` remains in the feasible set.
+"""
 function dicg_maximum_step(lmo::ZeroOneHypercube, x, direction)
-    
+    T = promote_type(eltype(x), eltype(direction))
+    gamma_max = one(T)
+    for idx in eachindex(x)
+        if direction[idx] != 0.0
+            # iterate already on the boundary
+            if (direction[idx] < 0 && lmo.fixed_to_one) || (direction[idx] > 0 && lmo.fixed_to_zero)
+                return zero(gamma_max)
+            end
+            # clipping with the zero boundary
+            if direction[idx] > 0
+                gamma_max = min(gamma_max, x[idx] / direction[idx])
+            else
+                @assert direction[idx] < 0
+                gamma_max = min(gamma_max, -(1 - x[idx]) / direction[idx])
+            end
+        end
+    end
+    return gamma_max
 end
