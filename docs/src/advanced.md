@@ -214,3 +214,7 @@ This subspace is the image of the Reynolds operator defined by
 ```math
 \mathcal{R}(x)=\frac{1}{|G|}\sum_{g\in G}g\cdot x.
 ```
+
+In practice, the type `SymmetricLMO` allows the user to provide the Reynolds operator $\mathcal{R}$ as well as its adjoint $\mathcal{R}^\ast$.
+The gradient is symmetrised with $\mathcal{R}^\ast$, then passed to the non-symmetric LMO, and the resulting output is symmetrised with $\mathcal{R}$.
+In many cases, the gradient is already symmetric so that `reynolds_adjoint(gradient, lmo) = gradient` is a fast and valid choice.
