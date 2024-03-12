@@ -81,7 +81,7 @@ function benchmark_Bell(p::Array{T, 3}, sym::Bool; kwargs...) where {T <: Number
     end
     lmo = BellCorrelationsLMO{T}(size(p, 1), 10^3, zeros(T, size(p, 1)), zeros(T, size(p)))
     if sym
-        lmo = FrankWolfe.SymLMO(lmo, reynolds_permutedims!)
+        lmo = FrankWolfe.SymmetricLMO(lmo, reynolds_permutedims!)
     end
     x0 = FrankWolfe.compute_extreme_point(lmo, -p)
     return FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo, x0; lazy=true, line_search=FrankWolfe.Shortstep(one(T)), kwargs...)
