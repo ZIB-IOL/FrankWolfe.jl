@@ -1,7 +1,40 @@
+# Alternating Linear Minimization with a start direction instead of an initial point x0
+# The is for the case of unknown feasible points.
+function alternating_linear_minimization(
+    bc_method,
+    f,
+    grad!,
+    lmos::NTuple{N,LinearMinimizationOracle},
+    start_direction::T;
+    lambda=1.0,
+    verbose=false,
+    callback=nothing,
+    print_iter=1e3,
+    kwargs...,
+) where {N,T<:AbstractArray}
+
+    x0 = compute_extreme_point(ProductLMO(lmos), tuple(fill(start_direction, N)...))
+
+    return alternating_linear_minimization(
+        bc_method,
+        f,
+        grad!,
+        lmos,
+        x0;
+        lambda=lambda,
+        verbose=verbose,
+        callback=callback,
+        print_iter=print_iter,
+        kwargs...,
+    )
+
+end
+
 """
     alternating_linear_minimization(bc_algo::BlockCoordinateMethod, f, grad!, lmos::NTuple{N,LinearMinimizationOracle}, x0; ...) where {N}
 
 Alternating Linear Minimization minimizes the objective `f` over the intersections of the feasible domains specified by `lmos`.
+The tuple `x0` defines the initial points for each domain.
 Returns a tuple `(x, v, primal, dual_gap, infeas, traj_data)` with:
 - `x` cartesian product of final iterates
 - `v` cartesian product of last vertices of the LMOs
@@ -15,40 +48,50 @@ function alternating_linear_minimization(
     f,
     grad!,
     lmos::NTuple{N,LinearMinimizationOracle},
-    x0;
+    x0::Tuple{Vararg{Any,N}};
     lambda=1.0,
     verbose=false,
+    trajectory=false,
     callback=nothing,
     print_iter=1e3,
     kwargs...,
 ) where {N}
 
-    ndim = ndims(x0) + 1 # New product dimension
-    prod_lmo = ProductLMO(lmos)
-    x0_bc = cat(compute_extreme_point(prod_lmo, tuple([x0 for i in 1:N]...))..., dims=ndim)
-
-    # workspace for the gradient
+    x0_bc = BlockVector([x0[i] for i in 1:N], [size(x0[i]) for i in 1:N], sum(length, x0))
     gradf = similar(x0_bc)
+    prod_lmo = ProductLMO(lmos)
 
     function grad_bc!(storage, x)
         for i in 1:N
-            grad!(selectdim(gradf, ndim, i), selectdim(x, ndim, i))
+            grad!(gradf.blocks[i], x.blocks[i])
         end
-        t = lambda * 2.0 * (N * x .- sum(x, dims=ndim))
-        @. storage = gradf + t
+        t = [lambda * 2.0 * (N * b - sum(x.blocks)) for b in x.blocks]
+        return storage.blocks = gradf.blocks + t
     end
 
     infeasibility(x) = sum(
-        fast_dot(
-            selectdim(x, ndim, i) - selectdim(x, ndim, j),
-            selectdim(x, ndim, i) - selectdim(x, ndim, j),
-        ) for i in 1:N for j in 1:i-1
+        fast_dot(x.blocks[i] - x.blocks[j], x.blocks[i] - x.blocks[j]) for i in 1:N for j in 1:i-1
     )
 
-    f_bc(x) = sum(f(selectdim(x, ndim, i)) for i in 1:N) + lambda * infeasibility(x)
+    f_bc(x) = sum(f(x.blocks[i]) for i in 1:N) + lambda * infeasibility(x)
+
+    infeasibilities = []
+    if trajectory
+        function make_infeasibitly_callback(callback)
+            return function callback_infeasibility(state, args...)
+                push!(infeasibilities, infeasibility(state.x))
+                if callback === nothing
+                    return true
+                end
+                return callback(state, args...)
+            end
+        end
+
+        callback = make_infeasibitly_callback(callback)
+    end
 
     if verbose
-        println("\nAlternating Linear Minimization.")
+        println("\nAlternating Linear Minimization (ALM).")
         print("LAMBDA: $lambda")
 
         format_string = "%14e\n"
@@ -70,12 +113,18 @@ function alternating_linear_minimization(
         prod_lmo,
         x0_bc;
         verbose=verbose,
+        trajectory=trajectory,
         callback=callback,
         print_iter=print_iter,
         kwargs...,
     )
 
-    return x, v, primal, dual_gap, infeasibility(x), traj_data
+    if trajectory
+        traj_data = [(t...,infeasibilities[i]) for (i,t) in enumerate(traj_data)]
+        return x, v, primal, dual_gap, infeasibility(x), traj_data
+    else
+        return x, v, primal, dual_gap, infeasibility(x), traj_data
+    end
 end
 
 
@@ -259,7 +308,7 @@ function alternating_projections(
 
         t = t + 1
         if callback !== nothing
-            state = CallbackStateBlockCoordinateMethod(
+            state = CallbackState(
                 t,
                 infeas,
                 infeas - dual_gap,
@@ -267,6 +316,7 @@ function alternating_projections(
                 tot_time,
                 x,
                 v,
+                nothing,
                 nothing,
                 nothing,
                 nothing,
@@ -294,7 +344,7 @@ function alternating_projections(
     tot_time = (time_ns() - time_start) / 1.0e9
 
     if callback !== nothing
-        state = CallbackStateBlockCoordinateMethod(
+        state = CallbackState(
             t,
             infeas,
             infeas - dual_gap,
@@ -302,6 +352,7 @@ function alternating_projections(
             tot_time,
             x,
             v,
+            nothing,
             nothing,
             nothing,
             nothing,

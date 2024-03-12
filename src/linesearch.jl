@@ -26,7 +26,9 @@ build_linesearch_workspace(::LineSearchMethod, x, gradient) = nothing
 """
 Computes step size: `l/(l + t)` at iteration `t`, given `l > 0`.
 
-Using `l ≥ 4` is advised only for strongly convex sets, see:
+Using `l > 2` leads to faster convergence rates than l = 2 over strongly and some uniformly convex set.
+> Accelerated Affine-Invariant Convergence Rates of the Frank-Wolfe Algorithm with Open-Loop Step-Sizes, Wirth, Peña, Pokutta (2023), https://arxiv.org/abs/2310.04096 
+See also the paper that introduced the study of open-loop step-sizes with l > 2:
 > Acceleration of Frank-Wolfe Algorithms with Open-Loop Step-Sizes, Wirth, Kerdreux, Pokutta, (2023), https://arxiv.org/abs/2205.12838
 
 Fixing l = -1, results in the step size gamma_t = (2 + log(t+1)) / (t + 2 + log(t+1))
@@ -73,8 +75,43 @@ function perform_line_search(
     end
 end
 
-
 Base.print(io::IO, ls::Agnostic) = print(io, "Agnostic($(ls.l))")
+
+"""
+Computes step size: `g(t)/(t + g(t))` at iteration `t`, given `g: R_{>= 0} -> R_{>= 0}`.
+
+Defaults to the best open-loop step-size gamma_t = (2 + log(t+1)) / (t + 2 + log(t+1))
+> S. Pokutta "The Frank-Wolfe algorith: a short introduction" (2023), https://arxiv.org/abs/2311.05313
+This step-size is as fast as the step-size gamma_t = 2 / (t + 2) up to polylogarithmic factors. Further, over strongly convex and some uniformly convex sets, it is faster than any traditional step-size gamma_t = l / (t + l) for any l in N.
+"""
+struct GeneralizedAgnostic{T<:Real, F<:Function} <: LineSearchMethod
+    g::F
+end
+
+function GeneralizedAgnostic()
+    g(x) = 2 + log(x + 1)
+    return GeneralizedAgnostic{Float64, typeof(g)}(g)
+end
+
+GeneralizedAgnostic(g) = GeneralizedAgnostic{Float64, typeof(g)}(g)
+
+function perform_line_search(
+    ls::GeneralizedAgnostic{T, F},
+    t,
+    f,
+    g!,
+    gradient,
+    x,
+    d,
+    gamma_max,
+    workspace,
+    memory_mode::MemoryEmphasis,
+) where {T, F}
+    gamma = T(ls.g(t) / (t + ls.g(t)))
+    return gamma
+end
+
+Base.print(io::IO, ls::GeneralizedAgnostic) = print(io, "GeneralizedAgnostic($(ls.g))")
 
 """
 Computes a step size for nonconvex functions: `1/sqrt(t + 1)`.
@@ -511,7 +548,7 @@ function perform_line_search(
     memory_mode::MemoryEmphasis;
     should_upgrade::Val=Val{false}(),
 )
-    if norm(d) ≤ length(d) * eps(float(eltype(d)))
+    if norm(d) ≤ length(d) * eps(float(real(eltype(d))))
         if should_upgrade isa Val{true}
             return big(zero(promote_type(eltype(d), eltype(gradient))))
         else
