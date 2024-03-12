@@ -10,7 +10,6 @@ using FrankWolfe
 struct BellCorrelationsLMO{T} <: FrankWolfe.LinearMinimizationOracle
     m::Int # number of inputs
     tmp::Vector{T} # used to compute scalar products
-    tmpA::Array{T, 3} # pre-allocation for speed in reynolds
 end
 
 function FrankWolfe.compute_extreme_point(
@@ -21,7 +20,7 @@ function FrankWolfe.compute_extreme_point(
     ax = [ones(T, lmo.m) for n in 1:3]
     sc1 = zero(T)
     sc2 = one(T)
-    axm = [zeros(T, lmo.m) for n in 1:3]
+    axm = [zeros(Int, lmo.m) for n in 1:3]
     scm = typemax(T)
     L = 2^lmo.m
     intax = zeros(Int, lmo.m)
@@ -47,6 +46,7 @@ function FrankWolfe.compute_extreme_point(
             end
         end
     end
+    # returning a full tensor is naturally naive, but this is only a toy example
     return [axm[1][x1]*axm[2][x2]*axm[3][x3] for x1 in 1:lmo.m, x2 in 1:lmo.m, x3 in 1:lmo.m]
 end
 
@@ -73,23 +73,29 @@ function benchmark_Bell(p::Array{T, 3}, sym::Bool; kwargs...) where {T <: Number
             end
         end
     end
-    function reynolds_permutedims!(A::Array{T, 3}, lmo::BellCorrelationsLMO{T}) where {T <: Number}
-        lmo.tmpA .= A
-        for per in [[1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]]
-            A .+= permutedims(lmo.tmpA, per)
+    function reynolds_permutedims(atom::Array{Int, 3}, lmo::BellCorrelationsLMO{T}) where {T <: Number}
+        res = zeros(T, size(atom))
+        for per in [[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]]
+            res .+= permutedims(atom, per)
         end
-        A ./= 6
-        return A
+        res ./= 6
+        return res
     end
-    lmo = BellCorrelationsLMO{T}(size(p, 1), zeros(T, size(p, 1)), zeros(T, size(p)))
+    function reynolds_adjoint(gradient::Array{T, 3}, lmo::BellCorrelationsLMO{T}) where {T <: Number}
+        return gradient # we can spare symmetrising the gradient as it remains symmetric throughout the algorithm
+    end
+    lmo = BellCorrelationsLMO{T}(size(p, 1), zeros(T, size(p, 1)))
     if sym
-        lmo = FrankWolfe.SymmetricLMO(lmo, reynolds_permutedims!)
+        lmo = FrankWolfe.SymmetricLMO(lmo, reynolds_permutedims, reynolds_adjoint)
     end
     x0 = FrankWolfe.compute_extreme_point(lmo, -p)
-    return FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo, x0; lazy=true, line_search=FrankWolfe.Shortstep(one(T)), kwargs...)
+    println("Output type of the LMO: ", typeof(x0))
+    active_set = FrankWolfe.ActiveSet([(one(T), x0)])
+    return FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo, active_set; lazy=true, line_search=FrankWolfe.Shortstep(one(T)), kwargs...)
 end
 
 p = correlation_tensor_GHZ_polygon(3, 8)
-benchmark_Bell(0.5*p, true; verbose=true, max_iteration=10^6, print_iter=10^4) # 18_142 iterations and 83 atoms
+benchmark_Bell(0.5*p, true; verbose=true, max_iteration=10^6, print_iter=10^4) # 27_985 iterations and 89 atoms
+println()
 benchmark_Bell(0.5*p, false; verbose=true, max_iteration=10^6, print_iter=10^4) # 107_647 iterations and 379 atoms
 println()
