@@ -1,18 +1,21 @@
 using FrankWolfe
 using Test
 using LinearAlgebra
+using Random
+
+Random.seed!(42)
 
 @testset "Hypercube interface" begin
     # no fixed variable
     cube = FrankWolfe.ZeroOneHypercube()
     n = 5
     x = fill(0.4, n)
-    d = randn(n)
+    d = 10 * randn(n)
     gamma_max = FrankWolfe.dicg_maximum_step(cube, x, d)
     @test gamma_max > 0
     # using the maximum step size sets at least one coordinate to 0
     x2 = x - gamma_max * d
-    @test count(≈(0), x2) ≥ 1
+    @test count(xi -> abs(xi * (1 - xi)) ≤ 1e-16, x2) ≥ 1
     # one variable fixed to zero
     cube_fixed = FrankWolfe.ZeroOneHypercube()
     @test_throws AssertionError FrankWolfe.dicg_fix_variable!(cube_fixed, 3, 0.5)
