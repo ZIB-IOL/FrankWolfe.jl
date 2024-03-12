@@ -10,7 +10,7 @@ using FrankWolfe
 struct BellCorrelationsLMO{T} <: FrankWolfe.LinearMinimizationOracle
     m::Int # number of inputs
     tmp::Vector{T} # used to compute scalar products
-    res::Array{T, 3} # pre-allocation for speed in reynolds
+    tmpA::Array{T, 3} # pre-allocation for speed in reynolds
 end
 
 function FrankWolfe.compute_extreme_point(
@@ -74,9 +74,9 @@ function benchmark_Bell(p::Array{T, 3}, sym::Bool; kwargs...) where {T <: Number
         end
     end
     function reynolds_permutedims!(A::Array{T, 3}, lmo::BellCorrelationsLMO{T}) where {T <: Number}
-        lmo.res .= A
+        lmo.tmpA .= A
         for per in [[1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]]
-            A .+= permutedims(lmo.res, per)
+            A .+= permutedims(lmo.tmpA, per)
         end
         A ./= 6
         return A
