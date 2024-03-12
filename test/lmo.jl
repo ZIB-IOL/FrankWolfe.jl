@@ -829,3 +829,75 @@ end
     v = FrankWolfe.compute_extreme_point(lmo, d)
     @test v == lmo.vertices[1]
 end
+
+@testset "Symmetric LMO" begin
+    # See examples/reynolds.jl
+    struct BellCorrelationsLMO{T} <: FrankWolfe.LinearMinimizationOracle
+        m::Int # number of inputs
+        tmp::Vector{T} # used to compute scalar products
+    end
+    function FrankWolfe.compute_extreme_point(
+            lmo::BellCorrelationsLMO{T},
+            A::Array{T, 3};
+            kwargs...,
+        ) where {T <: Number}
+        ax = [ones(T, lmo.m) for n in 1:3]
+        sc1 = zero(T)
+        sc2 = one(T)
+        axm = [zeros(Int, lmo.m) for n in 1:3]
+        scm = typemax(T)
+        L = 2^lmo.m
+        intax = zeros(Int, lmo.m)
+        for λa3 in 0:(L÷2)-1
+            digits!(intax, λa3, base=2)
+            ax[3][1:lmo.m] .= 2intax .- 1
+            for λa2 in 0:L-1
+                digits!(intax, λa2, base=2)
+                ax[2][1:lmo.m] .= 2intax .- 1
+                for x1 in 1:lmo.m
+                    lmo.tmp[x1] = 0
+                    for x2 in 1:lmo.m, x3 in 1:lmo.m
+                        lmo.tmp[x1] += A[x1, x2, x3] * ax[2][x2] * ax[3][x3]
+                    end
+                    ax[1][x1] = lmo.tmp[x1] > zero(T) ? -one(T) : one(T)
+                end
+                sc = dot(ax[1], lmo.tmp)
+                if sc < scm
+                    scm = sc
+                    for n in 1:3
+                        axm[n] .= ax[n]
+                    end
+                end
+            end
+        end
+        return [axm[1][x1]*axm[2][x2]*axm[3][x3] for x1 in 1:lmo.m, x2 in 1:lmo.m, x3 in 1:lmo.m]
+    end
+    p = [0.5cos((i+j+k)*pi/4) for i in 1:4, j in 1:4, k in 1:4]
+    normp2 = dot(p, p) / 2
+    f = let p = p, normp2 = normp2
+        x -> normp2 + dot(x, x) / 2 - dot(p, x)
+    end
+    grad! = let p = p
+        (storage, xit) -> begin
+            for x in eachindex(xit)
+                storage[x] = xit[x] - p[x]
+            end
+        end
+    end
+    function reynolds_permutedims(atom::Array{Int, 3}, lmo::BellCorrelationsLMO{Float64})
+        res = zeros(size(atom))
+        for per in [[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]]
+            res .+= permutedims(atom, per)
+        end
+        res ./= 6
+        return res
+    end
+    reynolds_adjoint(gradient, lmo) = gradient
+    lmo = BellCorrelationsLMO{Float64}(size(p, 1), zeros(size(p, 1)))
+    sym = FrankWolfe.SymmetricLMO(lmo, reynolds_permutedims, reynolds_adjoint)
+    x0 = FrankWolfe.compute_extreme_point(sym, -p)
+    active_set = FrankWolfe.ActiveSet([(1.0, x0)])
+    res = FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, sym, active_set; lazy=true, line_search=FrankWolfe.Shortstep(1.0))
+    @test norm(res[1]-p) < 1e-6
+    @test length(res[6]) < 25
+end

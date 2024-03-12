@@ -200,3 +200,21 @@ which recomputes the iterate from the current convex decomposition and the follo
 FrankWolfe.active_set_update_scale!(x::IT, lambda, atom)
 FrankWolfe.active_set_update_iterate_pairwise!(x::IT, lambda, fw_atom, away_atom)
 ```
+
+## Symmetry reduction
+
+Example: `examples/reynolds.jl`
+
+Suppose that there is a group $G$ acting on the underlying vector space and such that for all $x\in\mathcal{C}$ and $g\in G$
+```math
+f(g\cdot x)=f(x)\quad\text{and}\quad g\cdot x\in\mathcal{C}.
+```
+Then, the computations can be performed in the subspace invariant under $G$.
+This subspace is the image of the Reynolds operator defined by
+```math
+\mathcal{R}(x)=\frac{1}{|G|}\sum_{g\in G}g\cdot x.
+```
+
+In practice, the type `SymmetricLMO` allows the user to provide the Reynolds operator $\mathcal{R}$ as well as its adjoint $\mathcal{R}^\ast$.
+The gradient is symmetrised with $\mathcal{R}^\ast$, then passed to the non-symmetric LMO, and the resulting output is symmetrised with $\mathcal{R}$.
+In many cases, the gradient is already symmetric so that `reynolds_adjoint(gradient, lmo) = gradient` is a fast and valid choice.
