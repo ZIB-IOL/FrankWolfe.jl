@@ -118,6 +118,9 @@ function decomposition_invariant_conditional_gradient(
     recompute_last_vertex=true,
 )
 
+    if !is_decomposition_invariant_oracle(lmo)
+        error("The provided LMO of type $(typeof(lmo)) does not support the decomposition-invariant interface")
+    end
     # format string for output of the algorithm
     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
     headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "#Fixed")
