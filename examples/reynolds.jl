@@ -1,17 +1,16 @@
 using LinearAlgebra
 using FrankWolfe
-using Tullio
 
 # Example of speedup using the symmetry reduction
-# See https://arxiv.org/abs/2302.04721 for the context
+# See arxiv.org/abs/2302.04721 for the context
+# and arxiv.org/abs/2310.20677 for further symmetrisation
 # The symmetry exploited is the invariance of a tensor
 # by exchange of the dimensions
 
 struct BellCorrelationsLMO{T} <: FrankWolfe.LinearMinimizationOracle
     m::Int # number of inputs
-    nb::Int # number of repetition
     tmp::Vector{T} # used to compute scalar products
-    res::Array{T, 3} # pre-allocation of the res of reynolds
+    res::Array{T, 3} # pre-allocation for speed in reynolds
 end
 
 function FrankWolfe.compute_extreme_point(
@@ -32,8 +31,11 @@ function FrankWolfe.compute_extreme_point(
         for λa2 in 0:L-1
             digits!(intax, λa2, base=2)
             ax[2][1:lmo.m] .= 2intax .- 1
-            @tullio lmo.tmp[x1] = A[x1, x2, x3] * ax[2][x2] * ax[3][x3]
-            for x1 in 1:length(ax[1])
+            for x1 in 1:lmo.m
+                lmo.tmp[x1] = 0
+                for x2 in 1:lmo.m, x3 in 1:lmo.m
+                    lmo.tmp[x1] += A[x1, x2, x3] * ax[2][x2] * ax[3][x3]
+                end
                 ax[1][x1] = lmo.tmp[x1] > zero(T) ? -one(T) : one(T)
             end
             sc = dot(ax[1], lmo.tmp)
@@ -66,7 +68,7 @@ function benchmark_Bell(p::Array{T, 3}, sym::Bool; kwargs...) where {T <: Number
     end
     grad! = let p = p
         (storage, xit) -> begin
-            @inbounds for x in eachindex(xit)
+            for x in eachindex(xit)
                 storage[x] = xit[x] - p[x]
             end
         end
@@ -79,7 +81,7 @@ function benchmark_Bell(p::Array{T, 3}, sym::Bool; kwargs...) where {T <: Number
         A ./= 6
         return A
     end
-    lmo = BellCorrelationsLMO{T}(size(p, 1), 10^3, zeros(T, size(p, 1)), zeros(T, size(p)))
+    lmo = BellCorrelationsLMO{T}(size(p, 1), zeros(T, size(p, 1)), zeros(T, size(p)))
     if sym
         lmo = FrankWolfe.SymmetricLMO(lmo, reynolds_permutedims!)
     end
@@ -88,6 +90,6 @@ function benchmark_Bell(p::Array{T, 3}, sym::Bool; kwargs...) where {T <: Number
 end
 
 p = correlation_tensor_GHZ_polygon(3, 8)
-benchmark_Bell(0.5*p, true; verbose=true, max_iteration=10^6, print_iter=10^4) # 27_329 iterations and 89 atoms
+benchmark_Bell(0.5*p, true; verbose=true, max_iteration=10^6, print_iter=10^4) # 18_142 iterations and 83 atoms
 benchmark_Bell(0.5*p, false; verbose=true, max_iteration=10^6, print_iter=10^4) # 107_647 iterations and 379 atoms
 println()
