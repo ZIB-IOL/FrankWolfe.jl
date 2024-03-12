@@ -50,6 +50,10 @@ end
 
 is_decomposition_invariant_oracle(::ZeroOneHypercube) = true
 
+"""
+Fix a variable to either 0 or 1.
+Fixing a variable removes previous fixings if any was present.
+"""
 function dicg_fix_variable!(lmo::ZeroOneHypercube, variable_idx::Int, value)
     if value ≈ 0
         delete!(lmo.fixed_to_one, variable_idx)
@@ -57,7 +61,7 @@ function dicg_fix_variable!(lmo::ZeroOneHypercube, variable_idx::Int, value)
     else
         @assert value ≈ 1
         delete!(lmo.fixed_to_zero, variable_idx)
-        push!(lmo.fixed_to_zero, variable_idx)
+        push!(lmo.fixed_to_one, variable_idx)
     end
     return nothing
 end
@@ -77,7 +81,7 @@ function dicg_maximum_step(lmo::ZeroOneHypercube, x, direction)
     for idx in eachindex(x)
         if direction[idx] != 0.0
             # iterate already on the boundary
-            if (direction[idx] < 0 && lmo.fixed_to_one) || (direction[idx] > 0 && lmo.fixed_to_zero)
+            if (direction[idx] < 0 && idx in lmo.fixed_to_one) || (direction[idx] > 0 && idx in lmo.fixed_to_zero)
                 return zero(gamma_max)
             end
             # clipping with the zero boundary
