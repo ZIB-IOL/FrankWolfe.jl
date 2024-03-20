@@ -4,23 +4,19 @@
 """
     is_decomposition_invariant_oracle(lmo)
 
-Function to indicate whether the given LMO supports the decomposition-invariant interface
+Function to indicate whether the given LMO supports the decomposition-invariant interface.
+This interface includes `compute_extreme_point` with a `lazy` keyword, `inface_compute_extreme_point`
+and `dicg_maximum_step`.
 """
 is_decomposition_invariant_oracle(::LinearMinimizationOracle) = false
 
 """
-    dicg_fix_variable!(lmo, variable_idx::Int, value::Real)
+    inface_compute_extreme_point(lmo, direction; lazy, x, kwargs...)
 
-Fixes a variable to a value (its lower or upper bound).
+LMO-like operation which computes a vertex minimizing in the `direction` on the face defined by the current fixings.
+Fixings are maintained by the oracle (or deduced from `x` itself).
 """
-function dicg_fix_variable!(lmo, variable_idx, value) end
-
-"""
-    dicg_unfix_variable!(lmo, variable_idx::Int, lb::Real, ub::Real)
-
-Unfixes a variable that was fixed before, resetting its lower and upper bounds to the provided ones.
-"""
-function dicg_unfix_variable!(lmo, variable_idx, lb, ub) end
+function inface_compute_extreme_point(lmo, direction; lazy, x, kwargs...) end
 
 """
     dicg_maximum_step(lmo, x, direction)
@@ -31,46 +27,27 @@ determine a maximum step size `gamma_max`, such that `x - gamma_max * direction`
 function dicg_maximum_step(lmo, x, direction) end
 
 struct ZeroOneHypercube
-    fixed_to_one::Set{Int}
-    fixed_to_zero::Set{Int}
 end
 
-ZeroOneHypercube() = ZeroOneHypercube(Set{Int}(), Set{Int}())
+function compute_extreme_point(lmo::ZeroOneHypercube, direction; lazy=false, kwargs...)
+    v = BitVector(signbit(di) for di in direction)
+    return v
+end
 
-function FrankWolfe.compute_extreme_point(lmo::ZeroOneHypercube, direction; kwargs...)
-    d = BitVector(signbit(di) for di in direction)
-    for idx in lmo.fixed_to_one
-        d[idx] = true
+function inface_compute_extreme_point(lmo::ZeroOneHypercube, direction; lazy=false, x, kwargs...)
+    v = BitVector(signbit(di) for di in direction)
+    for idx in eachindex(x)
+        if x[idx] ≈ 1
+            v[idx] = true
+        end
+        if x[idx] ≈ 0
+            v[idx] = false
+        end
     end
-    for idx in lmo.fixed_to_zero
-        d[idx] = false
-    end
-    return d
+    return v
 end
 
 is_decomposition_invariant_oracle(::ZeroOneHypercube) = true
-
-"""
-Fix a variable to either 0 or 1.
-Fixing a variable removes previous fixings if any was present.
-"""
-function dicg_fix_variable!(lmo::ZeroOneHypercube, variable_idx::Int, value)
-    if value ≈ 0
-        delete!(lmo.fixed_to_one, variable_idx)
-        push!(lmo.fixed_to_zero, variable_idx)
-    else
-        @assert value ≈ 1
-        delete!(lmo.fixed_to_zero, variable_idx)
-        push!(lmo.fixed_to_one, variable_idx)
-    end
-    return nothing
-end
-
-function dicg_unfix_variable!(lmo::ZeroOneHypercube, variable_idx::Int, lb=0, ub=1)
-    delete!(lmo.fixed_to_one, variable_idx)
-    delete!(lmo.fixed_to_zero, variable_idx)
-    return nothing
-end
 
 """
 Find the maximum step size γ such that `x - γ d` remains in the feasible set.
@@ -81,7 +58,7 @@ function dicg_maximum_step(lmo::ZeroOneHypercube, x, direction)
     for idx in eachindex(x)
         if direction[idx] != 0.0
             # iterate already on the boundary
-            if (direction[idx] < 0 && idx in lmo.fixed_to_one) || (direction[idx] > 0 && idx in lmo.fixed_to_zero)
+            if (direction[idx] < 0 && x[idx] ≈ 1) || (direction[idx] > 0 && x[idx] ≈ 0)
                 return zero(gamma_max)
             end
             # clipping with the zero boundary
@@ -122,8 +99,8 @@ function decomposition_invariant_conditional_gradient(
         error("The provided LMO of type $(typeof(lmo)) does not support the decomposition-invariant interface")
     end
     # format string for output of the algorithm
-    format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
-    headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "#Fixed")
+    format_string = "%6s %13s %14e %14e %14e %14e %14e\n"
+    headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec")
     function format_state(state, args...)
         rep = (
             st[Symbol(state.tt)],
