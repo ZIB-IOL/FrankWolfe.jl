@@ -18,20 +18,19 @@ Random.seed!(42)
     @test count(xi -> abs(xi * (1 - xi)) ≤ 1e-16, x2) ≥ 1
     # one variable fixed to zero
     cube_fixed = FrankWolfe.ZeroOneHypercube()
-    @test_throws AssertionError FrankWolfe.dicg_fix_variable!(cube_fixed, 3, 0.5)
-    FrankWolfe.dicg_fix_variable!(cube_fixed, 3, 0)
+    x_fixed = copy(x)
+    x_fixed[3] = 0
     # positive entry in the direction, gamma_max = 0
     d2 = randn(n)
     d2[3] = 1
-    gamma_max2 = FrankWolfe.dicg_maximum_step(cube_fixed, x, d2)
+    gamma_max2 = FrankWolfe.dicg_maximum_step(cube_fixed, x_fixed, d2)
     @test gamma_max2 == 0
     # with a zero direction on the fixed coordinate, positive steps are allowed
     d2[3] = 0
-    @test FrankWolfe.dicg_maximum_step(cube_fixed, x, d2) > 0
+    @test FrankWolfe.dicg_maximum_step(cube_fixed, x, d2) > eps()
     # fixing a variable to one unfixes it from zero
-    FrankWolfe.dicg_fix_variable!(cube_fixed, 3, 1)
-    @test isempty(cube_fixed.fixed_to_zero)
+    x_fixed[3] = 1
     d2[3] = -1
-    gamma_max3 = FrankWolfe.dicg_maximum_step(cube_fixed, x, d2)
+    gamma_max3 = FrankWolfe.dicg_maximum_step(cube_fixed, x_fixed, d2)
     @test gamma_max3 == 0
 end
