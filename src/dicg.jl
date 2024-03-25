@@ -143,8 +143,8 @@ function decomposition_invariant_conditional_gradient(
     end
 
     if verbose
-        println("\nBlended Pairwise Conditional Gradient Algorithm.")
-        NumType = eltype(x)
+        println("\nDecomposition-Invariant Conditional Gradient Algorithm.")
+        NumType = eltype(x0)
         println(
             "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
         )
@@ -162,7 +162,7 @@ function decomposition_invariant_conditional_gradient(
     gamma = one(phi)
 
     # active set used to store vertices
-    # only relevant for lazification
+    # only relevant later for lazification
     active_set = ActiveSet([1.0], [x0], similar(x))
 
     if linesearch_workspace === nothing

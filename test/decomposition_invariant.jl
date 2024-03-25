@@ -53,4 +53,5 @@ end
     x0 = FrankWolfe.compute_extreme_point(cube, randn(n))
     
     res = FrankWolfe.decomposition_invariant_conditional_gradient(f, grad!, cube, x0, verbose=true, trajectory=true)
+    res_fw = FrankWolfe.frank_wolfe(f, grad!, cube, x0, verbose=true, trajectory=true)
 end
