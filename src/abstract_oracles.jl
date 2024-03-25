@@ -268,8 +268,9 @@ struct SymmetricLMO{LMO<:LinearMinimizationOracle,R,RA} <: LinearMinimizationOra
     reynolds_adjoint::RA
 end
 
-SymmetricLMO(lmo::LMO, reynolds, reynolds_adjoint=reynolds) where {LMO<:LinearMinimizationOracle} =
-    SymmetricLMO{typeof(lmo),typeof(reynolds),typeof(reynolds_adjoint)}(lmo, reynolds, reynolds_adjoint)
+function SymmetricLMO(lmo::LMO, reynolds) where {LMO<:LinearMinimizationOracle}
+    return SymmetricLMO{typeof(lmo),typeof(reynolds),typeof(reynolds)}(lmo, reynolds, reynolds)
+end
 
 function compute_extreme_point(sym::SymmetricLMO, direction; kwargs...)
     return sym.reynolds(compute_extreme_point(sym.lmo, sym.reynolds_adjoint(direction, sym.lmo)), sym.lmo)

@@ -13,6 +13,11 @@ Random.seed!(42)
     d = 10 * randn(n)
     gamma_max = FrankWolfe.dicg_maximum_step(cube, x, d)
     @test gamma_max > 0
+    # point in the interior => inface away == -v_fw
+    v = FrankWolfe.compute_extreme_point(cube, d)
+    a = FrankWolfe.compute_inface_away_point(cube, -d, x)
+    @test v == a
+
     # using the maximum step size sets at least one coordinate to 0
     x2 = x - gamma_max * d
     @test count(xi -> abs(xi * (1 - xi)) ≤ 1e-16, x2) ≥ 1
@@ -33,4 +38,8 @@ Random.seed!(42)
     d2[3] = -1
     gamma_max3 = FrankWolfe.dicg_maximum_step(cube_fixed, x_fixed, d2)
     @test gamma_max3 == 0
+end
+
+@testset "DICG standard run" begin
+
 end
