@@ -89,11 +89,9 @@ function decomposition_invariant_conditional_gradient(
     callback=nothing,
     traj_data=[],
     timeout=Inf,
-    renorm_interval=1000,
     lazy=false,
     linesearch_workspace=nothing,
     lazy_tolerance=2.0,
-    recompute_last_vertex=true,
 )
 
     if !is_decomposition_invariant_oracle(lmo)
@@ -123,12 +121,21 @@ function decomposition_invariant_conditional_gradient(
         callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
     end
 
+    x = x0
+    if memory_mode isa InplaceEmphasis && !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
+        # if integer, convert element type to most appropriate float
+        if eltype(x) <: Integer
+            x = copyto!(similar(x, float(eltype(x))), x)
+        else
+            x = copyto!(similar(x), x)
+        end
+    end
+
     t = 0
-    primal = convert(eltype(x0), Inf)
+    primal = convert(float(eltype(x)), Inf)
     tt = regular
     time_start = time_ns()
 
-    x = x0
     d = similar(x)
 
     if gradient === nothing
@@ -151,14 +158,12 @@ function decomposition_invariant_conditional_gradient(
 
     grad!(gradient, x)
     v = x0
-    # if !lazy, phi is maintained as the global dual gap
-    phi = max(0, fast_dot(x, gradient) - fast_dot(v, gradient))
-    local_gap = zero(phi)
+    phi = primal
     gamma = one(phi)
 
     # active set used to store vertices
     # only relevant for lazification
-    active_set = ActiveSet([1.0], x0)
+    active_set = ActiveSet([1.0], [x0], similar(x))
 
     if linesearch_workspace === nothing
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
@@ -222,6 +227,28 @@ function decomposition_invariant_conditional_gradient(
             linesearch_workspace,
             memory_mode,
         )
+        if callback !== nothing
+            state = CallbackState(
+                t,
+                primal,
+                primal - phi,
+                phi,
+                tot_time,
+                x,
+                v,
+                d,
+                gamma,
+                f,
+                grad!,
+                lmo,
+                gradient,
+                tt,
+            )
+            if callback(state) === false
+                break
+            end
+        end
+        x = muladd_memory_mode(memory_mode, x, gamma, d)
     end
 
     # recompute everything once more for final verfication / do not record to trajectory though
@@ -229,19 +256,19 @@ function decomposition_invariant_conditional_gradient(
     # hence the final computation.
     # do also cleanup of active_set due to many operations on the same set
 
+    grad!(gradient, x)
+    v = compute_extreme_point(lmo, gradient)
+    primal = f(x)
+    dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
     if verbose
-        grad!(gradient, x)
-        v = compute_extreme_point(lmo, gradient)
-        primal = f(x)
-        phi = fast_dot(x, gradient) - fast_dot(v, gradient)
         tt = last
         tot_time = (time_ns() - time_start) / 1e9
         if callback !== nothing
             state = CallbackState(
                 t,
                 primal,
-                primal - phi,
-                phi,
+                primal - dual_gap,
+                dual_gap,
                 tot_time,
                 x,
                 v,

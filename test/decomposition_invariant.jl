@@ -41,5 +41,16 @@ Random.seed!(42)
 end
 
 @testset "DICG standard run" begin
-
+    cube = FrankWolfe.ZeroOneHypercube()
+    n = 100
+    xref = fill(0.4, n)
+    function f(x)
+        1/2 * (norm(x)^2 - 2 * dot(x, xref) + norm(xref)^2)
+    end
+    function grad!(storage, x)
+        @. storage = x - xref
+    end
+    x0 = FrankWolfe.compute_extreme_point(cube, randn(n))
+    
+    res = FrankWolfe.decomposition_invariant_conditional_gradient(f, grad!, cube, x0, verbose=true, trajectory=true)
 end
