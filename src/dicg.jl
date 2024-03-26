@@ -26,53 +26,6 @@ determine a maximum step size `gamma_max`, such that `x - gamma_max * direction`
 """
 function dicg_maximum_step(lmo, x, direction) end
 
-struct ZeroOneHypercube
-end
-
-function compute_extreme_point(lmo::ZeroOneHypercube, direction; lazy=false, kwargs...)
-    v = BitVector(signbit(di) for di in direction)
-    return v
-end
-
-function compute_inface_away_point(lmo::ZeroOneHypercube, direction, x; lazy=false, kwargs...)
-    v = BitVector(signbit(-di) for di in direction)
-    for idx in eachindex(x)
-        if x[idx] ≈ 1
-            v[idx] = true
-        end
-        if x[idx] ≈ 0
-            v[idx] = false
-        end
-    end
-    return v
-end
-
-is_decomposition_invariant_oracle(::ZeroOneHypercube) = true
-
-"""
-Find the maximum step size γ such that `x - γ d` remains in the feasible set.
-"""
-function dicg_maximum_step(lmo::ZeroOneHypercube, x, direction)
-    T = promote_type(eltype(x), eltype(direction))
-    gamma_max = one(T)
-    for idx in eachindex(x)
-        if direction[idx] != 0.0
-            # iterate already on the boundary
-            if (direction[idx] < 0 && x[idx] ≈ 1) || (direction[idx] > 0 && x[idx] ≈ 0)
-                return zero(gamma_max)
-            end
-            # clipping with the zero boundary
-            if direction[idx] > 0
-                gamma_max = min(gamma_max, x[idx] / direction[idx])
-            else
-                @assert direction[idx] < 0
-                gamma_max = min(gamma_max, -(1 - x[idx]) / direction[idx])
-            end
-        end
-    end
-    return gamma_max
-end
-
 function decomposition_invariant_conditional_gradient(
     f,
     grad!,
@@ -160,10 +113,6 @@ function decomposition_invariant_conditional_gradient(
     v = x0
     phi = primal
     gamma = one(phi)
-
-    # active set used to store vertices
-    # only relevant later for lazification
-    active_set = ActiveSet([1.0], [x0], similar(x))
 
     if linesearch_workspace === nothing
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)

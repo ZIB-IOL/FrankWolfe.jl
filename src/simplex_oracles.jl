@@ -17,7 +17,7 @@ UnitSimplexOracle(rhs::Integer) = UnitSimplexOracle{Rational{BigInt}}(rhs)
 
 """
 LMO for scaled unit simplex:
-`∑ x_i = τ`
+`∑ x_i ≤ τ`
 Returns either vector of zeros or vector with one active value equal to RHS if
 there exists an improving direction.
 """
@@ -62,6 +62,62 @@ function compute_dual_solution(::UnitSimplexOracle{T}, direction, primalSolution
     return lambda, mu
 end
 
+is_decomposition_invariant_oracle(::UnitSimplexOracle) = true
+
+function compute_inface_away_point(lmo::UnitSimplexOracle{T}, direction, x; kwargs...) where {T}
+    # faces for the unit simplex are:
+    # - coordinate faces: {x_i = 0}
+    # - simplex face: {∑ x == τ}
+
+    # zero-vector x means fixing to all coordinate faces, return zero-vector
+    sx = sum(x)
+    if sx <= 0
+        return ScaledHotVector(zero(T), 1, length(direction))
+    end
+
+    max_idx = -1
+    max_val = convert(eltype(direction), -Inf)
+    # TODO implement with sparse indices of x
+    @inbounds for idx in eachindex(direction)
+        val = direction[idx]
+        if val > max_val && x[idx] > 0
+            max_val = val
+            max_idx = idx
+        end
+    end
+    # all vertices are on the simplex face except 0
+    # if no index better than 0 on the current face, return an all-zero vector
+    if sx ≉ lmo.right_side && max_val < 0
+        return ScaledHotVector(zero(T), 1, length(direction))
+    end
+    # if we are on the simplex face or if a vector is better than zero, return the best scaled hot vector
+    return ScaledHotVector(lmo.right_side, max_idx, length(direction))
+end
+
+function dicg_maximum_step(::UnitSimplexOracle{T}, x, direction) where {T}
+    # the direction should never violate the simplex constraint because it would correspond to a gamma_max > 1
+    gamma_max = one(promote_type(T, eltype(direction)))
+    @inbounds for idx in eachindex(x)
+        di = direction[idx]
+        if di > 0
+            gamma_max = min(gamma_max, x[idx] / di)
+        end
+    end
+    return gamma_max
+end
+
+function dicg_maximum_step(::UnitSimplexOracle{T}, x, direction::SparseArrays.AbstractSparseVector) where {T}
+    gamma_max = one(promote_type(T, eltype(direction)))
+    dinds = SparseArrays.nonzeroinds(direction)
+    dvals = SparseArrays.nonzeros(direction)
+    @inbounds for idx in 1:SparseArrays.nnz(direction)
+        di = dvals[idx]
+        if di > 0
+            gamma_max = min(gamma_max, x[dinds[idx]] / di)
+        end
+    end
+    return gamma_max
+end
 
 """
     ProbabilitySimplexOracle(right_side)
