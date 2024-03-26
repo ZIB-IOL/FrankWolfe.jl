@@ -153,6 +153,35 @@ function compute_extreme_point(
     return ScaledHotVector(lmo.right_side, idx, length(direction))
 end
 
+is_decomposition_invariant_oracle(::ProbabilitySimplexOracle) = true
+
+function compute_inface_away_point(lmo::ProbabilitySimplexOracle{T}, direction, x::SparseArrays.AbstractSparseVector; kwargs...) where {T}
+    # faces for the probability simplex are {x_i = 0}
+    max_idx = -1
+    max_val = convert(eltype(direction), -Inf)
+    x_inds = SparseArrays.nonzeroinds(x)
+    x_vals = SparseArrays.nonzeros(x)
+    @inbounds for idx in eachindex(x_inds)
+        val = direction[x_inds[idx]]
+        if val > max_val && x_vals[idx] > 0 
+            max_val = val
+            max_idx = idx
+        end
+    end
+    return ScaledHotVector(lmo.right_side, x_inds[max_idx], length(direction))
+end
+
+function dicg_maximum_step(::ProbabilitySimplexOracle{T}, x, direction) where {T}
+    gamma_max = one(promote_type(T, eltype(direction)))
+    @inbounds for idx in eachindex(x)
+        di = direction[idx]
+        if di > 0
+            gamma_max = min(gamma_max, x[idx] / di)
+        end
+    end
+    return gamma_max
+end
+
 function convert_mathopt(
     lmo::ProbabilitySimplexOracle{T},
     optimizer::OT;
