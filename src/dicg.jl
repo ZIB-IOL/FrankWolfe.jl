@@ -26,6 +26,28 @@ determine a maximum step size `gamma_max`, such that `x - gamma_max * direction`
 """
 function dicg_maximum_step(lmo, x, direction) end
 
+"""
+    is_inface_vertex(lmo, x, v) -> Bool
+
+For the given lmo supporting the decomposition-invariant interface, check whether the given vertex `v` is in the face where the iterate `x` lies.
+"""
+function is_inface_vertex(lmo, x, v) end
+
+"""
+    active_set_inface_argminmax(lmo, active_set, gradient, inface_forward::Bool; Φ=-Inf)
+
+Finds `(v_FW, v_AW)`, the points in the active set vertices minimizing and maximizing the inner product with `gradient` such that:
+- `v_AW` is in the face where the iterate `active_set.x` currently lies. The definition of being in the face depends on the polytope implemented by `lmo`.
+- if `inface_forward`, `v_FW` must also be in the face where where `active_set.x` currently lies. Otherwise, the vertex minimizing the inner product is returned.
+
+Returns the same indications as `active_set_argminmax`:
+```
+(λ_min, a_min, i_min, val_min, λ_max, a_max, i_max, val_max, val_max-val_min ≥ Φ)
+```
+with `λ_` a weight, `a_` an atom, `i_` the corresponding index, `val_` the value of the inner product with `direction`.
+"""
+function active_set_inface_argminmax(lmo, active_set, direction, inface_forward; Φ=-Inf) end
+
 struct ZeroOneHypercube
 end
 
@@ -163,7 +185,7 @@ function decomposition_invariant_conditional_gradient(
 
     # active set used to store vertices
     # only relevant later for lazification
-    active_set = ActiveSet([1.0], [x0], similar(x))
+    active_set = ActiveSet([1.0], [x0], x)
 
     if linesearch_workspace === nothing
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
