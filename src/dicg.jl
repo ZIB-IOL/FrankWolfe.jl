@@ -16,7 +16,7 @@ is_decomposition_invariant_oracle(::LinearMinimizationOracle) = false
 LMO-like operation which computes a vertex maximizing in the `direction` on the face defined by the current fixings.
 Fixings are maintained by the oracle (or deduced from `x` itself).
 """
-function compute_inface_away_point(lmo, direction, x; lazy, kwargs...) end
+compute_inface_away_point(lmo, direction, x; lazy, kwargs...)
 
 """
     dicg_maximum_step(lmo, x, direction)
@@ -24,8 +24,15 @@ function compute_inface_away_point(lmo, direction, x; lazy, kwargs...) end
 Given `x` the current iterate and `direction` the negative of the direction towards which the iterate will move,
 determine a maximum step size `gamma_max`, such that `x - gamma_max * direction` is in the polytope.
 """
-function dicg_maximum_step(lmo, x, direction) end
+dicg_maximum_step(lmo, x, direction)
 
+"""
+    decomposition_invariant_conditional_gradient(f, grad!, lmo, x0; kwargs...)
+
+Implements the Decomposition-Invariant Conditional Gradient from:
+Garber, Ofer (2016), Linear-memory and decomposition-invariant linearly convergent conditional gradient algorithm for structured polytopes.
+The algorithm performs pairwise steps with the away direction computed by calls to a modified linear oracle, see [`FrankWolfe.is_decomposition_invariant_oracle`](@ref) for the extended linear minimization oracle interface required.
+"""
 function decomposition_invariant_conditional_gradient(
     f,
     grad!,
