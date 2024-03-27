@@ -2,6 +2,7 @@ using FrankWolfe
 using Test
 using LinearAlgebra
 using Random
+using SparseArrays
 
 Random.seed!(42)
 
@@ -56,13 +57,13 @@ end
         # positive entry in the direction, gamma_max = 0
         d2 = randn(n)
         d2[3] = 1
-        gamma_max2 = FrankWolfe.dicg_maximum_step(cube, x_fixed, d2)
+        gamma_max2 = FrankWolfe.dicg_maximum_step(lmo, x_fixed, d2)
         @test gamma_max2 == 0
         # only improving direction is fixed to its face -> best vector is zero
         d3 = -ones(n)
         d3[3] = 1
         @test FrankWolfe.compute_inface_away_point(lmo, d3, x_fixed) == zeros(n)
-        @test FrankWolfe.compute_inface_away_point(lmo, sparse(d3), x_fixed) == zeros(n)
+        @test FrankWolfe.compute_inface_away_point(lmo, SparseArrays.sparse(d3), x_fixed) == zeros(n)
 
         # the single in-face point if iterate is zero is zero
         @test FrankWolfe.compute_inface_away_point(lmo, randn(n), zeros(n)) == zeros(n)
@@ -120,8 +121,8 @@ end
         cube = FrankWolfe.ZeroOneHypercube()
         x0 = FrankWolfe.compute_extreme_point(cube, randn(n))
         
-        res = FrankWolfe.decomposition_invariant_conditional_gradient(f, grad!, cube, x0, verbose=true, trajectory=true)
-        res_fw = FrankWolfe.frank_wolfe(f, grad!, cube, x0, verbose=true, trajectory=true)
+        res = FrankWolfe.decomposition_invariant_conditional_gradient(f, grad!, cube, x0, verbose=false, trajectory=true)
+        res_fw = FrankWolfe.frank_wolfe(f, grad!, cube, x0, verbose=false, trajectory=true)
 
         @test norm(res[1] - res_fw[1]) ≤ n * 1e-4
     end
