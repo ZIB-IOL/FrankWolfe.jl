@@ -7,7 +7,7 @@ include("lmo.jl")
 include("function_gradient.jl")
 include("active_set.jl")
 include("utils.jl")
-include("pairwise.jl")
+include("blended_pairwise.jl")
 include("alternating_methods_tests.jl")
 
 @testset "Testing vanilla Frank-Wolfe with various step size and momentum strategies" begin
