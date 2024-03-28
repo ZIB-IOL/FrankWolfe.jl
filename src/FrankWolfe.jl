@@ -41,6 +41,7 @@ include("block_oracles.jl")
 include("block_coordinate_algorithms.jl")
 include("alternating_methods.jl")
 include("blended_pairwise.jl")
+include("pairwise.jl")
 include("tracking.jl")
 include("callback.jl")
 

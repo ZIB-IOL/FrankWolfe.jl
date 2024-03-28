@@ -9,7 +9,7 @@ function test_callback(state, active_set, args...)
     @test grad0 ≈ state.gradient
 end
 
-@testset "Testing Blended Pairwise Conditional Gradients" begin
+@testset "Testing active set Frank-Wolfe variants, BPFW, AFW, and PFW" begin
     f(x) = norm(x)^2
     function grad!(storage, x)
         @. storage = 2x
@@ -38,7 +38,20 @@ end
         verbose=false,
         epsilon=3e-7,
     )
+    res_pfw = FrankWolfe.pairwise_frank_wolfe(
+        f,
+        grad!,
+        lmo_prob,
+        x0,
+        max_iteration=6000,
+        line_search=FrankWolfe.AdaptiveZerothOrder(),
+        print_iter=100,
+        verbose=false,
+        epsilon=3e-7,
+    )
     @test res_afw[3] ≈ res_bpcg[3]
+    @test res_afw[3] ≈ res_pfw[3]
+    print(res_pfw[3], res_afw[3])
     @test norm(res_afw[1] - res_bpcg[1]) ≈ 0 atol = 1e-6
     res_bpcg2 = FrankWolfe.blended_pairwise_conditional_gradient(
         f,
