@@ -369,6 +369,21 @@ function away_frank_wolfe(
     return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data, active_set=active_set)
 end
 
+# JUSTIFICATION for using the standard FW-gap in the dual update `phi = min(dual_gap, phi / 2.0)` below.
+# Note: usually we would use the strong FW gap for phi to scale over, however it suffices to use _standard_ FW gap instead
+# To this end observe that we take a "lazy step", i.e., one using already stored vertices if in the below it holds:
+#  grad_dot_x - grad_dot_lazy_fw_vertex + grad_dot_a - grad_dot_x >= 2 * phi / lazy_tolerance
+# <=>  grad_dot_a - grad_dot_lazy_fw_vertex >= phi / lazy_tolerance
+# now phi is at least dual_gap / 2 where dual_gap = grad_dot_x - grad_dot_fw_vertex, until we cannot find a vertex from the "lazy" (already seen) set
+# => 2 * lazy_tolerance * grad_dot_a - grad_dot_lazy_fw_vertex >= (grad_dot_x - grad_dot_fw_vertex)
+# via https://hackmd.io/@spokutta/B14MTMsLF / see also https://arxiv.org/pdf/2110.12650.pdf Lemma 3.7 and (3.30)
+# we have that: 
+# (2 * lazy_tolerance + 1.0 ) * < nabla f(x_t), d_t > >= grad_dot_a - grad_dot_fw_vertex (the strong FW gap),
+# where "d_t = away_vertex - x_t" (away step) or "d_t = x_t - lazy_fw_vertex" (lazy FW step)
+# as such the < nabla f(x_t), d_t > >= strong_FW_gap / (2 * lazy_tolerance + 1.0 ) (which is required for enough primal progress per original proof)
+# usually we have lazy_tolerance = 1.0, and hence we have:
+# < nabla f(x_t), d_t > >= strong_FW_gap / 3.0
+
 function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon, d; use_extra_vertex_storage=false, extra_vertex_storage=nothing, lazy_tolerance=2.0, memory_mode::MemoryEmphasis=InplaceEmphasis())
     _, v, v_loc, _, a_lambda, a, a_loc, _, _ = active_set_argminmax(active_set, gradient)
     #Do lazy FW step
