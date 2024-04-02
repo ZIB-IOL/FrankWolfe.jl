@@ -372,7 +372,7 @@ end
 # JUSTIFICATION for using the standard FW-gap in the dual update `phi = min(dual_gap, phi / 2.0)` below.
 # Note: usually we would use the strong FW gap for phi to scale over, however it suffices to use _standard_ FW gap instead
 # To this end observe that we take a "lazy step", i.e., one using already stored vertices if in the below it holds:
-#  grad_dot_x - grad_dot_lazy_fw_vertex + grad_dot_a - grad_dot_x >= 2 * phi / lazy_tolerance
+#  grad_dot_x - grad_dot_lazy_fw_vertex + grad_dot_a - grad_dot_x >= phi / lazy_tolerance
 # <=>  grad_dot_a - grad_dot_lazy_fw_vertex >= phi / lazy_tolerance
 # now phi is at least dual_gap / 2 where dual_gap = grad_dot_x - grad_dot_fw_vertex, until we cannot find a vertex from the "lazy" (already seen) set
 # => 2 * lazy_tolerance * grad_dot_a - grad_dot_lazy_fw_vertex >= (grad_dot_x - grad_dot_fw_vertex)
