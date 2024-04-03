@@ -375,11 +375,13 @@ function lazy_pfw_step(x, gradient, lmo, active_set, phi, epsilon, d; use_extra_
     gamma_max = a_lambda
     away_index = a_local_loc
     fw_index = nothing
+    grad_dot_x = fast_dot(x, gradient)
+    grad_dot_a_local = fast_dot(a_local, gradient)
 
     # Do lazy pairwise step
     grad_dot_lazy_fw_vertex = fast_dot(v_local, gradient)
-    grad_dot_a = fast_dot(a_local, gradient)
-    if grad_dot_a - grad_dot_lazy_fw_vertex >= phi / lazy_tolerance && grad_dot_a - grad_dot_lazy_fw_vertex >= epsilon
+    
+    if grad_dot_a_local - grad_dot_lazy_fw_vertex >= phi / lazy_tolerance && grad_dot_a_local - grad_dot_lazy_fw_vertex >= epsilon
         tt = lazy
         v  = v_local
         d = muladd_memory_mode(memory_mode, d, a_local, v)
@@ -402,15 +404,15 @@ function lazy_pfw_step(x, gradient, lmo, active_set, phi, epsilon, d; use_extra_
             tt = pairwise
         end
         
-        # Real pairwise gap promises enough progress.
+        # Real dual gap promises enough progress.
         grad_dot_fw_vertex = fast_dot(v, gradient)
-        pairwise_gap = grad_dot_a - grad_dot_fw_vertex
-        if pairwise_gap >= phi / lazy_tolerance
+        dual_gap = grad_dot_x - grad_dot_fw_vertex
+        if dual_gap >= phi / lazy_tolerance
             d = muladd_memory_mode(memory_mode, d, a_local, v)
             #Lower our expectation for progress.
         else
             tt = dualstep
-            phi = min(pairwise_gap, phi / 2.0)
+            phi = min(dual_gap, phi / 2.0)
         end
     end
     return d, v, fw_index, a_local, away_index, gamma_max, phi, tt
