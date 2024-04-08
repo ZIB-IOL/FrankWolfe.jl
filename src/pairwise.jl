@@ -206,7 +206,7 @@ function pairwise_frank_wolfe(
             @memory_mode(memory_mode, gradient = (momentum * gradient) + (1 - momentum) * gtemp)
         end
 
-        
+
         if lazy
             d, fw_vertex, fw_index, away_vertex, away_index, gamma_max, phi_value, tt =
                 lazy_pfw_step(
@@ -237,24 +237,32 @@ function pairwise_frank_wolfe(
         gamma = 0.0
         if tt != dualstep
             gamma = perform_line_search(
-                    line_search,
-                    t,
-                    f,
-                    grad!,
-                    gradient,
-                    x,
-                    d,
-                    gamma_max,
-                    linesearch_workspace,
-                    memory_mode,
-                )
+                line_search,
+                t,
+                f,
+                grad!,
+                gradient,
+                x,
+                d,
+                gamma_max,
+                linesearch_workspace,
+                memory_mode,
+            )
 
             gamma = min(gamma_max, gamma)
-            
+
             # cleanup and renormalize every x iterations. Only for the fw steps.
             renorm = mod(t, renorm_interval) == 0
             # away update
-            active_set_update!(active_set, -gamma, away_vertex, true, away_index, add_dropped_vertices=use_extra_vertex_storage, vertex_storage=extra_vertex_storage)
+            active_set_update!(
+                active_set,
+                -gamma,
+                away_vertex,
+                true,
+                away_index,
+                add_dropped_vertices=use_extra_vertex_storage,
+                vertex_storage=extra_vertex_storage,
+            )
             if add_dropped_vertices && gamma == gamma_max
                 for vtx in active_set.atoms
                     if vtx != v
@@ -336,7 +344,11 @@ function pairwise_frank_wolfe(
     end
 
     active_set_renormalize!(active_set)
-    active_set_cleanup!(active_set, add_dropped_vertices=use_extra_vertex_storage, vertex_storage=extra_vertex_storage)
+    active_set_cleanup!(
+        active_set,
+        add_dropped_vertices=use_extra_vertex_storage,
+        vertex_storage=extra_vertex_storage,
+    )
     x = get_active_set_iterate(active_set)
     grad!(gradient, x)
     if recompute_last_vertex
@@ -369,8 +381,21 @@ function pairwise_frank_wolfe(
     return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data, active_set=active_set)
 end
 
-function lazy_pfw_step(x, gradient, lmo, active_set, phi, epsilon, d; use_extra_vertex_storage=false, extra_vertex_storage=nothing, lazy_tolerance=2.0, memory_mode::MemoryEmphasis=InplaceEmphasis())
-    _, v_local, v_local_loc, _, a_lambda, a_local, a_local_loc, _, _ = active_set_argminmax(active_set, gradient)
+function lazy_pfw_step(
+    x,
+    gradient,
+    lmo,
+    active_set,
+    phi,
+    epsilon,
+    d;
+    use_extra_vertex_storage=false,
+    extra_vertex_storage=nothing,
+    lazy_tolerance=2.0,
+    memory_mode::MemoryEmphasis=InplaceEmphasis(),
+)
+    _, v_local, v_local_loc, _, a_lambda, a_local, a_local_loc, _, _ =
+        active_set_argminmax(active_set, gradient)
     # We will always have an away vertex determining the steplength. 
     gamma_max = a_lambda
     away_index = a_local_loc
@@ -380,17 +405,19 @@ function lazy_pfw_step(x, gradient, lmo, active_set, phi, epsilon, d; use_extra_
 
     # Do lazy pairwise step
     grad_dot_lazy_fw_vertex = fast_dot(v_local, gradient)
-    
-    if grad_dot_a_local - grad_dot_lazy_fw_vertex >= phi / lazy_tolerance && grad_dot_a_local - grad_dot_lazy_fw_vertex >= epsilon
+
+    if grad_dot_a_local - grad_dot_lazy_fw_vertex >= phi / lazy_tolerance &&
+       grad_dot_a_local - grad_dot_lazy_fw_vertex >= epsilon
         tt = lazy
-        v  = v_local
+        v = v_local
         d = muladd_memory_mode(memory_mode, d, a_local, v)
         fw_index = v_local_loc
     else
         # optionally: try vertex storage
         if use_extra_vertex_storage
             lazy_threshold = fast_dot(gradient, a_local) - phi / lazy_tolerance
-            (found_better_vertex, new_forward_vertex) = storage_find_argmin_vertex(extra_vertex_storage, gradient, lazy_threshold)
+            (found_better_vertex, new_forward_vertex) =
+                storage_find_argmin_vertex(extra_vertex_storage, gradient, lazy_threshold)
             if found_better_vertex
                 @debug("Found acceptable lazy vertex in storage")
                 v = new_forward_vertex
@@ -403,7 +430,7 @@ function lazy_pfw_step(x, gradient, lmo, active_set, phi, epsilon, d; use_extra_
             v = compute_extreme_point(lmo, gradient)
             tt = pairwise
         end
-        
+
         # Real dual gap promises enough progress.
         grad_dot_fw_vertex = fast_dot(v, gradient)
         dual_gap = grad_dot_x - grad_dot_fw_vertex
@@ -419,7 +446,15 @@ function lazy_pfw_step(x, gradient, lmo, active_set, phi, epsilon, d; use_extra_
 end
 
 
-function pfw_step(x, gradient, lmo, active_set, epsilon, d; memory_mode::MemoryEmphasis=InplaceEmphasis())
+function pfw_step(
+    x,
+    gradient,
+    lmo,
+    active_set,
+    epsilon,
+    d;
+    memory_mode::MemoryEmphasis=InplaceEmphasis(),
+)
     tt = pairwise
     _, _, _, _, a_lambda, a_local, a_local_loc = active_set_argminmax(active_set, gradient)
     away_vertex = a_local

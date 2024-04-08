@@ -366,7 +366,7 @@ function blended_pairwise_conditional_gradient(
                     @debug begin
                         @assert tt == regular
                         v2 = compute_extreme_point(lmo, gradient)
-                        g = dot(gradient, x-v2)
+                        g = dot(gradient, x - v2)
                         if abs(g - dual_gap) > 100 * sqrt(eps())
                             error("dual gap estimation error $g $dual_gap")
                         end

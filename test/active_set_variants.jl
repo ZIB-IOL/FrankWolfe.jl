@@ -36,7 +36,7 @@ end
         line_search=FrankWolfe.AdaptiveZerothOrder(),
         verbose=false,
         epsilon=3e-7,
-        lazy=true
+        lazy=true,
     )
     res_afw = FrankWolfe.away_frank_wolfe(
         f,
@@ -59,7 +59,7 @@ end
         print_iter=100,
         verbose=false,
         epsilon=3e-7,
-        lazy=true
+        lazy=true,
     )
     res_pfw = FrankWolfe.pairwise_frank_wolfe(
         f,
