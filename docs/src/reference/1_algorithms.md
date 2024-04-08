@@ -41,7 +41,7 @@ Pages = ["blended_cg.jl"]
 
 ```@autodocs
 Modules = [FrankWolfe]
-Pages = ["pairwise.jl"]
+Pages = ["blended_pairwise.jl"]
 ```
 
 ## Alternating Methods

@@ -9,7 +9,7 @@ function test_callback(state, active_set, args...)
     @test grad0 ≈ state.gradient
 end
 
-@testset "Testing Blended Pairwise Conditional Gradients" begin
+@testset "Testing active set Frank-Wolfe variants, BPFW, AFW, and PFW, including their lazy versions" begin
     f(x) = norm(x)^2
     function grad!(storage, x)
         @. storage = 2x
@@ -27,6 +27,17 @@ end
         verbose=false,
         epsilon=3e-7,
     )
+    res_bpcg_lazy = FrankWolfe.blended_pairwise_conditional_gradient(
+        f,
+        grad!,
+        lmo_prob,
+        x0,
+        max_iteration=6000,
+        line_search=FrankWolfe.AdaptiveZerothOrder(),
+        verbose=false,
+        epsilon=3e-7,
+        lazy=true,
+    )
     res_afw = FrankWolfe.away_frank_wolfe(
         f,
         grad!,
@@ -38,8 +49,51 @@ end
         verbose=false,
         epsilon=3e-7,
     )
+    res_afw_lazy = FrankWolfe.away_frank_wolfe(
+        f,
+        grad!,
+        lmo_prob,
+        x0,
+        max_iteration=6000,
+        line_search=FrankWolfe.AdaptiveZerothOrder(),
+        print_iter=100,
+        verbose=false,
+        epsilon=3e-7,
+        lazy=true,
+    )
+    res_pfw = FrankWolfe.pairwise_frank_wolfe(
+        f,
+        grad!,
+        lmo_prob,
+        x0,
+        max_iteration=6000,
+        line_search=FrankWolfe.AdaptiveZerothOrder(),
+        print_iter=100,
+        verbose=false,
+        epsilon=3e-7,
+    )
+    res_pfw_lazy = FrankWolfe.pairwise_frank_wolfe(
+        f,
+        grad!,
+        lmo_prob,
+        x0,
+        max_iteration=6000,
+        line_search=FrankWolfe.AdaptiveZerothOrder(),
+        print_iter=100,
+        verbose=false,
+        lazy=true,
+        epsilon=3e-7,
+    )
     @test res_afw[3] ≈ res_bpcg[3]
+    @test res_afw[3] ≈ res_pfw[3]
+    @test res_afw[3] ≈ res_afw_lazy[3]
+    @test res_pfw[3] ≈ res_pfw_lazy[3]
+    @test res_bpcg[3] ≈ res_bpcg_lazy[3]
     @test norm(res_afw[1] - res_bpcg[1]) ≈ 0 atol = 1e-6
+    @test norm(res_afw[1] - res_pfw[1]) ≈ 0 atol = 1e-6
+    @test norm(res_afw[1] - res_afw_lazy[1]) ≈ 0 atol = 1e-6
+    @test norm(res_pfw[1] - res_pfw_lazy[1]) ≈ 0 atol = 1e-6
+    @test norm(res_bpcg[1] - res_bpcg_lazy[1]) ≈ 0 atol = 1e-6
     res_bpcg2 = FrankWolfe.blended_pairwise_conditional_gradient(
         f,
         grad!,
