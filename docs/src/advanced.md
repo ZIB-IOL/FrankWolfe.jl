@@ -7,7 +7,7 @@ All algorithms can run in various precisions modes: `Float16, Float32, Float64, 
 ## Step size computation
 
 For all Frank-Wolfe algorithms, a step size must be determined to move from the current iterate to the next one.
-This step size can be determined by exact line search or any other rule represented by a subtype of [`FrankWolfe.LineSearchMethod`](@ref), which must implement [`FrankWolfe.line_search_wrapper`](@ref).
+This step size can be determined by exact line search or any other rule represented by a subtype of [`FrankWolfe.LineSearchMethod`](@ref), which must implement [`FrankWolfe.perform_line_search`](@ref).
 
 Multiple line search and step size determination rules are already  available.
 See [Pedregosa, Negiar, Askari, Jaggi (2020)](https://arxiv.org/abs/1806.05123) and [Pokutta (2023)](https://arxiv.org/abs/2311.05313) for the adaptive step size and [Carderera, Besançon, Pokutta (2021)](https://openreview.net/forum?id=rq_UD6IiBpX) for the monotonic step size.
