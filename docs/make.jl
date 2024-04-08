@@ -39,6 +39,7 @@ function literate_directory(jl_dir, md_dir)
 end
 
 literate_directory(EXAMPLE_DIR, DOCS_EXAMPLE_DIR)
+cp(joinpath(EXAMPLE_DIR, "plot_utils.jl"), joinpath(DOCS_EXAMPLE_DIR, "plot_utils.jl"))
 
 ENV["GKSwstype"] = "100"
 
