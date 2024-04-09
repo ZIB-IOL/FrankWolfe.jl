@@ -30,6 +30,13 @@ Modules = [FrankWolfe]
 Pages = ["afw.jl"]
 ```
 
+### Pairwise Frank-Wolfe
+
+```@autodocs
+Modules = [FrankWolfe]
+Pages = ["pairwise.jl"]
+```
+
 ### Blended Conditional Gradient
 
 ```@autodocs
@@ -43,6 +50,7 @@ Pages = ["blended_cg.jl"]
 Modules = [FrankWolfe]
 Pages = ["blended_pairwise.jl"]
 ```
+
 
 ## Alternating Methods
 

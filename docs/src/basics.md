@@ -76,6 +76,11 @@ It is implemented in the [`blended_conditional_gradient`](@ref) function, with a
 
 See [Braun, Pokutta, Tu, Wright (2018)](https://arxiv.org/abs/1805.07311).
 
+### Pairwise Frank-Wolfe (PFW)
+
+It is implemented in the [`pairwise_frank_wolfe`](@ref) function.
+See [Lacoste-Julien, Jaggi (2015)](https://arxiv.org/abs/1511.05932) for an overview.
+
 ### Blended Pairwise Conditional Gradients (BPCG)
 
 It is implemented in the [`FrankWolfe.blended_pairwise_conditional_gradient`](@ref) function, with a minor [modification](https://hackmd.io/@spokutta/B14MTMsLF) to improve sparsity.
