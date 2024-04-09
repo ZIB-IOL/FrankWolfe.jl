@@ -1,7 +1,7 @@
 
 using FrankWolfe
 using LinearAlgebra
-
+using ReverseDiff
 
 n = Int(1e3);
 k = 1e5
