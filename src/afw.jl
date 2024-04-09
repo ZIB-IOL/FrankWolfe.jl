@@ -383,6 +383,8 @@ end
 # as such the < nabla f(x_t), d_t > >= strong_FW_gap / (2 * lazy_tolerance + 1.0 ) (which is required for enough primal progress per original proof)
 # usually we have lazy_tolerance = 1.0, and hence we have:
 # < nabla f(x_t), d_t > >= strong_FW_gap / 3.0
+#
+# a more complete derivation can be found in https://hackmd.io/@spokutta/B14MTMsLF
 
 function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon, d; use_extra_vertex_storage=false, extra_vertex_storage=nothing, lazy_tolerance=2.0, memory_mode::MemoryEmphasis=InplaceEmphasis())
     _, v, v_loc, _, a_lambda, a, a_loc, _, _ = active_set_argminmax(active_set, gradient)
