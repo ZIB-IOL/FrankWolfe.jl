@@ -196,6 +196,7 @@ end
 
     @testset "Birkhoff polytope" begin
         n = 10
+        lmo = FrankWolfe.BirkhoffPolytopeLMO()
         x0_bk = FrankWolfe.compute_extreme_point(lmo, randn(n, n))
         f(X) = 1 / 2 * sum(abs2, X)
         grad!(storage, X) = storage .= X
