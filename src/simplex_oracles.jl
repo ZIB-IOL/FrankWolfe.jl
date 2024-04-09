@@ -64,7 +64,7 @@ end
 
 is_decomposition_invariant_oracle(::UnitSimplexOracle) = true
 
-function compute_inface_away_point(lmo::UnitSimplexOracle{T}, direction, x; kwargs...) where {T}
+function compute_inface_extreme_point(lmo::UnitSimplexOracle{T}, direction, x, away::Bool; kwargs...) where {T}
     # faces for the unit simplex are:
     # - coordinate faces: {x_i = 0}
     # - simplex face: {∑ x == τ}
@@ -77,9 +77,10 @@ function compute_inface_away_point(lmo::UnitSimplexOracle{T}, direction, x; kwar
 
     max_idx = -1
     max_val = convert(eltype(direction), -Inf)
+    away_term = away ? 1 : -1
     # TODO implement with sparse indices of x
     @inbounds for idx in eachindex(direction)
-        val = direction[idx]
+        val = away_term * direction[idx]
         if val > max_val && x[idx] > 0
             max_val = val
             max_idx = idx
@@ -155,14 +156,16 @@ end
 
 is_decomposition_invariant_oracle(::ProbabilitySimplexOracle) = true
 
-function compute_inface_away_point(lmo::ProbabilitySimplexOracle{T}, direction, x::SparseArrays.AbstractSparseVector; kwargs...) where {T}
+function compute_inface_extreme_point(lmo::ProbabilitySimplexOracle{T}, direction, x::SparseArrays.AbstractSparseVector, away::Bool; kwargs...) where {T}
     # faces for the probability simplex are {x_i = 0}
     max_idx = -1
     max_val = convert(eltype(direction), -Inf)
     x_inds = SparseArrays.nonzeroinds(x)
     x_vals = SparseArrays.nonzeros(x)
+    # if FW step, we flip each direction coordinate in the search
+    away_term = away ? 1 : -1
     @inbounds for idx in eachindex(x_inds)
-        val = direction[x_inds[idx]]
+        val = away_term * direction[x_inds[idx]]
         if val > max_val && x_vals[idx] > 0 
             max_val = val
             max_idx = idx
