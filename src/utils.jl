@@ -360,3 +360,21 @@ function argmin_(v::SparseArrays.SparseVector{T}) where {T}
     end
     error("unreachable")
 end
+
+"""
+Given an array `array`, `NegatingArray` represents `-1 * array` lazily.
+"""
+struct NegatingArray{T, N, AT <: AbstractArray{T,N}} <: AbstractArray{T, N}
+    array::AT
+    function NegatingArray(array::AT) where {T, N, AT <: AbstractArray{T,N}}
+        return new{T, N, AT}(array)
+    end
+end
+
+Base.size(a::NegatingArray) = Base.size(a.array)
+Base.getindex(a::NegatingArray, idxs...) = -Base.getindex(a.array, idxs...)
+
+LinearAlgebra.dot(a1::NegatingArray, a2::NegatingArray) = dot(a1.array, a2.array)
+LinearAlgebra.dot(a1::NegatingArray{T1, N}, a2::AbstractArray{T2, N}) where {T1, T2, N} = -dot(a1.array, a2)
+LinearAlgebra.dot(a1::AbstractArray{T1, N}, a2::NegatingArray{T2, N}) where {T1, T2, N} = -dot(a1, a2.array)
+Base.sum(a::NegatingArray) = -sum(a.array)
