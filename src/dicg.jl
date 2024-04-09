@@ -5,19 +5,18 @@
     is_decomposition_invariant_oracle(lmo)
 
 Function to indicate whether the given LMO supports the decomposition-invariant interface.
-This interface includes `compute_extreme_point` with a `lazy` keyword, `compute_inface_extreme_point`
+This interface includes `compute_extreme_point` with a `lazy` keyword, `compute_inface_away_point`
 and `dicg_maximum_step`.
 """
 is_decomposition_invariant_oracle(::LinearMinimizationOracle) = false
 
 """
-    compute_inface_extreme_point(lmo, direction, x, away::Bool; lazy, kwargs...)
+    compute_inface_away_point(lmo, direction, x; lazy, kwargs...)
 
 LMO-like operation which computes a vertex maximizing in the `direction` on the face defined by the current fixings.
 Fixings are maintained by the oracle (or deduced from `x` itself).
-`away` indicates whether the point should be an away or FW vertex on the current face.
 """
-compute_inface_extreme_point(lmo, direction, x, away; lazy, kwargs...)
+compute_inface_away_point(lmo, direction, x; lazy, kwargs...)
 
 """
     dicg_maximum_step(lmo, x, direction)
@@ -168,7 +167,7 @@ function decomposition_invariant_conditional_gradient(
                 dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
                 phi = dual_gap
             end
-            a = compute_inface_extreme_point(lmo, gradient, x, true; lazy=lazy)
+            a = compute_inface_away_point(lmo, gradient, x; lazy=lazy)
         end
         d = muladd_memory_mode(memory_mode, d, a, v)
         gamma_max = dicg_maximum_step(lmo, x, d)

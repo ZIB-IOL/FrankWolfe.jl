@@ -16,7 +16,7 @@ Random.seed!(42)
     @test gamma_max > 0
     # point in the interior => inface away == -v_fw
     v = FrankWolfe.compute_extreme_point(cube, d)
-    a = FrankWolfe.compute_inface_extreme_point(cube, -d, x, true)
+    a = FrankWolfe.compute_inface_away_point(cube, -d, x)
     @test v == a
 
     # using the maximum step size sets at least one coordinate to 0
@@ -62,11 +62,11 @@ end
         # only improving direction is fixed to its face -> best vector is zero
         d3 = -ones(n)
         d3[3] = 1
-        @test FrankWolfe.compute_inface_extreme_point(lmo, d3, x_fixed, true) == zeros(n)
-        @test FrankWolfe.compute_inface_extreme_point(lmo, SparseArrays.sparse(d3), x_fixed, true) == zeros(n)
+        @test FrankWolfe.compute_inface_away_point(lmo, d3, x_fixed) == zeros(n)
+        @test FrankWolfe.compute_inface_away_point(lmo, SparseArrays.sparse(d3), x_fixed) == zeros(n)
 
         # the single in-face point if iterate is zero is zero
-        @test FrankWolfe.compute_inface_extreme_point(lmo, randn(n), zeros(n), true) == zeros(n)
+        @test FrankWolfe.compute_inface_away_point(lmo, randn(n), zeros(n)) == zeros(n)
 
         # fix iterate on the simplex face
         x_fixed[4] += lmo.right_side - sum(x_fixed)
@@ -74,13 +74,13 @@ end
         @test sum(x_fixed) ≈ lmo.right_side
         
         # away point remains on the simplex face
-        @test norm(FrankWolfe.compute_inface_extreme_point(lmo, -ones(n), x_fixed, true)) == lmo.right_side
-        @test norm(FrankWolfe.compute_inface_extreme_point(lmo, ones(n), x_fixed, true)) == lmo.right_side
+        @test norm(FrankWolfe.compute_inface_away_point(lmo, -ones(n), x_fixed)) == lmo.right_side
+        @test norm(FrankWolfe.compute_inface_away_point(lmo, ones(n), x_fixed)) == lmo.right_side
 
         # all point towards zero except the coordinate fixed to 0
         d_test = -ones(n)
         d_test[3] = 10
-        FrankWolfe.compute_inface_extreme_point(lmo, d_test, x_fixed, true)
+        FrankWolfe.compute_inface_away_point(lmo, d_test, x_fixed)
     end
     @testset "Probability simplex" begin
         lmo = FrankWolfe.ProbabilitySimplexOracle(5.0)
@@ -102,7 +102,7 @@ end
         # in-face away vertex: should not be the fixed coordinate
         d2 = zeros(n)
         d2[idx_zero] = 1
-        v3 = FrankWolfe.compute_inface_extreme_point(lmo, d2, x2, true)
+        v3 = FrankWolfe.compute_inface_away_point(lmo, d2, x2)
         @test v3.val_idx != idx_zero
     end
 end

@@ -255,12 +255,8 @@ function compute_extreme_point(::ZeroOneHypercube, direction; lazy=false, kwargs
     return v
 end
 
-function compute_inface_extreme_point(::ZeroOneHypercube, direction, x, away::Bool; lazy=false, kwargs...)
-    v = BitVector(signbit(di) for di in direction)
-    if away
-        # if away, flip the vector
-        v = map(!, v)
-    end
+function compute_inface_away_point(::ZeroOneHypercube, direction, x; lazy=false, kwargs...)
+    v = BitVector(signbit(-di) for di in direction)
     for idx in eachindex(x)
         if x[idx] ≈ 1
             v[idx] = true
