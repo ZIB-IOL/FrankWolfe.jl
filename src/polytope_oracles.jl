@@ -87,7 +87,7 @@ function compute_extreme_point(
 ) where {T}
     n = size(direction, 1)
     n == size(direction, 2) ||
-        DimensionMismatch("direction should be square and matching BirkhoffPolytopeLMO dimension")
+        DimensionMismatch("direction should be square")
     m = spzeros(Bool, n, n)
     res_mat = Hungarian.munkres(direction)
     (rows, cols, vals) = SparseArrays.findnz(res_mat)
@@ -107,6 +107,83 @@ function compute_extreme_point(
     nsq = length(direction)
     n = isqrt(nsq)
     return compute_extreme_point(lmo, reshape(direction, n, n); kwargs...)[:]
+end
+
+is_decomposition_invariant_oracle(::BirkhoffPolytopeLMO) = true
+
+function compute_inface_away_point(::BirkhoffPolytopeLMO, direction::AbstractMatrix{T}, x::AbstractMatrix; kwargs...) where {T}
+    n = size(direction, 1)
+    fixed_to_one_rows = Int[]
+    fixed_to_one_cols = Int[]
+    for j in 1:size(direction, 2)
+        for i in 1:size(direction, 1)
+            if x[i,j] >= 1 - eps(T)
+                push!(fixed_to_one_rows, i)
+                push!(fixed_to_one_cols, j)
+            end
+        end
+    end
+    nfixed = length(fixed_to_one_cols)
+    nreduced = n - nfixed
+    # stores the indices of the original matrix that are still in the reduced matrix
+    index_map_rows = fill(1, nreduced)
+    index_map_cols = fill(1, nreduced)
+    idx_in_map_row = 1
+    idx_in_map_col = 1
+    for orig_idx in 1:n
+        if orig_idx ∉ fixed_to_one_rows
+            index_map_rows[idx_in_map_row] = orig_idx
+            idx_in_map_row += 1
+        end
+        if orig_idx ∉ fixed_to_one_cols
+            index_map_cols[idx_in_map_col] = orig_idx
+            idx_in_map_col += 1
+        end
+    end
+    d2 = ones(Union{T, Missing}, nreduced, nreduced)
+    for j in 1:nreduced
+        for i in 1:nreduced
+            # interdict arc when fixed to zero
+            if x[i,j] <= eps(T)
+                d2[i,j] = missing
+            else
+                # - sign is due to the away step
+                d2[i,j] = -direction[index_map_rows[i], index_map_cols[j]]
+            end
+        end
+    end
+    m = spzeros(n, n)
+    for (i, j) in zip(fixed_to_one_rows, fixed_to_one_cols)
+        m[i, j] = 1
+    end
+    res_mat = Hungarian.munkres(d2)
+    (rows, cols, vals) = SparseArrays.findnz(res_mat)
+    @inbounds for i in eachindex(cols)
+        m[index_map_rows[rows[i]], index_map_cols[cols[i]]] = (vals[i] == 2)
+    end
+    return m
+end
+
+# Find the maximum step size γ such that `x - γ d` remains in the feasible set.
+function dicg_maximum_step(::BirkhoffPolytopeLMO, x, direction::AbstractMatrix)
+    T = promote_type(eltype(x), eltype(direction))
+    gamma_max = one(T)
+    for idx in eachindex(x)
+        if direction[idx] != 0.0
+            # iterate already on the boundary
+            if (direction[idx] < 0 && x[idx] ≈ 1) || (direction[idx] > 0 && x[idx] ≈ 0)
+                return zero(gamma_max)
+            end
+            # clipping with the zero boundary
+            if direction[idx] > 0
+                gamma_max = min(gamma_max, x[idx] / direction[idx])
+            else
+                @assert direction[idx] < 0
+                gamma_max = min(gamma_max, -(1 - x[idx]) / direction[idx])
+            end
+        end
+    end
+    return gamma_max
 end
 
 function convert_mathopt(
@@ -268,9 +345,7 @@ function compute_inface_away_point(::ZeroOneHypercube, direction, x; lazy=false,
     return v
 end
 
-"""
-Find the maximum step size γ such that `x - γ d` remains in the feasible set.
-"""
+# Find the maximum step size γ such that `x - γ d` remains in the feasible set.
 function dicg_maximum_step(::ZeroOneHypercube, x, direction)
     T = promote_type(eltype(x), eltype(direction))
     gamma_max = one(T)

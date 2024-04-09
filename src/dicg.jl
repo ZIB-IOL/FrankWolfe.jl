@@ -55,7 +55,9 @@ function decomposition_invariant_conditional_gradient(
 )
 
     if !is_decomposition_invariant_oracle(lmo)
-        error("The provided LMO of type $(typeof(lmo)) does not support the decomposition-invariant interface")
+        error(
+            "The provided LMO of type $(typeof(lmo)) does not support the decomposition-invariant interface",
+        )
     end
     # format string for output of the algorithm
     format_string = "%6s %13s %14e %14e %14e %14e %14e\n"
