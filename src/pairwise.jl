@@ -8,6 +8,10 @@ The algorithm maintains the current iterate as a convex combination of vertices 
 See [M. Besançon, A. Carderera and S. Pokutta 2021](https://arxiv.org/abs/2104.06675) for illustrations of away steps. 
 Unlike away-step, it transfers weight from an away vertex to another vertex.
 """
+# note that we also use the standard FW gap and not the strong FW gap for lazification as in BPCG
+# see blended_pairwise.jl or a more complete derivation can be found in https://hackmd.io/@spokutta/B14MTMsLF
+# 
+
 function pairwise_frank_wolfe(
     f,
     grad!,
