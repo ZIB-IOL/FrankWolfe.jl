@@ -64,7 +64,7 @@ end
 
 is_decomposition_invariant_oracle(::UnitSimplexOracle) = true
 
-function compute_inface_away_point(lmo::UnitSimplexOracle{T}, direction, x; kwargs...) where {T}
+function compute_inface_extreme_point(lmo::UnitSimplexOracle{T}, direction, x; kwargs...) where {T}
     # faces for the unit simplex are:
     # - coordinate faces: {x_i = 0}
     # - simplex face: {∑ x == τ}
@@ -75,23 +75,23 @@ function compute_inface_away_point(lmo::UnitSimplexOracle{T}, direction, x; kwar
         return ScaledHotVector(zero(T), 1, length(direction))
     end
 
-    max_idx = -1
-    max_val = convert(eltype(direction), -Inf)
+    min_idx = -1
+    min_val = convert(float(eltype(direction)), Inf)
     # TODO implement with sparse indices of x
     @inbounds for idx in eachindex(direction)
         val = direction[idx]
-        if val > max_val && x[idx] > 0
-            max_val = val
-            max_idx = idx
+        if val < min_val && x[idx] > 0
+            min_val = val
+            min_idx = idx
         end
     end
     # all vertices are on the simplex face except 0
     # if no index better than 0 on the current face, return an all-zero vector
-    if sx ≉ lmo.right_side && max_val < 0
+    if sx ≉ lmo.right_side && min_val > 0
         return ScaledHotVector(zero(T), 1, length(direction))
     end
     # if we are on the simplex face or if a vector is better than zero, return the best scaled hot vector
-    return ScaledHotVector(lmo.right_side, max_idx, length(direction))
+    return ScaledHotVector(lmo.right_side, min_idx, length(direction))
 end
 
 function dicg_maximum_step(::UnitSimplexOracle{T}, x, direction) where {T}
@@ -155,20 +155,20 @@ end
 
 is_decomposition_invariant_oracle(::ProbabilitySimplexOracle) = true
 
-function compute_inface_away_point(lmo::ProbabilitySimplexOracle{T}, direction, x::SparseArrays.AbstractSparseVector; kwargs...) where {T}
+function compute_inface_extreme_point(lmo::ProbabilitySimplexOracle{T}, direction, x::SparseArrays.AbstractSparseVector; kwargs...) where {T}
     # faces for the probability simplex are {x_i = 0}
-    max_idx = -1
-    max_val = convert(eltype(direction), -Inf)
+    min_idx = -1
+    min_val = convert(float(eltype(direction)), Inf)
     x_inds = SparseArrays.nonzeroinds(x)
     x_vals = SparseArrays.nonzeros(x)
     @inbounds for idx in eachindex(x_inds)
         val = direction[x_inds[idx]]
-        if val > max_val && x_vals[idx] > 0 
-            max_val = val
-            max_idx = idx
+        if val < min_val && x_vals[idx] > 0 
+            min_val = val
+            min_idx = idx
         end
     end
-    return ScaledHotVector(lmo.right_side, x_inds[max_idx], length(direction))
+    return ScaledHotVector(lmo.right_side, x_inds[min_idx], length(direction))
 end
 
 function dicg_maximum_step(::ProbabilitySimplexOracle{T}, x, direction) where {T}

@@ -111,7 +111,7 @@ end
 
 is_decomposition_invariant_oracle(::BirkhoffPolytopeLMO) = true
 
-function compute_inface_away_point(::BirkhoffPolytopeLMO, direction::AbstractMatrix{T}, x::AbstractMatrix; kwargs...) where {T}
+function compute_inface_extreme_point(::BirkhoffPolytopeLMO, direction::AbstractMatrix{T}, x::AbstractMatrix; kwargs...) where {T}
     n = size(direction, 1)
     fixed_to_one_rows = Int[]
     fixed_to_one_cols = Int[]
@@ -147,8 +147,7 @@ function compute_inface_away_point(::BirkhoffPolytopeLMO, direction::AbstractMat
             if x[i,j] <= eps(T)
                 d2[i,j] = missing
             else
-                # - sign is due to the away step
-                d2[i,j] = -direction[index_map_rows[i], index_map_cols[j]]
+                d2[i,j] = direction[index_map_rows[i], index_map_cols[j]]
             end
         end
     end
@@ -332,8 +331,8 @@ function compute_extreme_point(::ZeroOneHypercube, direction; lazy=false, kwargs
     return v
 end
 
-function compute_inface_away_point(::ZeroOneHypercube, direction, x; lazy=false, kwargs...)
-    v = BitVector(signbit(-di) for di in direction)
+function compute_inface_extreme_point(::ZeroOneHypercube, direction, x; lazy=false, kwargs...)
+    v = BitVector(signbit(di) for di in direction)
     for idx in eachindex(x)
         if x[idx] ≈ 1
             v[idx] = true

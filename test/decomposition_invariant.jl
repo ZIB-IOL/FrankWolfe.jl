@@ -16,7 +16,7 @@ Random.seed!(42)
     @test gamma_max > 0
     # point in the interior => inface away == -v_fw
     v = FrankWolfe.compute_extreme_point(cube, d)
-    a = FrankWolfe.compute_inface_away_point(cube, -d, x)
+    a = FrankWolfe.compute_inface_extreme_point(cube, d, x)
     @test v == a
 
     # using the maximum step size sets at least one coordinate to 0
@@ -60,14 +60,14 @@ end
         gamma_max2 = FrankWolfe.dicg_maximum_step(lmo, x_fixed, d2)
         @test gamma_max2 == 0
         # only improving direction is fixed to its face -> best vector is zero
-        d3 = -ones(n)
-        d3[3] = 1
-        @test FrankWolfe.compute_inface_away_point(lmo, d3, x_fixed) == zeros(n)
-        @test FrankWolfe.compute_inface_away_point(lmo, SparseArrays.sparse(d3), x_fixed) ==
+        d3 = ones(n)
+        d3[3] = -1
+        @test FrankWolfe.compute_inface_extreme_point(lmo, d3, x_fixed) == zeros(n)
+        @test FrankWolfe.compute_inface_extreme_point(lmo, SparseArrays.sparse(d3), x_fixed) ==
               zeros(n)
 
         # the single in-face point if iterate is zero is zero
-        @test FrankWolfe.compute_inface_away_point(lmo, randn(n), zeros(n)) == zeros(n)
+        @test FrankWolfe.compute_inface_extreme_point(lmo, randn(n), zeros(n)) == zeros(n)
 
         # fix iterate on the simplex face
         x_fixed[4] += lmo.right_side - sum(x_fixed)
@@ -75,13 +75,14 @@ end
         @test sum(x_fixed) ≈ lmo.right_side
 
         # away point remains on the simplex face
-        @test norm(FrankWolfe.compute_inface_away_point(lmo, -ones(n), x_fixed)) == lmo.right_side
-        @test norm(FrankWolfe.compute_inface_away_point(lmo, ones(n), x_fixed)) == lmo.right_side
+        @test norm(FrankWolfe.compute_inface_extreme_point(lmo, -ones(n), x_fixed)) == lmo.right_side
+        @test norm(FrankWolfe.compute_inface_extreme_point(lmo, ones(n), x_fixed)) == lmo.right_side
+        @test norm(FrankWolfe.compute_inface_extreme_point(lmo, FrankWolfe.NegatingArray(ones(n)), x_fixed)) == lmo.right_side
 
         # all point towards zero except the coordinate fixed to 0
         d_test = -ones(n)
         d_test[3] = 10
-        FrankWolfe.compute_inface_away_point(lmo, d_test, x_fixed)
+        FrankWolfe.compute_inface_extreme_point(lmo, d_test, x_fixed)
     end
     @testset "Probability simplex" begin
         lmo = FrankWolfe.ProbabilitySimplexOracle(5.0)
@@ -103,7 +104,7 @@ end
         # in-face away vertex: should not be the fixed coordinate
         d2 = zeros(n)
         d2[idx_zero] = 1
-        v3 = FrankWolfe.compute_inface_away_point(lmo, d2, x2)
+        v3 = FrankWolfe.compute_inface_extreme_point(lmo, -d2, x2)
         @test v3.val_idx != idx_zero
     end
 end
@@ -114,9 +115,9 @@ end
     lmo = FrankWolfe.BirkhoffPolytopeLMO()
     x = ones(n, n) ./ n
     # test without fixings
-    v_a = FrankWolfe.compute_inface_away_point(lmo, d, x)
-    v_fw = FrankWolfe.compute_extreme_point(lmo, -d)
-    @test norm(v_a - v_fw) ≤ n * eps()
+    v_if = FrankWolfe.compute_inface_extreme_point(lmo, d, x)
+    v_fw = FrankWolfe.compute_extreme_point(lmo, d)
+    @test norm(v_fw - v_if) ≤ n * eps()
     fixed_col = 2
     fixed_row = 3
     # fix one transition and renormalize
@@ -125,10 +126,10 @@ end
     x2[fixed_row, :] .= 0
     x2[fixed_row, fixed_col] = 1
     x2 = x2 ./ sum(x2, dims=1)
-    v_fixed = FrankWolfe.compute_inface_away_point(lmo, d, x2)
+    v_fixed = FrankWolfe.compute_inface_extreme_point(lmo, d, x2)
     @test v_fixed[fixed_row, fixed_col] == 1
     # If matrix is already a vertex, away-step can give only itself
-    @test norm(FrankWolfe.compute_inface_away_point(lmo, d, v_fixed) - v_fixed) ≤ eps()
+    @test norm(FrankWolfe.compute_inface_extreme_point(lmo, d, v_fixed) - v_fixed) ≤ eps()
     # fixed a zero only
     x3 = copy(x)
     x3[4, 3] = 0
@@ -136,7 +137,7 @@ end
     x3[4, 4] += 1 / n
     x3[1, 4] -= 1 / n
     x3[1, 3] += 1 / n
-    v_zero = FrankWolfe.compute_inface_away_point(lmo, d, x3)
+    v_zero = FrankWolfe.compute_inface_extreme_point(lmo, d, x3)
     @test v_zero[4, 3] == 0
     @test v_zero[1, 4] == 0
 end

@@ -5,18 +5,18 @@
     is_decomposition_invariant_oracle(lmo)
 
 Function to indicate whether the given LMO supports the decomposition-invariant interface.
-This interface includes `compute_extreme_point` with a `lazy` keyword, `compute_inface_away_point`
+This interface includes `compute_extreme_point` with a `lazy` keyword, `compute_inface_extreme_point`
 and `dicg_maximum_step`.
 """
 is_decomposition_invariant_oracle(::LinearMinimizationOracle) = false
 
 """
-    compute_inface_away_point(lmo, direction, x; lazy, kwargs...)
+    compute_inface_extreme_point(lmo, direction, x; lazy, kwargs...)
 
-LMO-like operation which computes a vertex maximizing in the `direction` on the face defined by the current fixings.
+LMO-like operation which computes a vertex minimizing in `direction` on the face defined by the current fixings.
 Fixings are maintained by the oracle (or deduced from `x` itself).
 """
-compute_inface_away_point(lmo, direction, x; lazy, kwargs...)
+compute_inface_extreme_point(lmo, direction, x; lazy, kwargs...)
 
 """
     dicg_maximum_step(lmo, x, direction)
@@ -167,7 +167,7 @@ function decomposition_invariant_conditional_gradient(
             v = compute_extreme_point(lmo, gradient, lazy=lazy)
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
             phi = dual_gap
-            a = compute_inface_away_point(lmo, gradient, x; lazy=lazy)
+            a = compute_inface_extreme_point(lmo, NegatingArray(gradient), x; lazy=lazy)
         end
         d = muladd_memory_mode(memory_mode, d, a, v)
         gamma_max = dicg_maximum_step(lmo, x, d)
@@ -371,15 +371,9 @@ function blended_decomposition_invariant_conditional_gradient(
 
         if lazy
             error("not implemented yet")
-            # _, v_local, v_local_loc, _, a_lambda, a, a_loc, _, _ =
-            #     active_set_argminmax(active_set, gradient)
-
-            # dot_forward_vertex = fast_dot(gradient, v_local)
-            # dot_away_vertex = fast_dot(gradient, a)
-            # local_gap = dot_away_vertex - dot_forward_vertex
         else # non-lazy, call the simple and modified
-            a = compute_inface_away_point(lmo, gradient, x; lazy=lazy)
-            v_inface = compute_inface_away_point(lmo, NegatingArray(gradient), x; lazy=lazy)
+            a = compute_inface_extreme_point(lmo, NegatingArray(gradient), x; lazy=lazy)
+            v_inface = compute_inface_extreme_point(lmo, gradient, x; lazy=lazy)
             v = compute_extreme_point(lmo, gradient, lazy=lazy)
             inface_gap = dot(gradient, a) - fast_dot(gradient, v_inface)
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
