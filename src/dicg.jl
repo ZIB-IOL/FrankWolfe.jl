@@ -379,7 +379,7 @@ function blended_decomposition_invariant_conditional_gradient(
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
             phi = dual_gap
             # in-face step
-            if inface_gap >= phi
+            if inface_gap >= phi / lazy_tolerance
                 tt = pairwise
                 d = muladd_memory_mode(memory_mode, d, a, v)
                 gamma_max = dicg_maximum_step(lmo, x, d)
