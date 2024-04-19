@@ -231,6 +231,7 @@ function active_set_cleanup!(active_set; weight_purge_threshold=1e-12, update=tr
             end
         end
     end
+    # FIXME replace with deleteat! and check if setindex! is then needed
     filter!(e -> e[1] > weight_purge_threshold, active_set)
     if update
         compute_active_set_iterate!(active_set)

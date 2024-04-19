@@ -238,29 +238,9 @@ function active_set_argminmax(active_set::ActiveSetQuadratic, direction; Φ=0.5)
         end
     end
     @inbounds for i in eachindex(active_set)
-        val_test = fast_dot(active_set.atoms[i], direction)
+        # val = fast_dot(active_set.atoms[i], direction)
         # XXX direction is not used and assumed to be Ax+b
         val = active_set.dots_x[i] + active_set.dots_b[i]
-        if abs(val_test-val) > 1e-10
-            println("Weights")
-            println(active_set.weights)
-            println("Atoms")
-            println(active_set.atoms)
-            println("x")
-            println(active_set.x)
-            println("<Ax,a>")
-            println(active_set.dots_x)
-            println("<Aa,a>")
-            println(active_set.dots_A)
-            println("<b,a>")
-            println(active_set.dots_b)
-            println(active_set.weights_prev)
-            println(active_set.modified)
-            println(val_test)
-            println(val)
-            display(direction)
-            error("")
-        end
         if val < valm
             valm = val
             idxm = i
