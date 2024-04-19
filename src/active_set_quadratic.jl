@@ -188,7 +188,7 @@ function active_set_renormalize!(active_set::ActiveSetQuadratic)
 end
 
 function active_set_argmin(active_set::ActiveSetQuadratic, direction)
-    valm = Inf
+    valm = typemax(eltype(direction))
     idxm = -1
     idx_modified = findall(active_set.modified)
     @inbounds for idx in idx_modified
@@ -217,8 +217,8 @@ function active_set_argmin(active_set::ActiveSetQuadratic, direction)
 end
 
 function active_set_argminmax(active_set::ActiveSetQuadratic, direction; Φ=0.5)
-    valm = Inf
-    valM = -Inf
+    valm = typemax(eltype(direction))
+    valM = typemin(eltype(direction))
     idxm = -1
     idxM = -1
     idx_modified = findall(active_set.modified)
