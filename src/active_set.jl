@@ -294,7 +294,6 @@ function active_set_argminmax(active_set::AbstractActiveSet, direction; Φ=0.5)
     return (active_set[idx]..., idx, val, active_set[idxM]..., idxM, valM, valM - val ≥ Φ)
 end
 
-
 """
     active_set_initialize!(as, v)
 
