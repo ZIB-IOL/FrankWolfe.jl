@@ -154,6 +154,8 @@ function active_set_update_iterate_pairwise!(active_set, x::IT, lambda::Real, fw
     return x
 end
 
+@deprecate active_set_update_iterate_pairwise!(x, lambda, fw_atom, away_atom) active_set_update_iterate_pairwise!(nothing, x, lambda, fw_atom, away_atom)
+
 function active_set_validate(active_set::AbstractActiveSet)
     return sum(active_set.weights) ≈ 1.0 && all(>=(0), active_set.weights)
 end
