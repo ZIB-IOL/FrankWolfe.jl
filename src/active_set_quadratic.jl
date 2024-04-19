@@ -33,8 +33,8 @@ function ActiveSetQuadratic(tuple_values::AbstractVector{Tuple{R,AT}}, A::H, b) 
     dots_x = zeros(R, n)
     dots_A = Vector{Vector{R}}(undef, n)
     dots_b = Vector{R}(undef, n)
-    weights_prev = Vector{R}(undef, n)
-    modified = falses(n)
+    weights_prev = zeros(R, n)
+    modified = trues(n)
     @inbounds for idx in 1:n
         weights[idx] = tuple_values[idx][1]
         atoms[idx] = tuple_values[idx][2]
@@ -57,8 +57,8 @@ function ActiveSetQuadratic{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,
     dots_x = zeros(R, n)
     dots_A = Vector{Vector{R}}(undef, n)
     dots_b = Vector{R}(undef, n)
-    weights_prev = Vector{R}(undef, n)
-    modified = falses(n)
+    weights_prev = zeros(R, n)
+    modified = trues(n)
     @inbounds for idx in 1:n
         weights[idx] = tuple_values[idx][1]
         atoms[idx] = tuple_values[idx][2]
@@ -80,7 +80,7 @@ function Base.push!(as::ActiveSetQuadratic, (λ, a))
     dot_x = zero(as.dots_x[end])
     dot_A = similar(as.dots_A[end])
     dot_b = fast_dot(as.b, a)
-    Aa = A * a
+    Aa = as.A * a
     @inbounds for i in 1:length(as)
         dot_A[i] = fast_dot(Aa, as.atoms[i])
         as.dots_x[i] += λ * dot_A[i]
@@ -90,11 +90,11 @@ function Base.push!(as::ActiveSetQuadratic, (λ, a))
     dot_x += λ * dot_A[end]
     push!(as.weights, λ)
     push!(as.atoms, a)
-    push!(dots_x)
-    push!(dots_A)
-    push!(dots_b)
-    push!(weights_prev, λ)
-    push!(modified, false)
+    push!(as.dots_x, dot_x)
+    push!(as.dots_A, dot_A)
+    push!(as.dots_b, dot_b)
+    push!(as.weights_prev, λ)
+    push!(as.modified, false)
     return as
 end
 
@@ -104,6 +104,7 @@ function Base.deleteat!(as::ActiveSetQuadratic, idx)
     end
     @inbounds for i in idx+1:length(as)
         as.dots_x[i] -= as.weights[idx] * as.dots_A[i][idx]
+        deleteat!(as.dots_A[i], idx)
     end
     deleteat!(as.weights, idx)
     deleteat!(as.atoms, idx)
@@ -115,20 +116,23 @@ function Base.deleteat!(as::ActiveSetQuadratic, idx)
     return as
 end
 
-function Base.setindex!(as::ActiveSetQuadratic, tup::Tuple, idx)
-    as.weights[idx] = tup[1]
-    as.atoms[idx] = tup[2]
-    as.dots_x[idx] -= as.dots_A[idx][idx]
-    @inbounds for i in 1:idx
-        as.dots_A[idx][i] = fast_dot(as.atoms[idx], as.atoms[i])
+Base.@propagate_inbounds function Base.setindex!(as::ActiveSetQuadratic, tup::Tuple, idx)
+    @boundscheck checkbounds(as, idx)
+    @inbounds begin
+        as.weights[idx] = tup[1]
+        as.atoms[idx] = tup[2]
+        as.dots_x[idx] -= as.dots_A[idx][idx]
+        for i in 1:idx
+            as.dots_A[idx][i] = fast_dot(as.atoms[idx], as.atoms[i])
+        end
+        for i in idx+1:length(as)
+            as.dots_A[i][idx] = fast_dot(as.atoms[i], as.atoms[idx])
+        end
+        as.dots_x[idx] += as.dots_A[idx][idx]
+        as.dots_b[idx] = fast_dot(as.b, as.atoms[idx])
+        as.weights_prev[idx] = as.weights[idx]
+        as.modified[idx] = false
     end
-    @inbounds for i in idx+1:length(as)
-        as.dots_A[i][idx] = fast_dot(as.atoms[i], as.atoms[idx])
-    end
-    as.dots_x[idx] += as.dots_A[idx][idx]
-    as.dots_b = fast_dot(as.b, as.atoms[idx])
-    as.weights_prev[idx] = as.weights[idx]
-    as.modified[idx] = false
     return tup
 end
 
@@ -172,7 +176,9 @@ function active_set_update_iterate_pairwise!(active_set::ActiveSetQuadratic, x::
     idx_fw = find_atom(active_set, fw_atom)
     active_set.modified[idx_fw] = true
     idx_away = find_atom(active_set, away_atom)
-    active_set.modified[idx_away] = true
+    if idx_away > 0 # may have been dropped already
+        active_set.modified[idx_away] = true
+    end
     @. x += lambda * fw_atom - lambda * away_atom
     return x
 end
@@ -232,9 +238,29 @@ function active_set_argminmax(active_set::ActiveSetQuadratic, direction; Φ=0.5)
         end
     end
     @inbounds for i in eachindex(active_set)
-        # val = fast_dot(active_set.atoms[i], direction)
+        val_test = fast_dot(active_set.atoms[i], direction)
         # XXX direction is not used and assumed to be Ax+b
         val = active_set.dots_x[i] + active_set.dots_b[i]
+        if abs(val_test-val) > 1e-10
+            println("Weights")
+            println(active_set.weights)
+            println("Atoms")
+            println(active_set.atoms)
+            println("x")
+            println(active_set.x)
+            println("<Ax,a>")
+            println(active_set.dots_x)
+            println("<Aa,a>")
+            println(active_set.dots_A)
+            println("<b,a>")
+            println(active_set.dots_b)
+            println(active_set.weights_prev)
+            println(active_set.modified)
+            println(val_test)
+            println(val)
+            display(direction)
+            error("")
+        end
         if val < valm
             valm = val
             idxm = i

@@ -71,9 +71,12 @@ function Base.deleteat!(as::AbstractActiveSet, idx)
     return as
 end
 
-function Base.setindex!(as::AbstractActiveSet, tup::Tuple, idx)
-    as.weights[idx] = tup[1]
-    as.atoms[idx] = tup[2]
+Base.@propagate_inbounds function Base.setindex!(as::AbstractActiveSet, tup::Tuple, idx)
+    @boundscheck checkbounds(as, idx)
+    @inbounds begin
+        as.weights[idx] = tup[1]
+        as.atoms[idx] = tup[2]
+    end
     return tup
 end
 
@@ -155,7 +158,7 @@ end
 @deprecate active_set_update_iterate_pairwise!(x, lambda, fw_atom, away_atom) active_set_update_iterate_pairwise!(nothing, x, lambda, fw_atom, away_atom)
 
 function active_set_validate(active_set::AbstractActiveSet)
-    return sum(active_set.weights) ≈ 1.0 && all(>=(0), active_set.weights)
+    return sum(active_set.weights) ≈ 1.0 && all(≥(0), active_set.weights)
 end
 
 function active_set_renormalize!(active_set::AbstractActiveSet)
@@ -223,12 +226,11 @@ end
 function active_set_cleanup!(active_set; weight_purge_threshold=1e-12, update=true, add_dropped_vertices=false, vertex_storage=nothing)
     if add_dropped_vertices && vertex_storage !== nothing
         for (weight, v) in zip(active_set.weights, active_set.atoms)
-            if weight <= weight_purge_threshold
+            if weight ≤ weight_purge_threshold
                 push!(vertex_storage, v)
             end
         end
     end
-
     filter!(e -> e[1] > weight_purge_threshold, active_set)
     if update
         compute_active_set_iterate!(active_set)
