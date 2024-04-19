@@ -223,7 +223,7 @@ function update_iterate(
             s.active_set.weights[v_local_loc] += gamma
             @assert active_set_validate(s.active_set)
         end
-        active_set_update_iterate_pairwise!(s.active_set.x, gamma, v_local, a)
+        active_set_update_iterate_pairwise!(active_set, s.active_set.x, gamma, v_local, a)
     else # add to active set
         vertex_taken = v
         # if we are about to exit, compute dual_gap with the cleaned-up x

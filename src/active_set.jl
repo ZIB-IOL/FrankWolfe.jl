@@ -145,11 +145,11 @@ function active_set_update_scale!(x::IT, lambda, atom::SparseArrays.SparseVector
 end
 
 """
-    active_set_update_iterate_pairwise!(x, lambda, fw_atom, away_atom)
+    active_set_update_iterate_pairwise!(active_set, x, lambda, fw_atom, away_atom)
 
 Operates `x ← x + λ a_fw - λ a_aw`.
 """
-function active_set_update_iterate_pairwise!(x::IT, lambda::Real, fw_atom::A, away_atom::A) where {IT, A}
+function active_set_update_iterate_pairwise!(active_set, x::IT, lambda::Real, fw_atom::A, away_atom::A) where {IT, A}
     @. x += lambda * fw_atom - lambda * away_atom
     return x
 end
