@@ -313,3 +313,25 @@ function compute_active_set_iterate!(active_set::AbstractActiveSet{<:ScaledHotVe
     end
     return active_set.x
 end
+
+"""
+    ActiveSetQuadratic{AT, R, IT}
+
+Represents an active set of extreme vertices collected in a FW algorithm,
+along with their coefficients `(λ_i, a_i)`.
+`R` is the type of the `λ_i`, `AT` is the type of the atoms `a_i`.
+The iterate `x = ∑λ_i a_i` is stored in x with type `IT`.
+The objective function is assumed to be of the form `f(x)=a⟨x,x⟩+b⟨p,x⟩+c`
+so that the gradient is simply `∇f(x)=2ax+bp`.
+"""
+struct ActiveSetQuadratic{AT, R <: Real, IT} <: AbstractActiveSet{AT,R,IT}
+    weights::Vector{R}
+    atoms::Vector{AT}
+    x::IT
+    dots_p::Vector{R} # TODO new type?
+    dots::Vector{Vector{R}} # TODO new type?
+    gaps::Vector{R} # TODO new type?
+    weights_prev::Vector{R}
+    modified::Vector{Bool}
+end
+
