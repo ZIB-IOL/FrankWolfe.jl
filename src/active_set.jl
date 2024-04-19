@@ -71,14 +71,14 @@ function Base.deleteat!(as::AbstractActiveSet, idx)
     return as
 end
 
-Base.@propagate_inbounds function Base.setindex!(as::AbstractActiveSet, tup::Tuple, idx)
-    @boundscheck checkbounds(as, idx)
-    @inbounds begin
-        as.weights[idx] = tup[1]
-        as.atoms[idx] = tup[2]
-    end
-    return tup
-end
+# Base.@propagate_inbounds function Base.setindex!(as::AbstractActiveSet, tup::Tuple, idx)
+    # @boundscheck checkbounds(as, idx)
+    # @inbounds begin
+        # as.weights[idx] = tup[1]
+        # as.atoms[idx] = tup[2]
+    # end
+    # return tup
+# end
 
 function Base.empty!(as::AbstractActiveSet)
     empty!(as.atoms)
@@ -231,8 +231,7 @@ function active_set_cleanup!(active_set; weight_purge_threshold=1e-12, update=tr
             end
         end
     end
-    # FIXME replace with deleteat! and check if setindex! is then needed
-    filter!(e -> e[1] > weight_purge_threshold, active_set)
+    deleteat!(active_set, findall(e -> e ≤ weight_purge_threshold, active_set.weights))
     if update
         compute_active_set_iterate!(active_set)
     end
