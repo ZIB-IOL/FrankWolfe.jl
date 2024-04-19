@@ -87,7 +87,6 @@ function benchmark_Bell(p::Array{T, 2}, sym::Bool; quadratic=false, kwargs...) w
         lmo = FrankWolfe.SymmetricLMO(lmo, reynolds_permutedims, reynolds_adjoint)
     end
     x0 = FrankWolfe.compute_extreme_point(lmo, -p)
-    println("Output type of the LMO: ", typeof(x0))
     if quadratic
         active_set = FrankWolfe.ActiveSetQuadratic([(one(T), x0)], I, -p)
     else
