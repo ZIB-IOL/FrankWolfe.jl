@@ -339,7 +339,7 @@ end
 
 # ActiveSetQuadratic{AT}() where {AT} = ActiveSetQuadratic{AT,Float64,Vector{float(eltype(AT))}}()
 
-function ActiveSetQuadratic(tuple_values::AbstractVector{Tuple{R,AT}}, A::H, b) where {AT,R,H<:AbstractMatrix}
+function ActiveSetQuadratic(tuple_values::AbstractVector{Tuple{R,AT}}, A::H, b) where {AT,R,H}
     n = length(tuple_values)
     weights = Vector{R}(undef, n)
     atoms = Vector{AT}(undef, n)
@@ -363,7 +363,7 @@ function ActiveSetQuadratic(tuple_values::AbstractVector{Tuple{R,AT}}, A::H, b) 
     return as
 end
 
-function ActiveSetQuadratic{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}, A::H, b) where {AT,R}
+function ActiveSetQuadratic{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}, A::H, b) where {AT,R,H}
     n = length(tuple_values)
     weights = Vector{R}(undef, n)
     atoms = Vector{AT}(undef, n)
@@ -500,7 +500,7 @@ function active_set_renormalize!(active_set::ActiveSetQuadratic)
     return active_set
 end
 
-function active_set_argmin(active_set::AbstractActiveSet, direction)
+function active_set_argmin(active_set::ActiveSetQuadratic, direction)
     valm = Inf
     idxm = -1
     idx_modified = findall(active_set.modified)
