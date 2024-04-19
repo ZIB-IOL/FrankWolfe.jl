@@ -98,7 +98,7 @@ function Base.push!(as::ActiveSetQuadratic, (λ, a))
     return as
 end
 
-function Base.deleteat!(as::ActiveSetQuadratic, idx)
+function Base.deleteat!(as::ActiveSetQuadratic, idx::Int)
     @inbounds for i in 1:idx-1
         as.dots_x[i] -= as.weights[idx] * as.dots_A[idx][i]
     end
