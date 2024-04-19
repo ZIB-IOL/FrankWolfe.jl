@@ -108,10 +108,8 @@ function active_set_update!(active_set::AbstractActiveSet, lambda, atom, renorm=
     if idx === nothing
         idx = find_atom(active_set, atom)
     end
-    updating = false
     if idx > 0
-        @inbounds active_set.weights[idx] = active_set.weights[idx] + lambda
-        updating = true
+        @inbounds active_set.weights[idx] += lambda
     else
         push!(active_set, (lambda, atom))
     end
@@ -138,7 +136,7 @@ function active_set_update_scale!(x::IT, lambda, atom::SparseArrays.SparseVector
     @. x *= (1 - lambda)
     nzvals = SparseArrays.nonzeros(atom)
     nzinds = SparseArrays.nonzeroinds(atom)
-    for idx in eachindex(nzvals)
+    @inbounds for idx in eachindex(nzvals)
         x[nzinds[idx]] += lambda * nzvals[idx]
     end
     return x
@@ -254,18 +252,16 @@ Computes the linear minimizer in the direction on the active set.
 Returns `(λ_i, a_i, i)`
 """
 function active_set_argmin(active_set::AbstractActiveSet, direction)
-    val = dot(active_set.atoms[1], direction)
-    idx = 1
-    temp = 0
-    for i in 2:length(active_set)
-        temp = fast_dot(active_set.atoms[i], direction)
-        if temp < val
-            val = temp
-            idx = i
+    valm = Inf
+    idxm = -1
+    @inbounds for i in eachindex(active_set)
+        val = fast_dot(active_set.atoms[i], direction)
+        if val < valm
+            valm = val
+            idxm = i
         end
     end
-    # return lambda, vertex, index
-    return (active_set[idx]..., idx)
+    return (active_set[idxm]..., idxm)
 end
 
 """
@@ -275,25 +271,25 @@ Computes the linear minimizer in the direction on the active set.
 Returns `(λ_min, a_min, i_min, val_min, λ_max, a_max, i_max, val_max, val_max-val_min ≥ Φ)`
 """
 function active_set_argminmax(active_set::AbstractActiveSet, direction; Φ=0.5)
-    val = Inf
+    valm = Inf
     valM = -Inf
-    idx = -1
+    idxm = -1
     idxM = -1
-    for i in eachindex(active_set)
-        temp_val = fast_dot(active_set.atoms[i], direction)
-        if temp_val < val
-            val = temp_val
-            idx = i
+    @inbounds for i in eachindex(active_set)
+        val = fast_dot(active_set.atoms[i], direction)
+        if val < valm
+            valm = val
+            idxm = i
         end
-        if valM < temp_val
-            valM = temp_val
+        if valM < val
+            valM = val
             idxM = i
         end
     end
-    if idx == -1 || idxM == -1
-        error("Infinite minimum $val or maximum $valM in the active set. Does the gradient contain invalid (NaN / Inf) entries?")
+    if idxm == -1 || idxM == -1
+        error("Infinite minimum $valm or maximum $valM in the active set. Does the gradient contain invalid (NaN / Inf) entries?")
     end
-    return (active_set[idx]..., idx, val, active_set[idxM]..., idxM, valM, valM - val ≥ Φ)
+    return (active_set[idxm]..., idxm, valm, active_set[idxM]..., idxM, valM, valM - valm ≥ Φ)
 end
 
 """
@@ -332,16 +328,16 @@ struct ActiveSetQuadratic{AT, R <: Real, IT, H} <: AbstractActiveSet{AT,R,IT}
     x::IT
     A::H # Hessian matrix
     b::IT # linear term
-    dots_x::Vector{R} # stores ⟨x, atoms[i]⟩
-    dots_A::Vector{Vector{R}} # stores ⟨A * atoms[i], atoms[j]⟩
+    dots_x::Vector{R} # stores ⟨A * x, atoms[i]⟩
+    dots_A::Vector{Vector{R}} # stores ⟨A * atoms[j], atoms[i]⟩
     dots_b::Vector{R} # stores ⟨b, atoms[i]⟩
     weights_prev::Vector{R}
     modified::BitVector
 end
 
-#  ActiveSetQuadratic{AT,R}() where {AT,R} = ActiveSetQuadratic{AT,R,Vector{float(eltype(AT))}}([], [])
+# ActiveSetQuadratic{AT,R}() where {AT,R} = ActiveSetQuadratic{AT,R,Vector{float(eltype(AT))}}([], [])
 
-#  ActiveSetQuadratic{AT}() where {AT} = ActiveSetQuadratic{AT,Float64,Vector{float(eltype(AT))}}()
+# ActiveSetQuadratic{AT}() where {AT} = ActiveSetQuadratic{AT,Float64,Vector{float(eltype(AT))}}()
 
 function ActiveSetQuadratic(tuple_values::AbstractVector{Tuple{R,AT}}, A::H, b) where {AT,R,H<:AbstractMatrix}
     n = length(tuple_values)
@@ -459,4 +455,114 @@ function Base.empty!(as::ActiveSetQuadratic)
     empty!(as.weights_prev)
     empty!(as.modified)
     return as
+end
+
+function active_set_update!(active_set::ActiveSetQuadratic, lambda, atom, renorm=true, idx=nothing; add_dropped_vertices=false, vertex_storage=nothing)
+    # rescale active set
+    active_set.weights .*= (1 - lambda)
+    active_set.weights_prev .*= (1 - lambda)
+    active_set.dots_x .*= (1 - lambda)
+    # add value for new atom
+    if idx === nothing
+        idx = find_atom(active_set, atom)
+    end
+    if idx > 0
+        @inbounds active_set.weights[idx] += lambda
+        @inbounds active_set.modified[idx] = true
+    else
+        push!(active_set, (lambda, atom))
+    end
+    if renorm
+        add_dropped_vertices = add_dropped_vertices ? vertex_storage !== nothing : add_dropped_vertices
+        active_set_cleanup!(active_set, update=false, add_dropped_vertices=add_dropped_vertices, vertex_storage=vertex_storage)
+        active_set_renormalize!(active_set)
+    end
+    active_set_update_scale!(active_set.x, lambda, atom)
+    return active_set
+end
+
+function active_set_update_iterate_pairwise!(active_set::ActiveSetQuadratic, x::IT, lambda::Real, fw_atom::A, away_atom::A) where {IT, A}
+    idx_fw = find_atom(active_set, fw_atom)
+    active_set.modified[idx_fw] = true
+    idx_away = find_atom(active_set, away_atom)
+    active_set.modified[idx_away] = true
+    @. x += lambda * fw_atom - lambda * away_atom
+    return x
+end
+
+function active_set_renormalize!(active_set::ActiveSetQuadratic)
+    renorm = sum(active_set.weights)
+    active_set.weights ./= renorm
+    active_set.weights_prev ./= renorm
+    # TODO check if it's necessary to recompute dots_x
+    # to prevent discrepancy due to numerical errors
+    active_set.dots_x ./= renorm
+    return active_set
+end
+
+function active_set_argmin(active_set::AbstractActiveSet, direction)
+    valm = Inf
+    idxm = -1
+    idx_modified = findall(active_set.modified)
+    @inbounds for idx in idx_modified
+        weights_diff = active_set.weights[idx] - active_set.weights_prev[idx]
+        for i in 1:idx
+            active_set.dots_x[i] += weights_diff * active_set.dots_A[idx][i]
+        end
+        for i in idx+1:length(active_set)
+            active_set.dots_x[i] += weights_diff * active_set.dots_A[i][idx]
+        end
+    end
+    @inbounds for i in eachindex(active_set)
+        # val = fast_dot(active_set.atoms[i], direction)
+        # XXX direction is not used and assumed to be Ax+b
+        val = active_set.dots_x[i] + active_set.dots_b[i]
+        if val < valm
+            valm = val
+            idxm = i
+        end
+    end
+    @inbounds for idx in idx_modified
+        active_set.weights_prev[idx] = active_set.weights[idx]
+        active_set.modified[idx] = false
+    end
+    return (active_set[idxm]..., idxm)
+end
+
+function active_set_argminmax(active_set::ActiveSetQuadratic, direction; Φ=0.5)
+    valm = Inf
+    valM = -Inf
+    idxm = -1
+    idxM = -1
+    idx_modified = findall(active_set.modified)
+    @inbounds for idx in idx_modified
+        weights_diff = active_set.weights[idx] - active_set.weights_prev[idx]
+        for i in 1:idx
+            active_set.dots_x[i] += weights_diff * active_set.dots_A[idx][i]
+        end
+        for i in idx+1:length(active_set)
+            active_set.dots_x[i] += weights_diff * active_set.dots_A[i][idx]
+        end
+    end
+    @inbounds for i in eachindex(active_set)
+        # val = fast_dot(active_set.atoms[i], direction)
+        # XXX direction is not used and assumed to be Ax+b
+        val = active_set.dots_x[i] + active_set.dots_b[i]
+        if val < valm
+            valm = val
+            idxm = i
+        end
+        if valM < val
+            valM = val
+            idxM = i
+        end
+    end
+    @inbounds for idx in idx_modified
+        active_set.weights_prev[idx] = active_set.weights[idx]
+        active_set.modified[idx] = false
+    end
+    if idxm == -1 || idxM == -1
+        error("Infinite minimum $valm or maximum $valM in the active set. Does the gradient contain invalid (NaN / Inf) entries?")
+    end
+    return (active_set[idxm]..., idxm, valm, active_set[idxM]..., idxM, valM, valM - valm ≥ Φ)
 end
