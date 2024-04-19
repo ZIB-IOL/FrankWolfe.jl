@@ -332,6 +332,5 @@ struct ActiveSetQuadratic{AT, R <: Real, IT} <: AbstractActiveSet{AT,R,IT}
     dots::Vector{Vector{R}} # TODO new type?
     gaps::Vector{R} # TODO new type?
     weights_prev::Vector{R}
-    modified::Vector{Bool}
+    modified::BitVector
 end
-
