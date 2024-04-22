@@ -66,8 +66,8 @@ function Base.push!(as::AbstractActiveSet, (λ, a))
 end
 
 function Base.deleteat!(as::AbstractActiveSet, idx)
-    deleteat!(as.weights, idx)
     deleteat!(as.atoms, idx)
+    deleteat!(as.weights, idx)
     return as
 end
 
@@ -231,7 +231,7 @@ function active_set_cleanup!(active_set; weight_purge_threshold=1e-12, update=tr
             end
         end
     end
-    deleteat!(active_set, findall(e -> e ≤ weight_purge_threshold, active_set.weights))
+    deleteat!(active_set, (idx for idx in eachindex(active_set) if active_set.weights[idx] ≤ weight_purge_threshold))
     if update
         compute_active_set_iterate!(active_set)
     end
