@@ -259,7 +259,7 @@ function blended_pairwise_conditional_gradient(
                 active_set.weights[v_local_loc] += gamma
                 @assert active_set_validate(active_set)
             end
-            active_set_update_iterate_pairwise!(active_set, active_set.x, gamma, v_local, a)
+            active_set_update_iterate_pairwise!(active_set.x, gamma, v_local, a)
         else # add to active set
             if lazy # otherwise, v computed above already
                 # optionally try to use the storage

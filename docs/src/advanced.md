@@ -198,7 +198,7 @@ which recomputes the iterate from the current convex decomposition and the follo
 [`FrankWolfe.active_set_update_scale!`](@ref) and [`FrankWolfe.active_set_update_iterate_pairwise!`](@ref):
 ```julia
 FrankWolfe.active_set_update_scale!(x::IT, lambda, atom)
-FrankWolfe.active_set_update_iterate_pairwise!(active_set, x::IT, lambda, fw_atom, away_atom)
+FrankWolfe.active_set_update_iterate_pairwise!(x::IT, lambda, fw_atom, away_atom)
 ```
 
 ## Symmetry reduction
