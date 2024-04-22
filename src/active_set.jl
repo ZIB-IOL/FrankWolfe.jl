@@ -71,15 +71,6 @@ function Base.deleteat!(as::AbstractActiveSet, idx)
     return as
 end
 
-# Base.@propagate_inbounds function Base.setindex!(as::AbstractActiveSet, tup::Tuple, idx)
-    # @boundscheck checkbounds(as, idx)
-    # @inbounds begin
-        # as.weights[idx] = tup[1]
-        # as.atoms[idx] = tup[2]
-    # end
-    # return tup
-# end
-
 function Base.empty!(as::AbstractActiveSet)
     empty!(as.atoms)
     empty!(as.weights)
