@@ -152,6 +152,29 @@ function active_set_update!(active_set::ActiveSetQuadratic, lambda, atom, renorm
     return active_set
 end
 
+# only useful for testing purposes, should remain commented out
+function active_set_validate(as::ActiveSetQuadratic)
+    T = eltype(as.weights)
+    ε = Base.rtoldefault(T)
+    @inbounds for i in eachindex(as)
+        if abs(fast_dot(as.A*as.x, as.atoms[i]) - as.dots_x[i]) ≥ ε
+            return false
+        end
+        if abs(fast_dot(as.b, as.atoms[i]) - as.dots_b[i]) ≥ ε
+            return false
+        end
+        if length(as.dots_A[i]) != i
+            return false
+        end
+        # for j in 1:i
+            # if abs(fast_dot(as.A*as.atoms[j], as.atoms[i]) - as.dots_A[i][j]) ≥ ε
+                # return false
+            # end
+        # end
+    end
+    return sum(as.weights) ≈ 1.0 && all(≥(0), as.weights)
+end
+
 function active_set_renormalize!(active_set::ActiveSetQuadratic)
     renorm = sum(active_set.weights)
     active_set.weights ./= renorm
