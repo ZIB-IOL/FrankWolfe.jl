@@ -254,6 +254,9 @@ function active_set_argmin(active_set::AbstractActiveSet, direction)
             idxm = i
         end
     end
+    if idxm == -1
+        error("Infinite minimum $valm in the active set. Does the gradient contain invalid (NaN / Inf) entries?")
+    end
     return (active_set[idxm]..., idxm)
 end
 
