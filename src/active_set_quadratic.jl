@@ -116,26 +116,6 @@ function Base.deleteat!(as::ActiveSetQuadratic, idx::Int)
     return as
 end
 
-Base.@propagate_inbounds function Base.setindex!(as::ActiveSetQuadratic, tup::Tuple, idx)
-    @boundscheck checkbounds(as, idx)
-    @inbounds begin
-        as.weights[idx] = tup[1]
-        as.atoms[idx] = tup[2]
-        as.dots_x[idx] -= as.dots_A[idx][idx]
-        for i in 1:idx
-            as.dots_A[idx][i] = fast_dot(as.atoms[idx], as.atoms[i])
-        end
-        for i in idx+1:length(as)
-            as.dots_A[i][idx] = fast_dot(as.atoms[i], as.atoms[idx])
-        end
-        as.dots_x[idx] += as.dots_A[idx][idx]
-        as.dots_b[idx] = fast_dot(as.b, as.atoms[idx])
-        as.weights_prev[idx] = as.weights[idx]
-        as.modified[idx] = false
-    end
-    return tup
-end
-
 function Base.empty!(as::ActiveSetQuadratic)
     empty!(as.atoms)
     empty!(as.weights)
@@ -238,9 +218,9 @@ function active_set_argminmax(active_set::ActiveSetQuadratic, direction; Φ=0.5)
         end
     end
     @inbounds for i in eachindex(active_set)
-        # val = fast_dot(active_set.atoms[i], direction)
-        # XXX direction is not used and assumed to be Ax+b
+        # direction is not used and assumed to be Ax+b
         val = active_set.dots_x[i] + active_set.dots_b[i]
+        # @assert abs(fast_dot(active_set.atoms[i], direction) - val) < Base.rtoldefault(eltype(direction))
         if val < valm
             valm = val
             idxm = i
