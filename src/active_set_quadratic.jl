@@ -94,7 +94,7 @@ function Base.push!(as::ActiveSetQuadratic, (λ, a))
     push!(as.dots_A, dot_A)
     push!(as.dots_b, dot_b)
     push!(as.weights_prev, λ)
-    push!(as.modified, false)
+    push!(as.modified, true)
     return as
 end
 
@@ -152,16 +152,16 @@ function active_set_update!(active_set::ActiveSetQuadratic, lambda, atom, renorm
     return active_set
 end
 
-function active_set_update_iterate_pairwise!(active_set::ActiveSetQuadratic, x::IT, lambda::Real, fw_atom::A, away_atom::A) where {IT, A}
-    idx_fw = find_atom(active_set, fw_atom)
-    active_set.modified[idx_fw] = true
-    idx_away = find_atom(active_set, away_atom)
-    if idx_away > 0 # may have been dropped already
-        active_set.modified[idx_away] = true
-    end
-    @. x += lambda * fw_atom - lambda * away_atom
-    return x
-end
+# function active_set_update_iterate_pairwise!(active_set::ActiveSetQuadratic, x::IT, lambda::Real, fw_atom::A, away_atom::A) where {IT, A}
+    # idx_fw = find_atom(active_set, fw_atom)
+    # # active_set.modified[idx_fw] = true
+    # idx_away = find_atom(active_set, away_atom)
+    # if idx_away > 0 # may have been dropped already
+        # # active_set.modified[idx_away] = true
+    # end
+    # @. x += lambda * fw_atom - lambda * away_atom
+    # return x
+# end
 
 function active_set_renormalize!(active_set::ActiveSetQuadratic)
     renorm = sum(active_set.weights)
@@ -237,5 +237,7 @@ function active_set_argminmax(active_set::ActiveSetQuadratic, direction; Φ=0.5)
     if idxm == -1 || idxM == -1
         error("Infinite minimum $valm or maximum $valM in the active set. Does the gradient contain invalid (NaN / Inf) entries?")
     end
+    active_set.modified[idxm] = true
+    active_set.modified[idxM] = true
     return (active_set[idxm]..., idxm, valm, active_set[idxM]..., idxM, valM, valM - valm ≥ Φ)
 end
