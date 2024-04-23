@@ -58,7 +58,7 @@ function correlation_tensor_GHZ_polygon(N::Int, m::Int; type=Float64)
     return res
 end
 
-function benchmark_Bell(p::Array{T, 2}, sym::Bool; quadratic=false, kwargs...) where {T <: Number}
+function benchmark_Bell(p::Array{T, 2}, quadratic::Bool; fw_method=FrankWolfe.blended_pairwise_conditional_gradient, kwargs...) where {T <: Number}
     normp2 = dot(p, p) / 2
     # weird syntax to enable the compiler to correctly understand the type
     f = let p = p, normp2 = normp2
@@ -83,20 +83,22 @@ function benchmark_Bell(p::Array{T, 2}, sym::Bool; quadratic=false, kwargs...) w
         return gradient # we can spare symmetrising the gradient as it remains symmetric throughout the algorithm
     end
     lmo = BellCorrelationsLMO{T}(size(p, 1), zeros(T, size(p, 1)))
-    if sym
-        lmo = FrankWolfe.SymmetricLMO(lmo, reynolds_permutedims, reynolds_adjoint)
-    end
     x0 = FrankWolfe.compute_extreme_point(lmo, -p)
     if quadratic
         active_set = FrankWolfe.ActiveSetQuadratic([(one(T), x0)], I, -p)
     else
         active_set = FrankWolfe.ActiveSet([(one(T), x0)])
     end
-    return FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo, active_set; lazy=true, line_search=FrankWolfe.Shortstep(one(T)), kwargs...)
+    return fw_method(f, grad!, lmo, active_set; line_search=FrankWolfe.Shortstep(one(T)), kwargs...)
 end
 
 p = correlation_tensor_GHZ_polygon(2, 100)
-@time benchmark_Bell(p, false; verbose=true, max_iteration=10^3, lazy_tolerance=2.0) # 3s
-println()
-@time benchmark_Bell(p, false; verbose=true, max_iteration=10^3, lazy_tolerance=2.0, quadratic=true) # 1s
+@time benchmark_Bell(p, false; verbose=false, max_iteration=10^3, lazy=false, fw_method=FrankWolfe.blended_pairwise_conditional_gradient) # 2.4s
+@time benchmark_Bell(p, true; verbose=false, max_iteration=10^3, lazy=false, fw_method=FrankWolfe.blended_pairwise_conditional_gradient) # 0.8s
+@time benchmark_Bell(p, false; verbose=false, max_iteration=10^3, lazy=true, fw_method=FrankWolfe.blended_pairwise_conditional_gradient) # 2.1s
+@time benchmark_Bell(p, true; verbose=false, max_iteration=10^3, lazy=true, fw_method=FrankWolfe.blended_pairwise_conditional_gradient) # 0.4s
+@time benchmark_Bell(p, false; verbose=false, max_iteration=10^3, lazy=false, fw_method=FrankWolfe.away_frank_wolfe) # 5.7s
+@time benchmark_Bell(p, true; verbose=false, max_iteration=10^3, lazy=false, fw_method=FrankWolfe.away_frank_wolfe) # 2.3s
+@time benchmark_Bell(p, false; verbose=false, max_iteration=10^3, lazy=true, fw_method=FrankWolfe.away_frank_wolfe) # 3s
+@time benchmark_Bell(p, true; verbose=false, max_iteration=10^3, lazy=true, fw_method=FrankWolfe.away_frank_wolfe) # 0.7s
 println()
