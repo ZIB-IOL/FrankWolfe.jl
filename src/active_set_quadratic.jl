@@ -100,10 +100,10 @@ end
 
 function Base.deleteat!(as::ActiveSetQuadratic, idx::Int)
     @inbounds for i in 1:idx-1
-        as.dots_x[i] -= as.weights[idx] * as.dots_A[idx][i]
+        as.dots_x[i] -= as.weights_prev[idx] * as.dots_A[idx][i]
     end
     @inbounds for i in idx+1:length(as)
-        as.dots_x[i] -= as.weights[idx] * as.dots_A[i][idx]
+        as.dots_x[i] -= as.weights_prev[idx] * as.dots_A[i][idx]
         deleteat!(as.dots_A[i], idx)
     end
     deleteat!(as.weights, idx)
