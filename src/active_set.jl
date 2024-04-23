@@ -66,6 +66,14 @@ function Base.push!(as::AbstractActiveSet, (λ, a))
 end
 
 function Base.deleteat!(as::AbstractActiveSet, idx)
+    # WARNING assumes that idx is sorted
+    for (i, j) in enumerate(idx)
+        deleteat!(as, j-i+1)
+    end
+    return as
+end
+
+function Base.deleteat!(as::AbstractActiveSet, idx::Int)
     deleteat!(as.atoms, idx)
     deleteat!(as.weights, idx)
     return as
@@ -220,7 +228,8 @@ function active_set_cleanup!(active_set; weight_purge_threshold=1e-12, update=tr
             end
         end
     end
-    deleteat!(active_set, (idx for idx in eachindex(active_set) if active_set.weights[idx] ≤ weight_purge_threshold))
+    # one cannot use a generator as deleteat! modifies active_set in place
+    deleteat!(active_set, [idx for idx in eachindex(active_set) if active_set.weights[idx] ≤ weight_purge_threshold])
     if update
         compute_active_set_iterate!(active_set)
     end
