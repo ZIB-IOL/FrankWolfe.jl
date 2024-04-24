@@ -476,7 +476,7 @@ function block_coordinate_frank_wolfe(
                     @. storage = big_storage.blocks[i]
                 end
 
-                dual_gaps[i], v, d, gamma, tt = update_iterate(
+                dual_gaps[i], v.blocks[i], d, gamma, tt = update_iterate(
                     update_step[i],
                     x.blocks[i],
                     lmo.lmos[i],
