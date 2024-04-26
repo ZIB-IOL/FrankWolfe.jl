@@ -55,6 +55,12 @@ end
 
 is_decomposition_invariant_oracle(::MathOptLMO) = true
 
+function compute_inface_extreme_point(lmo::UnitSimplexOracle{T}, direction, x; kwargs...) where {T}
+    
+end
+
+
+
 function Base.copy(lmo::MathOptLMO{OT}; ensure_identity=true) where {OT}
     opt = OT() # creates the empty optimizer
     index_map = MOI.copy_to(opt, lmo.o)
