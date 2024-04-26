@@ -53,12 +53,21 @@ function compute_extreme_point(
     return reshape(v, n, n)
 end
 
+"""
+    only support box constraints for now
+"""
+
 is_decomposition_invariant_oracle(::MathOptLMO) = true
 
-function compute_inface_extreme_point(lmo::UnitSimplexOracle{T}, direction, x; kwargs...) where {T}
+function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x; kwargs...) where {T}
     
 end
 
+function dicg_maximum_step(::MathOptLMO{OT}, x, direction) where {T}
+     
+    
+
+end
 
 
 function Base.copy(lmo::MathOptLMO{OT}; ensure_identity=true) where {OT}
