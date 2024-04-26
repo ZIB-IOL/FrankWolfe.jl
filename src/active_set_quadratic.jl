@@ -22,9 +22,35 @@ struct ActiveSetQuadratic{AT, R <: Real, IT, H} <: AbstractActiveSet{AT,R,IT}
     modified::BitVector
 end
 
+function detect_quadratic_function(grad!, x0)
+    n = length(x0)
+    T = eltype(x0)
+    storage = collect(x0)
+    g0 = zeros(T, n)
+    grad!(storage, x0)
+    g0 .= storage
+    X = randn(T, n, n)
+    G = zeros(T, n, n)
+    for i in 1:n
+        grad!(storage, X[:, i])
+        X[:, i] .-= x0
+        G[:, i] .= storage .- g0
+    end
+    A = G * inv(X)
+    b = g0 - A * x0
+    x_test = randn(T, n)
+    grad!(storage, x_test)
+    println(norm(storage - (A * x_test + b)))
+    return A, b
+end
+
 # ActiveSetQuadratic{AT,R}() where {AT,R} = ActiveSetQuadratic{AT,R,Vector{float(eltype(AT))}}([], [])
 
 # ActiveSetQuadratic{AT}() where {AT} = ActiveSetQuadratic{AT,Float64,Vector{float(eltype(AT))}}()
+
+function ActiveSetQuadratic(tuple_values::AbstractVector{Tuple{R,AT}}, grad!) where {AT,R}
+    return ActiveSetQuadratic(tuple_values, detect_quadratic_function(grad!, tuple_values[1][2])...)
+end
 
 function ActiveSetQuadratic(tuple_values::AbstractVector{Tuple{R,AT}}, A::H, b) where {AT,R,H}
     n = length(tuple_values)
@@ -48,6 +74,10 @@ function ActiveSetQuadratic(tuple_values::AbstractVector{Tuple{R,AT}}, A::H, b) 
     as = ActiveSetQuadratic{AT,R,typeof(x),H}(weights, atoms, x, A, b, dots_x, dots_A, dots_b, weights_prev, modified)
     compute_active_set_iterate!(as)
     return as
+end
+
+function ActiveSetQuadratic{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}, grad!) where {AT,R}
+    return ActiveSetQuadratic{AT,R}(tuple_values, detect_quadratic_function(grad!, tuple_values[1][2])...)
 end
 
 function ActiveSetQuadratic{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}, A::H, b) where {AT,R,H}
