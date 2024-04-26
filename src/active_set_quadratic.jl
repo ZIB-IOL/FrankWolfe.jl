@@ -76,9 +76,9 @@ end
 
 # these three functions do not update the active set iterate
 
-function Base.push!(as::ActiveSetQuadratic, (λ, a))
-    dot_x = zero(as.dots_x[end])
-    dot_A = similar(as.dots_A[end])
+function Base.push!(as::ActiveSetQuadratic{AT,R}, (λ, a)) where {AT,R}
+    dot_x = zero(R)
+    dot_A = Vector{R}(undef, length(as))
     dot_b = fast_dot(as.b, a)
     Aa = as.A * a
     @inbounds for i in 1:length(as)
