@@ -22,7 +22,7 @@ struct ActiveSetQuadratic{AT, R <: Real, IT, H} <: AbstractActiveSet{AT,R,IT}
     modified::BitVector
 end
 
-function detect_quadratic_function(grad!, x0)
+function detect_quadratic_function(grad!, x0; test=true)
     n = length(x0)
     T = eltype(x0)
     storage = collect(x0)
@@ -38,9 +38,13 @@ function detect_quadratic_function(grad!, x0)
     end
     A = G * inv(X)
     b = g0 - A * x0
-    x_test = randn(T, n)
-    grad!(storage, x_test)
-    println(norm(storage - (A * x_test + b)))
+    if test
+        x_test = randn(T, n)
+        grad!(storage, x_test)
+        if norm(storage - (A * x_test + b)) ≥ Base.rtoldefault(T)
+            @warn "The function given is either not a quadratic or too high-dimensional for an accurate estimation of its parameters."
+        end
+    end
     return A, b
 end
 
