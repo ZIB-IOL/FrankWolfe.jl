@@ -116,7 +116,7 @@ function Base.push!(as::ActiveSetQuadratic{AT,R}, (λ, a)) where {AT,R}
         as.dots_x[i] += λ * dot_A[i]
         dot_x += as.weights[i] * dot_A[i]
     end
-    push!(dot_A, fast_dot(a, a))
+    push!(dot_A, fast_dot(Aa, a))
     dot_x += λ * dot_A[end]
     push!(as.weights, λ)
     push!(as.atoms, a)
