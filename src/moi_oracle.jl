@@ -66,35 +66,35 @@ function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x; kwargs.
         push!(temp, val)
     end
     direction = temp
-    o2 = copy(lmo.o)
-    variables = MOI.get(o2, MOI.ListOfVariableIndices())
+    lmo2 = copy(lmo.o)
+    variables = MOI.get(lmo2, MOI.ListOfVariableIndices())
     terms = [MOI.ScalarAffineTerm(d, v) for (d, v) in zip(direction, variables)]
     obj = MOI.ScalarAffineFunction(terms, zero(T))
-    MOI.set(o2, MOI.ObjectiveFunction{typeof(obj)}(), obj)
-    for (F, S) in MOI.get(opt, MOI.ListOfConstraintTypesPresent())
+    MOI.set(lmo2.o, MOI.ObjectiveFunction{typeof(obj)}(), obj)
+    for (F, S) in MOI.get(lmo2.o, MOI.ListOfConstraintTypesPresent())
         valvar(f) = x[f.value]
-        const_list = MOI.get(opt, MOI.ListOfConstraintIndices{F,S}())
+        const_list = MOI.get(lmo2.o, MOI.ListOfConstraintIndices{F,S}())
         for c_idx in const_list
             if !(S <: MOI.ZeroOne)
-                func = MOI.get(o2, MOI.ConstraintFunction(), c_idx)
+                func = MOI.get(lmo2.o, MOI.ConstraintFunction(), c_idx)
                 val = MOIU.eval_variables(valvar, func)
-                set = MOI.get(o2, MOI.ConstraintSet(), c_idx)
+                set = MOI.get(lmo2.o, MOI.ConstraintSet(), c_idx)
                 # @debug("Constraint: $(F)-$(S) $(func) = $(val) in $(set)")
                 if ( S <: MOI.GreaterThan)
                     if set.lower === val
-                        idx = MOI.add_constraint(o2, func, MOI.EqualTo(val))
+                        idx = MOI.add_constraint(lmo2.o, func, MOI.EqualTo(val))
                     elseif ( S <: MOI.LessThan)
                         if set.upper === val
-                            idx = MOI.add_constraint(o2, func, MOI.EqualTo(val)) 
+                            idx = MOI.add_constraint(lmo2.o, func, MOI.EqualTo(val)) 
                         end
                     end
                 end  
             end
         end
     end
-    MOI.optimize!(o2)
-    a = MOI.get(o2, MOI.VariablePrimal(), variables)
-    MOI.empty!(o2)
+    MOI.optimize!(lmo2.o)
+    a = MOI.get(lmo2.o, MOI.VariablePrimal(), variables)
+    MOI.empty!(lmo2.o)
     return a
 end
 
