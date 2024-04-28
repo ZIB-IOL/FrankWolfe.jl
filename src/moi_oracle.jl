@@ -67,6 +67,7 @@ function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x; kwargs.
     end
     direction = temp
     lmo2 = copy(lmo)
+    MOI.set(lmo2.o, MOI.Silent(), true)
     variables = MOI.get(lmo2.o, MOI.ListOfVariableIndices())
     terms = [MOI.ScalarAffineTerm(d, v) for (d, v) in zip(direction, variables)]
     obj = MOI.ScalarAffineFunction(terms, zero(Float64))
