@@ -60,6 +60,7 @@ end
 is_decomposition_invariant_oracle(::MathOptLMO) = true
 
 function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x; kwargs...) where {OT}
+    direction = [for i in direction]
     lmo2 = copy(lmo.o)
     variables = MOI.get(lmo, MOI.ListOfVariableIndices())
     terms = [MOI.ScalarAffineTerm(d, v) for (d, v) in zip(direction, variables)]
@@ -91,6 +92,7 @@ function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x; kwargs.
 end
 
 function dicg_maximum_step(lmo::MathOptLMO{OT}, x, direction; exactness=40) where {OT}
+    d = [for i in direction]
     gamma_max = 0.0
     gamma = 1.0
     while(exactness != 0)
@@ -113,6 +115,7 @@ function dicg_maximum_step(lmo::MathOptLMO{OT}, x, direction; exactness=40) wher
 end
 
 function is_constraints_feasible(lmo::MathOptLMO{OT}, x; atol=1e-7)
+    d = [for i in direction]
     flag = []
     equal = []
     for (F, S) in MOI.get(lmo.o, MOI.ListOfConstraintTypesPresent())
