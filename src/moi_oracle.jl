@@ -61,34 +61,36 @@ is_decomposition_invariant_oracle(::MathOptLMO) = true
 
 function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x; kwargs...) where {OT}
     direction = [for i in direction]
-    lmo2 = copy(lmo.o)
-    variables = MOI.get(lmo, MOI.ListOfVariableIndices())
+    o2 = copy(lmo.o)
+    variables = MOI.get(o2, MOI.ListOfVariableIndices())
     terms = [MOI.ScalarAffineTerm(d, v) for (d, v) in zip(direction, variables)]
     obj = MOI.ScalarAffineFunction(terms, zero(T))
-    MOI.set(lmo, MOI.ObjectiveFunction{typeof(obj)}(), obj)
+    MOI.set(o2, MOI.ObjectiveFunction{typeof(obj)}(), obj)
     for (F, S) in MOI.get(opt, MOI.ListOfConstraintTypesPresent())
         valvar(f) = x[f.value]
         const_list = MOI.get(opt, MOI.ListOfConstraintIndices{F,S}())
         for c_idx in const_list
             if !(S <: MOI.ZeroOne)
-                func = MOI.get(opt, MOI.ConstraintFunction(), c_idx)
+                func = MOI.get(o2, MOI.ConstraintFunction(), c_idx)
                 val = MOIU.eval_variables(valvar, func)
-                set = MOI.get(opt, MOI.ConstraintSet(), c_idx)
+                set = MOI.get(o2, MOI.ConstraintSet(), c_idx)
                 # @debug("Constraint: $(F)-$(S) $(func) = $(val) in $(set)")
                 if ( S <: MOI.GreaterThan)
                     if set.lower === val
-                        idx = MOI.add_constraint(opt, func, MOI.EqualTo(val))
+                        idx = MOI.add_constraint(o2, func, MOI.EqualTo(val))
                     elseif ( S <: MOI.LessThan)
                         if set.upper === val
-                            idx = MOI.add_constraint(opt, func, MOI.EqualTo(val)) 
+                            idx = MOI.add_constraint(o2, func, MOI.EqualTo(val)) 
                         end
                     end
                 end  
             end
         end
     end
-    MOI.optimize!(lmo2)
-    return MOI.get(lmo2, MOI.VariablePrimal(), variables)
+    MOI.optimize!(o2)
+    a = MOI.get(o2, MOI.VariablePrimal(), variables)
+    MOI.empty!(o2)
+    return a
 end
 
 function dicg_maximum_step(lmo::MathOptLMO{OT}, x, direction; exactness=40) where {OT}
