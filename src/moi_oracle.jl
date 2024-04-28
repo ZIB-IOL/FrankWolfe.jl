@@ -54,19 +54,62 @@ function compute_extreme_point(
 end
 
 """
-    only support box constraints for now
+    
 """
 
 is_decomposition_invariant_oracle(::MathOptLMO) = true
 
-function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x; kwargs...) where {T}
-    
+function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x; kwargs...) where {OT}
+    lmo2 = copy(lmo.o)
+    variables = MOI.get(lmo, MOI.ListOfVariableIndices())
+    terms = [MOI.ScalarAffineTerm(d, v) for (d, v) in zip(direction, variables)]
+    obj = MOI.ScalarAffineFunction(terms, zero(T))
+    MOI.set(lmo, MOI.ObjectiveFunction{typeof(obj)}(), obj)
+    for (F, S) in MOI.get(opt, MOI.ListOfConstraintTypesPresent())
+        valvar(f) = x[f.value]
+        const_list = MOI.get(opt, MOI.ListOfConstraintIndices{F,S}())
+        for c_idx in const_list
+            if !(S <: MOI.ZeroOne)
+                func = MOI.get(opt, MOI.ConstraintFunction(), c_idx)
+                val = MOIU.eval_variables(valvar, func)
+                set = MOI.get(opt, MOI.ConstraintSet(), c_idx)
+                # @debug("Constraint: $(F)-$(S) $(func) = $(val) in $(set)")
+                if ( S <: MOI.GreaterThan)
+                    if set.lower === val
+                        idx = MOI.add_constraint(opt, func, MOI.EqualTo(val))
+                    elseif ( S <: MOI.LessThan)
+                        if set.upper === val
+                            idx = MOI.add_constraint(opt, func, MOI.EqualTo(val)) 
+                        end
+                    end
+                end  
+            end
+        end
+    end
+    MOI.optimize!(lmo2)
+    return MOI.get(lmo2, MOI.VariablePrimal(), variables)
 end
 
-function dicg_maximum_step(::MathOptLMO{OT}, x, direction) where {T}
-     
-    
-
+function dicg_maximum_step(lmo::MathOptLMO{OT}, x, direction; exactness=40) where {OT}
+    gamma_max = 0.0
+    gamma = 1.0
+    while(exactness != 0)
+        flag, _ = is_constraints_feasible(lmo, x+gamma*direction)
+        if flag
+            if gamma === 1.0
+                return gamma
+            else
+                gamma_max = max(gamma, gamma_max)
+                gamma = (1+gamma_max) / 2
+                exactness -= 1
+            end
+        end
+        if !flag
+            gamma = (gamma+gamma_max) / 2
+            exactness -= 1
+        end
+    end
+    return gamma_max
 end
 
 
