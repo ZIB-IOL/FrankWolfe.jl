@@ -127,12 +127,6 @@ function dicg_maximum_step(lmo::MathOptLMO{OT}, x, direction; exactness=40) wher
 end
 
 function is_constraints_feasible(lmo::MathOptLMO{OT}, x; atol=1e-7)
-    temp = []
-    @inbounds for idx in eachindex(direction)
-        val = direction[idx]
-        push!(temp, val)
-    end
-    direction = temp
     flag = []
     equal = []
     for (F, S) in MOI.get(lmo.o, MOI.ListOfConstraintTypesPresent())
