@@ -60,7 +60,12 @@ end
 is_decomposition_invariant_oracle(::MathOptLMO) = true
 
 function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x; kwargs...) where {OT}
-    direction = [for i in direction]
+    temp = []
+    @inbounds for idx in eachindex(direction)
+        val = direction[idx]
+        push!(temp, val)
+    end
+    direction = temp
     o2 = copy(lmo.o)
     variables = MOI.get(o2, MOI.ListOfVariableIndices())
     terms = [MOI.ScalarAffineTerm(d, v) for (d, v) in zip(direction, variables)]
