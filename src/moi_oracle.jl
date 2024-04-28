@@ -54,7 +54,7 @@ function compute_extreme_point(
 end
 
 """
-    
+=============================================================================================================    
 """
 
 is_decomposition_invariant_oracle(::MathOptLMO) = true
@@ -94,7 +94,7 @@ function dicg_maximum_step(lmo::MathOptLMO{OT}, x, direction; exactness=40) wher
     gamma_max = 0.0
     gamma = 1.0
     while(exactness != 0)
-        flag, _ = is_constraints_feasible(lmo, x+gamma*direction)
+        flag, _ = is_constraints_feasible(lmo.o, x+gamma*direction)
         if flag
             if gamma === 1.0
                 return gamma
@@ -112,6 +112,42 @@ function dicg_maximum_step(lmo::MathOptLMO{OT}, x, direction; exactness=40) wher
     return gamma_max
 end
 
+function is_constraints_feasible(lmo::MathOptLMO{OT}, x; atol=1e-7)
+    flag = []
+    equal = []
+    for (F, S) in MOI.get(lmo.o, MOI.ListOfConstraintTypesPresent())
+        valvar(f) = x[f.value]
+        #println((F,S))
+        const_list = MOI.get(lmo.o, MOI.ListOfConstraintIndices{F,S}())
+        for c_idx in const_list
+            if !(S <: MOI.ZeroOne)
+                func = MOI.get(lmo.o, MOI.ConstraintFunction(), c_idx)
+                val = MOIU.eval_variables(valvar, func)
+                set = MOI.get(lmo.o, MOI.ConstraintSet(), c_idx)
+                #println(set.upper)
+                #println(val)
+                #println()
+                # @debug("Constraint: $(F)-$(S) $(func) = $(val) in $(set)")
+                dist = MOD.distance_to_set(MOD.DefaultDistance(), val, set)
+                if dist > atol
+                    push!(flag, 1)
+                else
+                    push!(flag, 0)
+                end
+            end
+        end
+    end
+    flag_boolean = sum(flag)
+    if flag_boolean === 0
+        return [true, flag]
+    else
+        return [false, flag]
+    end
+end
+
+"""
+=============================================================================================================
+"""
 
 function Base.copy(lmo::MathOptLMO{OT}; ensure_identity=true) where {OT}
     opt = OT() # creates the empty optimizer
