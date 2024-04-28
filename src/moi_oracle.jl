@@ -99,7 +99,12 @@ function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x; kwargs.
 end
 
 function dicg_maximum_step(lmo::MathOptLMO{OT}, x, direction; exactness=40) where {OT}
-    d = [for i in direction]
+    temp = []
+    @inbounds for idx in eachindex(direction)
+        val = direction[idx]
+        push!(temp, val)
+    end
+    direction = temp
     gamma_max = 0.0
     gamma = 1.0
     while(exactness != 0)
@@ -122,7 +127,12 @@ function dicg_maximum_step(lmo::MathOptLMO{OT}, x, direction; exactness=40) wher
 end
 
 function is_constraints_feasible(lmo::MathOptLMO{OT}, x; atol=1e-7)
-    d = [for i in direction]
+    temp = []
+    @inbounds for idx in eachindex(direction)
+        val = direction[idx]
+        push!(temp, val)
+    end
+    direction = temp
     flag = []
     equal = []
     for (F, S) in MOI.get(lmo.o, MOI.ListOfConstraintTypesPresent())
