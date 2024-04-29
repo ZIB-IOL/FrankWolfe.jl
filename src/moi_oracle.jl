@@ -101,6 +101,8 @@ end
 
 function dicg_maximum_step(lmo::MathOptLMO{OT}, x, direction; exactness=40, atol=1e-7) where {OT}
     temp = []
+    on_lowerbound_idx_value =[]
+    
     @inbounds for idx in eachindex(direction)
         val = direction[idx]
         push!(temp, val)
@@ -108,8 +110,20 @@ function dicg_maximum_step(lmo::MathOptLMO{OT}, x, direction; exactness=40, atol
     direction = temp
     gamma_max = 0.0
     gamma = 1.0
+
+    precheck, _, on_lowerbound_idx_value = is_constraints_feasible(lmo, x; atol)
+    if !precheck
+        error("x is not a fesible point!")
+    end
+
+    for (idx,value) in on_lowerbound_idx_value
+        if d[idx] <= value
+            return gamma_max
+        end
+    end
+    
     while(exactness != 0)
-        flag, _ = is_constraints_feasible(lmo, x-gamma*direction; atol)
+        flag, _, on_lowerbound_idx_value = is_constraints_feasible(lmo, x-gamma*direction; atol)
         if flag
             if gamma === 1.0
                 return gamma
@@ -128,7 +142,7 @@ function dicg_maximum_step(lmo::MathOptLMO{OT}, x, direction; exactness=40, atol
 end
 
 function is_constraints_feasible(lmo::MathOptLMO{OT}, x; atol=1e-7) where {OT}
-    flag = []
+    on_lowerbound_idx_value = []
     equal = []
     flag_value = 0
     for (F, S) in MOI.get(lmo.o, MOI.ListOfConstraintTypesPresent())
@@ -143,6 +157,10 @@ function is_constraints_feasible(lmo::MathOptLMO{OT}, x; atol=1e-7) where {OT}
                 #println(set.upper)
                 #println(val)
                 #println()
+                if ( S <: MOI.GreaterThan)
+                    if set.lower === val
+                        push!(on_lowerbound_idx_value, (func.value, set.lower))
+                    end
                 # @debug("Constraint: $(F)-$(S) $(func) = $(val) in $(set)")
                 dist = MOD.distance_to_set(MOD.DefaultDistance(), val, set)
                 if dist > atol
@@ -155,9 +173,9 @@ function is_constraints_feasible(lmo::MathOptLMO{OT}, x; atol=1e-7) where {OT}
         end
     end
     if flag_value === 0
-        return [true, flag]
+        return [true, flag, on_lowerbound_idx_value]
     else
-        return [false, flag]
+        return [false, flag, on_lowerbound_idx_value]
     end
 end
 
