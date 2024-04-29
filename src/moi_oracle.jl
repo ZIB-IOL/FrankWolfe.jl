@@ -104,6 +104,7 @@ function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x; kwargs.
             end  
         end
     end
+    MOI.set(lmo2.o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
     MOI.optimize!(lmo2.o)
     a = MOI.get(lmo2.o, MOI.VariablePrimal(), variables)
     MOI.empty!(lmo2.o)
