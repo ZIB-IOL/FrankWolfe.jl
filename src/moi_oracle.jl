@@ -188,9 +188,9 @@ function is_constraints_feasible(lmo::MathOptLMO{OT}, x; atol=1e-7) where {OT}
         end
     end
     if flag_value === 0
-        return [true, satisfied_idx, on_lowerbound_idx_value]
+        return [true, satisfied_idx, on_lowerbound_idx_value,on_upperbound_idx_value]
     else
-        return [false, satisfied_idx, on_lowerbound_idx_value]
+        return [false, satisfied_idx, on_lowerbound_idx_value,on_upperbound_idx_value]
     end
 end
 
