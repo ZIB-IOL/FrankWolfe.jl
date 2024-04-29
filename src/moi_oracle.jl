@@ -130,6 +130,7 @@ end
 function is_constraints_feasible(lmo::MathOptLMO{OT}, x; atol=1e-7) where {OT}
     flag = []
     equal = []
+    flag_value = 0
     for (F, S) in MOI.get(lmo.o, MOI.ListOfConstraintTypesPresent())
         valvar(f) = x[f.value]
         #println((F,S))
@@ -146,13 +147,13 @@ function is_constraints_feasible(lmo::MathOptLMO{OT}, x; atol=1e-7) where {OT}
                 dist = MOD.distance_to_set(MOD.DefaultDistance(), val, set)
                 if dist > atol
                     push!(flag, 1)
+                    flag_value = 1
                 else
                     push!(flag, 0)
                 end
             end
         end
     end
-    flag_boolean = sum(vec(flag))
     if flag_boolean === 0
         return [true, flag]
     else
