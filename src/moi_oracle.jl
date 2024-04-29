@@ -166,6 +166,14 @@ function is_constraints_feasible(lmo::MathOptLMO{OT}, x; atol=1e-7) where {OT}
                 #println(set.upper)
                 #println(val)
                 #println()
+                if ( S <: MOI.Interval)
+                    if set.lower === val
+                        push!(on_lowerbound_idx_value, (func.value, set.lower))
+                    end
+                    if set.upper === val
+                        push!(on_upperbound_idx_value, (func.value, set.upper))
+                    end
+                end
                 if ( S <: MOI.GreaterThan)
                     if set.lower === val
                         push!(on_lowerbound_idx_value, (func.value, set.lower))
