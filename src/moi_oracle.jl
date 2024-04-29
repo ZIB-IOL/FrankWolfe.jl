@@ -118,7 +118,7 @@ function dicg_maximum_step(lmo::MathOptLMO{OT}, x, direction; exactness=40, atol
     end
 
     for (idx,value) in on_lowerbound_idx_value
-        if d[idx] <= value
+        if direction[idx] <= value
             return gamma_max
         end
     end
