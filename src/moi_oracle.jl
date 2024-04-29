@@ -152,7 +152,7 @@ function is_constraints_feasible(lmo::MathOptLMO{OT}, x; atol=1e-7) where {OT}
             end
         end
     end
-    flag_boolean = sum(flag)
+    flag_boolean = sum(vec(flag))
     if flag_boolean === 0
         return [true, flag]
     else
