@@ -172,7 +172,7 @@ function is_constraints_feasible(lmo::MathOptLMO{OT}, x; atol=1e-7) where {OT}
                     end
                 end
                 if ( S <: MOI.LessThan)
-                    if set.lower === val
+                    if set.upper === val
                         push!(on_upperbound_idx_value, (func.value, set.upper))
                     end
                 end
