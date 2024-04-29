@@ -154,7 +154,7 @@ function is_constraints_feasible(lmo::MathOptLMO{OT}, x; atol=1e-7) where {OT}
             end
         end
     end
-    if flag_boolean === 0
+    if flag_value === 0
         return [true, flag]
     else
         return [false, flag]
