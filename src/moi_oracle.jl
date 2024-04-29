@@ -109,7 +109,7 @@ function dicg_maximum_step(lmo::MathOptLMO{OT}, x, direction; exactness=40, atol
     gamma_max = 0.0
     gamma = 1.0
     while(exactness != 0)
-        flag, _ = is_constraints_feasible(lmo, x+gamma*direction; atol)
+        flag, _ = is_constraints_feasible(lmo, x-gamma*direction; atol)
         if flag
             if gamma === 1.0
                 return gamma
