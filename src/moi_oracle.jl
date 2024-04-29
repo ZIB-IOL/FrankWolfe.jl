@@ -96,6 +96,7 @@ function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x; kwargs.
                         idx = MOI.add_constraint(lmo2.o, func, MOI.EqualTo(val))
                     end
                     if set.lower === val
+                        println("lower value get!")
                         idx = MOI.add_constraint(lmo2.o, func, MOI.EqualTo(val))
                     end
                 end
