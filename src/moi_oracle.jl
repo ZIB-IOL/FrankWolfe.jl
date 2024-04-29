@@ -107,6 +107,7 @@ function dicg_maximum_step(lmo::MathOptLMO{OT}, x, direction; exactness=40, atol
         val = direction[idx]
         push!(temp, val)
     end
+    
     direction = temp
     gamma_max = 0.0
     gamma = 1.0
@@ -161,6 +162,7 @@ function is_constraints_feasible(lmo::MathOptLMO{OT}, x; atol=1e-7) where {OT}
                     if set.lower === val
                         push!(on_lowerbound_idx_value, (func.value, set.lower))
                     end
+                end
                 # @debug("Constraint: $(F)-$(S) $(func) = $(val) in $(set)")
                 dist = MOD.distance_to_set(MOD.DefaultDistance(), val, set)
                 if dist > atol
