@@ -102,6 +102,7 @@ end
 function dicg_maximum_step(lmo::MathOptLMO{OT}, x, direction; exactness=40, atol=1e-7) where {OT}
     temp = []
     on_lowerbound_idx_value =[]
+    on_upperbound_idx_value =[]
     
     @inbounds for idx in eachindex(direction)
         val = direction[idx]
@@ -112,13 +113,19 @@ function dicg_maximum_step(lmo::MathOptLMO{OT}, x, direction; exactness=40, atol
     gamma_max = 0.0
     gamma = 1.0
 
-    precheck, _, on_lowerbound_idx_value = is_constraints_feasible(lmo, x; atol)
+    precheck, _, on_lowerbound_idx_value,  on_upperbound_idx_value = is_constraints_feasible(lmo, x; atol)
     if !precheck
         error("x is not a fesible point!")
     end
 
     for (idx,value) in on_lowerbound_idx_value
         if direction[idx] <= value
+            return gamma_max
+        end
+    end
+
+    for (idx,value) in on_upperbound_idx_value
+        if direction[idx] >= value
             return gamma_max
         end
     end
@@ -144,6 +151,7 @@ end
 
 function is_constraints_feasible(lmo::MathOptLMO{OT}, x; atol=1e-7) where {OT}
     on_lowerbound_idx_value = []
+    on_upperbound_idx_value =[]
     satisfied_idx = []
     flag_value = 0
     for (F, S) in MOI.get(lmo.o, MOI.ListOfConstraintTypesPresent())
@@ -161,6 +169,11 @@ function is_constraints_feasible(lmo::MathOptLMO{OT}, x; atol=1e-7) where {OT}
                 if ( S <: MOI.GreaterThan)
                     if set.lower === val
                         push!(on_lowerbound_idx_value, (func.value, set.lower))
+                    end
+                end
+                if ( S <: MOI.LessThan)
+                    if set.lower === val
+                        push!(on_upperbound_idx_value, (func.value, set.upper))
                     end
                 end
                 # @debug("Constraint: $(F)-$(S) $(func) = $(val) in $(set)")
