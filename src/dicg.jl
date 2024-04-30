@@ -165,14 +165,14 @@ function decomposition_invariant_conditional_gradient(
             # local_gap = dot_away_vertex - dot_forward_vertex
         else # non-lazy, call the simple and modified
             v = compute_extreme_point(lmo, gradient, lazy=lazy)
-            if t === 2
+            if t === 1
                 println("========t  2 :==========")
                 println(v)
             end
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
             phi = dual_gap
             a = compute_inface_extreme_point(lmo, NegatingArray(gradient), x; lazy=lazy)
-            if t === 2
+            if t === 1
                 println("=========t  2 :==========")
                 println(a)
             end
