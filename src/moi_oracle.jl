@@ -113,7 +113,7 @@ function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x; kwargs.
     return a
 end
 
-function dicg_maximum_step(lmo::MathOptLMO{OT}, x, direction; exactness=40, atol=1e-7) where {OT}
+function dicg_maximum_step(lmo::MathOptLMO{OT}, x, direction; exactness=1000, atol=1e-16) where {OT}
     temp = []
     on_lowerbound_idx_value =[]
     on_upperbound_idx_value =[]
