@@ -145,7 +145,7 @@ function dicg_maximum_step(lmo::MathOptLMO{OT}, x, direction; exactness=40, atol
     end
     
     while(exactness != 0)
-        flag, _, on_lowerbound_idx_value = is_constraints_feasible(lmo, x+gamma*direction; atol)
+        flag, _, on_lowerbound_idx_value = is_constraints_feasible(lmo, x-gamma*direction; atol)
         if flag
             if gamma === 1.0
                 return gamma
