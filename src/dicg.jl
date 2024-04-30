@@ -179,6 +179,10 @@ function decomposition_invariant_conditional_gradient(
         end
         d = muladd_memory_mode(memory_mode, d, a, v)
         gamma_max = dicg_maximum_step(lmo, x, d)
+        if t === 1
+                println("========gamma_max  2 :==========")
+                println(gamma_max)
+            end
         gamma = perform_line_search(
             line_search,
             t,
