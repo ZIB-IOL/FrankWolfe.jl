@@ -37,9 +37,11 @@ function convert_mathopt(
     kwargs...,
 ) where {T,OT}
     MOI.empty!(optimizer)
-    τ = lmo.right_side
+    #τ = lmo.right_side
+    τ = sqrt((lmo.right_side^2) / 2 )
     n = dimension
-    (x, _) = MOI.add_constrained_variables(optimizer, [MOI.Interval(0.0, 1.0) for _ in 1:n])
+    #(x, _) = MOI.add_constrained_variables(optimizer, [MOI.Interval(0.0, 1.0) for _ in 1:n])
+    (x, _) = MOI.add_constrained_variables(optimizer, [MOI.GreaterThan(0.0) for _ in 1:n])
     MOI.add_constraint(
         optimizer,
         MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(ones(n), x), 0.0),
