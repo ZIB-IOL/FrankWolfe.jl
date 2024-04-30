@@ -146,7 +146,7 @@ function dicg_maximum_step(lmo::MathOptLMO{OT}, x, direction; exactness=1000, at
         println("idx, value : ===============")
         println(idx)
         println(value)
-        if direction[idx] < value
+        if direction[idx] > value
             return gamma_max
         end
     end
@@ -155,7 +155,7 @@ function dicg_maximum_step(lmo::MathOptLMO{OT}, x, direction; exactness=1000, at
         println("idx, value : ===============")
         println(idx)
         println(value)
-        if direction[idx] > value
+        if direction[idx] < value
             return gamma_max
         end
     end
