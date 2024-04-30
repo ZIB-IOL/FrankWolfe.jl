@@ -17,6 +17,10 @@ struct MathOptLMO{OT<:MOI.AbstractOptimizer} <: LinearMinimizationOracle
     use_modify::Bool
     function MathOptLMO(o, use_modify=true)
         MOI.set(o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+    
+        #silent it
+        MOI.set(o, MOI.Silent(), true)
+        
         return new{typeof(o)}(o, use_modify)
     end
 end
