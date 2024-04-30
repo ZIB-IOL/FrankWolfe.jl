@@ -67,41 +67,50 @@ function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x; kwargs.
     end
     direction = temp
     lmo2 = copy(lmo)
+    MOI.empty!(lmo2.o)
     MOI.set(lmo2.o, MOI.Silent(), true)
     variables = MOI.get(lmo2.o, MOI.ListOfVariableIndices())
     terms = [MOI.ScalarAffineTerm(d, v) for (d, v) in zip(direction, variables)]
     obj = MOI.ScalarAffineFunction(terms, zero(Float64))
-    MOI.set(lmo2.o, MOI.ObjectiveFunction{typeof(obj)}(), obj)
-    for (F, S) in MOI.get(lmo2.o, MOI.ListOfConstraintTypesPresent())
+    MOI.set(lmo.o, MOI.ObjectiveFunction{typeof(obj)}(), obj)
+    for (F, S) in MOI.get(lmo.o, MOI.ListOfConstraintTypesPresent())
         valvar(f) = x[f.value]
-        const_list = MOI.get(lmo2.o, MOI.ListOfConstraintIndices{F,S}())
+        const_list = MOI.get(lmo.o, MOI.ListOfConstraintIndices{F,S}())
         for c_idx in const_list
+            flag = 0
             if !(S <: MOI.ZeroOne)
-                func = MOI.get(lmo2.o, MOI.ConstraintFunction(), c_idx)
+                func = MOI.get(lmo.o, MOI.ConstraintFunction(), c_idx)
                 val = MOIU.eval_variables(valvar, func)
-                set = MOI.get(lmo2.o, MOI.ConstraintSet(), c_idx)
+                set = MOI.get(lmo.o, MOI.ConstraintSet(), c_idx)
                 # @debug("Constraint: $(F)-$(S) $(func) = $(val) in $(set)")
                 if ( S <: MOI.GreaterThan)
                     if set.lower === val
-                        MOI.delete(lmo2.o, c_idx)
+                        #MOI.delete(lmo2.o, c_idx)
                         idx = MOI.add_constraint(lmo2.o, func, MOI.EqualTo(val))
+                        flag = 1
                     end
                 end
                 if ( S <: MOI.LessThan)
                     if set.upper === val
                         #MOI.delete(lmo2.o, c_idx)
                         idx = MOI.add_constraint(lmo2.o, func, MOI.EqualTo(val)) 
+                        flag = 1
                     end
                 end
                 if (S <: MOI.Interval)
                     if set.upper === val
                         #MOI.delete(lmo2.o, c_idx)
                         idx = MOI.add_constraint(lmo2.o, func, MOI.EqualTo(val))
+                        flag = 1
                     end
                     if set.lower === val
-                        MOI.delete(lmo2.o, c_idx)
+                        #MOI.delete(lmo2.o, c_idx)
                         idx = MOI.add_constraint(lmo2.o, func, MOI.EqualTo(val))
+                        flag = 1
                     end
+                end
+                if flag === 0 
+                    idx = MOI.add_constraint(lmo2.o, func, set)
                 end
             end  
         end
