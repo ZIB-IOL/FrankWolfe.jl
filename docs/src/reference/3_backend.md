@@ -55,7 +55,7 @@ FrankWolfe.TrackingGradient
 FrankWolfe.TrackingLMO
 ```
 
-Also see the example "Tracking number of calls to different oracles".[here](docs/src/examples/docs_8_callback_and_tracking/)
+Also see the example [Tracking, counters and custom callbacks for Frank Wolfe](@ref).
 
 ## Update order for block-coordinate methods
 

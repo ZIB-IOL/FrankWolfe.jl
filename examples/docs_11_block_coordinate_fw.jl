@@ -1,10 +1,10 @@
-# #Block-Coordinate Frank-Wolfe and Block-Vectors
+# # Block-Coordinate Frank-Wolfe and Block-Vectors
 
 # In this example, we demonstrate the usage of the [`FrankWolfe.block_coordinate_frank_wolfe`](@ref) and [`FrankWolfe.BlockVector`](@ref).
 # We consider the problem of minimizing the squared Euclidean distance between two sets.
 # We compare different update orders and different update steps.
 
-# ##Import and setup
+# ## Import and setup
 # We first import the necessary packages and include the code for plotting the results.
 using FrankWolfe
 using LinearAlgebra
@@ -28,7 +28,7 @@ prod_lmo = FrankWolfe.ProductLMO((lmo1, lmo2))
 
 # We initialize the starting point `x0` as a [`FrankWolfe.BlockVector`](@ref) with two blocks.
 # The two other arguments are the block sizes and the overall number of entries.
-x0 = FrankWolfe.BlockVector([-ones(n), [i == 1 ? 1 : 0 for i in 1:n]], [(n,), (n,)], 2 * n)
+x0 = FrankWolfe.BlockVector([-ones(n), [i == 1 ? 1 : 0 for i in 1:n]], [(n,), (n,)], 2 * n);
 
 
 # ## Running block-coordinate Frank-Wolfe with different update-orders
@@ -66,7 +66,7 @@ for order in [
 end
 # ### Plotting the results
 labels = ["Full update", "Cyclic order", "Stochstic order", "Custom order"]
-display(plot_trajectories(trajectories, labels, xscalelog=true))
+plot_trajectories(trajectories, labels, xscalelog=true)
 
 # ## Running BCFW with different update methods
 # As a second step, we compare different update steps. We consider the [`FrankWolfe.BPCGStep`](@ref) and the [`FrankWolfe.FrankWolfeStep`](@ref).
@@ -89,4 +89,4 @@ for us in [(FrankWolfe.BPCGStep(), FrankWolfe.FrankWolfeStep()), (FrankWolfe.Fra
 end
 # ### Plotting the results
 labels = ["BPCG FW", "FW BPCG", "BPCG", "FW"]
-display(plot_trajectories(trajectories, labels, xscalelog=true))
+plot_trajectories(trajectories, labels, xscalelog=true)
