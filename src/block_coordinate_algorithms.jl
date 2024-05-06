@@ -195,7 +195,7 @@ function update_iterate(
     # (proof follows with minor modification when estimating the step)
     #println("Gaps: ", local_gap, " ", dual_gap)
     #println(fast_dot(gradient, x), " ", fast_dot(gradient, v))
-    if t > 1 && local_gap ≥ dual_gap / s.lazy_tolerance
+    if t > 1 && local_gap > dual_gap / s.lazy_tolerance
         d = muladd_memory_mode(memory_mode, d, a, v_local)
         vertex_taken = v_local
         gamma_max = a_lambda
@@ -476,7 +476,7 @@ function block_coordinate_frank_wolfe(
                     @. storage = big_storage.blocks[i]
                 end
 
-                dual_gaps[i], v, d, gamma, tt = update_iterate(
+                dual_gaps[i], v.blocks[i], d, gamma, tt = update_iterate(
                     update_step[i],
                     x.blocks[i],
                     lmo.lmos[i],
