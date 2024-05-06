@@ -11,7 +11,7 @@
 # Q = [-1,0]^n ~.
 # ```
 # The goal is to find a point that lies both in ``P`` and ``Q``. We do this by reformulating the problem first.
-# Instead of a finding a point in the intersection ``P \cap Q``, we search for a pair of points, ``(x_P, x_Q)`` in the cartesian product `P \times Q``, which attains minimal distance between ``P`` and ``Q``,
+# Instead of a finding a point in the intersection ``P \cap Q``, we search for a pair of points, ``(x_P, x_Q)`` in the cartesian product ``P \times Q``, which attains minimal distance between ``P`` and ``Q``,
 # ```math
 # \|x_P - x_Q\|_2 = \min_{(x,y) \in P \times Q} \|x - y \|_2 ~.
 # ```

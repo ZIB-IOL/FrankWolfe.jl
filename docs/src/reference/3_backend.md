@@ -80,6 +80,11 @@ FrankWolfe.FrankWolfeStep
 FrankWolfe.BPCGStep
 ```
 
+## Block vector
+```@docs
+FrankWolfe.BlockVector
+```
+
 ## Index
 
 ```@index
