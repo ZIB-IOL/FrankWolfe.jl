@@ -461,7 +461,7 @@ function block_coordinate_frank_wolfe(
             first_iter = false
 
             xold = copy(x)
-            for i in update_indices
+            Threads.@threads for i in update_indices
 
                 function extend(y)
                     bv = copy(xold)
