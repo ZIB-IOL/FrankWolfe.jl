@@ -152,15 +152,15 @@ UnitHyperSimplexOracle{T}() where {T} = UnitHyperSimplexOracle{T}(one(T))
 
 UnitHyperSimplexOracle(radius::Integer) = UnitHyperSimplexOracle{Rational{BigInt}}(radius)
 
-function compute_extreme_point(lmo::UnitHyperSimplexOracle{T}, direction; v=nothing, kwargs...) where {T}
+function compute_extreme_point(lmo::UnitHyperSimplexOracle{TL}, direction; v=nothing, kwargs...) where {TL}
+    T = promote_type(TL, eltype(direction))
     n = length(direction)
     K = min(lmo.K, n, sum(>(0), direction))
     K_indices = sortperm(direction)[1:K]
-    v = falses(n)
+    v = spzeros(T, n)
     for idx in 1:K
-        v[K_indices[idx]] = true
+        v[K_indices[idx]] = lmo.radius
     end
-    # TODO scale v
     return v
 end
 
