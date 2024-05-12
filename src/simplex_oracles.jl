@@ -133,3 +133,52 @@ function compute_dual_solution(
     mu = direction .- lambda
     return lambda, mu
 end
+
+"""
+    UnitHyperSimplexOracle(radius)
+
+Represents the scaled unit hypersimplex of radius τ, the convex hull of vectors `v` such that:
+- v_i ∈ {0, τ}
+- ||v||_0 ≤ k
+
+Equivalently, this is the intersection of the K-sparse polytope and the nonnegative orthant.
+"""
+struct UnitHyperSimplexOracle{T} <: LinearMinimizationOracle
+    K::Int
+    radius::T
+end
+
+UnitHyperSimplexOracle{T}() where {T} = UnitHyperSimplexOracle{T}(one(T))
+
+UnitHyperSimplexOracle(radius::Integer) = UnitHyperSimplexOracle{Rational{BigInt}}(radius)
+
+function compute_extreme_point(lmo::UnitHyperSimplexOracle{T}, direction; v=nothing, kwargs...) where {T}
+    n = length(direction)
+    K = min(lmo.K, n, sum(>(0), direction))
+    K_indices = sortperm(direction)[1:K]
+    v = falses(n)
+    for idx in 1:K
+        v[K_indices[idx]] = true
+    end
+    # TODO scale v
+    return v
+end
+
+function convert_mathopt(
+    lmo::UnitHyperSimplexOracle{T},
+    optimizer::OT;
+    dimension::Integer,
+    use_modify::Bool=true,
+    kwargs...,
+) where {T,OT}
+    MOI.empty!(optimizer)
+    τ = lmo.radius
+    n = dimension
+    (x, _) = MOI.add_constrained_variables(optimizer, [MOI.Interval(0.0, τ) for _ in 1:n])
+    MOI.add_constraint(
+        optimizer,
+        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(ones(n), x), 0.0),
+        MOI.LessThan(lmo.K) * τ,
+    )
+    return MathOptLMO(optimizer, use_modify)
+end
