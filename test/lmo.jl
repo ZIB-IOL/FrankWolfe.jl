@@ -60,6 +60,24 @@ using JuMP
     end
 end
 
+@testset "Hypersimplex $n $K" for n in (2, 5, 10), K in (1, min(n, 4))
+    direction = randn(n)
+    hypersimplex = FrankWolfe.HyperSimplexOracle(K, 3.0)
+    unit_hypersimplex = FrankWolfe.UnitHyperSimplexOracle(K, 3.0)
+    v = FrankWolfe.compute_extreme_point(hypersimplex, direction)
+    @test SparseArrays.nnz(v) == K
+    v_unit = FrankWolfe.compute_extreme_point(unit_hypersimplex, direction)
+    @test SparseArrays.nnz(v_unit) == min(K, count(<=(0), direction))
+    using HiGHS
+    optimizer = GLPK.Optimizer()
+    moi_hypersimpler = FrankWolfe.convert_mathopt(hypersimplex, optimizer; dimension=n)
+    v_moi = FrankWolfe.compute_extreme_point(moi_hypersimpler, direction)
+    @test norm(v_moi - v) ≤ 1e-4
+    moi_unit_hypersimpler = FrankWolfe.convert_mathopt(unit_hypersimplex, optimizer; dimension=n)
+    v_moi_unit = FrankWolfe.compute_extreme_point(moi_unit_hypersimpler, direction)
+    @test norm(v_moi_unit - v_unit) ≤ 1e-4
+end
+
 @testset "Lp-norm epigraph LMO" begin
     for n in (1, 2, 5, 10)
         τ = 5 + 3 * rand()

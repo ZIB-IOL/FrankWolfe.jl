@@ -155,7 +155,7 @@ UnitHyperSimplexOracle(radius::Integer) = UnitHyperSimplexOracle{Rational{BigInt
 function compute_extreme_point(lmo::UnitHyperSimplexOracle{TL}, direction; v=nothing, kwargs...) where {TL}
     T = promote_type(TL, eltype(direction))
     n = length(direction)
-    K = min(lmo.K, n, sum(>(0), direction))
+    K = min(lmo.K, n, sum(<(0), direction))
     K_indices = sortperm(direction)[1:K]
     v = spzeros(T, n)
     for idx in 1:K
@@ -178,7 +178,56 @@ function convert_mathopt(
     MOI.add_constraint(
         optimizer,
         MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(ones(n), x), 0.0),
-        MOI.LessThan(lmo.K) * τ,
+        MOI.LessThan(lmo.K * τ),
+    )
+    return MathOptLMO(optimizer, use_modify)
+end
+
+"""
+    HyperSimplexOracle(radius)
+
+Represents the scaled hypersimplex of radius τ, the convex hull of vectors `v` such that:
+- v_i ∈ {0, τ}
+- ||v||_0 = k
+
+Equivalently, this is the convex hull of the vertices of the K-sparse polytope lying in the nonnegative orthant.
+"""
+struct HyperSimplexOracle{T} <: LinearMinimizationOracle
+    K::Int
+    radius::T
+end
+
+HyperSimplexOracle{T}(K::Integer) where {T} = HyperSimplexOracle{T}(K, one(T))
+
+HyperSimplexOracle(K::Integer, radius::Integer) = HyperSimplexOracle{Rational{BigInt}}(K, radius)
+
+function compute_extreme_point(lmo::HyperSimplexOracle{TL}, direction; v=nothing, kwargs...) where {TL}
+    T = promote_type(TL, eltype(direction))
+    n = length(direction)
+    K = min(lmo.K, n)
+    K_indices = sortperm(direction)[1:K]
+    v = spzeros(T, n)
+    for idx in 1:K
+        v[K_indices[idx]] = lmo.radius
+    end
+    return v
+end
+
+function convert_mathopt(
+    lmo::HyperSimplexOracle{T},
+    optimizer::OT;
+    dimension::Integer,
+    use_modify::Bool=true,
+    kwargs...,
+) where {T,OT}
+    MOI.empty!(optimizer)
+    τ = lmo.radius
+    n = dimension
+    (x, _) = MOI.add_constrained_variables(optimizer, [MOI.Interval(0.0, τ) for _ in 1:n])
+    MOI.add_constraint(
+        optimizer,
+        MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(ones(n), x), 0.0),
+        MOI.EqualTo(lmo.K * τ),
     )
     return MathOptLMO(optimizer, use_modify)
 end
