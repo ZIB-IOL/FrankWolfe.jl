@@ -152,7 +152,12 @@ UnitHyperSimplexOracle{T}() where {T} = UnitHyperSimplexOracle{T}(one(T))
 
 UnitHyperSimplexOracle(radius::Integer) = UnitHyperSimplexOracle{Rational{BigInt}}(radius)
 
-function compute_extreme_point(lmo::UnitHyperSimplexOracle{TL}, direction; v=nothing, kwargs...) where {TL}
+function compute_extreme_point(
+    lmo::UnitHyperSimplexOracle{TL},
+    direction;
+    v=nothing,
+    kwargs...,
+) where {TL}
     T = promote_type(TL, eltype(direction))
     n = length(direction)
     K = min(lmo.K, n, sum(<(0), direction))
@@ -201,7 +206,12 @@ HyperSimplexOracle{T}(K::Integer) where {T} = HyperSimplexOracle{T}(K, one(T))
 
 HyperSimplexOracle(K::Integer, radius::Integer) = HyperSimplexOracle{Rational{BigInt}}(K, radius)
 
-function compute_extreme_point(lmo::HyperSimplexOracle{TL}, direction; v=nothing, kwargs...) where {TL}
+function compute_extreme_point(
+    lmo::HyperSimplexOracle{TL},
+    direction;
+    v=nothing,
+    kwargs...,
+) where {TL}
     T = promote_type(TL, eltype(direction))
     n = length(direction)
     K = min(lmo.K, n)
