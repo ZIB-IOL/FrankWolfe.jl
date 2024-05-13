@@ -148,9 +148,9 @@ struct UnitHyperSimplexOracle{T} <: LinearMinimizationOracle
     radius::T
 end
 
-UnitHyperSimplexOracle{T}() where {T} = UnitHyperSimplexOracle{T}(one(T))
+UnitHyperSimplexOracle{T}(K::Integer) where {T} = UnitHyperSimplexOracle{T}(K, one(T))
 
-UnitHyperSimplexOracle(radius::Integer) = UnitHyperSimplexOracle{Rational{BigInt}}(radius)
+UnitHyperSimplexOracle(K::Integer, radius::Integer) = UnitHyperSimplexOracle{Rational{BigInt}}(radius)
 
 function compute_extreme_point(
     lmo::UnitHyperSimplexOracle{TL},
