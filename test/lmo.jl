@@ -68,7 +68,6 @@ end
     @test SparseArrays.nnz(v) == K
     v_unit = FrankWolfe.compute_extreme_point(unit_hypersimplex, direction)
     @test SparseArrays.nnz(v_unit) == min(K, count(<=(0), direction))
-    using HiGHS
     optimizer = GLPK.Optimizer()
     moi_hypersimpler = FrankWolfe.convert_mathopt(hypersimplex, optimizer; dimension=n)
     v_moi = FrankWolfe.compute_extreme_point(moi_hypersimpler, direction)
