@@ -129,19 +129,8 @@ function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x; kwargs.
 end
 
 function dicg_maximum_step(lmo::MathOptLMO{OT}, x, direction; exactness=1000, atol=1e-16) where {OT}
-    temp = []
-    on_lowerbound_idx_value =[]
-    on_upperbound_idx_value =[]
-    
-    @inbounds for idx in eachindex(direction)
-        val = direction[idx]
-        push!(temp, val)
-    end
-    
-    direction = temp
     gamma_max = 0.0
     gamma = 1.0
-
     precheck, _, on_lowerbound_idx_value,  on_upperbound_idx_value = is_constraints_feasible(lmo, x; atol)
     if !precheck
         error("x is not a fesible point!")
@@ -192,9 +181,6 @@ function is_constraints_feasible(lmo::MathOptLMO{OT}, x; atol=1e-7) where {OT}
                 func = MOI.get(lmo.o, MOI.ConstraintFunction(), c_idx)
                 val = MOIU.eval_variables(valvar, func)
                 set = MOI.get(lmo.o, MOI.ConstraintSet(), c_idx)
-                #println(set.upper)
-                #println(val)
-                #println()
                 if ( S <: MOI.Interval)
                     if set.lower === val
                         push!(on_lowerbound_idx_value, (func.value, set.lower))
