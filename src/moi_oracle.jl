@@ -57,18 +57,46 @@ function compute_extreme_point(
     return reshape(v, n, n)
 end
 
-# Sanity check is necessary. Will be implemented later.
+
 is_decomposition_invariant_oracle(::MathOptLMO) = true
 
-# Only support MOI.Interval type for now.
-# For MOI.GreaterThan and MOI.LessThan constraints, sanity check is necessary. It will be implemented later.
-# function set_constraint_equal() will be implented to make code concise.
-
-function set_constraint_equal(optimizer, func, var_constraint_list::Dict)
+function set_constraint(o, S, func, val, set, var_constraint_list::Dict)
+    is_set = haskey(var_constraint_list, func)
+    if S <: MOI.GreaterThan
+        if set.lower ≈ val
+            # VariableIndex LessThan-constraint is already set, needs to be deleted first
+            if is_set
+                c_idx = var_constraint_list[func]
+                MOI.delete(o, c_idx)
+            end
+            MOI.add_constraint(o, func, MOI.EqualTo(val))
+        end
+    elseif S <: MOI.LessThan
+        if set.upper ≈ val
+            # VariableIndex GreaterThan-constraint is already set, needs to be deleted first
+            if is_set
+                c_idx = var_constraint_list[func]
+                MOI.delete(o, c_idx)
+            end
+            MOI.add_constraint(o, func, MOI.EqualTo(val))
+            
+        end
+    elseif S <: MOI.Interval
+        if set.upper ≈ val || set.lower
+            if is_set
+                c_idx = var_constraint_list[func]
+                MOI.delete(o, c_idx)
+            end
+            MOI.add_constraint(o, func, MOI.EqualTo(val))
+        end
+    else
+        idx = MOI.add_constraint(o, func, set)
+        var_constraint_list[func] = idx
+    end     
 end
 
 function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x; kwargs...) where {OT}
-    
+    var_constraint_list = Dict([])
     lmo2 = copy(lmo)
     MOI.empty!(lmo2.o)
     MOI.set(lmo2.o, MOI.Silent(), true)
@@ -81,41 +109,11 @@ function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x; kwargs.
         valvar(f) = x[f.value]
         const_list = MOI.get(lmo.o, MOI.ListOfConstraintIndices{F,S}())
         for c_idx in const_list
-            set_bound = 0
             if !(S <: MOI.ZeroOne)
                 func = MOI.get(lmo.o, MOI.ConstraintFunction(), c_idx)
                 val = MOIU.eval_variables(valvar, func)
                 set = MOI.get(lmo.o, MOI.ConstraintSet(), c_idx)
-                # @debug("Constraint: $(F)-$(S) $(func) = $(val) in $(set)")
-                if ( S <: MOI.GreaterThan)
-                    if set.lower ≈ val
-                        #MOI.delete(lmo2.o, c_idx)
-                        idx = MOI.add_constraint(lmo2.o, func, MOI.EqualTo(val))
-                        set_bound = 1
-                    end
-                end
-                if ( S <: MOI.LessThan)
-                    if set.upper ≈ val
-                        #MOI.delete(lmo2.o, c_idx)
-                        idx = MOI.add_constraint(lmo2.o, func, MOI.EqualTo(val)) 
-                        set_bound = 1
-                    end
-                end
-                if (S <: MOI.Interval)
-                    if set.upper ≈ val
-                        #MOI.delete(lmo2.o, c_idx)
-                        idx = MOI.add_constraint(lmo2.o, func, MOI.EqualTo(val))
-                        set_bound = 1
-                    end
-                    if set.lower ≈ val
-                        #MOI.delete(lmo2.o, c_idx)
-                        idx = MOI.add_constraint(lmo2.o, func, MOI.EqualTo(val))
-                        set_bound = 1
-                    end
-                end
-                if set_bound === 0 
-                    idx = MOI.add_constraint(lmo2.o, func, set)
-                end
+                set_constraint(lmo2.o, S, func, val, set, var_constraint_list)
             end  
         end
     end
