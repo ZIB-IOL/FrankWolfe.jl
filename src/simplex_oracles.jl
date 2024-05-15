@@ -245,7 +245,7 @@ end
 UnitHyperSimplexOracle{T}(K::Integer) where {T} = UnitHyperSimplexOracle{T}(K, one(T))
 
 UnitHyperSimplexOracle(K::Integer, radius::Integer) =
-    UnitHyperSimplexOracle{Rational{BigInt}}(radius)
+    UnitHyperSimplexOracle(K, convert(Rational{BigInt}, radius))
 
 function compute_extreme_point(
     lmo::UnitHyperSimplexOracle{TL},
@@ -322,7 +322,7 @@ is_decomposition_invariant_oracle(::HyperSimplexOracle) = true
 
 function compute_inface_extreme_point(lmo::HyperSimplexOracle, direction, x; kwargs...)
     # faces for the hypersimplex are bounds x_i ∈ {0, τ}
-    v = spzeros(eltype(x), size(direction))
+    v = spzeros(eltype(x), size(direction)...)
     K = min(lmo.K, length(x))
     K_free = K
     # remove the K components already fixed to their bounds
