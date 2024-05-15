@@ -61,6 +61,8 @@ end
 is_decomposition_invariant_oracle(::MathOptLMO) = true
 
 function set_constraint(o, S, func, val, set, var_constraint_list::Dict)
+    println("func:")
+    println(func)
     is_set = haskey(var_constraint_list, func)
     set_equal = false
     if S <: MOI.GreaterThan
