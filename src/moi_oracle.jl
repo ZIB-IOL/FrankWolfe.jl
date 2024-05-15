@@ -62,6 +62,7 @@ is_decomposition_invariant_oracle(::MathOptLMO) = true
 
 function set_constraint(o, S, func, val, set, var_constraint_list::Dict)
     is_set = haskey(var_constraint_list, func)
+    set_equal = false
     if S <: MOI.GreaterThan
         if set.lower ≈ val
             # VariableIndex LessThan-constraint is already set, needs to be deleted first
@@ -70,6 +71,7 @@ function set_constraint(o, S, func, val, set, var_constraint_list::Dict)
                 MOI.delete(o, c_idx)
             end
             MOI.add_constraint(o, func, MOI.EqualTo(set.lower))
+            set_equal = true
         end
     elseif S <: MOI.LessThan
         if set.upper ≈ val
@@ -79,16 +81,18 @@ function set_constraint(o, S, func, val, set, var_constraint_list::Dict)
                 MOI.delete(o, c_idx)
             end
             MOI.add_constraint(o, func, MOI.EqualTo(set.upper))
+            set_equal = true
         end
     elseif S <: MOI.Interval
         if set.upper ≈ val || set.lower ≈ val
+            set_equal = true
             if set.upper ≈ val
                 MOI.add_constraint(o, func, MOI.EqualTo(set.upper))
             else
                 MOI.add_constraint(o, func, MOI.EqualTo(set.lower))
             end
         end
-    else
+    elseif !set_equal 
         idx = MOI.add_constraint(o, func, set)
         var_constraint_list[func] = idx
         println("set")
