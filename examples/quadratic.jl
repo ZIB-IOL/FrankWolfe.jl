@@ -93,12 +93,14 @@ function benchmark_Bell(p::Array{T, 2}, quadratic::Bool; fw_method=FrankWolfe.bl
 end
 
 p = correlation_tensor_GHZ_polygon(2, 100)
-@time benchmark_Bell(p, false; verbose=false, max_iteration=10^3, lazy=false, fw_method=FrankWolfe.blended_pairwise_conditional_gradient) # 2.4s
-@time benchmark_Bell(p, true; verbose=false, max_iteration=10^3, lazy=false, fw_method=FrankWolfe.blended_pairwise_conditional_gradient) # 0.8s
-@time benchmark_Bell(p, false; verbose=false, max_iteration=10^3, lazy=true, fw_method=FrankWolfe.blended_pairwise_conditional_gradient) # 2.1s
-@time benchmark_Bell(p, true; verbose=false, max_iteration=10^3, lazy=true, fw_method=FrankWolfe.blended_pairwise_conditional_gradient) # 0.4s
-@time benchmark_Bell(p, false; verbose=false, max_iteration=10^3, lazy=false, fw_method=FrankWolfe.away_frank_wolfe) # 5.7s
-@time benchmark_Bell(p, true; verbose=false, max_iteration=10^3, lazy=false, fw_method=FrankWolfe.away_frank_wolfe) # 2.3s
-@time benchmark_Bell(p, false; verbose=false, max_iteration=10^3, lazy=true, fw_method=FrankWolfe.away_frank_wolfe) # 3s
-@time benchmark_Bell(p, true; verbose=false, max_iteration=10^3, lazy=true, fw_method=FrankWolfe.away_frank_wolfe) # 0.7s
+max_iteration = 10^3 # speedups are way more important for more iterations
+verbose = false
+@time benchmark_Bell(p, false; verbose, max_iteration, lazy=false, fw_method=FrankWolfe.blended_pairwise_conditional_gradient) # 2.4s
+@time benchmark_Bell(p, true; verbose, max_iteration, lazy=false, fw_method=FrankWolfe.blended_pairwise_conditional_gradient) # 0.8s
+@time benchmark_Bell(p, false; verbose, max_iteration, lazy=true, fw_method=FrankWolfe.blended_pairwise_conditional_gradient) # 2.1s
+@time benchmark_Bell(p, true; verbose, max_iteration, lazy=true, fw_method=FrankWolfe.blended_pairwise_conditional_gradient) # 0.4s
+@time benchmark_Bell(p, false; verbose, max_iteration, lazy=false, fw_method=FrankWolfe.away_frank_wolfe) # 5.7s
+@time benchmark_Bell(p, true; verbose, max_iteration, lazy=false, fw_method=FrankWolfe.away_frank_wolfe) # 2.3s
+@time benchmark_Bell(p, false; verbose, max_iteration, lazy=true, fw_method=FrankWolfe.away_frank_wolfe) # 3s
+@time benchmark_Bell(p, true; verbose, max_iteration, lazy=true, fw_method=FrankWolfe.away_frank_wolfe) # 0.7s
 println()
