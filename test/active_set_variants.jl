@@ -170,3 +170,48 @@ end
     )
     @test lmo.counter == prev_counter - 1
 end
+
+@testset "Quadratic active set" begin
+    Random.seed!(0)
+    n = 3 # number of dimensions
+    p = 10^2 # number of points
+    function simple_reg_loss(θ, data_point)
+        (xi, yi) = data_point
+        (a, b) = (θ[1:end-1], θ[end])
+        pred = a ⋅ xi + b
+        return (pred - yi)^2 / 2
+    end
+    function ∇simple_reg_loss(storage, θ, data_point)
+        (xi, yi) = data_point
+        (a, b) = (θ[1:end-1], θ[end])
+        pred = a ⋅ xi + b
+        @. storage[1:end-1] += xi * (pred - yi)
+        storage[end] += pred - yi
+        return storage
+    end
+    xs = [10randn(n) for _ in 1:p]
+    bias = 4
+    params_perfect = [1:n; bias]
+    data_noisy = [(x, x ⋅ (1:n) + bias + 0.5 * randn()) for x in xs]
+    f(x) = sum(simple_reg_loss(x, data_point) for data_point in data_noisy)
+    function gradf(storage, x)
+        storage .= 0
+        for dp in data_noisy
+            ∇simple_reg_loss(storage, x, dp)
+        end
+    end
+    lmo = FrankWolfe.LpNormLMO{Float64, 2}(1.05 * norm(params_perfect))
+    x0 = FrankWolfe.compute_extreme_point(lmo, zeros(Float64, n+1))
+    active_set = FrankWolfe.ActiveSetQuadratic([(1.0, x0)], gradf)
+    res = FrankWolfe.blended_pairwise_conditional_gradient(
+        f,
+        gradf,
+        lmo,
+        active_set;
+        verbose=false,
+        lazy=true,
+        line_search=FrankWolfe.Adaptive(L_est=10.0, relaxed_smoothness=true),
+        trajectory=true,
+    )
+    @test abs(res[3] - 12.084) ≤ 0.01
+end
