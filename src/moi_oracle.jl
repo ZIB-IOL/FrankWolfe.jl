@@ -131,7 +131,7 @@ end
 function dicg_maximum_step(lmo::MathOptLMO{OT}, x, direction; exactness=1000, atol=1e-16) where {OT}
     gamma_max = 0.0
     gamma = 1.0
-    precheck, _, on_lowerbound_idx_value,  on_upperbound_idx_value = is_constraints_feasible(lmo, x; atol)
+    precheck, on_lowerbound_idx_value,  on_upperbound_idx_value = is_constraints_feasible(lmo, x; atol)
     if !precheck
         error("x is not a fesible point!")
     end
@@ -212,9 +212,9 @@ function is_constraints_feasible(lmo::MathOptLMO{OT}, x; atol=1e-7) where {OT}
         end
     end
     if is_feasible
-        return [true, satisfied_idx, on_lowerbound_idx_value,on_upperbound_idx_value]
+        return [true, on_lowerbound_idx_value,on_upperbound_idx_value]
     else
-        return [false, satisfied_idx, on_lowerbound_idx_value,on_upperbound_idx_value]
+        return [false, on_lowerbound_idx_value,on_upperbound_idx_value]
     end
 end
 
