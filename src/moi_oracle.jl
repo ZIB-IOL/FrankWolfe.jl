@@ -57,19 +57,14 @@ function compute_extreme_point(
     return reshape(v, n, n)
 end
 
-"""
-=============================================================================================================    
-"""
-
+# Sanity check is necessary. Will be implemented later.
 is_decomposition_invariant_oracle(::MathOptLMO) = true
 
+# Only support MOI.Interval type for now.
+# For MOI.GreaterThan and MOI.LessThan constraints, sanity check is necessary. It will be implemented later.
+
 function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x; kwargs...) where {OT}
-    temp = []
-    @inbounds for idx in eachindex(direction)
-        val = direction[idx]
-        push!(temp, val)
-    end
-    direction = temp
+    
     lmo2 = copy(lmo)
     MOI.empty!(lmo2.o)
     MOI.set(lmo2.o, MOI.Silent(), true)
@@ -82,7 +77,7 @@ function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x; kwargs.
         valvar(f) = x[f.value]
         const_list = MOI.get(lmo.o, MOI.ListOfConstraintIndices{F,S}())
         for c_idx in const_list
-            flag = 0
+            set_bound = 0
             if !(S <: MOI.ZeroOne)
                 func = MOI.get(lmo.o, MOI.ConstraintFunction(), c_idx)
                 val = MOIU.eval_variables(valvar, func)
@@ -92,29 +87,29 @@ function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x; kwargs.
                     if set.lower ≈ val
                         #MOI.delete(lmo2.o, c_idx)
                         idx = MOI.add_constraint(lmo2.o, func, MOI.EqualTo(val))
-                        flag = 1
+                        set_bound = 1
                     end
                 end
                 if ( S <: MOI.LessThan)
                     if set.upper ≈ val
                         #MOI.delete(lmo2.o, c_idx)
                         idx = MOI.add_constraint(lmo2.o, func, MOI.EqualTo(val)) 
-                        flag = 1
+                        set_bound = 1
                     end
                 end
                 if (S <: MOI.Interval)
                     if set.upper ≈ val
                         #MOI.delete(lmo2.o, c_idx)
                         idx = MOI.add_constraint(lmo2.o, func, MOI.EqualTo(val))
-                        flag = 1
+                        set_bound = 1
                     end
                     if set.lower ≈ val
                         #MOI.delete(lmo2.o, c_idx)
                         idx = MOI.add_constraint(lmo2.o, func, MOI.EqualTo(val))
-                        flag = 1
+                        set_bound = 1
                     end
                 end
-                if flag === 0 
+                if set_bound === 0 
                     idx = MOI.add_constraint(lmo2.o, func, set)
                 end
             end  
@@ -127,7 +122,7 @@ function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x; kwargs.
     return a
 end
 
-function dicg_maximum_step(lmo::MathOptLMO{OT}, x, direction; exactness=1000, atol=1e-7) where {OT}
+function dicg_maximum_step(lmo::MathOptLMO{OT}, x, direction; exactness=1000, atol=1e-16) where {OT}
     temp = []
     on_lowerbound_idx_value =[]
     on_upperbound_idx_value =[]
@@ -229,10 +224,6 @@ function is_constraints_feasible(lmo::MathOptLMO{OT}, x; atol=1e-7) where {OT}
         return [false, satisfied_idx, on_lowerbound_idx_value,on_upperbound_idx_value]
     end
 end
-
-"""
-=============================================================================================================
-"""
 
 function Base.copy(lmo::MathOptLMO{OT}; ensure_identity=true) where {OT}
     opt = OT() # creates the empty optimizer
