@@ -12,7 +12,7 @@ Random.seed!(42)
     n = 5
     x = fill(0.4, n)
     d = 10 * randn(n)
-    gamma_max = FrankWolfe.dicg_maximum_step(cube, x, d)
+    gamma_max = FrankWolfe.dicg_maximum_step(cube, d, x)
     @test gamma_max > 0
     # point in the interior => inface away == -v_fw
     v = FrankWolfe.compute_extreme_point(cube, d)
@@ -28,15 +28,15 @@ Random.seed!(42)
     # positive entry in the direction, gamma_max = 0
     d2 = randn(n)
     d2[3] = 1
-    gamma_max2 = FrankWolfe.dicg_maximum_step(cube, x_fixed, d2)
+    gamma_max2 = FrankWolfe.dicg_maximum_step(cube, d2, x_fixed)
     @test gamma_max2 == 0
     # with a zero direction on the fixed coordinate, positive steps are allowed
     d2[3] = 0
-    @test FrankWolfe.dicg_maximum_step(cube, x, d2) > eps()
+    @test FrankWolfe.dicg_maximum_step(cube, d2, x) > eps()
     # fixing a variable to one unfixes it from zero
     x_fixed[3] = 1
     d2[3] = -1
-    gamma_max3 = FrankWolfe.dicg_maximum_step(cube, x_fixed, d2)
+    gamma_max3 = FrankWolfe.dicg_maximum_step(cube, d2, x_fixed)
     @test gamma_max3 == 0
 end
 
@@ -47,7 +47,7 @@ end
         # x interior
         x = fill(0.4, n)
         d = 10 * randn(n)
-        gamma_max = FrankWolfe.dicg_maximum_step(lmo, x, d)
+        gamma_max = FrankWolfe.dicg_maximum_step(lmo, d, x)
         @test gamma_max > 0
         x2 = x - gamma_max * d
         @test sum(x2) <= lmo.right_side
@@ -57,7 +57,7 @@ end
         # positive entry in the direction, gamma_max = 0
         d2 = randn(n)
         d2[3] = 1
-        gamma_max2 = FrankWolfe.dicg_maximum_step(lmo, x_fixed, d2)
+        gamma_max2 = FrankWolfe.dicg_maximum_step(lmo, d2, x_fixed)
         @test gamma_max2 == 0
         # only improving direction is fixed to its face -> best vector is zero
         d3 = ones(n)
@@ -94,7 +94,7 @@ end
         # making sure the two are different
         v2 = FrankWolfe.compute_extreme_point(lmo, v1)
         d = v1 - v2
-        gamma_max = FrankWolfe.dicg_maximum_step(lmo, x, d)
+        gamma_max = FrankWolfe.dicg_maximum_step(lmo, d, x)
         @test gamma_max > 0
         x2 = x - gamma_max * d
         @test count(iszero, x2) >= 1

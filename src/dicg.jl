@@ -19,12 +19,12 @@ Fixings are maintained by the oracle (or deduced from `x` itself).
 compute_inface_extreme_point(lmo, direction, x; lazy, kwargs...)
 
 """
-    dicg_maximum_step(lmo, x, direction)
+    dicg_maximum_step(lmo, direction, x)
 
 Given `x` the current iterate and `direction` the negative of the direction towards which the iterate will move,
 determine a maximum step size `gamma_max`, such that `x - gamma_max * direction` is in the polytope.
 """
-dicg_maximum_step(lmo, x, direction)
+dicg_maximum_step(lmo, direction, x)
 
 """
     decomposition_invariant_conditional_gradient(f, grad!, lmo, x0; kwargs...)
@@ -170,7 +170,7 @@ function decomposition_invariant_conditional_gradient(
             a = compute_inface_extreme_point(lmo, NegatingArray(gradient), x; lazy=lazy)
         end
         d = muladd_memory_mode(memory_mode, d, a, v)
-        gamma_max = dicg_maximum_step(lmo, x, d)
+        gamma_max = dicg_maximum_step(lmo, d, x)
         gamma = perform_line_search(
             line_search,
             t,
@@ -382,7 +382,7 @@ function blended_decomposition_invariant_conditional_gradient(
             if inface_gap >= phi / lazy_tolerance
                 tt = pairwise
                 d = muladd_memory_mode(memory_mode, d, a, v)
-                gamma_max = dicg_maximum_step(lmo, x, d)
+                gamma_max = dicg_maximum_step(lmo, d, x)
             else # global FW step
                 tt = regular
                 d = muladd_memory_mode(memory_mode, d, x, v)

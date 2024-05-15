@@ -94,7 +94,7 @@ function compute_inface_extreme_point(lmo::UnitSimplexOracle{T}, direction, x; k
     return ScaledHotVector(lmo.right_side, min_idx, length(direction))
 end
 
-function dicg_maximum_step(::UnitSimplexOracle{T}, x, direction) where {T}
+function dicg_maximum_step(::UnitSimplexOracle{T}, direction, x) where {T}
     # the direction should never violate the simplex constraint because it would correspond to a gamma_max > 1
     gamma_max = one(promote_type(T, eltype(direction)))
     @inbounds for idx in eachindex(x)
@@ -108,8 +108,8 @@ end
 
 function dicg_maximum_step(
     ::UnitSimplexOracle{T},
-    x,
     direction::SparseArrays.AbstractSparseVector,
+    x,
 ) where {T}
     gamma_max = one(promote_type(T, eltype(direction)))
     dinds = SparseArrays.nonzeroinds(direction)
@@ -180,7 +180,7 @@ function compute_inface_extreme_point(
     return ScaledHotVector(lmo.right_side, x_inds[min_idx], length(direction))
 end
 
-function dicg_maximum_step(::ProbabilitySimplexOracle{T}, x, direction) where {T}
+function dicg_maximum_step(::ProbabilitySimplexOracle{T}, direction, x) where {T}
     gamma_max = one(promote_type(T, eltype(direction)))
     @inbounds for idx in eachindex(x)
         di = direction[idx]
@@ -355,7 +355,7 @@ function compute_inface_extreme_point(lmo::HyperSimplexOracle, direction, x; kwa
     return v
 end
 
-function dicg_maximum_step(lmo::HyperSimplexOracle, x, direction)
+function dicg_maximum_step(lmo::HyperSimplexOracle, direction, x)
     T = promote_type(eltype(x), eltype(direction))
     gamma_max = one(T)
     for idx in eachindex(x)

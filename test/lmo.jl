@@ -92,7 +92,7 @@ end
             v_face = FrankWolfe.compute_inface_extreme_point(hypersimplex, rand_direction, x_int)
             @test v_fw == v_face
             # maximum step is one for x in the relint
-            @test FrankWolfe.dicg_maximum_step(hypersimplex, x_int, x_int - v_face) ≈ 1
+            @test FrankWolfe.dicg_maximum_step(hypersimplex, x_int - v_face, x_int) ≈ 1
         end
         if K < n # otherwise setting index to zero is invalid
             # set one index to zero and renormalize to project back onto hypersimplex
@@ -105,21 +105,21 @@ end
             @test v[2] ≈ 0
             @test v2[2] ≈ 0
             # both directions are in-face FW, maximal step is 1
-            @test FrankWolfe.dicg_maximum_step(hypersimplex, x_int2, x_int2 - v) ≈ 1
-            @test FrankWolfe.dicg_maximum_step(hypersimplex, x_int2, x_int2 - v2) ≈ 1
+            @test FrankWolfe.dicg_maximum_step(hypersimplex, x_int2 - v, x_int2) ≈ 1
+            @test FrankWolfe.dicg_maximum_step(hypersimplex, x_int2 - v2, x_int2) ≈ 1
             # away step stays in polytope
-            gamma_max = FrankWolfe.dicg_maximum_step(hypersimplex, x_int2, v - x_int2)
+            gamma_max = FrankWolfe.dicg_maximum_step(hypersimplex, v - x_int2, x_int2)
             x_away = x_int2 - gamma_max * (v - x_int2)
             @test sum(x_away) ≈ hypersimplex.K * hypersimplex.radius
             @test all(-10eps() .<=  x_away .<= hypersimplex.radius + 10eps())
-            gamma_max2 = FrankWolfe.dicg_maximum_step(hypersimplex, x_int, v - x_int)
+            gamma_max2 = FrankWolfe.dicg_maximum_step(hypersimplex, v - x_int, x_int)
             x_away2 = x_int - gamma_max2 * (v - x_int)
             @test sum(x_away2) ≈ hypersimplex.K * hypersimplex.radius
             @test all(-10eps() .<= x_away2 .<= hypersimplex.radius + 10eps())
             # if direction crosses an active face, maximal step is zero
             direction = zeros(n)
             direction[2] = 1
-            @test FrankWolfe.dicg_maximum_step(hypersimplex, x_int2, direction) ≈ 0
+            @test FrankWolfe.dicg_maximum_step(hypersimplex, direction, x_int2) ≈ 0
         end
     end
 end
