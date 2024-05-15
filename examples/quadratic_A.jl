@@ -24,7 +24,7 @@ function ∇simple_reg_loss(storage, θ, data_point)
     return storage
 end
 
-xs = [10 * randn(T, n) for _ in 1:p]
+xs = [10randn(T, n) for _ in 1:p]
 bias = 4
 params_perfect = [1:n; bias]
 
@@ -43,7 +43,11 @@ end
 lmo = FrankWolfe.LpNormLMO{T, 2}(1.05 * norm(params_perfect))
 
 x0 = FrankWolfe.compute_extreme_point(lmo, zeros(T, n+1))
-#  active_set = FrankWolfe.ActiveSet([(1.0, x0)])
+
+# standard active set
+# active_set = FrankWolfe.ActiveSet([(1.0, x0)])
+
+# specialized active set, automatically detecting the parameters A and b of the quadratic function f
 active_set = FrankWolfe.ActiveSetQuadratic([(one(T), x0)], gradf)
 
 @time res = FrankWolfe.blended_pairwise_conditional_gradient(
