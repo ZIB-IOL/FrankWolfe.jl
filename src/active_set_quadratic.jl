@@ -108,6 +108,17 @@ function ActiveSetQuadratic{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,
     return as
 end
 
+# custom dummy structure to handle identity hessian matrix
+# required as LinearAlgebra.I does not work for general tensors
+struct e end
+Base.:*(::e, x) = x
+function ActiveSetQuadratic(tuple_values::AbstractVector{Tuple{R,AT}}, A::UniformScaling, b) where {AT,R}
+    ActiveSetQuadratic(tuple_values, e(), b)
+end
+function ActiveSetQuadratic{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}, A::UniformScaling, b) where {AT,R}
+    ActiveSetQuadratic{AT,R}(tuple_values, e(), b)
+end
+
 # these three functions do not update the active set iterate
 
 function Base.push!(as::ActiveSetQuadratic{AT,R}, (λ, a)) where {AT,R}
