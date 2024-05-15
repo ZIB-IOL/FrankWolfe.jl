@@ -95,7 +95,7 @@ function benchmark_Bell(p::Array{T, 3}, sym::Bool; kwargs...) where {T <: Number
 end
 
 p = 0.5correlation_tensor_GHZ_polygon(3, 8)
-benchmark_Bell(p, true; verbose=true, max_iteration=10^6, print_iter=10^4) # 27_985 iterations and 89 atoms
+benchmark_Bell(p, true; verbose=true, max_iteration=10^6, print_iter=10^4) # 24_914 iterations and 89 atoms
 println()
 benchmark_Bell(p, false; verbose=true, max_iteration=10^6, print_iter=10^4) # 107_647 iterations and 379 atoms
 println()
