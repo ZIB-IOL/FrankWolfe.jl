@@ -62,6 +62,10 @@ is_decomposition_invariant_oracle(::MathOptLMO) = true
 
 # Only support MOI.Interval type for now.
 # For MOI.GreaterThan and MOI.LessThan constraints, sanity check is necessary. It will be implemented later.
+# function set_constraint_equal() will be implented to make code concise.
+
+function set_constraint_equal(optimizer, func, var_constraint_list::Dict)
+end
 
 function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x; kwargs...) where {OT}
     
