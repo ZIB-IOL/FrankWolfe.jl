@@ -110,13 +110,21 @@ end
 
 # custom dummy structure to handle identity hessian matrix
 # required as LinearAlgebra.I does not work for general tensors
-struct e end
-Base.:*(::e, x) = x
+struct Identity{R <: Real}
+    λ::R
+end
+function Base.:*(a::Identity, b)
+    if a.λ == 1
+        return b
+    else
+        return a.λ * b
+    end
+end
 function ActiveSetQuadratic(tuple_values::AbstractVector{Tuple{R,AT}}, A::UniformScaling, b) where {AT,R}
-    ActiveSetQuadratic(tuple_values, e(), b)
+    return ActiveSetQuadratic(tuple_values, Identity(A.λ), b)
 end
 function ActiveSetQuadratic{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}, A::UniformScaling, b) where {AT,R}
-    ActiveSetQuadratic{AT,R}(tuple_values, e(), b)
+    return ActiveSetQuadratic{AT,R}(tuple_values, Identity(A.λ), b)
 end
 
 # these three functions do not update the active set iterate
