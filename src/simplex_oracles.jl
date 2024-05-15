@@ -106,7 +106,11 @@ function dicg_maximum_step(::UnitSimplexOracle{T}, x, direction) where {T}
     return gamma_max
 end
 
-function dicg_maximum_step(::UnitSimplexOracle{T}, x, direction::SparseArrays.AbstractSparseVector) where {T}
+function dicg_maximum_step(
+    ::UnitSimplexOracle{T},
+    x,
+    direction::SparseArrays.AbstractSparseVector,
+) where {T}
     gamma_max = one(promote_type(T, eltype(direction)))
     dinds = SparseArrays.nonzeroinds(direction)
     dvals = SparseArrays.nonzeros(direction)
@@ -155,7 +159,12 @@ end
 
 is_decomposition_invariant_oracle(::ProbabilitySimplexOracle) = true
 
-function compute_inface_extreme_point(lmo::ProbabilitySimplexOracle{T}, direction, x::SparseArrays.AbstractSparseVector; kwargs...) where {T}
+function compute_inface_extreme_point(
+    lmo::ProbabilitySimplexOracle{T},
+    direction,
+    x::SparseArrays.AbstractSparseVector;
+    kwargs...,
+) where {T}
     # faces for the probability simplex are {x_i = 0}
     min_idx = -1
     min_val = convert(float(eltype(direction)), Inf)
@@ -163,7 +172,7 @@ function compute_inface_extreme_point(lmo::ProbabilitySimplexOracle{T}, directio
     x_vals = SparseArrays.nonzeros(x)
     @inbounds for idx in eachindex(x_inds)
         val = direction[x_inds[idx]]
-        if val < min_val && x_vals[idx] > 0 
+        if val < min_val && x_vals[idx] > 0
             min_val = val
             min_idx = idx
         end
@@ -235,7 +244,8 @@ end
 
 UnitHyperSimplexOracle{T}(K::Integer) where {T} = UnitHyperSimplexOracle{T}(K, one(T))
 
-UnitHyperSimplexOracle(K::Integer, radius::Integer) = UnitHyperSimplexOracle{Rational{BigInt}}(radius)
+UnitHyperSimplexOracle(K::Integer, radius::Integer) =
+    UnitHyperSimplexOracle{Rational{BigInt}}(radius)
 
 function compute_extreme_point(
     lmo::UnitHyperSimplexOracle{TL},
@@ -306,6 +316,64 @@ function compute_extreme_point(
         v[K_indices[idx]] = lmo.radius
     end
     return v
+end
+
+is_decomposition_invariant_oracle(::HyperSimplexOracle) = true
+
+function compute_inface_extreme_point(lmo::HyperSimplexOracle, direction, x; kwargs...)
+    # faces for the hypersimplex are bounds x_i ∈ {0, τ}
+    v = spzeros(eltype(x), size(direction))
+    K = min(lmo.K, length(x))
+    K_free = K
+    # remove the K components already fixed to their bounds
+    @inbounds for idx in eachindex(x)
+        if x[idx] >= lmo.radius
+            K_free -= 1
+            v[idx] = lmo.radius
+        end
+    end
+    @assert K_free >= 0
+    # already K elements fixed to their bound -> the face is a single vertex
+    if K_free == 0
+        copyto!(v, x)
+        return v
+    end
+    K_indices = sortperm(direction)
+    for idx in K_indices
+        # fixed to a bound face, skip
+        xi = x[idx]
+        if xi ≈ 0 || xi ≈ lmo.radius
+            continue
+        end
+        v[idx] = lmo.radius
+        K_free -= 1
+        # we fixed K elements already
+        if K_free == 0
+            break
+        end
+    end
+    return v
+end
+
+function dicg_maximum_step(lmo::HyperSimplexOracle, x, direction)
+    T = promote_type(eltype(x), eltype(direction))
+    gamma_max = one(T)
+    for idx in eachindex(x)
+        if direction[idx] != 0.0
+            # iterate already on the boundary
+            if (direction[idx] < 0 && x[idx] ≈ lmo.radius) || (direction[idx] > 0 && x[idx] ≈ 0)
+                return zero(gamma_max)
+            end
+            # clipping with the zero boundary
+            if direction[idx] > 0
+                gamma_max = min(gamma_max, x[idx] / direction[idx])
+            else
+                @assert direction[idx] < 0
+                gamma_max = min(gamma_max, -(lmo.radius - x[idx]) / direction[idx])
+            end
+        end
+    end
+    return gamma_max
 end
 
 function convert_mathopt(
