@@ -51,6 +51,19 @@ extra_vertex_storage=vertex_storage,
 determines whether vertices from the storage are used in the algorithm.
 See [Extra-lazification](@ref) for a complete example.
 
+## Specialized active set for quadratic functions
+
+If the objective function is quadratic, a considerable speedup can be obtained by using the structure `ActiveSetQuadratic`.
+It relies on the storage of various scalar products to efficiently determine the best (and worst for `blended_pairwise_conditional_gradient`) atom in the active set without the need of computing many scalar products in each iteration.
+The user should provide the Hessian matrix `A` as well as the linear part `b` of the function, such that:
+```math
+\nabla f(x)=Ax+b.
+```
+If the Hessian matrix `A` is simply the identity (for a distance function for instance), `LinearAlgebra.I` can be given.
+Note that these parameters can also be automatically detected, but the precision of this detection (which basically requires solving a linear system) soon becomes insufficient for practical purposes when the dimension increases.
+
+See the examples `quadratic.jl` and `quadratic_A.jl` for the exact syntax.
+
 ## Miscellaneous
 
 - Emphasis: All solvers support emphasis (parameter `Emphasis`) to either exploit vectorized linear algebra or be memory efficient, e.g., for large-scale instances
