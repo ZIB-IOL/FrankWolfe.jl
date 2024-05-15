@@ -91,6 +91,7 @@ function set_constraint(o, S, func, val, set, var_constraint_list::Dict)
     else
         idx = MOI.add_constraint(o, func, set)
         var_constraint_list[func] = idx
+        println("set")
     end     
 end
 
