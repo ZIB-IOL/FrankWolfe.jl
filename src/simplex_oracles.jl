@@ -264,6 +264,91 @@ function compute_extreme_point(
     return v
 end
 
+is_decomposition_invariant_oracle(::UnitHyperSimplexOracle) = true
+
+function compute_inface_extreme_point(lmo::UnitHyperSimplexOracle, direction, x; kwargs...)
+    # faces for the hypersimplex are:
+    # bounds x_i ∈ {0, τ}
+    # the simplex face ∑ x_i == K * τ
+    v = spzeros(eltype(x), size(direction)...)
+
+    # zero-vector x means fixing to all coordinate faces, return zero-vector
+    # is_fixed_to_simplex_face = sum(x) ≥ lmo.K * lmo.radius
+    sx = sum(x)
+    if sx <= 0
+        return v
+    end
+
+    K = min(lmo.K, length(x))
+    K_free = K
+    # remove the K components already fixed to their bounds
+    @inbounds for idx in eachindex(x)
+        if x[idx] >= lmo.radius
+            K_free -= 1
+            v[idx] = lmo.radius
+        end
+    end
+    @assert K_free >= 0
+    # already K elements fixed to their bound -> the face is a single vertex
+    if K_free == 0
+        copyto!(v, x)
+        return v
+    end
+    K_indices = sortperm(direction)
+    for idx in K_indices
+        # fixed to a bound face, skip
+        xi = x[idx]
+        if xi ≈ 0 || xi ≈ lmo.radius
+            continue
+        end
+        # positive direction reached, no improving coordinate anymore
+        if direction[idx] >= 0
+            break
+        end
+        v[idx] = lmo.radius
+        K_free -= 1
+        # we fixed K elements already
+        if K_free == 0
+            break
+        end
+    end
+    return v
+end
+
+function dicg_maximum_step(lmo::UnitHyperSimplexOracle, direction, x)
+    T = promote_type(eltype(x), eltype(direction))
+    gamma_max = one(T)
+    xsum = zero(T)
+    dsum = zero(T)
+    for idx in eachindex(x)
+        di = direction[idx]
+        xi = x[idx]
+        xsum += xi
+        if di != 0.0
+            dsum += di
+            # iterate already on the boundary
+            if (direction[idx] < 0 && xi ≈ lmo.radius) || (di > 0 && xi ≈ 0)
+                return zero(gamma_max)
+            end
+            # clipping with the zero boundary
+            if di > 0
+                gamma_max = min(gamma_max, xi / di)
+            else
+                @assert di < 0
+                gamma_max = min(gamma_max, -(lmo.radius - xi) / di)
+            end
+        end
+    end
+    # constrain γ to avoid crossing the simplex hyperplane
+    if dsum < -length(x) * eps(T)
+        # ∑ x_i - γ d_i ≤ τ K <=>
+        # γ (-∑ d_i) ≤ τ K - ∑ x_i <=>
+        # γ ≤ (τ K - ∑ x_i) / (-∑ d_i)
+        gamma_max = min(gamma_max, (lmo.radius * lmo.K - xsum) / -dsum)
+    end
+    return gamma_max
+end
+
 function convert_mathopt(
     lmo::UnitHyperSimplexOracle{T},
     optimizer::OT;
