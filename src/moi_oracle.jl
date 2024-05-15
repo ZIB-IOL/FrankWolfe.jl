@@ -94,7 +94,8 @@ function set_constraint(o, S, func, val, set, var_constraint_list::Dict)
                 MOI.add_constraint(o, func, MOI.EqualTo(set.lower))
             end
         end
-    elseif !set_equal 
+    end
+    if !set_equal 
         idx = MOI.add_constraint(o, func, set)
         var_constraint_list[func] = idx
         println("set")
