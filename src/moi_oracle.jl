@@ -170,11 +170,9 @@ end
 function is_constraints_feasible(lmo::MathOptLMO{OT}, x; atol=1e-7) where {OT}
     on_lowerbound_idx_value = []
     on_upperbound_idx_value =[]
-    satisfied_idx = []
-    flag_value = 0
-    for (F, S) in MOI.get(lmo.o, MOI.ListOfConstraintTypesPresent())
+    is_feasible = true
+    check: for (F, S) in MOI.get(lmo.o, MOI.ListOfConstraintTypesPresent())
         valvar(f) = x[f.value]
-        #println((F,S))
         const_list = MOI.get(lmo.o, MOI.ListOfConstraintIndices{F,S}())
         for c_idx in const_list
             if !(S <: MOI.ZeroOne)
@@ -202,15 +200,13 @@ function is_constraints_feasible(lmo::MathOptLMO{OT}, x; atol=1e-7) where {OT}
                 # @debug("Constraint: $(F)-$(S) $(func) = $(val) in $(set)")
                 dist = MOD.distance_to_set(MOD.DefaultDistance(), val, set)
                 if dist > atol
-                    push!(satisfied_idx, 1)
-                    flag_value = 1
-                else
-                    push!(satisfied_idx, 0)
+                    is_feasible = false
+                    break check
                 end
             end
         end
     end
-    if flag_value === 0
+    if is_feasible
         return [true, satisfied_idx, on_lowerbound_idx_value,on_upperbound_idx_value]
     else
         return [false, satisfied_idx, on_lowerbound_idx_value,on_upperbound_idx_value]
