@@ -82,10 +82,6 @@ function set_constraint(o, S, func, val, set, var_constraint_list::Dict)
         end
     elseif S <: MOI.Interval
         if set.upper ≈ val || set.lower ≈ val
-            if is_set
-                c_idx = var_constraint_list[func]
-                MOI.delete(o, c_idx)
-            end
             if set.upper ≈ val
                 MOI.add_constraint(o, func, MOI.EqualTo(set.upper))
             else
