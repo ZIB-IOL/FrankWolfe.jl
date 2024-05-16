@@ -360,3 +360,52 @@ function compute_extreme_point(lmo::EllipsoidLMO, direction; v=nothing, kwargs..
     mul!(v, I, lmo.buffer, -scaling, true)
     return v
 end
+
+
+"""
+    OrderWeightNormLMO(W,R)
+    
+LMO with feasible set being the ordered weighted l1 norm: https://arxiv.org/pdf/1409.4271
+
+```
+C = {x ∈ R^n, Ω_w(x) ≤ R} 
+```
+
+"""
+struct OrderWeightNormLMO{W,R} <: LinearMinimizationOracle
+    weights::W
+    radius::R
+    perm_indices::P
+    mat_B::B
+end
+
+function OrderWeightNormLMO(weights, radius)
+    N = size(weights)
+    mat = zeros(N,N)
+    sum = 0
+    for i in range(N)
+        sum += weights[i]
+        for j in range(k)
+            mat[i,j] = 1 / sum
+    perm_indices = sortperm(weights)
+    return OrderWeightNormLMO(weights, radius, perm_indices, mat)
+end
+
+function compute_extreme_point(
+    lmo::OrderWeightNormLMO{W,R},
+    direction::M;
+    v=nothing,
+    kwargs...,
+) where {W,R}
+    direction_abs = abs.(direction)
+    perm_grad = sortperm(direction_abs)
+    max = 0
+    ind = 0
+    for i in range(size(weights))
+        scal = dot(mat_B[i],direction_abs[perm_grad])
+        if(scal > max)
+            max = scal
+            ind = i
+    v = sign(direction).*((mat_B[ind,:])[sortperm(perm_grad)])
+    return v
+
