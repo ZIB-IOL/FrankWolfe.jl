@@ -59,7 +59,7 @@ The user should provide the Hessian matrix `A` as well as the linear part `b` of
 ```math
 \nabla f(x)=Ax+b.
 ```
-If the Hessian matrix `A` is simply the identity (for a distance function for instance), `LinearAlgebra.I` can be given.
+If the Hessian matrix `A` is simply a scaled identity (for a distance function for instance), `LinearAlgebra.I` or any `LinearAlgebra.UniformScaling` can be given.
 Note that these parameters can also be automatically detected, but the precision of this detection (which basically requires solving a linear system) soon becomes insufficient for practical purposes when the dimension increases.
 
 See the examples `quadratic.jl` and `quadratic_A.jl` for the exact syntax.
