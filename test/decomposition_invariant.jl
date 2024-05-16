@@ -231,3 +231,21 @@ end
         @test norm(res_di[1] - res_fw[1]) <= 1e-6
     end
 end
+
+@testset "DICG Hypersimplex $n $K" for n in (20, 500, 10000), K in (1, n ÷ 10, n ÷ 2)
+    for lmo in (FrankWolfe.HyperSimplexOracle(K, 3.0), FrankWolfe.UnitHyperSimplexOracle(K, 3.0))
+        K = 4
+        n = 10
+        lmo = FrankWolfe.HyperSimplexOracle(K, 3.0)
+        xref = fill(0.4, n)
+        function f(x)
+            return 1 / 2 * (norm(x)^2 - 2 * dot(x, xref) + norm(xref)^2)
+        end
+        function grad!(storage, x)
+            @. storage = x - xref
+        end
+        res_fw = FrankWolfe.frank_wolfe(f, grad!, lmo, FrankWolfe.compute_extreme_point(lmo, randn(n)))
+        res_dicg = FrankWolfe.decomposition_invariant_conditional_gradient(f, grad!, lmo, FrankWolfe.compute_extreme_point(lmo, randn(n)))
+        @test norm(res_fw.x - res_dicg.x) ≤ 1e-4
+    end
+end

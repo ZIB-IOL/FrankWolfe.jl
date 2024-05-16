@@ -244,7 +244,7 @@ end
 
 UnitHyperSimplexOracle{T}(K::Integer) where {T} = UnitHyperSimplexOracle{T}(K, one(T))
 
-UnitHyperSimplexOracle(K::Integer, radius::Integer) =
+UnitHyperSimplexOracle(K::Int, radius::Integer) =
     UnitHyperSimplexOracle(K, convert(Rational{BigInt}, radius))
 
 function compute_extreme_point(
@@ -384,7 +384,7 @@ end
 
 HyperSimplexOracle{T}(K::Integer) where {T} = HyperSimplexOracle{T}(K, one(T))
 
-HyperSimplexOracle(K::Integer, radius::Integer) = HyperSimplexOracle{Rational{BigInt}}(K, radius)
+HyperSimplexOracle(K::Int, radius::Integer) = HyperSimplexOracle{Rational{BigInt}}(K, radius)
 
 function compute_extreme_point(
     lmo::HyperSimplexOracle{TL},
