@@ -926,3 +926,24 @@ end
     @test norm(res[1] - p) < 1e-6
     @test length(res[6]) < 25
 end
+
+@testset "Ordered Weighted Norm LMO" begin
+    
+    N = 100
+    radius = 10
+    direction = randn(N)
+    #norm l1
+    weights = zeros(N)
+    fill!(weights,1)
+    lmo = FrankWolfe.OrderWeightNormLMO(weights,radius)
+    v = FrankWolfe.compute_extreme_point(lmo,direction)
+    @test radius ≈ norm(v,1)
+
+    #norm L_∞
+    weights = zeros(N)
+    weights[1] = 5
+    lmo = FrankWolfe.OrderWeightNormLMO(weights,radius)
+    v = FrankWolfe.compute_extreme_point(lmo,direction)
+    @test (radius / norm(weights,Inf)) == norm(v,Inf)
+
+end
