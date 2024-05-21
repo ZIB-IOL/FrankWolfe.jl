@@ -389,7 +389,7 @@ function OrderWeightNormLMO(weights, radius)
             mat[i,j] = 1 / sum
         end
     end
-    perm_indices = sortperm(weights)
+    perm_indices = sortperm(weights,rev=true)
     return OrderWeightNormLMO(weights, radius, perm_indices, mat)
 end
 
@@ -400,9 +400,9 @@ function compute_extreme_point(
     kwargs...,
 ) where {W,R,P,B,M}
     direction_abs = abs.(direction)
-    perm_grad = sortperm(direction_abs)
+    perm_grad = sortperm(direction_abs,rev=true)
     max = 0
-    ind = 0
+    ind = 1
     N = length(lmo.weights)
     for i in range(1,N)
         scal = dot(lmo.mat_B[i,:],direction_abs[perm_grad])
@@ -411,6 +411,6 @@ function compute_extreme_point(
             ind = i
         end
     end
-    v = (lmo.radius).*sign.(direction).*((lmo.mat_B[ind,:])[sortperm(perm_grad)])
+    v = (lmo.radius).*sign.(-1*direction).*((lmo.mat_B[ind,:])[sortperm(perm_grad)])
     return v
 end

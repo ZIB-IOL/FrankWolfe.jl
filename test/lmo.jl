@@ -928,22 +928,35 @@ end
 end
 
 @testset "Ordered Weighted Norm LMO" begin
-    
-    N = 100
-    radius = 10
+    Random.seed!(1564)
+    N = Int(1e3)
+    radius = abs(randn())+1
     direction = randn(N)
+
     #norm l1
     weights = zeros(N)
     fill!(weights,1)
     lmo = FrankWolfe.OrderWeightNormLMO(weights,radius)
-    v = FrankWolfe.compute_extreme_point(lmo,direction)
-    @test radius ≈ norm(v,1)
+    lmo_l1 = FrankWolfe.LpNormLMO{1}(radius)
+    v1 = FrankWolfe.compute_extreme_point(lmo,direction)
+    v2 = FrankWolfe.compute_extreme_point(lmo_l1,direction)
+    @test all(v1 .== v2)
 
     #norm L_∞
     weights = zeros(N)
-    weights[1] = 5
+    weights[1] = 1
     lmo = FrankWolfe.OrderWeightNormLMO(weights,radius)
-    v = FrankWolfe.compute_extreme_point(lmo,direction)
-    @test (radius / norm(weights,Inf)) == norm(v,Inf)
+    lmo_l_inf = FrankWolfe.LpNormLMO{Inf}(radius)
+    v1 = FrankWolfe.compute_extreme_point(lmo,direction)
+    v2 = FrankWolfe.compute_extreme_point(lmo_l_inf,direction)
+    @test all(v1 .== v2)
+
+    #symmetry
+    direction_opp = -1*direction
+    weights = rand(N)
+    lmo_opp = FrankWolfe.OrderWeightNormLMO(weights,radius)
+    v = FrankWolfe.compute_extreme_point(lmo_opp,direction)
+    v_opp = FrankWolfe.compute_extreme_point(lmo_opp,direction_opp)
+    @test all(v .== -1*v_opp)
 
 end
