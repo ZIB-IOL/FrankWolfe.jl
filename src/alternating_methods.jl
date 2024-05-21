@@ -69,17 +69,17 @@ function alternating_linear_minimization(
         return storage.blocks = gradf.blocks + t
     end
 
-    infeasibility(x) = sum(
+    dist2(x) = sum(
         fast_dot(x.blocks[i] - x.blocks[j], x.blocks[i] - x.blocks[j]) for i in 1:N for j in 1:i-1
     )
 
-    f_bc(x) = sum(f(x.blocks[i]) for i in 1:N) + lambda * infeasibility(x)
+    f_bc(x) = sum(f(x.blocks[i]) for i in 1:N) + lambda * dist2(x)
 
-    infeasibilities = []
+    dist2_data = []
     if trajectory
-        function make_infeasibitly_callback(callback)
-            return function callback_infeasibility(state, args...)
-                push!(infeasibilities, infeasibility(state.x))
+        function make_dist2_callback(callback)
+            return function callback_dist2(state, args...)
+                push!(dist2_data, dist2(state.x))
                 if callback === nothing
                     return true
                 end
@@ -87,7 +87,7 @@ function alternating_linear_minimization(
             end
         end
 
-        callback = make_infeasibitly_callback(callback)
+        callback = make_dist2_callback(callback)
     end
 
     if verbose
@@ -95,8 +95,8 @@ function alternating_linear_minimization(
         print("LAMBDA: $lambda")
 
         format_string = "%14e\n"
-        headers = ("Infeas",)
-        format_state(state, args...) = (Float64(infeasibility(state.x)),)
+        headers = ("Dist2",)
+        format_state(state, args...) = (Float64(dist2(state.x)),)
 
         callback = make_print_callback_extension(
             callback,
@@ -120,10 +120,10 @@ function alternating_linear_minimization(
     )
 
     if trajectory
-        traj_data = [(t...,infeasibilities[i]) for (i,t) in enumerate(traj_data)]
-        return x, v, primal, dual_gap, infeasibility(x), traj_data
+        traj_data = [(t...,dist2_data[i]) for (i,t) in enumerate(traj_data)]
+        return x, v, primal, dual_gap, dist2(x), traj_data
     else
-        return x, v, primal, dual_gap, infeasibility(x), traj_data
+        return x, v, primal, dual_gap, dist2(x), traj_data
     end
 end
 

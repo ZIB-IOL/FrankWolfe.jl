@@ -55,11 +55,11 @@ FrankWolfe.TrackingGradient
 FrankWolfe.TrackingLMO
 ```
 
-Also see the example "Tracking number of calls to different oracles".
+Also see the example [Tracking, counters and custom callbacks for Frank Wolfe](@ref).
 
 ## Update order for block-coordinate methods
 
-Block-coordinate methods can be run with different update order. All update order are subtypes of [`FrankWolfe.BlockCoordinateUpdateOrder`](@ref). They have to implement the method [`FrankWolfe.select_update_indices`](@ref) which select which blocks to update in what order.
+Block-coordinate methods can be run with different update orders. All update orders are subtypes of [`FrankWolfe.BlockCoordinateUpdateOrder`](@ref). They have to implement the method [`FrankWolfe.select_update_indices`](@ref) which selects which blocks to update in what order.
 
 ```@docs
 FrankWolfe.BlockCoordinateUpdateOrder
@@ -78,6 +78,11 @@ FrankWolfe.UpdateStep
 FrankWolfe.update_iterate
 FrankWolfe.FrankWolfeStep
 FrankWolfe.BPCGStep
+```
+
+## Block vector
+```@docs
+FrankWolfe.BlockVector
 ```
 
 ## Index

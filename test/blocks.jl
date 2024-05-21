@@ -39,10 +39,17 @@ using SparseArrays
     arr4 = 2 * arr3
     @test arr4.blocks[1] == 6 * ones(2, 2)
     arr5 = FrankWolfe.BlockVector([6 * ones(2, 2), 2 * ones(3, 3)],)
+    arr6 = arr3/2
+    arr7 = arr3 * 2
+    @test arr6.blocks[1] == 1.5 * ones(2, 2)
+    @test isequal(arr4, arr7)
     @test isequal(arr4, arr4)
     @test isequal(arr4, arr5)
     @test !isequal(arr3, arr4)
     @test !isequal(arr2, FrankWolfe.BlockVector([zeros(2, 2)]))
+
+    arr8 = FrankWolfe.BlockVector([ones(2, 2), ones(2, 2)])
+    @test_throws DimensionMismatch dot(arr3, arr8)
 
 end
 

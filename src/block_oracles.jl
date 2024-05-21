@@ -1,3 +1,9 @@
+"""
+    BlockVector{T, MT <: AbstractArray{T}, ST <: Tuple} <: AbstractVector{T}
+
+Represents a vector consisting of blocks. `T` is the element type of the vector, `MT` is the type of the underlying data array, and `ST` is the type of the tuple representing the sizes of each block.
+Each block can be accessed with the `blocks` field, and the sizes of the blocks are stored in the `block_sizes` field.
+"""
 mutable struct BlockVector{T, MT <: AbstractArray{T}, ST <: Tuple} <: AbstractVector{T}
     blocks::Vector{MT}
     block_sizes::Vector{ST}
@@ -128,6 +134,14 @@ function Base.:*(s::Number, v::BlockVector)
 end
 
 Base.:*(v::BlockVector, s::Number) = s * v
+
+function Base.:/(v::BlockVector, s::Number)
+    return BlockVector(
+        v.blocks ./ s,
+        copy(v.block_sizes),
+        v.tot_size,
+    )
+end
 
 function LinearAlgebra.dot(v1::BlockVector{T1}, v2::BlockVector{T2}) where {T1, T2}
     if size(v1) != size(v2) || length(v1.block_sizes) != length(v2.block_sizes)
