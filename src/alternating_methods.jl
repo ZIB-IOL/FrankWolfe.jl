@@ -53,9 +53,14 @@ function alternating_linear_minimization(
     verbose=false,
     trajectory=false,
     callback=nothing,
-    print_iter=1e3,
+    max_iteration=10000,
+    print_iter = max_iteration / 10,
+    memory_mode=InplaceEmphasis(),
+    line_search::LS=Adaptive(),
+    epsilon=1e-7,
+    momentum=nothing,
     kwargs...,
-) where {N}
+) where {N, LS<:Union{LineSearchMethod,NTuple{N,LineSearchMethod}}}
 
     x0_bc = BlockVector([x0[i] for i in 1:N], [size(x0[i]) for i in 1:N], sum(length, x0))
     gradf = similar(x0_bc)
@@ -92,10 +97,21 @@ function alternating_linear_minimization(
 
     if verbose
         println("\nAlternating Linear Minimization (ALM).")
-        print("LAMBDA: $lambda")
+        println("FW METHOD: $bc_method")
+
+        num_type = eltype(x0[1])
+        grad_type = eltype(gradf.blocks[1])
+        line_search_type = line_search isa Tuple ? [typeof(a) for a in line_search] : typeof(line_search)
+        println("MEMORY_MODE: $memory_mode STEPSIZE: $line_search_type EPSILON: $epsilon MAXITERATION: $max_iteration")
+        println("TYPE: $num_type GRADIENTTYPE: $grad_type")
+        println("MOMENTUM: $momentum LAMBDA: $lambda")
+
+        if memory_mode isa InplaceEmphasis
+            @info("In memory_mode memory iterates are written back into x0!")
+        end
 
         # header and format string for output of the algorithm
-        headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "Dist2"] 
+        headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "Dist2"]
         format_string = "%6s %13s %14e %14e %14e %14e %14e %14e\n"
 
         function format_state(state, args...)
@@ -110,10 +126,11 @@ function alternating_linear_minimization(
                 Float64(dist2(state.x)),
             )
 
-            if bc_method in [away_frank_wolfe, blended_pairwise_conditional_gradient, pairwise_frank_wolfe]
-                add_rep = (length(args[1],))
+            if bc_method in
+               [away_frank_wolfe, blended_pairwise_conditional_gradient, pairwise_frank_wolfe]
+                add_rep = (length(args[1]))
             elseif bc_method === blended_conditional_gradient
-                add_rep = (length(args[1]), args[2],)
+                add_rep = (length(args[1]), args[2])
             elseif bc_method === stochastic_frank_wolfe
                 add_rep = (args[1],)
             else
@@ -123,7 +140,8 @@ function alternating_linear_minimization(
             return (rep..., add_rep...)
         end
 
-        if bc_method in [away_frank_wolfe, blended_pairwise_conditional_gradient, pairwise_frank_wolfe]
+        if bc_method in
+           [away_frank_wolfe, blended_pairwise_conditional_gradient, pairwise_frank_wolfe]
             push!(headers, "#ActiveSet")
             format_string = format_string[1:end-1] * " %14i\n"
         elseif bc_method === blended_conditional_gradient
@@ -150,11 +168,9 @@ function alternating_linear_minimization(
     )
 
     if trajectory
-        traj_data = [(t...,dist2_data[i]) for (i,t) in enumerate(traj_data)]
-        return x, v, primal, dual_gap, dist2(x), traj_data
-    else
-        return x, v, primal, dual_gap, dist2(x), traj_data
+        traj_data = [(t..., dist2_data[i]) for (i, t) in enumerate(traj_data)]
     end
+    return x, v, primal, dual_gap, dist2(x), traj_data
 end
 
 
