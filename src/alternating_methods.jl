@@ -94,17 +94,47 @@ function alternating_linear_minimization(
         println("\nAlternating Linear Minimization (ALM).")
         print("LAMBDA: $lambda")
 
-        format_string = "%14e\n"
-        headers = ("Dist2",)
-        format_state(state, args...) = (Float64(dist2(state.x)),)
+        # header and format string for output of the algorithm
+        headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "Dist2"] 
+        format_string = "%6s %13s %14e %14e %14e %14e %14e %14e\n"
 
-        callback = make_print_callback_extension(
-            callback,
-            print_iter,
-            headers,
-            format_string,
-            format_state,
-        )
+        function format_state(state, args...)
+            rep = (
+                st[Symbol(state.tt)],
+                string(state.t),
+                Float64(state.primal),
+                Float64(state.primal - state.dual_gap),
+                Float64(state.dual_gap),
+                state.time,
+                state.t / state.time,
+                Float64(dist2(state.x)),
+            )
+
+            if bc_method in [away_frank_wolfe, blended_pairwise_conditional_gradient, pairwise_frank_wolfe]
+                add_rep = (length(args[1],))
+            elseif bc_method === blended_conditional_gradient
+                add_rep = (length(args[1]), args[2],)
+            elseif bc_method === stochastic_frank_wolfe
+                add_rep = (args[1],)
+            else
+                add_rep = ()
+            end
+
+            return (rep..., add_rep...)
+        end
+
+        if bc_method in [away_frank_wolfe, blended_pairwise_conditional_gradient, pairwise_frank_wolfe]
+            push!(headers, "#ActiveSet")
+            format_string = format_string[1:end-1] * " %14i\n"
+        elseif bc_method === blended_conditional_gradient
+            append!(headers, ["#ActiveSet", "#non-simplex"])
+            format_string = format_string[1:end-1] * " %14i %14i\n"
+        elseif bc_method === stochastic_frank_wolfe
+            push!(headers, "Batch")
+            format_string = format_string[1:end-1] * " %6i\n"
+        end
+
+        callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
     end
 
     x, v, primal, dual_gap, traj_data = bc_method(
@@ -112,7 +142,7 @@ function alternating_linear_minimization(
         grad_bc!,
         prod_lmo,
         x0_bc;
-        verbose=verbose,
+        verbose=false, # Suppress inner verbose output
         trajectory=trajectory,
         callback=callback,
         print_iter=print_iter,
