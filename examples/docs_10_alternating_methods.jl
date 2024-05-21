@@ -10,7 +10,8 @@
 # ```math
 # Q = [-1,0]^n ~.
 # ```
-# The goal is to find either a point in the intersection, `` x \in P \cap Q``, or a pair of points, ``(x_P, x_Q) \in P \times Q``, which attains minimal distance between ``P`` and ``Q``,
+# The goal is to find a point that lies both in ``P`` and ``Q``. We do this by reformulating the problem first.
+# Instead of a finding a point in the intersection ``P \cap Q``, we search for a pair of points, ``(x_P, x_Q)`` in the cartesian product ``P \times Q``, which attains minimal distance between ``P`` and ``Q``,
 # ```math
 # \|x_P - x_Q\|_2 = \min_{(x,y) \in P \times Q} \|x - y \|_2 ~.
 # ```
@@ -19,7 +20,8 @@ using FrankWolfe
 include("../examples/plot_utils.jl")
 
 # ## Setting up objective, gradient and linear minimization oracles
-# Since we only consider the feasibility problem the objective function as well as the gradient are zero.
+# Alternating Linear Minimization (ALM) allows for an additional objective such that one can optimize over an intersection of sets instead of finding only feasible points.
+# Since this example only considers the feasibility, we set the objective function as well as the gradient to zero.
 
 n = 20
 
@@ -41,8 +43,9 @@ target_tolerance = 1e-6
 trajectories = [];
 
 # ## Running Alternating Linear Minimization
-# We run Alternating Linear Minimization (ALM) with [`FrankWolfe.block_coordinate_frank_wolfe`](@ref).
-# This method allows three different update orders, `FullUpdate`, `CyclicUpdate` and `Stochasticupdate`.
+# The method [`FrankWolfe.alternating_linear_minimization`](@ref) is not a FrankWolfe method itself. It is a wrapper translating a problem over the intersection of multiple sets to a problem over the product space.
+# ALM can be called with any FW method. The default choice though is [`FrankWolfe.block_coordinate_frank_wolfe`](@ref) as it allows to update the blocks separately.
+# There are three different update orders implemented, `FullUpdate`, `CyclicUpdate` and `Stochasticupdate`.
 # Accordingly both blocks are updated either simulatenously, sequentially or in random order.
 
 for order in [FrankWolfe.FullUpdate(), FrankWolfe.CyclicUpdate(), FrankWolfe.StochasticUpdate()]
