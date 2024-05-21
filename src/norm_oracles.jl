@@ -365,7 +365,7 @@ end
 """
     OrderWeightNormLMO(W,R)
     
-LMO with feasible set being the ordered weighted l1 norm: https://arxiv.org/pdf/1409.4271
+LMO with feasible set being the atomic ordered weighted l1 norm: https://arxiv.org/pdf/1409.4271
 
 ```
 C = {x ∈ R^n, Ω_w(x) ≤ R} 
