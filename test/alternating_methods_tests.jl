@@ -104,12 +104,7 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
         ones(n),
         verbose=true,
         line_search=FrankWolfe.Shortstep(2),
-        callback=(state, args...) -> println(state),
     )
-    println(x)
-    println(v)
-    println(primal)
-    println(dual_gap)
 
     @test norm(x.blocks[1] - zeros(n)) < 1e-6
     @test norm(x.blocks[2] - ones(n)) < 1e-6
