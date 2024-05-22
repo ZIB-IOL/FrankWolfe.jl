@@ -940,7 +940,7 @@ end
     lmo_l1 = FrankWolfe.LpNormLMO{1}(radius)
     v1 = FrankWolfe.compute_extreme_point(lmo,direction)
     v2 = FrankWolfe.compute_extreme_point(lmo_l1,direction)
-    @test all(v1 .== v2)
+    @test v1 == v2
 
     #norm L_∞
     weights = zeros(N)
@@ -949,7 +949,7 @@ end
     lmo_l_inf = FrankWolfe.LpNormLMO{Inf}(radius)
     v1 = FrankWolfe.compute_extreme_point(lmo,direction)
     v2 = FrankWolfe.compute_extreme_point(lmo_l_inf,direction)
-    @test all(v1 .== v2)
+    @test v1 == v2
 
     #symmetry
     direction_opp = -1*direction
@@ -957,6 +957,6 @@ end
     lmo_opp = FrankWolfe.OrderWeightNormLMO(weights,radius)
     v = FrankWolfe.compute_extreme_point(lmo_opp,direction)
     v_opp = FrankWolfe.compute_extreme_point(lmo_opp,direction_opp)
-    @test all(v .== -1*v_opp)
+    @test v == -1*v_opp
 
 end
