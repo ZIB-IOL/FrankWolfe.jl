@@ -928,15 +928,14 @@ end
 end
 
 @testset "Ordered Weighted Norm LMO" begin
-    for k in 101:110
-        Random.seed!(k)
-        N = Int(1e3)
+    Random.seed!(1234)
+    N = Int(1e3)
+    for _ in 1:10 
         radius = abs(randn())+1
         direction = randn(N)
 
         #norm l1
-        weights = zeros(N)
-        fill!(weights,1)
+        weights = ones(N)
         lmo = FrankWolfe.OrderWeightNormLMO(weights,radius)
         lmo_l1 = FrankWolfe.LpNormLMO{1}(radius)
         v1 = FrankWolfe.compute_extreme_point(lmo,direction)
