@@ -422,6 +422,8 @@ function block_coordinate_frank_wolfe(
         tt,
     )
 
+    println("State before iteration ", state)
+
     while t <= max_iteration && dual_gap >= max(epsilon, eps(float(typeof(dual_gap))))
 
         #####################
