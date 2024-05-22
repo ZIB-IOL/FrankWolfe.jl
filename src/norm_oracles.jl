@@ -396,11 +396,11 @@ function OrderWeightNormLMO(weights, radius)
 end
 
 function compute_extreme_point(
-    lmo::OrderWeightNormLMO{W,R,P,B,D},
+    lmo::OrderWeightNormLMO,
     direction::M;
     v=similar(direction),
     kwargs...,
-) where {W,R,P,B,D,M}
+) where {M}
     for i in eachindex(direction)
         lmo.direction_abs[i] = abs(direction[i])
     end
