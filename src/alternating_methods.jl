@@ -58,7 +58,6 @@ function alternating_linear_minimization(
     memory_mode=InplaceEmphasis(),
     line_search::LS=Adaptive(),
     epsilon=1e-7,
-    momentum=nothing,
     kwargs...,
 ) where {N, LS<:Union{LineSearchMethod,NTuple{N,LineSearchMethod}}}
 
@@ -79,10 +78,6 @@ function alternating_linear_minimization(
     )
 
     f_bc(x) = sum(f(x.blocks[i]) for i in 1:N) + lambda * dist2(x)
-
-    gradient = similar(x0_bc)
-    grad_bc!(gradient, x0_bc)
-    @info("Initialisation", x0_bc, gradient)
 
     dist2_data = []
     if trajectory
@@ -108,7 +103,7 @@ function alternating_linear_minimization(
         line_search_type = line_search isa Tuple ? [typeof(a) for a in line_search] : typeof(line_search)
         println("MEMORY_MODE: $memory_mode STEPSIZE: $line_search_type EPSILON: $epsilon MAXITERATION: $max_iteration")
         println("TYPE: $num_type GRADIENTTYPE: $grad_type")
-        println("MOMENTUM: $momentum LAMBDA: $lambda")
+        println("LAMBDA: $lambda")
 
         if memory_mode isa InplaceEmphasis
             @info("In memory_mode memory iterates are written back into x0!")
@@ -167,7 +162,11 @@ function alternating_linear_minimization(
         verbose=false, # Suppress inner verbose output
         trajectory=trajectory,
         callback=callback,
+        max_iteration=max_iteration,
         print_iter=print_iter,
+        epsilon=epsilon,
+        memory_mode=memory_mode,
+        line_search=line_search,
         kwargs...,
     )
 

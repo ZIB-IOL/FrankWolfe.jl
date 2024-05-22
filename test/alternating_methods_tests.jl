@@ -99,7 +99,7 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
     x, v, primal, dual_gap, traj_data = FrankWolfe.alternating_linear_minimization(
         FrankWolfe.block_coordinate_frank_wolfe,
         x -> 0,
-        (storage, x) -> zero(x),
+        (storage, x) -> storage .= zero(x),
         (lmo1, lmo3),
         ones(n),
         verbose=true,
