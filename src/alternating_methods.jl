@@ -80,6 +80,10 @@ function alternating_linear_minimization(
 
     f_bc(x) = sum(f(x.blocks[i]) for i in 1:N) + lambda * dist2(x)
 
+    gradient = similar(x0_bc)
+    grad_bc!(gradient, x0_bc)
+    @info("Initialisation", x0_bc, gradient)
+
     dist2_data = []
     if trajectory
         function make_dist2_callback(callback)
