@@ -363,7 +363,7 @@ end
 
 
 """
-    OrderWeightNormLMO(W,R)
+    OrderWeightNormLMO(weights,radius)
     
 LMO with feasible set being the atomic ordered weighted l1 norm: https://arxiv.org/pdf/1409.4271
 
@@ -382,11 +382,11 @@ end
 function OrderWeightNormLMO(weights, radius)
     N = length(weights)
     mat = zeros(N,N)
-    sum = 0
-    for i in range(1,N)
-        sum += weights[i]
-        for j in range(1,i)
-            mat[i,j] = 1 / sum
+    s = zero(eltype(weights))
+    for i in 1:N
+        s += weights[i]
+        for j in 1:i
+            mat[i,j] = 1 / s
         end
     end
     perm_indices = sortperm(weights,rev=true)
@@ -404,7 +404,7 @@ function compute_extreme_point(
     max = 0
     ind = 1
     N = length(lmo.weights)
-    for i in range(1,N)
+    for i in 1:N
         scal = dot(lmo.mat_B[i,:],direction_abs[perm_grad])
         if(scal > max)
             max = scal
