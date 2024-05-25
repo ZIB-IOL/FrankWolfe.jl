@@ -17,10 +17,6 @@ struct MathOptLMO{OT<:MOI.AbstractOptimizer} <: LinearMinimizationOracle
     use_modify::Bool
     function MathOptLMO(o, use_modify=true)
         MOI.set(o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
-    
-        #silent it
-        MOI.set(o, MOI.Silent(), true)
-        
         return new{typeof(o)}(o, use_modify)
     end
 end
@@ -113,12 +109,10 @@ function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x; kwargs.
         valvar(f) = x[f.value]
         const_list = MOI.get(lmo.o, MOI.ListOfConstraintIndices{F,S}())
         for c_idx in const_list
-            if !(S <: MOI.ZeroOne)
-                func = MOI.get(lmo.o, MOI.ConstraintFunction(), c_idx)
-                val = MOIU.eval_variables(valvar, func)
-                set = MOI.get(lmo.o, MOI.ConstraintSet(), c_idx)
-                set_constraint(lmo2.o, S, func, val, set, var_constraint_list)
-            end  
+            func = MOI.get(lmo.o, MOI.ConstraintFunction(), c_idx)
+            val = MOIU.eval_variables(valvar, func)
+            set = MOI.get(lmo.o, MOI.ConstraintSet(), c_idx)
+            set_constraint(lmo2.o, S, func, val, set, var_constraint_list)  
         end
     end
     MOI.set(lmo2.o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
@@ -197,6 +191,7 @@ function compute_inface_extreme_point!(lmo::MathOptLMO{OT}, direction, x; kwargs
     MOI.empty!(lmo2.o)
     return a
 end
+
 
 function dicg_maximum_step(lmo::MathOptLMO{OT}, x, direction; exactness=1000, atol=1e-16) where {OT}
     gamma_max = 0.0
@@ -287,6 +282,51 @@ function is_constraints_feasible(lmo::MathOptLMO{OT}, x; atol=1e-7) where {OT}
         return [false, on_lowerbound_idx_value,on_upperbound_idx_value]
     end
 end
+
+# Fast way to compute gamma_max.
+# Check every constraint and compute the corresponding gamma_upper_bound. 
+function dicg_maximum_step!(lmo::MathOptLMO{OT}, x, direction) where {OT}
+    gamma_less_than = []
+    for (F, S) in MOI.get(lmo.o, MOI.ListOfConstraintTypesPresent())
+        valvar(f) = x[f.value]
+        valvar_(f) = direction[f.value]
+        const_list = MOI.get(lmo.o, MOI.ListOfConstraintIndices{F,S}())
+        
+        # Constraints need to satisfy g(x+γ*d) ∈ ConstraintSet.
+        # Since constraints function is linear, g(x) +γ * g(d) ∈ ConstraintSet.
+        for c_idx in const_list
+            func = MOI.get(lmo.o, MOI.ConstraintFunction(), c_idx)
+            # Compute g(x).
+            val = MOIU.eval_variables(valvar, func)
+            # Compute g(d).
+            val_d = MOIU.eval_variables(valvar_, func)
+            set = MOI.get(lmo.o, MOI.ConstraintSet(), c_idx)
+            if S <: MOI.Interval
+                if val_d < 0.0
+                    upper_bound_gamma = (val - set.upper) / val_d
+                    push!(gamma_less_than, upper_bound_gamma)
+                end
+                if val_d > 0.0
+                    upper_bound_gamma = (val - set.lower) / val_d
+                    push!(gamma_less_than, upper_bound_gamma)
+                end
+            end
+
+            if S <: MOI.LessThan
+                if val_d < 0.0
+                    upper_bound_gamma = (val - set.upper) / val_d
+                    push!(gamma_less_than, upper_bound_gamma)
+                end
+            end
+
+            if S <: MOI.GreaterThan
+                if val_d > 0.0
+                    upper_bound_gamma = (val - set.lower) / val_d
+                    push!(gamma_less_than, upper_bound_gamma)
+                end
+            end
+        end
+    end
 
 function Base.copy(lmo::MathOptLMO{OT}; ensure_identity=true) where {OT}
     opt = OT() # creates the empty optimizer
