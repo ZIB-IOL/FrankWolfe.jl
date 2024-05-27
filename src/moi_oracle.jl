@@ -124,7 +124,7 @@ end
 
 # Second version of compute_inface_extreme_point.
 # Copy and modify the constriants if necesssary.
-function compute_inface_extreme_point!(lmo::MathOptLMO{OT}, direction, x; kwargs...) where {OT}
+function compute_inface_extreme_point!(lmo::MathOptLMO{OT}, direction, x;solve_data=Dict(), kwargs...) where {OT}
     lmo2 = copy(lmo)
     MOI.set(lmo2.o, MOI.Silent(), true)
     variables = MOI.get(lmo2.o, MOI.ListOfVariableIndices())
@@ -183,6 +183,14 @@ function compute_inface_extreme_point!(lmo::MathOptLMO{OT}, direction, x; kwargs
                     MOI.add_constraint(lmo2.o, func, MOI.EqualTo(set.lower))
                 end
             end
+        end
+    end
+    # Check if extra information needs to be updated
+    
+    if !isempty(solve_data)
+        for attribute in keys(solve_data)
+            val = MOI.get(lmo2.o, attribute)
+            solve_data[attribute] = val
         end
     end
     MOI.set(lmo2.o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
