@@ -595,7 +595,7 @@ function block_coordinate_frank_wolfe(
 
 
         t = t + 1
-        if callback !== nothing
+        if callback !== nothing || update_order isa CyclicUpdate
             state = CallbackState(
                 t,
                 primal,
@@ -612,9 +612,11 @@ function block_coordinate_frank_wolfe(
                 gradient,
                 tt,
             )
-            # @show state
-            if callback(state, dual_gaps) === false
-                break
+            if callback !== nothing
+                # @show state
+                if callback(state, dual_gaps) === false
+                    break
+                end
             end
         end
 
