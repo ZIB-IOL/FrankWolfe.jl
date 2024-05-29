@@ -53,9 +53,13 @@ function alternating_linear_minimization(
     verbose=false,
     trajectory=false,
     callback=nothing,
-    print_iter=1e3,
+    max_iteration=10000,
+    print_iter = max_iteration / 10,
+    memory_mode=InplaceEmphasis(),
+    line_search::LS=Adaptive(),
+    epsilon=1e-7,
     kwargs...,
-) where {N}
+) where {N, LS<:Union{LineSearchMethod,NTuple{N,LineSearchMethod}}}
 
     x0_bc = BlockVector([x0[i] for i in 1:N], [size(x0[i]) for i in 1:N], sum(length, x0))
     gradf = similar(x0_bc)
@@ -92,19 +96,62 @@ function alternating_linear_minimization(
 
     if verbose
         println("\nAlternating Linear Minimization (ALM).")
-        print("LAMBDA: $lambda")
+        println("FW METHOD: $bc_method")
 
-        format_string = "%14e\n"
-        headers = ("Dist2",)
-        format_state(state, args...) = (Float64(dist2(state.x)),)
+        num_type = eltype(x0[1])
+        grad_type = eltype(gradf.blocks[1])
+        line_search_type = line_search isa Tuple ? [typeof(a) for a in line_search] : typeof(line_search)
+        println("MEMORY_MODE: $memory_mode STEPSIZE: $line_search_type EPSILON: $epsilon MAXITERATION: $max_iteration")
+        println("TYPE: $num_type GRADIENTTYPE: $grad_type")
+        println("LAMBDA: $lambda")
 
-        callback = make_print_callback_extension(
-            callback,
-            print_iter,
-            headers,
-            format_string,
-            format_state,
-        )
+        if memory_mode isa InplaceEmphasis
+            @info("In memory_mode memory iterates are written back into x0!")
+        end
+
+        # header and format string for output of the algorithm
+        headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "Dist2"]
+        format_string = "%6s %13s %14e %14e %14e %14e %14e %14e\n"
+
+        function format_state(state, args...)
+            rep = (
+                st[Symbol(state.tt)],
+                string(state.t),
+                Float64(state.primal),
+                Float64(state.primal - state.dual_gap),
+                Float64(state.dual_gap),
+                state.time,
+                state.t / state.time,
+                Float64(dist2(state.x)),
+            )
+
+            if bc_method in
+               [away_frank_wolfe, blended_pairwise_conditional_gradient, pairwise_frank_wolfe]
+                add_rep = (length(args[1]))
+            elseif bc_method === blended_conditional_gradient
+                add_rep = (length(args[1]), args[2])
+            elseif bc_method === stochastic_frank_wolfe
+                add_rep = (args[1],)
+            else
+                add_rep = ()
+            end
+
+            return (rep..., add_rep...)
+        end
+
+        if bc_method in
+           [away_frank_wolfe, blended_pairwise_conditional_gradient, pairwise_frank_wolfe]
+            push!(headers, "#ActiveSet")
+            format_string = format_string[1:end-1] * " %14i\n"
+        elseif bc_method === blended_conditional_gradient
+            append!(headers, ["#ActiveSet", "#non-simplex"])
+            format_string = format_string[1:end-1] * " %14i %14i\n"
+        elseif bc_method === stochastic_frank_wolfe
+            push!(headers, "Batch")
+            format_string = format_string[1:end-1] * " %6i\n"
+        end
+
+        callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
     end
 
     x, v, primal, dual_gap, traj_data = bc_method(
@@ -112,19 +159,21 @@ function alternating_linear_minimization(
         grad_bc!,
         prod_lmo,
         x0_bc;
-        verbose=verbose,
+        verbose=false, # Suppress inner verbose output
         trajectory=trajectory,
         callback=callback,
+        max_iteration=max_iteration,
         print_iter=print_iter,
+        epsilon=epsilon,
+        memory_mode=memory_mode,
+        line_search=line_search,
         kwargs...,
     )
 
     if trajectory
-        traj_data = [(t...,dist2_data[i]) for (i,t) in enumerate(traj_data)]
-        return x, v, primal, dual_gap, dist2(x), traj_data
-    else
-        return x, v, primal, dual_gap, dist2(x), traj_data
+        traj_data = [(t..., dist2_data[i]) for (i, t) in enumerate(traj_data)]
     end
+    return x, v, primal, dual_gap, dist2(x), traj_data
 end
 
 
