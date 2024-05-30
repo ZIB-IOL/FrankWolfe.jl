@@ -382,7 +382,7 @@ end
 
 function OrderWeightNormLMO(weights, radius)
     N = length(weights)
-    mat = zeros(N,N)
+    mat = zeros(eltype(weights),N,N)
     s = zero(eltype(weights))
     for i in 1:N
         s += weights[i]
@@ -398,7 +398,7 @@ end
 function compute_extreme_point(
     lmo::OrderWeightNormLMO,
     direction::M;
-    v=similar(direction),
+    v=nothing,
     kwargs...,
 ) where {M}
     for i in eachindex(direction)
