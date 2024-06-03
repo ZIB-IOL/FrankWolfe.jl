@@ -66,15 +66,17 @@ function Base.push!(as::AbstractActiveSet, (λ, a))
 end
 
 function Base.deleteat!(as::AbstractActiveSet, idx)
-    deleteat!(as.weights, idx)
-    deleteat!(as.atoms, idx)
+    # WARNING assumes that idx is sorted
+    for (i, j) in enumerate(idx)
+        deleteat!(as, j-i+1)
+    end
     return as
 end
 
-function Base.setindex!(as::AbstractActiveSet, tup::Tuple, idx)
-    as.weights[idx] = tup[1]
-    as.atoms[idx] = tup[2]
-    return tup
+function Base.deleteat!(as::AbstractActiveSet, idx::Int)
+    deleteat!(as.atoms, idx)
+    deleteat!(as.weights, idx)
+    return as
 end
 
 function Base.empty!(as::AbstractActiveSet)
@@ -108,10 +110,8 @@ function active_set_update!(active_set::AbstractActiveSet, lambda, atom, renorm=
     if idx === nothing
         idx = find_atom(active_set, atom)
     end
-    updating = false
     if idx > 0
-        @inbounds active_set.weights[idx] = active_set.weights[idx] + lambda
-        updating = true
+        @inbounds active_set.weights[idx] += lambda
     else
         push!(active_set, (lambda, atom))
     end
@@ -138,14 +138,14 @@ function active_set_update_scale!(x::IT, lambda, atom::SparseArrays.SparseVector
     @. x *= (1 - lambda)
     nzvals = SparseArrays.nonzeros(atom)
     nzinds = SparseArrays.nonzeroinds(atom)
-    for idx in eachindex(nzvals)
+    @inbounds for idx in eachindex(nzvals)
         x[nzinds[idx]] += lambda * nzvals[idx]
     end
     return x
 end
 
 """
-    active_set_update_iterate_pairwise!(x, lambda, fw_atom, away_atom)
+    active_set_update_iterate_pairwise!(active_set, x, lambda, fw_atom, away_atom)
 
 Operates `x ← x + λ a_fw - λ a_aw`.
 """
@@ -155,7 +155,7 @@ function active_set_update_iterate_pairwise!(x::IT, lambda::Real, fw_atom::A, aw
 end
 
 function active_set_validate(active_set::AbstractActiveSet)
-    return sum(active_set.weights) ≈ 1.0 && all(>=(0), active_set.weights)
+    return sum(active_set.weights) ≈ 1.0 && all(≥(0), active_set.weights)
 end
 
 function active_set_renormalize!(active_set::AbstractActiveSet)
@@ -223,13 +223,13 @@ end
 function active_set_cleanup!(active_set; weight_purge_threshold=1e-12, update=true, add_dropped_vertices=false, vertex_storage=nothing)
     if add_dropped_vertices && vertex_storage !== nothing
         for (weight, v) in zip(active_set.weights, active_set.atoms)
-            if weight <= weight_purge_threshold
+            if weight ≤ weight_purge_threshold
                 push!(vertex_storage, v)
             end
         end
     end
-
-    filter!(e -> e[1] > weight_purge_threshold, active_set)
+    # one cannot use a generator as deleteat! modifies active_set in place
+    deleteat!(active_set, [idx for idx in eachindex(active_set) if active_set.weights[idx] ≤ weight_purge_threshold])
     if update
         compute_active_set_iterate!(active_set)
     end
@@ -252,18 +252,19 @@ Computes the linear minimizer in the direction on the active set.
 Returns `(λ_i, a_i, i)`
 """
 function active_set_argmin(active_set::AbstractActiveSet, direction)
-    val = dot(active_set.atoms[1], direction)
-    idx = 1
-    temp = 0
-    for i in 2:length(active_set)
-        temp = fast_dot(active_set.atoms[i], direction)
-        if temp < val
-            val = temp
-            idx = i
+    valm = typemax(eltype(direction))
+    idxm = -1
+    @inbounds for i in eachindex(active_set)
+        val = fast_dot(active_set.atoms[i], direction)
+        if val < valm
+            valm = val
+            idxm = i
         end
     end
-    # return lambda, vertex, index
-    return (active_set[idx]..., idx)
+    if idxm == -1
+        error("Infinite minimum $valm in the active set. Does the gradient contain invalid (NaN / Inf) entries?")
+    end
+    return (active_set[idxm]..., idxm)
 end
 
 """
@@ -273,27 +274,26 @@ Computes the linear minimizer in the direction on the active set.
 Returns `(λ_min, a_min, i_min, val_min, λ_max, a_max, i_max, val_max, val_max-val_min ≥ Φ)`
 """
 function active_set_argminmax(active_set::AbstractActiveSet, direction; Φ=0.5)
-    val = Inf
-    valM = -Inf
-    idx = -1
+    valm = typemax(eltype(direction))
+    valM = typemin(eltype(direction))
+    idxm = -1
     idxM = -1
-    for i in eachindex(active_set)
-        temp_val = fast_dot(active_set.atoms[i], direction)
-        if temp_val < val
-            val = temp_val
-            idx = i
+    @inbounds for i in eachindex(active_set)
+        val = fast_dot(active_set.atoms[i], direction)
+        if val < valm
+            valm = val
+            idxm = i
         end
-        if valM < temp_val
-            valM = temp_val
+        if valM < val
+            valM = val
             idxM = i
         end
     end
-    if idx == -1 || idxM == -1
-        error("Infinite minimum $val or maximum $valM in the active set. Does the gradient contain invalid (NaN / Inf) entries?")
+    if idxm == -1 || idxM == -1
+        error("Infinite minimum $valm or maximum $valM in the active set. Does the gradient contain invalid (NaN / Inf) entries?")
     end
-    return (active_set[idx]..., idx, val, active_set[idxM]..., idxM, valM, valM - val ≥ Φ)
+    return (active_set[idxm]..., idxm, valm, active_set[idxM]..., idxM, valM, valM - valm ≥ Φ)
 end
-
 
 """
     active_set_initialize!(as, v)
