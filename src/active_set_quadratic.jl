@@ -209,8 +209,7 @@ function active_set_renormalize!(active_set::ActiveSetQuadratic)
     renorm = sum(active_set.weights)
     active_set.weights ./= renorm
     active_set.weights_prev ./= renorm
-    # TODO check if it's necessary to recompute dots_x
-    # to prevent discrepancy due to numerical errors
+    # WARNING: it might sometimes be necessary to recompute dots_x to prevent discrepancy due to numerical errors
     active_set.dots_x ./= renorm
     return active_set
 end
