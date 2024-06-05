@@ -48,10 +48,6 @@ function detect_quadratic_function(grad!, x0; test=true)
     return A, b
 end
 
-# ActiveSetQuadratic{AT,R}() where {AT,R} = ActiveSetQuadratic{AT,R,Vector{float(eltype(AT))}}([], [])
-
-# ActiveSetQuadratic{AT}() where {AT} = ActiveSetQuadratic{AT,Float64,Vector{float(eltype(AT))}}()
-
 function ActiveSetQuadratic(tuple_values::AbstractVector{Tuple{R,AT}}, grad!) where {AT,R}
     return ActiveSetQuadratic(tuple_values, detect_quadratic_function(grad!, tuple_values[1][2])...)
 end
