@@ -76,6 +76,64 @@ function ActiveSetQuadratic(tuple_values::AbstractVector{Tuple{R,AT}}, A::H, b) 
     return as
 end
 
+# warm-start with a standard active set
+function ActiveSetQuadratic(warm_as::ActiveSet{AT,R}, A::H, b) where {AT,R,H}
+    n = length(warm_as)
+    dots_x = zeros(R, n)
+    dots_A = Vector{Vector{R}}(undef, n)
+    dots_b = Vector{R}(undef, n)
+    weights_prev = zeros(R, n)
+    modified = trues(n)
+    @inbounds for idx in 1:n
+        dots_A[idx] = Vector{R}(undef, idx)
+        for idy in 1:idx
+            dots_A[idx][idy] = fast_dot(A * warm_as.atoms[idx], warm_as.atoms[idy])
+        end
+        dots_b[idx] = fast_dot(b, warm_as.atoms[idx])
+    end
+    x = similar(warm_as.atoms[1], float(eltype(warm_as.atoms[1])))
+    as = ActiveSetQuadratic{AT,R,typeof(x),H}(warm_as.weights, warm_as.atoms, x, A, b, dots_x, dots_A, dots_b, weights_prev, modified)
+    compute_active_set_iterate!(as)
+    return as
+end
+
+# warm-start with a quadratic active set and different A and b
+function ActiveSetQuadratic(warm_as::ActiveSetQuadratic{AT,R}, A::H, b) where {AT,R,H}
+    n = length(warm_as)
+    dots_x = zeros(R, n)
+    dots_A = Vector{Vector{R}}(undef, n)
+    dots_b = Vector{R}(undef, n)
+    weights_prev = zeros(R, n)
+    modified = trues(n)
+    @inbounds for idx in 1:n
+        dots_A[idx] = Vector{R}(undef, idx)
+        for idy in 1:idx
+            dots_A[idx][idy] = fast_dot(A * warm_as.atoms[idx], warm_as.atoms[idy])
+        end
+        dots_b[idx] = fast_dot(b, warm_as.atoms[idx])
+    end
+    x = similar(warm_as.atoms[1], float(eltype(warm_as.atoms[1])))
+    as = ActiveSetQuadratic{AT,R,typeof(x),H}(warm_as.weights, warm_as.atoms, x, A, b, dots_x, dots_A, dots_b, weights_prev, modified)
+    compute_active_set_iterate!(as)
+    return as
+end
+
+# warm-start with a quadratic active set and a different b
+function ActiveSetQuadratic(warm_as::ActiveSetQuadratic{AT,R,IT,H}, b) where {AT,R,IT,H}
+    n = length(warm_as)
+    dots_x = zeros(R, n)
+    dots_b = Vector{R}(undef, n)
+    weights_prev = zeros(R, n)
+    modified = trues(n)
+    @inbounds for idx in 1:n
+        dots_b[idx] = fast_dot(b, warm_as.atoms[idx])
+    end
+    x = similar(warm_as.atoms[1], float(eltype(warm_as.atoms[1])))
+    as = ActiveSetQuadratic{AT,R,typeof(x),H}(warm_as.weights, warm_as.atoms, x, warm_as.A, b, dots_x, warm_as.dots_A, dots_b, weights_prev, modified)
+    compute_active_set_iterate!(as)
+    return as
+end
+
 function ActiveSetQuadratic{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}, grad!) where {AT,R}
     return ActiveSetQuadratic{AT,R}(tuple_values, detect_quadratic_function(grad!, tuple_values[1][2])...)
 end
