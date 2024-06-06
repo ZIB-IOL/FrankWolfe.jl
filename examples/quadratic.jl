@@ -2,19 +2,18 @@ using LinearAlgebra
 using FrankWolfe
 using Random
 
-# Example of speedup using the symmetry reduction
-# See arxiv.org/abs/2302.04721 for the context
-# and arxiv.org/abs/2310.20677 for further symmetrisation
-# The symmetry exploited is the invariance of a tensor
-# by exchange of the dimensions
+# Example of speedup using the quadratic active set
+# This is exactly the same as in the literate example #12,
+# but in the bipartite case and with a heuristic LMO
+# The size of the instance is then higher, making the acceleration more visible
 
-struct BellCorrelationsLMO{T} <: FrankWolfe.LinearMinimizationOracle
+struct BellCorrelationsLMOHeuristic{T} <: FrankWolfe.LinearMinimizationOracle
     m::Int # number of inputs
     tmp::Vector{T} # used to compute scalar products
 end
 
 function FrankWolfe.compute_extreme_point(
-    lmo::BellCorrelationsLMO{T},
+    lmo::BellCorrelationsLMOHeuristic{T},
     A::Array{T, 2};
     kwargs...,
     ) where {T <: Number}
@@ -71,7 +70,7 @@ function benchmark_Bell(p::Array{T, 2}, quadratic::Bool; fw_method=FrankWolfe.bl
             end
         end
     end
-    function reynolds_permutedims(atom::Array{Int, 2}, lmo::BellCorrelationsLMO{T}) where {T <: Number}
+    function reynolds_permutedims(atom::Array{Int, 2}, lmo::BellCorrelationsLMOHeuristic{T}) where {T <: Number}
         res = zeros(T, size(atom))
         for per in [[1, 2], [2, 1]]
             res .+= permutedims(atom, per)
@@ -79,10 +78,10 @@ function benchmark_Bell(p::Array{T, 2}, quadratic::Bool; fw_method=FrankWolfe.bl
         res ./= 2
         return res
     end
-    function reynolds_adjoint(gradient::Array{T, 2}, lmo::BellCorrelationsLMO{T}) where {T <: Number}
+    function reynolds_adjoint(gradient::Array{T, 2}, lmo::BellCorrelationsLMOHeuristic{T}) where {T <: Number}
         return gradient # we can spare symmetrising the gradient as it remains symmetric throughout the algorithm
     end
-    lmo = BellCorrelationsLMO{T}(size(p, 1), zeros(T, size(p, 1)))
+    lmo = BellCorrelationsLMOHeuristic{T}(size(p, 1), zeros(T, size(p, 1)))
     x0 = FrankWolfe.compute_extreme_point(lmo, -p)
     if quadratic
         active_set = FrankWolfe.ActiveSetQuadratic([(one(T), x0)], I, -p)
