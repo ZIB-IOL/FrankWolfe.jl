@@ -372,10 +372,9 @@ C = {x ∈ R^n, Ω_w(x) ≤ R}
 ```
 
 """
-struct OrderWeightNormLMO{W,R,P,B,D} <: LinearMinimizationOracle
+struct OrderWeightNormLMO{W,R,B,D} <: LinearMinimizationOracle
     weights::W
     radius::R
-    perm_indices::P
     mat_B::B
     direction_abs::D
 end
@@ -384,15 +383,15 @@ function OrderWeightNormLMO(weights, radius)
     N = length(weights)
     mat = zeros(eltype(weights),N,N)
     s = zero(eltype(weights))
+    w_sort = sort(weights,rev=true)
     for i in 1:N
-        s += weights[i]
+        s += w_sort[i]
         for j in 1:i
             mat[i,j] = 1 / s
         end
     end
-    perm_indices = sortperm(weights,rev=true)
     direction_abs = similar(weights)
-    return OrderWeightNormLMO(weights, radius, perm_indices, mat, direction_abs)
+    return OrderWeightNormLMO(weights, radius, mat, direction_abs)
 end
 
 function compute_extreme_point(
