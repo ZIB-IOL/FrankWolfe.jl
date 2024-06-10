@@ -21,8 +21,9 @@ import LinearAlgebra
 import Tullio
 
 # Then we can define our custom LMO, together with the method `compute_extreme_point`,
-# which is simply enumerating the vertices ``d^{\vec{a}^{(1)}`` defined above.
+# which is simply enumerating the vertices ``d^{\vec{a}^{(1)}}`` defined above.
 # This structure is specialized for the case `N=5` and contains pre-allocated fields used to accelerate the enumeration.
+# Note that the output type (full tensor) is quite naive, but this is enough to illustrate the syntax in this toy example.
 
 struct BellCorrelationsLMO{T} <: FrankWolfe.LinearMinimizationOracle
     m::Int # size of the tensor
@@ -91,6 +92,7 @@ verbose = true
 m = 4
 p = 0.23correlation_tensor_GHZ_polygon(T, 5, m)
 x0 = zeros(T, size(p))
+println() #hide
 
 # The objective function is simply ``\frac12\|x-p\|_2^2``, which we decompose in different terms for speed.
 
@@ -105,6 +107,7 @@ grad! = let p = p
         end
     end
 end
+println() #hide
 
 # ## Naive run
 
@@ -112,27 +115,27 @@ end
 
 lmo_naive = BellCorrelationsLMO{T}(m, zeros(T, m), zeros(T, m, m), zeros(T, m, m, m), zeros(T, m, m, m, m))
 as_naive = FrankWolfe.ActiveSet([(one(T), x0)])
-FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_naive, as_naive; verbose=false, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration=10) #hide
+FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_naive, as_naive; verbose=false, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration=100) #hide
 @time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_naive, as_naive; verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)))
-println()
+println() #hide
 
 # ## Faster active set for quadratic functions
 
-# A first acceleration can be obtained by using the specialized active set for the quadratic objective function,
-# whose gradient is here ``x-p``, explaining the hessian linear part provided as arguments.
+# A first acceleration can be obtained by using the active set specialized for the quadratic objective function,
+# whose gradient is here ``x-p``, explaining the hessian and linear part provided as arguments.
 # The speedup is obtained by pre-computing some scalar products to quickly obtained, in each iteration, the best and worst
 # atoms currently in the active set.
 
 asq_naive = FrankWolfe.ActiveSetQuadratic([(one(T), x0)], LinearAlgebra.I, -p)
-FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_naive, asq_naive; verbose=false, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration=10) #hide
+FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_naive, asq_naive; verbose=false, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration=100) #hide
 @time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_naive, asq_naive; verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)))
-println()
+println() #hide
 
-# In this toy example, the acceleration is quite minimal, but as soon as one of the following conditions is met,
+# In this small example, the acceleration is quite minimal, but as soon as one of the following conditions is met,
 # significant speedups (factor ten at least) can be observed:
-# - quite expensive scalar product between atoms, for instance, due to a high dimension (say, more than ``10^4``)
-# - high number of atoms in the active set (say, more than ``10^3``)
-# - high number of iterations (say, more than ``10^5``), spending most of the time redistributing the weights in the active set
+# - quite expensive scalar product between atoms, for instance, due to a high dimension (say, more than 10000),
+# - high number of atoms in the active set (say, more than 1000),
+# - high number of iterations (say, more than 100000), spending most of the time redistributing the weights in the active set.
 
 # ## Dimension reduction via symmetrization
 
@@ -143,9 +146,9 @@ println()
 # owing to the reduced dimension (hence reduced size of the final active set and reduced number of iterations).
 
 # The way to operate this in the `FrankWolfe` package is to use a symmetrized LMO, which basically does the following:
-# - symmetrize the gradient using `reynolds_adjoint`, which is not necessary here as the gradient remains symmetric throughout the algorithm.
-# - call the standard LMO
-# - symmetrize its output, which amounts to averaging over its orbit with respect to the group considered (here the symmetric group permuting the dimensions of the tensor)
+# - symmetrize the gradient using `reynolds_adjoint`, which is not necessary here as the gradient remains symmetric throughout the algorithm,
+# - call the standard LMO,
+# - symmetrize its output, which amounts to averaging over its orbit with respect to the group considered (here the symmetric group permuting the dimensions of the tensor).
 
 function reynolds_adjoint(gradient::Array{T, N}, lmo::BellCorrelationsLMO{T}) where {T <: Number, N}
     return gradient
@@ -162,9 +165,9 @@ end
 
 lmo_permutedims = FrankWolfe.SymmetricLMO(lmo_naive, reynolds_permutedims, reynolds_adjoint)
 asq_permutedims = FrankWolfe.ActiveSetQuadratic([(one(T), x0)], LinearAlgebra.I, -p)
-FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_permutedims, asq_permutedims; verbose=false, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration=10) #hide
+FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_permutedims, asq_permutedims; verbose=false, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration=100) #hide
 @time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_permutedims, asq_permutedims; verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)))
-println()
+println() #hide
 
 # ### Uniqueness pattern
 
@@ -172,8 +175,8 @@ println()
 # Its action roughly allows us to work in the subspace respecting the structure of the objective point `p`, that is,
 # to average over tensor entries that have the same value in `p`.
 # Although quite general, this kind of symmetry is not always applicable, and great care has to be taken when using it, in particular,
-# to ensure that there exist a suitable group action whose Reynolds operator corresponds to this averaging procedure.
-# Here, the theoretical study enabling this further symmetrization can be found [here](https://arxiv.org/abs/2310.20677).
+# to ensure that there exists a suitable group action whose Reynolds operator corresponds to this averaging procedure.
+# In our current case, the theoretical study enabling this further symmetrization can be found [here](https://arxiv.org/abs/2310.20677).
 
 function build_reynolds_unique(p::Array{T, N}) where {T <: Number, N}
     ptol = round.(p; digits=8)
@@ -193,6 +196,6 @@ end
 
 lmo_unique = FrankWolfe.SymmetricLMO(lmo_naive, build_reynolds_unique(p), reynolds_adjoint)
 asq_unique = FrankWolfe.ActiveSetQuadratic([(one(T), x0)], LinearAlgebra.I, -p)
-FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_unique, asq_unique; verbose=false, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration=10) #hide
+FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_unique, asq_unique; verbose=false, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration=100) #hide
 @time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_unique, asq_unique; verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)))
-println()
+println() #hide
