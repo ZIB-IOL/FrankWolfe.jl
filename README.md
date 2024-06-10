@@ -42,7 +42,7 @@ julia> f(p) = sum(abs2, p)  # objective function
 
 julia> grad!(storage, p) = storage .= 2p  # in-place gradient computation
 
-# # function d ⟻ argmin ⟨p,d⟩ st. p ∈ Δ
+# # function d ⟼ argmin ⟨p,d⟩ st. p ∈ Δ
 julia> lmo = FrankWolfe.ProbabilitySimplexOracle(1.)
 
 julia> p0 = [1., 0., 0.]
