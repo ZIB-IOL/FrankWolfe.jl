@@ -32,11 +32,7 @@ struct BellCorrelationsLMO{T} <: FrankWolfe.LinearMinimizationOracle
     tmp4::Array{T, 4}
 end
 
-function FrankWolfe.compute_extreme_point(
-    lmo::BellCorrelationsLMO{T},
-    A::Array{T, 5};
-    kwargs...,
-) where {T <: Number}
+function FrankWolfe.compute_extreme_point(lmo::BellCorrelationsLMO{T}, A::Array{T, 5}; kwargs...) where {T <: Number}
     ax = [ones(T, lmo.m) for n in 1:5]
     sc1 = zero(T)
     sc2 = one(T)
@@ -74,7 +70,6 @@ function FrankWolfe.compute_extreme_point(
             end
         end
     end
-    # returning a full tensor is naturally naive, but this is only a toy example
     return [axm[1][x1]*axm[2][x2]*axm[3][x3]*axm[4][x4]*axm[5][x5] for x1 in 1:lmo.m, x2 in 1:lmo.m, x3 in 1:lmo.m, x4 in 1:lmo.m, x5 in 1:lmo.m]
 end
 
