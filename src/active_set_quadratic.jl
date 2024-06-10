@@ -48,11 +48,7 @@ function detect_quadratic_function(grad!, x0; test=true)
     return A, b
 end
 
-# ActiveSetQuadratic{AT,R}() where {AT,R} = ActiveSetQuadratic{AT,R,Vector{float(eltype(AT))}}([], [])
-
-# ActiveSetQuadratic{AT}() where {AT} = ActiveSetQuadratic{AT,Float64,Vector{float(eltype(AT))}}()
-
-function ActiveSetQuadratic(tuple_values::AbstractVector{Tuple{R,AT}}, grad!) where {AT,R}
+function ActiveSetQuadratic(tuple_values::AbstractVector{Tuple{R,AT}}, grad!::Function) where {AT,R}
     return ActiveSetQuadratic(tuple_values, detect_quadratic_function(grad!, tuple_values[1][2])...)
 end
 
@@ -284,3 +280,26 @@ function active_set_argminmax(active_set::ActiveSetQuadratic, direction; Φ=0.5)
     active_set.modified[idxM] = true
     return (active_set[idxm]..., idxm, valm, active_set[idxM]..., idxM, valM, valM - valm ≥ Φ)
 end
+
+# in-place warm-start of a quadratic active set for A and b
+function update_active_set_quadratic!(warm_as::ActiveSetQuadratic{AT,R}, A::H, b) where {AT,R,H}
+    @inbounds for idx in eachindex(warm_as)
+        for idy in 1:idx
+            warm_as.dots_A[idx][idy] = fast_dot(A * warm_as.atoms[idx], warm_as.atoms[idy])
+        end
+    end
+    return update_active_set_quadratic!(warm_as, b)
+end
+
+# in-place warm-start of a quadratic active set for b
+function update_active_set_quadratic!(warm_as::ActiveSetQuadratic{AT,R,IT,H}, b) where {AT,R,IT,H}
+    warm_as.dots_x .= 0
+    warm_as.weights_prev .= 0
+    warm_as.modified .= true
+    @inbounds for idx in eachindex(warm_as)
+        warm_as.dots_b[idx] = fast_dot(b, warm_as.atoms[idx])
+    end
+    compute_active_set_iterate!(warm_as)
+    return warm_as
+end
+
