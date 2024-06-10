@@ -117,6 +117,7 @@ end
 
 lmo_naive = BellCorrelationsLMO{T}(m, zeros(T, m), zeros(T, m, m), zeros(T, m, m, m), zeros(T, m, m, m, m))
 as_naive = FrankWolfe.ActiveSet([(one(T), x0)])
+FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_naive, as_naive; verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration=10) #hide
 @time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_naive, as_naive; verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)))
 println()
 
@@ -128,6 +129,7 @@ println()
 # atoms currently in the active set.
 
 asq_naive = FrankWolfe.ActiveSetQuadratic([(one(T), x0)], LinearAlgebra.I, -p)
+FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_naive, asq_naive; verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration=10) #hide
 @time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_naive, asq_naive; verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)))
 println()
 
@@ -165,6 +167,7 @@ end
 
 lmo_permutedims = FrankWolfe.SymmetricLMO(lmo_naive, reynolds_permutedims, reynolds_adjoint)
 asq_permutedims = FrankWolfe.ActiveSetQuadratic([(one(T), x0)], LinearAlgebra.I, -p)
+FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_permutedims, asq_permutedims; verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration=10) #hide
 @time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_permutedims, asq_permutedims; verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)))
 println()
 
@@ -195,5 +198,6 @@ end
 
 lmo_unique = FrankWolfe.SymmetricLMO(lmo_naive, build_reynolds_unique(p), reynolds_adjoint)
 asq_unique = FrankWolfe.ActiveSetQuadratic([(one(T), x0)], LinearAlgebra.I, -p)
+FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_unique, asq_unique; verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration=10) #hide
 @time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_unique, asq_unique; verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)))
 println()
