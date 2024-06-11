@@ -19,6 +19,7 @@ Profile = "9abbd945-dff8-562f-b5e8-e1ebf5ef1b79"
 ReverseDiff = "37e2e3b7-166d-5795-8a7a-e32c996b4267"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 ZipFile = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
+MathOptSetDistances = "3b969827-a86c-476c-9527-bb6f1a8fbad5"
 
 [compat]
 Documenter = "0.27"
