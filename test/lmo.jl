@@ -928,7 +928,7 @@ end
 end
 
 @testset "Ordered Weighted Norm LMO" begin
-    Random.seed!(1234)
+    Random.seed!(4321)
     N = Int(1e3)
     for _ in 1:10 
         radius = abs(randn())+1
