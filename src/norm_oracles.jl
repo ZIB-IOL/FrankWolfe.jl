@@ -372,27 +372,22 @@ C = {x ∈ R^n, Ω_w(x) ≤ R}
 ```
 
 """
-struct OrderWeightNormLMO{W,R,P,B,D} <: LinearMinimizationOracle
-    weights::W
+struct OrderWeightNormLMO{R,B,D} <: LinearMinimizationOracle
     radius::R
-    perm_indices::P
     mat_B::B
     direction_abs::D
 end
 
 function OrderWeightNormLMO(weights, radius)
     N = length(weights)
-    mat = zeros(N,N)
+    B = zeros(N)
     s = zero(eltype(weights))
     for i in 1:N
         s += weights[i]
-        for j in 1:i
-            mat[i,j] = 1 / s
-        end
+        B[i] = 1/s
     end
-    perm_indices = sortperm(weights,rev=true)
     direction_abs = similar(weights)
-    return OrderWeightNormLMO(weights, radius, perm_indices, mat, direction_abs)
+    return OrderWeightNormLMO(radius,B,direction_abs)
 end
 
 function compute_extreme_point(
@@ -407,14 +402,21 @@ function compute_extreme_point(
     perm_grad = sortperm(lmo.direction_abs,rev=true)
     max = 0
     ind = 1
-    N = length(lmo.weights)
+    N = length(lmo.mat_B)
     for i in 1:N
-        scal = dot(lmo.mat_B[i,:],lmo.direction_abs[perm_grad])
+        scal = 0
+        for k in 1:i
+            scal += lmo.mat_B[i]*(lmo.direction_abs[perm_grad])[k]
+        end
         if(scal > max)
             max = scal
             ind = i
         end
     end
-    v = (lmo.radius).*sign.(-1*direction).*((lmo.mat_B[ind,:])[sortperm(perm_grad)])
+    b = zeros(N)
+    for i in 1:ind
+        b[i] = lmo.mat_B[ind]
+    end
+    v = (lmo.radius).*sign.(-1*direction).*((b)[sortperm(perm_grad)])
     return v
 end
