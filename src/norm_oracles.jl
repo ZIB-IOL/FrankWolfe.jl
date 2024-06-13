@@ -380,15 +380,15 @@ end
 
 function OrderWeightNormLMO(weights, radius)
     N = length(weights)
-    B = zeros(N)
     s = zero(eltype(weights))
+    B = zeros(float(typeof(s)),N)
     w_sort = sort(weights,rev=true)
     for i in 1:N
         s += w_sort[i]
         B[i] = 1/s
     end
-    direction_abs = similar(weights)
-    return OrderWeightNormLMO(radius,B,direction_abs)
+    w_sort = similar(weights)
+    return OrderWeightNormLMO(radius,B,w_sort)
 end
 
 function compute_extreme_point(
@@ -401,16 +401,16 @@ function compute_extreme_point(
         lmo.direction_abs[i] = abs(direction[i])
     end
     perm_grad = sortperm(lmo.direction_abs,rev=true)
-    max = 0
+    scal_max = 0
     ind = 1
     N = length(lmo.mat_B)
     for i in 1:N
-        scal = 0
+        scal = zero(eltype(lmo.direction_abs[1]))
         for k in 1:i
             scal += lmo.mat_B[i]*(lmo.direction_abs[perm_grad])[k]
         end
-        if(scal > max)
-            max = scal
+        if(scal > scal_max)
+            scal_max = scal
             ind = i
         end
     end
@@ -418,6 +418,6 @@ function compute_extreme_point(
     for i in 1:ind
         b[i] = lmo.mat_B[ind]
     end
-    v = (lmo.radius).*sign.(-1*direction).*((b)[sortperm(perm_grad)])
+    v = (lmo.radius).*(-2*signbit.(-1*direction) + ones(N)).*((b)[sortperm(perm_grad)])
     return v
 end
