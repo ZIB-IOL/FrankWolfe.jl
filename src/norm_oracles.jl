@@ -402,7 +402,7 @@ function compute_extreme_point(
     end
     perm_grad = sortperm(lmo.direction_abs,rev=true)
     scal_max = 0
-    ind = 1
+    ind_max = 1
     N = length(lmo.mat_B)
     for i in 1:N
         scal = zero(eltype(lmo.direction_abs[1]))
@@ -411,12 +411,12 @@ function compute_extreme_point(
         end
         if(scal > scal_max)
             scal_max = scal
-            ind = i
+            ind_max = i
         end
     end
     b = zeros(N)
-    for i in 1:ind
-        b[i] = lmo.mat_B[ind]
+    for i in 1:ind_max
+        b[i] = lmo.mat_B[ind_max]
     end
     v = (lmo.radius).*(-2*signbit.(-1*direction) + ones(N)).*((b)[sortperm(perm_grad)])
     return v
