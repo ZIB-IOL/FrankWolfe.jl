@@ -224,8 +224,7 @@ end
         (lmo_nb, lmo_prob),
         ones(n),
         lambda=3.0,
-        verbose=true,
-        line_search=(FrankWolfe.Shortstep(2.0), FrankWolfe.Adaptive()),
+        line_search=(FrankWolfe.Shortstep(8.0), FrankWolfe.Adaptive()), # L-smooth in coordinates for L = 2+2*λ
         update_step=(FrankWolfe.BPCGStep(), FrankWolfe.FrankWolfeStep()),
     )
 
