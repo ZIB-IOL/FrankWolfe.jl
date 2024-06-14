@@ -21,7 +21,7 @@ function FrankWolfe.compute_extreme_point(
     axm = [zeros(Int, lmo.m) for n in 1:2]
     scm = typemax(T)
     for i in 1:100
-        rand!(ax[2], [-1, 1])
+        rand!(ax[1], [-1, 1])
         sc1 = zero(T)
         sc2 = one(T)
         while sc1 < sc2
@@ -58,6 +58,7 @@ function correlation_tensor_GHZ_polygon(N::Int, m::Int; type=Float64)
 end
 
 function benchmark_Bell(p::Array{T, 2}, quadratic::Bool; fw_method=FrankWolfe.blended_pairwise_conditional_gradient, kwargs...) where {T <: Number}
+    Random.seed!(0)
     normp2 = dot(p, p) / 2
     # weird syntax to enable the compiler to correctly understand the type
     f = let p = p, normp2 = normp2
@@ -69,17 +70,6 @@ function benchmark_Bell(p::Array{T, 2}, quadratic::Bool; fw_method=FrankWolfe.bl
                 storage[x] = xit[x] - p[x]
             end
         end
-    end
-    function reynolds_permutedims(atom::Array{Int, 2}, lmo::BellCorrelationsLMOHeuristic{T}) where {T <: Number}
-        res = zeros(T, size(atom))
-        for per in [[1, 2], [2, 1]]
-            res .+= permutedims(atom, per)
-        end
-        res ./= 2
-        return res
-    end
-    function reynolds_adjoint(gradient::Array{T, 2}, lmo::BellCorrelationsLMOHeuristic{T}) where {T <: Number}
-        return gradient # we can spare symmetrising the gradient as it remains symmetric throughout the algorithm
     end
     lmo = BellCorrelationsLMOHeuristic{T}(size(p, 1), zeros(T, size(p, 1)))
     x0 = FrankWolfe.compute_extreme_point(lmo, -p)
