@@ -254,3 +254,39 @@ Base.@propagate_inbounds function muladd_memory_mode(::InplaceEmphasis, x::Matri
     end
     return x
 end
+
+"""
+    SymmetricArray{T, N, DT}
+
+"""
+struct SymmetricArray{T,N,DT<:AbstractArray{T,N}} <: AbstractVector{T}
+    data::DT # full array to be symmetrised, will generally fall out of sync wrt vec
+    vec::Vector{T} # vector representing the array
+    mul::Vector{T} # multiplicities of the entries of vec in data, used to compute scalar products
+end
+
+Base.@propagate_inbounds function Base.getindex(A::SymmetricArray, i)
+    @boundscheck checkbounds(A.vec, i)
+    return @inbounds getindex(A.vec, i)
+end
+
+# TODO where is propagate_inbounds necessary?
+Base.@propagate_inbounds function Base.setindex!(A::SymmetricArray, x, i)
+    setindex!(A.vec, x, i)
+end
+
+Base.size(A::SymmetricArray) = size(A.vec)
+Base.eltype(A::SymmetricArray{T}) where {T} = T
+Base.similar(A::SymmetricArray) = SymmetricArray(similar(A.data), similar(A.vec), A.mul)
+Base.similar(A::SymmetricArray, ::Type{T}) where {T} = SymmetricArray(similar(A.data, T), similar(A.vec, T), convert.(T, A.mul))
+Base.collect(A::SymmetricArray) = SymmetricArray(collect(A.data), collect(A.vec), A.mul)
+Base.copyto!(dest::SymmetricArray, src::SymmetricArray) = copyto!(dest.vec, src.vec)
+Base.:*(scalar::Real, A::SymmetricArray) = SymmetricArray(A.data, x * A.vec, A.mul)
+Base.:+(A1::SymmetricArray{T}, A2::SymmetricArray{T}) where {T} = SymmetricArray(A1.data, A1.vec + A2.vec, A1.mul)
+Base.:-(A1::SymmetricArray{T}, A2::SymmetricArray{T}) where {T} = SymmetricArray(A1.data, A1.vec - A2.vec, A1.mul)
+Base.:-(A::SymmetricArray{T}) where {T} = SymmetricArray(A.data, -A.vec, A.mul)
+
+LinearAlgebra.dot(A1::SymmetricArray, A2::SymmetricArray) = dot(A1.vec, Diagonal(A1.mul), A2.vec)
+LinearAlgebra.norm(A::SymmetricArray) = sqrt(dot(A, A))
+
+Base.@propagate_inbounds Base.isequal(A1::SymmetricArray, A2::SymmetricArray) = isequal(A1.vec, A2.vec)
