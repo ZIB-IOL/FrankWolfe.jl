@@ -25,25 +25,114 @@ struct FullUpdate <: BlockCoordinateUpdateOrder end
 The cyclic update initiates a sequence of update rounds.
 In each round only one block is updated. The order of the blocks is determined by the given order of the LMOs.
 """
-struct CyclicUpdate <: BlockCoordinateUpdateOrder end
+struct CyclicUpdate <: BlockCoordinateUpdateOrder
+    limit::Int
+end
+
+CyclicUpdate() = CyclicUpdate(-1)
 
 """
 The stochastic update initiates a sequence of update rounds.
 In each round only one block is updated. The order of the blocks is a random.
 """
-struct StochasticUpdate <: BlockCoordinateUpdateOrder end
+struct StochasticUpdate <: BlockCoordinateUpdateOrder
+    limit::Int
+end
 
-function select_update_indices(::FullUpdate, s::CallbackState, dual_gaps)
+StochasticUpdate() = StochasticUpdate(-1)
+
+mutable struct DualGapOrder <: BlockCoordinateUpdateOrder
+    limit::Int
+end
+
+DualGapOrder() = DualGapOrder(-1)
+
+mutable struct DualProgressOrder <: BlockCoordinateUpdateOrder
+    limit::Int
+    previous_dual_gaps::Vector{Float64}
+    dual_progress::Vector{Float64}
+end
+
+DualProgressOrder() = DualProgressOrder(-1, [], [])
+DualProgressOrder(i::Int64) = DualProgressOrder(i, [], [])
+
+function select_update_indices(::FullUpdate, s::CallbackState, _)
     return [1:length(s.lmo.lmos)]
 end
 
-function select_update_indices(::CyclicUpdate, s::CallbackState, dual_gaps)
-    return [[i] for i in 1:length(s.lmo.lmos)]
+function select_update_indices(u::CyclicUpdate, s::CallbackState, _)
+
+    l = length(s.lmo.lmos)
+
+    @assert u.limit <= l
+    @assert u.limit > 0 || u.limit == -1
+
+    if u.limit in [-1, l]
+        return [[i] for i in 1:l]
+    end 
+
+    start = (s.t*u.limit % l) + 1
+    if start + u.limit - 1 ≤ l
+        return [[i] for i in start:start + u.limit - 1]
+    else
+        a = [[i] for i in start:l]
+        append!(a, [[i] for i in 1:u.limit-length(a)])
+        return a
+    end
 end
 
-function select_update_indices(::StochasticUpdate, s::CallbackState, dual_gaps)
+function select_update_indices(u::StochasticUpdate, s::CallbackState, _)
+
     l = length(s.lmo.lmos)
-    return [[rand(1:l)] for i in 1:l]
+
+    @assert u.limit <= l
+    @assert u.limit > 0 || u.limit == -1
+    
+    if u.limit == -1
+        return [[rand(1:l)] for i in 1:l]
+    end
+    return [[rand(1:l)] for i in 1:u.limit]
+end
+
+function select_update_indices(u::DualProgressOrder, s::CallbackState, dual_gaps)
+
+    l = length(s.lmo.lmos)
+
+    @assert u.limit <= l
+    @assert u.limit > 0 || u.limit == -1
+
+    # In the first iteration update every block so we get finite dual progress
+    if s.t < 2 
+        u.previous_dual_gaps = copy(dual_gaps)
+        return [[i] for i=1:l] 
+    end
+
+    if s.t == 1
+        u.dual_progress = dual_gaps - u.previous_dual_gaps
+    else
+        diff = dual_gaps - u.previous_dual_gaps
+        u.dual_progress = [d == 0 ? u.dual_progress[i] : d for (i, d) in enumerate(diff)]
+    end
+    u.previous_dual_gaps = copy(dual_gaps)
+
+    n = u.limit == -1 ? l : u.limit
+    return [[findfirst(cumsum(u.dual_progress/sum(u.dual_progress)) .> rand())] for _=1:n]
+end
+
+function select_update_indices(u::DualGapOrder, s::CallbackState, dual_gaps)
+
+    l = length(s.lmo.lmos)
+
+    @assert u.limit <= l
+    @assert u.limit > 0 || u.limit == -1
+
+    # In the first iteration update every block so we get finite dual gaps
+    if s.t < 1
+        return [[i] for i=1:l] 
+    end
+
+    n = u.limit == -1 ? l : u.limit
+    return [[findfirst(cumsum(dual_gaps/sum(dual_gaps)) .> rand())] for _=1:n]
 end
 
 """
@@ -506,7 +595,7 @@ function block_coordinate_frank_wolfe(
 
 
         t = t + 1
-        if callback !== nothing
+        if callback !== nothing || update_order isa CyclicUpdate
             state = CallbackState(
                 t,
                 primal,
@@ -523,9 +612,11 @@ function block_coordinate_frank_wolfe(
                 gradient,
                 tt,
             )
-            # @show state
-            if callback(state, dual_gaps) === false
-                break
+            if callback !== nothing
+                # @show state
+                if callback(state, dual_gaps) === false
+                    break
+                end
             end
         end
 
