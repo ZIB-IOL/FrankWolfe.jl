@@ -193,7 +193,7 @@ struct FrankWolfeStep <: UpdateStep end
 Implementation of the blended pairwise conditional gradient (BPCG) method as an update step for block-coordinate Frank-Wolfe.
 """
 mutable struct BPCGStep <: UpdateStep
-    active_set::Union{FrankWolfe.ActiveSet,Nothing}
+    active_set::Union{FrankWolfe.AbstractActiveSet,Nothing}
     renorm_interval::Int
     lazy_tolerance::Float64
 end
