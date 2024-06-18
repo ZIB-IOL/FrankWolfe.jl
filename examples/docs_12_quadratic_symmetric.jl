@@ -114,8 +114,8 @@ println() #hide
 # If we run the blended pairwise conditional gradient algorithm without modifications, convergence is not reached in 10000 iterations.
 
 lmo_naive = BellCorrelationsLMO{T}(m, zeros(T, m), zeros(T, m, m), zeros(T, m, m, m), zeros(T, m, m, m, m))
+@time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_naive, FrankWolfe.ActiveSet([(one(T), x0)]); verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T))) #hide
 as_naive = FrankWolfe.ActiveSet([(one(T), x0)])
-FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_naive, as_naive; verbose=false, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration=100) #hide
 @time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_naive, as_naive; verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)))
 println() #hide
 
@@ -126,8 +126,8 @@ println() #hide
 # The speedup is obtained by pre-computing some scalar products to quickly obtained, in each iteration, the best and worst
 # atoms currently in the active set.
 
+@time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_naive, FrankWolfe.ActiveSetQuadratic([(one(T), x0)], LinearAlgebra.I, -p); verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T))) #hide
 asq_naive = FrankWolfe.ActiveSetQuadratic([(one(T), x0)], LinearAlgebra.I, -p)
-FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_naive, asq_naive; verbose=false, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration=100) #hide
 @time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_naive, asq_naive; verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)))
 println() #hide
 
@@ -164,8 +164,8 @@ function reynolds_permutedims(atom::Array{T, N}, lmo::BellCorrelationsLMO{T}) wh
 end
 
 lmo_permutedims = FrankWolfe.SymmetricLMO(lmo_naive, reynolds_permutedims, reynolds_adjoint)
+@time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_permutedims, FrankWolfe.ActiveSetQuadratic([(one(T), x0)], LinearAlgebra.I, -p); verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T))) #hide
 asq_permutedims = FrankWolfe.ActiveSetQuadratic([(one(T), x0)], LinearAlgebra.I, -p)
-FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_permutedims, asq_permutedims; verbose=false, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration=100) #hide
 @time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_permutedims, asq_permutedims; verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)))
 println() #hide
 
@@ -195,7 +195,7 @@ function build_reynolds_unique(p::Array{T, N}) where {T <: Number, N}
 end
 
 lmo_unique = FrankWolfe.SymmetricLMO(lmo_naive, build_reynolds_unique(p), reynolds_adjoint)
+@time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_unique, FrankWolfe.ActiveSetQuadratic([(one(T), x0)], LinearAlgebra.I, -p); verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T))) #hide
 asq_unique = FrankWolfe.ActiveSetQuadratic([(one(T), x0)], LinearAlgebra.I, -p)
-FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_unique, asq_unique; verbose=false, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration=100) #hide
 @time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_unique, asq_unique; verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)))
 println() #hide
