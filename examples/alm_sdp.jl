@@ -27,7 +27,7 @@ x0 = (zeros(dim, dim), Matrix(I(dim) ./ dim))
 
 trajectories = []
 
-for order in [FrankWolfe.FullUpdate(), FrankWolfe.CyclicUpdate(), FrankWolfe.StochasticUpdate()]
+for order in [FrankWolfe.FullUpdate(), FrankWolfe.CyclicUpdate(), FrankWolfe.StochasticUpdate(), FrankWolfe.DualGapOrder(), FrankWolfe.DualProgressOrder()]
     _, _, _, _, _, traj_data = FrankWolfe.alternating_linear_minimization(
         FrankWolfe.block_coordinate_frank_wolfe,
         f,
@@ -42,7 +42,7 @@ for order in [FrankWolfe.FullUpdate(), FrankWolfe.CyclicUpdate(), FrankWolfe.Sto
     push!(trajectories, traj_data)
 end
 
-labels = ["Full", "Cyclic", "Stochastic"]
+labels = ["Full", "Cyclic", "Stochastic", "DualGapOrder", "DualProgressOrder"]
 
 println(trajectories[1][1])
 
