@@ -89,7 +89,8 @@ end
 
 T = Float64
 verbose = true
-m = 4
+max_iteration = 10^4
+m = 5
 p = 0.23correlation_tensor_GHZ_polygon(T, 5, m)
 x0 = zeros(T, size(p))
 println() #hide
@@ -114,9 +115,9 @@ println() #hide
 # If we run the blended pairwise conditional gradient algorithm without modifications, convergence is not reached in 10000 iterations.
 
 lmo_naive = BellCorrelationsLMO{T}(m, zeros(T, m), zeros(T, m, m), zeros(T, m, m, m), zeros(T, m, m, m, m))
-@time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_naive, FrankWolfe.ActiveSet([(one(T), x0)]); verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T))) #hide
+@time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_naive, FrankWolfe.ActiveSet([(one(T), x0)]); verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration=10) #hide
 as_naive = FrankWolfe.ActiveSet([(one(T), x0)])
-@time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_naive, as_naive; verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)))
+@time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_naive, as_naive; verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration)
 println() #hide
 
 # ## Faster active set for quadratic functions
@@ -126,9 +127,9 @@ println() #hide
 # The speedup is obtained by pre-computing some scalar products to quickly obtained, in each iteration, the best and worst
 # atoms currently in the active set.
 
-@time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_naive, FrankWolfe.ActiveSetQuadratic([(one(T), x0)], LinearAlgebra.I, -p); verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T))) #hide
+@time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_naive, FrankWolfe.ActiveSetQuadratic([(one(T), x0)], LinearAlgebra.I, -p); verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration=10) #hide
 asq_naive = FrankWolfe.ActiveSetQuadratic([(one(T), x0)], LinearAlgebra.I, -p)
-@time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_naive, asq_naive; verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)))
+@time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_naive, asq_naive; verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration)
 println() #hide
 
 # In this small example, the acceleration is quite minimal, but as soon as one of the following conditions is met,
@@ -146,13 +147,9 @@ println() #hide
 # owing to the reduced dimension (hence reduced size of the final active set and reduced number of iterations).
 
 # The way to operate this in the `FrankWolfe` package is to use a symmetrized LMO, which basically does the following:
-# - symmetrize the gradient using `reynolds_adjoint`, which is not necessary here as the gradient remains symmetric throughout the algorithm,
+# - symmetrize the gradient, which is not necessary here as the gradient remains symmetric throughout the algorithm,
 # - call the standard LMO,
 # - symmetrize its output, which amounts to averaging over its orbit with respect to the group considered (here the symmetric group permuting the dimensions of the tensor).
-
-function reynolds_adjoint(gradient::Array{T, N}, lmo::BellCorrelationsLMO{T}) where {T <: Number, N}
-    return gradient
-end
 
 function reynolds_permutedims(atom::Array{T, N}, lmo::BellCorrelationsLMO{T}) where {T <: Number, N}
     res = zeros(T, size(atom))
@@ -163,10 +160,10 @@ function reynolds_permutedims(atom::Array{T, N}, lmo::BellCorrelationsLMO{T}) wh
     return res
 end
 
-lmo_permutedims = FrankWolfe.SymmetricLMO(lmo_naive, reynolds_permutedims, reynolds_adjoint)
-@time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_permutedims, FrankWolfe.ActiveSetQuadratic([(one(T), x0)], LinearAlgebra.I, -p); verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T))) #hide
+lmo_permutedims = FrankWolfe.SymmetricLMO(lmo_naive, reynolds_permutedims)
+@time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_permutedims, FrankWolfe.ActiveSetQuadratic([(one(T), x0)], LinearAlgebra.I, -p); verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration=10) #hide
 asq_permutedims = FrankWolfe.ActiveSetQuadratic([(one(T), x0)], LinearAlgebra.I, -p)
-@time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_permutedims, asq_permutedims; verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)))
+@time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_permutedims, asq_permutedims; verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration)
 println() #hide
 
 # ### Uniqueness pattern
@@ -183,7 +180,7 @@ function build_reynolds_unique(p::Array{T, N}) where {T <: Number, N}
     ptol[ptol .== zero(T)] .= zero(T) # transform -0.0 into 0.0 as isequal(0.0, -0.0) is false
     uniquetol = unique(ptol[:])
     indices = [ptol .== u for u in uniquetol]
-    return function(A::Array{T, N}, lmo) where {T <: Number, N}
+    return function(A::Array{T, N}, lmo) # the second argument is useless in this case
         res = zeros(T, size(A))
         ave = zero(T)
         for ind in indices
@@ -194,8 +191,53 @@ function build_reynolds_unique(p::Array{T, N}) where {T <: Number, N}
     end
 end
 
-lmo_unique = FrankWolfe.SymmetricLMO(lmo_naive, build_reynolds_unique(p), reynolds_adjoint)
-@time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_unique, FrankWolfe.ActiveSetQuadratic([(one(T), x0)], LinearAlgebra.I, -p); verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T))) #hide
+lmo_unique = FrankWolfe.SymmetricLMO(lmo_naive, build_reynolds_unique(p))
+@time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_unique, FrankWolfe.ActiveSetQuadratic([(one(T), x0)], LinearAlgebra.I, -p); verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration=10) #hide
 asq_unique = FrankWolfe.ActiveSetQuadratic([(one(T), x0)], LinearAlgebra.I, -p)
-@time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_unique, asq_unique; verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)))
+@time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_unique, asq_unique; verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration)
 println() #hide
+
+function build_reduce_inflate(p::Array{T, N}) where {T <: Number, N}
+    ptol = round.(p; digits=8)
+    ptol[ptol .== zero(T)] .= zero(T) # transform -0.0 into 0.0 as isequal(0.0, -0.0) is false
+    uniquetol = unique(ptol[:])
+    dim = length(uniquetol) # reduced dimension
+    indices = [ptol .== u for u in uniquetol]
+    mul = [sum(ind) for ind in indices] # multiplicities, used to have matching scalar products
+    sqmul = sqrt.(mul) # precomputed for speed
+    return function(A::Array{T, N}, lmo) # the second argument is useless in this case
+        x = zeros(T, dim)
+        for (i, ind) in enumerate(indices)
+            x[i] = sum(A[ind]) / sqmul[i]
+        end
+        return x
+    end, function(x::Vector{T}, lmo) # the second argument is useless in this case
+        A = zeros(T, size(p))
+        for (i, ind) in enumerate(indices)
+            @view(A[ind]) .= x[i] / sqmul[i]
+        end
+        return A
+    end
+end
+
+reduce, inflate = build_reduce_inflate(p)
+p_reduce = reduce(p, nothing)
+x0_reduce = reduce(x0, nothing)
+f_reduce = let p_reduce = p_reduce, normp2 = normp2
+    x -> LinearAlgebra.dot(x, x) / 2 - LinearAlgebra.dot(p_reduce, x) + normp2
+end
+grad_reduce! = let p_reduce = p_reduce
+    (storage, x) -> begin
+        @inbounds for i in eachindex(x)
+            storage[i] = x[i] - p_reduce[i]
+        end
+    end
+end
+println() #hide
+
+lmo_reduce = FrankWolfe.SymmetricLMO(lmo_naive, reduce, inflate)
+@time FrankWolfe.blended_pairwise_conditional_gradient(f_reduce, grad_reduce!, lmo_reduce, FrankWolfe.ActiveSetQuadratic([(one(T), x0_reduce)], LinearAlgebra.I, -p_reduce); verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration=10) #hide
+asq_reduce = FrankWolfe.ActiveSetQuadratic([(one(T), x0_reduce)], LinearAlgebra.I, -p_reduce)
+@time FrankWolfe.blended_pairwise_conditional_gradient(f_reduce, grad_reduce!, lmo_reduce, asq_reduce; verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration)
+println() #hide
+
