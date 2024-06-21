@@ -8,7 +8,7 @@
 # ```math
 # d^{\vec{a}^{(1)}\ldots \vec{a}^{(N)}}_{x_1\ldots x_N}\coloneqq\prod_{n=1}^Na^{(n)}_{x_n}
 # ```
-# labeled by ``\vec{a}^{(n)}=a^{(n)}_1\ldots a^{(n)}_m`` for ``n\in[1,N]``.
+# labeled by ``\vec{a}^{(n)}=a^{(n)}_1\ldots a^{(n)}_m`` for ``n\in[1,N]``, where ``a^{(n)}_x=\pm1``.
 # In the bipartite case (`N=2`), this polytope is affinely equivalent to the cut polytope.
 
 # ## Import and setup
@@ -197,6 +197,16 @@ asq_unique = FrankWolfe.ActiveSetQuadratic([(one(T), x0)], LinearAlgebra.I, -p)
 @time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_unique, asq_unique; verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration)
 println() #hide
 
+# ### Physical reduction of the iterate
+
+# In the last run, the dimension reduction is mathematically exploited to accelerate the algorithm,
+# but it is not physically used to effectively work in a subspace of reduced dimension.
+# The iterate, although symmetric, was indeed still a full tensor.
+# As a last example of the speedup obtainable through symmetry reduction, we show how to map the computations
+# into a space whose physical dimension is also reduced during the algorithm.
+# This makes all in-place operations marginally faster, which can lead, in bigger instances, to significant
+# accelerations, especially for active set based algorithms in the regime where many lazy iterations are performed.
+
 function build_reduce_inflate(p::Array{T, N}) where {T <: Number, N}
     ptol = round.(p; digits=8)
     ptol[ptol .== zero(T)] .= zero(T) # transform -0.0 into 0.0 as isequal(0.0, -0.0) is false
@@ -234,6 +244,10 @@ grad_reduce! = let p_reduce = p_reduce
     end
 end
 println() #hide
+
+# Note that the objective function and its gradient have to be explicitly rewritten.
+# In this simple example, their shape remains unchanged, but in general this may need some
+# reformulation, which falls to the user.
 
 lmo_reduce = FrankWolfe.SymmetricLMO(lmo_naive, reduce, inflate)
 @time FrankWolfe.blended_pairwise_conditional_gradient(f_reduce, grad_reduce!, lmo_reduce, FrankWolfe.ActiveSetQuadratic([(one(T), x0_reduce)], LinearAlgebra.I, -p_reduce); verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration=10) #hide
