@@ -58,42 +58,42 @@ function correlation_tensor_GHZ_polygon(N::Int, m::Int; type=Float64)
     return res
 end
 
-function reynolds_symmetric(p::Matrix{T}) where {T <: Number}
+function build_reduce_inflate_permutedims(p::Array{T, 2}) where {T <: Number}
     n = size(p, 1)
     @assert n == size(p, 2)
     dimension = (n * (n + 1)) ÷ 2
-    return function(array::AbstractMatrix{T}, lmo)
+    sqrt2 = sqrt(T(2))
+    return function(array::AbstractArray{T, 2}, lmo)
         x = Vector{T}(undef, dimension)
         cnt = 0
         @inbounds for i in 1:n
             x[i] = array[i, i]
             cnt += n - i
             for j in i+1:n
-                x[cnt+j] = (array[i, j] + array[j, i]) / sqrt(T(2))
+                x[cnt+j] = (array[i, j] + array[j, i]) / sqrt2
             end
         end
-        return x
-    end, function(x::AbstractVector{T}, lmo)
-        array = zeros(T, n, n)
+        return FrankWolfe.SymmetricArray(array, x)
+    end, function(x::FrankWolfe.SymmetricArray, lmo)
         cnt = 0
         @inbounds for i in 1:n
-            array[i, i] = x[i]
+            x.data[i, i] = x[i]
             cnt += n - i
             for j in i+1:n
-                array[i, j] = x[cnt+j] / sqrt(T(2))
-                array[j, i] = array[i, j]
+                x.data[i, j] = x[cnt+j] / sqrt2
+                x.data[j, i] = x.data[i, j]
             end
         end
-        return array
+        return x.data
     end
 end
 
 function benchmark_Bell(p::Array{T, 2}, sym::Bool; fw_method=FrankWolfe.blended_pairwise_conditional_gradient, kwargs...) where {T <: Number}
     Random.seed!(0)
     if sym
-        reynolds, reynolds_adjoint = reynolds_symmetric(p)
-        lmo = FrankWolfe.SymmetricLMO(BellCorrelationsLMOHeuristic{T}(size(p, 1), zeros(T, size(p, 1))), reynolds, reynolds_adjoint)
-        p = reynolds(p, lmo)
+        reduce, inflate = build_reduce_inflate_permutedims(p)
+        lmo = FrankWolfe.SymmetricLMO(BellCorrelationsLMOHeuristic{T}(size(p, 1), zeros(T, size(p, 1))), reduce, inflate)
+        p = reduce(p, lmo)
     else
         lmo = BellCorrelationsLMOHeuristic{T}(size(p, 1), zeros(T, size(p, 1)))
     end
@@ -119,6 +119,6 @@ p = correlation_tensor_GHZ_polygon(2, 100)
 max_iteration = 10^4
 verbose = false
 # the following kwarg passing might break for old julia versions
-@btime benchmark_Bell(p, false; verbose, max_iteration, lazy=true, fw_method=FrankWolfe.blended_pairwise_conditional_gradient)
+# @btime benchmark_Bell(p, false; verbose, max_iteration, lazy=true, fw_method=FrankWolfe.blended_pairwise_conditional_gradient)
 @btime benchmark_Bell(p, true; verbose, max_iteration, lazy=true, fw_method=FrankWolfe.blended_pairwise_conditional_gradient)
 println()
