@@ -112,13 +112,13 @@ function benchmark_Bell(p::Array{T, 2}, sym::Bool; fw_method=FrankWolfe.blended_
     x0 = FrankWolfe.compute_extreme_point(lmo, -p)
     active_set = FrankWolfe.ActiveSetQuadratic([(one(T), x0)], I, -p)
     res = fw_method(f, grad!, lmo, active_set; line_search=FrankWolfe.Shortstep(one(T)), lazy=true, verbose=false, max_iteration=10^2)
-    return fw_method(f, grad!, lmo, res[6]; line_search=FrankWolfe.Shortstep(one(T)), lazy_tolerance=10^6, kwargs...)
+    return fw_method(f, grad!, lmo, res[6]; line_search=FrankWolfe.Shortstep(one(T)), lazy=true, lazy_tolerance=10^6, kwargs...)
 end
 
 p = correlation_tensor_GHZ_polygon(2, 100)
 max_iteration = 10^4
 verbose = false
 # the following kwarg passing might break for old julia versions
-@btime benchmark_Bell(p, false; verbose, max_iteration, lazy=true, fw_method=FrankWolfe.blended_pairwise_conditional_gradient)
-@btime benchmark_Bell(p, true; verbose, max_iteration, lazy=true, fw_method=FrankWolfe.blended_pairwise_conditional_gradient)
+@btime benchmark_Bell(p, false; verbose, max_iteration, fw_method=FrankWolfe.blended_pairwise_conditional_gradient)
+@btime benchmark_Bell(p, true; verbose, max_iteration, fw_method=FrankWolfe.blended_pairwise_conditional_gradient)
 println()
