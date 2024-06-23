@@ -160,6 +160,9 @@ function reynolds_permutedims(atom::Array{T, N}, lmo::BellCorrelationsLMO{T}) wh
     return res
 end
 
+# Note that the second argument `lmo` is not used here but could in principle be exploited to obtain
+# a very small speedup by storing `Combinatorics.permutations(1:N)` in a dedicated field in our custom LMO.
+
 lmo_permutedims = FrankWolfe.SymmetricLMO(lmo_naive, reynolds_permutedims)
 @time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_permutedims, FrankWolfe.ActiveSetQuadratic([(one(T), x0)], LinearAlgebra.I, -p); verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration=10) #hide
 asq_permutedims = FrankWolfe.ActiveSetQuadratic([(one(T), x0)], LinearAlgebra.I, -p)
@@ -180,7 +183,7 @@ function build_reynolds_unique(p::Array{T, N}) where {T <: Number, N}
     ptol[ptol .== zero(T)] .= zero(T) # transform -0.0 into 0.0 as isequal(0.0, -0.0) is false
     uniquetol = unique(ptol[:])
     indices = [ptol .== u for u in uniquetol]
-    return function(A::Array{T, N}, lmo) # the second argument is useless in this case
+    return function(A::Array{T, N}, lmo)
         res = zeros(T, size(A))
         ave = zero(T)
         for ind in indices
@@ -199,13 +202,14 @@ println() #hide
 
 # ### Physical reduction of the iterate
 
-# In the last run, the dimension reduction is mathematically exploited to accelerate the algorithm,
+# In the previous run, the dimension reduction is mathematically exploited to accelerate the algorithm,
 # but it is not physically used to effectively work in a subspace of reduced dimension.
 # The iterate, although symmetric, was indeed still a full tensor.
 # As a last example of the speedup obtainable through symmetry reduction, we show how to map the computations
 # into a space whose physical dimension is also reduced during the algorithm.
 # This makes all in-place operations marginally faster, which can lead, in bigger instances, to significant
 # accelerations, especially for active set based algorithms in the regime where many lazy iterations are performed.
+# We refer to the example `symmetric.jl` for a small benchmark with symmetric matrices.
 
 function build_reduce_inflate(p::Array{T, N}) where {T <: Number, N}
     ptol = round.(p; digits=8)
@@ -215,13 +219,13 @@ function build_reduce_inflate(p::Array{T, N}) where {T <: Number, N}
     indices = [ptol .== u for u in uniquetol]
     mul = [sum(ind) for ind in indices] # multiplicities, used to have matching scalar products
     sqmul = sqrt.(mul) # precomputed for speed
-    return function(A::Array{T, N}, lmo) # the second argument is useless in this case
+    return function(A::Array{T, N}, lmo)
         x = zeros(T, dim)
         for (i, ind) in enumerate(indices)
             x[i] = sum(A[ind]) / sqmul[i]
         end
         return x
-    end, function(x::Vector{T}, lmo) # the second argument is useless in this case
+    end, function(x::Vector{T}, lmo)
         A = zeros(T, size(p))
         for (i, ind) in enumerate(indices)
             @view(A[ind]) .= x[i] / sqmul[i]
