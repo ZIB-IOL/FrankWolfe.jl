@@ -3,10 +3,59 @@ using LinearAlgebra
 using Random
 import GLPK
 
+# s = rand(1:100)
+s = 98
+@info "Seed $s"
+Random.seed!(s)
+
+n = Int(2e2)
+k = Int(4e4)
+
+# we artificially create a symmetric instance to illustrate the syntax
+xpi = rand(n, n)
+xpi .+= xpi'
+xpi .+= reverse(xpi)
+xpi ./= 4
+reduce, inflate = build_reduce_inflate(xpi)
+const xp = xpi
+const normxp2 = dot(xp, xp)
+
+function cf(x, xp, normxp2)
+    return (normxp2 - 2dot(x, xp) + dot(x, x)) / n^2
+end
+
+function cgrad!(storage, x, xp)
+    return @. storage = 2 * (x - xp) / n^2
+end
+
+lmo_nat = FrankWolfe.BirkhoffPolytopeLMO()
+
+x0 = FrankWolfe.compute_extreme_point(lmo_nat, randn(n, n))
+
+@time x, v, primal, dual_gap, trajectoryBPCG, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+    x -> cf(x, xp, normxp2),
+    (str, x) -> cgrad!(str, x, xp),
+    lmo_nat,
+    FrankWolfe.ActiveSetQuadratic([(1.0, x0)], 2I/n^2, -2xp/n^2);
+    max_iteration=k,
+    line_search=FrankWolfe.Shortstep(2/n^2),
+    lazy=true,
+    print_iter=k / 10,
+    verbose=true,
+)
+
+# to accelerate the algorithm, we use the symmetry reduction described in the example 12 of the doc
+# here the problem is invariant under mirror symmetry around the diagonal and the anti-diagonal
+# each solution of the LMO can then be added to the active set together with its orbit
+# on top of that, the effective dimension of the space is reduced
+# the following function constructs the functions `reduce` and `inflate` needed for SymmetricLMO
+# `reduce` maps a matrix to the invariant vector space
+# `inflate` maps a vector in this space back to a matrix
+# using `FrankWolfe.SymmetricArray` is a convenience to avoid reallocating the result of `inflate`
 function build_reduce_inflate(p::Array{T, 2}) where {T <: Number}
     n = size(p, 1)
     @assert n == size(p, 2)
-    dimension = floor(Int, (n+1)^2 / 4)
+    dimension = floor(Int, (n+1)^2 / 4) # reduced dimension
     sqrt2 = sqrt(T(2))
     return function(A::AbstractArray{T, 2}, lmo)
         vec = Vector{T}(undef, dimension)
@@ -55,49 +104,8 @@ function build_reduce_inflate(p::Array{T, 2}) where {T <: Number}
     end
 end
 
-# s = rand(1:100)
-s = 98
-@info "Seed $s"
-Random.seed!(s)
-
-n = Int(2e2)
-k = Int(4e4)
-
-# we artificially create a symmetric instance to illustrate the syntax
-xpi = rand(n, n)
-xpi .+= xpi'
-xpi .+= reverse(xpi)
-xpi ./= 4
-reduce, inflate = build_reduce_inflate(xpi)
-const xp = xpi
-const normxp2 = dot(xp, xp)
-
-function cf(x, xp, normxp2)
-    return (normxp2 - 2dot(x, xp) + dot(x, x)) / n^2
-end
-
-function cgrad!(storage, x, xp)
-    return @. storage = 2 * (x - xp) / n^2
-end
-
-lmo_nat = FrankWolfe.BirkhoffPolytopeLMO()
-
-x0 = FrankWolfe.compute_extreme_point(lmo_nat, randn(n, n))
-
-@time x, v, primal, dual_gap, trajectoryBPCG, _ = FrankWolfe.blended_pairwise_conditional_gradient(
-    x -> cf(x, xp, normxp2),
-    (str, x) -> cgrad!(str, x, xp),
-    lmo_nat,
-    FrankWolfe.ActiveSetQuadratic([(1.0, x0)], 2I/n^2, -2xp/n^2);
-    max_iteration=k,
-    line_search=FrankWolfe.Shortstep(2/n^2),
-    lazy=true,
-    print_iter=k / 10,
-    verbose=true,
-)
-
 const rxp = reduce(xpi, nothing)
-@assert dot(rxp, rxp) ≈ normxp2
+@assert dot(rxp, rxp) ≈ normxp2 # should be correct thanks to the factors sqrt(2) and 2 in reduce and inflate
 
 lmo_sym = FrankWolfe.SymmetricLMO(lmo_nat, reduce, inflate)
 
