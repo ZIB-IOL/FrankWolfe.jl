@@ -259,18 +259,18 @@ end
     SymmetricArray{T, DT}
 
 """
-struct SymmetricArray{HasMultiplicities,T,DT} <: AbstractVector{T}
+struct SymmetricArray{HasMultiplicities,T,DT,V<:AbstractVector{T}} <: AbstractVector{T}
     data::DT # full array to be symmetrised, will generally fall out of sync wrt vec
-    vec::Vector{T} # vector representing the array
+    vec::V # vector representing the array
     mul::Vector{T} # only used for scalar products
 end
 
-function SymmetricArray(data::DT, vec::Vector{T}) where {T,DT}
-    return SymmetricArray{false,T,DT}(data, vec, T[])
+function SymmetricArray(data::DT, vec::V) where {DT,V<:AbstractVector{T}} where {T}
+    return SymmetricArray{false,T,DT,V}(data, vec, T[])
 end
 
-function SymmetricArray(data::DT, vec::Vector{T}, mul::Vector) where {T,DT}
-    return SymmetricArray{true,T,DT}(data, vec, convert(Vector{T}, mul))
+function SymmetricArray(data::DT, vec::V, mul::Vector) where {DT,V<:AbstractVector{T}} where {T}
+    return SymmetricArray{true,T,DT,V}(data, vec, convert(Vector{T}, mul))
 end
 
 Base.@propagate_inbounds function Base.getindex(A::SymmetricArray, i)
@@ -294,6 +294,8 @@ Base.collect(A::SymmetricArray{false}) = SymmetricArray(collect(A.data), collect
 Base.copyto!(dest::SymmetricArray, src::SymmetricArray) = copyto!(dest.vec, src.vec)
 Base.:*(scalar::Real, A::SymmetricArray{true}) = SymmetricArray(A.data, scalar * A.vec, A.mul)
 Base.:*(scalar::Real, A::SymmetricArray{false}) = SymmetricArray(A.data, scalar * A.vec)
+Base.:*(A::SymmetricArray, scalar::Real) = scalar * A
+Base.:/(A::SymmetricArray, scalar::Real) = inv(scalar) * A
 Base.:+(A1::SymmetricArray{true,T}, A2::SymmetricArray{true,T}) where {T} = SymmetricArray(A1.data, A1.vec + A2.vec, A1.mul)
 Base.:+(A1::SymmetricArray{false,T}, A2::SymmetricArray{false,T}) where {T} = SymmetricArray(A1.data, A1.vec + A2.vec)
 Base.:-(A1::SymmetricArray{true,T}, A2::SymmetricArray{true,T}) where {T} = SymmetricArray(A1.data, A1.vec - A2.vec, A1.mul)
