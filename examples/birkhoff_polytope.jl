@@ -64,7 +64,7 @@ FrankWolfe.benchmark_oracles(
     verbose=true,
 )
 
-data = [trajectoryBCG]
-label = ["BCG"]
+data = [trajectoryBPCG]
+label = ["BPCG"]
 
 plot_trajectories(data, label, reduce_size=true, marker_shapes=[:dtriangle])
