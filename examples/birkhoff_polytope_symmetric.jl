@@ -14,6 +14,7 @@ n = Int(1e2)
 k = Int(2e4)
 
 xpi = rand(n, n)
+xpi .+= xpi'
 # total = sum(xpi)
 const xp = xpi # / total
 const normxp2 = dot(xp, xp)
@@ -50,7 +51,7 @@ FrankWolfe.benchmark_oracles(
 )
 
 # BCG run
-@time x, v, primal, dual_gap, trajectoryBPCG, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+@time x, v, primal, dual_gap, trajectoryBCG, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     x -> cf(x, xp, normxp2),
     (str, x) -> cgrad!(str, x, xp),
     lmo,
