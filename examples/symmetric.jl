@@ -63,24 +63,24 @@ function build_reduce_inflate_permutedims(p::Array{T, 2}) where {T <: Number}
     @assert n == size(p, 2)
     dimension = (n * (n + 1)) ÷ 2
     sqrt2 = sqrt(T(2))
-    return function(array::AbstractArray{T, 2}, lmo)
-        x = Vector{T}(undef, dimension)
+    return function(A::AbstractArray{T, 2}, lmo)
+        vec = Vector{T}(undef, dimension)
         cnt = 0
         @inbounds for i in 1:n
-            x[i] = array[i, i]
+            vec[i] = A[i, i]
             cnt += n - i
             for j in i+1:n
-                x[cnt+j] = (array[i, j] + array[j, i]) / sqrt2
+                vec[cnt+j] = (A[i, j] + A[j, i]) / sqrt2
             end
         end
-        return FrankWolfe.SymmetricArray(array, x)
+        return FrankWolfe.SymmetricArray(A, vec)
     end, function(x::FrankWolfe.SymmetricArray, lmo)
         cnt = 0
         @inbounds for i in 1:n
-            x.data[i, i] = x[i]
+            x.data[i, i] = x.vec[i]
             cnt += n - i
             for j in i+1:n
-                x.data[i, j] = x[cnt+j] / sqrt2
+                x.data[i, j] = x.vec[cnt+j] / sqrt2
                 x.data[j, i] = x.data[i, j]
             end
         end
