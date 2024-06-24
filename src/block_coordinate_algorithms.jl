@@ -193,9 +193,11 @@ struct FrankWolfeStep <: UpdateStep end
 Implementation of the blended pairwise conditional gradient (BPCG) method as an update step for block-coordinate Frank-Wolfe.
 """
 mutable struct BPCGStep <: UpdateStep
+    lazy::Bool
     active_set::Union{FrankWolfe.AbstractActiveSet,Nothing}
     renorm_interval::Int
     lazy_tolerance::Float64
+    phi::Float64
 end
 
 function Base.copy(::FrankWolfeStep)
@@ -204,13 +206,13 @@ end
 
 function Base.copy(obj::BPCGStep)
     if obj.active_set === nothing
-        return BPCGStep(nothing, obj.renorm_interval, obj.lazy_tolerance)
+        return BPCGStep(false, nothing, obj.renorm_interval, obj.lazy_tolerance, Inf)
     else
-        return BPCGStep(copy(obj.active_set), obj.renorm_interval, obj.lazy_tolerance)
+        return BPCGStep(obj.lazy, copy(obj.active_set), obj.renorm_interval, obj.lazy_tolerance, obj.phi)
     end
 end
 
-BPCGStep() = BPCGStep(nothing, 1000, 2.0)
+BPCGStep() = BPCGStep(false, nothing, 1000, 2.0, Inf)
 
 function update_iterate(
     ::FrankWolfeStep,
@@ -277,14 +279,15 @@ function update_iterate(
     dot_away_vertex = fast_dot(gradient, a)
     local_gap = dot_away_vertex - dot_forward_vertex
 
-    v = compute_extreme_point(lmo, gradient)
-    dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
+    if !s.lazy
+        v = compute_extreme_point(lmo, gradient)
+        dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
+        s.phi = dual_gap
+    end
 
     # minor modification from original paper for improved sparsity
     # (proof follows with minor modification when estimating the step)
-    #println("Gaps: ", local_gap, " ", dual_gap)
-    #println(fast_dot(gradient, x), " ", fast_dot(gradient, v))
-    if t > 1 && local_gap > dual_gap / s.lazy_tolerance
+    if local_gap > s.phi / s.lazy_tolerance
         d = muladd_memory_mode(memory_mode, d, a, v_local)
         vertex_taken = v_local
         gamma_max = a_lambda
@@ -314,7 +317,12 @@ function update_iterate(
         end
         active_set_update_iterate_pairwise!(s.active_set.x, gamma, v_local, a)
     else # add to active set
+        if s.lazy
+            v = compute_extreme_point(lmo, gradient)
+            tt = regular
+        end
         vertex_taken = v
+        dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
         # if we are about to exit, compute dual_gap with the cleaned-up x
         if dual_gap ≤ epsilon
             active_set_renormalize!(s.active_set)
@@ -325,27 +333,45 @@ function update_iterate(
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
         end
 
-        d = muladd_memory_mode(memory_mode, d, x, v)
+        if !s.lazy || dual_gap ≥ s.phi / s.lazy_tolerance
 
-        gamma = perform_line_search(
-            line_search,
-            t,
-            f,
-            grad!,
-            gradient,
-            x,
-            d,
-            one(eltype(x)),
-            linesearch_workspace,
-            memory_mode,
-        )
+            d = muladd_memory_mode(memory_mode, d, x, v)
 
-        # dropping active set and restarting from singleton
-        if gamma ≈ 1.0
-            active_set_initialize!(s.active_set, v)
-        else
-            renorm = mod(t, s.renorm_interval) == 0
-            active_set_update!(s.active_set, gamma, v, renorm, nothing)
+            gamma = perform_line_search(
+                line_search,
+                t,
+                f,
+                grad!,
+                gradient,
+                x,
+                d,
+                one(eltype(x)),
+                linesearch_workspace,
+                memory_mode,
+            )
+
+            # dropping active set and restarting from singleton
+            if gamma ≈ 1.0
+                active_set_initialize!(s.active_set, v)
+            else
+                renorm = mod(t, s.renorm_interval) == 0
+                active_set_update!(s.active_set, gamma, v, renorm, nothing)
+            end
+        else # dual step
+            if tt != lazylazy
+                s.phi = dual_gap
+                @debug begin
+                    @assert tt == regular
+                    v2 = compute_extreme_point(lmo, gradient)
+                    g = dot(gradient, x - v2)
+                    if abs(g - dual_gap) > 100 * sqrt(eps())
+                        error("dual gap estimation error $g $dual_gap")
+                    end
+                end
+            else
+                @info "useless step"
+            end
+            tt = dualstep
         end
     end
     if mod(t, s.renorm_interval) == 0
