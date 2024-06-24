@@ -49,12 +49,12 @@ FrankWolfe.benchmark_oracles(
     k=100,
 )
 
-# BCG run
+# BPCG run
 @time x, v, primal, dual_gap, trajectoryBPCG, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     x -> cf(x, xp, normxp2),
     (str, x) -> cgrad!(str, x, xp),
     lmo,
-    FrankWolfe.ActiveSetQuadratic([(1.0, x0)], 2I/n^2, -2xp/n^2);
+    FrankWolfe.ActiveSetQuadratic([(1.0, collect(x0))], 2I/n^2, -2xp/n^2); # surprisingly faster and more memory efficient with collect
     max_iteration=k,
     line_search=FrankWolfe.Shortstep(2/n^2),
     lazy=true,
