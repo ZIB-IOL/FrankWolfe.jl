@@ -1,6 +1,7 @@
 using FrankWolfe
 using LinearAlgebra
 using Random
+using SparseArrays
 import GLPK
 
 # s = rand(1:100)
@@ -74,7 +75,7 @@ function build_reduce_inflate(p::Matrix{T}) where {T <: Number}
                 end
             end
         end
-        return FrankWolfe.SymmetricArray(collect(A), vec)
+        return FrankWolfe.SymmetricArray(A, vec)
     end
     function inflate(x::FrankWolfe.SymmetricArray, lmo)
         cnt = 0
@@ -110,7 +111,7 @@ const rxp = reduce(xpi, nothing)
 
 lmo_sym = FrankWolfe.SymmetricLMO(lmo_nat, reduce, inflate)
 
-rx0 = FrankWolfe.compute_extreme_point(lmo_sym, reduce(randn(n, n), nothing))
+rx0 = FrankWolfe.compute_extreme_point(lmo_sym, reduce(sparse(randn(n, n)), nothing))
 
 @time rx, rv, rprimal, rdual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     x -> cf(x, rxp, normxp2),
