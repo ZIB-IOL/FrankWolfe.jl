@@ -48,6 +48,7 @@ end
         print_iter=100,
         verbose=false,
         epsilon=3e-7,
+        weight_purge_threshold=1e-12,
     )
     res_afw_lazy = FrankWolfe.away_frank_wolfe(
         f,
