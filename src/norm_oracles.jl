@@ -414,10 +414,15 @@ function compute_extreme_point(
             ind_max = i
         end
     end
-    b = zeros(N)
-    for i in 1:ind_max
-        b[i] = lmo.mat_B[ind_max]
+    
+    v = (lmo.radius).*(-2*signbit.(-1*direction) + ones(N))
+    unsort_perm = sortperm(perm_grad)
+    for i in 1:N
+        if(unsort_perm[i]<=ind_max)
+            v[i] *= lmo.mat_B[ind_max]
+        else
+            v[i] = 0
+        end
     end
-    v = (lmo.radius).*(-2*signbit.(-1*direction) + ones(N)).*((b)[sortperm(perm_grad)])
     return v
 end
