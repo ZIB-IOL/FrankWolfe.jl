@@ -16,7 +16,6 @@ xpi = rand(n, n)
 xpi .+= xpi'
 xpi .+= reverse(xpi)
 xpi ./= 4
-reduce, inflate = build_reduce_inflate(xpi)
 const xp = xpi
 const normxp2 = dot(xp, xp)
 
@@ -32,7 +31,7 @@ lmo_nat = FrankWolfe.BirkhoffPolytopeLMO()
 
 x0 = FrankWolfe.compute_extreme_point(lmo_nat, randn(n, n))
 
-@time x, v, primal, dual_gap, trajectoryBPCG, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+@time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     x -> cf(x, xp, normxp2),
     (str, x) -> cgrad!(str, x, xp),
     lmo_nat,
@@ -52,12 +51,11 @@ x0 = FrankWolfe.compute_extreme_point(lmo_nat, randn(n, n))
 # `reduce` maps a matrix to the invariant vector space
 # `inflate` maps a vector in this space back to a matrix
 # using `FrankWolfe.SymmetricArray` is a convenience to avoid reallocating the result of `inflate`
-function build_reduce_inflate(p::Array{T, 2}) where {T <: Number}
+function build_reduce_inflate(p::Matrix{T}) where {T <: Number}
     n = size(p, 1)
-    @assert n == size(p, 2)
+    @assert n == size(p, 2) # square matrix
     dimension = floor(Int, (n+1)^2 / 4) # reduced dimension
-    sqrt2 = sqrt(T(2))
-    return function(A::AbstractArray{T, 2}, lmo)
+    function reduce(A::AbstractMatrix{T}, lmo)
         vec = Vector{T}(undef, dimension)
         cnt = 0
         @inbounds for i in 1:(n+1)÷2, j in i:n+1-i
@@ -66,18 +64,19 @@ function build_reduce_inflate(p::Array{T, 2}) where {T <: Number}
                 if i + j == n+1
                     vec[cnt] = A[i, i]
                 else
-                    vec[cnt] = (A[i, i] + A[n+1-i, n+1-i]) / sqrt2
+                    vec[cnt] = (A[i, i] + A[n+1-i, n+1-i]) / sqrt(T(2))
                 end
             else
                 if i + j == n+1
-                    vec[cnt] = (A[i, j] + A[j, i]) / sqrt2
+                    vec[cnt] = (A[i, j] + A[j, i]) / sqrt(T(2))
                 else
-                    vec[cnt] = (A[i, j] + A[j, i] + A[n+1-i, n+1-j] + A[n+1-j, n+1-i]) / 2
+                    vec[cnt] = (A[i, j] + A[j, i] + A[n+1-i, n+1-j] + A[n+1-j, n+1-i]) / T(2)
                 end
             end
         end
         return FrankWolfe.SymmetricArray(collect(A), vec)
-    end, function(x::FrankWolfe.SymmetricArray, lmo)
+    end
+    function inflate(x::FrankWolfe.SymmetricArray, lmo)
         cnt = 0
         @inbounds for i in 1:(n+1)÷2, j in i:n+1-i
             cnt += 1
@@ -85,12 +84,12 @@ function build_reduce_inflate(p::Array{T, 2}) where {T <: Number}
                 if i + j == n+1
                     x.data[i, i] = x.vec[cnt]
                 else
-                    x.data[i, i] = x.vec[cnt] / sqrt2
+                    x.data[i, i] = x.vec[cnt] / sqrt(T(2))
                     x.data[n+1-i, n+1-i] = x.data[i, j]
                 end
             else
                 if i + j == n+1
-                    x.data[i, j] = x.vec[cnt] / sqrt2
+                    x.data[i, j] = x.vec[cnt] / sqrt(T(2))
                     x.data[j, i] = x.data[i, j]
                 else
                     x.data[i, j] = x.vec[cnt] / 2
@@ -102,8 +101,10 @@ function build_reduce_inflate(p::Array{T, 2}) where {T <: Number}
         end
         return x.data
     end
+    return reduce, inflate
 end
 
+reduce, inflate = build_reduce_inflate(xpi)
 const rxp = reduce(xpi, nothing)
 @assert dot(rxp, rxp) ≈ normxp2 # should be correct thanks to the factors sqrt(2) and 2 in reduce and inflate
 
@@ -111,7 +112,7 @@ lmo_sym = FrankWolfe.SymmetricLMO(lmo_nat, reduce, inflate)
 
 rx0 = FrankWolfe.compute_extreme_point(lmo_sym, reduce(randn(n, n), nothing))
 
-@time x, v, primal, dual_gap, trajectoryBPCG, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+@time rx, rv, rprimal, rdual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     x -> cf(x, rxp, normxp2),
     (str, x) -> cgrad!(str, x, rxp),
     lmo_sym,
