@@ -254,3 +254,55 @@ Base.@propagate_inbounds function muladd_memory_mode(::InplaceEmphasis, x::Matri
     end
     return x
 end
+
+"""
+    SymmetricArray{T, DT}
+
+"""
+struct SymmetricArray{HasMultiplicities,T,DT} <: AbstractVector{T}
+    data::DT # full array to be symmetrised, will generally fall out of sync wrt vec
+    vec::Vector{T} # vector representing the array
+    mul::Vector{T} # only used for scalar products
+end
+
+function SymmetricArray(data::DT, vec::Vector{T}) where {T,DT}
+    return SymmetricArray{false,T,DT}(data, vec, T[])
+end
+
+function SymmetricArray(data::DT, vec::Vector{T}, mul::Vector) where {T,DT}
+    return SymmetricArray{true,T,DT}(data, vec, convert(Vector{T}, mul))
+end
+
+Base.@propagate_inbounds function Base.getindex(A::SymmetricArray, i)
+    @boundscheck checkbounds(A.vec, i)
+    return @inbounds getindex(A.vec, i)
+end
+
+Base.@propagate_inbounds function Base.setindex!(A::SymmetricArray, x, i)
+    @boundscheck checkbounds(A.vec, i)
+    return @inbounds setindex!(A.vec, x, i)
+end
+
+Base.size(A::SymmetricArray) = size(A.vec)
+Base.eltype(A::SymmetricArray) = eltype(A.vec)
+Base.similar(A::SymmetricArray{true}) = SymmetricArray(similar(A.data), similar(A.vec), A.mul)
+Base.similar(A::SymmetricArray{false}) = SymmetricArray(similar(A.data), similar(A.vec))
+Base.similar(A::SymmetricArray{true}, ::Type{T}) where {T} = SymmetricArray(similar(A.data, T), similar(A.vec, T), convert(Vector{T}, A.mul))
+Base.similar(A::SymmetricArray{false}, ::Type{T}) where {T} = SymmetricArray(similar(A.data, T), similar(A.vec, T))
+Base.collect(A::SymmetricArray{true}) = SymmetricArray(collect(A.data), collect(A.vec), A.mul)
+Base.collect(A::SymmetricArray{false}) = SymmetricArray(collect(A.data), collect(A.vec))
+Base.copyto!(dest::SymmetricArray, src::SymmetricArray) = copyto!(dest.vec, src.vec)
+Base.:*(scalar::Real, A::SymmetricArray{true}) = SymmetricArray(A.data, scalar * A.vec, A.mul)
+Base.:*(scalar::Real, A::SymmetricArray{false}) = SymmetricArray(A.data, scalar * A.vec)
+Base.:+(A1::SymmetricArray{true,T}, A2::SymmetricArray{true,T}) where {T} = SymmetricArray(A1.data, A1.vec + A2.vec, A1.mul)
+Base.:+(A1::SymmetricArray{false,T}, A2::SymmetricArray{false,T}) where {T} = SymmetricArray(A1.data, A1.vec + A2.vec)
+Base.:-(A1::SymmetricArray{true,T}, A2::SymmetricArray{true,T}) where {T} = SymmetricArray(A1.data, A1.vec - A2.vec, A1.mul)
+Base.:-(A1::SymmetricArray{false,T}, A2::SymmetricArray{false,T}) where {T} = SymmetricArray(A1.data, A1.vec - A2.vec)
+Base.:-(A::SymmetricArray{true,T}) where {T} = SymmetricArray(A.data, -A.vec, A.mul)
+Base.:-(A::SymmetricArray{false,T}) where {T} = SymmetricArray(A.data, -A.vec)
+
+LinearAlgebra.dot(A1::SymmetricArray{true}, A2::SymmetricArray{true}) = dot(A1.vec, Diagonal(A1.mul), A2.vec)
+LinearAlgebra.dot(A1::SymmetricArray{false}, A2::SymmetricArray{false}) = dot(A1.vec, A2.vec)
+LinearAlgebra.norm(A::SymmetricArray) = sqrt(dot(A, A))
+
+Base.@propagate_inbounds Base.isequal(A1::SymmetricArray, A2::SymmetricArray) = isequal(A1.vec, A2.vec)
