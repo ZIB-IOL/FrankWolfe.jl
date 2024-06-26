@@ -407,15 +407,15 @@ function compute_extreme_point(
     for i in 1:N
         scal = zero(eltype(lmo.direction_abs[1]))
         for k in 1:i
-            scal += lmo.mat_B[i]*(lmo.direction_abs[perm_grad])[k]
+            scal += lmo.mat_B[i] * lmo.direction_abs[perm_grad][k]
         end
-        if(scal > scal_max)
+        if scal > scal_max
             scal_max = scal
             ind_max = i
         end
     end
     
-    v = (lmo.radius) .* (2 * signbit.(direction) - 1)
+    v = lmo.radius .* (2 * signbit.(direction) - 1)
     unsort_perm = sortperm(perm_grad)
     for i in 1:N
         if unsort_perm[i] <= ind_max
