@@ -49,7 +49,7 @@ function alternating_linear_minimization(
     grad!,
     lmos::NTuple{N,LinearMinimizationOracle},
     x0::Tuple{Vararg{Any,N}};
-    lambda=1.0,
+    lambda::Union{Float64, Function}=1.0,
     verbose=false,
     trajectory=false,
     callback=nothing,
@@ -65,19 +65,41 @@ function alternating_linear_minimization(
     gradf = similar(x0_bc)
     prod_lmo = ProductLMO(lmos)
 
-    function grad_bc!(storage, x)
-        for i in 1:N
-            grad!(gradf.blocks[i], x.blocks[i])
+    λ0 = lambda isa Function ? 1.0 : lambda
+
+    function build_gradient()
+        λ = Ref(λ0)
+
+        return (storage, x) -> begin
+            for i in 1:N
+                grad!(gradf.blocks[i], x.blocks[i])
+            end
+            t = [2.0 * (N * b - sum(x.blocks)) for b in x.blocks]
+            return storage.blocks = λ[] * gradf.blocks + t
         end
-        t = [lambda * 2.0 * (N * b - sum(x.blocks)) for b in x.blocks]
-        return storage.blocks = gradf.blocks + t
     end
 
-    dist2(x) = sum(
-        fast_dot(x.blocks[i] - x.blocks[j], x.blocks[i] - x.blocks[j]) for i in 1:N for j in 1:i-1
-    )
+    function dist2(x::BlockVector) 
+        s = 0
+        for i=1:N
+            for j=1:i-1
+                diff = x.blocks[i] - x.blocks[j]
+                s += fast_dot(diff, diff)
+            end
+        end
+        return s
+    end
 
-    f_bc(x) = sum(f(x.blocks[i]) for i in 1:N) + lambda * dist2(x)
+    function build_objective()
+        λ = Ref(λ0)
+
+        return x -> begin
+            return λ[] * sum(f(x.blocks[i]) for i in 1:N) + dist2(x)
+        end
+    end
+
+    f_bc = build_objective()
+    grad_bc! = build_gradient()
 
     dist2_data = []
     if trajectory
@@ -152,6 +174,18 @@ function alternating_linear_minimization(
         end
 
         callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
+    end
+
+    if lambda isa Function
+        callback  = function (state,args...)
+            state.f.λ[] = lambda(state)
+            state.grad!.λ[] = state.f.λ[]
+
+            if callback === nothing
+                return true
+            end
+            return callback(state, args...)
+        end
     end
 
     x, v, primal, dual_gap, traj_data = bc_method(
