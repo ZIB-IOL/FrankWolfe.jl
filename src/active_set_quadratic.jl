@@ -70,7 +70,7 @@ function ActiveSetQuadratic(tuple_values::AbstractVector{Tuple{R,AT}}, A::H, b) 
         end
         dots_b[idx] = fast_dot(b, atoms[idx])
     end
-    x = similar(atoms[1], float(eltype(atoms[1])))
+    x = similar(b)
     as = ActiveSetQuadratic{AT,R,typeof(x),H}(weights, atoms, x, A, b, dots_x, dots_A, dots_b, weights_prev, modified)
     compute_active_set_iterate!(as)
     return as
@@ -98,7 +98,7 @@ function ActiveSetQuadratic{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,
         end
         dots_b[idx] = fast_dot(b, atoms[idx])
     end
-    x = similar(tuple_values[1][2], float(eltype(tuple_values[1][2])))
+    x = similar(b)
     as = ActiveSetQuadratic{AT,R,typeof(x),H}(weights, atoms, x, A, b, dots_x, dots_A, dots_b, weights_prev, modified)
     compute_active_set_iterate!(as)
     return as
