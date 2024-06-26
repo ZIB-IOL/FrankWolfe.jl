@@ -400,7 +400,7 @@ function compute_extreme_point(
     for i in eachindex(direction)
         lmo.direction_abs[i] = abs(direction[i])
     end
-    perm_grad = sortperm(lmo.direction_abs,rev=true)
+    perm_grad = sortperm(lmo.direction_abs, rev=true)
     scal_max = 0
     ind_max = 1
     N = length(lmo.mat_B)
