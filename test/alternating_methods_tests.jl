@@ -40,7 +40,7 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
         grad!,
         (lmo_nb, lmo_prob),
         ones(n),
-        lambda=3.0,
+        lambda=1/3,
         line_search=FrankWolfe.Adaptive(relaxed_smoothness=true),
     )
 
@@ -53,7 +53,7 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
         grad!,
         (lmo_nb, lmo_prob),
         ones(n),
-        lambda=9.0,
+        lambda=1/9,
         line_search=FrankWolfe.Adaptive(relaxed_smoothness=true),
     )
 
@@ -66,7 +66,7 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
         grad!,
         (lmo_nb, lmo_prob),
         ones(n),
-        lambda=1 / 3,
+        lambda=3.0,
         line_search=FrankWolfe.Adaptive(relaxed_smoothness=true),
     )
 
@@ -126,9 +126,33 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
     @test length(traj_data) >= 2
     @test length(traj_data) <= 10001
 
-    for order in [FrankWolfe.FullUpdate(), FrankWolfe.CyclicUpdate(), FrankWolfe.StochasticUpdate()]
+    x, _, _, _, _, _ = FrankWolfe.alternating_linear_minimization(
+        FrankWolfe.block_coordinate_frank_wolfe,
+        f,
+        grad!,
+        (lmo2, lmo_prob),
+        ones(n),
+        line_search=FrankWolfe.Agnostic(),
+        momentum=0.9,
+    )
 
-        x, _, _, _, _ = FrankWolfe.alternating_linear_minimization(
+    @test abs(x.blocks[1][1] - 0.5 / n) < 1e-3
+    @test abs(x.blocks[2][1] - 1 / n) < 1e-3
+
+end
+
+@testset "Testing different update orders for block coordinate FW in within alternating linear minimization" begin
+
+    orders = [
+        FrankWolfe.FullUpdate(), 
+        [FrankWolfe.CyclicUpdate(i) for i in [-1, 1, 2]]...,
+        [FrankWolfe.StochasticUpdate(i) for i in [-1, 1, 2]]...,
+        [FrankWolfe.DualGapOrder(i) for i in [-1, 1, 2]]...,
+        [FrankWolfe.DualProgressOrder(i) for i in [-1, 1, 2]]...,
+    ]
+
+    for order in orders
+        x, _, _, _, _, _ = FrankWolfe.alternating_linear_minimization(
             FrankWolfe.block_coordinate_frank_wolfe,
             f,
             grad!,
@@ -137,24 +161,9 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
             line_search=FrankWolfe.Adaptive(relaxed_smoothness=true),
             update_order=order,
         )
-
-        @test abs(x.blocks[1][1] - 0.5 / n) < 1e-6
-        @test abs(x.blocks[2][1] - 1 / n) < 1e-6
-
-        x, _, _, _, _, _ = FrankWolfe.alternating_linear_minimization(
-            FrankWolfe.block_coordinate_frank_wolfe,
-            f,
-            grad!,
-            (lmo2, lmo_prob),
-            ones(n),
-            line_search=FrankWolfe.Agnostic(),
-            momentum=0.9,
-        )
-
-        @test abs(x.blocks[1][1] - 0.5 / n) < 1e-3
-        @test abs(x.blocks[2][1] - 1 / n) < 1e-3
+        @test abs(x.blocks[1][1] - 0.5 / n) < 1e-5
+        @test abs(x.blocks[2][1] - 1 / n) < 1e-5
     end
-
 end
 
 @testset "Testing alternating linear minimization with different FW methods" begin
@@ -223,8 +232,8 @@ end
         grad!,
         (lmo_nb, lmo_prob),
         ones(n),
-        lambda=1 / 3,
-        line_search=(FrankWolfe.Shortstep(2.0), FrankWolfe.Adaptive()),
+        lambda=3.0,
+        line_search=(FrankWolfe.Shortstep(8.0), FrankWolfe.Adaptive()), # L-smooth in coordinates for L = 2+2*λ
         update_step=(FrankWolfe.BPCGStep(), FrankWolfe.FrankWolfeStep()),
     )
 
