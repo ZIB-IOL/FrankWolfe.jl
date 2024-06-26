@@ -25,11 +25,11 @@ function blended_conditional_gradient(
     memory_mode::MemoryEmphasis=InplaceEmphasis(),
     accelerated=false,
     lazy_tolerance=2.0,
-    weight_purge_threshold=1e-9,
     gradient=nothing,
     callback=nothing,
     traj_data=[],
     timeout=Inf,
+    weight_purge_threshold=Base.rtoldefault(eltype(x0)),
     extra_vertex_storage=nothing,
     add_dropped_vertices=false,
     use_extra_vertex_storage=false,
@@ -57,11 +57,11 @@ function blended_conditional_gradient(
         memory_mode=memory_mode,
         accelerated=accelerated,
         lazy_tolerance=lazy_tolerance,
-        weight_purge_threshold=weight_purge_threshold,
         gradient=gradient,
         callback=callback,
         traj_data=traj_data,
         timeout=timeout,
+        weight_purge_threshold=weight_purge_threshold,
         extra_vertex_storage=extra_vertex_storage,
         add_dropped_vertices=add_dropped_vertices,
         use_extra_vertex_storage=use_extra_vertex_storage,
@@ -76,7 +76,7 @@ function blended_conditional_gradient(
     f,
     grad!,
     lmo,
-    active_set::AbstractActiveSet;
+    active_set::AbstractActiveSet{AT,R};
     line_search::LineSearchMethod=Adaptive(),
     line_search_inner::LineSearchMethod=Adaptive(),
     hessian=nothing,
@@ -88,11 +88,11 @@ function blended_conditional_gradient(
     memory_mode::MemoryEmphasis=InplaceEmphasis(),
     accelerated=false,
     lazy_tolerance=2.0,
-    weight_purge_threshold=1e-9,
     gradient=nothing,
     callback=nothing,
     traj_data=[],
     timeout=Inf,
+    weight_purge_threshold=Base.rtoldefault(R),
     extra_vertex_storage=nothing,
     add_dropped_vertices=false,
     use_extra_vertex_storage=false,
@@ -100,7 +100,7 @@ function blended_conditional_gradient(
     linesearch_inner_workspace=nothing,
     renorm_interval=1000,
     lmo_kwargs...,
-)
+) where {AT,R}
 
     # format string for output of the algorithm
     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i %14i\n"
@@ -436,7 +436,7 @@ function minimize_over_convex_hull!(
     f,
     grad!,
     gradient,
-    active_set::AbstractActiveSet,
+    active_set::AbstractActiveSet{AT,R},
     tolerance,
     t,
     time_start,
@@ -445,7 +445,7 @@ function minimize_over_convex_hull!(
     verbose=true,
     print_iter=1000,
     hessian=nothing,
-    weight_purge_threshold=1e-12,
+    weight_purge_threshold=Base.rtoldefault(R),
     accelerated=false,
     max_iteration,
     callback,
@@ -456,7 +456,7 @@ function minimize_over_convex_hull!(
     renorm_interval=1000,
     use_extra_vertex_storage=false,
     extra_vertex_storage=nothing,
-)
+) where {AT,R}
     #No hessian is known, use simplex gradient descent.
     if hessian === nothing
         number_of_steps = simplex_gradient_descent_over_convex_hull(
@@ -897,7 +897,7 @@ function simplex_gradient_descent_over_convex_hull(
     f,
     grad!,
     gradient,
-    active_set::AbstractActiveSet,
+    active_set::AbstractActiveSet{AT,R},
     tolerance,
     t,
     time_start,
@@ -907,7 +907,7 @@ function simplex_gradient_descent_over_convex_hull(
     verbose=true,
     print_iter=1000,
     hessian=nothing,
-    weight_purge_threshold=1e-12,
+    weight_purge_threshold=Base.rtoldefault(R),
     max_iteration,
     callback,
     timeout=Inf,
@@ -919,7 +919,7 @@ function simplex_gradient_descent_over_convex_hull(
     ),
     use_extra_vertex_storage=false,
     extra_vertex_storage=nothing,
-)
+) where {AT,R}
     number_of_steps = 0
     x = get_active_set_iterate(active_set)
     if line_search_inner isa Adaptive
