@@ -288,6 +288,7 @@ function update_active_set_quadratic!(warm_as::ActiveSetQuadratic{AT,R}, A::H, b
             warm_as.dots_A[idx][idy] = fast_dot(A * warm_as.atoms[idx], warm_as.atoms[idy])
         end
     end
+    warm_as.A .= A
     return update_active_set_quadratic!(warm_as, b)
 end
 
@@ -299,6 +300,7 @@ function update_active_set_quadratic!(warm_as::ActiveSetQuadratic{AT,R,IT,H}, b)
     @inbounds for idx in eachindex(warm_as)
         warm_as.dots_b[idx] = fast_dot(b, warm_as.atoms[idx])
     end
+    warm_as.b .= b
     compute_active_set_iterate!(warm_as)
     return warm_as
 end
