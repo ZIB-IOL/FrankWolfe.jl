@@ -26,7 +26,7 @@ function blended_pairwise_conditional_gradient(
     lazy=false,
     linesearch_workspace=nothing,
     lazy_tolerance=2.0,
-    weight_purge_threshold=sqrt(eps(eltype(x0) * Base.rtoldefault(eltype(x0)))),
+    weight_purge_threshold=sqrt(eps(eltype(x0)) * Base.rtoldefault(eltype(x0))),
     extra_vertex_storage=nothing,
     add_dropped_vertices=false,
     use_extra_vertex_storage=false,
