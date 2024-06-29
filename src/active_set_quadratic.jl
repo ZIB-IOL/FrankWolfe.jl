@@ -177,7 +177,13 @@ function Base.empty!(as::ActiveSetQuadratic)
     return as
 end
 
-function active_set_update!(active_set::ActiveSetQuadratic{AT,R}, lambda, atom, renorm=true, idx=nothing; weight_purge_threshold=Base.rtoldefault(R), add_dropped_vertices=false, vertex_storage=nothing) where {AT,R}
+function active_set_update!(
+    active_set::ActiveSetQuadratic{AT,R},
+    lambda, atom, renorm=true, idx=nothing;
+    weight_purge_threshold=weight_purge_threshold_default(R),
+    add_dropped_vertices=false,
+    vertex_storage=nothing,
+) where {AT,R}
     # rescale active set
     active_set.weights .*= (1 - lambda)
     active_set.weights_prev .*= (1 - lambda)

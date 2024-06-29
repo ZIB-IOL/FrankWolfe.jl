@@ -106,7 +106,7 @@ Adds the atom to the active set with weight lambda or adds lambda to existing at
 function active_set_update!(
     active_set::AbstractActiveSet{AT,R},
     lambda, atom, renorm=true, idx=nothing;
-    weight_purge_threshold=R <: AbstractFloat ? sqrt(eps(R) * Base.rtoldefault(R)) : Base.rtoldefault(R),
+    weight_purge_threshold=weight_purge_threshold_default(R),
     add_dropped_vertices=false,
     vertex_storage=nothing,
 ) where {AT,R}
@@ -228,7 +228,7 @@ end
 
 function active_set_cleanup!(
     active_set::AbstractActiveSet{AT,R};
-    weight_purge_threshold=R <: AbstractFloat ? sqrt(eps(R) * Base.rtoldefault(R)) : Base.rtoldefault(R),
+    weight_purge_threshold=weight_purge_threshold_default(R),
     update=true,
     add_dropped_vertices=false,
     vertex_storage=nothing,
