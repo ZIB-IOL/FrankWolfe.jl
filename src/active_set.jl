@@ -103,7 +103,7 @@ end
 
 Adds the atom to the active set with weight lambda or adds lambda to existing atom.
 """
-function active_set_update!(active_set::AbstractActiveSet{AT,R}, lambda, atom, renorm=true, idx=nothing; weight_purge_threshold=Base.rtoldefault(R), add_dropped_vertices=false, vertex_storage=nothing) where {AT,R}
+function active_set_update!(active_set::AbstractActiveSet{AT,R}, lambda, atom, renorm=true, idx=nothing; weight_purge_threshold=sqrt(eps(R) * Base.rtoldefault(R)), add_dropped_vertices=false, vertex_storage=nothing) where {AT,R}
     # rescale active set
     active_set.weights .*= (1 - lambda)
     # add value for new atom
@@ -220,7 +220,7 @@ function compute_active_set_iterate!(active_set::FrankWolfe.ActiveSet{<:SparseAr
     return active_set.x
 end
 
-function active_set_cleanup!(active_set::AbstractActiveSet{AT,R}; weight_purge_threshold=Base.rtoldefault(R), update=true, add_dropped_vertices=false, vertex_storage=nothing) where {AT,R}
+function active_set_cleanup!(active_set::AbstractActiveSet{AT,R}; weight_purge_threshold=sqrt(eps(R) * Base.rtoldefault(R)), update=true, add_dropped_vertices=false, vertex_storage=nothing) where {AT,R}
     if add_dropped_vertices && vertex_storage !== nothing
         for (weight, v) in zip(active_set.weights, active_set.atoms)
             if weight ≤ weight_purge_threshold
