@@ -269,7 +269,7 @@ function update_iterate(
     epsilon,
 )
 
-    d = similar(x)
+    d = zero(x)
     tt = regular
 
     _, v_local, v_local_loc, _, a_lambda, a, a_loc, _, _ =
@@ -372,6 +372,7 @@ function update_iterate(
                 @info "useless step"
             end
             tt = dualstep
+            gamma = 0.0
         end
     end
     if mod(t, s.renorm_interval) == 0
@@ -591,7 +592,7 @@ function block_coordinate_frank_wolfe(
                     @. storage = big_storage.blocks[i]
                 end
 
-                dual_gaps[i], v.blocks[i], d, gamma, tt = update_iterate(
+                dual_gaps[i], v.blocks[i], d.blocks[i], gamma, tt = update_iterate(
                     update_step[i],
                     x.blocks[i],
                     lmo.lmos[i],
