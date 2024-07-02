@@ -220,6 +220,18 @@ end
         grad!,
         (lmo1, lmo2),
         ones(n),
+        update_step=FrankWolfe.BPCGStep(true, nothing, 1000, false, Inf),
+    )
+
+    @test abs(x.blocks[1][1]) < 1e-6
+    @test abs(x.blocks[2][1]) < 1e-6
+
+    x, _, _, _, _ = FrankWolfe.alternating_linear_minimization(
+        FrankWolfe.block_coordinate_frank_wolfe,
+        f,
+        grad!,
+        (lmo1, lmo2),
+        ones(n),
         update_step=(FrankWolfe.BPCGStep(), FrankWolfe.FrankWolfeStep()),
     )
 
