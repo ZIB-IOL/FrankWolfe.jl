@@ -52,6 +52,7 @@ function decomposition_invariant_conditional_gradient(
     lazy=false,
     linesearch_workspace=nothing,
     lazy_tolerance=2.0,
+    num_atoms=100,
 )
 
     if !is_decomposition_invariant_oracle(lmo)
@@ -84,6 +85,7 @@ function decomposition_invariant_conditional_gradient(
     end
 
     x = x0
+    active_set = ActiveSet([(1.0, x)])
     if memory_mode isa InplaceEmphasis && !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
         # if integer, convert element type to most appropriate float
         if eltype(x) <: Integer
@@ -156,21 +158,34 @@ function decomposition_invariant_conditional_gradient(
         end
 
         if lazy
-            error("not implemented yet")
+            # error("not implemented yet")
             # _, v_local, v_local_loc, _, a_lambda, a, a_loc, _, _ =
             #     active_set_argminmax(active_set, gradient)
 
             # dot_forward_vertex = fast_dot(gradient, v_local)
             # dot_away_vertex = fast_dot(gradient, a)
             # local_gap = dot_away_vertex - dot_forward_vertex
+            d, v, v_index, a, away_index, gamma_max, phi, tt = 
+                lazy_dicg_step(
+                    x, 
+                    gradient, 
+                    lmo, 
+                    active_set, 
+                    phi, 
+                    epsilon, 
+                    d;
+                )
+            if gamma_max === nothing
+                gamma_max = dicg_maximum_step(lmo, x, d)
+            end
         else # non-lazy, call the simple and modified
             v = compute_extreme_point(lmo, gradient, lazy=lazy)
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
             phi = dual_gap
             a = compute_inface_extreme_point(lmo, NegatingArray(gradient), x; lazy=lazy)
+            d = muladd_memory_mode(memory_mode, d, a, v)
+            gamma_max = dicg_maximum_step(lmo, x, d)
         end
-        d = muladd_memory_mode(memory_mode, d, a, v)
-        gamma_max = dicg_maximum_step(lmo, x, d)
         gamma = perform_line_search(
             line_search,
             t,
@@ -183,6 +198,19 @@ function decomposition_invariant_conditional_gradient(
             linesearch_workspace,
             memory_mode,
         )
+
+        if lazy
+            dicg_active_set_update!(
+                active_set, 
+                gamma, 
+                a, 
+                v, 
+                false, 
+                away_index, 
+                v_index;
+                maximum_num_atoms=num_atoms, 
+            )
+        end
         if callback !== nothing
             state = CallbackState(
                 t,
@@ -458,4 +486,114 @@ function blended_decomposition_invariant_conditional_gradient(
         end
     end
     return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data)
+end
+
+function lazy_dicg_step(
+    x,
+    gradient,
+    lmo,
+    active_set,
+    phi,
+    epsilon,
+    d;
+    use_extra_vertex_storage=false,
+    extra_vertex_storage=nothing,
+    lazy_tolerance=2.0,
+    memory_mode::MemoryEmphasis=InplaceEmphasis(),
+)
+    _, v_local, v_local_loc, _, a_lambda, a_local, a_local_loc, _, _ =
+        active_set_argminmax(active_set, gradient)
+    # We will always have an away vertex determining the steplength. 
+    tt = regular
+    gamma_max = nothing
+    away_index = nothing
+    fw_index = nothing
+    grad_dot_x = fast_dot(x, gradient)
+    grad_dot_a_local = fast_dot(a_local, gradient)
+
+    # Do lazy pairwise step
+    grad_dot_lazy_fw_vertex = fast_dot(v_local, gradient)
+
+    if grad_dot_a_local - grad_dot_lazy_fw_vertex >= phi / lazy_tolerance &&
+       grad_dot_a_local - grad_dot_lazy_fw_vertex >= epsilon
+        tt = lazy
+        v = v_local
+        a = a_local
+        gamma_max = a_lambda
+        d = muladd_memory_mode(memory_mode, d, a, v)
+        fw_index = v_local_loc
+    else
+        # optionally: try vertex storage
+        if use_extra_vertex_storage
+            lazy_threshold = fast_dot(gradient, a_local) - phi / lazy_tolerance
+            (found_better_vertex, new_forward_vertex) =
+                storage_find_argmin_vertex(extra_vertex_storage, gradient, lazy_threshold)
+            if found_better_vertex
+                @debug("Found acceptable lazy vertex in storage")
+                v = new_forward_vertex
+                tt = lazylazy
+            else
+                v = compute_extreme_point(lmo, gradient)
+                tt = pairwise
+            end
+        else
+            v = compute_extreme_point(lmo, gradient)
+            grad_dot_v = fast_dot(gradient, v)
+            # Do lazy inface_point
+            if grad_dot_a_local - grad_dot_v >= phi / lazy_tolerance && 
+                grad_dot_a_local - grad_dot_v >= epsilon
+                tt = lazy_pairwise
+                a = a_local
+                gamma_max = a_lambda
+                away_index = a_local_loc
+            else
+                a = compute_inface_extreme_point(lmo, NegatingArray(gradient), x)
+            end
+        end
+
+        # Real dual gap promises enough progress.
+        grad_dot_fw_vertex = fast_dot(v, gradient)
+        dual_gap = grad_dot_x - grad_dot_fw_vertex
+        
+        if dual_gap >= phi / lazy_tolerance
+            d = muladd_memory_mode(memory_mode, d, a, v)
+            #Lower our expectation for progress.
+        else
+            d = muladd_memory_mode(memory_mode, d, a, v)
+            phi = min(dual_gap, phi / 2.0)
+        end
+    end
+    return d, v, fw_index, a, away_index, gamma_max, phi, tt
+end
+
+function dicg_active_set_update!(active_set::AbstractActiveSet, lambda, atom_a, atom_v, renorm=true, idx_a=nothing, idx_v=nothing; maximum_num_atoms=100, add_dropped_vertices=false, vertex_storage=nothing)
+    if idx_a === nothing
+        idx_a = find_atom(active_set, atom_a)
+    end
+
+    if idx_v === nothing
+        idx_v = find_atom(active_set, atom_v)
+    end
+
+    # update the weight of away_vertex if existed in active_set
+    if idx_a != -1
+        active_set.weights[idx_a] -= lambda
+    else # shrink all the weights to ensure feasiblity and the weights are inexact.
+        active_set.weights .-= lambda
+    end
+
+    if idx_v != -1
+        active_set.weights[idx_v] += lambda
+    else
+        push!(active_set, (lambda, atom_v))
+    end
+    
+    active_set_cleanup!(active_set, update=false, add_dropped_vertices=false, vertex_storage=nothing)
+    num_atoms = length(active_set.atoms)
+
+    if num_atoms > maximum_num_atoms
+        idx_redundant_atoms = partialsortperm(active_set.atoms, (num_atoms-maximum_num_atoms))
+        deleteat!(active_set, idx_redundant_atoms)
+    end
+    return active_set
 end
