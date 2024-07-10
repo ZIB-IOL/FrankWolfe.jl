@@ -36,7 +36,7 @@ function frank_wolfe(
     format_string = "%6s %13s %14e %14e %14e %14e %14e\n"
     function format_state(state)
         rep = (
-            st[Symbol(state.tt)],
+            st[Symbol(state.step_type)],
             string(state.t),
             Float64(state.primal),
             Float64(state.primal - state.dual_gap),
@@ -52,7 +52,7 @@ function frank_wolfe(
     primal = Inf
     v = []
     x = x0
-    tt = regular
+    step_type = regular
 
     if trajectory
         callback = make_trajectory_callback(callback, traj_data)
@@ -187,7 +187,7 @@ function frank_wolfe(
                 grad!,
                 lmo,
                 gradient,
-                tt,
+                step_type,
             )
             if callback(state) === false
                 break
@@ -199,7 +199,7 @@ function frank_wolfe(
     # recompute everything once for final verfication / do not record to trajectory though for now!
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
     # hence the final computation.
-    tt = last
+    step_type = last
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient, v=v)
     primal = f(x)
@@ -232,7 +232,7 @@ function frank_wolfe(
             grad!,
             lmo,
             gradient,
-            tt,
+            step_type,
         )
         callback(state)
     end
@@ -277,7 +277,7 @@ function lazified_conditional_gradient(
     headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "Cache Size"]
     function format_state(state, args...)
         rep = (
-            st[Symbol(state.tt)],
+            st[Symbol(state.step_type)],
             string(state.t),
             Float64(state.primal),
             Float64(state.primal - state.dual_gap),
@@ -300,7 +300,7 @@ function lazified_conditional_gradient(
     v = []
     x = x0
     phi = Inf
-    tt = regular
+    step_type = regular
 
     if trajectory
         callback = make_trajectory_callback(callback, traj_data)
@@ -380,9 +380,9 @@ function lazified_conditional_gradient(
         end
 
         v = compute_extreme_point(lmo, gradient, threshold=threshold, greedy=greedy_lazy)
-        tt = lazy
+        step_type = lazy
         if fast_dot(v, gradient) > threshold
-            tt = dualstep
+            step_type = dualstep
             dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
             phi = min(dual_gap, phi / 2)
         end
@@ -418,7 +418,7 @@ function lazified_conditional_gradient(
                 grad!,
                 lmo,
                 gradient,
-                tt,
+                step_type,
             )
             if callback(state) === false
                 break
@@ -431,7 +431,7 @@ function lazified_conditional_gradient(
     # recompute everything once for final verfication / do not record to trajectory though for now!
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
     # hence the final computation.
-    tt = last
+    step_type = last
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
@@ -464,7 +464,7 @@ function lazified_conditional_gradient(
             grad!,
             lmo,
             gradient,
-            tt,
+            step_type,
         )
         callback(state)
     end
@@ -514,7 +514,7 @@ function stochastic_frank_wolfe(
 
     function format_state(state, batch_size)
         rep = (
-            st[Symbol(state.tt)],
+            st[Symbol(state.step_type)],
             string(state.t),
             Float64(state.primal),
             Float64(state.primal - state.dual_gap),
@@ -532,7 +532,7 @@ function stochastic_frank_wolfe(
     v = []
     x = x0
     d = similar(x)
-    tt = regular
+    step_type = regular
 
     if trajectory
         callback = make_trajectory_callback(callback, traj_data)
@@ -678,7 +678,7 @@ function stochastic_frank_wolfe(
                 nothing,
                 lmo,
                 gradient,
-                tt,
+                step_type,
             )
             if callback(state, batch_size) === false
                 break
@@ -696,7 +696,7 @@ function stochastic_frank_wolfe(
     v = compute_extreme_point(lmo, gradient)
     # @show (gradient, primal)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
-    tt = last
+    step_type = last
     d = muladd_memory_mode(memory_mode, d, x, v)
     gamma = perform_line_search(
         line_search,
@@ -726,7 +726,7 @@ function stochastic_frank_wolfe(
             nothing,
             lmo,
             gradient,
-            tt,
+            step_type,
         )
         callback(state, batch_size)
     end

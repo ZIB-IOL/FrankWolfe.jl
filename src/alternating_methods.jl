@@ -137,7 +137,7 @@ function alternating_linear_minimization(
 
         function format_state(state, args...)
             rep = (
-                st[Symbol(state.tt)],
+                st[Symbol(state.step_type)],
                 string(state.t),
                 Float64(state.primal),
                 Float64(state.primal - state.dual_gap),
@@ -288,7 +288,7 @@ function alternating_projections(
     format_string = "%6s %13s %14e %14e %14e %14e\n"
     function format_state(state, infeas)
         rep = (
-            st[Symbol(state.tt)],
+            st[Symbol(state.step_type)],
             string(state.t),
             Float64(state.dual_gap),
             Float64(infeas),
@@ -302,7 +302,7 @@ function alternating_projections(
     dual_gap = Inf
     x = fill(x0, N)
     v = similar(x)
-    tt = regular
+    step_type = regular
     gradient = similar(x)
     ndim = ndims(x)
 
@@ -405,7 +405,7 @@ function alternating_projections(
                 nothing,
                 lmo,
                 gradient,
-                tt,
+                step_type,
             )
             # @show state
             if callback(state, infeas) === false
@@ -418,7 +418,7 @@ function alternating_projections(
     # recompute everything once for final verfication / do not record to trajectory though for now!
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
     # hence the final computation.
-    tt = last
+    step_type = last
     infeas = infeasibility(x)
     grad!(gradient, x)
     v = compute_extreme_point.(lmo.lmos, gradient)
@@ -441,7 +441,7 @@ function alternating_projections(
             nothing,
             lmo,
             gradient,
-            tt,
+            step_type,
         )
         callback(state, infeas)
     end

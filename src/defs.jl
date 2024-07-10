@@ -57,7 +57,7 @@ struct CallbackState{TP,TDV,TDG,XT,VT,DT,TG,FT,GFT,LMO,GT}
     grad!::GFT
     lmo::LMO
     gradient::GT
-    tt::FrankWolfe.StepType
+    step_type::FrankWolfe.StepType
 end
 
 function callback_state(state::CallbackState)
