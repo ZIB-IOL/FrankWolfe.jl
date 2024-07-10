@@ -11,31 +11,31 @@ struct InplaceEmphasis <: MemoryEmphasis end
 struct OutplaceEmphasis <: MemoryEmphasis end
 
 @enum StepType begin
-    initial = 1
-    regular = 2
-    lazy = 3
-    lazylazy = 4
-    dualstep = 5
-    away = 6
-    pairwise = 7
-    drop = 8
-    simplex_descent = 101
-    last = 1000
-    pp = 1001
+    ST_INITIAL = 1
+    ST_REGULAR = 2
+    ST_LAZY = 3
+    ST_LAZYSTORAGE = 4
+    ST_DUALSTEP = 5
+    ST_AWAY = 6
+    ST_PAIRWISE = 7
+    ST_DROP = 8
+    ST_SIMPLEXDESCENT = 101
+    ST_LAST = 1000
+    ST_POSTPROCESS = 1001
 end
 
 const steptype_string = (
-    initial="I",
-    regular="FW",
-    lazy="L",
-    lazylazy="LL",
-    dualstep="LD",
-    away="A",
-    pairwise="P",
-    drop="D",
-    simplex_descent="SD",
-    last="Last",
-    pp="PP",
+    ST_INITIAL="I",
+    ST_REGULAR="FW",
+    ST_LAZY="L",
+    ST_LAZYSTORAGE="LL",
+    ST_DUALSTEP="LD",
+    ST_AWAY="A",
+    ST_PAIRWISE="P",
+    ST_DROP="D",
+    ST_SIMPLEXDESCENT="SD",
+    ST_LAST="Last",
+    ST_POSTPROCESS="PP",
 )
 
 """

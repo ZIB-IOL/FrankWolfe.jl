@@ -2,6 +2,7 @@
 
 - Changed `tt` to `step_type` everywhere, including as a type in the `CallbackState` object.
 - `FrankWolfe.st` is now `FrankWolfe.steptype_string`
+- all step types were renamed to clearly appear as constants, with a naming convention `ST_NAME`.
 
 # Noteworthy changes from v0.1 to v0.2
 

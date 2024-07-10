@@ -50,8 +50,8 @@ If the callback to be wrapped is of type nothing, always return true to enforce 
 """
 function make_print_callback(callback, print_iter, headers, format_string, format_state)
     return function callback_with_prints(state, args...)
-        if (state.step_type == pp || state.step_type == last)
-            if state.t == 0 && state.step_type == last
+        if (state.step_type == ST_POSTPROCESS || state.step_type == ST_LAST)
+            if state.t == 0 && state.step_type == ST_LAST
                 print_callback(headers, format_string, print_header=true)
             end
             rep = format_state(state, args...)
@@ -60,10 +60,10 @@ function make_print_callback(callback, print_iter, headers, format_string, forma
             flush(stdout)
         elseif state.t == 1 ||
                mod(state.t, print_iter) == 0 ||
-               state.step_type == dualstep ||
-               state.step_type == last
+               state.step_type == ST_DUALSTEP ||
+               state.step_type == ST_LAST
             if state.t == 1
-                state = @set state.step_type = initial
+                state = @set state.step_type = ST_INITIAL
                 print_callback(headers, format_string, print_header=true)
             end
             rep = format_state(state, args...)
@@ -81,8 +81,8 @@ end
 
 function make_print_callback_extension(callback, print_iter, headers, format_string, format_state)
     return function callback_with_prints(state, args...)
-        if (state.step_type == pp || state.step_type == last)
-            if state.t == 0 && state.step_type == last
+        if (state.step_type == ST_POSTPROCESS || state.step_type == ST_LAST)
+            if state.t == 0 && state.step_type == ST_LAST
                 print_callback(headers, format_string, print_header=true)
             end
             rep = format_state(state, args...)
@@ -93,8 +93,8 @@ function make_print_callback_extension(callback, print_iter, headers, format_str
             flush(stdout)
         elseif state.t == 1 ||
                mod(state.t, print_iter) == 0 ||
-               state.step_type == dualstep ||
-               state.step_type == last
+               state.step_type == ST_DUALSTEP ||
+               state.step_type == ST_LAST
             if state.t == 1
                 print("\e[u\e[3A") # Move to end of upper horizontal line
                 line = "-"^compute_line_length(format_string)
@@ -131,7 +131,7 @@ If the callback to be wrapped is of type nothing, always return true to enforce 
 """
 function make_trajectory_callback(callback, traj_data::Vector)
     return function callback_with_trajectory(state, args...)
-        if state.step_type !== last || state.step_type !== pp
+        if state.step_type !== ST_LAST || state.step_type !== ST_POSTPROCESS
             push!(traj_data, callback_state(state))
         end
         if callback === nothing

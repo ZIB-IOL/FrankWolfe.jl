@@ -302,7 +302,7 @@ function alternating_projections(
     dual_gap = Inf
     x = fill(x0, N)
     v = similar(x)
-    step_type = regular
+    step_type = ST_REGULAR
     gradient = similar(x)
     ndim = ndims(x)
 
@@ -418,7 +418,7 @@ function alternating_projections(
     # recompute everything once for final verfication / do not record to trajectory though for now!
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
     # hence the final computation.
-    step_type = last
+    step_type = ST_LAST
     infeas = infeasibility(x)
     grad!(gradient, x)
     v = compute_extreme_point.(lmo.lmos, gradient)

@@ -123,7 +123,7 @@ function pairwise_frank_wolfe(
     dual_gap = Inf
     primal = Inf
     x = get_active_set_iterate(active_set)
-    step_type = regular
+    step_type = ST_REGULAR
 
     if trajectory
         callback = make_trajectory_callback(callback, traj_data)
@@ -234,11 +234,11 @@ function pairwise_frank_wolfe(
         end
 
         if gamma ≈ gamma_max && fw_index === -1
-            step_type = dualstep
+            step_type = ST_DUALSTEP
         end
 
         gamma = 0.0
-        if step_type != dualstep
+        if step_type != ST_DUALSTEP
             gamma = perform_line_search(
                 line_search,
                 t,
@@ -324,7 +324,7 @@ function pairwise_frank_wolfe(
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
-    step_type = last
+    step_type = ST_LAST
     tot_time = (time_ns() - time_start) / 1e9
     if callback !== nothing
         state = CallbackState(
@@ -360,7 +360,7 @@ function pairwise_frank_wolfe(
         primal = f(x)
         dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
     end
-    step_type = pp
+    step_type = ST_POSTPROCESS
     tot_time = (time_ns() - time_start) / 1e9
     if callback !== nothing
         state = CallbackState(
@@ -412,7 +412,7 @@ function lazy_pfw_step(
 
     if grad_dot_a_local - grad_dot_lazy_fw_vertex >= phi / lazy_tolerance &&
        grad_dot_a_local - grad_dot_lazy_fw_vertex >= epsilon
-        step_type = lazy
+        step_type = ST_LAZY
         v = v_local
         d = muladd_memory_mode(memory_mode, d, a_local, v)
         fw_index = v_local_loc
@@ -425,14 +425,14 @@ function lazy_pfw_step(
             if found_better_vertex
                 @debug("Found acceptable lazy vertex in storage")
                 v = new_forward_vertex
-                step_type = lazylazy
+                step_type = ST_LAZYSTORAGE
             else
                 v = compute_extreme_point(lmo, gradient)
-                step_type = pairwise
+                step_type = ST_PAIRWISE
             end
         else
             v = compute_extreme_point(lmo, gradient)
-            step_type = pairwise
+            step_type = ST_PAIRWISE
         end
 
         # Real dual gap promises enough progress.
@@ -442,7 +442,7 @@ function lazy_pfw_step(
             d = muladd_memory_mode(memory_mode, d, a_local, v)
             #Lower our expectation for progress.
         else
-            step_type = dualstep
+            step_type = ST_DUALSTEP
             phi = min(dual_gap, phi / 2.0)
         end
     end
@@ -459,7 +459,7 @@ function pfw_step(
     d;
     memory_mode::MemoryEmphasis=InplaceEmphasis(),
 )
-    step_type = pairwise
+    step_type = ST_PAIRWISE
     _, _, _, _, a_lambda, a_local, a_local_loc = active_set_argminmax(active_set, gradient)
     away_vertex = a_local
     away_index = a_local_loc

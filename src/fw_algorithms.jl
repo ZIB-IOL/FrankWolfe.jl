@@ -52,7 +52,7 @@ function frank_wolfe(
     primal = Inf
     v = []
     x = x0
-    step_type = regular
+    step_type = ST_REGULAR
 
     if trajectory
         callback = make_trajectory_callback(callback, traj_data)
@@ -199,7 +199,7 @@ function frank_wolfe(
     # recompute everything once for final verfication / do not record to trajectory though for now!
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
     # hence the final computation.
-    step_type = last
+    step_type = ST_LAST
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient, v=v)
     primal = f(x)
@@ -300,7 +300,7 @@ function lazified_conditional_gradient(
     v = []
     x = x0
     phi = Inf
-    step_type = regular
+    step_type = ST_REGULAR
 
     if trajectory
         callback = make_trajectory_callback(callback, traj_data)
@@ -380,9 +380,9 @@ function lazified_conditional_gradient(
         end
 
         v = compute_extreme_point(lmo, gradient, threshold=threshold, greedy=greedy_lazy)
-        step_type = lazy
+        step_type = ST_LAZY
         if fast_dot(v, gradient) > threshold
-            step_type = dualstep
+            step_type = ST_DUALSTEP
             dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
             phi = min(dual_gap, phi / 2)
         end
@@ -431,7 +431,7 @@ function lazified_conditional_gradient(
     # recompute everything once for final verfication / do not record to trajectory though for now!
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
     # hence the final computation.
-    step_type = last
+    step_type = ST_LAST
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
@@ -532,7 +532,7 @@ function stochastic_frank_wolfe(
     v = []
     x = x0
     d = similar(x)
-    step_type = regular
+    step_type = ST_REGULAR
 
     if trajectory
         callback = make_trajectory_callback(callback, traj_data)
@@ -696,7 +696,7 @@ function stochastic_frank_wolfe(
     v = compute_extreme_point(lmo, gradient)
     # @show (gradient, primal)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
-    step_type = last
+    step_type = ST_LAST
     d = muladd_memory_mode(memory_mode, d, x, v)
     gamma = perform_line_search(
         line_search,

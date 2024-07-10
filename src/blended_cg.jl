@@ -154,7 +154,7 @@ function blended_conditional_gradient(
         callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
     end
 
-    step_type = regular
+    step_type = ST_REGULAR
     time_start = time_ns()
     v = x
 
@@ -271,7 +271,7 @@ function blended_conditional_gradient(
         force_fw_step = false
         xval = fast_dot(x, gradient)
         if value > xval - phi / lazy_tolerance
-            step_type = dualstep
+            step_type = ST_DUALSTEP
             # setting gap estimate as ∇f(x) (x - v_FW) / 2
             phi = (xval - value) / 2
             if callback !== nothing
@@ -296,7 +296,7 @@ function blended_conditional_gradient(
                 end
             end
         else
-            step_type = regular
+            step_type = ST_REGULAR
             d = muladd_memory_mode(memory_mode, d, x, v)
             gamma = perform_line_search(
                 line_search,
@@ -362,7 +362,7 @@ function blended_conditional_gradient(
         primal = f(x)
         dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         tot_time = (time_ns() - time_start) / 1e9
-        step_type = last
+        step_type = ST_LAST
         state = CallbackState(
             t,
             primal,
@@ -394,7 +394,7 @@ function blended_conditional_gradient(
 
     # report post-processed iteration
     if callback !== nothing
-        step_type = pp
+        step_type = ST_POSTPROCESS
         tot_time = (time_ns() - time_start) / 1e9
         state = CallbackState(
             t,
@@ -734,7 +734,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
         primal = reduced_f(x)
         reduced_grad!(gradient_x, x)
         strong_wolfe_gap = strong_frankwolfe_gap_probability_simplex(gradient_x, x)
-        step_type = simplex_descent
+        step_type = ST_SIMPLEXDESCENT
         if callback !== nothing
             state = CallbackState(
                 t + number_of_steps,
@@ -804,7 +804,7 @@ function simplex_gradient_descent_over_probability_simplex(
         reduced_grad!(gradient, x)
         strong_wolfe_gap = strong_frankwolfe_gap_probability_simplex(gradient, x)
         tot_time = (time_ns() - time_start) / 1e9
-        step_type = simplex_descent
+        step_type = ST_SIMPLEXDESCENT
         if callback !== nothing
             state = CallbackState(
                 t + number_of_steps,
@@ -1042,7 +1042,7 @@ function simplex_gradient_descent_over_convex_hull(
         x = get_active_set_iterate(active_set)
         primal = f(x)
         dual_gap = tolerance
-        step_type = simplex_descent
+        step_type = ST_SIMPLEXDESCENT
         if callback !== nothing
             state = CallbackState(
                 t,
