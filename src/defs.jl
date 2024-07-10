@@ -20,12 +20,11 @@ struct OutplaceEmphasis <: MemoryEmphasis end
     pairwise = 7
     drop = 8
     simplex_descent = 101
-    gap_step = 102
     last = 1000
     pp = 1001
 end
 
-const st = (
+const steptype_string = (
     initial="I",
     regular="FW",
     lazy="L",
@@ -35,7 +34,6 @@ const st = (
     pairwise="P",
     drop="D",
     simplex_descent="SD",
-    gap_step="GS",
     last="Last",
     pp="PP",
 )
@@ -57,7 +55,7 @@ struct CallbackState{TP,TDV,TDG,XT,VT,DT,TG,FT,GFT,LMO,GT}
     grad!::GFT
     lmo::LMO
     gradient::GT
-    step_type::FrankWolfe.StepType
+    step_type::StepType
 end
 
 function callback_state(state::CallbackState)

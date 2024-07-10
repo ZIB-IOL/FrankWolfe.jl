@@ -137,7 +137,7 @@ function alternating_linear_minimization(
 
         function format_state(state, args...)
             rep = (
-                st[Symbol(state.step_type)],
+                steptype_string[Symbol(state.step_type)],
                 string(state.t),
                 Float64(state.primal),
                 Float64(state.primal - state.dual_gap),
@@ -288,7 +288,7 @@ function alternating_projections(
     format_string = "%6s %13s %14e %14e %14e %14e\n"
     function format_state(state, infeas)
         rep = (
-            st[Symbol(state.step_type)],
+            steptype_string[Symbol(state.step_type)],
             string(state.t),
             Float64(state.dual_gap),
             Float64(infeas),

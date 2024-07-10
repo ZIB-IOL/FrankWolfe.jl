@@ -36,7 +36,7 @@ function frank_wolfe(
     format_string = "%6s %13s %14e %14e %14e %14e %14e\n"
     function format_state(state)
         rep = (
-            st[Symbol(state.step_type)],
+            steptype_string[Symbol(state.step_type)],
             string(state.t),
             Float64(state.primal),
             Float64(state.primal - state.dual_gap),
@@ -277,7 +277,7 @@ function lazified_conditional_gradient(
     headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "Cache Size"]
     function format_state(state, args...)
         rep = (
-            st[Symbol(state.step_type)],
+            steptype_string[Symbol(state.step_type)],
             string(state.t),
             Float64(state.primal),
             Float64(state.primal - state.dual_gap),
@@ -514,7 +514,7 @@ function stochastic_frank_wolfe(
 
     function format_state(state, batch_size)
         rep = (
-            st[Symbol(state.step_type)],
+            steptype_string[Symbol(state.step_type)],
             string(state.t),
             Float64(state.primal),
             Float64(state.primal - state.dual_gap),

@@ -118,7 +118,7 @@ function blended_conditional_gradient(
 
     function format_state(state, active_set, non_simplex_iter)
         rep = (
-            st[Symbol(state.step_type)],
+            steptype_string[Symbol(state.step_type)],
             string(state.t),
             Float64(state.primal),
             Float64(state.primal - state.dual_gap),

@@ -102,7 +102,7 @@ function pairwise_frank_wolfe(
     headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "#ActiveSet")
     function format_state(state, active_set)
         rep = (
-            st[Symbol(state.step_type)],
+            steptype_string[Symbol(state.step_type)],
             string(state.t),
             Float64(state.primal),
             Float64(state.primal - state.dual_gap),
