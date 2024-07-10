@@ -175,12 +175,12 @@ abstract type UpdateStep end
     )
     
 Executes one iteration of the defined [`FrankWolfe.UpdateStep`](@ref) and updates the iterate `x` implicitly.
-The function returns a tuple `(dual_gap, v, d, gamma, tt)`:
+The function returns a tuple `(dual_gap, v, d, gamma, step_type)`:
 - `dual_gap` is the updated FrankWolfe gap
 - `v` is the used vertex
 - `d` is the update direction
 - `gamma` is the applied step-size
-- `tt` is the applied step-type
+- `step_type` is the applied step-type
 """
 function update_iterate end
 
@@ -249,9 +249,9 @@ function update_iterate(
 
     x = muladd_memory_mode(memory_mode, x, gamma, d)
 
-    tt = regular
+    step_type = ST_REGULAR
 
-    return (dual_gap, v, d, gamma, tt)
+    return (dual_gap, v, d, gamma, step_type)
 end
 
 function update_iterate(
@@ -270,7 +270,7 @@ function update_iterate(
 )
 
     d = zero(x)
-    tt = regular
+    step_type = ST_REGULAR
 
     _, v_local, v_local_loc, _, a_lambda, a, a_loc, _, _ =
         active_set_argminmax(s.active_set, gradient)
@@ -304,7 +304,7 @@ function update_iterate(
             memory_mode,
         )
         gamma = min(gamma_max, gamma)
-        tt = gamma ≈ gamma_max ? drop : pairwise
+        step_type = gamma ≈ gamma_max ? ST_DROP : ST_PAIRWISE
 
         # reached maximum of lambda -> dropping away vertex
         if gamma ≈ gamma_max
@@ -319,7 +319,7 @@ function update_iterate(
     else # add to active set
         if s.lazy
             v = compute_extreme_point(lmo, gradient)
-            tt = regular
+            step_type = ST_REGULAR
         end
         vertex_taken = v
         dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
@@ -358,10 +358,10 @@ function update_iterate(
                 active_set_update!(s.active_set, gamma, v, renorm, nothing)
             end
         else # dual step
-            if tt != lazylazy
+            if step_type != ST_LAZYSTORAGE
                 s.phi = dual_gap
                 @debug begin
-                    @assert tt == regular
+                    @assert step_type == ST_REGULAR
                     v2 = compute_extreme_point(lmo, gradient)
                     g = dot(gradient, x - v2)
                     if abs(g - dual_gap) > 100 * sqrt(eps())
@@ -371,7 +371,7 @@ function update_iterate(
             else
                 @info "useless step"
             end
-            tt = dualstep
+            step_type = ST_DUALSTEP
             gamma = 0.0
         end
     end
@@ -381,7 +381,7 @@ function update_iterate(
 
     x = muladd_memory_mode(memory_mode, x, gamma, d)
 
-    return (dual_gap, vertex_taken, d, gamma, tt)
+    return (dual_gap, vertex_taken, d, gamma, step_type)
 end
 
 """
@@ -433,7 +433,7 @@ function block_coordinate_frank_wolfe(
     format_string = "%6s %13s %14e %14e %14e %14e %14e\n"
     function format_state(state, args...)
         rep = (
-            st[Symbol(state.tt)],
+            steptype_string[Symbol(state.step_type)],
             string(state.t),
             Float64(state.primal),
             Float64(state.primal - state.dual_gap),
@@ -450,7 +450,7 @@ function block_coordinate_frank_wolfe(
     dual_gaps = fill(Inf, N)
     primal = Inf
     x = copy(x0)
-    tt = regular
+    step_type = ST_REGULAR
 
     if trajectory
         callback = make_trajectory_callback(callback, traj_data)
@@ -535,7 +535,7 @@ function block_coordinate_frank_wolfe(
         grad!,
         lmo,
         gradient,
-        tt,
+        step_type,
     )
 
     while t <= max_iteration && dual_gap >= max(epsilon, eps(float(typeof(dual_gap))))
@@ -592,7 +592,7 @@ function block_coordinate_frank_wolfe(
                     @. storage = big_storage.blocks[i]
                 end
 
-                dual_gaps[i], v.blocks[i], d.blocks[i], gamma, tt = update_iterate(
+                dual_gaps[i], v.blocks[i], d.blocks[i], gamma, step_type = update_iterate(
                     update_step[i],
                     x.blocks[i],
                     lmo.lmos[i],
@@ -637,7 +637,7 @@ function block_coordinate_frank_wolfe(
                 grad!,
                 lmo,
                 gradient,
-                tt,
+                step_type,
             )
             if callback !== nothing
                 # @show state
@@ -651,7 +651,7 @@ function block_coordinate_frank_wolfe(
     # recompute everything once for final verfication / do not record to trajectory though for now!
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
     # hence the final computation.
-    tt = last
+    step_type = ST_LAST
 
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
@@ -676,7 +676,7 @@ function block_coordinate_frank_wolfe(
             grad!,
             lmo,
             gradient,
-            tt,
+            step_type,
         )
         callback(state, dual_gaps)
     end

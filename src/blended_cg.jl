@@ -118,7 +118,7 @@ function blended_conditional_gradient(
 
     function format_state(state, active_set, non_simplex_iter)
         rep = (
-            st[Symbol(state.tt)],
+            steptype_string[Symbol(state.step_type)],
             string(state.t),
             Float64(state.primal),
             Float64(state.primal - state.dual_gap),
@@ -154,7 +154,7 @@ function blended_conditional_gradient(
         callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
     end
 
-    tt = regular
+    step_type = ST_REGULAR
     time_start = time_ns()
     v = x
 
@@ -271,7 +271,7 @@ function blended_conditional_gradient(
         force_fw_step = false
         xval = fast_dot(x, gradient)
         if value > xval - phi / lazy_tolerance
-            tt = dualstep
+            step_type = ST_DUALSTEP
             # setting gap estimate as ∇f(x) (x - v_FW) / 2
             phi = (xval - value) / 2
             if callback !== nothing
@@ -289,14 +289,14 @@ function blended_conditional_gradient(
                     grad!,
                     lmo,
                     gradient,
-                    tt,
+                    step_type,
                 )
                 if callback(state, active_set, non_simplex_iter) === false
                     break
                 end
             end
         else
-            tt = regular
+            step_type = ST_REGULAR
             d = muladd_memory_mode(memory_mode, d, x, v)
             gamma = perform_line_search(
                 line_search,
@@ -326,7 +326,7 @@ function blended_conditional_gradient(
                     grad!,
                     lmo,
                     gradient,
-                    tt,
+                    step_type,
                 )
                 if callback(state, active_set, non_simplex_iter) === false
                     break
@@ -362,7 +362,7 @@ function blended_conditional_gradient(
         primal = f(x)
         dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         tot_time = (time_ns() - time_start) / 1e9
-        tt = last
+        step_type = ST_LAST
         state = CallbackState(
             t,
             primal,
@@ -377,7 +377,7 @@ function blended_conditional_gradient(
             grad!,
             lmo,
             gradient,
-            tt,
+            step_type,
         )
         callback(state, active_set, non_simplex_iter)
     end
@@ -394,7 +394,7 @@ function blended_conditional_gradient(
 
     # report post-processed iteration
     if callback !== nothing
-        tt = pp
+        step_type = ST_POSTPROCESS
         tot_time = (time_ns() - time_start) / 1e9
         state = CallbackState(
             t,
@@ -410,7 +410,7 @@ function blended_conditional_gradient(
             grad!,
             lmo,
             gradient,
-            tt,
+            step_type,
         )
         callback(state, active_set, non_simplex_iter)
     end
@@ -734,7 +734,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
         primal = reduced_f(x)
         reduced_grad!(gradient_x, x)
         strong_wolfe_gap = strong_frankwolfe_gap_probability_simplex(gradient_x, x)
-        tt = simplex_descent
+        step_type = ST_SIMPLEXDESCENT
         if callback !== nothing
             state = CallbackState(
                 t + number_of_steps,
@@ -750,7 +750,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
                 reduced_grad!,
                 nothing,
                 gradient_x,
-                tt,
+                step_type,
             )
             if callback(state, active_set, non_simplex_iter) === false
                 break
@@ -804,7 +804,7 @@ function simplex_gradient_descent_over_probability_simplex(
         reduced_grad!(gradient, x)
         strong_wolfe_gap = strong_frankwolfe_gap_probability_simplex(gradient, x)
         tot_time = (time_ns() - time_start) / 1e9
-        tt = simplex_descent
+        step_type = ST_SIMPLEXDESCENT
         if callback !== nothing
             state = CallbackState(
                 t + number_of_steps,
@@ -820,7 +820,7 @@ function simplex_gradient_descent_over_probability_simplex(
                 reduced_grad!,
                 nothing,
                 gradient,
-                tt,
+                step_type,
             )
             if callback(state, active_set, non_simplex_iter) === false
                 break
@@ -1042,7 +1042,7 @@ function simplex_gradient_descent_over_convex_hull(
         x = get_active_set_iterate(active_set)
         primal = f(x)
         dual_gap = tolerance
-        tt = simplex_descent
+        step_type = ST_SIMPLEXDESCENT
         if callback !== nothing
             state = CallbackState(
                 t,
@@ -1058,7 +1058,7 @@ function simplex_gradient_descent_over_convex_hull(
                 grad!,
                 nothing,
                 gradient,
-                tt,
+                step_type,
             )
             callback(state, active_set, non_simplex_iter)
         end

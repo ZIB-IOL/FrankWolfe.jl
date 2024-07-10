@@ -104,7 +104,7 @@ function away_frank_wolfe(
     headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "#ActiveSet")
     function format_state(state, active_set)
         rep = (
-            st[Symbol(state.tt)],
+            steptype_string[Symbol(state.step_type)],
             string(state.t),
             Float64(state.primal),
             Float64(state.primal - state.dual_gap),
@@ -125,7 +125,7 @@ function away_frank_wolfe(
     dual_gap = Inf
     primal = Inf
     x = get_active_set_iterate(active_set)
-    tt = regular
+    step_type = ST_REGULAR
 
     if trajectory
         callback = make_trajectory_callback(callback, traj_data)
@@ -213,7 +213,7 @@ function away_frank_wolfe(
 
         if away_steps
             if lazy
-                d, vertex, index, gamma_max, phi_value, away_step_taken, fw_step_taken, tt =
+                d, vertex, index, gamma_max, phi_value, away_step_taken, fw_step_taken, step_type =
                     lazy_afw_step(
                         x,
                         gradient,
@@ -228,11 +228,11 @@ function away_frank_wolfe(
                         memory_mode=memory_mode,
                     )
             else
-                d, vertex, index, gamma_max, phi_value, away_step_taken, fw_step_taken, tt =
+                d, vertex, index, gamma_max, phi_value, away_step_taken, fw_step_taken, step_type =
                     afw_step(x, gradient, lmo, active_set, epsilon, d, memory_mode=memory_mode)
             end
         else
-            d, vertex, index, gamma_max, phi_value, away_step_taken, fw_step_taken, tt =
+            d, vertex, index, gamma_max, phi_value, away_step_taken, fw_step_taken, step_type =
                 fw_step(x, gradient, lmo, d, memory_mode=memory_mode)
         end
 
@@ -252,7 +252,7 @@ function away_frank_wolfe(
             )
 
             gamma = min(gamma_max, gamma)
-            tt = gamma ≈ gamma_max ? drop : tt
+            step_type = gamma ≈ gamma_max ? ST_DROP : step_type
             # cleanup and renormalize every x iterations. Only for the fw steps.
             renorm = mod(t, renorm_interval) == 0
             if away_step_taken
@@ -284,7 +284,7 @@ function away_frank_wolfe(
                 grad!,
                 lmo,
                 gradient,
-                tt,
+                step_type,
             )
             if callback(state, active_set) === false
                 break
@@ -316,7 +316,7 @@ function away_frank_wolfe(
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
-    tt = last
+    step_type = ST_LAST
     tot_time = (time_ns() - time_start) / 1e9
     if callback !== nothing
         state = CallbackState(
@@ -333,7 +333,7 @@ function away_frank_wolfe(
             grad!,
             lmo,
             gradient,
-            tt,
+            step_type,
         )
         callback(state, active_set)
     end
@@ -347,7 +347,7 @@ function away_frank_wolfe(
         primal = f(x)
         dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
     end
-    tt = pp
+    step_type = ST_POSTPROCESS
     tot_time = (time_ns() - time_start) / 1e9
     if callback !== nothing
         state = CallbackState(
@@ -364,7 +364,7 @@ function away_frank_wolfe(
             grad!,
             lmo,
             gradient,
-            tt,
+            step_type,
         )
         callback(state, active_set)
     end
@@ -381,7 +381,7 @@ function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon, d; use_extra_
     if grad_dot_x - grad_dot_lazy_fw_vertex >= grad_dot_a - grad_dot_x &&
        grad_dot_x - grad_dot_lazy_fw_vertex >= phi / lazy_tolerance &&
        grad_dot_x - grad_dot_lazy_fw_vertex >= epsilon
-        tt = lazy
+        step_type = ST_LAZY
         gamma_max = one(a_lambda)
         d = muladd_memory_mode(memory_mode, d, x, v)
         vertex = v
@@ -392,7 +392,7 @@ function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon, d; use_extra_
         #Do away step, as it promises enough progress.
         if grad_dot_a - grad_dot_x > grad_dot_x - grad_dot_lazy_fw_vertex &&
            grad_dot_a - grad_dot_x >= phi / lazy_tolerance
-            tt = away
+            step_type = ST_AWAY
             gamma_max = a_lambda / (1 - a_lambda)
             d = muladd_memory_mode(memory_mode, d, a, x)
             vertex = a
@@ -409,14 +409,14 @@ function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon, d; use_extra_
                 if found_better_vertex
                     @debug("Found acceptable lazy vertex in storage")
                     v = new_forward_vertex
-                    tt = lazylazy
+                    step_type = ST_LAZYSTORAGE
                 else
                     v = compute_extreme_point(lmo, gradient)
-                    tt = regular
+                    step_type = ST_REGULAR
                 end
             else
                 v = compute_extreme_point(lmo, gradient)
-                tt = regular
+                step_type = ST_REGULAR
             end
             # Real dual gap promises enough progress.
             grad_dot_fw_vertex = fast_dot(v, gradient)
@@ -430,7 +430,7 @@ function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon, d; use_extra_
                 index = -1
                 #Lower our expectation for progress.
             else
-                tt = dualstep
+                step_type = ST_DUALSTEP
                 phi = min(dual_gap, phi / 2.0)
                 gamma_max = zero(a_lambda)
                 vertex = v
@@ -440,7 +440,7 @@ function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon, d; use_extra_
             end
         end
     end
-    return d, vertex, index, gamma_max, phi, away_step_taken, fw_step_taken, tt
+    return d, vertex, index, gamma_max, phi, away_step_taken, fw_step_taken, step_type
 end
 
 function afw_step(x, gradient, lmo, active_set, epsilon, d; memory_mode::MemoryEmphasis=InplaceEmphasis())
@@ -450,7 +450,7 @@ function afw_step(x, gradient, lmo, active_set, epsilon, d; memory_mode::MemoryE
     away_gap = fast_dot(a, gradient) - grad_dot_x
     dual_gap = grad_dot_x - fast_dot(v, gradient)
     if dual_gap >= away_gap && dual_gap >= epsilon
-        tt = regular
+        step_type = ST_REGULAR
         gamma_max = one(a_lambda)
         d = muladd_memory_mode(memory_mode, d, x, v)
         vertex = v
@@ -458,7 +458,7 @@ function afw_step(x, gradient, lmo, active_set, epsilon, d; memory_mode::MemoryE
         fw_step_taken = true
         index = -1
     elseif away_gap >= epsilon
-        tt = away
+        step_type = ST_AWAY
         gamma_max = a_lambda / (1 - a_lambda)
         d = muladd_memory_mode(memory_mode, d, a, x)
         vertex = a
@@ -466,14 +466,14 @@ function afw_step(x, gradient, lmo, active_set, epsilon, d; memory_mode::MemoryE
         fw_step_taken = false
         index = a_loc
     else
-        tt = away
+        step_type = ST_AWAY
         gamma_max = zero(a_lambda)
         vertex = a
         away_step_taken = false
         fw_step_taken = false
         index = a_loc
     end
-    return d, vertex, index, gamma_max, dual_gap, away_step_taken, fw_step_taken, tt
+    return d, vertex, index, gamma_max, dual_gap, away_step_taken, fw_step_taken, step_type
 end
 
 function fw_step(x, gradient, lmo, d; memory_mode::MemoryEmphasis = InplaceEmphasis())
@@ -487,6 +487,6 @@ function fw_step(x, gradient, lmo, d; memory_mode::MemoryEmphasis = InplaceEmpha
         fast_dot(x, gradient) - fast_dot(v, gradient),
         false,
         true,
-        regular,
+        ST_REGULAR,
     )
 end
