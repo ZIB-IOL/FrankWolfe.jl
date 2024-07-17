@@ -258,30 +258,23 @@ function compute_extreme_point(
 end
 
 """
-    SymmetricLMO{LMO, R, RA}
+    SymmetricLMO{LMO, TR, TI}
 
-Symmetric LMO for the Reynolds operator defined by `R`.
+Symmetric LMO for the reduction operator defined by `TR`
+and the inflation operator defined by `TI`.
+Computations are performed in the reduced subspace, and the
+effective call of the LMO first inflates the gradient, then
+use the non-symmetric LMO, and finally reduces the output.
 """
-struct SymmetricLMO{LMO<:LinearMinimizationOracle,R,RA} <: LinearMinimizationOracle
+struct SymmetricLMO{LMO<:LinearMinimizationOracle,TR,TI} <: LinearMinimizationOracle
     lmo::LMO
-    reynolds::R
-    reynolds_adjoint::RA
-    function SymmetricLMO(
-        lmo::LMO,
-        reynolds,
-        reynolds_adjoint=reynolds,
-    ) where {LMO<:LinearMinimizationOracle}
-        return new{typeof(lmo),typeof(reynolds),typeof(reynolds_adjoint)}(
-            lmo,
-            reynolds,
-            reynolds_adjoint,
-        )
+    reduce::TR
+    inflate::TI
+    function SymmetricLMO(lmo::LMO, reduce, inflate=(x, lmo) -> x) where {LMO<:LinearMinimizationOracle}
+        return new{typeof(lmo),typeof(reduce),typeof(inflate)}( lmo, reduce, inflate)
     end
 end
 
 function compute_extreme_point(sym::SymmetricLMO, direction; kwargs...)
-    return sym.reynolds(
-        compute_extreme_point(sym.lmo, sym.reynolds_adjoint(direction, sym.lmo)),
-        sym.lmo,
-    )
+    return sym.reduce(compute_extreme_point(sym.lmo, sym.inflate(direction, sym.lmo)), sym.lmo)
 end
