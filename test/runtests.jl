@@ -3,7 +3,7 @@ using Test
 using LinearAlgebra
 using DoubleFloats
 
-# include("lmo.jl")
+include("lmo.jl")
 include("function_gradient.jl")
 include("active_set.jl")
 include("utils.jl")
