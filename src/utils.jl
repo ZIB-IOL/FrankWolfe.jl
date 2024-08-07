@@ -308,6 +308,33 @@ end
 Base.length(storage::DeletedVertexStorage) = length(storage.storage)
 
 """
+    Computes the linear minimizer in the direction on the PrecomputedSet.
+"""
+function pre_computed_set_argminmax(pre_computed_set, direction)
+    val = Inf
+    valM = -Inf
+    idx = -1
+    idxM = -1
+    for i in eachindex(pre_computed_set)
+        temp_val = fast_dot(pre_computed_set[i], direction)
+        if temp_val < val
+            val = temp_val
+            idx = i
+        end
+        if valM < temp_val
+            valM = temp_val
+            idxM = i
+        end
+    end
+    if idx == -1 || idxM == -1
+        error("Infinite minimum $val or maximum $valM in the PrecomputedSet. Does the gradient contain invalid (NaN / Inf) entries?")
+    end
+    v_local = pre_computed_set[idx]
+    a_local = pre_computed_set[idxM]
+    return (v_local, idx, val, a_local, idxM, valM)
+end
+
+"""
 Give the vertex `v` in the storage that minimizes `s = direction ⋅ v` and whether `s` achieves
 `s ≤ lazy_threshold`.
 """
@@ -383,31 +410,4 @@ function weight_purge_threshold_default(::Type{T}) where {T<:AbstractFloat}
     return sqrt(eps(T) * Base.rtoldefault(T)) # around 1e-12 for Float64
 end
 weight_purge_threshold_default(::Type{T}) where {T<:Number} = Base.rtoldefault(T)
-
-"""
-    Computes the linear minimizer in the direction on the PrecomputedSet.
-"""
-function pre_computed_set_argminmax(pre_computed_set, direction)
-    val = Inf
-    valM = -Inf
-    idx = -1
-    idxM = -1
-    for i in eachindex(pre_computed_set)
-        temp_val = fast_dot(pre_computed_set[i], direction)
-        if temp_val < val
-            val = temp_val
-            idx = i
-        end
-        if valM < temp_val
-            valM = temp_val
-            idxM = i
-        end
-    end
-    if idx == -1 || idxM == -1
-        error("Infinite minimum $val or maximum $valM in the PrecomputedSet. Does the gradient contain invalid (NaN / Inf) entries?")
-    end
-    v_local = pre_computed_set[idx]
-    a_local = pre_computed_set[idxM]
-    return (v_local, idx, val, a_local, idxM, valM)
-end
 
