@@ -237,7 +237,7 @@ function dicg_maximum_step(lmo::MathOptLMO{OT}, direction, x; exactness=1000, at
     while(exactness != 0)
         flag, _, on_lowerbound_idx_value = is_constraints_feasible(lmo, x-gamma*direction; atol)
         if flag
-            if gamma === 1.0
+            if gamma >= 1.0
                 return gamma
             else
                 gamma_max = max(gamma, gamma_max)
@@ -254,8 +254,8 @@ function dicg_maximum_step(lmo::MathOptLMO{OT}, direction, x; exactness=1000, at
 end
 
 function is_constraints_feasible(lmo::MathOptLMO{OT}, x; atol=1e-7) where {OT}
-    on_lowerbound_idx_value = []
-    on_upperbound_idx_value =[]
+    on_lowerbound_idx_value = Float64[]
+    on_upperbound_idx_value = Float64[]
     is_feasible = true
     for (F, S) in MOI.get(lmo.o, MOI.ListOfConstraintTypesPresent())
         valvar(f) = x[f.value]
@@ -266,7 +266,7 @@ function is_constraints_feasible(lmo::MathOptLMO{OT}, x; atol=1e-7) where {OT}
                 func = MOI.get(lmo.o, MOI.ConstraintFunction(), c_idx)
                 val = MOIU.eval_variables(valvar, func)
                 set = MOI.get(lmo.o, MOI.ConstraintSet(), c_idx)
-                if ( S <: MOI.Interval)
+                if (S <: MOI.Interval)
                     if set.lower === val
                         push!(on_lowerbound_idx_value, (func.value, set.lower))
                     end
@@ -298,16 +298,16 @@ function is_constraints_feasible(lmo::MathOptLMO{OT}, x; atol=1e-7) where {OT}
         end
     end
     if is_feasible
-        return [true, on_lowerbound_idx_value,on_upperbound_idx_value]
+        return (true, on_lowerbound_idx_value,on_upperbound_idx_value)
     else
-        return [false, on_lowerbound_idx_value,on_upperbound_idx_value]
+        return (false, on_lowerbound_idx_value,on_upperbound_idx_value)
     end
 end
 
 # Fast way to compute gamma_max.
 # Check every constraint and compute the corresponding gamma_upper_bound. 
 function dicg_maximum_step!(lmo::MathOptLMO{OT}, direction, x) where {OT}
-    gamma_less_than = []
+    gamma_less_than = Float64[]
     for (F, S) in MOI.get(lmo.o, MOI.ListOfConstraintTypesPresent())
         valvar(f) = x[f.value]
         valvar_(f) = direction[f.value]
@@ -347,6 +347,16 @@ function dicg_maximum_step!(lmo::MathOptLMO{OT}, direction, x) where {OT}
                 end
             end
         end
+    end
+    if !isempty(gamma_less_than)
+        gamma_max = minimum(gamma_less_than)
+        if gamma_max >= 0.0
+            return gamma_max
+        else
+            return 0.0
+        end
+    else
+        return 1.0
     end
 end
 
