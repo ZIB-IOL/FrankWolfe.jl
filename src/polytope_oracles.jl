@@ -345,7 +345,7 @@ function compute_inface_extreme_point(::ZeroOneHypercube, direction, x; lazy=fal
 end
 
 # Find the maximum step size γ such that `x - γ d` remains in the feasible set.
-function dicg_maximum_step(::ZeroOneHypercube, x, direction)
+function dicg_maximum_step(::ZeroOneHypercube, direction, x)
     T = promote_type(eltype(x), eltype(direction))
     gamma_max = one(T)
     for idx in eachindex(x)
