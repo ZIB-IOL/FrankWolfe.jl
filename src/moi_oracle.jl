@@ -214,7 +214,7 @@ function compute_inface_extreme_point!(lmo::MathOptLMO{OT}, direction, x;solve_d
 end
 
 
-function dicg_maximum_step(lmo::MathOptLMO{OT}, x, direction; exactness=1000, atol=1e-16) where {OT}
+function dicg_maximum_step(lmo::MathOptLMO{OT}, direction, x; exactness=1000, atol=1e-16) where {OT}
     gamma_max = 0.0
     gamma = 1.0
     precheck, on_lowerbound_idx_value,  on_upperbound_idx_value = is_constraints_feasible(lmo, x; atol)
@@ -306,7 +306,7 @@ end
 
 # Fast way to compute gamma_max.
 # Check every constraint and compute the corresponding gamma_upper_bound. 
-function dicg_maximum_step!(lmo::MathOptLMO{OT}, x, direction) where {OT}
+function dicg_maximum_step!(lmo::MathOptLMO{OT}, direction, x) where {OT}
     gamma_less_than = []
     for (F, S) in MOI.get(lmo.o, MOI.ListOfConstraintTypesPresent())
         valvar(f) = x[f.value]
