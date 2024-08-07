@@ -379,6 +379,11 @@ LinearAlgebra.dot(a1::NegatingArray{T1, N}, a2::AbstractArray{T2, N}) where {T1,
 LinearAlgebra.dot(a1::AbstractArray{T1, N}, a2::NegatingArray{T2, N}) where {T1, T2, N} = -dot(a1, a2.array)
 Base.sum(a::NegatingArray) = -sum(a.array)
 
+function weight_purge_threshold_default(::Type{T}) where {T<:AbstractFloat}
+    return sqrt(eps(T) * Base.rtoldefault(T)) # around 1e-12 for Float64
+end
+weight_purge_threshold_default(::Type{T}) where {T<:Number} = Base.rtoldefault(T)
+
 """
     Computes the linear minimizer in the direction on the PrecomputedSet.
 """
