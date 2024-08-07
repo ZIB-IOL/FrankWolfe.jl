@@ -107,7 +107,11 @@ function dicg_maximum_step(::UnitSimplexOracle{T}, direction, x) where {T}
     return gamma_max
 end
 
-function dicg_maximum_step(::UnitSimplexOracle{T}, direction::SparseArrays.AbstractSparseVector, x) where {T}
+function dicg_maximum_step(
+        ::UnitSimplexOracle{T}, 
+        direction::SparseArrays.AbstractSparseVector, 
+        x,
+) where {T}
     gamma_max = one(promote_type(T, eltype(direction)))
     dinds = SparseArrays.nonzeroinds(direction)
     dvals = SparseArrays.nonzeros(direction)
