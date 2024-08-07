@@ -28,15 +28,15 @@ Random.seed!(42)
     # positive entry in the direction, gamma_max = 0
     d2 = randn(n)
     d2[3] = 1
-    gamma_max2 = FrankWolfe.dicg_maximum_step(cube, x_fixed, d2)
+    gamma_max2 = FrankWolfe.dicg_maximum_step(cube, d2, x_fixed)
     @test gamma_max2 == 0
     # with a zero direction on the fixed coordinate, positive steps are allowed
     d2[3] = 0
-    @test FrankWolfe.dicg_maximum_step(cube, x, d2) > eps()
+    @test FrankWolfe.dicg_maximum_step(cube, d2, x) > eps()
     # fixing a variable to one unfixes it from zero
     x_fixed[3] = 1
     d2[3] = -1
-    gamma_max3 = FrankWolfe.dicg_maximum_step(cube, x_fixed, d2)
+    gamma_max3 = FrankWolfe.dicg_maximum_step(cube, d2, x_fixed)
     @test gamma_max3 == 0
 end
 
