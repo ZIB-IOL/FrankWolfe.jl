@@ -308,7 +308,7 @@ end
 Base.length(storage::DeletedVertexStorage) = length(storage.storage)
 
 """
-    Computes the linear minimizer in the direction on the PrecomputedSet.
+Computes the linear minimizer in the direction on the PrecomputedSet.
 """
 function pre_computed_set_argminmax(pre_computed_set, direction)
     val = Inf
@@ -327,7 +327,7 @@ function pre_computed_set_argminmax(pre_computed_set, direction)
         end
     end
     if idx == -1 || idxM == -1
-        error("Infinite minimum $val or maximum $valM in the PrecomputedSet. Does the gradient contain invalid (NaN / Inf) entries?")
+        error("Infinite minimum $val or maximum $valM in the precomputed set. Does the gradient contain invalid (NaN / Inf) entries?")
     end
     v_local = pre_computed_set[idx]
     a_local = pre_computed_set[idxM]
