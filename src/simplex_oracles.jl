@@ -108,8 +108,8 @@ function dicg_maximum_step(::UnitSimplexOracle{T}, direction, x) where {T}
 end
 
 function dicg_maximum_step(
-    ::UnitSimplexOracle{T}, 
-    direction::SparseArrays.AbstractSparseVector, 
+    ::UnitSimplexOracle{T},
+    direction::SparseArrays.AbstractSparseVector,
     x,
 ) where {T}
     gamma_max = one(promote_type(T, eltype(direction)))
