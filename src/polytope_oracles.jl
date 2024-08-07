@@ -164,7 +164,7 @@ function compute_inface_extreme_point(::BirkhoffPolytopeLMO, direction::Abstract
 end
 
 # Find the maximum step size γ such that `x - γ d` remains in the feasible set.
-function dicg_maximum_step(::BirkhoffPolytopeLMO, x, direction::AbstractMatrix)
+function dicg_maximum_step(::BirkhoffPolytopeLMO, direction::AbstractMatrix, x)
     T = promote_type(eltype(x), eltype(direction))
     gamma_max = one(T)
     for idx in eachindex(x)
