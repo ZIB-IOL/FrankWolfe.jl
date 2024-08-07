@@ -348,6 +348,7 @@ function dicg_maximum_step!(lmo::MathOptLMO{OT}, direction, x) where {OT}
             end
         end
     end
+end
 
 function Base.copy(lmo::MathOptLMO{OT}; ensure_identity=true) where {OT}
     opt = OT() # creates the empty optimizer
