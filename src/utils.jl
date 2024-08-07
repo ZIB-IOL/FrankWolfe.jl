@@ -387,7 +387,6 @@ weight_purge_threshold_default(::Type{T}) where {T<:Number} = Base.rtoldefault(T
 """
     Computes the linear minimizer in the direction on the PrecomputedSet.
 """
-
 function pre_computed_set_argminmax(pre_computed_set, direction)
     val = Inf
     valM = -Inf
