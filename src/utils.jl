@@ -308,11 +308,12 @@ end
 Base.length(storage::DeletedVertexStorage) = length(storage.storage)
 
 """
-Computes the linear minimizer in the direction on the PrecomputedSet.
+Computes the linear minimizer in the direction on the precomputed_set.
+Precomputed_set stores the vertices computed as extreme points v in each iteration.
 """
 function pre_computed_set_argminmax(pre_computed_set, direction)
-    val = Inf
-    valM = -Inf
+    val = convert(eltype(direction), Inf)
+    valM = convert(eltype(direction), -Inf)
     idx = -1
     idxM = -1
     for i in eachindex(pre_computed_set)
