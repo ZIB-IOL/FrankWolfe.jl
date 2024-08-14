@@ -56,7 +56,7 @@ end
 
 is_decomposition_invariant_oracle(::MathOptLMO) = true
 
-function set_constraint(o, S, func, val, set, var_constraint_list::Dict)
+function set_constraint!(o, S, func, val, set, var_constraint_list::Dict)
     is_set = haskey(var_constraint_list, func)
     set_equal = false
     if S <: MOI.GreaterThan
@@ -123,7 +123,7 @@ end
 
 # Second version of compute_inface_extreme_point.
 # Copy and modify the constriants if necesssary.
-function compute_inface_extreme_point!(lmo::MathOptLMO{OT}, direction, x;solve_data=Dict(), kwargs...) where {OT}
+function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x;solve_data=Dict(), kwargs...) where {OT}
     lmo2 = copy(lmo)
     MOI.set(lmo2.o, MOI.Silent(), true)
     variables = MOI.get(lmo2.o, MOI.ListOfVariableIndices())
@@ -213,100 +213,9 @@ function compute_inface_extreme_point!(lmo::MathOptLMO{OT}, direction, x;solve_d
     return a
 end
 
-
-function dicg_maximum_step(lmo::MathOptLMO{OT}, direction, x; exactness=1000, atol=1e-16) where {OT}
-    gamma_max = 0.0
-    gamma = 1.0
-    precheck, on_lowerbound_idx_value,  on_upperbound_idx_value = is_constraints_feasible(lmo, x; atol)
-    if !precheck
-        error("x is not a fesible point!")
-    end
-
-    for (idx,value) in on_lowerbound_idx_value
-        if direction[idx] > value
-            return gamma_max
-        end
-    end
-
-    for (idx,value) in on_upperbound_idx_value
-        if direction[idx] < value
-            return gamma_max
-        end
-    end
-
-    while(exactness != 0)
-        flag, _, on_lowerbound_idx_value = is_constraints_feasible(lmo, x-gamma*direction; atol)
-        if flag
-            if gamma >= 1.0
-                return gamma
-            else
-                gamma_max = max(gamma, gamma_max)
-                gamma = (1+gamma_max) / 2
-                exactness -= 1
-            end
-        end
-        if !flag
-            gamma = (gamma+gamma_max) / 2
-            exactness -= 1
-        end
-    end
-    return gamma_max
-end
-
-function is_constraints_feasible(lmo::MathOptLMO{OT}, x; atol=1e-7) where {OT}
-    on_lowerbound_idx_value = Float64[]
-    on_upperbound_idx_value = Float64[]
-    is_feasible = true
-    for (F, S) in MOI.get(lmo.o, MOI.ListOfConstraintTypesPresent())
-        valvar(f) = x[f.value]
-        const_list = MOI.get(lmo.o, MOI.ListOfConstraintIndices{F,S}())
-        done = false
-        for c_idx in const_list
-            if !(S <: MOI.ZeroOne)
-                func = MOI.get(lmo.o, MOI.ConstraintFunction(), c_idx)
-                val = MOIU.eval_variables(valvar, func)
-                set = MOI.get(lmo.o, MOI.ConstraintSet(), c_idx)
-                if S <: MOI.Interval
-                    if set.lower === val
-                        push!(on_lowerbound_idx_value, (func.value, set.lower))
-                    end
-                    if set.upper === val
-                        push!(on_upperbound_idx_value, (func.value, set.upper))
-                    end
-                end
-                if S <: MOI.GreaterThan
-                    if set.lower === val
-                        push!(on_lowerbound_idx_value, (func.value, set.lower))
-                    end
-                end
-                if S <: MOI.LessThan
-                    if set.upper === val
-                        push!(on_upperbound_idx_value, (func.value, set.upper))
-                    end
-                end
-                # @debug("Constraint: $(F)-$(S) $(func) = $(val) in $(set)")
-                dist = MOD.distance_to_set(MOD.DefaultDistance(), val, set)
-                if dist > atol
-                    is_feasible = false
-                    done = true
-                    break
-                end
-            end
-        end
-        if done
-            break
-        end
-    end
-    if is_feasible
-        return (true, on_lowerbound_idx_value,on_upperbound_idx_value)
-    else
-        return (false, on_lowerbound_idx_value,on_upperbound_idx_value)
-    end
-end
-
 # Fast way to compute gamma_max.
 # Check every constraint and compute the corresponding gamma_upper_bound. 
-function dicg_maximum_step!(lmo::MathOptLMO{OT}, direction, x) where {OT}
+function dicg_maximum_step(lmo::MathOptLMO{OT}, direction, x) where {OT}
     gamma_less_than = Float64[]
     for (F, S) in MOI.get(lmo.o, MOI.ListOfConstraintTypesPresent())
         valvar(f) = x[f.value]
