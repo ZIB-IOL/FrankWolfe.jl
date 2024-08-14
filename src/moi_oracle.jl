@@ -56,7 +56,7 @@ end
 
 is_decomposition_invariant_oracle(::MathOptLMO) = true
 
-function set_constraint!(o, S, func, val, set, var_constraint_list::Dict)
+function set_constraint(o, S, func, val, set, var_constraint_list::Dict)
     is_set = haskey(var_constraint_list, func)
     set_equal = false
     if S <: MOI.GreaterThan
@@ -95,7 +95,7 @@ function set_constraint!(o, S, func, val, set, var_constraint_list::Dict)
     end     
 end
 
-function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x; kwargs...) where {OT}
+function compute_inface_extreme_point!(lmo::MathOptLMO{OT}, direction, x; kwargs...) where {OT}
     var_constraint_list = Dict([])
     lmo2 = copy(lmo)
     MOI.empty!(lmo2.o)
