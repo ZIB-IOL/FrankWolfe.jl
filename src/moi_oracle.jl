@@ -123,7 +123,7 @@ end
 
 # Second version of compute_inface_extreme_point.
 # Copy and modify the constriants if necesssary.
-function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x;solve_data=Dict(), kwargs...) where {OT}
+function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x; solve_data=Dict(), kwargs...) where {OT}
     lmo2 = copy(lmo)
     MOI.set(lmo2.o, MOI.Silent(), true)
     variables = MOI.get(lmo2.o, MOI.ListOfVariableIndices())
@@ -131,86 +131,92 @@ function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x;solve_da
     terms = [MOI.ScalarAffineTerm(d, v) for (d, v) in zip(direction, variables)]
     obj = MOI.ScalarAffineFunction(terms, zero(Float64))
     MOI.set(lmo2.o, MOI.ObjectiveFunction{typeof(obj)}(), obj)
+    valvar(f) = x[f.value]
     for (F, S) in MOI.get(lmo2.o, MOI.ListOfConstraintTypesPresent())
-        valvar(f) = x[f.value]
-        const_list = MOI.get(lmo2.o, MOI.ListOfConstraintIndices{F,S}())
-        for c_idx in const_list
-            func = MOI.get(lmo2.o, MOI.ConstraintFunction(), c_idx)
-            val = MOIU.eval_variables(valvar, func)
-            set = MOI.get(lmo2.o, MOI.ConstraintSet(), c_idx)
-            if S <: MOI.GreaterThan
-                if set.lower ≈ val
-                    MOI.delete(lmo2.o, c_idx)
-                    if F <: MOI.VariableIndex
-                        check_cidx = MOI.ConstraintIndex{F,MOI.LessThan{Float64}}(c_idx.value)
-                        if MOI.is_valid(lmo2.o, check_cidx)
-                            MOI.delete(lmo2.o, check_cidx)
-                        end
-                    else
-                        func_dict = Dict(field => getfield(func, field) for field in fieldnames(typeof(func)))
-                    
-                        # Get the list of constraints with same ConstraintFunction but LessThan ConstraintSet.
-                        const_list_less = MOI.get(lmo2.o, MOI.ListOfConstraintIndices{F,MOI.LessThan{Float64}}())
-                    
-                        # Check if the ConstraintFunction has other ConstraintSet.
-                        # If exists, delete the constraint to avoid conflict.
-                        for c_idx_less in const_list_less
-                            func_less = MOI.get(lmo2.o, MOI.ConstraintFunction(), c_idx_less)
-                            func_less_dict = Dict(field => getfield(func_less, field) for field in fieldnames(typeof(func_less)))
-                            if func_less_dict == func_dict
-                                MOI.delete(lmo2.o, c_idx_less)
-                                break
-                            end
-                        end
-                    end
-                    MOI.add_constraint(lmo2.o, func, MOI.EqualTo(set.lower))
-                end
-            elseif S <: MOI.LessThan
-                if set.upper ≈ val
-                    MOI.delete(lmo2.o, c_idx)
-                    if F <: MOI.VariableIndex
-                        check_cidx = MOI.ConstraintIndex{F,MOI.GreaterThan{Float64}}(c_idx.value)
-                        if MOI.is_valid(lmo2.o, check_cidx)
-                            MOI.delete(lmo2.o, check_cidx)
-                        end
-                    else
-                        func_dict = Dict(field => getfield(func, field) for field in fieldnames(typeof(func)))
-                        const_list_greater = MOI.get(lmo2.o, MOI.ListOfConstraintIndices{F,MOI.GreaterThan{Float64}}())
-                        for c_idx_greater in const_list_greater
-                            func_greater = MOI.get(lmo2.o, MOI.ConstraintFunction(), c_idx_greater)
-                            func_greater_dict = Dict(field => getfield(func_greater, field) for field in fieldnames(typeof(func_greater)))
-                            if func_greater_dict == func_dict
-                                MOI.delete(lmo2.o, c_idx_greater)
-                                break
-                            end
-                        end
-                    end
-                    MOI.add_constraint(lmo2.o, func, MOI.EqualTo(set.upper))
-                end
-            elseif S <: MOI.Interval
-                if set.upper ≈ val
-                    MOI.delete(lmo2.o, c_idx)
-                    MOI.add_constraint(lmo2.o, func, MOI.EqualTo(set.upper))
-                elseif set.lower ≈ val
-                    MOI.delete(lmo2.o, c_idx)
-                    MOI.add_constraint(lmo2.o, func, MOI.EqualTo(set.lower))
-                end
-            end
-        end
+        compute_inface_extreme_point_subroutine(lmo2, F, S, valvar)
     end
+
+    MOI.set(lmo2.o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+    MOI.optimize!(lmo2.o)
     # Check if extra information needs to be updated
-    
     if !isempty(solve_data)
         for attribute in keys(solve_data)
             val = MOI.get(lmo2.o, attribute)
             solve_data[attribute] = val
         end
     end
-    MOI.set(lmo2.o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
-    MOI.optimize!(lmo2.o)
     a = MOI.get(lmo2.o, MOI.VariablePrimal(), variables)
     MOI.empty!(lmo2.o)
     return a
+end
+
+# function barrier for performance
+function compute_inface_extreme_point_subroutine(lmo::MathOptLMO{OT}, ::Type{F}, ::Type{S}, valvar) where {OT,F,S}
+    const_list = MOI.get(lmo.o, MOI.ListOfConstraintIndices{F,S}())
+    for c_idx in const_list
+        func = MOI.get(lmo.o, MOI.ConstraintFunction(), c_idx)
+        val = MOIU.eval_variables(valvar, func)
+        set = MOI.get(lmo.o, MOI.ConstraintSet(), c_idx)
+        if S <: MOI.GreaterThan
+            if set.lower ≈ val
+                MOI.delete(lmo.o, c_idx)
+                if F <: MOI.VariableIndex
+                    check_cidx = MOI.ConstraintIndex{F,MOI.LessThan{Float64}}(c_idx.value)
+                    if MOI.is_valid(lmo.o, check_cidx)
+                        MOI.delete(lmo.o, check_cidx)
+                    end
+                else
+                    func_dict = Dict(field => getfield(func, field) for field in fieldnames(typeof(func)))
+
+                    # Get the list of constraints with same ConstraintFunction but LessThan ConstraintSet.
+                    const_list_less = MOI.get(lmo.o, MOI.ListOfConstraintIndices{F,MOI.LessThan{Float64}}())
+
+                    # Check if the ConstraintFunction has other ConstraintSet.
+                    # If exists, delete the constraint to avoid conflict.
+                    for c_idx_less in const_list_less
+                        func_less = MOI.get(lmo.o, MOI.ConstraintFunction(), c_idx_less)
+                        func_less_dict = Dict(field => getfield(func_less, field) for field in fieldnames(typeof(func_less)))
+                        if func_less_dict == func_dict
+                            MOI.delete(lmo.o, c_idx_less)
+                            break
+                        end
+                    end
+                end
+                MOI.add_constraint(lmo.o, func, MOI.EqualTo(set.lower))
+            end
+        elseif S <: MOI.LessThan
+            if set.upper ≈ val
+                MOI.delete(lmo.o, c_idx)
+                if F <: MOI.VariableIndex
+                    check_cidx = MOI.ConstraintIndex{F,MOI.GreaterThan{Float64}}(c_idx.value)
+                    if MOI.is_valid(lmo.o, check_cidx)
+                        MOI.delete(lmo.o, check_cidx)
+                    end
+                else
+                    func_dict = Dict(field => getfield(func, field) for field in fieldnames(typeof(func)))
+                    const_list_greater = MOI.get(lmo.o, MOI.ListOfConstraintIndices{F,MOI.GreaterThan{Float64}}())
+                    for c_idx_greater in const_list_greater
+                        func_greater = MOI.get(lmo.o, MOI.ConstraintFunction(), c_idx_greater)
+                        func_greater_dict = Dict(field => getfield(func_greater, field) for field in fieldnames(typeof(func_greater)))
+                        if func_greater_dict == func_dict
+                            MOI.delete(lmo.o, c_idx_greater)
+                            break
+                        end
+                    end
+                end
+                MOI.add_constraint(lmo.o, func, MOI.EqualTo(set.upper))
+            end
+        elseif S <: MOI.Interval
+            if set.upper ≈ val
+                MOI.delete(lmo.o, c_idx)
+                MOI.add_constraint(lmo.o, func, MOI.EqualTo(set.upper))
+            elseif set.lower ≈ val
+                MOI.delete(lmo.o, c_idx)
+                MOI.add_constraint(lmo.o, func, MOI.EqualTo(set.lower))
+            end
+        end
+    end
+    return true
 end
 
 # Fast way to compute gamma_max.
