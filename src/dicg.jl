@@ -166,13 +166,6 @@ function decomposition_invariant_conditional_gradient(
         end
 
         if lazy
-            # error("not implemented yet")
-            # _, v_local, v_local_loc, _, a_lambda, a, a_loc, _, _ =
-            #     active_set_argminmax(active_set, gradient)
-
-            # dot_forward_vertex = fast_dot(gradient, v_local)
-            # dot_away_vertex = fast_dot(gradient, a)
-            # local_gap = dot_away_vertex - dot_forward_vertex
             d, v, v_index, a, away_index, phi, tt = 
                 lazy_dicg_step(
                     x, 
