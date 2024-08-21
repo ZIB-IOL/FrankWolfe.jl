@@ -26,6 +26,7 @@ function blended_pairwise_conditional_gradient(
     lazy=false,
     linesearch_workspace=nothing,
     lazy_tolerance=2.0,
+    weight_purge_threshold=weight_purge_threshold_default(eltype(x0)),
     extra_vertex_storage=nothing,
     add_dropped_vertices=false,
     use_extra_vertex_storage=false,
@@ -54,6 +55,7 @@ function blended_pairwise_conditional_gradient(
         lazy=lazy,
         linesearch_workspace=linesearch_workspace,
         lazy_tolerance=lazy_tolerance,
+        weight_purge_threshold=weight_purge_threshold,
         extra_vertex_storage=extra_vertex_storage,
         add_dropped_vertices=add_dropped_vertices,
         use_extra_vertex_storage=use_extra_vertex_storage,
@@ -70,7 +72,7 @@ function blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
-    active_set::AbstractActiveSet;
+    active_set::AbstractActiveSet{AT,R};
     line_search::LineSearchMethod=Adaptive(),
     epsilon=1e-7,
     max_iteration=10000,
@@ -86,11 +88,12 @@ function blended_pairwise_conditional_gradient(
     lazy=false,
     linesearch_workspace=nothing,
     lazy_tolerance=2.0,
+    weight_purge_threshold=weight_purge_threshold_default(R),
     extra_vertex_storage=nothing,
     add_dropped_vertices=false,
     use_extra_vertex_storage=false,
     recompute_last_vertex=true,
-)
+) where {AT,R}
 
     # format string for output of the algorithm
     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
@@ -290,7 +293,7 @@ function blended_pairwise_conditional_gradient(
             # if we are about to exit, compute dual_gap with the cleaned-up x
             if dual_gap ≤ epsilon
                 active_set_renormalize!(active_set)
-                active_set_cleanup!(active_set)
+                active_set_cleanup!(active_set; weight_purge_threshold=weight_purge_threshold)
                 compute_active_set_iterate!(active_set)
                 x = get_active_set_iterate(active_set)
                 grad!(gradient, x)
@@ -446,7 +449,7 @@ function blended_pairwise_conditional_gradient(
         end
     end
     active_set_renormalize!(active_set)
-    active_set_cleanup!(active_set)
+    active_set_cleanup!(active_set; weight_purge_threshold=weight_purge_threshold)
     compute_active_set_iterate!(active_set)
     x = get_active_set_iterate(active_set)
     grad!(gradient, x)

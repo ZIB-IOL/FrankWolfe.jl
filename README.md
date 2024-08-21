@@ -4,7 +4,7 @@
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://zib-iol.github.io/FrankWolfe.jl/dev/)
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://zib-iol.github.io/FrankWolfe.jl/stable/)
 [![Coverage](https://codecov.io/gh/ZIB-IOL/FrankWolfe.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/ZIB-IOL/FrankWolfe.jl)
-[![Genie Downloads](https://shields.io/endpoint?url=https://pkgs.genieframework.com/api/v1/badge/FrankWolfe)](https://pkgs.genieframework.com?packages=FrankWolfe)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.12720673.svg)](https://doi.org/10.5281/zenodo.12720673)
 
 This package is a toolbox for Frank-Wolfe and conditional gradients algorithms.
 
@@ -43,7 +43,7 @@ julia> f(p) = sum(abs2, p)  # objective function
 
 julia> grad!(storage, p) = storage .= 2p  # in-place gradient computation
 
-# # function d ⟻ argmin ⟨p,d⟩ st. p ∈ Δ
+# # function d ⟼ argmin ⟨p,d⟩ st. p ∈ Δ
 julia> lmo = FrankWolfe.ProbabilitySimplexOracle(1.)
 
 julia> p0 = [1., 0., 0.]

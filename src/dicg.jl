@@ -19,12 +19,12 @@ Fixings are maintained by the oracle (or deduced from `x` itself).
 compute_inface_extreme_point(lmo, direction, x; lazy, kwargs...)
 
 """
-    dicg_maximum_step(lmo, x, direction)
+    dicg_maximum_step(lmo, direction, x)
 
 Given `x` the current iterate and `direction` the negative of the direction towards which the iterate will move,
 determine a maximum step size `gamma_max`, such that `x - gamma_max * direction` is in the polytope.
 """
-dicg_maximum_step(lmo, x, direction)
+dicg_maximum_step(lmo, direction, x)
 
 """
     decomposition_invariant_conditional_gradient(f, grad!, lmo, x0; kwargs...)

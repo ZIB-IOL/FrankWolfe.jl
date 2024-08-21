@@ -298,7 +298,7 @@ end
 
 Convex hull of a finite number of vertices of type `AT`, stored in a vector of type `VT`.
 """
-struct ConvexHullOracle{AT, VT <: AbstractVector{AT}}
+struct ConvexHullOracle{AT, VT <: AbstractVector{AT}} <: LinearMinimizationOracle
     vertices::VT
 end
 
