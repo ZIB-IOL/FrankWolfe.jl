@@ -25,25 +25,114 @@ struct FullUpdate <: BlockCoordinateUpdateOrder end
 The cyclic update initiates a sequence of update rounds.
 In each round only one block is updated. The order of the blocks is determined by the given order of the LMOs.
 """
-struct CyclicUpdate <: BlockCoordinateUpdateOrder end
+struct CyclicUpdate <: BlockCoordinateUpdateOrder
+    limit::Int
+end
+
+CyclicUpdate() = CyclicUpdate(-1)
 
 """
 The stochastic update initiates a sequence of update rounds.
 In each round only one block is updated. The order of the blocks is a random.
 """
-struct StochasticUpdate <: BlockCoordinateUpdateOrder end
+struct StochasticUpdate <: BlockCoordinateUpdateOrder
+    limit::Int
+end
 
-function select_update_indices(::FullUpdate, s::CallbackState, dual_gaps)
+StochasticUpdate() = StochasticUpdate(-1)
+
+mutable struct DualGapOrder <: BlockCoordinateUpdateOrder
+    limit::Int
+end
+
+DualGapOrder() = DualGapOrder(-1)
+
+mutable struct DualProgressOrder <: BlockCoordinateUpdateOrder
+    limit::Int
+    previous_dual_gaps::Vector{Float64}
+    dual_progress::Vector{Float64}
+end
+
+DualProgressOrder() = DualProgressOrder(-1, [], [])
+DualProgressOrder(i::Int64) = DualProgressOrder(i, [], [])
+
+function select_update_indices(::FullUpdate, s::CallbackState, _)
     return [1:length(s.lmo.lmos)]
 end
 
-function select_update_indices(::CyclicUpdate, s::CallbackState, dual_gaps)
-    return [[i] for i in 1:length(s.lmo.lmos)]
+function select_update_indices(u::CyclicUpdate, s::CallbackState, _)
+
+    l = length(s.lmo.lmos)
+
+    @assert u.limit <= l
+    @assert u.limit > 0 || u.limit == -1
+
+    if u.limit in [-1, l]
+        return [[i] for i in 1:l]
+    end 
+
+    start = (s.t*u.limit % l) + 1
+    if start + u.limit - 1 ≤ l
+        return [[i] for i in start:start + u.limit - 1]
+    else
+        a = [[i] for i in start:l]
+        append!(a, [[i] for i in 1:u.limit-length(a)])
+        return a
+    end
 end
 
-function select_update_indices(::StochasticUpdate, s::CallbackState, dual_gaps)
+function select_update_indices(u::StochasticUpdate, s::CallbackState, _)
+
     l = length(s.lmo.lmos)
-    return [[rand(1:l)] for i in 1:l]
+
+    @assert u.limit <= l
+    @assert u.limit > 0 || u.limit == -1
+    
+    if u.limit == -1
+        return [[rand(1:l)] for i in 1:l]
+    end
+    return [[rand(1:l)] for i in 1:u.limit]
+end
+
+function select_update_indices(u::DualProgressOrder, s::CallbackState, dual_gaps)
+
+    l = length(s.lmo.lmos)
+
+    @assert u.limit <= l
+    @assert u.limit > 0 || u.limit == -1
+
+    # In the first iteration update every block so we get finite dual progress
+    if s.t < 2 
+        u.previous_dual_gaps = copy(dual_gaps)
+        return [[i] for i=1:l] 
+    end
+
+    if s.t == 1
+        u.dual_progress = dual_gaps - u.previous_dual_gaps
+    else
+        diff = dual_gaps - u.previous_dual_gaps
+        u.dual_progress = [d == 0 ? u.dual_progress[i] : d for (i, d) in enumerate(diff)]
+    end
+    u.previous_dual_gaps = copy(dual_gaps)
+
+    n = u.limit == -1 ? l : u.limit
+    return [[findfirst(cumsum(u.dual_progress/sum(u.dual_progress)) .> rand())] for _=1:n]
+end
+
+function select_update_indices(u::DualGapOrder, s::CallbackState, dual_gaps)
+
+    l = length(s.lmo.lmos)
+
+    @assert u.limit <= l
+    @assert u.limit > 0 || u.limit == -1
+
+    # In the first iteration update every block so we get finite dual gaps
+    if s.t < 1
+        return [[i] for i=1:l] 
+    end
+
+    n = u.limit == -1 ? l : u.limit
+    return [[findfirst(cumsum(dual_gaps/sum(dual_gaps)) .> rand())] for _=1:n]
 end
 
 """
@@ -104,9 +193,11 @@ struct FrankWolfeStep <: UpdateStep end
 Implementation of the blended pairwise conditional gradient (BPCG) method as an update step for block-coordinate Frank-Wolfe.
 """
 mutable struct BPCGStep <: UpdateStep
-    active_set::Union{FrankWolfe.ActiveSet,Nothing}
+    lazy::Bool
+    active_set::Union{FrankWolfe.AbstractActiveSet,Nothing}
     renorm_interval::Int
     lazy_tolerance::Float64
+    phi::Float64
 end
 
 function Base.copy(::FrankWolfeStep)
@@ -115,13 +206,13 @@ end
 
 function Base.copy(obj::BPCGStep)
     if obj.active_set === nothing
-        return BPCGStep(nothing, obj.renorm_interval, obj.lazy_tolerance)
+        return BPCGStep(false, nothing, obj.renorm_interval, obj.lazy_tolerance, Inf)
     else
-        return BPCGStep(copy(obj.active_set), obj.renorm_interval, obj.lazy_tolerance)
+        return BPCGStep(obj.lazy, copy(obj.active_set), obj.renorm_interval, obj.lazy_tolerance, obj.phi)
     end
 end
 
-BPCGStep() = BPCGStep(nothing, 1000, 2.0)
+BPCGStep() = BPCGStep(false, nothing, 1000, 2.0, Inf)
 
 function update_iterate(
     ::FrankWolfeStep,
@@ -178,7 +269,7 @@ function update_iterate(
     epsilon,
 )
 
-    d = similar(x)
+    d = zero(x)
     tt = regular
 
     _, v_local, v_local_loc, _, a_lambda, a, a_loc, _, _ =
@@ -188,14 +279,15 @@ function update_iterate(
     dot_away_vertex = fast_dot(gradient, a)
     local_gap = dot_away_vertex - dot_forward_vertex
 
-    v = compute_extreme_point(lmo, gradient)
-    dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
+    if !s.lazy
+        v = compute_extreme_point(lmo, gradient)
+        dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
+        s.phi = dual_gap
+    end
 
     # minor modification from original paper for improved sparsity
     # (proof follows with minor modification when estimating the step)
-    #println("Gaps: ", local_gap, " ", dual_gap)
-    #println(fast_dot(gradient, x), " ", fast_dot(gradient, v))
-    if t > 1 && local_gap ≥ dual_gap / s.lazy_tolerance
+    if local_gap > s.phi / s.lazy_tolerance
         d = muladd_memory_mode(memory_mode, d, a, v_local)
         vertex_taken = v_local
         gamma_max = a_lambda
@@ -225,7 +317,12 @@ function update_iterate(
         end
         active_set_update_iterate_pairwise!(s.active_set.x, gamma, v_local, a)
     else # add to active set
+        if s.lazy
+            v = compute_extreme_point(lmo, gradient)
+            tt = regular
+        end
         vertex_taken = v
+        dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
         # if we are about to exit, compute dual_gap with the cleaned-up x
         if dual_gap ≤ epsilon
             active_set_renormalize!(s.active_set)
@@ -236,27 +333,46 @@ function update_iterate(
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
         end
 
-        d = muladd_memory_mode(memory_mode, d, x, v)
+        if !s.lazy || dual_gap ≥ s.phi / s.lazy_tolerance
 
-        gamma = perform_line_search(
-            line_search,
-            t,
-            f,
-            grad!,
-            gradient,
-            x,
-            d,
-            one(eltype(x)),
-            linesearch_workspace,
-            memory_mode,
-        )
+            d = muladd_memory_mode(memory_mode, d, x, v)
 
-        # dropping active set and restarting from singleton
-        if gamma ≈ 1.0
-            active_set_initialize!(s.active_set, v)
-        else
-            renorm = mod(t, s.renorm_interval) == 0
-            active_set_update!(s.active_set, gamma, v, renorm, nothing)
+            gamma = perform_line_search(
+                line_search,
+                t,
+                f,
+                grad!,
+                gradient,
+                x,
+                d,
+                one(eltype(x)),
+                linesearch_workspace,
+                memory_mode,
+            )
+
+            # dropping active set and restarting from singleton
+            if gamma ≈ 1.0
+                active_set_initialize!(s.active_set, v)
+            else
+                renorm = mod(t, s.renorm_interval) == 0
+                active_set_update!(s.active_set, gamma, v, renorm, nothing)
+            end
+        else # dual step
+            if tt != lazylazy
+                s.phi = dual_gap
+                @debug begin
+                    @assert tt == regular
+                    v2 = compute_extreme_point(lmo, gradient)
+                    g = dot(gradient, x - v2)
+                    if abs(g - dual_gap) > 100 * sqrt(eps())
+                        error("dual gap estimation error $g $dual_gap")
+                    end
+                end
+            else
+                @info "useless step"
+            end
+            tt = dualstep
+            gamma = 0.0
         end
     end
     if mod(t, s.renorm_interval) == 0
@@ -461,7 +577,7 @@ function block_coordinate_frank_wolfe(
             first_iter = false
 
             xold = copy(x)
-            for i in update_indices
+            Threads.@threads for i in update_indices
 
                 function extend(y)
                     bv = copy(xold)
@@ -476,7 +592,7 @@ function block_coordinate_frank_wolfe(
                     @. storage = big_storage.blocks[i]
                 end
 
-                dual_gaps[i], v, d, gamma, tt = update_iterate(
+                dual_gaps[i], v.blocks[i], d.blocks[i], gamma, tt = update_iterate(
                     update_step[i],
                     x.blocks[i],
                     lmo.lmos[i],
@@ -506,7 +622,7 @@ function block_coordinate_frank_wolfe(
 
 
         t = t + 1
-        if callback !== nothing
+        if callback !== nothing || update_order isa CyclicUpdate
             state = CallbackState(
                 t,
                 primal,
@@ -523,9 +639,11 @@ function block_coordinate_frank_wolfe(
                 gradient,
                 tt,
             )
-            # @show state
-            if callback(state, dual_gaps) === false
-                break
+            if callback !== nothing
+                # @show state
+                if callback(state, dual_gaps) === false
+                    break
+                end
             end
         end
 

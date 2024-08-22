@@ -360,3 +360,69 @@ function compute_extreme_point(lmo::EllipsoidLMO, direction; v=nothing, kwargs..
     mul!(v, I, lmo.buffer, -scaling, true)
     return v
 end
+
+
+"""
+    OrderWeightNormLMO(weights,radius)
+    
+LMO with feasible set being the atomic ordered weighted l1 norm: https://arxiv.org/pdf/1409.4271
+
+```
+C = {x ∈ R^n, Ω_w(x) ≤ R} 
+```
+The weights are assumed to be positive.
+"""
+struct OrderWeightNormLMO{R,B,D} <: LinearMinimizationOracle
+    radius::R
+    mat_B::B
+    direction_abs::D
+end
+
+function OrderWeightNormLMO(weights, radius)
+    N = length(weights)
+    s = zero(eltype(weights))
+    B = zeros(float(typeof(s)),N)
+    w_sort = sort(weights,rev=true)
+    for i in 1:N
+        s += w_sort[i]
+        B[i] = 1/s
+    end
+    w_sort = similar(weights)
+    return OrderWeightNormLMO(radius,B,w_sort)
+end
+
+function compute_extreme_point(
+    lmo::OrderWeightNormLMO,
+    direction::M;
+    v=nothing,
+    kwargs...,
+) where {M}
+    for i in eachindex(direction)
+        lmo.direction_abs[i] = abs(direction[i])
+    end
+    perm_grad = sortperm(lmo.direction_abs, rev=true)
+    scal_max = 0
+    ind_max = 1
+    N = length(lmo.mat_B)
+    for i in 1:N
+        scal = zero(eltype(lmo.direction_abs[1]))
+        for k in 1:i
+            scal += lmo.mat_B[i] * lmo.direction_abs[perm_grad][k]
+        end
+        if scal > scal_max
+            scal_max = scal
+            ind_max = i
+        end
+    end
+    
+    v = lmo.radius .* (2 * signbit.(direction) .- 1)
+    unsort_perm = sortperm(perm_grad)
+    for i in 1:N
+        if unsort_perm[i] <= ind_max
+            v[i] *= lmo.mat_B[ind_max]
+        else
+            v[i] = 0
+        end
+    end
+    return v
+end

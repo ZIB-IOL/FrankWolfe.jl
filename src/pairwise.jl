@@ -28,6 +28,7 @@ function pairwise_frank_wolfe(
     callback=nothing,
     traj_data=[],
     timeout=Inf,
+    weight_purge_threshold=weight_purge_threshold_default(eltype(x0)),
     extra_vertex_storage=nothing,
     add_dropped_vertices=false,
     use_extra_vertex_storage=false,
@@ -58,6 +59,7 @@ function pairwise_frank_wolfe(
         callback=callback,
         traj_data=traj_data,
         timeout=timeout,
+        weight_purge_threshold=weight_purge_threshold,
         extra_vertex_storage=extra_vertex_storage,
         add_dropped_vertices=add_dropped_vertices,
         use_extra_vertex_storage=use_extra_vertex_storage,
@@ -72,7 +74,7 @@ function pairwise_frank_wolfe(
     f,
     grad!,
     lmo,
-    active_set::AbstractActiveSet;
+    active_set::AbstractActiveSet{AT,R};
     line_search::LineSearchMethod=Adaptive(),
     lazy_tolerance=2.0,
     epsilon=1e-7,
@@ -88,12 +90,13 @@ function pairwise_frank_wolfe(
     callback=nothing,
     traj_data=[],
     timeout=Inf,
+    weight_purge_threshold=weight_purge_threshold_default(R),
     extra_vertex_storage=nothing,
     add_dropped_vertices=false,
     use_extra_vertex_storage=false,
     linesearch_workspace=nothing,
     recompute_last_vertex=true,
-)
+) where {AT,R}
     # format string for output of the algorithm
     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
     headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "#ActiveSet")
@@ -345,7 +348,8 @@ function pairwise_frank_wolfe(
 
     active_set_renormalize!(active_set)
     active_set_cleanup!(
-        active_set,
+        active_set;
+        weight_purge_threshold=weight_purge_threshold,
         add_dropped_vertices=use_extra_vertex_storage,
         vertex_storage=extra_vertex_storage,
     )

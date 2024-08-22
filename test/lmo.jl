@@ -60,6 +60,26 @@ using JuMP
     end
 end
 
+@testset "Hypersimplex" begin
+    @testset "Hypersimplex $n $K" for n in (2, 5, 10), K in (1, min(n, 4))
+        direction = randn(n)
+        hypersimplex = FrankWolfe.HyperSimplexOracle(K, 3.0)
+        unit_hypersimplex = FrankWolfe.UnitHyperSimplexOracle(K, 3.0)
+        v = FrankWolfe.compute_extreme_point(hypersimplex, direction)
+        @test SparseArrays.nnz(v) == K
+        v_unit = FrankWolfe.compute_extreme_point(unit_hypersimplex, direction)
+        @test SparseArrays.nnz(v_unit) == min(K, count(<=(0), direction))
+        optimizer = GLPK.Optimizer()
+        moi_hypersimpler = FrankWolfe.convert_mathopt(hypersimplex, optimizer; dimension=n)
+        v_moi = FrankWolfe.compute_extreme_point(moi_hypersimpler, direction)
+        @test norm(v_moi - v) ≤ 1e-4
+        moi_unit_hypersimpler =
+            FrankWolfe.convert_mathopt(unit_hypersimplex, optimizer; dimension=n)
+        v_moi_unit = FrankWolfe.compute_extreme_point(moi_unit_hypersimpler, direction)
+        @test norm(v_moi_unit - v_unit) ≤ 1e-4
+    end
+end
+
 @testset "Lp-norm epigraph LMO" begin
     for n in (1, 2, 5, 10)
         τ = 5 + 3 * rand()
@@ -705,10 +725,10 @@ end
     @test v ≈ vref
     @test norm(v, Inf) == 1
     # test with non-flat array
-    lmo = FrankWolfe.ScaledBoundLInfNormBall(-ones(3,3), ones(3,3))
+    lmo = FrankWolfe.ScaledBoundLInfNormBall(-ones(3, 3), ones(3, 3))
     lmo_flat = FrankWolfe.ScaledBoundLInfNormBall(-ones(9), ones(9))
     for _ in 1:10
-        d = randn(3,3)
+        d = randn(3, 3)
         v = FrankWolfe.compute_extreme_point(lmo, d)
         vflat = FrankWolfe.compute_extreme_point(lmo_flat, vec(d))
         @test vec(v) == vflat
@@ -745,14 +765,14 @@ end
     y = MOI.add_variables(o, 10)
     MOI.add_constraint.(o, x, MOI.GreaterThan.(-ones(10)))
     MOI.add_constraint.(o, x, MOI.LessThan.(ones(10)))
-    MOI.add_constraint.(o, y, MOI.GreaterThan.(-2*ones(10)))
-    MOI.add_constraint.(o, y, MOI.LessThan.(2*ones(10)))
+    MOI.add_constraint.(o, y, MOI.GreaterThan.(-2 * ones(10)))
+    MOI.add_constraint.(o, y, MOI.LessThan.(2 * ones(10)))
     lmo = FrankWolfe.MathOptLMO(o)
 
     direction = FrankWolfe.BlockVector([ones(10), -ones(10)])
 
     v = FrankWolfe.compute_extreme_point(lmo, direction)
-    v_ref = FrankWolfe.BlockVector([-ones(10), 2*ones(10)])
+    v_ref = FrankWolfe.BlockVector([-ones(10), 2 * ones(10)])
     @test v == v_ref
 
 end
@@ -783,18 +803,18 @@ end
 
 @testset "Ellipsoid LMO $n" for n in (2, 5, 10)
     A = zeros(n, n)
-    A[1,1] = 3
+    A[1, 1] = 3
     @test_throws PosDefException FrankWolfe.EllipsoidLMO(A)
     for i in 1:n
-        A[i,i] = 3
+        A[i, i] = 3
     end
     radius = 4 * rand()
     center = randn(n)
     lmo = FrankWolfe.EllipsoidLMO(A, center, radius)
     d = randn(n)
     v = FrankWolfe.compute_extreme_point(lmo, d)
-    @test dot(v - center, A, v - center) ≈ radius atol=1e-10
-    A = randn(n,n)
+    @test dot(v - center, A, v - center) ≈ radius atol = 1e-10
+    A = randn(n, n)
     A += A'
     while !isposdef(A)
         A += I
@@ -802,23 +822,19 @@ end
     lmo = FrankWolfe.EllipsoidLMO(A, center, radius)
     d = randn(n)
     v = FrankWolfe.compute_extreme_point(lmo, d)
-    @test dot(v - center, A, v - center) ≈ radius atol=1e-10
+    @test dot(v - center, A, v - center) ≈ radius atol = 1e-10
     m = Model(Hypatia.Optimizer)
     @variable(m, x[1:n])
-    @constraint(m, dot(x-center, A, x-center) ≤ radius)
+    @constraint(m, dot(x - center, A, x - center) ≤ radius)
     @objective(m, Min, dot(x, d))
     JuMP.set_silent(m)
     optimize!(m)
     xv = JuMP.value.(x)
-    @test dot(xv, d) ≈ dot(v, d) atol=1e-5*n
+    @test dot(xv, d) ≈ dot(v, d) atol = 1e-5 * n
 end
 
 @testset "Convex hull" begin
-    lmo = FrankWolfe.ConvexHullOracle([
-        [1, 0, 0],
-        [0, 1, 0],
-        [0, 0, 1],
-    ])
+    lmo = FrankWolfe.ConvexHullOracle([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
     for _ in 1:100
         d = randn(3)
         v = FrankWolfe.compute_extreme_point(lmo, d)
@@ -837,10 +853,10 @@ end
         tmp::Vector{T} # used to compute scalar products
     end
     function FrankWolfe.compute_extreme_point(
-            lmo::BellCorrelationsLMO{T},
-            A::Array{T, 3};
-            kwargs...,
-        ) where {T <: Number}
+        lmo::BellCorrelationsLMO{T},
+        A::Array{T,3};
+        kwargs...,
+    ) where {T<:Number}
         ax = [ones(T, lmo.m) for n in 1:3]
         sc1 = zero(T)
         sc2 = one(T)
@@ -870,9 +886,11 @@ end
                 end
             end
         end
-        return [axm[1][x1]*axm[2][x2]*axm[3][x3] for x1 in 1:lmo.m, x2 in 1:lmo.m, x3 in 1:lmo.m]
+        return [
+            axm[1][x1] * axm[2][x2] * axm[3][x3] for x1 in 1:lmo.m, x2 in 1:lmo.m, x3 in 1:lmo.m
+        ]
     end
-    p = [0.5cos((i+j+k)*pi/4) for i in 1:4, j in 1:4, k in 1:4]
+    p = [0.5cos((i + j + k) * pi / 4) for i in 1:4, j in 1:4, k in 1:4]
     normp2 = dot(p, p) / 2
     f = let p = p, normp2 = normp2
         x -> normp2 + dot(x, x) / 2 - dot(p, x)
@@ -884,7 +902,7 @@ end
             end
         end
     end
-    function reynolds_permutedims(atom::Array{Int, 3}, lmo::BellCorrelationsLMO{Float64})
+    function reynolds_permutedims(atom::Array{Int,3}, lmo::BellCorrelationsLMO{Float64})
         res = zeros(size(atom))
         for per in [[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]]
             res .+= permutedims(atom, per)
@@ -897,7 +915,48 @@ end
     sym = FrankWolfe.SymmetricLMO(lmo, reynolds_permutedims, reynolds_adjoint)
     x0 = FrankWolfe.compute_extreme_point(sym, -p)
     active_set = FrankWolfe.ActiveSet([(1.0, x0)])
-    res = FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, sym, active_set; lazy=true, line_search=FrankWolfe.Shortstep(1.0))
-    @test norm(res[1]-p) < 1e-6
+    res = FrankWolfe.blended_pairwise_conditional_gradient(
+        f,
+        grad!,
+        sym,
+        active_set;
+        lazy=true,
+        line_search=FrankWolfe.Shortstep(1.0),
+    )
+    @test norm(res[1] - p) < 1e-6
     @test length(res[6]) < 25
+end
+
+@testset "Ordered Weighted Norm LMO" begin
+    Random.seed!(4321)
+    N = Int(1e3)
+    for _ in 1:10 
+        radius = abs(randn())+1
+        direction = randn(N)
+
+        #norm l1
+        weights = ones(N)
+        lmo = FrankWolfe.OrderWeightNormLMO(weights,radius)
+        lmo_l1 = FrankWolfe.LpNormLMO{1}(radius)
+        v1 = FrankWolfe.compute_extreme_point(lmo,direction)
+        v2 = FrankWolfe.compute_extreme_point(lmo_l1,direction)
+        @test v1 == v2
+
+        #norm L_∞
+        weights = zeros(N)
+        weights[1] = 1
+        lmo = FrankWolfe.OrderWeightNormLMO(weights,radius)
+        lmo_l_inf = FrankWolfe.LpNormLMO{Inf}(radius)
+        v1 = FrankWolfe.compute_extreme_point(lmo,direction)
+        v2 = FrankWolfe.compute_extreme_point(lmo_l_inf,direction)
+        @test v1 == v2
+
+        #symmetry
+        direction_opp = -1*direction
+        weights = rand(N)
+        lmo_opp = FrankWolfe.OrderWeightNormLMO(weights,radius)
+        v = FrankWolfe.compute_extreme_point(lmo_opp,direction)
+        v_opp = FrankWolfe.compute_extreme_point(lmo_opp,direction_opp)
+        @test v == -1*v_opp
+    end
 end
