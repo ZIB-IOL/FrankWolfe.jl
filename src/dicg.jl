@@ -87,7 +87,7 @@ function decomposition_invariant_conditional_gradient(
     x = x0
 
     if lazy
-        if extra_vertex_storage == nothing
+        if extra_vertex_storage === nothing
             pre_computed_set = [x]
         else
             pre_computed_set = extra_vertex_storage
