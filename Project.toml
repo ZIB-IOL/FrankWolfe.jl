@@ -15,6 +15,7 @@ Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Setfield = "efcf1570-3423-57d1-acb7-fd33fddbac46"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
+MathOptSetDistances = "3b969827-a86c-476c-9527-bb6f1a8fbad5"
 
 [compat]
 Arpack = "0.5"

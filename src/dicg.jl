@@ -52,6 +52,7 @@ function decomposition_invariant_conditional_gradient(
     lazy=false,
     linesearch_workspace=nothing,
     lazy_tolerance=2.0,
+    extra_vertex_storage=nothing,
 )
 
     if !is_decomposition_invariant_oracle(lmo)
@@ -84,6 +85,15 @@ function decomposition_invariant_conditional_gradient(
     end
 
     x = x0
+
+    if lazy
+        if extra_vertex_storage === nothing
+            pre_computed_set = [x]
+        else
+            pre_computed_set = extra_vertex_storage
+        end
+    end
+    
     if memory_mode isa InplaceEmphasis && !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
         # if integer, convert element type to most appropriate float
         if eltype(x) <: Integer
@@ -156,13 +166,16 @@ function decomposition_invariant_conditional_gradient(
         end
 
         if lazy
-            error("not implemented yet")
-            # _, v_local, v_local_loc, _, a_lambda, a, a_loc, _, _ =
-            #     active_set_argminmax(active_set, gradient)
-
-            # dot_forward_vertex = fast_dot(gradient, v_local)
-            # dot_away_vertex = fast_dot(gradient, a)
-            # local_gap = dot_away_vertex - dot_forward_vertex
+            d, v, v_index, a, away_index, phi, tt = 
+                lazy_dicg_step(
+                    x, 
+                    gradient, 
+                    lmo, 
+                    pre_computed_set, 
+                    phi, 
+                    epsilon, 
+                    d;
+                )
         else # non-lazy, call the simple and modified
             v = compute_extreme_point(lmo, gradient, lazy=lazy)
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
@@ -183,6 +196,14 @@ function decomposition_invariant_conditional_gradient(
             linesearch_workspace,
             memory_mode,
         )
+
+        if lazy
+            idx = findfirst(x -> x == v, pre_computed_set)
+            if idx !== nothing
+                push!(pre_computed_set, v)
+            end
+        end
+        
         if callback !== nothing
             state = CallbackState(
                 t,
@@ -458,4 +479,64 @@ function blended_decomposition_invariant_conditional_gradient(
         end
     end
     return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data)
+end
+
+function lazy_dicg_step(
+    x,
+    gradient,
+    lmo,
+    pre_computed_set,
+    phi,
+    epsilon,
+    d;
+    use_extra_vertex_storage=false,
+    extra_vertex_storage=nothing,
+    lazy_tolerance=2.0,
+    memory_mode::MemoryEmphasis=InplaceEmphasis(),
+)
+    v_local, v_local_loc, val, a_local, a_local_loc, valM =
+        pre_computed_set_argminmax(pre_computed_set, gradient)
+    tt = regular
+    gamma_max = nothing
+    away_index = nothing
+    fw_index = nothing
+    grad_dot_x = fast_dot(x, gradient)
+    grad_dot_a_local = valM
+
+    # Do lazy pairwise step
+    grad_dot_lazy_fw_vertex = val
+
+    if grad_dot_a_local - grad_dot_lazy_fw_vertex >= phi / lazy_tolerance &&
+       grad_dot_a_local - grad_dot_lazy_fw_vertex >= epsilon
+        tt = lazy
+        v = v_local
+        a = a_local
+        d = muladd_memory_mode(memory_mode, d, a, v)
+        fw_index = v_local_loc
+    else
+        v = compute_extreme_point(lmo, gradient)
+        grad_dot_v = fast_dot(gradient, v)
+        # Do lazy inface_point
+        if grad_dot_a_local - grad_dot_v >= phi / lazy_tolerance && 
+            grad_dot_a_local - grad_dot_v >= epsilon
+            tt = lazy
+            a = a_local
+            away_index = a_local_loc
+        else
+            a = compute_inface_extreme_point(lmo, NegatingArray(gradient), x)
+        end
+        
+        # Real dual gap promises enough progress.
+        grad_dot_fw_vertex = fast_dot(v, gradient)
+        dual_gap = grad_dot_x - grad_dot_fw_vertex
+        
+        if dual_gap >= phi / lazy_tolerance
+            d = muladd_memory_mode(memory_mode, d, a, v)
+            #Lower our expectation for progress.
+        else
+            d = muladd_memory_mode(memory_mode, d, a, v)
+            phi = min(dual_gap, phi / 2.0)
+        end
+    end
+    return d, v, fw_index, a, away_index, phi, tt
 end

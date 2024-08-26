@@ -308,6 +308,34 @@ end
 Base.length(storage::DeletedVertexStorage) = length(storage.storage)
 
 """
+Computes the linear minimizer in the direction on the precomputed_set.
+Precomputed_set stores the vertices computed as extreme points v in each iteration.
+"""
+function pre_computed_set_argminmax(pre_computed_set, direction)
+    val = convert(eltype(direction), Inf)
+    valM = convert(eltype(direction), -Inf)
+    idx = -1
+    idxM = -1
+    for i in eachindex(pre_computed_set)
+        temp_val = fast_dot(pre_computed_set[i], direction)
+        if temp_val < val
+            val = temp_val
+            idx = i
+        end
+        if valM < temp_val
+            valM = temp_val
+            idxM = i
+        end
+    end
+    if idx == -1 || idxM == -1
+        error("Infinite minimum $val or maximum $valM in the precomputed set. Does the gradient contain invalid (NaN / Inf) entries?")
+    end
+    v_local = pre_computed_set[idx]
+    a_local = pre_computed_set[idxM]
+    return (v_local, idx, val, a_local, idxM, valM)
+end
+
+"""
 Give the vertex `v` in the storage that minimizes `s = direction ⋅ v` and whether `s` achieves
 `s ≤ lazy_threshold`.
 """
