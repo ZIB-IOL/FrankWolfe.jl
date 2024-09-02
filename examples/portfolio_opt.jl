@@ -12,8 +12,8 @@ eps = 1e-5
 # we also generated additional datasets at larger scale and log-normal revenues
 
 # Specify an explicit problem instance
-# problem_instance = joinpath(@__DIR__, "data/syn_1000_800_10_50_1.mat")
-problem_instance = joinpath(@__DIR__, "data/synlog_1000_1500.mat")
+problem_instance = joinpath(@__DIR__, "data/syn_1000_800_10_50_1.mat")
+# problem_instance = joinpath(@__DIR__, "data/syn_5000_5000.mat")
 
 W = MAT.matread(problem_instance)["W"]
 
@@ -37,7 +37,7 @@ function build_objective(W)
 end
 
 # lower bound on objective value
-# true_obj_value = -13
+true_obj_value = -13
 
 (f, ∇f) = build_objective(W)
 

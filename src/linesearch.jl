@@ -354,11 +354,10 @@ Base.print(io::IO, ::Backtracking) = print(io, "Backtracking")
 struct Secant <: LineSearchMethod
     limit_num_steps::Int
     tol::Float64
-    tau::Float64
 end
 
-function Secant(; limit_num_steps=20, tol=1e-10, tau=0.5)
-    return Secant(limit_num_steps, tol, tau)
+function Secant(; limit_num_steps=20, tol=1e-10)
+    return Secant(limit_num_steps, tol)
 end
 
 build_linesearch_workspace(::Secant, x, gradient) = similar(x)
