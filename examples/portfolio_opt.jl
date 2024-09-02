@@ -1,9 +1,8 @@
-using MAT
 using Plots
 using LinearAlgebra
 using FrankWolfe
-using ReverseDiff
 using JSON
+using DelimitedFiles
 
 # Set the tolerance
 eps = 1e-5
@@ -12,10 +11,10 @@ eps = 1e-5
 # we also generated additional datasets at larger scale and log-normal revenues
 
 # Specify an explicit problem instance
-problem_instance = joinpath(@__DIR__, "data/syn_1000_800_10_50_1.mat")
-# problem_instance = joinpath(@__DIR__, "data/syn_5000_5000.mat")
+# problem_instance = joinpath(@__DIR__, "syn_200_200.csv")
+problem_instance = joinpath(@__DIR__, "syn_200_200.csv")
 
-W = MAT.matread(problem_instance)["W"]
+const W = readdlm(problem_instance, ',')
 
 # Set the maximum number of iterations
 max_iteration = 5000
@@ -37,7 +36,7 @@ function build_objective(W)
 end
 
 # lower bound on objective value
-true_obj_value = -13
+true_obj_value = -2
 
 (f, ∇f) = build_objective(W)
 
@@ -67,7 +66,7 @@ storage = Vector{Float64}(undef, size(x0)...)
     epsilon=eps,
 )
 
-(xback, v, primal_back, dual_gap, traj_data_monotonous) = FrankWolfe.frank_wolfe(
+(xback, v, primal_back, dual_gap, traj_data_monotoninc) = FrankWolfe.frank_wolfe(
     x -> f(x) - true_obj_value, ∇f, lmo, x0,
     verbose=true,
     trajectory=true,
@@ -89,18 +88,7 @@ storage = Vector{Float64}(undef, size(x0)...)
     epsilon=eps,
 )
 
-(xstd_back, v, primal_std_back, dual_gap, traj_data_std_back) = FrankWolfe.frank_wolfe(
-    x -> f(x) - true_obj_value, ∇f, lmo, x0,
-    verbose=true,
-    trajectory=true,
-    line_search=FrankWolfe.Backtracking(),
-    max_iteration=max_iteration,
-    gradient=storage,
-    print_iter=max_iteration / 10,
-    epsilon=eps,
-)
-
 # Plotting the trajectories
-labels = ["Agnostic", "Adaptive", "Monotonous", "Secant", "Backtracking"]
-data = [traj_data_agnostic, traj_data_backtracking, traj_data_monotonous, traj_data_secant, traj_data_std_back]
+labels = ["Agnostic", "Adaptive", "Monotonic", "Secant"]
+data = [traj_data_agnostic, traj_data_backtracking, traj_data_monotoninc, traj_data_secant]
 plot_trajectories(data, labels,xscalelog=true)
