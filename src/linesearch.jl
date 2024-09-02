@@ -376,7 +376,8 @@ function perform_line_search(
 )
     grad!(gradient, x)
     dot_gdir = dot(gradient, d)
-    gamma = min(gamma_max, abs(dot_gdir)) # Start with a potentially smaller step
+    # gamma = min(gamma_max, abs(dot_gdir)) # Start with a potentially smaller step
+    gamma = gamma_max
     storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
     new_val = f(storage)
     best_gamma = gamma
