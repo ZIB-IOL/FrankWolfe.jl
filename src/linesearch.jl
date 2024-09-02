@@ -351,12 +351,29 @@ end
 
 Base.print(io::IO, ::Backtracking) = print(io, "Backtracking")
 
+"""
+    Secant(limit_num_steps, tol)
+
+Secant line search strategy, which iteratively refines the step size using the secant method.
+This method is geared towards problems with self-concordant functions (but might require extra structure) 
+and potentially faster than the backtracking line search. Order of convergence is superlinear 
+with exponent 1.618 (Golden Ratio) but not quite quadratic. Convergence is not guaranteed in general
+
+
+# Arguments
+- `limit_num_steps::Int`: Maximum number of iterations for the secant method. (default 40)
+- `tol::Float64`: Tolerance for convergence. (default 1e-8)
+
+# References
+- [Secant Method](https://en.wikipedia.org/wiki/Secant_method)
+"""
+
 struct Secant <: LineSearchMethod
     limit_num_steps::Int
     tol::Float64
 end
 
-function Secant(; limit_num_steps=20, tol=1e-10)
+function Secant(; limit_num_steps=40, tol=1e-8)
     return Secant(limit_num_steps, tol)
 end
 
