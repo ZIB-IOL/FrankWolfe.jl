@@ -2,7 +2,6 @@ using LinearAlgebra
 using FrankWolfe
 using CSV
 using DataFrames
-using ReverseDiff
 
 include("../examples/plot_utils.jl")
 
