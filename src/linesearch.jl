@@ -114,7 +114,7 @@ end
 Base.print(io::IO, ls::GeneralizedAgnostic) = print(io, "GeneralizedAgnostic($(ls.g))")
 
 """
-Computes a step size for nonconvex functions: `1/sqrt(t + 1)`.
+Computes step size: `1/sqrt(t + 1)`.
 """
 struct Nonconvex{T} <: LineSearchMethod end
 Nonconvex() = Nonconvex{Float64}()
@@ -350,6 +350,73 @@ function perform_line_search(
 end
 
 Base.print(io::IO, ::Backtracking) = print(io, "Backtracking")
+
+struct Secant <: LineSearchMethod
+    limit_num_steps::Int
+    tol::Float64
+    tau::Float64
+end
+
+function Secant(; limit_num_steps=20, tol=1e-10, tau=0.5)
+    return Secant(limit_num_steps, tol, tau)
+end
+
+build_linesearch_workspace(::Secant, x, gradient) = similar(x)
+
+function perform_line_search(
+    line_search::Secant,
+    _,
+    f,
+    grad!,
+    gradient,
+    x,
+    d,
+    gamma_max,
+    storage,
+    memory_mode,
+)
+    grad!(gradient, x)
+    dot_gdir = dot(gradient, d)
+    gamma = min(gamma_max, abs(dot_gdir)) # Start with a potentially smaller step
+    storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
+    new_val = f(storage)
+    best_gamma = gamma
+    best_val = new_val
+    i = 1
+
+    while abs(dot_gdir) > line_search.tol
+        if i > line_search.limit_num_steps
+            return best_gamma
+        end
+
+        grad!(gradient, storage)
+        dot_gdir_new = dot(gradient, d)
+        
+        if dot_gdir_new == dot_gdir
+            return best_gamma
+        end
+
+        gamma_prev = (i == 1) ? 0 : gamma
+        gamma = gamma - dot_gdir_new * (gamma - gamma_prev) / (dot_gdir_new - dot_gdir)
+        gamma = clamp(gamma, 0, gamma_max) # Ensure gamma stays in [0, gamma_max]
+        
+        storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
+        new_val = f(storage)
+        
+        if new_val < best_val
+            best_val = new_val
+            best_gamma = gamma
+        end
+        
+        dot_gdir = dot_gdir_new
+        i += 1
+        
+    end
+    return best_gamma
+end
+
+Base.print(io::IO, ::Secant) = print(io, "Secant")
+
 
 """
 Slight modification of the
