@@ -357,7 +357,7 @@ Base.print(io::IO, ::Backtracking) = print(io, "Backtracking")
 Secant line search strategy, which iteratively refines the step size using the secant method.
 This method is geared towards problems with self-concordant functions (but might require extra structure) 
 and potentially faster than the backtracking line search. Order of convergence is superlinear 
-with exponent 1.618 (Golden Ratio) but not quite quadratic. Convergence is not guaranteed in general
+with exponent 1.618 (Golden Ratio) but not quite quadratic. Convergence is not guaranteed in general.
 
 
 # Arguments
