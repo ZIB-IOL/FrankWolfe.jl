@@ -22,17 +22,17 @@ max_iteration = 5000
 function build_objective(W)
     (n, p) = size(W)
     function f(x)
-        -sum(log(dot(x, @view(W[:,t]))) for t in 1:p)
+        return -sum(log(dot(x, @view(W[:, t]))) for t in 1:p)
     end
     function ∇f(storage, x)
         storage .= 0
         for t in 1:p
-            temp_rev = dot(x, @view(W[:,t]))
-            @. storage -= @view(W[:,t]) ./ temp_rev
+            temp_rev = dot(x, @view(W[:, t]))
+            @. storage -= @view(W[:, t]) ./ temp_rev
         end
-        storage
+        return storage
     end
-    (f, ∇f)
+    return (f, ∇f)
 end
 
 # lower bound on objective value
@@ -45,7 +45,10 @@ x0 = FrankWolfe.compute_extreme_point(lmo, rand(size(W, 1)))
 storage = Vector{Float64}(undef, size(x0)...)
 
 (x, v, primal_agnostic, dual_gap, traj_data_agnostic) = FrankWolfe.frank_wolfe(
-    x -> f(x) - true_obj_value, ∇f, lmo, x0,
+    x -> f(x) - true_obj_value,
+    ∇f,
+    lmo,
+    x0,
     verbose=true,
     trajectory=true,
     line_search=FrankWolfe.Agnostic(),
@@ -56,7 +59,10 @@ storage = Vector{Float64}(undef, size(x0)...)
 )
 
 (xback, v, primal_back, dual_gap, traj_data_backtracking) = FrankWolfe.frank_wolfe(
-    x -> f(x) - true_obj_value, ∇f, lmo, x0,
+    x -> f(x) - true_obj_value,
+    ∇f,
+    lmo,
+    x0,
     verbose=true,
     trajectory=true,
     line_search=FrankWolfe.Adaptive(),
@@ -67,7 +73,10 @@ storage = Vector{Float64}(undef, size(x0)...)
 )
 
 (xback, v, primal_back, dual_gap, traj_data_monotoninc) = FrankWolfe.frank_wolfe(
-    x -> f(x) - true_obj_value, ∇f, lmo, x0,
+    x -> f(x) - true_obj_value,
+    ∇f,
+    lmo,
+    x0,
     verbose=true,
     trajectory=true,
     line_search=FrankWolfe.MonotonicStepSize(),
@@ -78,7 +87,10 @@ storage = Vector{Float64}(undef, size(x0)...)
 )
 
 (xsecant, v, primal_secant, dual_gap, traj_data_secant) = FrankWolfe.frank_wolfe(
-    x -> f(x) - true_obj_value, ∇f, lmo, x0,
+    x -> f(x) - true_obj_value,
+    ∇f,
+    lmo,
+    x0,
     verbose=true,
     trajectory=true,
     line_search=FrankWolfe.Secant(tol=1e-12),
@@ -91,4 +103,4 @@ storage = Vector{Float64}(undef, size(x0)...)
 # Plotting the trajectories
 labels = ["Agnostic", "Adaptive", "Monotonic", "Secant"]
 data = [traj_data_agnostic, traj_data_backtracking, traj_data_monotoninc, traj_data_secant]
-plot_trajectories(data, labels,xscalelog=true)
+plot_trajectories(data, labels, xscalelog=true)
