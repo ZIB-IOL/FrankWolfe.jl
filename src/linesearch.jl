@@ -376,7 +376,7 @@ function Secant(; limit_num_steps=40, tol=1e-8)
     return Secant(limit_num_steps, tol)
 end
 
-build_linesearch_workspace(::Secant, x, gradient) = similar(x)
+build_linesearch_workspace(::Secant, x, gradient) = (similar(x), similar(gradient))
 
 function perform_line_search(
     line_search::Secant,
@@ -387,13 +387,13 @@ function perform_line_search(
     x,
     d,
     gamma_max,
-    storage,
+    workspace,
     memory_mode,
 )
-    grad!(gradient, x)
     dot_gdir = dot(gradient, d)
     # gamma = min(gamma_max, abs(dot_gdir)) # Start with a potentially smaller step
     gamma = gamma_max
+    storage, grad_storage = workspace
     storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
     new_val = f(storage)
     best_gamma = gamma
@@ -405,10 +405,10 @@ function perform_line_search(
             return best_gamma
         end
 
-        grad!(gradient, storage)
-        dot_gdir_new = dot(gradient, d)
+        grad!(grad_storage, storage)
+        dot_gdir_new = dot(grad_storage, d)
         
-        if dot_gdir_new == dot_gdir
+        if dot_gdir_new ≈ dot_gdir
             return best_gamma
         end
 
@@ -426,7 +426,6 @@ function perform_line_search(
         
         dot_gdir = dot_gdir_new
         i += 1
-        
     end
     return best_gamma
 end
