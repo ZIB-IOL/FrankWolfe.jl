@@ -367,7 +367,6 @@ with exponent 1.618 (Golden Ratio) but not quite quadratic. Convergence is not g
 # References
 - [Secant Method](https://en.wikipedia.org/wiki/Secant_method)
 """
-
 struct Secant <: LineSearchMethod
     limit_num_steps::Int
     tol::Float64
