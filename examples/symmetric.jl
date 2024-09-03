@@ -1,7 +1,6 @@
 using LinearAlgebra
 using FrankWolfe
 using Random
-using BenchmarkTools
 
 # Example of speedup using the quadratic active set
 # This is exactly the same as in the literate example #12,
@@ -119,6 +118,6 @@ p = correlation_tensor_GHZ_polygon(2, 100)
 max_iteration = 10^4
 verbose = false
 # the following kwarg passing might break for old julia versions
-@btime benchmark_Bell(p, false; verbose, max_iteration, fw_method=FrankWolfe.blended_pairwise_conditional_gradient)
-@btime benchmark_Bell(p, true; verbose, max_iteration, fw_method=FrankWolfe.blended_pairwise_conditional_gradient)
+@time benchmark_Bell(p, false; verbose, max_iteration, fw_method=FrankWolfe.blended_pairwise_conditional_gradient)
+@time benchmark_Bell(p, true; verbose, max_iteration, fw_method=FrankWolfe.blended_pairwise_conditional_gradient)
 println()

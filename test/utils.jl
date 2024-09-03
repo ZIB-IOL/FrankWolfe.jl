@@ -91,7 +91,14 @@ end
     f(x) = norm(x)^2
     gradient = similar(a)
     grad!(gradient, a)
+
+    function reset_state()
+        gradient .= 0
+        grad!(gradient, a)
+    end
+
     ls = FrankWolfe.Backtracking()
+    reset_state()
     gamma_bt = @inferred FrankWolfe.perform_line_search(
         ls,
         1,
@@ -106,7 +113,24 @@ end
     )
     @test gamma_bt ≈ 0.5
 
+    ls_secant = FrankWolfe.Secant()
+    reset_state()
+    gamma_secant = @inferred FrankWolfe.perform_line_search(
+        ls_secant,
+        1,
+        f,
+        grad!,
+        gradient,
+        a,
+        a - b,
+        1.0,
+        FrankWolfe.build_linesearch_workspace(ls_secant, a, gradient),
+        FrankWolfe.InplaceEmphasis(),
+    )
+    @test gamma_secant ≈ 0.5
+    
     ls_gr = FrankWolfe.Goldenratio()
+    reset_state()
     gamma_gr = @inferred FrankWolfe.perform_line_search(
         ls_gr,
         1,
@@ -121,6 +145,7 @@ end
     )
     @test gamma_gr ≈ 0.5 atol = 1e-4
 
+    reset_state()
     @inferred FrankWolfe.perform_line_search(
         FrankWolfe.Agnostic(),
         1,
@@ -133,6 +158,7 @@ end
         nothing,
         FrankWolfe.InplaceEmphasis(),
     )
+    reset_state()
     @inferred FrankWolfe.perform_line_search(
         FrankWolfe.Nonconvex(),
         1,
@@ -145,6 +171,7 @@ end
         nothing,
         FrankWolfe.InplaceEmphasis(),
     )
+    reset_state()
     @inferred FrankWolfe.perform_line_search(
         FrankWolfe.Nonconvex(),
         1,
@@ -158,6 +185,7 @@ end
         FrankWolfe.InplaceEmphasis(),
     )
     ls = @inferred FrankWolfe.AdaptiveZerothOrder()
+    reset_state()
     @inferred FrankWolfe.perform_line_search(
         ls,
         1,
@@ -171,6 +199,7 @@ end
         FrankWolfe.InplaceEmphasis(),
     )
     ls = @inferred FrankWolfe.Adaptive()
+    reset_state()
     @inferred FrankWolfe.perform_line_search(
         ls,
         1,
