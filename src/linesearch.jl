@@ -399,7 +399,7 @@ function perform_line_search(
     best_gamma = gamma
     best_val = new_val
     i = 1
-
+    gamma_prev = zero(best_gamma)
     while abs(dot_gdir) > line_search.tol
         if i > line_search.limit_num_steps
             return best_gamma
@@ -412,9 +412,9 @@ function perform_line_search(
             return best_gamma
         end
 
-        gamma_prev = (i == 1) ? 0 : gamma
-        gamma = gamma - dot_gdir_new * (gamma - gamma_prev) / (dot_gdir_new - dot_gdir)
-        gamma = clamp(gamma, 0, gamma_max) # Ensure gamma stays in [0, gamma_max]
+        gamma_new = gamma - dot_gdir_new * (gamma - gamma_prev) / (dot_gdir_new - dot_gdir)
+        gamma_prev = gamma
+        gamma = clamp(gamma_new, 0, gamma_max) # Ensure gamma stays in [0, gamma_max]
 
         storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
         new_val = f(storage)
