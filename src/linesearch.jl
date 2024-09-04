@@ -69,7 +69,7 @@ function perform_line_search(
     memory_mode::MemoryEmphasis,
 ) where {T}
     return if ls.l == -1
-        T((2 + log(t+1)) / (t + 2 + log(t+1)))
+        T((2 + log(t + 1)) / (t + 2 + log(t + 1)))
     else
         T(ls.l / (t + ls.l))
     end
@@ -84,19 +84,19 @@ Defaults to the best open-loop step-size gamma_t = (2 + log(t+1)) / (t + 2 + log
 > S. Pokutta "The Frank-Wolfe algorith: a short introduction" (2023), https://arxiv.org/abs/2311.05313
 This step-size is as fast as the step-size gamma_t = 2 / (t + 2) up to polylogarithmic factors. Further, over strongly convex and some uniformly convex sets, it is faster than any traditional step-size gamma_t = l / (t + l) for any l in N.
 """
-struct GeneralizedAgnostic{T<:Real, F<:Function} <: LineSearchMethod
+struct GeneralizedAgnostic{T<:Real,F<:Function} <: LineSearchMethod
     g::F
 end
 
 function GeneralizedAgnostic()
     g(x) = 2 + log(x + 1)
-    return GeneralizedAgnostic{Float64, typeof(g)}(g)
+    return GeneralizedAgnostic{Float64,typeof(g)}(g)
 end
 
-GeneralizedAgnostic(g) = GeneralizedAgnostic{Float64, typeof(g)}(g)
+GeneralizedAgnostic(g) = GeneralizedAgnostic{Float64,typeof(g)}(g)
 
 function perform_line_search(
-    ls::GeneralizedAgnostic{T, F},
+    ls::GeneralizedAgnostic{T,F},
     t,
     f,
     g!,
@@ -106,7 +106,7 @@ function perform_line_search(
     gamma_max,
     workspace,
     memory_mode::MemoryEmphasis,
-) where {T, F}
+) where {T,F}
     gamma = T(ls.g(t) / (t + ls.g(t)))
     return gamma
 end
@@ -114,7 +114,7 @@ end
 Base.print(io::IO, ls::GeneralizedAgnostic) = print(io, "GeneralizedAgnostic($(ls.g))")
 
 """
-Computes a step size for nonconvex functions: `1/sqrt(t + 1)`.
+Computes step size: `1/sqrt(t + 1)`.
 """
 struct Nonconvex{T} <: LineSearchMethod end
 Nonconvex() = Nonconvex{Float64}()
@@ -352,6 +352,88 @@ end
 Base.print(io::IO, ::Backtracking) = print(io, "Backtracking")
 
 """
+    Secant(limit_num_steps, tol)
+
+Secant line search strategy, which iteratively refines the step size using the secant method.
+This method is geared towards problems with self-concordant functions (but might require extra structure) 
+and potentially faster than the backtracking line search. Order of convergence is superlinear 
+with exponent 1.618 (Golden Ratio) but not quite quadratic. Convergence is not guaranteed in general
+
+
+# Arguments
+- `limit_num_steps::Int`: Maximum number of iterations for the secant method. (default 40)
+- `tol::Float64`: Tolerance for convergence. (default 1e-8)
+
+# References
+- [Secant Method](https://en.wikipedia.org/wiki/Secant_method)
+"""
+struct Secant <: LineSearchMethod
+    limit_num_steps::Int
+    tol::Float64
+end
+
+function Secant(; limit_num_steps=40, tol=1e-8)
+    return Secant(limit_num_steps, tol)
+end
+
+build_linesearch_workspace(::Secant, x, gradient) = (similar(x), similar(gradient))
+
+function perform_line_search(
+    line_search::Secant,
+    _,
+    f,
+    grad!,
+    gradient,
+    x,
+    d,
+    gamma_max,
+    workspace,
+    memory_mode,
+)
+    dot_gdir = dot(gradient, d)
+    # gamma = min(gamma_max, abs(dot_gdir)) # Start with a potentially smaller step
+    gamma = gamma_max
+    storage, grad_storage = workspace
+    storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
+    new_val = f(storage)
+    best_gamma = gamma
+    best_val = new_val
+    i = 1
+
+    while abs(dot_gdir) > line_search.tol
+        if i > line_search.limit_num_steps
+            return best_gamma
+        end
+
+        grad!(grad_storage, storage)
+        dot_gdir_new = dot(grad_storage, d)
+
+        if dot_gdir_new ≈ dot_gdir
+            return best_gamma
+        end
+
+        gamma_prev = (i == 1) ? 0 : gamma
+        gamma = gamma - dot_gdir_new * (gamma - gamma_prev) / (dot_gdir_new - dot_gdir)
+        gamma = clamp(gamma, 0, gamma_max) # Ensure gamma stays in [0, gamma_max]
+
+        storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
+        new_val = f(storage)
+
+        if new_val < best_val
+            best_val = new_val
+            best_gamma = gamma
+        end
+
+        dot_gdir = dot_gdir_new
+        i += 1
+    end
+    return best_gamma
+end
+
+Base.print(io::IO, ::Secant) = print(io, "Secant")
+
+
+"""
 Slight modification of the
 Adaptive Step Size strategy from [Pedregosa, Negiar, Askari, Jaggi (2018)](https://arxiv.org/abs/1806.05123)
 ```math
@@ -398,7 +480,8 @@ struct AdaptiveZerothOrderWorkspace{XT,BT}
     xbig::BT
 end
 
-build_linesearch_workspace(::AdaptiveZerothOrder, x, gradient) = AdaptiveZerothOrderWorkspace(similar(x), big.(x))
+build_linesearch_workspace(::AdaptiveZerothOrder, x, gradient) =
+    AdaptiveZerothOrderWorkspace(similar(x), big.(x))
 
 function perform_line_search(
     line_search::AdaptiveZerothOrder,
@@ -438,17 +521,17 @@ function perform_line_search(
 
     gradient_storage = similar(gradient)
 
-    while f(x_storage) - f(x) >
-        -γ * α * dot_dir + α^2 * γ^2 * ndir2 * M / 2 + eps(float(γ)) &&
+    while f(x_storage) - f(x) > -γ * α * dot_dir + α^2 * γ^2 * ndir2 * M / 2 + eps(float(γ)) &&
         γ ≥ 100 * eps(float(γ))
 
-      # Additional smoothness condition
-      if line_search.relaxed_smoothness
-          grad!(gradient_storage, x_storage)
-          if fast_dot(gradient, d) - fast_dot(gradient_storage, d) <= γ * M * ndir2 + eps(float(γ))
-              break
-          end
-      end
+        # Additional smoothness condition
+        if line_search.relaxed_smoothness
+            grad!(gradient_storage, x_storage)
+            if fast_dot(gradient, d) - fast_dot(gradient_storage, d) <=
+               γ * M * ndir2 + eps(float(γ))
+                break
+            end
+        end
 
         M *= line_search.tau
         γ = min(max(dot_dir / (M * ndir2), 0), gamma_max)
@@ -463,7 +546,16 @@ function perform_line_search(
                 linesearch_fallback = deepcopy(line_search)
                 linesearch_fallback.relaxed_smoothness = true
                 return perform_line_search(
-                    linesearch_fallback, t, f, grad!, gradient, x, d, gamma_max, storage, memory_mode;
+                    linesearch_fallback,
+                    t,
+                    f,
+                    grad!,
+                    gradient,
+                    x,
+                    d,
+                    gamma_max,
+                    storage,
+                    memory_mode;
                     should_upgrade=should_upgrade,
                 )
             end
@@ -518,14 +610,8 @@ end
 Adaptive(eta::T, tau::TT) where {T,TT} =
     Adaptive{T,TT}(eta, tau, T(Inf), T(1e10), T(0.5), true, false)
 
-Adaptive(;
-    eta=0.9,
-    tau=2,
-    L_est=Inf,
-    max_estimate=1e10,
-    verbose=true,
-    relaxed_smoothness=false,
-) = Adaptive(eta, tau, L_est, max_estimate, verbose, relaxed_smoothness)
+Adaptive(; eta=0.9, tau=2, L_est=Inf, max_estimate=1e10, verbose=true, relaxed_smoothness=false) =
+    Adaptive(eta, tau, L_est, max_estimate, verbose, relaxed_smoothness)
 
 struct AdaptiveWorkspace{XT,BT}
     x::XT
@@ -533,7 +619,8 @@ struct AdaptiveWorkspace{XT,BT}
     gradient_storage::XT
 end
 
-build_linesearch_workspace(::Adaptive, x, gradient) = AdaptiveWorkspace(similar(x), big.(x), similar(x))
+build_linesearch_workspace(::Adaptive, x, gradient) =
+    AdaptiveWorkspace(similar(x), big.(x), similar(x))
 
 function perform_line_search(
     line_search::Adaptive,
@@ -587,7 +674,16 @@ function perform_line_search(
                 linesearch_fallback = deepcopy(line_search)
                 linesearch_fallback.relaxed_smoothness = true
                 return perform_line_search(
-                    linesearch_fallback, t, f, grad!, gradient, x, d, gamma_max, storage, memory_mode;
+                    linesearch_fallback,
+                    t,
+                    f,
+                    grad!,
+                    gradient,
+                    x,
+                    d,
+                    gamma_max,
+                    storage,
+                    memory_mode;
                     should_upgrade=should_upgrade,
                 )
             end
