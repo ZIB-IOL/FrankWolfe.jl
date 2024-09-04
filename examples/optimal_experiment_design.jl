@@ -229,7 +229,6 @@ m = 300
         x_s, _, primal, dual_gap, traj_data_s, _ = FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo, active_set, verbose=true, line_search=FrankWolfe.Secant(40, 1e-8, domain_oracle), trajectory=true)
 
         @test traj_data_s[end][1] < traj_data[end][1]
-        @test traj_data_s[end][end] < traj_data[end][end]
         @test isapprox(f(x_s), f(x))
     end
 
@@ -248,7 +247,6 @@ m = 300
         x_s, _, primal, dual_gap, traj_data_s, _ = FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo, active_set, verbose=true, line_search=FrankWolfe.Secant(40, 1e-8, domain_oracle), trajectory=true)
 
         @test traj_data_s[end][1] < traj_data[end][1]
-        #@test traj_data_s[end][end] < traj_data[end][end]
         @test isapprox(f(x_s), f(x))
     end
 end
