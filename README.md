@@ -69,7 +69,7 @@ julia> p_opt
  0.3333333286623478
 ```
 
-Note that active-set based methods like `Away-Frank-Wolfe` and `Blended Pairwise Conditional Gradient` also include a post processing step. 
+Note that active-set based methods like Away Frank-Wolfe and Blended Pairwise Conditional Gradient also include a post processing step. 
 In post-processing all values are recomputed and in particular the dual gap is computed at the current FW vertex, which might be slightly larger than the best dual gap observed as the gap is not monotonic. This is expected behavior.
 
 
