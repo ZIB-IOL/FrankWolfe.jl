@@ -288,7 +288,7 @@ function blended_pairwise_conditional_gradient(
                     step_type = ST_REGULAR
                 end
             else # Set the correct flag step.
-                tt = regular
+                step_type = ST_REGULAR
             end
             vertex_taken = v
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
