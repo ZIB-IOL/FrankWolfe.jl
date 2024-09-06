@@ -1,3 +1,9 @@
+# Noteworthy changes from v0.3 to v0.4
+
+- Changed `tt` to `step_type` everywhere, including as a type in the `CallbackState` object.
+- `FrankWolfe.st` is now `FrankWolfe.steptype_string`
+- all step types were renamed to clearly appear as constants, with a naming convention `ST_NAME`.
+
 # Noteworthy changes from v0.1 to v0.2
 
 - clean up `active_set.jl` by renaming `compute_active_set_iterate` to `get_active_set_iterate` and merging `find_minmax_direction` and `active_set_argminmax` [PR258](https://github.com/ZIB-IOL/FrankWolfe.jl/pull/258)
