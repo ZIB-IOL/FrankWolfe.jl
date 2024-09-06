@@ -352,24 +352,31 @@ end
 Base.print(io::IO, ::Backtracking) = print(io, "Backtracking")
 
 """
-    Secant(limit_num_steps, tol)
+    Secant(limit_num_steps, tol, domain_oracle)
 
 Secant line search strategy, which iteratively refines the step size using the secant method.
 This method is geared towards problems with self-concordant functions (but might require extra structure) 
-and potentially faster than the backtracking line search. Order of convergence is superlinear 
-with exponent 1.618 (Golden Ratio) but not quite quadratic. Convergence is not guaranteed in general
+and potentially faster than the backtracking line search.
+The order of convergence is superlinear with exponent 1.618 (Golden Ratio) but not quite quadratic.
+Convergence is not guaranteed in general.
 
 
 # Arguments
 - `limit_num_steps::Int`: Maximum number of iterations for the secant method. (default 40)
 - `tol::Float64`: Tolerance for convergence. (default 1e-8)
+- `domain_oracle::Function`, returns true if the argument x is in the domain of the objective function f.
 
 # References
 - [Secant Method](https://en.wikipedia.org/wiki/Secant_method)
 """
-struct Secant <: LineSearchMethod
+struct Secant{F} <: LineSearchMethod
     limit_num_steps::Int
     tol::Float64
+    domain_oracle::F
+end
+
+function Secant(limit_num_steps, tol)
+    return Secant(limit_num_steps, tol, x -> true)
 end
 
 function Secant(; limit_num_steps=40, tol=1e-8)
@@ -391,15 +398,19 @@ function perform_line_search(
     memory_mode,
 )
     dot_gdir = dot(gradient, d)
-    # gamma = min(gamma_max, abs(dot_gdir)) # Start with a potentially smaller step
     gamma = gamma_max
     storage, grad_storage = workspace
     storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
+    while !line_search.domain_oracle(storage)
+        gamma_max /= 2
+        gamma = gamma_max
+        storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
+    end
     new_val = f(storage)
     best_gamma = gamma
     best_val = new_val
     i = 1
-
+    gamma_prev = zero(best_gamma)
     while abs(dot_gdir) > line_search.tol
         if i > line_search.limit_num_steps
             return best_gamma
@@ -412,9 +423,9 @@ function perform_line_search(
             return best_gamma
         end
 
-        gamma_prev = (i == 1) ? 0 : gamma
-        gamma = gamma - dot_gdir_new * (gamma - gamma_prev) / (dot_gdir_new - dot_gdir)
-        gamma = clamp(gamma, 0, gamma_max) # Ensure gamma stays in [0, gamma_max]
+        gamma_new = gamma - dot_gdir_new * (gamma - gamma_prev) / (dot_gdir_new - dot_gdir)
+        gamma_prev = gamma
+        gamma = clamp(gamma_new, 0, gamma_max) # Ensure gamma stays in [0, gamma_max]
 
         storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
         new_val = f(storage)
