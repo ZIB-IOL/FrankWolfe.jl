@@ -459,7 +459,6 @@ function blended_pairwise_conditional_gradient(
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
         dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
-        dual_gap = dual_gap < phi ? dual_gap : phi 
     end
     tt = pp
     tot_time = (time_ns() - time_start) / 1e9
