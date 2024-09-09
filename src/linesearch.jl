@@ -383,7 +383,15 @@ function Secant(; limit_num_steps=40, tol=1e-8)
     return Secant(limit_num_steps, tol)
 end
 
-build_linesearch_workspace(::Secant, x, gradient) = (similar(x), similar(gradient))
+mutable struct SecantWorkspace{XT,GT}
+    x::XT
+    gradient::GT
+    last_gamma::Float64
+end
+
+function build_linesearch_workspace(::Secant, x, gradient)
+    return SecantWorkspace(similar(x), similar(gradient), 1.0)  # Initialize last_gamma to 1.0
+end
 
 function perform_line_search(
     line_search::Secant,
@@ -394,16 +402,16 @@ function perform_line_search(
     x,
     d,
     gamma_max,
-    workspace,
+    workspace::SecantWorkspace,
     memory_mode,
 )
     dot_gdir = dot(gradient, d)
-    gamma = gamma_max
-    storage, grad_storage = workspace
+    gamma = min(workspace.last_gamma, gamma_max)  # Start from last gamma, but don't exceed gamma_max
+    storage, grad_storage = workspace.x, workspace.gradient
     storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
     while !line_search.domain_oracle(storage)
         gamma_max /= 2
-        gamma = gamma_max
+        gamma = min(gamma, gamma_max)
         storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
     end
     new_val = f(storage)
@@ -413,13 +421,15 @@ function perform_line_search(
     gamma_prev = zero(best_gamma)
     while abs(dot_gdir) > line_search.tol
         if i > line_search.limit_num_steps
+            workspace.last_gamma = best_gamma  # Update last_gamma before returning
             return best_gamma
         end
 
         grad!(grad_storage, storage)
-        dot_gdir_new = dot(grad_storage, d)
+        dot_gdir_new = fast_dot(grad_storage, d)
 
         if dot_gdir_new ≈ dot_gdir
+            workspace.last_gamma = best_gamma  # Update last_gamma before returning
             return best_gamma
         end
 
@@ -438,6 +448,7 @@ function perform_line_search(
         dot_gdir = dot_gdir_new
         i += 1
     end
+    workspace.last_gamma = best_gamma  # Update last_gamma before returning
     return best_gamma
 end
 
