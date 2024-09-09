@@ -11,33 +11,31 @@ struct InplaceEmphasis <: MemoryEmphasis end
 struct OutplaceEmphasis <: MemoryEmphasis end
 
 @enum StepType begin
-    initial = 1
-    regular = 2
-    lazy = 3
-    lazylazy = 4
-    dualstep = 5
-    away = 6
-    pairwise = 7
-    drop = 8
-    simplex_descent = 101
-    gap_step = 102
-    last = 1000
-    pp = 1001
+    ST_INITIAL = 1
+    ST_REGULAR = 2
+    ST_LAZY = 3
+    ST_LAZYSTORAGE = 4
+    ST_DUALSTEP = 5
+    ST_AWAY = 6
+    ST_PAIRWISE = 7
+    ST_DROP = 8
+    ST_SIMPLEXDESCENT = 101
+    ST_LAST = 1000
+    ST_POSTPROCESS = 1001
 end
 
-const st = (
-    initial="I",
-    regular="FW",
-    lazy="L",
-    lazylazy="LL",
-    dualstep="LD",
-    away="A",
-    pairwise="P",
-    drop="D",
-    simplex_descent="SD",
-    gap_step="GS",
-    last="Last",
-    pp="PP",
+const steptype_string = (
+    ST_INITIAL="I",
+    ST_REGULAR="FW",
+    ST_LAZY="L",
+    ST_LAZYSTORAGE="LL",
+    ST_DUALSTEP="LD",
+    ST_AWAY="A",
+    ST_PAIRWISE="P",
+    ST_DROP="D",
+    ST_SIMPLEXDESCENT="SD",
+    ST_LAST="Last",
+    ST_POSTPROCESS="PP",
 )
 
 """
@@ -57,7 +55,7 @@ struct CallbackState{TP,TDV,TDG,XT,VT,DT,TG,FT,GFT,LMO,GT}
     grad!::GFT
     lmo::LMO
     gradient::GT
-    tt::FrankWolfe.StepType
+    step_type::StepType
 end
 
 function callback_state(state::CallbackState)
