@@ -45,9 +45,9 @@ include("block_coordinate_algorithms.jl")
 include("alternating_methods.jl")
 include("blended_pairwise.jl")
 include("pairwise.jl")
+include("dicg.jl")
 include("tracking.jl")
 include("callback.jl")
-include("dicg.jl")
 
 # collecting most common data types etc and precompile
 # min version req set to 1.5 to prevent stalling of julia 1
