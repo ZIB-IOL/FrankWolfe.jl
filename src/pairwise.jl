@@ -324,6 +324,7 @@ function pairwise_frank_wolfe(
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
+    dual_gap = min(phi_value, dual_gap)
     step_type = ST_LAST
     tot_time = (time_ns() - time_start) / 1e9
     if callback !== nothing
