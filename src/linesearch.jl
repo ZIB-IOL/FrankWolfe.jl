@@ -369,8 +369,8 @@ Convergence is not guaranteed in general.
 # References
 - [Secant Method](https://en.wikipedia.org/wiki/Secant_method)
 """
-struct Secant{F} <: LineSearchMethod
-    inner_ls::LineSearchMethod
+struct Secant{F,LSM<:LineSearchMethod} <: LineSearchMethod
+    inner_ls::LSM
     limit_num_steps::Int
     tol::Float64
     domain_oracle::F
