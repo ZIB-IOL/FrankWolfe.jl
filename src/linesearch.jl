@@ -370,27 +370,30 @@ Convergence is not guaranteed in general.
 - [Secant Method](https://en.wikipedia.org/wiki/Secant_method)
 """
 struct Secant{F} <: LineSearchMethod
+    inner_ls::LineSearchMethod
     limit_num_steps::Int
     tol::Float64
     domain_oracle::F
 end
 
 function Secant(limit_num_steps, tol)
-    return Secant(limit_num_steps, tol, x -> true)
+    return Secant(Backtracking(), limit_num_steps, tol, x -> true)
 end
 
-function Secant(; limit_num_steps=40, tol=1e-8)
-    return Secant(limit_num_steps, tol)
+function Secant(;inner_ls=Backtracking(), limit_num_steps=40, tol=1e-8, domain_oracle=(x -> true))
+    return Secant(inner_ls, limit_num_steps, tol, domain_oracle)
 end
 
-mutable struct SecantWorkspace{XT,GT}
+mutable struct SecantWorkspace{XT,GT, IWS}
+    inner_ws::IWS
     x::XT
     gradient::GT
     last_gamma::Float64
 end
 
-function build_linesearch_workspace(::Secant, x, gradient)
-    return SecantWorkspace(similar(x), similar(gradient), 1.0)  # Initialize last_gamma to 1.0
+function build_linesearch_workspace(ls::Secant, x, gradient)
+    inner_ws = build_linesearch_workspace(ls.inner_ls, x, gradient)
+    return SecantWorkspace(inner_ws, similar(x), similar(gradient), 1.0)  # Initialize last_gamma to 1.0
 end
 
 function perform_line_search(
@@ -449,11 +452,8 @@ function perform_line_search(
         i += 1
     end
     if abs(dot_gdir) > line_search.tol
-        inner_line_search = Backtracking()
-        inner_workspace = build_linesearch_workspace(line_search, x, gradient)
         gamma = perform_line_search(
-            line_search,
-            line_search::Backtracking,
+            line_search.inner_ls,
             0,
             f,
             grad!,
@@ -461,7 +461,7 @@ function perform_line_search(
             x,
             d,
             gamma_max,
-            storage,
+            workspace.inner_ws,
             memory_mode,
         )
 
