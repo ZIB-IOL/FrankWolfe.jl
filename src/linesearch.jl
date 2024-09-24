@@ -448,6 +448,29 @@ function perform_line_search(
         dot_gdir = dot_gdir_new
         i += 1
     end
+    if abs(dot_gdir) > line_search.tol
+        inner_line_search = Backtracking()
+        inner_workspace = build_linesearch_workspace(line_search, x, gradient)
+        gamma = perform_line_search(
+            line_search,
+            line_search::Backtracking,
+            0,
+            f,
+            grad!,
+            gradient,
+            x,
+            d,
+            gamma_max,
+            storage,
+            memory_mode,
+        )
+
+        storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
+        new_val = f(storage)
+
+        @assert new_val <= best_val
+        best_gamma = gamma
+    end
     workspace.last_gamma = best_gamma  # Update last_gamma before returning
     return best_gamma
 end
