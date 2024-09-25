@@ -3,14 +3,14 @@ using Test
 using LinearAlgebra
 using Random
 using SparseArrays
-using SCIP
+using GLPK
 import MathOptInterface
 
 const MOI = MathOptInterface
 const MOIU = MOI.Utilities
 
 Random.seed!(42)
-o = SCIP.Optimizer()
+o = GLPK.Optimizer()
 MOI.set(o, MOI.Silent(), true)
 MOI.empty!(o)
 
