@@ -251,8 +251,8 @@ end
     @testset "LMO: $lmo" for lmo in (
         FrankWolfe.UnitSimplexOracle(1.0),
         FrankWolfe.ProbabilitySimplexOracle(1.0),
-        #FrankWolfe.convert_mathopt(FrankWolfe.UnitSimplexOracle(1.0), o;dimension=n),
-        #FrankWolfe.convert_mathopt(FrankWolfe.ProbabilitySimplexOracle(1.0), o;dimension=n)
+        FrankWolfe.convert_mathopt(FrankWolfe.UnitSimplexOracle(1.0), o;dimension=n),
+        FrankWolfe.convert_mathopt(FrankWolfe.ProbabilitySimplexOracle(1.0), o;dimension=n)
     )
         x0_simplex = FrankWolfe.compute_extreme_point(lmo, randn(n))
         res_di = FrankWolfe.decomposition_invariant_conditional_gradient(
@@ -264,6 +264,7 @@ end
             trajectory=true,
             epsilon=1e-10,
         )
+        x0_simplex = FrankWolfe.compute_extreme_point(lmo, randn(n))
         res_fw = FrankWolfe.frank_wolfe(
             f,
             grad!,
