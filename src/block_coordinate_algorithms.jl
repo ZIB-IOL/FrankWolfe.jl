@@ -206,7 +206,7 @@ end
 
 function Base.copy(obj::BPCGStep)
     if obj.active_set === nothing
-        return BPCGStep(false, nothing, obj.renorm_interval, obj.lazy_tolerance, Inf)
+        return BPCGStep(obj.lazy, nothing, obj.renorm_interval, obj.lazy_tolerance, obj.phi)
     else
         return BPCGStep(obj.lazy, copy(obj.active_set), obj.renorm_interval, obj.lazy_tolerance, obj.phi)
     end
@@ -287,7 +287,7 @@ function update_iterate(
 
     # minor modification from original paper for improved sparsity
     # (proof follows with minor modification when estimating the step)
-    if local_gap > s.phi / s.lazy_tolerance
+    if local_gap > max(s.phi / s.lazy_tolerance, 0) # Robust condition to not drop the zero-vector if the dual_gap is negative by inaccuracy
         d = muladd_memory_mode(memory_mode, d, a, v_local)
         vertex_taken = v_local
         gamma_max = a_lambda
