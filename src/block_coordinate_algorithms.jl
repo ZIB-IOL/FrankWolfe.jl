@@ -51,10 +51,11 @@ mutable struct DualProgressOrder <: BlockCoordinateUpdateOrder
     limit::Int
     previous_dual_gaps::Vector{Float64}
     dual_progress::Vector{Float64}
+    last_indices::Vector{Int}
 end
 
-DualProgressOrder() = DualProgressOrder(-1, [], [])
-DualProgressOrder(i::Int64) = DualProgressOrder(i, [], [])
+DualProgressOrder() = DualProgressOrder(-1, [], [], [])
+DualProgressOrder(i::Int64) = DualProgressOrder(i, [], [], [])
 
 function select_update_indices(::FullUpdate, s::CallbackState, _)
     return [1:length(s.lmo.lmos)]
@@ -94,6 +95,19 @@ function select_update_indices(u::StochasticUpdate, s::CallbackState, _)
     return [[rand(1:l)] for i in 1:u.limit]
 end
 
+function sample_without_replacement(n::Int, weights::Vector{Float64})
+    weights = weights ./ sum(weights)
+    cumsum_weights = cumsum(weights)
+    indices = zeros(Int, n)
+    for i in 1:n
+        indices[i] = findfirst(cumsum_weights .> rand())
+        weights[indices[i]] = 0
+        weights = weights ./ sum(weights)
+        cumsum_weights = cumsum(weights)
+    end
+    return indices
+end
+
 function select_update_indices(u::DualProgressOrder, s::CallbackState, dual_gaps)
 
     l = length(s.lmo.lmos)
@@ -101,22 +115,33 @@ function select_update_indices(u::DualProgressOrder, s::CallbackState, dual_gaps
     @assert u.limit <= l
     @assert u.limit > 0 || u.limit == -1
 
-    # In the first iteration update every block so we get finite dual progress
-    if s.t < 2 
-        u.previous_dual_gaps = copy(dual_gaps)
-        return [[i] for i=1:l] 
-    end
-
-    if s.t == 1
-        u.dual_progress = dual_gaps - u.previous_dual_gaps
+    # In the first two iterations update every block so we get finite dual progress
+    if s.t < 2
+        u.dual_progress = ones(l)
+        indices = [[i for i=1:l]]
     else
-        diff = dual_gaps - u.previous_dual_gaps
-        u.dual_progress = [d == 0 ? u.dual_progress[i] : d for (i, d) in enumerate(diff)]
+        # Update dual progress only on updated blocks
+        for i in u.last_indices
+            d = u.previous_dual_gaps[i] - dual_gaps[i]
+            if d < 0
+                u.dual_progress[i] = 0
+            else
+                u.dual_progress[i] = d
+            end
+        end
+        n = u.limit == -1 ? l : u.limit
+        #println(u.dual_progress, "=>", sum(u.dual_progress .!= 0))
+        if sum(u.dual_progress .!= 0) < n
+            indices = [[i for i=1:l]]
+        else
+            indices = [sample_without_replacement(n, u.dual_progress)]
+        end
     end
     u.previous_dual_gaps = copy(dual_gaps)
-
-    n = u.limit == -1 ? l : u.limit
-    return [[findfirst(cumsum(u.dual_progress/sum(u.dual_progress)) .> rand())] for _=1:n]
+    #println(indices)
+    u.last_indices = vcat(indices...)
+    #println(u.last_indices)
+    return indices
 end
 
 function select_update_indices(u::DualGapOrder, s::CallbackState, dual_gaps)
@@ -128,11 +153,11 @@ function select_update_indices(u::DualGapOrder, s::CallbackState, dual_gaps)
 
     # In the first iteration update every block so we get finite dual gaps
     if s.t < 1
-        return [[i] for i=1:l] 
+        return [[i for i=1:l]]
     end
 
     n = u.limit == -1 ? l : u.limit
-    return [[findfirst(cumsum(dual_gaps/sum(dual_gaps)) .> rand())] for _=1:n]
+    return [sample_without_replacement(n, dual_gaps)]
 end
 
 """
