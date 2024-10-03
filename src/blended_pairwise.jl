@@ -143,7 +143,7 @@ function blended_pairwise_conditional_gradient(
     if squadratic
         @assert lp_solver !== nothing "When squadratic is true, lp_solver must be provided"
     end
-    
+
     if verbose
         println("\nBlended Pairwise Conditional Gradient Algorithm.")
         NumType = eltype(x)
@@ -318,6 +318,7 @@ function blended_pairwise_conditional_gradient(
                 compute_active_set_iterate!(active_set)
                 x = get_active_set_iterate(active_set)
                 grad!(gradient, x)
+                step_type = ST_DIRECT
             end
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
             # if we are about to exit, compute dual_gap with the cleaned-up x
@@ -353,7 +354,6 @@ function blended_pairwise_conditional_gradient(
                     linesearch_workspace,
                     memory_mode,
                 )
-
                 if callback !== nothing
                     state = CallbackState(
                         t,

@@ -19,6 +19,7 @@ struct OutplaceEmphasis <: MemoryEmphasis end
     ST_AWAY = 6
     ST_PAIRWISE = 7
     ST_DROP = 8
+    ST_DIRECT = 9
     ST_SIMPLEXDESCENT = 101
     ST_LAST = 1000
     ST_POSTPROCESS = 1001
@@ -33,6 +34,7 @@ const steptype_string = (
     ST_AWAY="A",
     ST_PAIRWISE="P",
     ST_DROP="D",
+    ST_DIRECT="DS",
     ST_SIMPLEXDESCENT="SD",
     ST_LAST="Last",
     ST_POSTPROCESS="PP",

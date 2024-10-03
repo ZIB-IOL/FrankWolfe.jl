@@ -61,7 +61,8 @@ function make_print_callback(callback, print_iter, headers, format_string, forma
         elseif state.t == 1 ||
                mod(state.t, print_iter) == 0 ||
                state.step_type == ST_DUALSTEP ||
-               state.step_type == ST_LAST
+               state.step_type == ST_LAST ||
+               state.step_type == ST_DIRECT
             if state.t == 1
                 state = @set state.step_type = ST_INITIAL
                 print_callback(headers, format_string, print_header=true)
@@ -94,7 +95,8 @@ function make_print_callback_extension(callback, print_iter, headers, format_str
         elseif state.t == 1 ||
                mod(state.t, print_iter) == 0 ||
                state.step_type == ST_DUALSTEP ||
-               state.step_type == ST_LAST
+               state.step_type == ST_LAST ||
+               state.step_type == ST_DIRECT
             if state.t == 1
                 print("\e[u\e[3A") # Move to end of upper horizontal line
                 line = "-"^compute_line_length(format_string)
