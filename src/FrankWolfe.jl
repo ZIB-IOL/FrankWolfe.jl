@@ -19,6 +19,9 @@ import Hungarian
 
 import Arpack
 
+# add HiGHS
+import HiGHS # TODO: later let the user choose the LP solver and pass it to the constructor
+
 export frank_wolfe, lazified_conditional_gradient, away_frank_wolfe
 export blended_conditional_gradient, compute_extreme_point
 

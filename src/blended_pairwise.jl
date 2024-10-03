@@ -1,4 +1,3 @@
-
 """
     blended_pairwise_conditional_gradient(f, grad!, lmo, x0; kwargs...)
 
@@ -31,6 +30,7 @@ function blended_pairwise_conditional_gradient(
     add_dropped_vertices=false,
     use_extra_vertex_storage=false,
     recompute_last_vertex=true,
+    squadratic=false,
 )
     # add the first vertex to active set from initialization
     active_set = ActiveSet([(1.0, x0)])
@@ -60,6 +60,7 @@ function blended_pairwise_conditional_gradient(
         add_dropped_vertices=add_dropped_vertices,
         use_extra_vertex_storage=use_extra_vertex_storage,
         recompute_last_vertex=recompute_last_vertex,
+        squadratic=squadratic,
     )
 end
 
@@ -93,6 +94,7 @@ function blended_pairwise_conditional_gradient(
     add_dropped_vertices=false,
     use_extra_vertex_storage=false,
     recompute_last_vertex=true,
+    squadratic=false,
 ) where {AT,R}
 
     # format string for output of the algorithm
@@ -121,6 +123,8 @@ function blended_pairwise_conditional_gradient(
     end
 
     t = 0
+    next_direct_solve_interval = 10
+    last_direct_solve = 0
     compute_active_set_iterate!(active_set)
     x = get_active_set_iterate(active_set)
     primal = convert(eltype(x), Inf)
@@ -291,6 +295,20 @@ function blended_pairwise_conditional_gradient(
                 step_type = ST_REGULAR
             end
             vertex_taken = v
+            # short circuit for quadratic case
+            if squadratic && (t == 1 || (t > last_direct_solve && t - last_direct_solve >= next_direct_solve_interval))
+                next_direct_solve_interval *= 2  # Double the interval for next execution
+                last_direct_solve = t  # Update the last execution round
+                # Compute gradient at 0
+                zero_x = zero(x)
+                zero_grad = similar(gradient)
+                grad!(zero_grad, zero_x)
+                active_set = direct_solve(active_set, zero_grad) # 0-grad is used to extract x0
+                active_set_cleanup!(active_set; weight_purge_threshold=weight_purge_threshold)
+                compute_active_set_iterate!(active_set)
+                x = get_active_set_iterate(active_set)
+                grad!(gradient, x)
+            end
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
             # if we are about to exit, compute dual_gap with the cleaned-up x
             if dual_gap ≤ epsilon
@@ -485,4 +503,72 @@ function blended_pairwise_conditional_gradient(
     end
 
     return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data, active_set=active_set)
+end
+
+function direct_solve(active_set, gradient)
+    # 1. Compute x0 = -1/2 * grad(0)
+    x0 = -0.5 * gradient
+
+    # 2. Generate matrix A with columns being the points in the active set
+    if isempty(active_set.atoms)
+        A = zeros(length(x0), 0)
+    else
+        A = hcat(getindex.(active_set, 2)...)
+    end
+    # println(active_set)
+    # println(A)
+    # println(x0)
+
+    # 3. Setup and solve the system using MOI and HIGHS
+    n = size(A, 2)
+    model = MOI.instantiate(HiGHS.Optimizer)
+    MOI.set(model, MOI.Silent(), true)
+
+    # @variable(model, λ[1:n] >= 0)
+    # @constraint(model, sum(λ) == 1)
+    # @objective(model, Min, (A'A*λ - A'x0)' * (A'A*λ - A'x0))
+
+    # Define variables
+    λ = MOI.add_variables(model, n)
+    for i in 1:n
+        MOI.add_constraint(model, λ[i], MOI.GreaterThan(0.0))
+    end
+
+    # Add sum constraint
+    sum_λ = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(ones(n), λ), 0.0)
+    MOI.add_constraint(model, sum_λ, MOI.EqualTo(1.0))
+
+    # Add constraint A'A λ = A'x0
+    Q = A'A
+    b = A'x0
+    # println(Q)
+    # println(b)
+    for i in 1:size(Q, 1)
+        terms = MOI.ScalarAffineTerm{Float64}[]
+        for j in 1:size(Q, 2)
+            if !iszero(Q[i,j])
+                push!(terms, MOI.ScalarAffineTerm(Q[i,j], λ[j]))
+            end
+        end
+        constraint = MOI.ScalarAffineFunction(terms, 0.0)
+        MOI.add_constraint(model, constraint, MOI.EqualTo(b[i]))
+    end
+
+    # Set a dummy objective (minimize sum of λ)
+    dummy_objective = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(ones(n), λ), 0.0)
+    MOI.set(model, MOI.ObjectiveFunction{typeof(dummy_objective)}(), dummy_objective)
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+
+    MOI.optimize!(model)
+
+    # 4. Check if solve was feasible and update active set weights
+    if MOI.get(model, MOI.TerminationStatus()) in [MOI.OPTIMAL, MOI.FEASIBLE_POINT]
+        # @info "Direct solve successful"
+        λ_values = MOI.get.(model, MOI.VariablePrimal(), λ)
+        new_weights = λ_values
+        return ActiveSet([(new_weights[i], active_set.atoms[i]) for i in 1:n])
+    else
+#        @info "Direct solve failed"
+        return active_set
+    end
 end
