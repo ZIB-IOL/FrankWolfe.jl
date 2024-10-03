@@ -26,9 +26,12 @@ lp_solver = GLPK.Optimizer
 # lp_solver = HiGHS.Optimizer
 # lp_solver = Clp.Optimizer # buggy / does not work properly
 
+
 include("../examples/plot_utils.jl")
 
-n = Int(1e4)
+# TODO: increase n to 1e4 and k to 1e4 and fix stack overflow issue / probably coming from the direct solve hcat in there??
+
+n = Int(1e3)
 k = 10000
 
 # s = rand(1:100)
