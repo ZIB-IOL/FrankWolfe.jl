@@ -17,10 +17,8 @@ using Random
 import Pkg
 Pkg.add("GLPK")
 Pkg.add("HiGHS")
-Pkg.add("Clp")
 import GLPK
 import HiGHS
-import Clp
 
 lp_solver = GLPK.Optimizer
 # lp_solver = HiGHS.Optimizer
@@ -30,6 +28,7 @@ lp_solver = GLPK.Optimizer
 include("../examples/plot_utils.jl")
 
 # TODO: increase n to 1e4 and k to 1e4 and fix stack overflow issue / probably coming from the direct solve hcat in there??
+# TODO: also unit tests for direct solve are missing
 
 n = Int(1e3)
 k = 10000
