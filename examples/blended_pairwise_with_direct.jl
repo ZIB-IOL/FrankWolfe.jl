@@ -20,8 +20,8 @@ Pkg.add("HiGHS")
 import GLPK
 import HiGHS
 
-lp_solver = GLPK.Optimizer
-# lp_solver = HiGHS.Optimizer
+# lp_solver = GLPK.Optimizer
+lp_solver = HiGHS.Optimizer
 # lp_solver = Clp.Optimizer # buggy / does not work properly
 
 
