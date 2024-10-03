@@ -31,7 +31,7 @@ function blended_pairwise_conditional_gradient(
     use_extra_vertex_storage=false,
     recompute_last_vertex=true,
     squadratic=false,
-    lp_solver=HiGHS.Optimizer,  # New parameter for LP solver
+    lp_solver=nothing,  # New parameter for LP solver
 )
     # add the first vertex to active set from initialization
     active_set = ActiveSet([(1.0, x0)])
@@ -97,7 +97,7 @@ function blended_pairwise_conditional_gradient(
     use_extra_vertex_storage=false,
     recompute_last_vertex=true,
     squadratic=false,
-    lp_solver=HiGHS.Optimizer,  # New parameter for LP solver
+    lp_solver=nothing,  # New parameter for LP solver
 ) where {AT,R}
 
     # format string for output of the algorithm
@@ -140,6 +140,10 @@ function blended_pairwise_conditional_gradient(
         gradient = collect(x)
     end
 
+    if squadratic
+        @assert lp_solver !== nothing "When squadratic is true, lp_solver must be provided"
+    end
+    
     if verbose
         println("\nBlended Pairwise Conditional Gradient Algorithm.")
         NumType = eltype(x)
