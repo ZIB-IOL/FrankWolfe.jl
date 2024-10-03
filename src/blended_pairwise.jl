@@ -31,6 +31,7 @@ function blended_pairwise_conditional_gradient(
     use_extra_vertex_storage=false,
     recompute_last_vertex=true,
     squadratic=false,
+    lp_solver=HiGHS.Optimizer,  # New parameter for LP solver
 )
     # add the first vertex to active set from initialization
     active_set = ActiveSet([(1.0, x0)])
@@ -61,6 +62,7 @@ function blended_pairwise_conditional_gradient(
         use_extra_vertex_storage=use_extra_vertex_storage,
         recompute_last_vertex=recompute_last_vertex,
         squadratic=squadratic,
+        lp_solver=lp_solver,
     )
 end
 
@@ -95,6 +97,7 @@ function blended_pairwise_conditional_gradient(
     use_extra_vertex_storage=false,
     recompute_last_vertex=true,
     squadratic=false,
+    lp_solver=HiGHS.Optimizer,  # New parameter for LP solver
 ) where {AT,R}
 
     # format string for output of the algorithm
@@ -146,6 +149,9 @@ function blended_pairwise_conditional_gradient(
         grad_type = typeof(gradient)
         println("GRADIENTTYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance")
         println("LMO: $(typeof(lmo))")
+        if lp_solver !== nothing
+            println("LP SOLVER: $(lp_solver)")
+        end
         if use_extra_vertex_storage && !lazy
             @info("vertex storage only used in lazy mode")
         end
@@ -303,7 +309,7 @@ function blended_pairwise_conditional_gradient(
                 zero_x = zero(x)
                 zero_grad = similar(gradient)
                 grad!(zero_grad, zero_x)
-                active_set = direct_solve(active_set, zero_grad) # 0-grad is used to extract x0
+                active_set = direct_solve(active_set, zero_grad, lp_solver)  # Pass lp_solver to direct_solve
                 active_set_cleanup!(active_set; weight_purge_threshold=weight_purge_threshold)
                 compute_active_set_iterate!(active_set)
                 x = get_active_set_iterate(active_set)
@@ -505,7 +511,7 @@ function blended_pairwise_conditional_gradient(
     return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data, active_set=active_set)
 end
 
-function direct_solve(active_set, gradient)
+function direct_solve(active_set, gradient, lp_solver)
     # 1. Compute x0 = -1/2 * grad(0)
     x0 = -0.5 * gradient
 
@@ -519,14 +525,10 @@ function direct_solve(active_set, gradient)
     # println(A)
     # println(x0)
 
-    # 3. Setup and solve the system using MOI and HIGHS
+    # 3. Setup and solve the system using the provided LP solver
     n = size(A, 2)
-    model = MOI.instantiate(HiGHS.Optimizer)
+    model = MOI.instantiate(lp_solver)
     MOI.set(model, MOI.Silent(), true)
-
-    # @variable(model, λ[1:n] >= 0)
-    # @constraint(model, sum(λ) == 1)
-    # @objective(model, Min, (A'A*λ - A'x0)' * (A'A*λ - A'x0))
 
     # Define variables
     λ = MOI.add_variables(model, n)
