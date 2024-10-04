@@ -365,3 +365,322 @@ function weight_purge_threshold_default(::Type{T}) where {T<:AbstractFloat}
     return sqrt(eps(T) * Base.rtoldefault(T)) # around 1e-12 for Float64
 end
 weight_purge_threshold_default(::Type{T}) where {T<:Number} = Base.rtoldefault(T)
+
+
+
+# Direct solvers and simplex based sparsification
+
+
+#### 
+# Leave for now - potentially faster for the norm projection case
+#### 
+
+"""
+    direct_solve(active_set, grad!, lp_solver)
+
+Directly solve the optimization problem for the given active set using a linear programming solver.
+
+This function performs the following steps:
+1. Computes the gradient at zero.
+2. Calculates x0 as -1/2 * grad(0).
+3. Generates a matrix A with columns being the points in the active set.
+4. Sets up and solves a linear programming problem using the provided LP solver.
+
+The LP problem is formulated to find optimal weights λ for the atoms in the active set,
+subject to the constraints that the weights sum to 1 and are non-negative.
+
+# Arguments
+- `active_set`: The current active set of atoms.
+- `grad!`: A function to compute the gradient.
+- `lp_solver`: A linear programming solver to use for the optimization.
+
+# Returns
+A new ActiveSet with updated weights based on the LP solution.
+
+# Note
+This function is particularly useful for problems where direct solving is more efficient
+than iterative methods. It can only used for functions of the form f(x) = \norm{x-x_0}_2^2
+"""
+
+function direct_solve(active_set, grad!, lp_solver)
+    x0 = get_active_set_iterate(active_set)
+    # Compute gradient at 0
+    zero_x = zero(x0)
+    zero_grad = similar(x0)
+    grad!(zero_grad, zero_x)
+    
+    # 1. Compute x0 = -1/2 * grad(0)
+    x0 = -0.5 * zero_grad
+
+    # 2. Generate matrix A with columns being the points in the active set
+    if isempty(active_set.atoms)
+        A = zeros(length(x0), 0)
+    else
+        # A = hcat(getindex.(active_set, 2)...) // this leads to stack overflow
+        A = zeros(eltype(x0), length(x0), length(active_set))
+        for (i, atom) in enumerate(active_set)
+            A[:, i] = atom[2]
+        end
+    end
+    # println(active_set)
+    # println(A)
+    # println(x0)
+
+    # 3. Setup and solve the system using the provided LP solver
+    n = size(A, 2)
+    model = MOI.instantiate(lp_solver)
+    MOI.set(model, MOI.Silent(), true)
+
+    # Define variables
+    λ = MOI.add_variables(model, n)
+    for i in 1:n
+        MOI.add_constraint(model, λ[i], MOI.GreaterThan(0.0))
+    end
+
+    # Add sum constraint
+    sum_λ = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(ones(n), λ), 0.0)
+    MOI.add_constraint(model, sum_λ, MOI.EqualTo(1.0))
+
+    # Add constraint A'A λ = A'x0
+    Q = A'A
+    b = A'x0
+    # println(Q)
+    # println(b)
+    for i in 1:size(Q, 1)
+        terms = MOI.ScalarAffineTerm{Float64}[]
+        for j in 1:size(Q, 2)
+            if !iszero(Q[i,j])
+                push!(terms, MOI.ScalarAffineTerm(Q[i,j], λ[j]))
+            end
+        end
+        constraint = MOI.ScalarAffineFunction(terms, 0.0)
+        MOI.add_constraint(model, constraint, MOI.EqualTo(b[i]))
+    end
+
+    # Set a dummy objective (minimize sum of λ)
+    dummy_objective = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(ones(n), λ), 0.0)
+    MOI.set(model, MOI.ObjectiveFunction{typeof(dummy_objective)}(), dummy_objective)
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+
+    MOI.optimize!(model)
+
+    # 4. Check if solve was feasible and update active set weights
+    if MOI.get(model, MOI.TerminationStatus()) in [MOI.OPTIMAL, MOI.FEASIBLE_POINT]
+        # @info "Direct solve successful"
+        # λ_values = MOI.get.(model, MOI.VariablePrimal(), λ) # leads to stack overflow
+        λ_values = Vector{Float64}(undef, n)
+        for i in 1:n
+            λ_values[i] = MOI.get(model, MOI.VariablePrimal(), λ[i])
+        end
+        new_weights = λ_values
+        return ActiveSet([(new_weights[i], active_set.atoms[i]) for i in 1:n])
+    else
+#        @info "Direct solve failed"
+        return active_set
+    end
+end
+
+"""
+    direct_solve_gq(active_set, grad!, lp_solver)
+
+Perform a direct solve for a quadratic problem over the active set by solving the 
+optimality system A'G λ = 0 with the provided LP solver. Here A is the matrix of atoms
+and G is the matrix of gradients of the atoms in the active set.
+
+# Arguments
+- `active_set`: The current active set containing atoms and their weights.
+- `grad!`: A function to compute the gradient for a given atom.
+- `lp_solver`: The linear programming solver to use for the optimization.
+
+# Returns
+- A new `ActiveSet` with updated weights if the solve is successful.
+- The original `active_set` if the solve fails.
+
+# Details
+1. Retrieves the current iterate from the active set.
+2. Generates matrices A and G, where A contains the atoms and G contains their gradients.
+3. Sets up a linear program for the optimization problem.
+4. Solves the system and updates the active set weights if successful using the provided LP solver.
+
+Note: This function is specifically designed for quadratic problems and uses the
+optimality condition A'G λ = 0, where A is the matrix of atoms and G is the matrix of
+their gradients.
+
+# Usage
+Set `squadratic = true` when calling `blended_pairwise_conditional_gradient' 
+
+"""
+
+function direct_solve_gq(active_set, grad!, lp_solver)
+    # 1. Get current iterate // artifact only used for size and type of A
+    x0 = get_active_set_iterate(active_set)
+    
+    # 2. Generate matrix A with columns being the gradients over the atoms in the active set
+    if isempty(active_set)
+        A = zeros(length(x0), 0)
+        G = zeros(length(x0), 0)
+    else
+        A = zeros(eltype(x0), length(x0), length(active_set))
+        G = zeros(eltype(x0), length(x0), length(active_set))
+        grad_storage = similar(x0)
+        for (i, atom) in enumerate(active_set)
+            grad!(grad_storage, atom[2])
+            A[:, i] = atom[2]
+            G[:, i] = grad_storage
+        end
+    end
+
+
+    # @info "Solving system with gradients"
+
+    # 3. Setup and solve the system using the provided LP solver
+    n = size(A, 2)
+    model = MOI.instantiate(lp_solver)
+    MOI.set(model, MOI.Silent(), true)
+
+    # Define variables
+    λ = MOI.add_variables(model, n)
+    for i in 1:n
+        MOI.add_constraint(model, λ[i], MOI.GreaterThan(0.0))
+    end
+
+    # Add sum constraint
+    sum_λ = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(ones(n), λ), 0.0)
+    MOI.add_constraint(model, sum_λ, MOI.EqualTo(1.0))
+
+    # Add constraint A'G λ = 0
+    Q = A'G
+    for i in 1:size(Q, 1)
+        terms = MOI.ScalarAffineTerm{Float64}[]
+        for j in 1:size(Q, 2)
+            if !iszero(Q[i,j])
+                push!(terms, MOI.ScalarAffineTerm(Q[i,j], λ[j]))
+            end
+        end
+        constraint = MOI.ScalarAffineFunction(terms, 0.0)
+        MOI.add_constraint(model, constraint, MOI.EqualTo(0.0))
+    end
+    # @info "Direct solve problem setup complete"
+    # Set a dummy objective (minimize sum of λ)
+    dummy_objective = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(ones(n), λ), 0.0)
+    MOI.set(model, MOI.ObjectiveFunction{typeof(dummy_objective)}(), dummy_objective)
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+    # @info "Direct solve problem setup + objective set"
+    MOI.optimize!(model)
+    # @info "Direct solve problem solved"
+    # 4. Check if solve was feasible and update active set weights
+    if MOI.get(model, MOI.TerminationStatus()) in [MOI.OPTIMAL, MOI.FEASIBLE_POINT]
+        # @info "Direct solve successful"
+        # λ_values = MOI.get.(model, MOI.VariablePrimal(), λ) # seems to lead to stack overflow // using explicit loop instead // does not seem to fix the problem
+        λ_values = Vector{Float64}(undef, n)
+        for i in 1:n
+            λ_values[i] = MOI.get(model, MOI.VariablePrimal(), λ[i])
+        end
+        new_weights = λ_values
+        return ActiveSet([(new_weights[i], active_set.atoms[i]) for i in 1:n])
+    else
+        # @info "Direct solve failed"
+        return active_set
+    end
+end
+
+
+
+"""
+    sparsify_iterate(active_set, lp_solver)
+
+Sparsify the current iterate of the active set using linear programming.
+
+This function attempts to find a sparser representation of the current iterate
+by solving a linear program. It aims to reduce the number of non-zero weights
+in the active set while maintaining the same iterate.
+
+# Arguments
+- `active_set`: The current ActiveSet object containing atoms and their weights.
+- `lp_solver`: A linear programming solver compatible with MathOptInterface.
+
+# Returns
+- A new ActiveSet object with potentially fewer non-zero weights, representing
+  the same iterate as the input active set.
+
+# Details
+The function performs the following steps:
+1. Extracts the current iterate from the active set.
+2. Constructs a matrix A where each column is an atom from the active set.
+3. Sets up and solves a linear program to find new weights that:
+   - Are non-negative
+   - Sum to 1
+   - Reproduce the current iterate when multiplied with the atoms
+4. If a feasible solution is found, creates a new ActiveSet with the new weights.
+   Otherwise, returns the original active set.
+
+Usage: Set `sparsify = true` when calling `blended_pairwise_conditional_gradient`
+"""
+
+function sparsify_iterate(active_set, lp_solver)
+    # 1. Get current iterate
+    x0 = get_active_set_iterate(active_set)
+
+    # 2. Generate matrix A with columns being the points in the active set
+    if isempty(active_set.atoms)
+        A = zeros(length(x0), 0)
+    else
+        # A = hcat(getindex.(active_set, 2)...) // this leads to stack overflow
+        A = zeros(eltype(x0), length(x0), length(active_set))
+        for (i, atom) in enumerate(active_set)
+            A[:, i] = atom[2]
+        end
+    end
+    # @info "Sparsification matrix A generated"
+
+    # 3. Setup and solve the system using the provided LP solver
+    n = size(A, 2)
+    model = MOI.instantiate(lp_solver)
+    MOI.set(model, MOI.Silent(), true)
+
+    # Define variables
+    λ = MOI.add_variables(model, n)
+    for i in 1:n
+        MOI.add_constraint(model, λ[i], MOI.GreaterThan(0.0))
+    end
+
+    # Add sum constraint
+    sum_λ = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(ones(n), λ), 0.0)
+    MOI.add_constraint(model, sum_λ, MOI.EqualTo(1.0))
+
+    # Add constraint A λ = x0
+    Q = A
+    b = x0
+    for i in 1:size(Q, 1)
+        terms = MOI.ScalarAffineTerm{Float64}[]
+        for j in 1:size(Q, 2)
+            if !iszero(Q[i,j])
+                push!(terms, MOI.ScalarAffineTerm(Q[i,j], λ[j]))
+            end
+        end
+        constraint = MOI.ScalarAffineFunction(terms, 0.0)
+        MOI.add_constraint(model, constraint, MOI.EqualTo(b[i]))
+    end
+    # @info "Sparsification problem setup complete"
+    # Set a dummy objective (minimize sum of λ)
+    dummy_objective = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(ones(n), λ), 0.0)
+    MOI.set(model, MOI.ObjectiveFunction{typeof(dummy_objective)}(), dummy_objective)
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+    # @info "Sparsification problem setup + objective set"
+    MOI.optimize!(model)
+    # @info "Sparsification problem solved"
+    # 4. Check if solve was feasible and update active set weights
+    if MOI.get(model, MOI.TerminationStatus()) in [MOI.OPTIMAL, MOI.FEASIBLE_POINT]
+        # @info "Sparsification successful"
+        # λ_values = MOI.get.(model, MOI.VariablePrimal(), λ) # seems to lead to stack overflow // using explicit loop instead // does not seem to fix the problem
+        λ_values = Vector{Float64}(undef, n)
+        for i in 1:n
+            λ_values[i] = MOI.get(model, MOI.VariablePrimal(), λ[i])
+        end
+        new_weights = λ_values
+        return ActiveSet([(new_weights[i], active_set.atoms[i]) for i in 1:n])
+    else
+        # @info "Sparsification failed"
+        return active_set
+    end
+end

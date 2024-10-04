@@ -30,8 +30,8 @@ include("../examples/plot_utils.jl")
 # TODO: increase n to 1e4 and k to 1e4 and fix stack overflow issue / probably coming from the direct solve hcat in there??
 # TODO: also unit tests for direct solve are missing
 
-n = Int(1e4)
-k = 10000
+n = Int(1e3)
+k = 1000
 
 # s = rand(1:100)
 s = 10
