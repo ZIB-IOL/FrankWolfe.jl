@@ -30,7 +30,8 @@ function blended_pairwise_conditional_gradient(
     add_dropped_vertices=false,
     use_extra_vertex_storage=false,
     recompute_last_vertex=true,
-    squadratic=false,
+    squadratic=false, # standard quadratic objective
+    quadratic=false,  # quadratic objective but not standard quadratic
     lp_solver=nothing, # lp_solver used for direct solve or sparsification
     sparsify=false, # sparsify the active set
     ds_scale_up=2,  # direct solve scale up parameter
@@ -64,6 +65,7 @@ function blended_pairwise_conditional_gradient(
         use_extra_vertex_storage=use_extra_vertex_storage,
         recompute_last_vertex=recompute_last_vertex,
         squadratic=squadratic,
+        quadratic=quadratic,  # Pass the new parameter
         lp_solver=lp_solver,
         sparsify=sparsify,
         ds_scale_up=ds_scale_up,  # Pass the new parameter
@@ -100,7 +102,8 @@ function blended_pairwise_conditional_gradient(
     add_dropped_vertices=false,
     use_extra_vertex_storage=false,
     recompute_last_vertex=true,
-    squadratic=false,
+    squadratic=false, # non-standard quadratic objective
+    quadratic=false,  # quadratic objective but not standard quadratic
     lp_solver=nothing, # lp_solver used for direct solve or sparsification
     sparsify=false, # sparsify the active set
     ds_scale_up=2,  # direct solve scale up parameter
@@ -146,8 +149,8 @@ function blended_pairwise_conditional_gradient(
         gradient = collect(x)
     end
 
-    if squadratic || sparsify
-        @assert lp_solver !== nothing "When squadratic or sparsify is true, lp_solver must be provided"
+    if squadratic || sparsify || quadratic  # when using LPs then lp_solver must be provided
+        @assert lp_solver !== nothing "When squadratic, sparsify, or quadratic is true, lp_solver must be provided"
     end
 
     if verbose
@@ -312,10 +315,14 @@ function blended_pairwise_conditional_gradient(
             end
             vertex_taken = v
             # short circuit for quadratic case
-            if squadratic && (t == 1 || (t > last_direct_solve && t - last_direct_solve >= next_direct_solve_interval))
-                next_direct_solve_interval *= ds_scale_up  # Use the new parameter
+            if (squadratic || quadratic) && ((t > last_direct_solve && t - last_direct_solve >= next_direct_solve_interval))  # Updated condition
+                next_direct_solve_interval *= ds_scale_up
                 last_direct_solve = t
-                active_set = direct_solve_gq(active_set, grad!, lp_solver) # direct solve for quadratic problem
+                if quadratic
+                    active_set = direct_solve_gq(active_set, grad!, lp_solver) # direct solve for non-standard quadratic problem
+                else
+                    active_set = direct_solve(active_set, grad!, lp_solver) # direct solve for standard quadratic problem
+                end
                 active_set_cleanup!(active_set; weight_purge_threshold=weight_purge_threshold)
                 compute_active_set_iterate!(active_set)
                 x = get_active_set_iterate(active_set)

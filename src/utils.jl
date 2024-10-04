@@ -400,6 +400,10 @@ A new ActiveSet with updated weights based on the LP solution.
 # Note
 This function is particularly useful for problems where direct solving is more efficient
 than iterative methods. It can only used for functions of the form f(x) = \norm{x-x_0}_2^2
+
+# Usage
+Set `squadratic = true` when calling `blended_pairwise_conditional_gradient`
+
 """
 
 function direct_solve(active_set, grad!, lp_solver)
