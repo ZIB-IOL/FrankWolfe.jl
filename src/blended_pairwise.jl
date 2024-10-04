@@ -1,4 +1,3 @@
-
 """
     blended_pairwise_conditional_gradient(f, grad!, lmo, x0; kwargs...)
 
@@ -31,6 +30,11 @@ function blended_pairwise_conditional_gradient(
     add_dropped_vertices=false,
     use_extra_vertex_storage=false,
     recompute_last_vertex=true,
+    squadratic=false, # standard quadratic objective
+    quadratic=false,  # quadratic objective but not standard quadratic
+    lp_solver=nothing, # lp_solver used for direct solve or sparsification
+    sparsify=false, # sparsify the active set
+    ds_scale_up=2,  # direct solve scale up parameter
 )
     # add the first vertex to active set from initialization
     active_set = ActiveSet([(1.0, x0)])
@@ -60,6 +64,11 @@ function blended_pairwise_conditional_gradient(
         add_dropped_vertices=add_dropped_vertices,
         use_extra_vertex_storage=use_extra_vertex_storage,
         recompute_last_vertex=recompute_last_vertex,
+        squadratic=squadratic,
+        quadratic=quadratic,  # Pass the new parameter
+        lp_solver=lp_solver,
+        sparsify=sparsify,
+        ds_scale_up=ds_scale_up,  # Pass the new parameter
     )
 end
 
@@ -93,6 +102,11 @@ function blended_pairwise_conditional_gradient(
     add_dropped_vertices=false,
     use_extra_vertex_storage=false,
     recompute_last_vertex=true,
+    squadratic=false, # non-standard quadratic objective
+    quadratic=false,  # quadratic objective but not standard quadratic
+    lp_solver=nothing, # lp_solver used for direct solve or sparsification
+    sparsify=false, # sparsify the active set
+    ds_scale_up=2,  # direct solve scale up parameter
 ) where {AT,R}
 
     # format string for output of the algorithm
@@ -121,6 +135,8 @@ function blended_pairwise_conditional_gradient(
     end
 
     t = 0
+    next_direct_solve_interval = 10
+    last_direct_solve = 0
     compute_active_set_iterate!(active_set)
     x = get_active_set_iterate(active_set)
     primal = convert(eltype(x), Inf)
@@ -133,6 +149,10 @@ function blended_pairwise_conditional_gradient(
         gradient = collect(x)
     end
 
+    if squadratic || sparsify || quadratic  # when using LPs then lp_solver must be provided
+        @assert lp_solver !== nothing "When squadratic, sparsify, or quadratic is true, lp_solver must be provided"
+    end
+
     if verbose
         println("\nBlended Pairwise Conditional Gradient Algorithm.")
         NumType = eltype(x)
@@ -142,6 +162,9 @@ function blended_pairwise_conditional_gradient(
         grad_type = typeof(gradient)
         println("GRADIENTTYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance")
         println("LMO: $(typeof(lmo))")
+        if lp_solver !== nothing
+            println("LP SOLVER: $(lp_solver)")
+        end
         if use_extra_vertex_storage && !lazy
             @info("vertex storage only used in lazy mode")
         end
@@ -291,6 +314,21 @@ function blended_pairwise_conditional_gradient(
                 step_type = ST_REGULAR
             end
             vertex_taken = v
+            # short circuit for quadratic case
+            if (squadratic || quadratic) && ((t > last_direct_solve && t - last_direct_solve >= next_direct_solve_interval))  # Updated condition
+                next_direct_solve_interval *= ds_scale_up
+                last_direct_solve = t
+                if quadratic
+                    active_set = direct_solve_gq(active_set, grad!, lp_solver) # direct solve for non-standard quadratic problem
+                else
+                    active_set = direct_solve(active_set, grad!, lp_solver) # direct solve for standard quadratic problem
+                end
+                active_set_cleanup!(active_set; weight_purge_threshold=weight_purge_threshold)
+                compute_active_set_iterate!(active_set)
+                x = get_active_set_iterate(active_set)
+                grad!(gradient, x)
+                step_type = ST_DIRECT
+            end
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
             # if we are about to exit, compute dual_gap with the cleaned-up x
             if dual_gap ≤ epsilon
@@ -325,7 +363,6 @@ function blended_pairwise_conditional_gradient(
                     linesearch_workspace,
                     memory_mode,
                 )
-
                 if callback !== nothing
                     state = CallbackState(
                         t,
@@ -452,6 +489,9 @@ function blended_pairwise_conditional_gradient(
         end
     end
     active_set_renormalize!(active_set)
+    if sparsify
+        active_set = sparsify_iterate(active_set, lp_solver)
+    end
     active_set_cleanup!(active_set; weight_purge_threshold=weight_purge_threshold)
     compute_active_set_iterate!(active_set)
     x = get_active_set_iterate(active_set)
