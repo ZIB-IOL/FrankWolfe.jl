@@ -93,7 +93,6 @@ x0 = deepcopy(x00)
     verbose=true,
     trajectory=true,
     callback=callback,
-    squadratic=false,
 );
 
 trajectoryBPCG_quadratic = []
