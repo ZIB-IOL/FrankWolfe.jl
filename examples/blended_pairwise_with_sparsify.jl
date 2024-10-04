@@ -112,6 +112,7 @@ x0 = deepcopy(x00)
     trajectory=true,
     callback=callback,
     sparsify=true,
+#    squadratic=true, # activate to see the effect of the numerical precision of the LP solver
     lp_solver=lp_solver,
 );
 
