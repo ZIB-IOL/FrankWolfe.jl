@@ -32,6 +32,7 @@ function blended_pairwise_conditional_gradient(
     recompute_last_vertex=true,
     squadratic=false,
     lp_solver=nothing,  # New parameter for LP solver
+    sparsify=false,  # New parameter for sparsification
 )
     # add the first vertex to active set from initialization
     active_set = ActiveSet([(1.0, x0)])
@@ -63,6 +64,7 @@ function blended_pairwise_conditional_gradient(
         recompute_last_vertex=recompute_last_vertex,
         squadratic=squadratic,
         lp_solver=lp_solver,
+        sparsify=sparsify,  # Propagate the sparsify parameter
     )
 end
 
@@ -98,6 +100,7 @@ function blended_pairwise_conditional_gradient(
     recompute_last_vertex=true,
     squadratic=false,
     lp_solver=nothing,  # New parameter for LP solver
+    sparsify=false,  # New parameter for sparsification
 ) where {AT,R}
 
     # format string for output of the algorithm
@@ -140,8 +143,8 @@ function blended_pairwise_conditional_gradient(
         gradient = collect(x)
     end
 
-    if squadratic
-        @assert lp_solver !== nothing "When squadratic is true, lp_solver must be provided"
+    if squadratic || sparsify
+        @assert lp_solver !== nothing "When squadratic or sparsify is true, lp_solver must be provided"
     end
 
     if verbose
@@ -480,6 +483,9 @@ function blended_pairwise_conditional_gradient(
         end
     end
     active_set_renormalize!(active_set)
+    if sparsify
+        active_set = sparsify(active_set, lp_solver)
+    end
     active_set_cleanup!(active_set; weight_purge_threshold=weight_purge_threshold)
     compute_active_set_iterate!(active_set)
     x = get_active_set_iterate(active_set)
@@ -575,6 +581,65 @@ function direct_solve(active_set, gradient, lp_solver)
         return ActiveSet([(new_weights[i], active_set.atoms[i]) for i in 1:n])
     else
 #        @info "Direct solve failed"
+        return active_set
+    end
+end
+
+function sparsify(active_set, lp_solver)
+    # 1. Get current iterate
+    x0 = get_active_set_iterate(active_set)
+
+    # 2. Generate matrix A with columns being the points in the active set
+    if isempty(active_set.atoms)
+        A = zeros(length(x0), 0)
+    else
+        A = hcat(getindex.(active_set, 2)...)
+    end
+
+    # 3. Setup and solve the system using the provided LP solver
+    n = size(A, 2)
+    model = MOI.instantiate(lp_solver)
+    MOI.set(model, MOI.Silent(), true)
+
+    # Define variables
+    λ = MOI.add_variables(model, n)
+    for i in 1:n
+        MOI.add_constraint(model, λ[i], MOI.GreaterThan(0.0))
+    end
+
+    # Add sum constraint
+    sum_λ = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(ones(n), λ), 0.0)
+    MOI.add_constraint(model, sum_λ, MOI.EqualTo(1.0))
+
+    # Add constraint A λ = x0
+    Q = A
+    b = x0
+    for i in 1:size(Q, 1)
+        terms = MOI.ScalarAffineTerm{Float64}[]
+        for j in 1:size(Q, 2)
+            if !iszero(Q[i,j])
+                push!(terms, MOI.ScalarAffineTerm(Q[i,j], λ[j]))
+            end
+        end
+        constraint = MOI.ScalarAffineFunction(terms, 0.0)
+        MOI.add_constraint(model, constraint, MOI.EqualTo(b[i]))
+    end
+
+    # Set a dummy objective (minimize sum of λ)
+    dummy_objective = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(ones(n), λ), 0.0)
+    MOI.set(model, MOI.ObjectiveFunction{typeof(dummy_objective)}(), dummy_objective)
+    MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+
+    MOI.optimize!(model)
+
+    # 4. Check if solve was feasible and update active set weights
+    if MOI.get(model, MOI.TerminationStatus()) in [MOI.OPTIMAL, MOI.FEASIBLE_POINT]
+        @info "Sparsification successful"
+        λ_values = MOI.get.(model, MOI.VariablePrimal(), λ)
+        new_weights = λ_values
+        return ActiveSet([(new_weights[i], active_set.atoms[i]) for i in 1:n])
+    else
+        @info "Sparsification failed"
         return active_set
     end
 end
