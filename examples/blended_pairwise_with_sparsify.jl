@@ -51,11 +51,11 @@ function grad!(storage, x)
     @. storage = 2 * (x - xp)
 end
 
-lmo = FrankWolfe.KSparseLMO(5, 1.0)
+# lmo = FrankWolfe.KSparseLMO(2, 1.0)
 
 ## other LMOs to try
 # lmo_big = FrankWolfe.KSparseLMO(100, big"1.0")
-# lmo = FrankWolfe.LpNormLMO{Float64,5}(1.0)
+lmo = FrankWolfe.LpNormLMO{Float64,5}(1.0)
 # lmo = FrankWolfe.ProbabilitySimplexOracle(1.0);
 # lmo = FrankWolfe.UnitSimplexOracle(1.0);
 
@@ -112,17 +112,14 @@ x0 = deepcopy(x00)
     verbose=true,
     trajectory=true,
     callback=callback,
-    squadratic=true,
+    sparsify=true,
     lp_solver=lp_solver,
 );
 
 # Reduction primal/dual error vs. sparsity of solution
 
 dataSparsity = [trajectoryBPCG_standard, trajectoryBPCG_quadratic]
-labelSparsity = ["BPCG (Standard)", "BPCG (Direct)"]
+labelSparsity = ["BPCG (Standard)", "BPCG (Sparsify)"]
 
 # Plot sparsity
-# plot_sparsity(dataSparsity, labelSparsity, legend_position=:topright)
-
-# Plot trajectories
-plot_trajectories(dataSparsity, labelSparsity,xscalelog=false)
+plot_sparsity(dataSparsity, labelSparsity, legend_position=:topright)

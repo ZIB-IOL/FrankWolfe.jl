@@ -31,8 +31,9 @@ function blended_pairwise_conditional_gradient(
     use_extra_vertex_storage=false,
     recompute_last_vertex=true,
     squadratic=false,
-    lp_solver=nothing,  # New parameter for LP solver
-    sparsify=false,  # New parameter for sparsification
+    lp_solver=nothing, # lp_solver used for direct solve or sparsification
+    sparsify=false, # sparsify the active set
+    ds_scale_up=2,  # direct solve scale up parameter
 )
     # add the first vertex to active set from initialization
     active_set = ActiveSet([(1.0, x0)])
@@ -64,7 +65,8 @@ function blended_pairwise_conditional_gradient(
         recompute_last_vertex=recompute_last_vertex,
         squadratic=squadratic,
         lp_solver=lp_solver,
-        sparsify=sparsify,  # Propagate the sparsify parameter
+        sparsify=sparsify,
+        ds_scale_up=ds_scale_up,  # Pass the new parameter
     )
 end
 
@@ -99,8 +101,9 @@ function blended_pairwise_conditional_gradient(
     use_extra_vertex_storage=false,
     recompute_last_vertex=true,
     squadratic=false,
-    lp_solver=nothing,  # New parameter for LP solver
-    sparsify=false,  # New parameter for sparsification
+    lp_solver=nothing, # lp_solver used for direct solve or sparsification
+    sparsify=false, # sparsify the active set
+    ds_scale_up=2,  # direct solve scale up parameter
 ) where {AT,R}
 
     # format string for output of the algorithm
@@ -310,8 +313,8 @@ function blended_pairwise_conditional_gradient(
             vertex_taken = v
             # short circuit for quadratic case
             if squadratic && (t == 1 || (t > last_direct_solve && t - last_direct_solve >= next_direct_solve_interval))
-                next_direct_solve_interval *= 2  # Double the interval for next execution
-                last_direct_solve = t  # Update the last execution round
+                next_direct_solve_interval *= ds_scale_up  # Use the new parameter
+                last_direct_solve = t
                 # Compute gradient at 0
                 zero_x = zero(x)
                 zero_grad = similar(gradient)
@@ -647,7 +650,7 @@ function sparsify_iterate(active_set, lp_solver)
     # @info "Sparsification problem solved"
     # 4. Check if solve was feasible and update active set weights
     if MOI.get(model, MOI.TerminationStatus()) in [MOI.OPTIMAL, MOI.FEASIBLE_POINT]
-        @info "Sparsification successful"
+        # @info "Sparsification successful"
         # λ_values = MOI.get.(model, MOI.VariablePrimal(), λ) # seems to lead to stack overflow // using explicit loop instead // does not seem to fix the problem
         λ_values = Vector{Float64}(undef, n)
         for i in 1:n
@@ -656,7 +659,7 @@ function sparsify_iterate(active_set, lp_solver)
         new_weights = λ_values
         return ActiveSet([(new_weights[i], active_set.atoms[i]) for i in 1:n])
     else
-        @info "Sparsification failed"
+        # @info "Sparsification failed"
         return active_set
     end
 end
