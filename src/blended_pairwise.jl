@@ -484,7 +484,7 @@ function blended_pairwise_conditional_gradient(
     end
     active_set_renormalize!(active_set)
     if sparsify
-        active_set = sparsify(active_set, lp_solver)
+        active_set = sparsify_iterate(active_set, lp_solver)
     end
     active_set_cleanup!(active_set; weight_purge_threshold=weight_purge_threshold)
     compute_active_set_iterate!(active_set)
@@ -529,7 +529,11 @@ function direct_solve(active_set, gradient, lp_solver)
     if isempty(active_set.atoms)
         A = zeros(length(x0), 0)
     else
-        A = hcat(getindex.(active_set, 2)...)
+        # A = hcat(getindex.(active_set, 2)...) // this leads to stack overflow
+        A = zeros(eltype(x0), length(x0), length(active_set))
+        for (i, atom) in enumerate(active_set)
+            A[:, i] = atom[2]
+        end
     end
     # println(active_set)
     # println(A)
@@ -576,7 +580,11 @@ function direct_solve(active_set, gradient, lp_solver)
     # 4. Check if solve was feasible and update active set weights
     if MOI.get(model, MOI.TerminationStatus()) in [MOI.OPTIMAL, MOI.FEASIBLE_POINT]
         # @info "Direct solve successful"
-        λ_values = MOI.get.(model, MOI.VariablePrimal(), λ)
+        # λ_values = MOI.get.(model, MOI.VariablePrimal(), λ) # leads to stack overflow
+        λ_values = Vector{Float64}(undef, n)
+        for i in 1:n
+            λ_values[i] = MOI.get(model, MOI.VariablePrimal(), λ[i])
+        end
         new_weights = λ_values
         return ActiveSet([(new_weights[i], active_set.atoms[i]) for i in 1:n])
     else
@@ -585,7 +593,7 @@ function direct_solve(active_set, gradient, lp_solver)
     end
 end
 
-function sparsify(active_set, lp_solver)
+function sparsify_iterate(active_set, lp_solver)
     # 1. Get current iterate
     x0 = get_active_set_iterate(active_set)
 
@@ -593,8 +601,13 @@ function sparsify(active_set, lp_solver)
     if isempty(active_set.atoms)
         A = zeros(length(x0), 0)
     else
-        A = hcat(getindex.(active_set, 2)...)
+        # A = hcat(getindex.(active_set, 2)...) // this leads to stack overflow
+        A = zeros(eltype(x0), length(x0), length(active_set))
+        for (i, atom) in enumerate(active_set)
+            A[:, i] = atom[2]
+        end
     end
+    # @info "Sparsification matrix A generated"
 
     # 3. Setup and solve the system using the provided LP solver
     n = size(A, 2)
@@ -624,18 +637,22 @@ function sparsify(active_set, lp_solver)
         constraint = MOI.ScalarAffineFunction(terms, 0.0)
         MOI.add_constraint(model, constraint, MOI.EqualTo(b[i]))
     end
-
+    # @info "Sparsification problem setup complete"
     # Set a dummy objective (minimize sum of λ)
     dummy_objective = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(ones(n), λ), 0.0)
     MOI.set(model, MOI.ObjectiveFunction{typeof(dummy_objective)}(), dummy_objective)
     MOI.set(model, MOI.ObjectiveSense(), MOI.MIN_SENSE)
-
+    # @info "Sparsification problem setup + objective set"
     MOI.optimize!(model)
-
+    # @info "Sparsification problem solved"
     # 4. Check if solve was feasible and update active set weights
     if MOI.get(model, MOI.TerminationStatus()) in [MOI.OPTIMAL, MOI.FEASIBLE_POINT]
         @info "Sparsification successful"
-        λ_values = MOI.get.(model, MOI.VariablePrimal(), λ)
+        # λ_values = MOI.get.(model, MOI.VariablePrimal(), λ) # seems to lead to stack overflow // using explicit loop instead // does not seem to fix the problem
+        λ_values = Vector{Float64}(undef, n)
+        for i in 1:n
+            λ_values[i] = MOI.get(model, MOI.VariablePrimal(), λ[i])
+        end
         new_weights = λ_values
         return ActiveSet([(new_weights[i], active_set.atoms[i]) for i in 1:n])
     else
