@@ -402,10 +402,9 @@ This function is particularly useful for problems where direct solving is more e
 than iterative methods. It can only used for functions of the form f(x) = \norm{x-x_0}_2^2
 
 # Usage
-Set `squadratic = true` when calling `blended_pairwise_conditional_gradient`
-
+- Set `squadratic = true` when calling `blended_pairwise_conditional_gradient`
+- Can be used together with `ActiveSetQuadratic`
 """
-
 function direct_solve(active_set, grad!, lp_solver)
     x0 = get_active_set_iterate(active_set)
     # Compute gradient at 0
@@ -511,10 +510,9 @@ optimality condition A'G λ = 0, where A is the matrix of atoms and G is the mat
 their gradients.
 
 # Usage
-Set `squadratic = true` when calling `blended_pairwise_conditional_gradient' 
-
+- Set `squadratic = true` when calling `blended_pairwise_conditional_gradient' 
+- Can we used together with ActiveSetQuadratic
 """
-
 function direct_solve_gq(active_set, grad!, lp_solver)
     # 1. Get current iterate // artifact only used for size and type of A
     x0 = get_active_set_iterate(active_set)
@@ -618,9 +616,9 @@ The function performs the following steps:
 4. If a feasible solution is found, creates a new ActiveSet with the new weights.
    Otherwise, returns the original active set.
 
-Usage: Set `sparsify = true` when calling `blended_pairwise_conditional_gradient`
+Usage: 
+- Set `sparsify = true` when calling `blended_pairwise_conditional_gradient`
 """
-
 function sparsify_iterate(active_set, lp_solver)
     # 1. Get current iterate
     x0 = get_active_set_iterate(active_set)
