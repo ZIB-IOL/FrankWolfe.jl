@@ -39,7 +39,7 @@ function active_set_update!(
         MOI.add_constraint(as.optimizer, sum(λ; init=0.0), MOI.EqualTo(1.0))
         x_sum = 0 * as.active_set.atoms[1]
         for (idx, atom) in enumerate(as.active_set.atoms)
-            x_sum += λ[idx] * as.active_set.atoms
+            x_sum += λ[idx] * atom
         end
         for idx in eachindex(x_sum)
             MOI.add_constraint(as.optimizer, x_sum[idx], MOI.EqualTo(x0[idx]))
