@@ -21,6 +21,7 @@ Pkg.add("GLPK")
 Pkg.add("HiGHS")
 import GLPK
 import HiGHS
+import MathOptInterface as MOI
 
 # lp_solver = GLPK.Optimizer
 lp_solver = HiGHS.Optimizer
@@ -30,7 +31,7 @@ lp_solver = HiGHS.Optimizer
 include("../examples/plot_utils.jl")
 
 n = Int(1e4)
-k = 10000
+k = 1000
 
 # s = rand(1:100)
 s = 10
@@ -112,12 +113,11 @@ x0 = deepcopy(x00)
 trajectoryBPCG_quadratic_nosquad = []
 callback = build_callback(trajectoryBPCG_quadratic_nosquad)
 
-x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
-    x0,
+    copy(x00),
     max_iteration=k,
     line_search=FrankWolfe.Shortstep(2.0),
     print_iter=k / 10,
@@ -130,9 +130,52 @@ x0 = deepcopy(x00)
     lp_solver=lp_solver,
 );
 
+# Just projection quadratic
+trajectoryBPCG_quadratic_as = []
+callback = build_callback(trajectoryBPCG_quadratic_as)
+
+as_quad = FrankWolfe.ActiveSetQuadratic([(1.0, copy(x00))], 2 * LinearAlgebra.I, -2xp)
+@time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    as_quad,
+    max_iteration=k,
+    line_search=FrankWolfe.Shortstep(2.0),
+    print_iter=k / 10,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
+    verbose=true,
+    trajectory=true,
+    callback=callback,
+);
+
+# with LP acceleration
+trajectoryBPCG_quadratic_as_lp = []
+callback = build_callback(trajectoryBPCG_quadratic_as_lp)
+
+as_quad_lp = FrankWolfe.ActiveSetQuadratic(
+    [(1.0, copy(x00))],
+    2 * LinearAlgebra.I, -2xp,
+    MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
+)
+@time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    as_quad_lp,
+    max_iteration=1000,
+    line_search=FrankWolfe.Shortstep(2.0),
+    print_iter=k / 10,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
+    verbose=true,
+    trajectory=true,
+    callback=callback,
+);
+
+
 # Update the data and labels for plotting
-dataSparsity = [trajectoryBPCG_standard, trajectoryBPCG_quadratic, trajectoryBPCG_quadratic_nosquad]
-labelSparsity = ["BPCG (Standard)", "BPCG (Specific Direct)", "BPCG (Generic Direct)"]
+dataSparsity = [trajectoryBPCG_standard, trajectoryBPCG_quadratic, trajectoryBPCG_quadratic_nosquad, trajectoryBPCG_quadratic_as, trajectoryBPCG_quadratic_as_lp]
+labelSparsity = ["BPCG (Standard)", "BPCG (Specific Direct)", "BPCG (Generic Direct)", "AS_Quad", "AS_Quad_LP"]
 
 # Plot sparsity
 # plot_sparsity(dataSparsity, labelSparsity, legend_position=:topright)

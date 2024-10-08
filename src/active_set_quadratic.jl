@@ -9,7 +9,7 @@ The iterate `x = ∑λ_i a_i` is stored in x with type `IT`.
 The objective function is assumed to be of the form `f(x)=½⟨x,Ax⟩+⟨b,x⟩+c`
 so that the gradient is simply `∇f(x)=Ax+b`.
 """
-struct ActiveSetQuadratic{AT, R <: Real, IT, H} <: AbstractActiveSet{AT,R,IT}
+struct ActiveSetQuadratic{AT, R <: Real, IT, H, OT <: Union{Nothing, MOI.AbstractOptimizer}} <: AbstractActiveSet{AT,R,IT}
     weights::Vector{R}
     atoms::Vector{AT}
     x::IT
@@ -20,6 +20,9 @@ struct ActiveSetQuadratic{AT, R <: Real, IT, H} <: AbstractActiveSet{AT,R,IT}
     dots_b::Vector{R} # stores ⟨b, atoms[i]⟩
     weights_prev::Vector{R}
     modified::BitVector
+    lp_optimizer::OT
+    lp_frequency::Int
+    counter::Base.RefValue{Int}
 end
 
 function detect_quadratic_function(grad!, x0; test=true)
@@ -48,11 +51,12 @@ function detect_quadratic_function(grad!, x0; test=true)
     return A, b
 end
 
-function ActiveSetQuadratic(tuple_values::AbstractVector{Tuple{R,AT}}, grad!::Function) where {AT,R}
-    return ActiveSetQuadratic(tuple_values, detect_quadratic_function(grad!, tuple_values[1][2])...)
+function ActiveSetQuadratic(tuple_values::AbstractVector{Tuple{R,AT}}, grad!::Function, lp_optimizer=nothing; lp_frequency=10) where {AT,R}
+    A, b = detect_quadratic_function(grad!, tuple_values[1][2])
+    return ActiveSetQuadratic(tuple_values, A, b, lp_optimizer, lp_frequency=lp_frequency)
 end
 
-function ActiveSetQuadratic(tuple_values::AbstractVector{Tuple{R,AT}}, A::H, b) where {AT,R,H}
+function ActiveSetQuadratic(tuple_values::AbstractVector{Tuple{R,AT}}, A::H, b, lp_optimizer=nothing; lp_frequency=10) where {AT,R,H}
     n = length(tuple_values)
     weights = Vector{R}(undef, n)
     atoms = Vector{AT}(undef, n)
@@ -71,16 +75,18 @@ function ActiveSetQuadratic(tuple_values::AbstractVector{Tuple{R,AT}}, A::H, b) 
         dots_b[idx] = fast_dot(b, atoms[idx])
     end
     x = similar(b)
-    as = ActiveSetQuadratic{AT,R,typeof(x),H}(weights, atoms, x, A, b, dots_x, dots_A, dots_b, weights_prev, modified)
+    as = ActiveSetQuadratic(weights, atoms, x, A, b, dots_x, dots_A, dots_b, weights_prev, modified, lp_optimizer, lp_frequency, Ref(0))
+
     compute_active_set_iterate!(as)
     return as
 end
 
-function ActiveSetQuadratic{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}, grad!) where {AT,R}
-    return ActiveSetQuadratic{AT,R}(tuple_values, detect_quadratic_function(grad!, tuple_values[1][2])...)
+function ActiveSetQuadratic{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}, grad!::Function, lp_optimizer=nothing; lp_frequency=10) where {AT,R}
+    A, b = detect_quadratic_function(grad!, tuple_values[1][2])
+    return ActiveSetQuadratic{AT,R}(tuple_values, A, b, lp_optimizer; lp_frequency=lp_frequency)
 end
 
-function ActiveSetQuadratic{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}, A::H, b) where {AT,R,H}
+function ActiveSetQuadratic{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}, A::H, b, lp_optimizer=nothing; lp_frequency=lp_frequency) where {AT,R,H}
     n = length(tuple_values)
     weights = Vector{R}(undef, n)
     atoms = Vector{AT}(undef, n)
@@ -99,7 +105,7 @@ function ActiveSetQuadratic{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,
         dots_b[idx] = fast_dot(b, atoms[idx])
     end
     x = similar(b)
-    as = ActiveSetQuadratic{AT,R,typeof(x),H}(weights, atoms, x, A, b, dots_x, dots_A, dots_b, weights_prev, modified)
+    as = ActiveSetQuadratic{AT,R,typeof(x),H}(weights, atoms, x, A, b, dots_x, dots_A, dots_b, weights_prev, modified, lp_optimizer, lp_frequency, Ref(0))
     compute_active_set_iterate!(as)
     return as
 end
@@ -116,11 +122,11 @@ function Base.:*(a::Identity, b)
         return a.λ * b
     end
 end
-function ActiveSetQuadratic(tuple_values::AbstractVector{Tuple{R,AT}}, A::UniformScaling, b) where {AT,R}
-    return ActiveSetQuadratic(tuple_values, Identity(A.λ), b)
+function ActiveSetQuadratic(tuple_values::AbstractVector{Tuple{R,AT}}, A::UniformScaling, b, lp_optimizer=nothing; lp_frequency=10) where {AT,R}
+    return ActiveSetQuadratic(tuple_values, Identity(A.λ), b, lp_optimizer; lp_frequency=lp_frequency)
 end
-function ActiveSetQuadratic{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}, A::UniformScaling, b) where {AT,R}
-    return ActiveSetQuadratic{AT,R}(tuple_values, Identity(A.λ), b)
+function ActiveSetQuadratic{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}, A::UniformScaling, b, lp_optimizer=nothing; lp_frequency=10) where {AT,R}
+    return ActiveSetQuadratic{AT,R}(tuple_values, Identity(A.λ), b, lp_optimizer; lp_frequency=lp_frequency)
 end
 
 # these three functions do not update the active set iterate
@@ -193,10 +199,21 @@ function active_set_update!(
         idx = find_atom(active_set, atom)
     end
     if idx > 0
+        @info "old atom"
         @inbounds active_set.weights[idx] += lambda
         @inbounds active_set.modified[idx] = true
     else
         push!(active_set, (lambda, atom))
+        if active_set.lp_optimizer !== nothing
+            active_set.counter[] += 1
+            @show active_set.counter[]
+            @show mod(active_set.counter[], active_set.lp_frequency)
+            if mod(active_set.counter[], active_set.lp_frequency) == 0
+                @show "solving quadratic"
+                solve_quadratic_activeset_lp!(active_set)
+                return active_set
+            end
+        end
     end
     if renorm
         add_dropped_vertices = add_dropped_vertices ? vertex_storage !== nothing : add_dropped_vertices
@@ -204,6 +221,54 @@ function active_set_update!(
         active_set_renormalize!(active_set)
     end
     active_set_update_scale!(active_set.x, lambda, atom)
+    return active_set
+end
+
+# generic quadratic
+function solve_quadratic_activeset_lp!(active_set::ActiveSetQuadratic{AT, R, IT, H}) where {AT, R, IT, H}
+    # TODO
+end
+
+# special case of scaled identity Hessian
+function solve_quadratic_activeset_lp!(active_set::ActiveSetQuadratic{AT, R, IT, <: Identity}) where {AT, R, IT}
+    hessian_scaling = active_set.A.λ
+    # number of vertices and ambient dimension
+    nv = length(active_set)
+    o = active_set.lp_optimizer
+    MOI.empty!(o)
+    λ = MOI.add_variables(o, nv)
+    # λ ∈ Δ_n ⇔ λ ≥ 0, ∑ λ == 1
+    MOI.add_constraint.(o, λ, MOI.GreaterThan(0.0))
+    MOI.add_constraint(o, sum(λ; init=0.0), MOI.EqualTo(1.0))
+    # 2 * a Aᵗ A λ == -Aᵗ b
+    lhs = 0.0 * λ
+    rhs = 0 * active_set.weights
+    for (idx, atom) in enumerate(active_set.atoms)
+        rhs[idx] = -dot(atom, active_set.b)
+        lhs[idx] = 2 * hessian_scaling * sum(λ[j] * dot(atom, active_set.atoms[j]) for j in 1:nv)
+    end
+    MOI.add_constraint.(o, lhs, MOI.EqualTo.(rhs))
+    dummy_objective = sum(λ, init=0.0)
+    MOI.set(o, MOI.ObjectiveFunction{typeof(dummy_objective)}(), dummy_objective)
+    MOI.set(o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+    MOI.optimize!(o)
+    if MOI.get(o, MOI.TerminationStatus()) in (MOI.OPTIMAL, MOI.FEASIBLE_POINT, MOI.ALMOST_OPTIMAL)
+        indices_to_remove = Int[]
+        new_weights = R[]
+        for idx in eachindex(λ)
+            weight_value = MOI.get(o, MOI.VariablePrimal(), λ[idx])
+            if weight_value <= min(1e-3 / nv, 1e-8)
+                push!(indices_to_remove, idx)
+            else
+                push!(new_weights, weight_value)
+            end
+        end
+        deleteat!(active_set.atoms, indices_to_remove)
+        deleteat!(active_set.weights, indices_to_remove)
+        @assert length(active_set) == length(new_weights)
+        active_set.weights .= new_weights
+        active_set_renormalize!(active_set)
+    end
     return active_set
 end
 
