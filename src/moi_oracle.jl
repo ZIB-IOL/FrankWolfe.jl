@@ -1,6 +1,6 @@
 
 """
-    MathOptLMO{OT <: MOI.Optimizer} <: LinearMinimizationOracle
+    MathOptLMO{OT <: MOI.AbstractOptimizer} <: LinearMinimizationOracle
 
 Linear minimization oracle with feasible space defined through a MathOptInterface.Optimizer.
 The oracle call sets the direction and reruns the optimizer.
