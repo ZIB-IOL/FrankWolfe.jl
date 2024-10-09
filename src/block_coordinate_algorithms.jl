@@ -41,12 +41,20 @@ end
 
 StochasticUpdate() = StochasticUpdate(-1)
 
+"""
+The dual gap order initiates one round of `ļimit` many updates.
+The according blocks are sampled with probabilties proportional to their respective dual gaps.
+"""
 mutable struct DualGapOrder <: BlockCoordinateUpdateOrder
     limit::Int
 end
 
 DualGapOrder() = DualGapOrder(-1)
 
+"""
+The dual progress order initiates one round of `ļimit` many updates.
+The according blocks are sampled with probabilties proportional to their respective dual progress.
+"""
 mutable struct DualProgressOrder <: BlockCoordinateUpdateOrder
     limit::Int
     previous_dual_gaps::Vector{Float64}
@@ -130,7 +138,8 @@ function select_update_indices(u::DualProgressOrder, s::CallbackState, dual_gaps
             end
         end
         n = u.limit == -1 ? l : u.limit
-        #println(u.dual_progress, "=>", sum(u.dual_progress .!= 0))
+
+        # If less than n blocks have non-zero dual progress, update all of them
         if sum(u.dual_progress .!= 0) < n
             indices = [[i for i=1:l]]
         else
@@ -138,9 +147,7 @@ function select_update_indices(u::DualProgressOrder, s::CallbackState, dual_gaps
         end
     end
     u.previous_dual_gaps = copy(dual_gaps)
-    #println(indices)
     u.last_indices = vcat(indices...)
-    #println(u.last_indices)
     return indices
 end
 
@@ -225,9 +232,7 @@ mutable struct BPCGStep <: UpdateStep
     phi::Float64
 end
 
-function Base.copy(::FrankWolfeStep)
-    return FrankWolfeStep()
-end
+Base.copy(::FrankWolfeStep) = FrankWolfeStep()
 
 function Base.copy(obj::BPCGStep)
     if obj.active_set === nothing
