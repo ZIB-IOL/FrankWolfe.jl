@@ -263,10 +263,10 @@ function solve_quadratic_activeset_lp!(active_set::ActiveSetQuadratic{AT, R, IT,
                 push!(new_weights, weight_value)
             end
         end
-        deleteat!(active_set.atoms, indices_to_remove)
-        deleteat!(active_set.weights, indices_to_remove)
+        deleteat!(active_set, indices_to_remove)
         @assert length(active_set) == length(new_weights)
         active_set.weights .= new_weights
+        active_set.weights_prev .= new_weights
         active_set_renormalize!(active_set)
     end
     return active_set

@@ -149,15 +149,16 @@ as_quad = FrankWolfe.ActiveSetQuadratic([(1.0, copy(x00))], 2 * LinearAlgebra.I,
     callback=callback,
 );
 
-# with LP acceleration
-trajectoryBPCG_quadratic_as_lp = []
-callback = build_callback(trajectoryBPCG_quadratic_as_lp)
-
 as_quad_lp = FrankWolfe.ActiveSetQuadratic(
     [(1.0, copy(x00))],
     2 * LinearAlgebra.I, -2xp,
     MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
 )
+
+# with LP acceleration
+trajectoryBPCG_quadratic_as_lp = []
+callback = build_callback(trajectoryBPCG_quadratic_as_lp)
+
 @time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
@@ -172,10 +173,34 @@ as_quad_lp = FrankWolfe.ActiveSetQuadratic(
     callback=callback,
 );
 
+as_quad_reloaded = FrankWolfe.ActiveSetQuadraticReloaded(
+    [(1.0, copy(x00))],
+    2 * LinearAlgebra.I, -2xp,
+    MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
+)
+
+# with LP acceleration
+trajectoryBPCG_quadratic_reloaded = []
+callback = build_callback(trajectoryBPCG_quadratic_reloaded)
+
+@time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    as_quad_reloaded,
+    max_iteration=1000,
+    line_search=FrankWolfe.Shortstep(2.0),
+    print_iter=k / 10,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
+    verbose=true,
+    trajectory=true,
+    callback=callback,
+);
+
 
 # Update the data and labels for plotting
-dataSparsity = [trajectoryBPCG_standard, trajectoryBPCG_quadratic, trajectoryBPCG_quadratic_nosquad, trajectoryBPCG_quadratic_as, trajectoryBPCG_quadratic_as_lp]
-labelSparsity = ["BPCG (Standard)", "BPCG (Specific Direct)", "BPCG (Generic Direct)", "AS_Quad", "AS_Quad_LP"]
+dataSparsity = [trajectoryBPCG_standard, trajectoryBPCG_quadratic, trajectoryBPCG_quadratic_nosquad, trajectoryBPCG_quadratic_as, trajectoryBPCG_quadratic_as_lp, trajectoryBPCG_quadratic_reloaded]
+labelSparsity = ["BPCG (Standard)", "BPCG (Specific Direct)", "BPCG (Generic Direct)", "AS_Quad", "AS_Quad_LP", "Reloaded"]
 
 # Plot sparsity
 # plot_sparsity(dataSparsity, labelSparsity, legend_position=:topright)

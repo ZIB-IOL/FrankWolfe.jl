@@ -34,6 +34,7 @@ include("moi_oracle.jl")
 include("function_gradient.jl")
 include("active_set.jl")
 include("active_set_quadratic.jl")
+include("active_set_quadratic_reloaded.jl")
 include("active_set_sparsifier.jl")
 
 include("blended_cg.jl")
