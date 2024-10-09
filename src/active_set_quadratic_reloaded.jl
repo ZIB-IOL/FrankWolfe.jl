@@ -20,7 +20,7 @@ struct ActiveSetQuadraticReloaded{AT, R <: Real, IT, H, OT <: Union{Nothing, MOI
     counter::Base.RefValue{Int}
 end
 
-function ActiveSetQuadraticReloaded(tuple_values::AbstractVector{Tuple{R,AT}}, grad!::Function, lp_optimizer=nothing; lp_frequency=10) where {AT,R}
+function ActiveSetQuadraticReloaded(tuple_values::AbstractVector{Tuple{R,AT}}, grad!::Function, lp_optimizer=nothing; lp_frequency=100) where {AT,R}
     A, b = detect_quadratic_function(grad!, tuple_values[1][2])
     return ActiveSetQuadraticReloaded(tuple_values, A, b, lp_optimizer, lp_frequency=lp_frequency)
 end
@@ -39,7 +39,7 @@ function ActiveSetQuadraticReloaded(tuple_values::AbstractVector{Tuple{R,AT}}, A
     return as
 end
 
-function ActiveSetQuadraticReloaded{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}, grad!::Function, lp_optimizer=nothing; lp_frequency=10) where {AT,R}
+function ActiveSetQuadraticReloaded{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}, grad!::Function, lp_optimizer=nothing; lp_frequency=100) where {AT,R}
     A, b = detect_quadratic_function(grad!, tuple_values[1][2])
     return ActiveSetQuadraticReloaded{AT,R}(tuple_values, A, b, lp_optimizer; lp_frequency=lp_frequency)
 end
@@ -58,10 +58,10 @@ function ActiveSetQuadraticReloaded{AT,R}(tuple_values::AbstractVector{<:Tuple{<
     return as
 end
 
-function ActiveSetQuadraticReloaded(tuple_values::AbstractVector{Tuple{R,AT}}, A::UniformScaling, b, lp_optimizer=nothing; lp_frequency=10) where {AT,R}
+function ActiveSetQuadraticReloaded(tuple_values::AbstractVector{Tuple{R,AT}}, A::UniformScaling, b, lp_optimizer=nothing; lp_frequency=100) where {AT,R}
     return ActiveSetQuadraticReloaded(tuple_values, Identity(A.λ), b, lp_optimizer; lp_frequency=lp_frequency)
 end
-function ActiveSetQuadraticReloaded{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}, A::UniformScaling, b, lp_optimizer=nothing; lp_frequency=10) where {AT,R}
+function ActiveSetQuadraticReloaded{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}, A::UniformScaling, b, lp_optimizer=nothing; lp_frequency=100) where {AT,R}
     return ActiveSetQuadraticReloaded{AT,R}(tuple_values, Identity(A.λ), b, lp_optimizer; lp_frequency=lp_frequency)
 end
 
@@ -133,22 +133,23 @@ function solve_quadratic_activeset_lp!(active_set::ActiveSetQuadraticReloaded{AT
     o = active_set.lp_optimizer
     MOI.empty!(o)
     λ = MOI.add_variables(o, nv)
-    A = zeros(length(active_set.x), nv)
-    for (idx, atom) in enumerate(active_set.atoms)
-        A[:,idx] .= atom
-    end
     # λ ≥ 0, ∑ λ == 1
     MOI.add_constraint.(o, λ, MOI.GreaterThan(0.0))
     MOI.add_constraint(o, sum(λ; init=0.0), MOI.EqualTo(1.0))
-    # 2 * a Aᵗ A λ == -Aᵗ b
-    lhs = 0.0 * λ
-    rhs = 0 * active_set.weights
-    for (idx, atom) in enumerate(active_set.atoms)
-        lhs[idx] = 2 * hessian_scaling * sum(λ[j] * dot(atom, active_set.atoms[j]) for j in 1:nv)
-        rhs[idx] = -dot(atom, active_set.b)
+    # a Aᵗ A λ == -Aᵗ b
+    # lhs = 0.0 * λ
+    # rhs = 0 * active_set.weights
+    for atom in active_set.atoms
+        lhs = MOI.ScalarAffineFunction{Float64}([], 0.0)
+        Base.sizehint!(lhs.terms, nv)
+        # replaces direct sum because of MOI and MutableArithmetic slow sums
+        for j in 1:nv
+            push!(lhs.terms, MOI.ScalarAffineTerm(hessian_scaling * dot(atom, active_set.atoms[j]), λ[j]))
+        end
+        rhs = -dot(atom, active_set.b)
+        MOI.add_constraint(o, lhs, MOI.EqualTo(rhs))
     end
-    MOI.add_constraint.(o, lhs, MOI.EqualTo.(rhs))
-    dummy_objective = sum(λ, init=0.0)
+    dummy_objective = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, λ), 0.0)
     MOI.set(o, MOI.ObjectiveFunction{typeof(dummy_objective)}(), dummy_objective)
     MOI.set(o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
     MOI.optimize!(o)
@@ -157,7 +158,7 @@ function solve_quadratic_activeset_lp!(active_set::ActiveSetQuadraticReloaded{AT
         new_weights = R[]
         for idx in eachindex(λ)
             weight_value = MOI.get(o, MOI.VariablePrimal(), λ[idx])
-            if weight_value <= min(1e-3 / nv, 1e-8)
+            if weight_value <= 1e-10
                 push!(indices_to_remove, idx)
             else
                 push!(new_weights, weight_value)
@@ -167,7 +168,9 @@ function solve_quadratic_activeset_lp!(active_set::ActiveSetQuadraticReloaded{AT
         deleteat!(active_set.weights, indices_to_remove)
         @assert length(active_set) == length(new_weights)
         active_set.weights .= new_weights
+        @assert all(>=(0), new_weights)
         active_set_renormalize!(active_set)
+        compute_active_set_iterate!(active_set)
     end
     return active_set
 end
