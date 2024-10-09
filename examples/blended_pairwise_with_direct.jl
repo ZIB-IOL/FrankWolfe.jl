@@ -31,7 +31,7 @@ lp_solver = HiGHS.Optimizer
 include("../examples/plot_utils.jl")
 
 n = Int(1e4)
-k = 1000
+k = 10000
 
 # s = rand(1:100)
 s = 10
@@ -59,7 +59,7 @@ lmo = FrankWolfe.KSparseLMO(5, 1.0)
 # lmo = FrankWolfe.ProbabilitySimplexOracle(1.0);
 # lmo = FrankWolfe.UnitSimplexOracle(1.0);
 
-x00 = FrankWolfe.compute_extreme_point(lmo, rand(n))
+const x00 = FrankWolfe.compute_extreme_point(lmo, rand(n))
 
 function build_callback(trajectory_arr)
     return function callback(state, active_set, args...)
@@ -73,12 +73,11 @@ FrankWolfe.benchmark_oracles(f, grad!, () -> randn(n), lmo; k=100)
 trajectoryBPCG_standard = []
 callback = build_callback(trajectoryBPCG_standard)
 
-x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
-    x0,
+    deepcopy(x00),
     max_iteration=k,
     line_search=FrankWolfe.Shortstep(2.0),
     print_iter=k / 10,
@@ -92,12 +91,11 @@ x0 = deepcopy(x00)
 trajectoryBPCG_quadratic = []
 callback = build_callback(trajectoryBPCG_quadratic)
 
-x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
-    x0,
+    deepcopy(x00),
     max_iteration=k,
     line_search=FrankWolfe.Shortstep(2.0),
     print_iter=k / 10,
@@ -149,30 +147,6 @@ as_quad = FrankWolfe.ActiveSetQuadratic([(1.0, copy(x00))], 2 * LinearAlgebra.I,
     callback=callback,
 );
 
-as_quad_lp = FrankWolfe.ActiveSetQuadratic(
-    [(1.0, copy(x00))],
-    2 * LinearAlgebra.I, -2xp,
-    MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
-)
-
-# with LP acceleration
-trajectoryBPCG_quadratic_as_lp = []
-callback = build_callback(trajectoryBPCG_quadratic_as_lp)
-
-@time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
-    f,
-    grad!,
-    lmo,
-    as_quad_lp,
-    max_iteration=1000,
-    line_search=FrankWolfe.Shortstep(2.0),
-    print_iter=k / 10,
-    memory_mode=FrankWolfe.InplaceEmphasis(),
-    verbose=true,
-    trajectory=true,
-    callback=callback,
-);
-
 as_quad_reloaded = FrankWolfe.ActiveSetQuadraticReloaded(
     [(1.0, copy(x00))],
     2 * LinearAlgebra.I, -2xp,
@@ -199,8 +173,8 @@ callback = build_callback(trajectoryBPCG_quadratic_reloaded)
 
 
 # Update the data and labels for plotting
-dataSparsity = [trajectoryBPCG_standard, trajectoryBPCG_quadratic, trajectoryBPCG_quadratic_nosquad, trajectoryBPCG_quadratic_as, trajectoryBPCG_quadratic_as_lp, trajectoryBPCG_quadratic_reloaded]
-labelSparsity = ["BPCG (Standard)", "BPCG (Specific Direct)", "BPCG (Generic Direct)", "AS_Quad", "AS_Quad_LP", "Reloaded"]
+dataSparsity = [trajectoryBPCG_standard, trajectoryBPCG_quadratic, trajectoryBPCG_quadratic_nosquad, trajectoryBPCG_quadratic_as, trajectoryBPCG_quadratic_reloaded]
+labelSparsity = ["BPCG (Standard)", "BPCG (Specific Direct)", "BPCG (Generic Direct)", "AS_Quad", "Reloaded"]
 
 # Plot sparsity
 # plot_sparsity(dataSparsity, labelSparsity, legend_position=:topright)

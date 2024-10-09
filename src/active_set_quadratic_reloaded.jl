@@ -100,16 +100,12 @@ function active_set_update!(
         idx = find_atom(active_set, atom)
     end
     if idx > 0
-        @info "old atom"
         @inbounds active_set.weights[idx] += lambda
     else
         push!(active_set, (lambda, atom))
         if active_set.lp_optimizer !== nothing
             active_set.counter[] += 1
-            @show active_set.counter[]
-            @show mod(active_set.counter[], active_set.lp_frequency)
             if mod(active_set.counter[], active_set.lp_frequency) == 0
-                @show "solving quadratic"
                 solve_quadratic_activeset_lp!(active_set)
                 return active_set
             end
