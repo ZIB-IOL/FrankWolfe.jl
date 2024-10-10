@@ -165,21 +165,45 @@ callback = build_callback(trajectoryBPCG_quadratic_as)
     callback=callback,
 );
 
-as_quad_reloaded = FrankWolfe.ActiveSetQuadraticReloaded(
+as_quad_direct = FrankWolfe.ActiveSetQuadraticLinearSolve(
     [(1.0, copy(x00))],
     2 * LinearAlgebra.I, -2xp,
     MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
 )
 
 # with LP acceleration
-trajectoryBPCG_quadratic_reloaded = []
-callback = build_callback(trajectoryBPCG_quadratic_reloaded)
+trajectoryBPCG_quadratic_direct = []
+callback = build_callback(trajectoryBPCG_quadratic_direct)
 
 @time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
-    as_quad_reloaded,
+    as_quad_direct,
+    max_iteration=k,
+    line_search=FrankWolfe.Shortstep(2.0),
+    print_iter=k / 10,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
+    verbose=true,
+    trajectory=true,
+    callback=callback,
+);
+
+as_quad_direct_generic = FrankWolfe.ActiveSetQuadraticLinearSolve(
+    [(1.0, copy(x00))],
+    2 * Diagonal(ones(length(xp))), -2xp,
+    MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
+)
+
+# with LP acceleration
+trajectoryBPCG_quadratic_direct_generic = []
+callback = build_callback(trajectoryBPCG_quadratic_direct_generic)
+
+@time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    as_quad_direct_generic,
     max_iteration=k,
     line_search=FrankWolfe.Shortstep(2.0),
     print_iter=k / 10,
@@ -191,7 +215,7 @@ callback = build_callback(trajectoryBPCG_quadratic_reloaded)
 
 
 # Update the data and labels for plotting
-dataSparsity = [trajectoryBPCG_standard, trajectoryBPCG_quadratic, trajectoryBPCG_quadratic_as, trajectoryBPCG_quadratic_reloaded]
+dataSparsity = [trajectoryBPCG_standard, trajectoryBPCG_quadratic, trajectoryBPCG_quadratic_as, trajectoryBPCG_quadratic_direct]
 labelSparsity = ["BPCG (Standard)", "BPCG (Specific Direct)", "AS_Quad", "Reloaded"]
 
 # Plot sparsity

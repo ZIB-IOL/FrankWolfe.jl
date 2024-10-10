@@ -119,6 +119,7 @@ function Base.:*(a::Identity, b)
         return a.λ * b
     end
 end
+
 function ActiveSetQuadratic(tuple_values::AbstractVector{Tuple{R,AT}}, A::UniformScaling, b) where {AT,R}
     return ActiveSetQuadratic(tuple_values, Identity(A.λ), b)
 end
