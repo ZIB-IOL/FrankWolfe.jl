@@ -99,23 +99,43 @@ function solve_quadratic_activeset_lp!(as::ActiveSetQuadraticLinearSolve{AT, R, 
     λ = MOI.add_variables(o, nv)
     # λ ≥ 0, ∑ λ == 1
     MOI.add_constraint.(o, λ, MOI.GreaterThan(0.0))
-    MOI.add_constraint(o, sum(λ; init=0.0), MOI.EqualTo(1.0))
-    # Aᵗ Q A λ == -Aᵗ b
+    sum_of_variables = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, λ), 0.0)
+    MOI.add_constraint(o, sum_of_variables, MOI.EqualTo(1.0))
+    # Vᵗ A V λ == -Vᵗ b
     for atom in as.atoms
         lhs = MOI.ScalarAffineFunction{Float64}([], 0.0)
         Base.sizehint!(lhs.terms, nv)
         # replaces direct sum because of MOI and MutableArithmetic slow sums
         for j in 1:nv
-            # TODO slow
-            push!(lhs.terms, MOI.ScalarAffineTerm(dot(atom, as.A, as.atoms[j]), λ[j]))
+            push!(lhs.terms, MOI.ScalarAffineTerm(fast_dot(atom, as.A, as.atoms[j]), λ[j]))
         end
         rhs = -dot(atom, as.b)
         MOI.add_constraint(o, lhs, MOI.EqualTo(rhs))
     end
-    dummy_objective = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, λ), 0.0)
-    MOI.set(o, MOI.ObjectiveFunction{typeof(dummy_objective)}(), dummy_objective)
+    MOI.set(o, MOI.ObjectiveFunction{typeof(sum_of_variables)}(), sum_of_variables)
     MOI.set(o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
     MOI.optimize!(o)
+    if MOI.get(o, MOI.TerminationStatus()) ∉ (MOI.OPTIMAL, MOI.FEASIBLE_POINT, MOI.ALMOST_OPTIMAL)
+        return as
+    end
+    indices_to_remove = Int[]
+    new_weights = R[]
+    for idx in eachindex(λ)
+        weight_value = MOI.get(o, MOI.VariablePrimal(), λ[idx])
+        if weight_value <= 1e-10
+            push!(indices_to_remove, idx)
+        else
+            push!(new_weights, weight_value)
+        end
+    end
+    deleteat!(as.atoms, indices_to_remove)
+    deleteat!(as.weights, indices_to_remove)
+    @assert length(as) == length(new_weights)
+    as.weights .= new_weights
+    @assert all(>=(0), new_weights)
+    active_set_renormalize!(as)
+    compute_active_set_iterate!(as)
+    return as
 end
 
 # special case of scaled identity Hessian
@@ -127,7 +147,8 @@ function solve_quadratic_activeset_lp!(as::ActiveSetQuadraticLinearSolve{AT, R, 
     λ = MOI.add_variables(o, nv)
     # λ ≥ 0, ∑ λ == 1
     MOI.add_constraint.(o, λ, MOI.GreaterThan(0.0))
-    MOI.add_constraint(o, sum(λ; init=0.0), MOI.EqualTo(1.0))
+    sum_of_variables = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, λ), 0.0)
+    MOI.add_constraint(o, sum_of_variables, MOI.EqualTo(1.0))
     # a Aᵗ A λ == -Aᵗ b
     for atom in as.atoms
         lhs = MOI.ScalarAffineFunction{Float64}([], 0.0)
@@ -139,28 +160,28 @@ function solve_quadratic_activeset_lp!(as::ActiveSetQuadraticLinearSolve{AT, R, 
         rhs = -dot(atom, as.b)
         MOI.add_constraint(o, lhs, MOI.EqualTo(rhs))
     end
-    dummy_objective = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, λ), 0.0)
-    MOI.set(o, MOI.ObjectiveFunction{typeof(dummy_objective)}(), dummy_objective)
+    MOI.set(o, MOI.ObjectiveFunction{typeof(sum_of_variables)}(), sum_of_variables)
     MOI.set(o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
     MOI.optimize!(o)
-    if MOI.get(o, MOI.TerminationStatus()) in (MOI.OPTIMAL, MOI.FEASIBLE_POINT, MOI.ALMOST_OPTIMAL)
-        indices_to_remove = Int[]
-        new_weights = R[]
-        for idx in eachindex(λ)
-            weight_value = MOI.get(o, MOI.VariablePrimal(), λ[idx])
-            if weight_value <= 1e-10
-                push!(indices_to_remove, idx)
-            else
-                push!(new_weights, weight_value)
-            end
-        end
-        deleteat!(as.atoms, indices_to_remove)
-        deleteat!(as.weights, indices_to_remove)
-        @assert length(as) == length(new_weights)
-        as.weights .= new_weights
-        @assert all(>=(0), new_weights)
-        active_set_renormalize!(as)
-        compute_active_set_iterate!(as)
+    if MOI.get(o, MOI.TerminationStatus()) ∉ (MOI.OPTIMAL, MOI.FEASIBLE_POINT, MOI.ALMOST_OPTIMAL)
+        return as
     end
+    indices_to_remove = Int[]
+    new_weights = R[]
+    for idx in eachindex(λ)
+        weight_value = MOI.get(o, MOI.VariablePrimal(), λ[idx])
+        if weight_value <= 1e-10
+            push!(indices_to_remove, idx)
+        else
+            push!(new_weights, weight_value)
+        end
+    end
+    deleteat!(as.atoms, indices_to_remove)
+    deleteat!(as.weights, indices_to_remove)
+    @assert length(as) == length(new_weights)
+    as.weights .= new_weights
+    @assert all(>=(0), new_weights)
+    active_set_renormalize!(as)
+    compute_active_set_iterate!(as)
     return as
 end

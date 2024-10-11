@@ -204,7 +204,7 @@ callback = build_callback(trajectoryBPCG_quadratic_direct_generic)
     grad!,
     lmo,
     as_quad_direct_generic,
-    max_iteration=5,
+    max_iteration=k,
     line_search=FrankWolfe.Shortstep(2.0),
     print_iter=k / 10,
     memory_mode=FrankWolfe.InplaceEmphasis(),
@@ -215,8 +215,8 @@ callback = build_callback(trajectoryBPCG_quadratic_direct_generic)
 
 
 # Update the data and labels for plotting
-dataSparsity = [trajectoryBPCG_standard, trajectoryBPCG_quadratic, trajectoryBPCG_quadratic_as, trajectoryBPCG_quadratic_direct]
-labelSparsity = ["BPCG (Standard)", "BPCG (Specific Direct)", "AS_Quad", "Reloaded"]
+dataSparsity = [trajectoryBPCG_standard, trajectoryBPCG_quadratic, trajectoryBPCG_quadratic_as, trajectoryBPCG_quadratic_direct, trajectoryBPCG_quadratic_direct_generic]
+labelSparsity = ["BPCG (Standard)", "BPCG (Specific Direct)", "AS_Quad", "Reloaded", "Reloaded_generic"]
 
 # Plot sparsity
 # plot_sparsity(dataSparsity, labelSparsity, legend_position=:topright)
