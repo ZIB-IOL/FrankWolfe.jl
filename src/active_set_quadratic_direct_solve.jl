@@ -106,6 +106,7 @@ function solve_quadratic_activeset_lp!(as::ActiveSetQuadraticLinearSolve{AT, R, 
         Base.sizehint!(lhs.terms, nv)
         # replaces direct sum because of MOI and MutableArithmetic slow sums
         for j in 1:nv
+            # TODO slow
             push!(lhs.terms, MOI.ScalarAffineTerm(dot(atom, as.A, as.atoms[j]), λ[j]))
         end
         rhs = -dot(atom, as.b)

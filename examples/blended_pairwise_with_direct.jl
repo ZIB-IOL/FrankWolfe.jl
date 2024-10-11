@@ -204,7 +204,7 @@ callback = build_callback(trajectoryBPCG_quadratic_direct_generic)
     grad!,
     lmo,
     as_quad_direct_generic,
-    max_iteration=k,
+    max_iteration=5,
     line_search=FrankWolfe.Shortstep(2.0),
     print_iter=k / 10,
     memory_mode=FrankWolfe.InplaceEmphasis(),
