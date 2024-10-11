@@ -197,7 +197,6 @@ function active_set_update!(
         idx = find_atom(active_set, atom)
     end
     if idx > 0
-        @info "old atom"
         @inbounds active_set.weights[idx] += lambda
         @inbounds active_set.modified[idx] = true
     else
