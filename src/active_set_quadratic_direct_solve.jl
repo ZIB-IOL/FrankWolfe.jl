@@ -7,9 +7,16 @@ along with their coefficients `(λ_i, a_i)`.
 `R` is the type of the `λ_i`, `AT` is the type of the atoms `a_i`.
 The iterate `x = ∑λ_i a_i` is stored in x with type `IT`.
 The objective function is assumed to be of the form `f(x)=½⟨x,Ax⟩+⟨b,x⟩+c`
-so that the gradient is simply `∇f(x)=Ax+b`.
+so that the gradient is `∇f(x)=Ax+b`.
+
+This active set stores an inner `active_set` that keeps track of the current set of vertices and convex decomposition.
+It therefore delegates all update, deletion, and addition operations to this inner active set.
+The `weight`, `atoms`, and `x` fields should only be accessed to read and are effectively the same objects as those in the inner active set.
+
+The structure also contains a scheduler struct which is called with the `should_solve_lp` function.
+To define a new frequency at which the LP should be solved, one can define another scheduler struct and implement the corresponding method.
 """
-struct ActiveSetQuadraticLinearSolve{AT, R <: Real, IT, H, OT <: MOI.AbstractOptimizer, AS <: AbstractActiveSet} <: AbstractActiveSet{AT,R,IT}
+struct ActiveSetQuadraticLinearSolve{AT, R <: Real, IT, H, OT <: MOI.AbstractOptimizer, AS <: AbstractActiveSet, SF} <: AbstractActiveSet{AT,R,IT}
     weights::Vector{R}
     atoms::Vector{AT}
     x::IT
@@ -17,46 +24,71 @@ struct ActiveSetQuadraticLinearSolve{AT, R <: Real, IT, H, OT <: MOI.AbstractOpt
     b::IT # linear term
     active_set::AS
     lp_optimizer::OT
-    lp_frequency::Int
+    scheduler::SF
     counter::Base.RefValue{Int}
 end
 
-function ActiveSetQuadraticLinearSolve(tuple_values::AbstractVector{Tuple{R,AT}}, grad!::Function, lp_optimizer; lp_frequency=100) where {AT,R}
+"""
+    ActiveSetQuadraticLinearSolve(tuple_values::Vector{Tuple{R,AT}}, grad!::Function, lp_optimizer)
+
+Creates an ActiveSetQuadraticLinearSolve by computing the Hessian and linear term from `grad!`.
+"""
+function ActiveSetQuadraticLinearSolve(tuple_values::Vector{Tuple{R,AT}}, grad!::Function, lp_optimizer; scheduler=LogScheduler()) where {AT,R}
     A, b = detect_quadratic_function(grad!, tuple_values[1][2])
-    return ActiveSetQuadraticLinearSolve(tuple_values, A, b, lp_optimizer, lp_frequency=lp_frequency)
+    return ActiveSetQuadraticLinearSolve(tuple_values, A, b, lp_optimizer, scheduler=scheduler)
 end
 
-function ActiveSetQuadraticLinearSolve(tuple_values::AbstractVector{Tuple{R,AT}}, A::H, b, lp_optimizer; lp_frequency=10) where {AT,R,H}
+"""
+    ActiveSetQuadraticLinearSolve(tuple_values::Vector{Tuple{R,AT}}, A, b, lp_optimizer)
+
+Creates an `ActiveSetQuadraticLinearSolve` from the given Hessian `A`, linear term `b` and `lp_optimizer` by creating an inner `ActiveSetQuadratic` active set.
+"""
+function ActiveSetQuadraticLinearSolve(tuple_values::Vector{Tuple{R,AT}}, A::H, b, lp_optimizer; scheduler=LogScheduler()) where {AT,R,H}
     inner_as = ActiveSetQuadratic(tuple_values, A, b)
-    as = ActiveSetQuadraticLinearSolve(inner_as.weights, inner_as.atoms, inner_as.x, A, b, inner_as, lp_optimizer, lp_frequency, Ref(0))
+    return ActiveSetQuadraticLinearSolve(inner_as.weights, inner_as.atoms, inner_as.x, inner_as.A, inner_as.b, inner_as, lp_optimizer, scheduler, Ref(0))
+end
+
+function ActiveSetQuadraticLinearSolve(inner_as::AbstractActiveSet, A, b, lp_optimizer; scheduler=LogScheduler())
+    as = ActiveSetQuadraticLinearSolve(inner_as.weights, inner_as.atoms, inner_as.x, A, b, inner_as, lp_optimizer, scheduler, Ref(0))
     compute_active_set_iterate!(as)
     return as
 end
 
-function ActiveSetQuadraticLinearSolve{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}, grad!::Function, lp_optimizer; lp_frequency=100) where {AT,R}
+function ActiveSetQuadraticLinearSolve(inner_as::AbstractActiveSet, A::LinearAlgebra.UniformScaling, b, lp_optimizer; scheduler=LogScheduler())
+    as = ActiveSetQuadraticLinearSolve(inner_as.weights, inner_as.atoms, inner_as.x, A, b, inner_as, lp_optimizer, scheduler, Ref(0))
+    compute_active_set_iterate!(as)
+    return as
+end
+
+function ActiveSetQuadraticLinearSolve(inner_as::AbstractActiveSet, grad!::Function, lp_optimizer; scheduler=LogScheduler())
     A, b = detect_quadratic_function(grad!, tuple_values[1][2])
-    return ActiveSetQuadraticLinearSolve{AT,R}(tuple_values, A, b, lp_optimizer; lp_frequency=lp_frequency)
+    return ActiveSetQuadraticLinearSolve(inner_as, A, b, lp_optimizer; scheduler=scheduler)
 end
 
-function ActiveSetQuadraticLinearSolve{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}, A::H, b, lp_optimizer; lp_frequency=lp_frequency) where {AT,R,H}
+function ActiveSetQuadraticLinearSolve{AT,R}(tuple_values::Vector{<:Tuple{<:Number,<:Any}}, grad!::Function, lp_optimizer; scheduler=LogScheduler()) where {AT,R}
+    A, b = detect_quadratic_function(grad!, tuple_values[1][2])
+    return ActiveSetQuadraticLinearSolve{AT,R}(tuple_values, A, b, lp_optimizer; scheduler=scheduler)
+end
+
+function ActiveSetQuadraticLinearSolve{AT,R}(tuple_values::Vector{<:Tuple{<:Number,<:Any}}, A::H, b, lp_optimizer; scheduler=LogScheduler()) where {AT,R,H}
     inner_as = ActiveSetQuadratic{AT,R}(tuple_values, A, b)
-    as = ActiveSetQuadraticLinearSolve{AT,R,typeof(x),H}(inner_as.weights, inner_as.atoms, inner_as.x, A, b, inner_as, lp_optimizer, lp_frequency, Ref(0))
+    as = ActiveSetQuadraticLinearSolve{AT,R,typeof(x),H}(inner_as.weights, inner_as.atoms, inner_as.x, A, b, inner_as, lp_optimizer, scheduler, Ref(0))
     compute_active_set_iterate!(as)
     return as
 end
 
-function ActiveSetQuadraticLinearSolve(tuple_values::AbstractVector{Tuple{R,AT}}, A::UniformScaling, b, lp_optimizer; lp_frequency=100) where {AT,R}
-    return ActiveSetQuadraticLinearSolve(tuple_values, Identity(A.λ), b, lp_optimizer; lp_frequency=lp_frequency)
+function ActiveSetQuadraticLinearSolve(tuple_values::Vector{Tuple{R,AT}}, A::UniformScaling, b, lp_optimizer; scheduler=LogScheduler()) where {AT,R}
+    return ActiveSetQuadraticLinearSolve(tuple_values, Identity(A.λ), b, lp_optimizer; scheduler=scheduler)
 end
-function ActiveSetQuadraticLinearSolve{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}, A::UniformScaling, b, lp_optimizer; lp_frequency=100) where {AT,R}
-    return ActiveSetQuadraticLinearSolve{AT,R}(tuple_values, Identity(A.λ), b, lp_optimizer; lp_frequency=lp_frequency)
+function ActiveSetQuadraticLinearSolve{AT,R}(tuple_values::Vector{<:Tuple{<:Number,<:Any}}, A::UniformScaling, b, lp_optimizer; scheduler=LogScheduler()) where {AT,R}
+    return ActiveSetQuadraticLinearSolve{AT,R}(tuple_values, Identity(A.λ), b, lp_optimizer; scheduler=scheduler)
 end
 
 # all mutating functions are delegated to the inner active set
 
 Base.push!(as::ActiveSetQuadraticLinearSolve, tuple) = push!(as.active_set, tuple)
 
-Base.deleteat!(as::ActiveSetQuadraticLinearSolve, idx) = deleteat!(as.active_set, idx)
+Base.deleteat!(as::ActiveSetQuadraticLinearSolve, idx::Int) = deleteat!(as.active_set, idx)
 
 Base.empty!(as::ActiveSetQuadraticLinearSolve) = empty!(as.active_set)
 
@@ -74,7 +106,7 @@ function active_set_update!(
     # new atom introduced, we can solve the auxiliary LP
     if idx < 0
         as.counter[] += 1
-        if mod(as.counter[], as.lp_frequency) == 0
+        if should_solve_lp(as, as.scheduler)
             solve_quadratic_activeset_lp!(as)
         end
     end
@@ -92,6 +124,12 @@ function active_set_argminmax(as::ActiveSetQuadraticLinearSolve, direction; Φ=0
 end
 
 # generic quadratic with quadratic information provided
+"""
+    solve_quadratic_activeset_lp!(as::ActiveSetQuadraticLinearSolve{AT, R, IT, H}))
+
+Solves the auxiliary LP over the current active set.
+The method is specialized by type `H` of the Hessian matrix `A`.
+"""
 function solve_quadratic_activeset_lp!(as::ActiveSetQuadraticLinearSolve{AT, R, IT, <: AbstractMatrix}) where {AT, R, IT}
     nv = length(as)
     o = as.lp_optimizer
@@ -122,7 +160,7 @@ function solve_quadratic_activeset_lp!(as::ActiveSetQuadraticLinearSolve{AT, R, 
     new_weights = R[]
     for idx in eachindex(λ)
         weight_value = MOI.get(o, MOI.VariablePrimal(), λ[idx])
-        if weight_value <= 1e-10
+        if weight_value <= 2 * weight_purge_threshold_default(typeof(weight_value))
             push!(indices_to_remove, idx)
         else
             push!(new_weights, weight_value)
@@ -132,14 +170,15 @@ function solve_quadratic_activeset_lp!(as::ActiveSetQuadraticLinearSolve{AT, R, 
     deleteat!(as.weights, indices_to_remove)
     @assert length(as) == length(new_weights)
     as.weights .= new_weights
-    @assert all(>=(0), new_weights)
+    active_set_cleanup!(as)
     active_set_renormalize!(as)
     compute_active_set_iterate!(as)
     return as
 end
 
 # special case of scaled identity Hessian
-function solve_quadratic_activeset_lp!(as::ActiveSetQuadraticLinearSolve{AT, R, IT, <: Identity}) where {AT, R, IT}
+
+function solve_quadratic_activeset_lp!(as::ActiveSetQuadraticLinearSolve{AT, R, IT, <: Union{Identity, LinearAlgebra.UniformScaling}}) where {AT, R, IT}
     hessian_scaling = as.A.λ
     nv = length(as)
     o = as.lp_optimizer
@@ -170,7 +209,7 @@ function solve_quadratic_activeset_lp!(as::ActiveSetQuadraticLinearSolve{AT, R, 
     new_weights = R[]
     for idx in eachindex(λ)
         weight_value = MOI.get(o, MOI.VariablePrimal(), λ[idx])
-        if weight_value <= 1e-10
+        if weight_value <= 2 * weight_purge_threshold_default(typeof(weight_value))
             push!(indices_to_remove, idx)
         else
             push!(new_weights, weight_value)
@@ -180,8 +219,31 @@ function solve_quadratic_activeset_lp!(as::ActiveSetQuadraticLinearSolve{AT, R, 
     deleteat!(as.weights, indices_to_remove)
     @assert length(as) == length(new_weights)
     as.weights .= new_weights
+    active_set_cleanup!(as)
     @assert all(>=(0), new_weights)
     active_set_renormalize!(as)
     compute_active_set_iterate!(as)
     return as
+end
+
+struct LogScheduler{T}
+    start_time::Int
+    scaling_factor::T
+    max_interval::Int
+    current_interval::Base.RefValue{Int}
+    last_solve_counter::Base.RefValue{Int}
+end
+
+LogScheduler(; start_time=20, scaling_factor=1.5, max_interval=1000) = LogScheduler(start_time, scaling_factor, max_interval, Ref(start_time), Ref(0))
+
+function should_solve_lp(as::ActiveSetQuadraticLinearSolve, scheduler::LogScheduler)
+    if as.counter[] - scheduler.last_solve_counter[] >= scheduler.current_interval[]
+        scheduler.last_solve_counter[] = as.counter[]
+        scheduler.current_interval[] = min(
+            round(Int, scheduler.scaling_factor * scheduler.current_interval[]),
+            scheduler.max_interval,
+        )
+        return true
+    end
+    return false
 end

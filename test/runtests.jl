@@ -798,6 +798,13 @@ using Test
 end
 end
 
+module LpDirectSolveTest
+using Test
+@testset "LP solving for quadratic functions and active set" begin
+    include("quadratic_lp_active_set.jl")
+end
+end
+
 include("generic-arrays.jl")
 
 include("blocks.jl")

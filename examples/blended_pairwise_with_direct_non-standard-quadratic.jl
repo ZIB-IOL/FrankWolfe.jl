@@ -14,15 +14,9 @@ using FrankWolfe
 using LinearAlgebra
 using Random
 
-import Pkg
-Pkg.add("GLPK")
-Pkg.add("HiGHS")
-import GLPK
 import HiGHS
 
-# lp_solver = GLPK.Optimizer
 lp_solver = HiGHS.Optimizer
-# lp_solver = Clp.Optimizer # buggy / does not work properly
 
 
 include("../examples/plot_utils.jl")
