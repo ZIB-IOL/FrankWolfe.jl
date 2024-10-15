@@ -805,6 +805,13 @@ using Test
 end
 end
 
+module SparsifyingActiveSetTest
+using Test
+@testset "Sparsifying active set" begin
+    include("sparsifying_activeset.jl")
+end
+end
+
 include("generic-arrays.jl")
 
 include("blocks.jl")

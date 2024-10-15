@@ -91,8 +91,10 @@ callback = build_callback(trajectoryBPCG_standard)
     callback=callback,
 );
 
-trajectoryBPCG_quadratic = []
-callback = build_callback(trajectoryBPCG_quadratic)
+trajectoryBPCG_as_sparse = []
+callback = build_callback(trajectoryBPCG_as_sparse)
+
+active_set_sparse = FrankWolfe.ActiveSetSparsifier(FrankWolfe.ActiveSet([1.0], [x00], similar(x00)), HiGHS.Optimizer())
 
 @time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
@@ -106,9 +108,6 @@ callback = build_callback(trajectoryBPCG_quadratic)
     verbose=true,
     trajectory=true,
     callback=callback,
-    sparsify=true,
-#    squadratic=true, # activate to see the effect of the numerical precision of the LP solver
-    lp_solver=lp_solver,
 );
 
 trajectoryBPCG_as_sparse = []
