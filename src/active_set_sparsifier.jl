@@ -1,4 +1,5 @@
-struct ActiveSetSparsifier{AT, R, IT, AS <: AbstractActiveSet{AT, R, IT}, OT <: MOI.AbstractOptimizer} <: AbstractActiveSet{AT,R,IT}
+struct ActiveSetSparsifier{AT,R,IT,AS<:AbstractActiveSet{AT,R,IT},OT<:MOI.AbstractOptimizer} <:
+       AbstractActiveSet{AT,R,IT}
     active_set::AS
     weights::Vector{R}
     atoms::Vector{AT}
@@ -9,12 +10,26 @@ struct ActiveSetSparsifier{AT, R, IT, AS <: AbstractActiveSet{AT, R, IT}, OT <: 
     counter::Base.RefValue{Int}
 end
 
-function ActiveSetSparsifier(active_set::AbstractActiveSet, optimizer::MOI.AbstractOptimizer; minimum_vertices=50, solve_frequency=50)
-    return ActiveSetSparsifier(active_set, active_set.weights, active_set.atoms, active_set.x, optimizer, minimum_vertices, solve_frequency, Ref(0))
+function ActiveSetSparsifier(
+    active_set::AbstractActiveSet,
+    optimizer::MOI.AbstractOptimizer;
+    minimum_vertices=50,
+    solve_frequency=50,
+)
+    return ActiveSetSparsifier(
+        active_set,
+        active_set.weights,
+        active_set.atoms,
+        active_set.x,
+        optimizer,
+        minimum_vertices,
+        solve_frequency,
+        Ref(0),
+    )
 end
 
 function Base.push!(as::ActiveSetSparsifier, (λ, a))
-    push!(as.active_set, (λ, a))
+    return push!(as.active_set, (λ, a))
 end
 
 Base.deleteat!(as::ActiveSetSparsifier, idx::Int) = deleteat!(as.active_set, idx)
@@ -22,10 +37,13 @@ Base.deleteat!(as::ActiveSetSparsifier, idx::Int) = deleteat!(as.active_set, idx
 Base.empty!(as::ActiveSetSparsifier) = empty!(as.active_set)
 
 function active_set_update!(
-    as::ActiveSetSparsifier{AS, OT, AT, R, IT},
-    lambda, atom, renorm=true, idx=nothing;
-    kwargs...
-) where {AS, OT, AT, R, IT}
+    as::ActiveSetSparsifier{AS,OT,AT,R,IT},
+    lambda,
+    atom,
+    renorm=true,
+    idx=nothing;
+    kwargs...,
+) where {AS,OT,AT,R,IT}
     active_set_update!(as.active_set, lambda, atom, renorm, idx; kwargs...)
     n = length(as)
     as.counter[] += 1
@@ -49,7 +67,8 @@ function active_set_update!(
         MOI.set(as.optimizer, MOI.ObjectiveFunction{typeof(dummy_objective)}(), dummy_objective)
         MOI.set(as.optimizer, MOI.ObjectiveSense(), MOI.MIN_SENSE)
         MOI.optimize!(as.optimizer)
-        if MOI.get(as.optimizer, MOI.TerminationStatus()) in (MOI.OPTIMAL, MOI.FEASIBLE_POINT, MOI.ALMOST_OPTIMAL)
+        if MOI.get(as.optimizer, MOI.TerminationStatus()) in
+           (MOI.OPTIMAL, MOI.FEASIBLE_POINT, MOI.ALMOST_OPTIMAL)
             indices_to_remove = Int[]
             new_weights = R[]
             for idx in eachindex(λ)
@@ -73,4 +92,5 @@ end
 active_set_renormalize!(as::ActiveSetSparsifier) = active_set_renormalize!(as.active_set)
 
 active_set_argmin(as::ActiveSetSparsifier, direction) = active_set_argmin(as.active_set, direction)
-active_set_argminmax(as::ActiveSetSparsifier, direction; Φ=0.5) = active_set_argminmax(as.active_set, direction; Φ=Φ)
+active_set_argminmax(as::ActiveSetSparsifier, direction; Φ=0.5) =
+    active_set_argminmax(as.active_set, direction; Φ=Φ)

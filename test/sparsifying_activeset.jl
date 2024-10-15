@@ -60,7 +60,10 @@ x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     callback=build_callback(trajectoryBPCG_standard),
 );
 
-active_set_sparse = FrankWolfe.ActiveSetSparsifier(FrankWolfe.ActiveSet([1.0], [x00], similar(x00)), HiGHS.Optimizer())
+active_set_sparse = FrankWolfe.ActiveSetSparsifier(
+    FrankWolfe.ActiveSet([1.0], [x00], similar(x00)),
+    HiGHS.Optimizer(),
+)
 trajectoryBPCG_as_sparse = []
 x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
