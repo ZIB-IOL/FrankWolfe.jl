@@ -19,8 +19,6 @@ using Random
 import HiGHS
 import MathOptInterface as MOI
 
-lp_solver = HiGHS.Optimizer
-
 include("../examples/plot_utils.jl")
 
 n = Int(1e4)
@@ -51,11 +49,7 @@ function build_callback(trajectory_arr)
 end
 
 
-FrankWolfe.benchmark_oracles(f, grad!, () -> randn(n), lmo; k=100)
-
 trajectoryBPCG_standard = []
-callback = build_callback(trajectoryBPCG_standard)
-
 @time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
@@ -63,52 +57,8 @@ callback = build_callback(trajectoryBPCG_standard)
     copy(x00),
     max_iteration=k,
     line_search=FrankWolfe.Shortstep(2.0),
-    print_iter=k / 10,
-    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
-    trajectory=true,
-    callback=callback,
-    squadratic=false,
-);
-
-trajectoryBPCG_quadratic = []
-callback = build_callback(trajectoryBPCG_quadratic)
-
-@time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
-    f,
-    grad!,
-    lmo,
-    copy(x00),
-    max_iteration=k,
-    line_search=FrankWolfe.Shortstep(2.0),
-    print_iter=k / 10,
-    memory_mode=FrankWolfe.InplaceEmphasis(),
-    verbose=true,
-    trajectory=true,
-    callback=callback,
-    squadratic=true,
-    lp_solver=lp_solver,
-);
-
-# Just using that qudratic (more expensive)
-trajectoryBPCG_quadratic_nosquad = []
-callback = build_callback(trajectoryBPCG_quadratic_nosquad)
-
-@time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
-    f,
-    grad!,
-    lmo,
-    copy(x00),
-    max_iteration=k,
-    line_search=FrankWolfe.Shortstep(2.0),
-    print_iter=k / 10,
-    memory_mode=FrankWolfe.InplaceEmphasis(),
-    verbose=true,
-    trajectory=true,
-    callback=callback,
-    quadratic=true,
-    squadratic=false,
-    lp_solver=lp_solver,
+    callback=build_callback(trajectoryBPCG_standard),
 );
 
 # Just projection quadratic
@@ -123,10 +73,7 @@ as_quad = FrankWolfe.ActiveSetQuadratic([(1.0, copy(x00))], 2 * LinearAlgebra.I,
     as_quad,
     max_iteration=k,
     line_search=FrankWolfe.Shortstep(2.0),
-    print_iter=k / 10,
-    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
-    trajectory=true,
     callback=callback,
 );
 
@@ -137,7 +84,6 @@ as_quad = FrankWolfe.ActiveSetQuadratic(
 
 # with quadratic active set
 trajectoryBPCG_quadratic_as = []
-callback = build_callback(trajectoryBPCG_quadratic_as)
 @time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
@@ -145,11 +91,8 @@ callback = build_callback(trajectoryBPCG_quadratic_as)
     as_quad,
     max_iteration=k,
     line_search=FrankWolfe.Shortstep(2.0),
-    print_iter=k / 10,
-    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
-    trajectory=true,
-    callback=callback,
+    callback=build_callback(trajectoryBPCG_quadratic_as),
 );
 
 as_quad_direct = FrankWolfe.ActiveSetQuadraticLinearSolve(
@@ -160,8 +103,6 @@ as_quad_direct = FrankWolfe.ActiveSetQuadraticLinearSolve(
 
 # with LP acceleration
 trajectoryBPCG_quadratic_direct = []
-callback = build_callback(trajectoryBPCG_quadratic_direct)
-
 @time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
@@ -169,11 +110,8 @@ callback = build_callback(trajectoryBPCG_quadratic_direct)
     as_quad_direct,
     max_iteration=k,
     line_search=FrankWolfe.Shortstep(2.0),
-    print_iter=k / 10,
-    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
-    trajectory=true,
-    callback=callback,
+    callback=build_callback(trajectoryBPCG_quadratic_direct),
 );
 
 as_quad_direct_generic = FrankWolfe.ActiveSetQuadraticLinearSolve(
@@ -184,8 +122,6 @@ as_quad_direct_generic = FrankWolfe.ActiveSetQuadraticLinearSolve(
 
 # with LP acceleration
 trajectoryBPCG_quadratic_direct_generic = []
-callback = build_callback(trajectoryBPCG_quadratic_direct_generic)
-
 @time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
@@ -193,11 +129,8 @@ callback = build_callback(trajectoryBPCG_quadratic_direct_generic)
     as_quad_direct_generic,
     max_iteration=k,
     line_search=FrankWolfe.Shortstep(2.0),
-    print_iter=k / 10,
-    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
-    trajectory=true,
-    callback=callback,
+    callback=build_callback(trajectoryBPCG_quadratic_direct_generic),
 );
 
 as_quad_direct_basic_as = FrankWolfe.ActiveSetQuadraticLinearSolve(
@@ -208,7 +141,6 @@ as_quad_direct_basic_as = FrankWolfe.ActiveSetQuadraticLinearSolve(
 
 # with LP acceleration
 trajectoryBPCG_quadratic_noqas = []
-callback = build_callback(trajectoryBPCG_quadratic_noqas)
 
 @time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
@@ -217,11 +149,8 @@ callback = build_callback(trajectoryBPCG_quadratic_noqas)
     as_quad_direct_basic_as,
     max_iteration=k,
     line_search=FrankWolfe.Shortstep(2.0),
-    print_iter=k / 10,
-    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
-    trajectory=true,
-    callback=callback,
+    callback=build_callback(trajectoryBPCG_quadratic_noqas),
 );
 
 
