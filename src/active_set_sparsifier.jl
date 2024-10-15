@@ -54,7 +54,7 @@ function active_set_update!(
             new_weights = R[]
             for idx in eachindex(λ)
                 weight_value = MOI.get(as.optimizer, MOI.VariablePrimal(), λ[idx])
-                if weight_value <= min(1e-3 / n, 1e-8)
+                if weight_value <= sqrt(weight_purge_threshold_default(typeof(weight_value)))
                     push!(indices_to_remove, idx)
                 else
                     push!(new_weights, weight_value)
