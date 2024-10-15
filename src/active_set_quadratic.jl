@@ -310,4 +310,3 @@ function update_active_set_quadratic!(warm_as::ActiveSetQuadratic{AT,R,IT,H}, b)
     compute_active_set_iterate!(warm_as)
     return warm_as
 end
-

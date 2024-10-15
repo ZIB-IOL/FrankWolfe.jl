@@ -33,7 +33,6 @@ function blended_pairwise_conditional_gradient(
     squadratic=false, # standard quadratic objective
     quadratic=false,  # quadratic objective but not standard quadratic
     lp_solver=nothing, # lp_solver used for direct solve or sparsification
-    sparsify=false, # sparsify the active set
     ds_scale_up=2,  # direct solve scale up parameter
 )
     # add the first vertex to active set from initialization
@@ -67,7 +66,6 @@ function blended_pairwise_conditional_gradient(
         squadratic=squadratic,
         quadratic=quadratic,  # Pass the new parameter
         lp_solver=lp_solver,
-        sparsify=sparsify,
         ds_scale_up=ds_scale_up,  # Pass the new parameter
     )
 end
@@ -105,7 +103,6 @@ function blended_pairwise_conditional_gradient(
     squadratic=false, # non-standard quadratic objective
     quadratic=false,  # quadratic objective but not standard quadratic
     lp_solver=nothing, # lp_solver used for direct solve or sparsification
-    sparsify=false, # sparsify the active set
     ds_scale_up=2,  # direct solve scale up parameter
 ) where {AT,R}
 
@@ -149,7 +146,7 @@ function blended_pairwise_conditional_gradient(
         gradient = collect(x)
     end
 
-    if squadratic || sparsify || quadratic  # when using LPs then lp_solver must be provided
+    if squadratic || quadratic  # when using LPs then lp_solver must be provided
         @assert lp_solver !== nothing "When squadratic, sparsify, or quadratic is true, lp_solver must be provided"
     end
 
@@ -489,9 +486,6 @@ function blended_pairwise_conditional_gradient(
         end
     end
     active_set_renormalize!(active_set)
-    if sparsify
-        active_set = sparsify_iterate(active_set, lp_solver)
-    end
     active_set_cleanup!(active_set; weight_purge_threshold=weight_purge_threshold)
     compute_active_set_iterate!(active_set)
     x = get_active_set_iterate(active_set)
