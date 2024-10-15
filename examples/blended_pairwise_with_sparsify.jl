@@ -14,7 +14,6 @@ using FrankWolfe
 using LinearAlgebra
 using Random
 
-import Pkg
 import HiGHS
 
 # lp_solver = GLPK.Optimizer
