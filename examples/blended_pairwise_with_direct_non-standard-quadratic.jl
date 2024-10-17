@@ -15,7 +15,7 @@ using LinearAlgebra
 using Random
 
 import HiGHS
-
+import MathOptInterface as MOI
 lp_solver = HiGHS.Optimizer
 
 
@@ -33,7 +33,6 @@ A = let
     A = randn(n, n)
     A' * A
 end
-
 @assert isposdef(A) == true
 
 const y = Random.rand(Bool, n) * 0.6 .+ 0.3
@@ -72,12 +71,11 @@ FrankWolfe.benchmark_oracles(f, grad!, () -> randn(n), lmo; k=100)
 trajectoryBPCG_standard = []
 callback = build_callback(trajectoryBPCG_standard)
 
-x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
-    x0,
+    copy(x00),
     max_iteration=k,
     line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
@@ -89,29 +87,84 @@ x0 = deepcopy(x00)
 );
 
 trajectoryBPCG_quadratic = []
-callback = build_callback(trajectoryBPCG_quadratic)
-
-x0 = deepcopy(x00)
 @time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
-    x0,
+    copy(x00),
     max_iteration=k,
     line_search=FrankWolfe.Adaptive(),
     print_iter=k / 10,
-    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
-    callback=callback,
+    callback=build_callback(trajectoryBPCG_quadratic),
     quadratic=true,
     lp_solver=lp_solver,
 );
 
+active_set_quadratic_automatic = FrankWolfe.ActiveSetQuadraticLinearSolve(
+    [(1.0, copy(x00))],
+    grad!,
+    MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
+    scheduler=FrankWolfe.LogScheduler(start_time=100, scaling_factor=1.2, max_interval=100),
+)
+trajectoryBPCG_quadratic_automatic = []
+@time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    active_set_quadratic_automatic,
+    # print_iter=1,
+    max_iteration=k,
+    verbose=true,
+    callback=build_callback(trajectoryBPCG_quadratic_automatic),
+);
+
+active_set_quadratic_automatic2 = FrankWolfe.ActiveSetQuadraticLinearSolve(
+    [(1.0, copy(x00))],
+    grad!,
+    MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
+    scheduler=FrankWolfe.LogScheduler(start_time=10, scaling_factor=2),
+)
+trajectoryBPCG_quadratic_automatic2 = []
+@time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    active_set_quadratic_automatic2,
+    # print_iter=1,
+    max_iteration=k,
+    verbose=true,
+    callback=build_callback(trajectoryBPCG_quadratic_automatic2),
+);
+
+
+active_set_quadratic_automatic_reloaded = FrankWolfe.ActiveSetQuadraticLinearSolve(
+    FrankWolfe.ActiveSet([(1.0, copy(x00))]),
+    grad!,
+    MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
+    scheduler=FrankWolfe.LogScheduler(start_time=10, scaling_factor=2),
+)
+trajectoryBPCG_quadratic_automatic_reloaded = []
+@time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    active_set_quadratic_automatic_reloaded,
+    max_iteration=k,
+    verbose=true,
+    callback=build_callback(trajectoryBPCG_quadratic_automatic_reloaded),
+);
+
+
+
 # Reduction primal/dual error vs. sparsity of solution
 
-dataSparsity = [trajectoryBPCG_standard, trajectoryBPCG_quadratic]
-labelSparsity = ["BPCG (Standard)", "BPCG (Direct)"]
+# dataSparsity = [trajectoryBPCG_standard, trajectoryBPCG_quadratic, trajectoryBPCG_quadratic_automatic, trajectoryBPCG_quadratic_automatic_reloaded, trajectoryBPCG_quadratic_automatic]
+# labelSparsity = ["BPCG (Standard)", "BPCG (Direct)", "AS_Quad", "R", "A2"]
+
+dataSparsity = [trajectoryBPCG_quadratic_automatic2, trajectoryBPCG_quadratic_automatic_reloaded]
+labelSparsity = ["AS_Quad", "AS_standard"]
 
 # Plot sparsity
 # plot_sparsity(dataSparsity, labelSparsity, legend_position=:topright)

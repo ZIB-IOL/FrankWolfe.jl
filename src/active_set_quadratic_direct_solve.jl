@@ -16,12 +16,12 @@ The `weight`, `atoms`, and `x` fields should only be accessed to read and are ef
 The structure also contains a scheduler struct which is called with the `should_solve_lp` function.
 To define a new frequency at which the LP should be solved, one can define another scheduler struct and implement the corresponding method.
 """
-struct ActiveSetQuadraticLinearSolve{AT, R <: Real, IT, H, OT <: MOI.AbstractOptimizer, AS <: AbstractActiveSet, SF} <: AbstractActiveSet{AT,R,IT}
+struct ActiveSetQuadraticLinearSolve{AT, R <: Real, IT, H, BT, OT <: MOI.AbstractOptimizer, AS <: AbstractActiveSet, SF} <: AbstractActiveSet{AT,R,IT}
     weights::Vector{R}
     atoms::Vector{AT}
     x::IT
     A::H # Hessian matrix
-    b::IT # linear term
+    b::BT # linear term
     active_set::AS
     lp_optimizer::OT
     scheduler::SF
@@ -61,7 +61,7 @@ function ActiveSetQuadraticLinearSolve(inner_as::AbstractActiveSet, A::LinearAlg
 end
 
 function ActiveSetQuadraticLinearSolve(inner_as::AbstractActiveSet, grad!::Function, lp_optimizer; scheduler=LogScheduler())
-    A, b = detect_quadratic_function(grad!, tuple_values[1][2])
+    A, b = detect_quadratic_function(grad!, inner_as.atoms[1])
     return ActiveSetQuadraticLinearSolve(inner_as, A, b, lp_optimizer; scheduler=scheduler)
 end
 
@@ -124,6 +124,7 @@ function active_set_argminmax(as::ActiveSetQuadraticLinearSolve, direction; Φ=0
 end
 
 # generic quadratic with quadratic information provided
+
 """
     solve_quadratic_activeset_lp!(as::ActiveSetQuadraticLinearSolve{AT, R, IT, H}))
 
@@ -160,14 +161,17 @@ function solve_quadratic_activeset_lp!(as::ActiveSetQuadraticLinearSolve{AT, R, 
     new_weights = R[]
     for idx in eachindex(λ)
         weight_value = MOI.get(o, MOI.VariablePrimal(), λ[idx])
-        if weight_value <= 2 * weight_purge_threshold_default(typeof(weight_value))
+        if weight_value <= 1e-5
             push!(indices_to_remove, idx)
         else
             push!(new_weights, weight_value)
         end
     end
-    deleteat!(as.atoms, indices_to_remove)
-    deleteat!(as.weights, indices_to_remove)
+    # we delete the elements in reverse order to avoid messing up the internal active set
+    sort!(indices_to_remove, rev=true)
+    for idx in indices_to_remove
+        deleteat!(as.active_set, idx)
+    end
     @assert length(as) == length(new_weights)
     as.weights .= new_weights
     active_set_cleanup!(as)

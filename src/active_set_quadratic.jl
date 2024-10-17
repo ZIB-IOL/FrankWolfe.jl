@@ -151,6 +151,7 @@ function Base.push!(as::ActiveSetQuadratic{AT,R}, (λ, a)) where {AT,R}
     return as
 end
 
+# TODO multi-indices version
 function Base.deleteat!(as::ActiveSetQuadratic, idx::Int)
     @inbounds for i in 1:idx-1
         as.dots_x[i] -= as.weights_prev[idx] * as.dots_A[idx][i]
