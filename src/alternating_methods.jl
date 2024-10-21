@@ -262,6 +262,7 @@ function alternating_projections(
     timeout=Inf,
     proj_method=frank_wolfe,
     inner_epsilon::Function=t->1 / (t^2 + 1),
+    reuse_active_set=false,
     kwargs...,
 ) where {N}
 
@@ -282,10 +283,17 @@ function alternating_projections(
 
     t = 0
     dual_gap = Inf
+    dual_gaps = fill(Inf, N)
     x = BlockVector(compute_extreme_point.(lmo.lmos, fill(x0,N)))
-    v = similar(x)
     step_type = ST_REGULAR
     gradient = similar(x)
+
+    if reuse_active_set
+        if proj_method ∉ [away_frank_wolfe, blended_pairwise_conditional_gradient, pairwise_frank_wolfe]
+            error("The selected FW method does not support active sets reuse.")
+        end
+        active_sets = [ActiveSet([(1.0, x.blocks[i])]) for i in 1:N]
+    end
 
     dist2(x::BlockVector) = 0.5 * sum(fast_dot(x.blocks[i]-x.blocks[j], x.blocks[i]-x.blocks[j]) for i in 1:N for j in 1:i-1)
 
@@ -300,17 +308,32 @@ function alternating_projections(
             storage .= 2 * (y - xii)
         end
 
-        x_opt, _ = proj_method(
-            f,
-            grad_proj!,
-            lmo.lmos[i],
-            x.blocks[i];
-            epsilon=inner_epsilon(t),
-            max_iteration=10000,
-            line_search=Adaptive(),
-            kwargs...,
-        )
-        return x_opt
+        if reuse_active_set
+
+            results = proj_method(
+                f,
+                grad_proj!,
+                lmo.lmos[i],
+                active_sets[i];
+                epsilon=inner_epsilon(t),
+                max_iteration=10000,
+                line_search=Adaptive(),
+                kwargs...,
+            )
+            active_sets[i] = results[:active_set]
+        else
+            results = proj_method(
+                f,
+                grad_proj!,
+                lmo.lmos[i],
+                x.blocks[i];
+                epsilon=inner_epsilon(t),
+                max_iteration=10000,
+                line_search=Adaptive(),
+                kwargs...,
+            )
+        end
+        return results[:x], results[:dual_gap]
     end
 
 
@@ -363,15 +386,14 @@ function alternating_projections(
         # Projection step:
         for i in 1:N
             # project the previous iterate on the i-th feasible region
-            x.blocks[i] = projection_step(i, t)
+            x.blocks[i], dual_gaps[i] = projection_step(i, t)
         end
+
+        dual_gap = sum(dual_gaps)
 
         # Update gradients
         grad!(gradient, x)
 
-        # Update dual gaps
-        v = compute_extreme_point(lmo, gradient)
-        dual_gap = fast_dot(x - v, gradient)
 
         # go easy on the memory - only compute if really needed
         if ((mod(t, print_iter) == 0 && verbose) || callback !== nothing)
@@ -389,7 +411,7 @@ function alternating_projections(
                 dual_gap,
                 tot_time,
                 x,
-                v,
+                nothing,
                 nothing,
                 nothing,
                 nothing,
