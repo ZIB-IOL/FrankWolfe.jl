@@ -227,6 +227,7 @@ function alternating_projections(
     timeout=Inf,
     proj_method=frank_wolfe,
     inner_epsilon::Function=t->1 / (t^2 + 1),
+    reuse_active_set=false,
     kwargs...,
 ) where {N}
     return alternating_projections(
@@ -243,6 +244,7 @@ function alternating_projections(
         timeout,
         proj_method,
         inner_epsilon,
+        reuse_active_set,
         kwargs...,
     )
 end
