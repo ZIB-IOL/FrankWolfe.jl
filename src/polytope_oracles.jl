@@ -324,6 +324,19 @@ end
 struct ZeroOneHypercube
 end
 
+function convert_mathopt(
+	lmo::ZeroOneHypercube,
+	optimizer::OT;
+	dimension::Integer,
+	use_modify = true::Bool,
+	kwargs...,
+) where {OT}
+	MOI.empty!(optimizer)
+	n = dimension
+	(x, _) = MOI.add_constrained_variables(optimizer, [MOI.Interval(0.0, 1.0) for _ in 1:n])
+	return MathOptLMO(optimizer, use_modify)
+end
+
 is_decomposition_invariant_oracle(::ZeroOneHypercube) = true
 
 function compute_extreme_point(::ZeroOneHypercube, direction; lazy=false, kwargs...)
