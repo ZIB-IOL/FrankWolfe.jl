@@ -67,6 +67,7 @@ FrankWolfe.select_update_indices
 FrankWolfe.FullUpdate
 FrankWolfe.CyclicUpdate
 FrankWolfe.StochasticUpdate
+FrankWolfe.LazyUpdate
 ```
 
 ## Update step for block-coordinate Frank-Wolfe
