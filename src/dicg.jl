@@ -1,4 +1,5 @@
 
+
 ## interface functions for LMOs that are supported by the decomposition-invariant algorithm
 
 """
@@ -65,7 +66,7 @@ function decomposition_invariant_conditional_gradient(
     headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec")
     function format_state(state, args...)
         rep = (
-            st[Symbol(state.tt)],
+            steptype_string[Symbol(state.step_type)],
             string(state.t),
             Float64(state.primal),
             Float64(state.primal - state.dual_gap),
@@ -85,14 +86,6 @@ function decomposition_invariant_conditional_gradient(
     end
 
     x = x0
-
-    if lazy
-        if extra_vertex_storage === nothing
-            pre_computed_set = [x]
-        else
-            pre_computed_set = extra_vertex_storage
-        end
-    end
     
     if memory_mode isa InplaceEmphasis && !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
         # if integer, convert element type to most appropriate float
@@ -105,7 +98,7 @@ function decomposition_invariant_conditional_gradient(
 
     t = 0
     primal = convert(float(eltype(x)), Inf)
-    tt = regular
+    step_type = ST_REGULAR
     time_start = time_ns()
 
     d = similar(x)
@@ -121,10 +114,10 @@ function decomposition_invariant_conditional_gradient(
             "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
         )
         grad_type = typeof(gradient)
-        println("GRADIENTTYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance")
+        println("GRADIENstep_typeYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance")
         println("LMO: $(typeof(lmo))")
         if memory_mode isa InplaceEmphasis
-            @info("In memory_mode memory iterates are written back into x0!")
+            @info("In memory_mode memory iterates are wristep_typeen back into x0!")
         end
     end
 
@@ -132,6 +125,15 @@ function decomposition_invariant_conditional_gradient(
     v = x0
     phi = primal
     gamma = one(phi)
+
+    if lazy
+	if extra_vertex_storage === nothing
+	   v = compute_extreme_point(lmo, gradient, lazy = lazy)
+	   pre_computed_set = [v]
+	else
+	   pre_computed_set = extra_vertex_storage
+	end
+    end
 
     if linesearch_workspace === nothing
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
@@ -166,7 +168,7 @@ function decomposition_invariant_conditional_gradient(
         end
 
         if lazy
-            d, v, v_index, a, away_index, phi, tt = 
+            d, v, v_index, a, away_index, phi, step_type = 
                 lazy_dicg_step(
                     x, 
                     gradient, 
@@ -219,7 +221,7 @@ function decomposition_invariant_conditional_gradient(
                 grad!,
                 lmo,
                 gradient,
-                tt,
+                step_type,
             )
             if callback(state) === false
                 break
@@ -238,7 +240,7 @@ function decomposition_invariant_conditional_gradient(
     primal = f(x)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
     if verbose
-        tt = last
+        step_type = ST_LAST
         tot_time = (time_ns() - time_start) / 1e9
         if callback !== nothing
             state = CallbackState(
@@ -255,7 +257,7 @@ function decomposition_invariant_conditional_gradient(
                 grad!,
                 lmo,
                 gradient,
-                tt,
+                step_type,
             )
             callback(state)
         end
@@ -300,7 +302,7 @@ function blended_decomposition_invariant_conditional_gradient(
     headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec")
     function format_state(state, args...)
         rep = (
-            st[Symbol(state.tt)],
+            steptype_string[Symbol(state.step_type)],
             string(state.t),
             Float64(state.primal),
             Float64(state.primal - state.dual_gap),
@@ -331,7 +333,7 @@ function blended_decomposition_invariant_conditional_gradient(
 
     t = 0
     primal = convert(float(eltype(x)), Inf)
-    tt = regular
+    step_type = ST_REGULAR
     time_start = time_ns()
 
     d = similar(x)
@@ -347,10 +349,10 @@ function blended_decomposition_invariant_conditional_gradient(
             "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
         )
         grad_type = typeof(gradient)
-        println("GRADIENTTYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance")
+        println("GRADIENstep_typeYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance")
         println("LMO: $(typeof(lmo))")
         if memory_mode isa InplaceEmphasis
-            @info("In memory_mode memory iterates are written back into x0!")
+            @info("In memory_mode memory iterates are wristep_typeen back into x0!")
         end
     end
 
@@ -401,11 +403,11 @@ function blended_decomposition_invariant_conditional_gradient(
             phi = dual_gap
             # in-face step
             if inface_gap >= phi / lazy_tolerance
-                tt = pairwise
+                step_type = ST_PAIRWISE
                 d = muladd_memory_mode(memory_mode, d, a, v)
                 gamma_max = dicg_maximum_step(lmo, d, x)
             else # global FW step
-                tt = regular
+                step_type = ST_REGULAR
                 d = muladd_memory_mode(memory_mode, d, x, v)
                 gamma_max = one(phi)
             end
@@ -437,7 +439,7 @@ function blended_decomposition_invariant_conditional_gradient(
                 grad!,
                 lmo,
                 gradient,
-                tt,
+                step_type,
             )
             if callback(state) === false
                 break
@@ -456,7 +458,7 @@ function blended_decomposition_invariant_conditional_gradient(
     primal = f(x)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
     if verbose
-        tt = last
+        step_type = ST_LAST
         tot_time = (time_ns() - time_start) / 1e9
         if callback !== nothing
             state = CallbackState(
@@ -473,7 +475,7 @@ function blended_decomposition_invariant_conditional_gradient(
                 grad!,
                 lmo,
                 gradient,
-                tt,
+                step_type,
             )
             callback(state)
         end
@@ -496,8 +498,7 @@ function lazy_dicg_step(
 )
     v_local, v_local_loc, val, a_local, a_local_loc, valM =
         pre_computed_set_argminmax(pre_computed_set, gradient)
-    tt = regular
-    gamma_max = nothing
+    step_type = ST_REGULAR
     away_index = nothing
     fw_index = nothing
     grad_dot_x = fast_dot(x, gradient)
@@ -508,7 +509,7 @@ function lazy_dicg_step(
 
     if grad_dot_a_local - grad_dot_lazy_fw_vertex >= phi / lazy_tolerance &&
        grad_dot_a_local - grad_dot_lazy_fw_vertex >= epsilon
-        tt = lazy
+        step_type = ST_LAZY
         v = v_local
         a = a_local
         d = muladd_memory_mode(memory_mode, d, a, v)
@@ -519,7 +520,7 @@ function lazy_dicg_step(
         # Do lazy inface_point
         if grad_dot_a_local - grad_dot_v >= phi / lazy_tolerance && 
             grad_dot_a_local - grad_dot_v >= epsilon
-            tt = lazy
+            step_type = ST_LAZY
             a = a_local
             away_index = a_local_loc
         else
@@ -538,5 +539,5 @@ function lazy_dicg_step(
             phi = min(dual_gap, phi / 2.0)
         end
     end
-    return d, v, fw_index, a, away_index, phi, tt
+    return d, v, fw_index, a, away_index, phi, step_type
 end
