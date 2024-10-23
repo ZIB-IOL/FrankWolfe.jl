@@ -1,6 +1,6 @@
 import FrankWolfe
 using LinearAlgebra
-using Random, HiGHS
+using Random
 
 
 include("../examples/plot_utils.jl")
