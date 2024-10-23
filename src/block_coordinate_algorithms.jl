@@ -45,7 +45,7 @@ StochasticUpdate() = StochasticUpdate(-1)
 The dual gap order initiates one round of `ļimit` many updates.
 The according blocks are sampled with probabilties proportional to their respective dual gaps.
 """
-mutable struct DualGapOrder <: BlockCoordinateUpdateOrder
+struct DualGapOrder <: BlockCoordinateUpdateOrder
     limit::Int
 end
 
