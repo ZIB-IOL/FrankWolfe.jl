@@ -49,17 +49,17 @@ function alternating_linear_minimization(
     grad!,
     lmos::NTuple{N,LinearMinimizationOracle},
     x0::Tuple{Vararg{Any,N}};
-    lambda::Union{Float64, Function}=1.0,
+    lambda::Union{Float64,Function}=1.0,
     verbose=false,
     trajectory=false,
     callback=nothing,
     max_iteration=10000,
-    print_iter = max_iteration / 10,
+    print_iter=max_iteration / 10,
     memory_mode=InplaceEmphasis(),
     line_search::LS=Adaptive(),
     epsilon=1e-7,
     kwargs...,
-) where {N, LS<:Union{LineSearchMethod,NTuple{N,LineSearchMethod}}}
+) where {N,LS<:Union{LineSearchMethod,NTuple{N,LineSearchMethod}}}
 
     x0_bc = BlockVector([x0[i] for i in 1:N], [size(x0[i]) for i in 1:N], sum(length, x0))
     gradf = similar(x0_bc)
@@ -79,7 +79,9 @@ function alternating_linear_minimization(
         end
     end
 
-    dist2(x::BlockVector) = 0.5 * (N-1) * sum(fast_dot(x.blocks[i], x.blocks[i]) for i =1:N) - sum(fast_dot(x.blocks[i], x.blocks[j]) for i=1:N for j=1:i-1)
+    dist2(x::BlockVector) =
+        0.5 * (N - 1) * sum(fast_dot(x.blocks[i], x.blocks[i]) for i in 1:N) -
+        sum(fast_dot(x.blocks[i], x.blocks[j]) for i in 1:N for j in 1:i-1)
 
     function build_objective()
         λ = Ref(λ0)
@@ -113,8 +115,11 @@ function alternating_linear_minimization(
 
         num_type = eltype(x0[1])
         grad_type = eltype(gradf.blocks[1])
-        line_search_type = line_search isa Tuple ? [typeof(a) for a in line_search] : typeof(line_search)
-        println("MEMORY_MODE: $memory_mode STEPSIZE: $line_search_type EPSILON: $epsilon MAXITERATION: $max_iteration")
+        line_search_type =
+            line_search isa Tuple ? [typeof(a) for a in line_search] : typeof(line_search)
+        println(
+            "MEMORY_MODE: $memory_mode STEPSIZE: $line_search_type EPSILON: $epsilon MAXITERATION: $max_iteration",
+        )
         println("TYPE: $num_type GRADIENTTYPE: $grad_type")
         println("LAMBDA: $lambda")
 
@@ -168,7 +173,7 @@ function alternating_linear_minimization(
     end
 
     if lambda isa Function
-        callback  = function (state,args...)
+        callback = function (state, args...)
             state.f.λ[] = lambda(state)
             state.grad!.λ[] = state.f.λ[]
 
@@ -226,7 +231,7 @@ function alternating_projections(
     traj_data=[],
     timeout=Inf,
     proj_method=frank_wolfe,
-    inner_epsilon::Function=t->1 / (t^2 + 1),
+    inner_epsilon::Function=t -> 1 / (t^2 + 1),
     reuse_active_set=false,
     kwargs...,
 ) where {N}
@@ -263,7 +268,7 @@ function alternating_projections(
     traj_data=[],
     timeout=Inf,
     proj_method=frank_wolfe,
-    inner_epsilon::Function=t->1 / (t^2 + 1),
+    inner_epsilon::Function=t -> 1 / (t^2 + 1),
     reuse_active_set=false,
     kwargs...,
 ) where {N}
@@ -286,28 +291,31 @@ function alternating_projections(
     t = 0
     dual_gap = Inf
     dual_gaps = fill(Inf, N)
-    x = BlockVector(compute_extreme_point.(lmo.lmos, fill(x0,N)))
+    x = BlockVector(compute_extreme_point.(lmo.lmos, fill(x0, N)))
     step_type = ST_REGULAR
     gradient = similar(x)
 
     if reuse_active_set
-        if proj_method ∉ [away_frank_wolfe, blended_pairwise_conditional_gradient, pairwise_frank_wolfe]
+        if proj_method ∉
+           [away_frank_wolfe, blended_pairwise_conditional_gradient, pairwise_frank_wolfe]
             error("The selected FW method does not support active sets reuse.")
         end
         active_sets = [ActiveSet([(1.0, x.blocks[i])]) for i in 1:N]
     end
 
-    dist2(x::BlockVector) = 0.5 * (N-1) * sum(fast_dot(x.blocks[i], x.blocks[i]) for i =1:N) - sum(fast_dot(x.blocks[i], x.blocks[j]) for i=1:N for j=1:i-1)
+    dist2(x::BlockVector) =
+        0.5 * (N - 1) * sum(fast_dot(x.blocks[i], x.blocks[i]) for i in 1:N) -
+        sum(fast_dot(x.blocks[i], x.blocks[j]) for i in 1:N for j in 1:i-1)
 
     function grad!(storage, x)
-        storage.blocks = [2.0 * (N * b - sum(x.blocks)) for b in x.blocks]
+        return storage.blocks = [2.0 * (N * b - sum(x.blocks)) for b in x.blocks]
     end
 
     function projection_step(i, t)
         xii = x.blocks[mod(i - 2, N)+1] # iterate in previous block
         f(y) = sum(abs2, y - xii)
         function grad_proj!(storage, y)
-            storage .= 2 * (y - xii)
+            return storage .= 2 * (y - xii)
         end
 
         if reuse_active_set
