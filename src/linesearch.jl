@@ -1,4 +1,5 @@
 
+
 """
 Line search method to apply once the direction is computed.
 A `LineSearchMethod` must implement
@@ -369,31 +370,28 @@ Convergence is not guaranteed in general.
 # References
 - [Secant Method](https://en.wikipedia.org/wiki/Secant_method)
 """
-struct Secant{F,LSM<:LineSearchMethod} <: LineSearchMethod
-    inner_ls::LSM
+struct Secant{F} <: LineSearchMethod
     limit_num_steps::Int
     tol::Float64
     domain_oracle::F
 end
 
 function Secant(limit_num_steps, tol)
-    return Secant(Backtracking(), limit_num_steps, tol, x -> true)
+    return Secant(limit_num_steps, tol, x -> true)
 end
 
-function Secant(;inner_ls=Backtracking(), limit_num_steps=40, tol=1e-8, domain_oracle=(x -> true))
-    return Secant(inner_ls, limit_num_steps, tol, domain_oracle)
+function Secant(; limit_num_steps=40, tol=1e-8)
+    return Secant(limit_num_steps, tol)
 end
 
-mutable struct SecantWorkspace{XT,GT, IWS}
-    inner_ws::IWS
+mutable struct SecantWorkspace{XT,GT}
     x::XT
     gradient::GT
     last_gamma::Float64
 end
 
-function build_linesearch_workspace(ls::Secant, x, gradient)
-    inner_ws = build_linesearch_workspace(ls.inner_ls, x, gradient)
-    return SecantWorkspace(inner_ws, similar(x), similar(gradient), 1.0)  # Initialize last_gamma to 1.0
+function build_linesearch_workspace(::Secant, x, gradient)
+    return SecantWorkspace(similar(x), similar(gradient), 1.0)  # Initialize last_gamma to 1.0
 end
 
 function perform_line_search(
@@ -450,26 +448,6 @@ function perform_line_search(
 
         dot_gdir = dot_gdir_new
         i += 1
-    end
-    if abs(dot_gdir) > line_search.tol
-        gamma = perform_line_search(
-            line_search.inner_ls,
-            0,
-            f,
-            grad!,
-            gradient,
-            x,
-            d,
-            gamma_max,
-            workspace.inner_ws,
-            memory_mode,
-        )
-
-        storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
-        new_val = f(storage)
-
-        @assert new_val <= best_val
-        best_gamma = gamma
     end
     workspace.last_gamma = best_gamma  # Update last_gamma before returning
     return best_gamma
