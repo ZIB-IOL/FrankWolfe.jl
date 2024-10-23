@@ -244,7 +244,7 @@ m = 300
         f, grad! = build_d_criterion(A, build_safe=false)
         x0, active_set = build_start_point(A)
         domain_oracle = build_domain_oracle(A)
-        x_s, _, primal, dual_gap, traj_data_s, _ = FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo, active_set, verbose=true, line_search=FrankWolfe.Secant(domain_oracle=domain_oracle), trajectory=true)
+        x_s, _, primal, dual_gap, traj_data_s, _ = FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo, active_set, verbose=true, line_search=FrankWolfe.Secant(40, 1e-8, domain_oracle), trajectory=true)
 
         @test traj_data_s[end][1] < traj_data[end][1]
         @test isapprox(f(x_s), f(x))
