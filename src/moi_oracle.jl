@@ -225,6 +225,17 @@ function compute_inface_extreme_point_subroutine(lmo::MathOptLMO{OT}, ::Type{F},
     return true
 end
 
+function compute_inface_extreme_point(
+	lmo::MathOptLMO{OT},
+	direction::AbstractMatrix{T},
+	x::AbstractMatrix{T};
+	kwargs...,
+) where {OT, T <: Real}
+	n = size(direction, 1)
+	a = compute_inface_extreme_point(lmo, vec(direction), x)
+	return reshape(a, n, n)
+end
+
 # Fast way to compute gamma_max.
 # Check every constraint and compute the corresponding gamma_upper_bound. 
 function dicg_maximum_step(lmo::MathOptLMO{OT}, direction, x) where {OT}
