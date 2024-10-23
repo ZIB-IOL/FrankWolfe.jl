@@ -79,7 +79,7 @@ function alternating_linear_minimization(
         end
     end
 
-    dist2(x::BlockVector) = 0.5 * sum(fast_dot(x.blocks[i]-x.blocks[j], x.blocks[i]-x.blocks[j]) for i in 1:N for j in 1:i-1)
+    dist2(x::BlockVector) = 0.5 * (N-1) * sum(fast_dot(x.blocks[i], x.blocks[i]) for i =1:N) - sum(fast_dot(x.blocks[i], x.blocks[j]) for i=1:N for j=1:i-1)
 
     function build_objective()
         λ = Ref(λ0)
@@ -297,7 +297,7 @@ function alternating_projections(
         active_sets = [ActiveSet([(1.0, x.blocks[i])]) for i in 1:N]
     end
 
-    dist2(x::BlockVector) = 0.5 * sum(fast_dot(x.blocks[i]-x.blocks[j], x.blocks[i]-x.blocks[j]) for i in 1:N for j in 1:i-1)
+    dist2(x::BlockVector) = 0.5 * (N-1) * sum(fast_dot(x.blocks[i], x.blocks[i]) for i =1:N) - sum(fast_dot(x.blocks[i], x.blocks[j]) for i=1:N for j=1:i-1)
 
     function grad!(storage, x)
         storage.blocks = [2.0 * (N * b - sum(x.blocks)) for b in x.blocks]
