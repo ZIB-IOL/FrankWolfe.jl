@@ -41,20 +41,29 @@ end
 
 StochasticUpdate() = StochasticUpdate(-1)
 
-mutable struct DualGapOrder <: BlockCoordinateUpdateOrder
+"""
+The dual gap order initiates one round of `ļimit` many updates.
+The according blocks are sampled with probabilties proportional to their respective dual gaps.
+"""
+struct DualGapOrder <: BlockCoordinateUpdateOrder
     limit::Int
 end
 
 DualGapOrder() = DualGapOrder(-1)
 
+"""
+The dual progress order initiates one round of `ļimit` many updates.
+The according blocks are sampled with probabilties proportional to their respective dual progress.
+"""
 mutable struct DualProgressOrder <: BlockCoordinateUpdateOrder
     limit::Int
     previous_dual_gaps::Vector{Float64}
     dual_progress::Vector{Float64}
+    last_indices::Vector{Int}
 end
 
-DualProgressOrder() = DualProgressOrder(-1, [], [])
-DualProgressOrder(i::Int64) = DualProgressOrder(i, [], [])
+DualProgressOrder() = DualProgressOrder(-1, [], [], [])
+DualProgressOrder(i::Int64) = DualProgressOrder(i, [], [], [])
 
 """
 The Lazy update order is discussed in "Flexible block-iterative
@@ -122,6 +131,19 @@ function select_update_indices(u::StochasticUpdate, s::CallbackState, _)
     return [[rand(1:l)] for i in 1:u.limit]
 end
 
+function sample_without_replacement(n::Int, weights::Vector{Float64})
+    weights = weights ./ sum(weights)
+    cumsum_weights = cumsum(weights)
+    indices = zeros(Int, n)
+    for i in 1:n
+        indices[i] = findfirst(cumsum_weights .> rand())
+        weights[indices[i]] = 0
+        weights = weights ./ sum(weights)
+        cumsum_weights = cumsum(weights)
+    end
+    return indices
+end
+
 function select_update_indices(u::DualProgressOrder, s::CallbackState, dual_gaps)
 
     l = length(s.lmo.lmos)
@@ -129,22 +151,32 @@ function select_update_indices(u::DualProgressOrder, s::CallbackState, dual_gaps
     @assert u.limit <= l
     @assert u.limit > 0 || u.limit == -1
 
-    # In the first iteration update every block so we get finite dual progress
-    if s.t < 2 
-        u.previous_dual_gaps = copy(dual_gaps)
-        return [[i] for i=1:l] 
-    end
-
-    if s.t == 1
-        u.dual_progress = dual_gaps - u.previous_dual_gaps
+    # In the first two iterations update every block so we get finite dual progress
+    if s.t < 2
+        u.dual_progress = ones(l)
+        indices = [[i for i=1:l]]
     else
-        diff = dual_gaps - u.previous_dual_gaps
-        u.dual_progress = [d == 0 ? u.dual_progress[i] : d for (i, d) in enumerate(diff)]
+        # Update dual progress only on updated blocks
+        for i in u.last_indices
+            d = u.previous_dual_gaps[i] - dual_gaps[i]
+            if d < 0
+                u.dual_progress[i] = 0
+            else
+                u.dual_progress[i] = d
+            end
+        end
+        n = u.limit == -1 ? l : u.limit
+
+        # If less than n blocks have non-zero dual progress, update all of them
+        if sum(u.dual_progress .!= 0) < n
+            indices = [[i for i=1:l]]
+        else
+            indices = [sample_without_replacement(n, u.dual_progress)]
+        end
     end
     u.previous_dual_gaps = copy(dual_gaps)
-
-    n = u.limit == -1 ? l : u.limit
-    return [[findfirst(cumsum(u.dual_progress/sum(u.dual_progress)) .> rand())] for _=1:n]
+    u.last_indices = vcat(indices...)
+    return indices
 end
 
 function select_update_indices(u::DualGapOrder, s::CallbackState, dual_gaps)
@@ -156,11 +188,11 @@ function select_update_indices(u::DualGapOrder, s::CallbackState, dual_gaps)
 
     # In the first iteration update every block so we get finite dual gaps
     if s.t < 1
-        return [[i] for i=1:l] 
+        return [[i for i=1:l]]
     end
 
     n = u.limit == -1 ? l : u.limit
-    return [[findfirst(cumsum(dual_gaps/sum(dual_gaps)) .> rand())] for _=1:n]
+    return [sample_without_replacement(n, dual_gaps)]
 end
 
 function select_update_indices(update::LazyUpdate, s::CallbackState, dual_gaps)
@@ -237,19 +269,18 @@ mutable struct BPCGStep <: UpdateStep
     phi::Float64
 end
 
-function Base.copy(::FrankWolfeStep)
-    return FrankWolfeStep()
-end
+Base.copy(::FrankWolfeStep) = FrankWolfeStep()
 
 function Base.copy(obj::BPCGStep)
     if obj.active_set === nothing
-        return BPCGStep(false, nothing, obj.renorm_interval, obj.lazy_tolerance, Inf)
+        return BPCGStep(obj.lazy, nothing, obj.renorm_interval, obj.lazy_tolerance, obj.phi)
     else
         return BPCGStep(obj.lazy, copy(obj.active_set), obj.renorm_interval, obj.lazy_tolerance, obj.phi)
     end
 end
 
 BPCGStep() = BPCGStep(false, nothing, 1000, 2.0, Inf)
+BPCGStep(lazy::Bool) = BPCGStep(lazy, nothing, 1000, 2.0, Inf)
 
 function update_iterate(
     ::FrankWolfeStep,
@@ -324,7 +355,7 @@ function update_iterate(
 
     # minor modification from original paper for improved sparsity
     # (proof follows with minor modification when estimating the step)
-    if local_gap > s.phi / s.lazy_tolerance
+    if local_gap > max(s.phi / s.lazy_tolerance, 0) # Robust condition to not drop the zero-vector if the dual_gap is negative by inaccuracy
         d = muladd_memory_mode(memory_mode, d, a, v_local)
         vertex_taken = v_local
         gamma_max = a_lambda
