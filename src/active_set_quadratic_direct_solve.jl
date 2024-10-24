@@ -88,7 +88,7 @@ end
 
 Base.push!(as::ActiveSetQuadraticLinearSolve, tuple) = push!(as.active_set, tuple)
 
-Base.deleteat!(as::ActiveSetQuadraticLinearSolve, idx::Int) = deleteat!(as.active_set, idx)
+Base.deleteat!(as::ActiveSetQuadraticLinearSolve, idx) = deleteat!(as.active_set, idx)
 
 Base.empty!(as::ActiveSetQuadraticLinearSolve) = empty!(as.active_set)
 
@@ -167,13 +167,9 @@ function solve_quadratic_activeset_lp!(as::ActiveSetQuadraticLinearSolve{AT, R, 
             push!(new_weights, weight_value)
         end
     end
-    # we delete the elements in reverse order to avoid messing up the internal active set
-    sort!(indices_to_remove, rev=true)
-    for idx in indices_to_remove
-        deleteat!(as.active_set, idx)
-    end
+    deleteat!(as.active_set, indices_to_remove)
     @assert length(as) == length(new_weights)
-    as.weights .= new_weights
+    update_weights!(as.active_set, new_weights)
     active_set_cleanup!(as)
     active_set_renormalize!(as)
     compute_active_set_iterate!(as)
@@ -219,10 +215,9 @@ function solve_quadratic_activeset_lp!(as::ActiveSetQuadraticLinearSolve{AT, R, 
             push!(new_weights, weight_value)
         end
     end
-    deleteat!(as.atoms, indices_to_remove)
-    deleteat!(as.weights, indices_to_remove)
+    deleteat!(as.active_set, indices_to_remove)
     @assert length(as) == length(new_weights)
-    as.weights .= new_weights
+    update_weights!(as.active_set, new_weights)
     active_set_cleanup!(as)
     @assert all(>=(0), new_weights)
     active_set_renormalize!(as)

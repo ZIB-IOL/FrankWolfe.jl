@@ -62,9 +62,7 @@ trajectoryBPCG_standard = []
 );
 
 # Just projection quadratic
-trajectoryBPCG_quadratic_as = []
-callback = build_callback(trajectoryBPCG_quadratic_as)
-
+trajectoryBPCG_quadratic = []
 as_quad = FrankWolfe.ActiveSetQuadratic([(1.0, copy(x00))], 2 * LinearAlgebra.I, -2xp)
 @time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
@@ -74,7 +72,7 @@ as_quad = FrankWolfe.ActiveSetQuadratic([(1.0, copy(x00))], 2 * LinearAlgebra.I,
     max_iteration=k,
     line_search=FrankWolfe.Shortstep(2.0),
     verbose=true,
-    callback=callback,
+    callback=build_callback(trajectoryBPCG_quadratic),
 );
 
 as_quad = FrankWolfe.ActiveSetQuadratic(
