@@ -79,7 +79,6 @@ x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     verbose=true,
     trajectory=true,
     callback=callback,
-    squadratic=false,
 );
 
 active_set_quadratic_automatic = FrankWolfe.ActiveSetQuadraticLinearSolve(
