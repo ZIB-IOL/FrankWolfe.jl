@@ -136,9 +136,13 @@ x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
 );
 
 
-dataSparsity = [trajectoryBPCG_standard, trajectoryBPCG_quadratic_automatic, trajectoryBPCG_quadratic_automatic_standard]
+dataSparsity = [
+    trajectoryBPCG_standard,
+    trajectoryBPCG_quadratic_automatic,
+    trajectoryBPCG_quadratic_automatic_standard,
+]
 labelSparsity = ["BPCG (Standard)", "AS_Quad", "AS_Standard"]
 
 
 # Plot trajectories
-plot_trajectories(dataSparsity, labelSparsity,xscalelog=false)
+plot_trajectories(dataSparsity, labelSparsity, xscalelog=false)

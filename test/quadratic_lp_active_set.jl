@@ -46,7 +46,8 @@ x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
 
 as_quad_direct = FrankWolfe.ActiveSetQuadraticLinearSolve(
     [(1.0, copy(x00))],
-    2 * LinearAlgebra.I, -2xp,
+    2 * LinearAlgebra.I,
+    -2xp,
     MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
 )
 
@@ -64,7 +65,8 @@ x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
 
 as_quad_direct_generic = FrankWolfe.ActiveSetQuadraticLinearSolve(
     [(1.0, copy(x00))],
-    2 * Diagonal(ones(length(xp))), -2xp,
+    2 * Diagonal(ones(length(xp))),
+    -2xp,
     MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
 )
 
@@ -82,7 +84,8 @@ x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
 
 as_quad_direct_basic_as = FrankWolfe.ActiveSetQuadraticLinearSolve(
     FrankWolfe.ActiveSet([1.0], [copy(x00)], collect(x00)),
-    2 * LinearAlgebra.I, -2xp,
+    2 * LinearAlgebra.I,
+    -2xp,
     MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
 )
 

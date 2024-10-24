@@ -290,7 +290,6 @@ function blended_pairwise_conditional_gradient(
                 step_type = ST_REGULAR
             end
             vertex_taken = v
-            # short circuit for quadratic case
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
             # if we are about to exit, compute dual_gap with the cleaned-up x
             if dual_gap ≤ epsilon

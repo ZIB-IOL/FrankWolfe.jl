@@ -75,10 +75,7 @@ as_quad = FrankWolfe.ActiveSetQuadratic([(1.0, copy(x00))], 2 * LinearAlgebra.I,
     callback=build_callback(trajectoryBPCG_quadratic),
 );
 
-as_quad = FrankWolfe.ActiveSetQuadratic(
-    [(1.0, copy(x00))],
-    2 * LinearAlgebra.I, -2xp,
-)
+as_quad = FrankWolfe.ActiveSetQuadratic([(1.0, copy(x00))], 2 * LinearAlgebra.I, -2xp)
 
 # with quadratic active set
 trajectoryBPCG_quadratic_as = []
@@ -95,7 +92,8 @@ trajectoryBPCG_quadratic_as = []
 
 as_quad_direct = FrankWolfe.ActiveSetQuadraticLinearSolve(
     [(1.0, copy(x00))],
-    2 * LinearAlgebra.I, -2xp,
+    2 * LinearAlgebra.I,
+    -2xp,
     MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
 )
 
@@ -114,7 +112,8 @@ trajectoryBPCG_quadratic_direct = []
 
 as_quad_direct_generic = FrankWolfe.ActiveSetQuadraticLinearSolve(
     [(1.0, copy(x00))],
-    2 * Diagonal(ones(length(xp))), -2xp,
+    2 * Diagonal(ones(length(xp))),
+    -2xp,
     MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
 )
 
@@ -133,7 +132,8 @@ trajectoryBPCG_quadratic_direct_generic = []
 
 as_quad_direct_basic_as = FrankWolfe.ActiveSetQuadraticLinearSolve(
     FrankWolfe.ActiveSet([1.0], [copy(x00)], collect(x00)),
-    2 * LinearAlgebra.I, -2xp,
+    2 * LinearAlgebra.I,
+    -2xp,
     MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
 )
 
@@ -153,8 +153,22 @@ trajectoryBPCG_quadratic_noqas = []
 
 
 # Update the data and labels for plotting
-data_trajectories = [trajectoryBPCG_standard, trajectoryBPCG_quadratic, trajectoryBPCG_quadratic_as, trajectoryBPCG_quadratic_direct, trajectoryBPCG_quadratic_direct_generic, trajectoryBPCG_quadratic_noqas]
-labels_trajectories = ["BPCG (Standard)", "BPCG (Specific Direct)", "AS_Quad", "Reloaded", "Reloaded_generic", "Reloaded_noqas"]
+data_trajectories = [
+    trajectoryBPCG_standard,
+    trajectoryBPCG_quadratic,
+    trajectoryBPCG_quadratic_as,
+    trajectoryBPCG_quadratic_direct,
+    trajectoryBPCG_quadratic_direct_generic,
+    trajectoryBPCG_quadratic_noqas,
+]
+labels_trajectories = [
+    "BPCG (Standard)",
+    "BPCG (Specific Direct)",
+    "AS_Quad",
+    "Reloaded",
+    "Reloaded_generic",
+    "Reloaded_noqas",
+]
 
 # Plot trajectories
 plot_trajectories(data_trajectories, labels_trajectories, xscalelog=false)
