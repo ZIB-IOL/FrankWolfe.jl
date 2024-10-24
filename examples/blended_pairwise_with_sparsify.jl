@@ -14,7 +14,6 @@ using FrankWolfe
 using LinearAlgebra
 using Random
 
-import Pkg
 import HiGHS
 
 # lp_solver = GLPK.Optimizer
@@ -108,6 +107,27 @@ active_set_sparse = FrankWolfe.ActiveSetSparsifier(FrankWolfe.ActiveSet([1.0], [
     verbose=true,
     trajectory=true,
     callback=callback,
+);
+
+trajectoryBPCG_as_sparse = []
+callback = build_callback(trajectoryBPCG_as_sparse)
+
+active_set_sparse = FrankWolfe.ActiveSetSparsifier(FrankWolfe.ActiveSet([1.0], [x00], similar(x00)), HiGHS.Optimizer())
+
+@time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    copy(x00),
+    max_iteration=k,
+    line_search=FrankWolfe.Shortstep(2.0),
+    print_iter=k / 10,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
+    verbose=true,
+    trajectory=true,
+    callback=callback,
+    sparsify=false,
+#    squadratic=true, # activate to see the effect of the numerical precision of the LP solver
 );
 
 # Reduction primal/dual error vs. sparsity of solution

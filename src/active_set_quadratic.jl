@@ -49,7 +49,8 @@ function detect_quadratic_function(grad!, x0; test=true)
 end
 
 function ActiveSetQuadratic(tuple_values::AbstractVector{Tuple{R,AT}}, grad!::Function) where {AT,R}
-    return ActiveSetQuadratic(tuple_values, detect_quadratic_function(grad!, tuple_values[1][2])...)
+    A, b = detect_quadratic_function(grad!, tuple_values[1][2])
+    return ActiveSetQuadratic(tuple_values, A, b)
 end
 
 function ActiveSetQuadratic(tuple_values::AbstractVector{Tuple{R,AT}}, A::H, b) where {AT,R,H}
@@ -71,13 +72,15 @@ function ActiveSetQuadratic(tuple_values::AbstractVector{Tuple{R,AT}}, A::H, b) 
         dots_b[idx] = fast_dot(b, atoms[idx])
     end
     x = similar(b)
-    as = ActiveSetQuadratic{AT,R,typeof(x),H}(weights, atoms, x, A, b, dots_x, dots_A, dots_b, weights_prev, modified)
+    as = ActiveSetQuadratic(weights, atoms, x, A, b, dots_x, dots_A, dots_b, weights_prev, modified)
+
     compute_active_set_iterate!(as)
     return as
 end
 
-function ActiveSetQuadratic{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}, grad!) where {AT,R}
-    return ActiveSetQuadratic{AT,R}(tuple_values, detect_quadratic_function(grad!, tuple_values[1][2])...)
+function ActiveSetQuadratic{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}, grad!::Function) where {AT,R}
+    A, b = detect_quadratic_function(grad!, tuple_values[1][2])
+    return ActiveSetQuadratic{AT,R}(tuple_values, A, b)
 end
 
 function ActiveSetQuadratic{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}, A::H, b) where {AT,R,H}
@@ -116,6 +119,7 @@ function Base.:*(a::Identity, b)
         return a.λ * b
     end
 end
+
 function ActiveSetQuadratic(tuple_values::AbstractVector{Tuple{R,AT}}, A::UniformScaling, b) where {AT,R}
     return ActiveSetQuadratic(tuple_values, Identity(A.λ), b)
 end
@@ -147,6 +151,7 @@ function Base.push!(as::ActiveSetQuadratic{AT,R}, (λ, a)) where {AT,R}
     return as
 end
 
+# TODO multi-indices version
 function Base.deleteat!(as::ActiveSetQuadratic, idx::Int)
     @inbounds for i in 1:idx-1
         as.dots_x[i] -= as.weights_prev[idx] * as.dots_A[idx][i]
@@ -309,4 +314,10 @@ function update_active_set_quadratic!(warm_as::ActiveSetQuadratic{AT,R,IT,H}, b)
     warm_as.b .= b
     compute_active_set_iterate!(warm_as)
     return warm_as
+end
+
+function update_weights!(as::ActiveSetQuadratic, new_weights)
+    as.weights_prev .= as.weights
+    as.weights .= new_weights
+    as.modified .= true
 end

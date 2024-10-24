@@ -163,6 +163,77 @@ function fast_dot(A::Matrix{T1}, B::SparseArrays.SparseMatrixCSC{T2}) where {T1,
     return s
 end
 
+fast_dot(a, Q, b) = dot(a, Q, b)
+
+function fast_dot(a::SparseArrays.AbstractSparseVector{<:Real}, Q::Diagonal{<:Real}, b::AbstractVector{<:Real})
+    if a === b
+        return _fast_quadratic_form_symmetric(a, Q)
+    end
+    d = Q.diag
+    nzvals = SparseArrays.nonzeros(a)
+    nzinds = SparseArrays.nonzeroinds(a)
+    return sum(eachindex(nzvals); init=zero(eltype(a))) do nzidx
+        nzvals[nzidx] * d[nzinds[nzidx]] * b[nzinds[nzidx]]
+    end
+end
+
+function fast_dot(a::SparseArrays.AbstractSparseVector{<:Real}, Q::Diagonal{<:Real}, b::SparseArrays.AbstractSparseVector{<:Real})
+    if a === b
+        return _fast_quadratic_form_symmetric(a, Q)
+    end
+    n = length(a)
+    if length(b) != n
+        throw(
+            DimensionMismatch("Vector a has a length $n but b has a length $(length(b))")
+        )
+    end
+    anzind = SparseArrays.nonzeroinds(a)
+    bnzind = SparseArrays.nonzeroinds(b)
+    anzval = SparseArrays.nonzeros(a)
+    bnzval = SparseArrays.nonzeros(b)
+    s = zero(Base.promote_eltype(a, Q, b))
+
+    if isempty(anzind) || isempty(bnzind)
+        return s
+    end
+
+    a_idx = 1
+    b_idx = 1
+    a_idx_last = length(anzind)
+    b_idx_last = length(bnzind)
+
+    # go through the nonzero indices of a and b simultaneously
+    @inbounds while a_idx <= a_idx_last && b_idx <= b_idx_last
+        ia = anzind[a_idx]
+        ib = bnzind[b_idx]
+        if ia == ib
+            s += dot(anzval[a_idx], Q.diag[ia], bnzval[b_idx])
+            a_idx += 1
+            b_idx += 1
+        elseif ia < ib
+            a_idx += 1
+        else
+            b_idx += 1
+        end
+    end
+    return s
+end
+
+
+function _fast_quadratic_form_symmetric(a, Q)
+    d = Q.diag
+    if length(d) != length(a)
+        throw(DimensionMismatch())
+    end
+    nzvals = SparseArrays.nonzeros(a)
+    nzinds = SparseArrays.nonzeroinds(a)
+    s = zero(Base.promote_eltype(a, Q))
+    @inbounds for nzidx in eachindex(nzvals)
+        s += nzvals[nzidx]^2 * d[nzinds[nzidx]]
+    end
+    return s
+end
+
 """
     trajectory_callback(storage)
 

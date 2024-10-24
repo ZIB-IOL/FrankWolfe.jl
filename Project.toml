@@ -59,4 +59,4 @@ Tullio = "bc48ee85-29a4-5162-ae0b-a64e1601d4bc"
 ZipFile = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
 
 [targets]
-test = ["CSV", "Combinatorics", "DataFrames", "Distributions", "DoubleFloats", "DynamicPolynomials", "FiniteDifferences", "ForwardDiff", "GLPK", "JSON", "JuMP", "LaTeXStrings", "MAT", "MultivariatePolynomials", "Plots", "PlotThemes", "Polyhedra", "ReverseDiff", "ZipFile", "Test", "Tullio", "Clp", "HiGHS", "Hypatia"]
+test = ["CSV", "Combinatorics", "DataFrames", "Distributions", "DoubleFloats", "DynamicPolynomials", "FiniteDifferences", "ForwardDiff", "GLPK", "HiGHS", "JSON", "JuMP", "LaTeXStrings", "MAT", "MultivariatePolynomials", "Plots", "PlotThemes", "Polyhedra", "ReverseDiff", "ZipFile", "Test", "Tullio", "Clp", "Hypatia"]
