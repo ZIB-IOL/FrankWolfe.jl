@@ -223,7 +223,7 @@ end
         grad!,
         (lmo1, lmo2),
         ones(n),
-        update_step=FrankWolfe.BPCGStep(true, nothing, 1000, false, Inf),
+        update_step=FrankWolfe.BPCGStep(true),
     )
 
     @test abs(x.blocks[1][1]) < 1e-6
