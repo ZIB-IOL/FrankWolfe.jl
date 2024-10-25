@@ -326,3 +326,7 @@ function compute_active_set_iterate!(active_set::AbstractActiveSet{<:ScaledHotVe
     end
     return active_set.x
 end
+
+function update_weights!(as::AbstractActiveSet, new_weights)
+    as.weights .= new_weights
+end

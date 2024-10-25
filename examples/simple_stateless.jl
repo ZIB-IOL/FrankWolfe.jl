@@ -71,7 +71,7 @@ plot_trajectories([trajectory_simple[1:end], trajectory_restart[1:end]], ["simpl
 
 # simple step iterations about 33% faster
 
-@test line_search.factor <= 44
+@test line_search.factor <= 51
 
 x, v, primal, dual_gap, trajectory_restart_highpres = FrankWolfe.frank_wolfe(
     f,

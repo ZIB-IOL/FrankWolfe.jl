@@ -1,4 +1,3 @@
-
 """
     blended_pairwise_conditional_gradient(f, grad!, lmo, x0; kwargs...)
 
@@ -325,7 +324,6 @@ function blended_pairwise_conditional_gradient(
                     linesearch_workspace,
                     memory_mode,
                 )
-
                 if callback !== nothing
                     state = CallbackState(
                         t,
