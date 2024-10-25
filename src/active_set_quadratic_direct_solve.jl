@@ -1,4 +1,3 @@
-
 """
     ActiveSetQuadraticLinearSolve{AT, R, IT}
 
@@ -381,3 +380,35 @@ function should_solve_lp(as::ActiveSetQuadraticLinearSolve, scheduler::LogSchedu
     end
     return false
 end
+
+struct ActiveSetQuadraticLinearSolveWolfe{AT, R<:Real, IT, H, BT, OT<:MOI.AbstractOptimizer, AS<:AbstractActiveSet, SF} <: AbstractActiveSet{AT,R,IT}
+    inner::ActiveSetQuadraticLinearSolve{AT, R, IT, H, BT, OT, AS, SF}
+end
+
+# Constructor that delegates to the inner ActiveSetQuadraticLinearSolve
+function ActiveSetQuadraticLinearSolveWolfe(args...; kwargs...)
+    inner = ActiveSetQuadraticLinearSolve(args...; kwargs...)
+    return ActiveSetQuadraticLinearSolveWolfe(inner)
+end
+
+# Delegate all fields to the inner struct
+Base.getproperty(as::ActiveSetQuadraticLinearSolveWolfe, name::Symbol) = getproperty(getfield(as, :inner), name)
+
+# Overwrite the two methods here
+function solve_quadratic_activeset_lp!(as::ActiveSetQuadraticLinearSolveWolfe)
+    # Implement your custom logic here
+    println("Custom solve_quadratic_activeset_lp! for Wolfe")
+    # You might want to call the original method and then modify its result
+    # solve_quadratic_activeset_lp!(as.inner)
+    # ... additional logic ...
+    return as
+end
+
+# function should_solve_lp(as::ActiveSetQuadraticLinearSolveWolfe, scheduler::LogScheduler)
+#     # Implement your custom logic here
+#     println("Custom should_solve_lp for Wolfe")
+#     # You might want to use the original method and then modify its result
+#     # original_result = should_solve_lp(as.inner, scheduler)
+#     # ... additional logic ...
+#     return true  # or false, depending on your logic
+# end
