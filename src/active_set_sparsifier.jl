@@ -37,13 +37,13 @@ Base.deleteat!(as::ActiveSetSparsifier, idx::Int) = deleteat!(as.active_set, idx
 Base.empty!(as::ActiveSetSparsifier) = empty!(as.active_set)
 
 function active_set_update!(
-    as::ActiveSetSparsifier{AS,OT,AT,R,IT},
+    as::ActiveSetSparsifier{AT,R,IT,AS},
     lambda,
     atom,
     renorm=true,
     idx=nothing;
     kwargs...,
-) where {AS,OT,AT,R,IT}
+) where {AS,AT,R,IT}
     active_set_update!(as.active_set, lambda, atom, renorm, idx; kwargs...)
     n = length(as)
     as.counter[] += 1
