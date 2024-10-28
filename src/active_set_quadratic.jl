@@ -36,7 +36,7 @@ function detect_quadratic_function(grad!, x0; test=true)
         X[:, i] .-= x0
         G[:, i] .= storage .- g0
     end
-    A = G \ X
+    A = G * inv(X)
     b = g0 - A * x0
     if test
         x_test = randn(T, n)
