@@ -262,7 +262,7 @@ Solves the auxiliary LP over the current active set.
 The method is specialized by type `H` of the Hessian matrix `A`.
 """
 function solve_quadratic_activeset_lp!(
-    as::ActiveSetQuadraticLinearSolve{AT,R,IT,<:AbstractMatrix},
+    as::ActiveSetQuadraticLinearSolve{AT,R,IT,H},
 ) where {AT,R,IT}
     nv = length(as)
     o = as.lp_optimizer
