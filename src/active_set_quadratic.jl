@@ -74,15 +74,24 @@ function ActiveSetQuadratic{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,
     @inbounds for idx in 1:n
         weights[idx] = tuple_values[idx][1]
         atoms[idx] = tuple_values[idx][2]
-        dots_A[idx] = Vector{R}(undef, idx)
-        for idy in 1:idx
-            dots_A[idx][idy] = fast_dot(A * atoms[idx], atoms[idy])
-        end
-        dots_b[idx] = fast_dot(b, atoms[idx])
     end
     x = similar(b)
     as = ActiveSetQuadratic{AT,R,typeof(x),H}(weights, atoms, x, A, b, dots_x, dots_A, dots_b, weights_prev, modified)
+    reset_quadratic_dots!(as)
     compute_active_set_iterate!(as)
+    return as
+end
+
+# should only be called upon construction
+# for active sets with a large number of atoms, this function becomes very costly
+function reset_quadratic_dots!(as::ActiveSetQuadratic{AT,R}) where {AT,R}
+    @inbounds for idx in 1:length(as)
+        as.dots_A[idx] = Vector{R}(undef, idx)
+        for idy in 1:idx
+            as.dots_A[idx][idy] = fast_dot(as.A * as.atoms[idx], as.atoms[idy])
+        end
+        as.dots_b[idx] = fast_dot(as.b, as.atoms[idx])
+    end
     return as
 end
 
