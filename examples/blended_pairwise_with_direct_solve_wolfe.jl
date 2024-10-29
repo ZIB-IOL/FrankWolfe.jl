@@ -75,20 +75,14 @@ end
 
 
 trajectoryBPCG_standard = []
-callback = build_callback(trajectoryBPCG_standard)
-
 x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
     copy(x00),
     max_iteration=k,
-    line_search=FrankWolfe.Adaptive(),
-    print_iter=k / 10,
-    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
-    trajectory=true,
-    callback=callback,
+    callback=build_callback(trajectoryBPCG_standard),
 );
 
 
@@ -96,7 +90,6 @@ active_set_quadratic_automatic_standard = FrankWolfe.ActiveSetQuadraticLinearSol
     FrankWolfe.ActiveSet([(1.0, copy(x00))]),
     grad!,
     MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
-    scheduler=FrankWolfe.LogScheduler(start_time=10, scaling_factor=1),
 )
 trajectoryBPCG_quadratic_automatic_standard = []
 x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
@@ -128,12 +121,12 @@ x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
 );
 
 dataSparsity = [
-    trajectoryBPCG_standard,
+    # trajectoryBPCG_standard,
     trajectoryBPCG_quadratic_automatic_standard,
     trajectoryBPCG_quadratic_wolfe,
 ]
 labelSparsity = [
-    "BPCG (Standard)", 
+    # "BPCG (Standard)",
     "AS_Standard", 
     "AS_Wolfe"
 ]
