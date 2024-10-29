@@ -35,7 +35,6 @@ include("function_gradient.jl")
 include("active_set.jl")
 include("active_set_quadratic.jl")
 include("active_set_quadratic_direct_solve.jl")
-include("active_set_quadratic_direct_solve_wolfe.jl")
 include("active_set_sparsifier.jl")
 
 include("blended_cg.jl")
