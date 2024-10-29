@@ -803,6 +803,9 @@ using Test
 @testset "LP solving for quadratic functions and active set" begin
     include("quadratic_lp_active_set.jl")
 end
+@testset "LP solving for quadratic functions and active set" begin
+    include("as_quadratic_projection.jl")
+end
 end
 
 module SparsifyingActiveSetTest

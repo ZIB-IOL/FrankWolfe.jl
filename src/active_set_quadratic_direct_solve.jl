@@ -293,7 +293,7 @@ function solve_quadratic_activeset_lp!(
     new_weights = R[]
     for idx in eachindex(λ)
         weight_value = MOI.get(o, MOI.VariablePrimal(), λ[idx])
-        if weight_value <= 1e-5
+        if weight_value <= 2 * weight_purge_threshold_default(typeof(weight_value))
             push!(indices_to_remove, idx)
         else
             push!(new_weights, weight_value)
