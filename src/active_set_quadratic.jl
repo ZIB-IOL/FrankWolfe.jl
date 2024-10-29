@@ -54,28 +54,7 @@ function ActiveSetQuadratic(tuple_values::AbstractVector{Tuple{R,AT}}, grad!::Fu
 end
 
 function ActiveSetQuadratic(tuple_values::AbstractVector{Tuple{R,AT}}, A::H, b) where {AT,R,H}
-    n = length(tuple_values)
-    weights = Vector{R}(undef, n)
-    atoms = Vector{AT}(undef, n)
-    dots_x = zeros(R, n)
-    dots_A = Vector{Vector{R}}(undef, n)
-    dots_b = Vector{R}(undef, n)
-    weights_prev = zeros(R, n)
-    modified = trues(n)
-    @inbounds for idx in 1:n
-        weights[idx] = tuple_values[idx][1]
-        atoms[idx] = tuple_values[idx][2]
-        dots_A[idx] = Vector{R}(undef, idx)
-        for idy in 1:idx
-            dots_A[idx][idy] = fast_dot(A * atoms[idx], atoms[idy])
-        end
-        dots_b[idx] = fast_dot(b, atoms[idx])
-    end
-    x = similar(b)
-    as = ActiveSetQuadratic(weights, atoms, x, A, b, dots_x, dots_A, dots_b, weights_prev, modified)
-
-    compute_active_set_iterate!(as)
-    return as
+    return ActiveSetQuadratic{AT,R}(tuple_values, A, b)
 end
 
 function ActiveSetQuadratic{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}, grad!::Function) where {AT,R}
