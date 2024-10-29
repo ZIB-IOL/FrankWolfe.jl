@@ -262,8 +262,8 @@ Solves the auxiliary LP over the current active set.
 The method is specialized by type `H` of the Hessian matrix `A`.
 """
 function solve_quadratic_activeset_lp!(
-    as::ActiveSetQuadraticLinearSolve{AT,R,IT,<:AbstractMatrix},
-) where {AT,R,IT}
+    as::ActiveSetQuadraticLinearSolve{AT,R,IT,H},
+) where {AT,R,IT,H}
     nv = length(as)
     o = as.lp_optimizer
     MOI.empty!(o)
@@ -278,57 +278,10 @@ function solve_quadratic_activeset_lp!(
         Base.sizehint!(lhs.terms, nv)
         # replaces direct sum because of MOI and MutableArithmetic slow sums
         for j in 1:nv
-            push!(lhs.terms, MOI.ScalarAffineTerm(fast_dot(atom, as.A, as.atoms[j]), λ[j]))
-        end
-        rhs = -dot(atom, as.b)
-        MOI.add_constraint(o, lhs, MOI.EqualTo(rhs))
-    end
-    MOI.set(o, MOI.ObjectiveFunction{typeof(sum_of_variables)}(), sum_of_variables)
-    MOI.set(o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
-    MOI.optimize!(o)
-    if MOI.get(o, MOI.TerminationStatus()) ∉ (MOI.OPTIMAL, MOI.FEASIBLE_POINT, MOI.ALMOST_OPTIMAL)
-        return as
-    end
-    indices_to_remove = Int[]
-    new_weights = R[]
-    for idx in eachindex(λ)
-        weight_value = MOI.get(o, MOI.VariablePrimal(), λ[idx])
-        if weight_value <= 1e-5
-            push!(indices_to_remove, idx)
-        else
-            push!(new_weights, weight_value)
-        end
-    end
-    deleteat!(as.active_set, indices_to_remove)
-    @assert length(as) == length(new_weights)
-    update_weights!(as.active_set, new_weights)
-    active_set_cleanup!(as)
-    active_set_renormalize!(as)
-    compute_active_set_iterate!(as)
-    return as
-end
-
-# special case of scaled identity Hessian
-
-function solve_quadratic_activeset_lp!(
-    as::ActiveSetQuadraticLinearSolve{AT,R,IT,<:Union{Identity,LinearAlgebra.UniformScaling}},
-) where {AT,R,IT}
-    hessian_scaling = as.A.λ
-    nv = length(as)
-    o = as.lp_optimizer
-    MOI.empty!(o)
-    λ = MOI.add_variables(o, nv)
-    # λ ≥ 0, ∑ λ == 1
-    MOI.add_constraint.(o, λ, MOI.GreaterThan(0.0))
-    sum_of_variables = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, λ), 0.0)
-    MOI.add_constraint(o, sum_of_variables, MOI.EqualTo(1.0))
-    # a Aᵗ A λ == -Aᵗ b
-    for atom in as.atoms
-        lhs = MOI.ScalarAffineFunction{Float64}([], 0.0)
-        Base.sizehint!(lhs.terms, nv)
-        # replaces direct sum because of MOI and MutableArithmetic slow sums
-        for j in 1:nv
-            push!(lhs.terms, MOI.ScalarAffineTerm(hessian_scaling * dot(atom, as.atoms[j]), λ[j]))
+            push!(
+                lhs.terms,
+                _compute_quadratic_constraint_term(atom, as.A, as.atoms[j], λ[j]),
+            )
         end
         rhs = -dot(atom, as.b)
         MOI.add_constraint(o, lhs, MOI.EqualTo(rhs))
@@ -353,10 +306,17 @@ function solve_quadratic_activeset_lp!(
     @assert length(as) == length(new_weights)
     update_weights!(as.active_set, new_weights)
     active_set_cleanup!(as)
-    @assert all(>=(0), new_weights)
     active_set_renormalize!(as)
     compute_active_set_iterate!(as)
     return as
+end
+
+function _compute_quadratic_constraint_term(atom1, A::AbstractMatrix, atom2, λ)
+    return MOI.ScalarAffineTerm(fast_dot(atom1, A, atom2), λ)
+end
+
+function _compute_quadratic_constraint_term(atom1, A::Union{Identity,LinearAlgebra.UniformScaling}, atom2, λ)
+    return MOI.ScalarAffineTerm(A.λ * fast_dot(atom1, atom2), λ)
 end
 
 struct LogScheduler{T}
