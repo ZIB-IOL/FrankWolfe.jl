@@ -322,7 +322,7 @@ function solve_quadratic_activeset_lp!(
     new_weights = R[]
     for idx in eachindex(λ)
         weight_value =  new_lambdas[idx] # using new lambdas
-        if weight_value <= 2 * weight_purge_threshold_default(typeof(weight_value)) # TODO: this should not be hardcoded // needs to be also fixed in other routines
+        if weight_value <= 2 * weight_purge_threshold_default(typeof(weight_value))
             push!(indices_to_remove, idx)
         else
             push!(new_weights, weight_value)
