@@ -262,7 +262,7 @@ The method is specialized by type `H` of the Hessian matrix `A`.
 """
 function solve_quadratic_activeset_lp!(
     as::ActiveSetQuadraticLinearSolve{AT,R,IT,H},
-) where {AT,R,IT}
+) where {AT,R,IT,H}
     nv = length(as)
     o = as.lp_optimizer
     MOI.empty!(o)
