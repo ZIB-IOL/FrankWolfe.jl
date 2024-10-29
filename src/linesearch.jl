@@ -425,7 +425,7 @@ function perform_line_search(
     while abs(dot_gdir) > line_search.tol
         if i > line_search.limit_num_steps
             workspace.last_gamma = best_gamma  # Update last_gamma before returning
-            return best_gamma
+            break
         end
 
         grad!(grad_storage, storage)
@@ -433,7 +433,7 @@ function perform_line_search(
 
         if dot_gdir_new ≈ dot_gdir
             workspace.last_gamma = best_gamma  # Update last_gamma before returning
-            return best_gamma
+            break
         end
 
         gamma_new = gamma - dot_gdir_new * (gamma - gamma_prev) / (dot_gdir_new - dot_gdir)
@@ -452,6 +452,12 @@ function perform_line_search(
         i += 1
     end
     if abs(dot_gdir) > line_search.tol
+        # Choose gamma_max to be domain feasible
+        storage = muladd_memory_mode(memory_mode, storage, x, gamma_max, d)
+        while !line_search.domain_oracle(storage)
+            gamma_max /= 2
+            storage = muladd_memory_mode(memory_mode, storage, x, gamma_max, d)
+        end
         gamma = perform_line_search(
             line_search.inner_ls,
             0,
@@ -468,8 +474,9 @@ function perform_line_search(
         storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
         new_val = f(storage)
 
-        @assert new_val <= best_val
-        best_gamma = gamma
+        if new_val <= best_val
+            best_gamma = gamma
+        end
     end
     workspace.last_gamma = best_gamma  # Update last_gamma before returning
     return best_gamma

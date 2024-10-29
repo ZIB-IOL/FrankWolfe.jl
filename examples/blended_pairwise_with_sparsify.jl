@@ -64,8 +64,6 @@ trajectoryBPCG_standard = []
     copy(x00),
     max_iteration=k,
     line_search=FrankWolfe.Shortstep(2.0),
-    print_iter=k / 10,
-    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
     callback=build_callback(trajectoryBPCG_standard),
@@ -76,25 +74,21 @@ active_set_sparse = FrankWolfe.ActiveSetSparsifier(
     FrankWolfe.ActiveSet([1.0], [x00], similar(x00)),
     HiGHS.Optimizer(),
 )
-
 @time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
-    copy(x00),
+    active_set_sparse,
     max_iteration=k,
     line_search=FrankWolfe.Shortstep(2.0),
-    print_iter=k / 10,
-    memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
-    trajectory=true,
     callback=build_callback(trajectoryBPCG_as_sparse),
 );
 
 # Reduction primal/dual error vs. sparsity of solution
 
-dataSparsity = [trajectoryBPCG_standard, trajectoryBPCG_quadratic]
-labelSparsity = ["BPCG (Standard)", "BPCG (Sparsify)"]
+plot_data = [trajectoryBPCG_standard, trajectoryBPCG_as_sparse]
+plot_labels = ["BPCG (Standard)", "BPCG (Sparsify)"]
 
 # Plot sparsity
-plot_sparsity(dataSparsity, labelSparsity, legend_position=:topright)
+plot_sparsity(plot_data, plot_labels, legend_position=:topright)
