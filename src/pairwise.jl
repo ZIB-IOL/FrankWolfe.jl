@@ -261,19 +261,19 @@ function pairwise_frank_wolfe(
                 active_set,
                 -gamma,
                 away_vertex,
-                true,
+                false,
                 away_index,
                 add_dropped_vertices=use_extra_vertex_storage,
                 vertex_storage=extra_vertex_storage,
             )
-            if add_dropped_vertices && gamma == gamma_max
+            if add_dropped_vertices && gamma ≈ gamma_max
                 for vtx in active_set.atoms
                     if vtx != v
                         push!(extra_vertex_storage, vtx)
                     end
                 end
             end
-            # fw update 
+            # fw update
             active_set_update!(active_set, gamma, fw_vertex, renorm, fw_index)
         end
 
