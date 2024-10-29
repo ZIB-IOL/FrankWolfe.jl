@@ -121,12 +121,12 @@ x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
 );
 
 dataSparsity = [
-    # trajectoryBPCG_standard,
+    trajectoryBPCG_standard,
     trajectoryBPCG_quadratic_automatic_standard,
     trajectoryBPCG_quadratic_wolfe,
 ]
 labelSparsity = [
-    # "BPCG (Standard)",
+    "BPCG (Standard)",
     "AS_Standard", 
     "AS_Wolfe"
 ]
