@@ -11,6 +11,7 @@ so that the gradient is `∇f(x)=Ax+b`.
 This active set stores an inner `active_set` that keeps track of the current set of vertices and convex decomposition.
 It therefore delegates all update, deletion, and addition operations to this inner active set.
 The `weight`, `atoms`, and `x` fields should only be accessed to read and are effectively the same objects as those in the inner active set.
+The Boolean flag `wolfe_step` determines whether to use a Wolfe step from the min-norm point algorithm or  
 
 The structure also contains a scheduler struct which is called with the `should_solve_lp` function.
 To define a new frequency at which the LP should be solved, one can define another scheduler struct and implement the corresponding method.
@@ -32,6 +33,7 @@ struct ActiveSetQuadraticLinearSolve{
     b::BT # linear term
     active_set::AS
     lp_optimizer::OT
+    wolfe_step::Bool
     scheduler::SF
     counter::Base.RefValue{Int}
 end
@@ -46,9 +48,10 @@ function ActiveSetQuadraticLinearSolve(
     grad!::Function,
     lp_optimizer;
     scheduler=LogScheduler(),
+    wolfe_step=false,
 ) where {AT,R}
     A, b = detect_quadratic_function(grad!, tuple_values[1][2])
-    return ActiveSetQuadraticLinearSolve(tuple_values, A, b, lp_optimizer, scheduler=scheduler)
+    return ActiveSetQuadraticLinearSolve(tuple_values, A, b, lp_optimizer, scheduler=scheduler, wolfe_step=wolfe_step)
 end
 
 """
@@ -62,6 +65,7 @@ function ActiveSetQuadraticLinearSolve(
     b,
     lp_optimizer;
     scheduler=LogScheduler(),
+    wolfe_step=false,
 ) where {AT,R,H}
     inner_as = ActiveSetQuadratic(tuple_values, A, b)
     return ActiveSetQuadraticLinearSolve(
@@ -72,6 +76,7 @@ function ActiveSetQuadraticLinearSolve(
         inner_as.b,
         inner_as,
         lp_optimizer,
+        wolfe_step,
         scheduler,
         Ref(0),
     )
@@ -83,6 +88,7 @@ function ActiveSetQuadraticLinearSolve(
     b,
     lp_optimizer;
     scheduler=LogScheduler(),
+    wolfe_step=false,
 )
     as = ActiveSetQuadraticLinearSolve(
         inner_as.weights,
@@ -92,6 +98,7 @@ function ActiveSetQuadraticLinearSolve(
         b,
         inner_as,
         lp_optimizer,
+        wolfe_step,
         scheduler,
         Ref(0),
     )
@@ -105,6 +112,7 @@ function ActiveSetQuadraticLinearSolve(
     b,
     lp_optimizer;
     scheduler=LogScheduler(),
+    wolfe_step=false,
 )
     as = ActiveSetQuadraticLinearSolve(
         inner_as.weights,
@@ -114,6 +122,7 @@ function ActiveSetQuadraticLinearSolve(
         b,
         inner_as,
         lp_optimizer,
+        wolfe_step,
         scheduler,
         Ref(0),
     )
@@ -126,9 +135,10 @@ function ActiveSetQuadraticLinearSolve(
     grad!::Function,
     lp_optimizer;
     scheduler=LogScheduler(),
+    wolfe_step=false,
 )
     A, b = detect_quadratic_function(grad!, inner_as.atoms[1])
-    return ActiveSetQuadraticLinearSolve(inner_as, A, b, lp_optimizer; scheduler=scheduler)
+    return ActiveSetQuadraticLinearSolve(inner_as, A, b, lp_optimizer; scheduler=scheduler, wolfe_step=wolfe_step)
 end
 
 function ActiveSetQuadraticLinearSolve{AT,R}(
@@ -268,7 +278,9 @@ function solve_quadratic_activeset_lp!(
     MOI.empty!(o)
     λ = MOI.add_variables(o, nv)
     # λ ≥ 0, ∑ λ == 1
-    MOI.add_constraint.(o, λ, MOI.GreaterThan(0.0))
+    if !as.wolfe_step
+        MOI.add_constraint.(o, λ, MOI.GreaterThan(0.0))
+    end
     sum_of_variables = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, λ), 0.0)
     MOI.add_constraint(o, sum_of_variables, MOI.EqualTo(1.0))
     # Vᵗ A V λ == -Vᵗ b
@@ -289,8 +301,24 @@ function solve_quadratic_activeset_lp!(
     MOI.set(o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
     MOI.optimize!(o)
     if MOI.get(o, MOI.TerminationStatus()) ∉ (MOI.OPTIMAL, MOI.FEASIBLE_POINT, MOI.ALMOST_OPTIMAL)
+        @assert !as.wolfe_step "Infeasible Wolfe subproblem: $(MOI.get(o, MOI.TerminationStatus()))"
         return as
     end
+    indices_to_remove, new_weights = if as.wolfe_step
+        _compute_new_weights_wolfe_step(λ, R, as.weights, o)
+    else
+        _compute_new_weights_direct_solve(λ, R, o)
+    end
+    deleteat!(as.active_set, indices_to_remove)
+    @assert length(as) == length(new_weights)
+    update_weights!(as.active_set, new_weights)
+    active_set_cleanup!(as)
+    active_set_renormalize!(as)
+    compute_active_set_iterate!(as)
+    return as
+end
+
+function _compute_new_weights_direct_solve(λ, ::Type{R}, o::MOI.AbstractOptimizer) where {R}
     indices_to_remove = Int[]
     new_weights = R[]
     for idx in eachindex(λ)
@@ -301,13 +329,32 @@ function solve_quadratic_activeset_lp!(
             push!(new_weights, weight_value)
         end
     end
-    deleteat!(as.active_set, indices_to_remove)
-    @assert length(as) == length(new_weights)
-    update_weights!(as.active_set, new_weights)
-    active_set_cleanup!(as)
-    active_set_renormalize!(as)
-    compute_active_set_iterate!(as)
-    return as
+    return indices_to_remove, new_weights
+end
+
+function _compute_new_weights_wolfe_step(λ, ::Type{R}, old_weights, o::MOI.AbstractOptimizer) where {R}
+    # ratio test to know which coordinate would hit zero first
+    tau_min = 1.0
+    for idx in eachindex(λ)
+        weight_value = MOI.get(o, MOI.VariablePrimal(), λ[idx])
+        if weight_value < old_weights[idx]
+            tau_min = min(tau_min, old_weights[idx] / (old_weights[idx] - weight_value))
+        end
+    end
+    new_lambdas = [(1 - tau_min) * old_weights[idx] + tau_min * MOI.get(o, MOI.VariablePrimal(), λ[idx]) for idx in eachindex(λ)]
+    @assert all(>=(0), new_lambdas) "All new_lambdas must be between nonnegative"
+    @assert isapprox(sum(new_lambdas), 1.0, atol=1e-5) "The sum of new_lambdas must be approximately 1"
+    indices_to_remove = Int[]
+    new_weights = R[]
+    for idx in eachindex(λ)
+        weight_value =  new_lambdas[idx] # using new lambdas
+        if weight_value <= 2 * weight_purge_threshold_default(typeof(weight_value))
+            push!(indices_to_remove, idx)
+        else
+            push!(new_weights, weight_value)
+        end
+    end
+    return indices_to_remove, new_weights
 end
 
 function _compute_quadratic_constraint_term(atom1, A::AbstractMatrix, atom2, λ)
