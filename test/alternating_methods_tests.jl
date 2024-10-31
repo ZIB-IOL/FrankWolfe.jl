@@ -19,7 +19,7 @@ lmo1 = FrankWolfe.ScaledBoundLInfNormBall(-ones(n), zeros(n))
 lmo2 = FrankWolfe.ScaledBoundLInfNormBall(zeros(n), ones(n))
 lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
 
-@testset "Testing alternating linear minimization with block coordinate FW for different LMO-pairs " begin
+@testset "Testing ALM with block-coordinate FW              " begin
 
     x, _ = FrankWolfe.alternating_linear_minimization(
         FrankWolfe.block_coordinate_frank_wolfe,
@@ -142,10 +142,10 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
 
 end
 
-@testset "Testing different update orders for block coordinate FW in within alternating linear minimization" begin
+@testset "Testing update orders for block-coordinate ALM-FW " begin
 
     orders = [
-        FrankWolfe.FullUpdate(), 
+        FrankWolfe.FullUpdate(),
         [FrankWolfe.CyclicUpdate(i) for i in [-1, 1, 2]]...,
         [FrankWolfe.StochasticUpdate(i) for i in [-1, 1, 2]]...,
         [FrankWolfe.DualGapOrder(i) for i in [-1, 1, 2]]...,
@@ -168,7 +168,7 @@ end
     end
 end
 
-@testset "Testing alternating linear minimization with different FW methods" begin
+@testset "Testing ALM with different FW methods             " begin
 
     methods = [
         FrankWolfe.frank_wolfe,
@@ -191,7 +191,7 @@ end
     end
 end
 
-@testset "Testing block-coordinate FW with different update steps and linesearch strategies" begin
+@testset "Testing stepsize/linesearch in block-coordinate FW" begin
 
     x, _, _, _, _ = FrankWolfe.alternating_linear_minimization(
         FrankWolfe.block_coordinate_frank_wolfe,
@@ -256,7 +256,7 @@ end
     @test abs(x.blocks[2][1] - 1 / n) < 1e-6
 end
 
-@testset "Testing alternating projections for different LMO-pairs " begin
+@testset "Testing alternating projections                   " begin
 
     x, _, _, _, _ = FrankWolfe.alternating_projections((lmo1, lmo_prob), rand(n), verbose=true)
 

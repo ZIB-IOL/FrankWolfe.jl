@@ -4,7 +4,7 @@ using FrankWolfe
 import FrankWolfe: ActiveSet
 using LinearAlgebra: norm
 
-@testset "Active sets" begin
+@testset "Active sets                                       " begin
 
     @testset "Constructors and eltypes" begin
         active_set = ActiveSet([(0.1, [1, 2, 3]), (0.9, [2, 3, 4]), (0.0, [5, 6, 7])])
@@ -100,7 +100,7 @@ using LinearAlgebra: norm
     end
 end
 
-@testset "Simplex gradient descent" begin
+@testset "Simplex gradient descent                          " begin
     # Gradient descent over a 2-D unit simplex
     # each atom is a vertex, direction points to [1,1]
     # note: integers for atom element types
@@ -175,7 +175,7 @@ end
     end
 end
 
-@testset "LP separation oracle" begin
+@testset "LP separation oracle                              " begin
     # Gradient descent over a L-inf ball of radius one
     # current active set contains 3 vertices
     # direction points to [1,1]
@@ -212,7 +212,7 @@ end
     )
 end
 
-@testset "Argminmax" begin
+@testset "Argminmax                                         " begin
     active_set = FrankWolfe.ActiveSet([(0.6, [-1, -1]), (0.2, [0, 1]), (0.2, [1, 0])])
     (λ_min, a_min, i_min, val, λ_max, a_max, i_max, valM, progress) =
         FrankWolfe.active_set_argminmax(active_set, [1, 1.5])
@@ -221,7 +221,7 @@ end
     @test_throws ErrorException FrankWolfe.active_set_argminmax(active_set, [NaN, NaN])
 end
 
-@testset "LPseparationWithScaledHotVector" begin
+@testset "LPseparationWithScaledHotVector                   " begin
     v1 = FrankWolfe.ScaledHotVector(1, 1, 2)
     v2 = FrankWolfe.ScaledHotVector(1, 2, 2)
     v3 = FrankWolfe.ScaledHotVector(0, 2, 2)
@@ -240,7 +240,7 @@ end
     )
 end
 
-@testset "ActiveSet for BigFloat" begin
+@testset "ActiveSet for BigFloat                            " begin
     n = Int(1e2)
     lmo = FrankWolfe.LpNormLMO{BigFloat,1}(rand())
     x0 = Vector(FrankWolfe.compute_extreme_point(lmo, zeros(n)))
