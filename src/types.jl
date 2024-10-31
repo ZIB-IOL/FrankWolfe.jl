@@ -256,8 +256,13 @@ Base.@propagate_inbounds function muladd_memory_mode(::InplaceEmphasis, x::Matri
 end
 
 """
-    SubspaceVector{T, DT}
+    SubspaceVector{HasMultiplicities, T}
 
+Companion structure of `SubspaceLMO` containing three fields:
+- `data` is the full structure to be deflated,
+- `vec` is a vector in the reduced subspace in which computations are performed,
+- `mul` is only used to compute scalar products when `HasMultiplicities = true`,
+which should be avoided (when possible) for performance reasons.
 """
 struct SubspaceVector{HasMultiplicities,T,DT,V<:AbstractVector{T}} <: AbstractVector{T}
     data::DT # full array to be symmetrised, will generally fall out of sync wrt vec

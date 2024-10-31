@@ -124,8 +124,8 @@ println() #hide
 
 # A first acceleration can be obtained by using the active set specialized for the quadratic objective function,
 # whose gradient is here ``x-p``, explaining the hessian and linear part provided as arguments.
-# The speedup is obtained by pre-computing some scalar products to quickly obtained, in each iteration, the best and worst
-# atoms currently in the active set.
+# The speedup is obtained by pre-computing some scalar products to quickly obtained, in each iteration,
+# the best and worst atoms currently in the active set.
 
 FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_naive, FrankWolfe.ActiveSetQuadraticCachedProducts([(one(T), x0)], LinearAlgebra.I, -p); verbose=false, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration=10) #hide
 asq_naive = FrankWolfe.ActiveSetQuadraticCachedProducts([(one(T), x0)], LinearAlgebra.I, -p)
