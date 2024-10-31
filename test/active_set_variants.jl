@@ -218,7 +218,7 @@ end
     end
     lmo = FrankWolfe.LpNormLMO{Float64, 2}(1.05 * norm(params_perfect))
     x0 = FrankWolfe.compute_extreme_point(lmo, zeros(Float64, n+1))
-    active_set = FrankWolfe.ActiveSetQuadratic([(1.0, x0)], gradf)
+    active_set = FrankWolfe.ActiveSetQuadraticCachedProducts([(1.0, x0)], gradf)
     res = FrankWolfe.blended_pairwise_conditional_gradient(
         f,
         gradf,

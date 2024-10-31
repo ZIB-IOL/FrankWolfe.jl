@@ -36,7 +36,7 @@ x0 = FrankWolfe.compute_extreme_point(lmo_nat, randn(n, n))
     x -> cf(x, xp, normxp2),
     (str, x) -> cgrad!(str, x, xp),
     lmo_nat,
-    FrankWolfe.ActiveSetQuadratic([(1.0, x0)], 2I/n^2, -2xp/n^2);
+    FrankWolfe.ActiveSetQuadraticCachedProducts([(1.0, x0)], 2I/n^2, -2xp/n^2);
     max_iteration=k,
     line_search=FrankWolfe.Shortstep(2/n^2),
     lazy=true,
@@ -117,7 +117,7 @@ rx0 = FrankWolfe.compute_extreme_point(lmo_sym, reduce(sparse(randn(n, n)), noth
     x -> cf(x, rxp, normxp2),
     (str, x) -> cgrad!(str, x, rxp),
     lmo_sym,
-    FrankWolfe.ActiveSetQuadratic([(1.0, rx0)], 2I/n^2, -2rxp/n^2);
+    FrankWolfe.ActiveSetQuadraticCachedProducts([(1.0, rx0)], 2I/n^2, -2rxp/n^2);
     max_iteration=k,
     line_search=FrankWolfe.Shortstep(2/n^2),
     lazy=true,

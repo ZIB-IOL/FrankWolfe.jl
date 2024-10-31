@@ -74,7 +74,7 @@ function benchmark_Bell(p::Array{T, 2}, quadratic::Bool; fw_method=FrankWolfe.bl
     lmo = BellCorrelationsLMOHeuristic{T}(size(p, 1), zeros(T, size(p, 1)))
     x0 = FrankWolfe.compute_extreme_point(lmo, -p)
     if quadratic
-        active_set = FrankWolfe.ActiveSetQuadratic([(one(T), x0)], I, -p)
+        active_set = FrankWolfe.ActiveSetQuadraticCachedProducts([(one(T), x0)], I, -p)
     else
         active_set = FrankWolfe.ActiveSet([(one(T), x0)])
     end

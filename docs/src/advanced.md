@@ -53,7 +53,7 @@ See [Extra-lazification](@ref) for a complete example.
 
 ## Specialized active set for quadratic functions
 
-If the objective function is quadratic, a considerable speedup can be obtained by using the structure `ActiveSetQuadratic`.
+If the objective function is quadratic, a considerable speedup can be obtained by using the structure `ActiveSetQuadraticCachedProducts`.
 It relies on the storage of various scalar products to efficiently determine the best (and worst for `blended_pairwise_conditional_gradient`) atom in the active set without the need of computing many scalar products in each iteration.
 The user should provide the Hessian matrix `A` as well as the linear part `b` of the function, such that:
 ```math
