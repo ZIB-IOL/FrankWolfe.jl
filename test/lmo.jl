@@ -912,7 +912,7 @@ end
     end
     reynolds_adjoint(gradient, lmo) = gradient
     lmo = BellCorrelationsLMO{Float64}(size(p, 1), zeros(size(p, 1)))
-    sym = FrankWolfe.SymmetricLMO(lmo, reynolds_permutedims, reynolds_adjoint)
+    sym = FrankWolfe.SubspaceLMO(lmo, reynolds_permutedims, reynolds_adjoint)
     x0 = FrankWolfe.compute_extreme_point(sym, -p)
     active_set = FrankWolfe.ActiveSet([(1.0, x0)])
     res = FrankWolfe.blended_pairwise_conditional_gradient(

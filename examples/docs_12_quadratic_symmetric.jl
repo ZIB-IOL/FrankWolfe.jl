@@ -1,6 +1,6 @@
 # # Accelerations for quadratic functions and symmetric problems
 
-# This example illustrates how to exploit symmetry to reduce the dimension of the problem via `SymmetricLMO`.
+# This example illustrates how to exploit symmetry to reduce the dimension of the problem via `SubspaceLMO`.
 # Moreover, active set based algorithms can be accelerated by using the specialized structure `ActiveSetQuadraticCachedProducts`.
 
 # The specific problem we consider here comes from quantum information and some context can be found [here](https://arxiv.org/abs/2302.04721).
@@ -165,7 +165,7 @@ println() #hide
 # a very small speedup by precomputing and storing `Combinatorics.permutations(1:N)`
 # in a dedicated field of our custom LMO.
 
-lmo_permutedims = FrankWolfe.SymmetricLMO(lmo_naive, reynolds_permutedims)
+lmo_permutedims = FrankWolfe.SubspaceLMO(lmo_naive, reynolds_permutedims)
 FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_permutedims, FrankWolfe.ActiveSetQuadraticCachedProducts([(one(T), x0)], LinearAlgebra.I, -p); verbose=false, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration=10) #hide
 asq_permutedims = FrankWolfe.ActiveSetQuadraticCachedProducts([(one(T), x0)], LinearAlgebra.I, -p)
 @time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_permutedims, asq_permutedims; verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration)
@@ -197,7 +197,7 @@ function build_reynolds_unique(p::Array{T, N}) where {T <: Number, N}
     end
 end
 
-lmo_unique = FrankWolfe.SymmetricLMO(lmo_naive, build_reynolds_unique(p))
+lmo_unique = FrankWolfe.SubspaceLMO(lmo_naive, build_reynolds_unique(p))
 FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_unique, FrankWolfe.ActiveSetQuadraticCachedProducts([(one(T), x0)], LinearAlgebra.I, -p); verbose=false, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration=10) #hide
 asq_unique = FrankWolfe.ActiveSetQuadraticCachedProducts([(one(T), x0)], LinearAlgebra.I, -p)
 @time FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo_unique, asq_unique; verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration)
@@ -255,7 +255,7 @@ println() #hide
 # In this simple example, their shape remains unchanged, but in general this may need some
 # reformulation, which falls to the user.
 
-lmo_reduce = FrankWolfe.SymmetricLMO(lmo_naive, reduce, inflate)
+lmo_reduce = FrankWolfe.SubspaceLMO(lmo_naive, reduce, inflate)
 FrankWolfe.blended_pairwise_conditional_gradient(f_reduce, grad_reduce!, lmo_reduce, FrankWolfe.ActiveSetQuadraticCachedProducts([(one(T), x0_reduce)], LinearAlgebra.I, -p_reduce); verbose=false, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration=10) #hide
 asq_reduce = FrankWolfe.ActiveSetQuadraticCachedProducts([(one(T), x0_reduce)], LinearAlgebra.I, -p_reduce)
 @time FrankWolfe.blended_pairwise_conditional_gradient(f_reduce, grad_reduce!, lmo_reduce, asq_reduce; verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration)

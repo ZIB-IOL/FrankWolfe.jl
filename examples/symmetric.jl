@@ -91,7 +91,7 @@ function benchmark_Bell(p::Array{T, 2}, sym::Bool; fw_method=FrankWolfe.blended_
     Random.seed!(0)
     if sym
         reduce, inflate = build_reduce_inflate_permutedims(p)
-        lmo = FrankWolfe.SymmetricLMO(BellCorrelationsLMOHeuristic{T}(size(p, 1), zeros(T, size(p, 1))), reduce, inflate)
+        lmo = FrankWolfe.SubspaceLMO(BellCorrelationsLMOHeuristic{T}(size(p, 1), zeros(T, size(p, 1))), reduce, inflate)
         p = reduce(p, lmo)
     else
         lmo = BellCorrelationsLMOHeuristic{T}(size(p, 1), zeros(T, size(p, 1)))

@@ -86,7 +86,7 @@ function benchmark_Bell(p::Array{T, 3}, sym::Bool; kwargs...) where {T <: Number
     end
     lmo = BellCorrelationsLMO{T}(size(p, 1), zeros(T, size(p, 1)))
     if sym
-        lmo = FrankWolfe.SymmetricLMO(lmo, reynolds_permutedims, reynolds_adjoint)
+        lmo = FrankWolfe.SubspaceLMO(lmo, reynolds_permutedims, reynolds_adjoint)
     end
     x0 = FrankWolfe.compute_extreme_point(lmo, -p)
     println("Output type of the LMO: ", typeof(x0))

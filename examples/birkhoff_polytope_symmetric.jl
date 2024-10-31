@@ -48,7 +48,7 @@ x0 = FrankWolfe.compute_extreme_point(lmo_nat, randn(n, n))
 # here the problem is invariant under mirror symmetry around the diagonal and the anti-diagonal
 # each solution of the LMO can then be added to the active set together with its orbit
 # on top of that, the effective dimension of the space is reduced
-# the following function constructs the functions `reduce` and `inflate` needed for SymmetricLMO
+# the following function constructs the functions `reduce` and `inflate` needed for SubspaceLMO
 # `reduce` maps a matrix to the invariant vector space
 # `inflate` maps a vector in this space back to a matrix
 # using `FrankWolfe.SymmetricArray` is a convenience to avoid reallocating the result of `inflate`
@@ -109,7 +109,7 @@ reduce, inflate = build_reduce_inflate(xpi)
 const rxp = reduce(xpi, nothing)
 @assert dot(rxp, rxp) ≈ normxp2 # should be correct thanks to the factors sqrt(2) and 2 in reduce and inflate
 
-lmo_sym = FrankWolfe.SymmetricLMO(lmo_nat, reduce, inflate)
+lmo_sym = FrankWolfe.SubspaceLMO(lmo_nat, reduce, inflate)
 
 rx0 = FrankWolfe.compute_extreme_point(lmo_sym, reduce(sparse(randn(n, n)), nothing))
 
