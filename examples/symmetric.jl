@@ -72,8 +72,8 @@ function build_deflate_inflate_permutedims(p::Array{T, 2}) where {T <: Number}
                 vec[cnt+j] = (A[i, j] + A[j, i]) / sqrt2
             end
         end
-        return FrankWolfe.SymmetricArray(A, vec)
-    end, function(x::FrankWolfe.SymmetricArray, lmo)
+        return FrankWolfe.SubspaceVector(A, vec)
+    end, function(x::FrankWolfe.SubspaceVector, lmo)
         cnt = 0
         @inbounds for i in 1:n
             x.data[i, i] = x.vec[i]

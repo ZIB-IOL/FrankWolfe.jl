@@ -227,8 +227,8 @@ function build_deflate_inflate(p::Array{T, N}) where {T <: Number, N}
         for (i, ind) in enumerate(indices)
             vec[i] = sum(A[ind]) / sqmul[i]
         end
-        return FrankWolfe.SymmetricArray(A, vec)
-    end, function(x::FrankWolfe.SymmetricArray, lmo)
+        return FrankWolfe.SubspaceVector(A, vec)
+    end, function(x::FrankWolfe.SubspaceVector, lmo)
         for (i, ind) in enumerate(indices)
             @view(x.data[ind]) .= x.vec[i] / sqmul[i]
         end

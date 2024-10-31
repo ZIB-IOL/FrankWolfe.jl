@@ -51,7 +51,7 @@ x0 = FrankWolfe.compute_extreme_point(lmo_nat, randn(n, n))
 # the following function constructs the functions `deflate` and `inflate` needed for SubspaceLMO
 # `deflate` maps a matrix to the invariant vector space
 # `inflate` maps a vector in this space back to a matrix
-# using `FrankWolfe.SymmetricArray` is a convenience to avoid reallocating the result of `inflate`
+# using `FrankWolfe.SubspaceVector` is a convenience to avoid reallocating the result of `inflate`
 function build_deflate_inflate(p::Matrix{T}) where {T <: Number}
     n = size(p, 1)
     @assert n == size(p, 2) # square matrix
@@ -75,9 +75,9 @@ function build_deflate_inflate(p::Matrix{T}) where {T <: Number}
                 end
             end
         end
-        return FrankWolfe.SymmetricArray(A, vec)
+        return FrankWolfe.SubspaceVector(A, vec)
     end
-    function inflate(x::FrankWolfe.SymmetricArray, lmo)
+    function inflate(x::FrankWolfe.SubspaceVector, lmo)
         cnt = 0
         @inbounds for i in 1:(n+1)÷2, j in i:n+1-i
             cnt += 1
