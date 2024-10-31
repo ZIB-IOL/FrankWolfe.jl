@@ -57,7 +57,7 @@ function correlation_tensor_GHZ_polygon(N::Int, m::Int; type=Float64)
     return res
 end
 
-function build_reduce_inflate_permutedims(p::Array{T, 2}) where {T <: Number}
+function build_deflate_inflate_permutedims(p::Array{T, 2}) where {T <: Number}
     n = size(p, 1)
     @assert n == size(p, 2)
     dimension = (n * (n + 1)) ÷ 2
@@ -90,9 +90,9 @@ end
 function benchmark_Bell(p::Array{T, 2}, sym::Bool; fw_method=FrankWolfe.blended_pairwise_conditional_gradient, kwargs...) where {T <: Number}
     Random.seed!(0)
     if sym
-        reduce, inflate = build_reduce_inflate_permutedims(p)
-        lmo = FrankWolfe.SubspaceLMO(BellCorrelationsLMOHeuristic{T}(size(p, 1), zeros(T, size(p, 1))), reduce, inflate)
-        p = reduce(p, lmo)
+        deflate, inflate = build_deflate_inflate_permutedims(p)
+        lmo = FrankWolfe.SubspaceLMO(BellCorrelationsLMOHeuristic{T}(size(p, 1), zeros(T, size(p, 1))), deflate, inflate)
+        p = deflate(p, lmo)
     else
         lmo = BellCorrelationsLMOHeuristic{T}(size(p, 1), zeros(T, size(p, 1)))
     end

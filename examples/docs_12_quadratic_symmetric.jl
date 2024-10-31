@@ -214,7 +214,7 @@ println() #hide
 # accelerations, especially for active set based algorithms in the regime where many lazy iterations are performed.
 # We refer to the example `symmetric.jl` for a small benchmark with symmetric matrices.
 
-function build_reduce_inflate(p::Array{T, N}) where {T <: Number, N}
+function build_deflate_inflate(p::Array{T, N}) where {T <: Number, N}
     ptol = round.(p; digits=8)
     ptol[ptol .== zero(T)] .= zero(T) # transform -0.0 into 0.0 as isequal(0.0, -0.0) is false
     uniquetol = unique(ptol[:])
@@ -236,16 +236,16 @@ function build_reduce_inflate(p::Array{T, N}) where {T <: Number, N}
     end
 end
 
-reduce, inflate = build_reduce_inflate(p)
-p_reduce = reduce(p, nothing)
-x0_reduce = reduce(x0, nothing)
-f_reduce = let p_reduce = p_reduce, normp2 = normp2
-    x -> LinearAlgebra.dot(x, x) / 2 - LinearAlgebra.dot(p_reduce, x) + normp2
+deflate, inflate = build_deflate_inflate(p)
+p_deflate = deflate(p, nothing)
+x0_deflate = deflate(x0, nothing)
+f_deflate = let p_deflate = p_deflate, normp2 = normp2
+    x -> LinearAlgebra.dot(x, x) / 2 - LinearAlgebra.dot(p_deflate, x) + normp2
 end
-grad_reduce! = let p_reduce = p_reduce
+grad_deflate! = let p_deflate = p_deflate
     (storage, x) -> begin
         @inbounds for i in eachindex(x)
-            storage[i] = x[i] - p_reduce[i]
+            storage[i] = x[i] - p_deflate[i]
         end
     end
 end
@@ -255,9 +255,9 @@ println() #hide
 # In this simple example, their shape remains unchanged, but in general this may need some
 # reformulation, which falls to the user.
 
-lmo_reduce = FrankWolfe.SubspaceLMO(lmo_naive, reduce, inflate)
-FrankWolfe.blended_pairwise_conditional_gradient(f_reduce, grad_reduce!, lmo_reduce, FrankWolfe.ActiveSetQuadraticCachedProducts([(one(T), x0_reduce)], LinearAlgebra.I, -p_reduce); verbose=false, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration=10) #hide
-asq_reduce = FrankWolfe.ActiveSetQuadraticCachedProducts([(one(T), x0_reduce)], LinearAlgebra.I, -p_reduce)
-@time FrankWolfe.blended_pairwise_conditional_gradient(f_reduce, grad_reduce!, lmo_reduce, asq_reduce; verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration)
+lmo_deflate = FrankWolfe.SubspaceLMO(lmo_naive, deflate, inflate)
+FrankWolfe.blended_pairwise_conditional_gradient(f_deflate, grad_deflate!, lmo_deflate, FrankWolfe.ActiveSetQuadraticCachedProducts([(one(T), x0_deflate)], LinearAlgebra.I, -p_deflate); verbose=false, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration=10) #hide
+asq_deflate = FrankWolfe.ActiveSetQuadraticCachedProducts([(one(T), x0_deflate)], LinearAlgebra.I, -p_deflate)
+@time FrankWolfe.blended_pairwise_conditional_gradient(f_deflate, grad_deflate!, lmo_deflate, asq_deflate; verbose, lazy=true, line_search=FrankWolfe.Shortstep(one(T)), max_iteration)
 println() #hide
 

@@ -48,15 +48,15 @@ x0 = FrankWolfe.compute_extreme_point(lmo_nat, randn(n, n))
 # here the problem is invariant under mirror symmetry around the diagonal and the anti-diagonal
 # each solution of the LMO can then be added to the active set together with its orbit
 # on top of that, the effective dimension of the space is reduced
-# the following function constructs the functions `reduce` and `inflate` needed for SubspaceLMO
-# `reduce` maps a matrix to the invariant vector space
+# the following function constructs the functions `deflate` and `inflate` needed for SubspaceLMO
+# `deflate` maps a matrix to the invariant vector space
 # `inflate` maps a vector in this space back to a matrix
 # using `FrankWolfe.SymmetricArray` is a convenience to avoid reallocating the result of `inflate`
-function build_reduce_inflate(p::Matrix{T}) where {T <: Number}
+function build_deflate_inflate(p::Matrix{T}) where {T <: Number}
     n = size(p, 1)
     @assert n == size(p, 2) # square matrix
-    dimension = floor(Int, (n+1)^2 / 4) # reduced dimension
-    function reduce(A::AbstractMatrix{T}, lmo)
+    dimension = floor(Int, (n+1)^2 / 4) # deflated dimension
+    function deflate(A::AbstractMatrix{T}, lmo)
         vec = Vector{T}(undef, dimension)
         cnt = 0
         @inbounds for i in 1:(n+1)÷2, j in i:n+1-i
@@ -102,16 +102,16 @@ function build_reduce_inflate(p::Matrix{T}) where {T <: Number}
         end
         return x.data
     end
-    return reduce, inflate
+    return deflate, inflate
 end
 
-reduce, inflate = build_reduce_inflate(xpi)
-const rxp = reduce(xpi, nothing)
-@assert dot(rxp, rxp) ≈ normxp2 # should be correct thanks to the factors sqrt(2) and 2 in reduce and inflate
+deflate, inflate = build_deflate_inflate(xpi)
+const rxp = deflate(xpi, nothing)
+@assert dot(rxp, rxp) ≈ normxp2 # should be correct thanks to the factors sqrt(2) and 2 in deflate and inflate
 
-lmo_sym = FrankWolfe.SubspaceLMO(lmo_nat, reduce, inflate)
+lmo_sym = FrankWolfe.SubspaceLMO(lmo_nat, deflate, inflate)
 
-rx0 = FrankWolfe.compute_extreme_point(lmo_sym, reduce(sparse(randn(n, n)), nothing))
+rx0 = FrankWolfe.compute_extreme_point(lmo_sym, deflate(sparse(randn(n, n)), nothing))
 
 @time rx, rv, rprimal, rdual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     x -> cf(x, rxp, normxp2),
