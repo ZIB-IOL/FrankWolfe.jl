@@ -8,7 +8,7 @@ n = Int(1e3)
 k = 10000
 
 s = rand(1:100)
-@info "Seed: $s"
+# @info "Seed: $s"
 
 Random.seed!(s)
 
@@ -47,7 +47,7 @@ xmem, _ = FrankWolfe.frank_wolfe(
     max_iteration=k,
     line_search=FrankWolfe.Shortstep(2.0),
     memory_mode=FrankWolfe.InplaceEmphasis(),
-    verbose=true,
+    verbose=false,
     trajectory=true,
     momentum=0.9,
 )

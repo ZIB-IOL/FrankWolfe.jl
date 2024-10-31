@@ -29,7 +29,7 @@ end
         max_iteration=k,
         line_search=FrankWolfe.Agnostic(),
         print_iter=k / 10,
-        verbose=true,
+        verbose=false,
         memory_mode=FrankWolfe.InplaceEmphasis(),
     )
 
@@ -44,7 +44,7 @@ end
         max_iteration=k,
         line_search=FrankWolfe.Agnostic(),
         print_iter=k / 10,
-        verbose=true,
+        verbose=false,
         memory_mode=FrankWolfe.InplaceEmphasis(),
         VType=FrankWolfe.ScaledHotVector{Float64},
     )
@@ -60,7 +60,7 @@ end
         max_iteration=k,
         line_search=FrankWolfe.Agnostic(),
         print_iter=k / 10,
-        verbose=true,
+        verbose=false,
         memory_mode=FrankWolfe.InplaceEmphasis(),
     )
 end

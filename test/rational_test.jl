@@ -37,7 +37,7 @@ xmem, vmem, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
     max_iteration=k,
     line_search=FrankWolfe.Agnostic(),
     print_iter=k / 10,
-    verbose=true,
+    verbose=false,
     memory_mode=FrankWolfe.InplaceEmphasis(),
 )
 
@@ -49,7 +49,7 @@ xstep, _ = FrankWolfe.frank_wolfe(
     max_iteration=k,
     line_search=FrankWolfe.Shortstep(2 // 1),
     print_iter=k / 10,
-    verbose=true,
+    verbose=false,
 )
 
 @test eltype(xmem) == eltype(xstep) == Rational{BigInt}

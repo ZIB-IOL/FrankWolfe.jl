@@ -102,7 +102,7 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
         (storage, x) -> storage .= zero(x),
         (lmo1, lmo3),
         ones(n),
-        verbose=true,
+        verbose=false,
         line_search=FrankWolfe.Shortstep(2),
     )
 
@@ -116,7 +116,7 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
         (lmo1, lmo_prob),
         ones(n),
         trajectory=true,
-        verbose=true,
+        verbose=false,
     )
 
     @test abs(x.blocks[1][1]) < 1e-6
@@ -258,7 +258,7 @@ end
 
 @testset "Testing alternating projections                   " begin
 
-    x, _, _, _, _ = FrankWolfe.alternating_projections((lmo1, lmo_prob), rand(n), verbose=true)
+    x, _, _, _, _ = FrankWolfe.alternating_projections((lmo1, lmo_prob), rand(n), verbose=false)
 
     @test abs(x.blocks[1][1]) < 1e-6
     @test abs(x.blocks[2][1] - 1 / n) < 1e-6

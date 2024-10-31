@@ -25,7 +25,7 @@ include("alternating_methods_tests.jl")
             x0,
             max_iteration=10000,
             line_search=FrankWolfe.GeneralizedAgnostic(),
-            verbose=true,
+            verbose=false,
         )[3] - 0.2,
     ) < 1.0e-5
     g(x) = 2 + log(1 + log(x + 1))
@@ -37,7 +37,7 @@ include("alternating_methods_tests.jl")
             x0,
             max_iteration=10000,
             line_search=FrankWolfe.GeneralizedAgnostic(g),
-            verbose=true,
+            verbose=false,
         )[3] - 0.2,
     ) < 1.0e-5
     @test abs(
@@ -48,7 +48,7 @@ include("alternating_methods_tests.jl")
             x0,
             max_iteration=1000,
             line_search=FrankWolfe.Agnostic(),
-            verbose=true,
+            verbose=false,
         )[3] - 0.2,
     ) < 1.0e-5
     @test abs(
@@ -71,7 +71,7 @@ include("alternating_methods_tests.jl")
             x0,
             max_iteration=1000,
             line_search=FrankWolfe.Goldenratio(),
-            verbose=true,
+            verbose=false,
         )[3] - 0.2,
     ) < 1.0e-5
     @test abs(
@@ -176,7 +176,7 @@ end
             x0,
             max_iteration=1000,
             line_search=FrankWolfe.Goldenratio(),
-            verbose=true,
+            verbose=false,
         )[3] - 0.2,
     ) < 1.0e-5
     @test abs(
@@ -187,7 +187,7 @@ end
             x0,
             max_iteration=1000,
             line_search=FrankWolfe.Backtracking(),
-            verbose=true,
+            verbose=false,
         )[3] - 0.2,
     ) < 1.0e-5
     @test abs(
@@ -198,7 +198,7 @@ end
             x0,
             max_iteration=1000,
             line_search=FrankWolfe.Shortstep(2.0),
-            verbose=true,
+            verbose=false,
         )[3] - 0.2,
     ) < 1.0e-5
     @test abs(
@@ -209,7 +209,7 @@ end
             x0,
             max_iteration=1000,
             line_search=FrankWolfe.AdaptiveZerothOrder(),
-            verbose=true,
+            verbose=false,
         )[3] - 0.2,
     ) < 1.0e-5
 end
@@ -235,7 +235,7 @@ end
         x0,
         max_iteration=k,
         line_search=FrankWolfe.Shortstep(2.0),
-        verbose=true,
+        verbose=false,
     )
 
     @test primal - 1 / n <= bound
@@ -377,7 +377,7 @@ end
         line_search=FrankWolfe.Agnostic(),
         print_iter=k / 10,
         memory_mode=FrankWolfe.InplaceEmphasis(),
-        verbose=true,
+        verbose=false,
     )
     @test eltype(x0) == eltype(x) == Rational{BigInt}
     @test f(x) <= 1e-4
@@ -393,7 +393,7 @@ end
         line_search=FrankWolfe.Shortstep(2 // 1),
         print_iter=k / 100,
         memory_mode=FrankWolfe.InplaceEmphasis(),
-        verbose=true,
+        verbose=false,
     )
 
     x0 = FrankWolfe.compute_extreme_point(lmo, direction)
@@ -406,7 +406,7 @@ end
         line_search=FrankWolfe.Shortstep(2 // 1),
         print_iter=k / 10,
         memory_mode=FrankWolfe.InplaceEmphasis(),
-        verbose=true,
+        verbose=false,
     )
     @test eltype(x) == Rational{BigInt}
 end
@@ -470,7 +470,7 @@ end
             line_search=FrankWolfe.AdaptiveZerothOrder(),
             print_iter=k / 10,
             memory_mode=FrankWolfe.InplaceEmphasis(),
-            verbose=true,
+            verbose=false,
         )
 
         @test eltype(x0) == T
@@ -485,7 +485,7 @@ end
             line_search=FrankWolfe.AdaptiveZerothOrder(),
             print_iter=k / 10,
             memory_mode=FrankWolfe.InplaceEmphasis(),
-            verbose=true,
+            verbose=false,
         )
 
         @test eltype(x0) == T
@@ -612,7 +612,7 @@ end
         max_iteration=k,
         line_search=FrankWolfe.Backtracking(),
         print_iter=k / 10,
-        verbose=true,
+        verbose=false,
         memory_mode=FrankWolfe.OutplaceEmphasis(),
     )
 
@@ -627,7 +627,7 @@ end
         max_iteration=k,
         line_search=FrankWolfe.Backtracking(),
         print_iter=k / 10,
-        verbose=true,
+        verbose=false,
         memory_mode=FrankWolfe.OutplaceEmphasis(),
     )
 
@@ -643,7 +643,7 @@ end
         away_steps=false,
         line_search=FrankWolfe.Backtracking(),
         print_iter=k / 10,
-        verbose=true,
+        verbose=false,
         memory_mode=FrankWolfe.OutplaceEmphasis(),
     )
 
@@ -658,7 +658,7 @@ end
         max_iteration=k,
         line_search=FrankWolfe.Backtracking(),
         print_iter=k / 10,
-        verbose=true,
+        verbose=false,
         memory_mode=FrankWolfe.OutplaceEmphasis(),
     )
 
@@ -673,7 +673,7 @@ end
         max_iteration=k,
         line_search=FrankWolfe.Backtracking(),
         print_iter=k / 10,
-        verbose=true,
+        verbose=false,
         memory_mode=FrankWolfe.InplaceEmphasis(),
     )
 
@@ -689,7 +689,7 @@ end
         away_steps=false,
         line_search=FrankWolfe.Backtracking(),
         print_iter=k / 10,
-        verbose=true,
+        verbose=false,
         memory_mode=FrankWolfe.InplaceEmphasis(),
     )
 
@@ -704,7 +704,7 @@ end
         max_iteration=k,
         line_search=FrankWolfe.Backtracking(),
         print_iter=k / 10,
-        verbose=true,
+        verbose=false,
         memory_mode=FrankWolfe.InplaceEmphasis(),
     )
 
@@ -720,7 +720,7 @@ end
         max_iteration=k,
         line_search=FrankWolfe.Backtracking(),
         print_iter=k / 10,
-        verbose=true,
+        verbose=false,
         memory_mode=FrankWolfe.OutplaceEmphasis(),
     )
 end
@@ -743,7 +743,7 @@ end
         x0,
         max_iteration=k,
         line_search=FrankWolfe.Backtracking(),
-        verbose=true,
+        verbose=false,
         memory_mode=FrankWolfe.OutplaceEmphasis(),
     )
 

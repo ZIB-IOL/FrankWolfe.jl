@@ -68,7 +68,7 @@ end
         trajectory=true,
         callback=nothing,
         traj_data=storage,
-        verbose=true,
+        verbose=false,
     )
 
     @test length(storage[1]) == 5
