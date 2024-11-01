@@ -1,6 +1,6 @@
 
 """
-    ActiveSetQuadraticCachedProducts{AT, R, IT}
+    ActiveSetQuadraticProductCaching{AT, R, IT}
 
 Represents an active set of extreme vertices collected in a FW algorithm,
 along with their coefficients `(λ_i, a_i)`.
@@ -9,7 +9,7 @@ The iterate `x = ∑λ_i a_i` is stored in x with type `IT`.
 The objective function is assumed to be of the form `f(x)=½⟨x,Ax⟩+⟨b,x⟩+c`
 so that the gradient is simply `∇f(x)=Ax+b`.
 """
-struct ActiveSetQuadraticCachedProducts{AT, R <: Real, IT, H} <: AbstractActiveSet{AT,R,IT}
+struct ActiveSetQuadraticProductCaching{AT, R <: Real, IT, H} <: AbstractActiveSet{AT,R,IT}
     weights::Vector{R}
     atoms::Vector{AT}
     x::IT
@@ -48,21 +48,21 @@ function detect_quadratic_function(grad!, x0; test=true)
     return A, b
 end
 
-function ActiveSetQuadraticCachedProducts(tuple_values::AbstractVector{Tuple{R,AT}}, grad!::Function) where {AT,R}
+function ActiveSetQuadraticProductCaching(tuple_values::AbstractVector{Tuple{R,AT}}, grad!::Function) where {AT,R}
     A, b = detect_quadratic_function(grad!, tuple_values[1][2])
-    return ActiveSetQuadraticCachedProducts(tuple_values, A, b)
+    return ActiveSetQuadraticProductCaching(tuple_values, A, b)
 end
 
-function ActiveSetQuadraticCachedProducts(tuple_values::AbstractVector{Tuple{R,AT}}, A::H, b) where {AT,R,H}
-    return ActiveSetQuadraticCachedProducts{AT,R}(tuple_values, A, b)
+function ActiveSetQuadraticProductCaching(tuple_values::AbstractVector{Tuple{R,AT}}, A::H, b) where {AT,R,H}
+    return ActiveSetQuadraticProductCaching{AT,R}(tuple_values, A, b)
 end
 
-function ActiveSetQuadraticCachedProducts{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}, grad!::Function) where {AT,R}
+function ActiveSetQuadraticProductCaching{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}, grad!::Function) where {AT,R}
     A, b = detect_quadratic_function(grad!, tuple_values[1][2])
-    return ActiveSetQuadraticCachedProducts{AT,R}(tuple_values, A, b)
+    return ActiveSetQuadraticProductCaching{AT,R}(tuple_values, A, b)
 end
 
-function ActiveSetQuadraticCachedProducts{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}, A::H, b) where {AT,R,H}
+function ActiveSetQuadraticProductCaching{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}, A::H, b) where {AT,R,H}
     n = length(tuple_values)
     weights = Vector{R}(undef, n)
     atoms = Vector{AT}(undef, n)
@@ -76,7 +76,7 @@ function ActiveSetQuadraticCachedProducts{AT,R}(tuple_values::AbstractVector{<:T
         atoms[idx] = tuple_values[idx][2]
     end
     x = similar(b)
-    as = ActiveSetQuadraticCachedProducts{AT,R,typeof(x),H}(weights, atoms, x, A, b, dots_x, dots_A, dots_b, weights_prev, modified)
+    as = ActiveSetQuadraticProductCaching{AT,R,typeof(x),H}(weights, atoms, x, A, b, dots_x, dots_A, dots_b, weights_prev, modified)
     reset_quadratic_dots!(as)
     compute_active_set_iterate!(as)
     return as
@@ -84,7 +84,7 @@ end
 
 # should only be called upon construction
 # for active sets with a large number of atoms, this function becomes very costly
-function reset_quadratic_dots!(as::ActiveSetQuadraticCachedProducts{AT,R}) where {AT,R}
+function reset_quadratic_dots!(as::ActiveSetQuadraticProductCaching{AT,R}) where {AT,R}
     @inbounds for idx in 1:length(as)
         as.dots_A[idx] = Vector{R}(undef, idx)
         for idy in 1:idx
@@ -108,16 +108,16 @@ function Base.:*(a::Identity, b)
     end
 end
 
-function ActiveSetQuadraticCachedProducts(tuple_values::AbstractVector{Tuple{R,AT}}, A::UniformScaling, b) where {AT,R}
-    return ActiveSetQuadraticCachedProducts(tuple_values, Identity(A.λ), b)
+function ActiveSetQuadraticProductCaching(tuple_values::AbstractVector{Tuple{R,AT}}, A::UniformScaling, b) where {AT,R}
+    return ActiveSetQuadraticProductCaching(tuple_values, Identity(A.λ), b)
 end
-function ActiveSetQuadraticCachedProducts{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}, A::UniformScaling, b) where {AT,R}
-    return ActiveSetQuadraticCachedProducts{AT,R}(tuple_values, Identity(A.λ), b)
+function ActiveSetQuadraticProductCaching{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}, A::UniformScaling, b) where {AT,R}
+    return ActiveSetQuadraticProductCaching{AT,R}(tuple_values, Identity(A.λ), b)
 end
 
 # these three functions do not update the active set iterate
 
-function Base.push!(as::ActiveSetQuadraticCachedProducts{AT,R}, (λ, a)) where {AT,R}
+function Base.push!(as::ActiveSetQuadraticProductCaching{AT,R}, (λ, a)) where {AT,R}
     dot_x = zero(R)
     dot_A = Vector{R}(undef, length(as))
     dot_b = fast_dot(as.b, a)
@@ -140,7 +140,7 @@ function Base.push!(as::ActiveSetQuadraticCachedProducts{AT,R}, (λ, a)) where {
 end
 
 # TODO multi-indices version
-function Base.deleteat!(as::ActiveSetQuadraticCachedProducts, idx::Int)
+function Base.deleteat!(as::ActiveSetQuadraticProductCaching, idx::Int)
     @inbounds for i in 1:idx-1
         as.dots_x[i] -= as.weights_prev[idx] * as.dots_A[idx][i]
     end
@@ -158,7 +158,7 @@ function Base.deleteat!(as::ActiveSetQuadraticCachedProducts, idx::Int)
     return as
 end
 
-function Base.empty!(as::ActiveSetQuadraticCachedProducts)
+function Base.empty!(as::ActiveSetQuadraticProductCaching)
     empty!(as.atoms)
     empty!(as.weights)
     as.x .= 0
@@ -171,7 +171,7 @@ function Base.empty!(as::ActiveSetQuadraticCachedProducts)
 end
 
 function active_set_update!(
-    active_set::ActiveSetQuadraticCachedProducts{AT,R},
+    active_set::ActiveSetQuadraticProductCaching{AT,R},
     lambda, atom, renorm=true, idx=nothing;
     weight_purge_threshold=weight_purge_threshold_default(R),
     add_dropped_vertices=false,
@@ -200,7 +200,7 @@ function active_set_update!(
     return active_set
 end
 
-function active_set_renormalize!(active_set::ActiveSetQuadraticCachedProducts)
+function active_set_renormalize!(active_set::ActiveSetQuadraticProductCaching)
     renorm = sum(active_set.weights)
     active_set.weights ./= renorm
     active_set.weights_prev ./= renorm
@@ -209,7 +209,7 @@ function active_set_renormalize!(active_set::ActiveSetQuadraticCachedProducts)
     return active_set
 end
 
-function active_set_argmin(active_set::ActiveSetQuadraticCachedProducts, direction)
+function active_set_argmin(active_set::ActiveSetQuadraticProductCaching, direction)
     valm = typemax(eltype(direction))
     idxm = -1
     idx_modified = findall(active_set.modified)
@@ -240,7 +240,7 @@ function active_set_argmin(active_set::ActiveSetQuadraticCachedProducts, directi
     return (active_set[idxm]..., idxm)
 end
 
-function active_set_argminmax(active_set::ActiveSetQuadraticCachedProducts, direction; Φ=0.5)
+function active_set_argminmax(active_set::ActiveSetQuadraticProductCaching, direction; Φ=0.5)
     valm = typemax(eltype(direction))
     valM = typemin(eltype(direction))
     idxm = -1
@@ -281,7 +281,7 @@ function active_set_argminmax(active_set::ActiveSetQuadraticCachedProducts, dire
 end
 
 # in-place warm-start of a quadratic active set for A and b
-function update_active_set_quadratic!(warm_as::ActiveSetQuadraticCachedProducts{AT,R}, A::H, b) where {AT,R,H}
+function update_active_set_quadratic!(warm_as::ActiveSetQuadraticProductCaching{AT,R}, A::H, b) where {AT,R,H}
     @inbounds for idx in eachindex(warm_as)
         for idy in 1:idx
             warm_as.dots_A[idx][idy] = fast_dot(A * warm_as.atoms[idx], warm_as.atoms[idy])
@@ -292,7 +292,7 @@ function update_active_set_quadratic!(warm_as::ActiveSetQuadraticCachedProducts{
 end
 
 # in-place warm-start of a quadratic active set for b
-function update_active_set_quadratic!(warm_as::ActiveSetQuadraticCachedProducts{AT,R,IT,H}, b) where {AT,R,IT,H}
+function update_active_set_quadratic!(warm_as::ActiveSetQuadraticProductCaching{AT,R,IT,H}, b) where {AT,R,IT,H}
     warm_as.dots_x .= 0
     warm_as.weights_prev .= 0
     warm_as.modified .= true
@@ -304,7 +304,7 @@ function update_active_set_quadratic!(warm_as::ActiveSetQuadraticCachedProducts{
     return warm_as
 end
 
-function update_weights!(as::ActiveSetQuadraticCachedProducts, new_weights)
+function update_weights!(as::ActiveSetQuadraticProductCaching, new_weights)
     as.weights_prev .= as.weights
     as.weights .= new_weights
     as.modified .= true

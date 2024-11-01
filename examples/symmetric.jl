@@ -109,7 +109,7 @@ function benchmark_Bell(p::Array{T, 2}, sym::Bool; fw_method=FrankWolfe.blended_
         end
     end
     x0 = FrankWolfe.compute_extreme_point(lmo, -p)
-    active_set = FrankWolfe.ActiveSetQuadraticCachedProducts([(one(T), x0)], I, -p)
+    active_set = FrankWolfe.ActiveSetQuadraticProductCaching([(one(T), x0)], I, -p)
     res = fw_method(f, grad!, lmo, active_set; line_search=FrankWolfe.Shortstep(one(T)), lazy=true, verbose=false, max_iteration=10^2)
     return fw_method(f, grad!, lmo, res[6]; line_search=FrankWolfe.Shortstep(one(T)), lazy=true, lazy_tolerance=10^6, kwargs...)
 end

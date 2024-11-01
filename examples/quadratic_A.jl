@@ -48,7 +48,7 @@ x0 = FrankWolfe.compute_extreme_point(lmo, zeros(T, n+1))
 # active_set = FrankWolfe.ActiveSet([(1.0, x0)])
 
 # specialized active set, automatically detecting the parameters A and b of the quadratic function f
-active_set = FrankWolfe.ActiveSetQuadraticCachedProducts([(one(T), x0)], gradf)
+active_set = FrankWolfe.ActiveSetQuadraticProductCaching([(one(T), x0)], gradf)
 
 @time res = FrankWolfe.blended_pairwise_conditional_gradient(
 #  @time res = FrankWolfe.away_frank_wolfe(

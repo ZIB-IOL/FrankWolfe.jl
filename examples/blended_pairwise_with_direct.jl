@@ -63,7 +63,7 @@ trajectoryBPCG_standard = []
 
 # Just projection quadratic
 trajectoryBPCG_quadratic = []
-as_quad = FrankWolfe.ActiveSetQuadraticCachedProducts([(1.0, copy(x00))], 2 * LinearAlgebra.I, -2xp)
+as_quad = FrankWolfe.ActiveSetQuadraticProductCaching([(1.0, copy(x00))], 2 * LinearAlgebra.I, -2xp)
 @time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
@@ -75,7 +75,7 @@ as_quad = FrankWolfe.ActiveSetQuadraticCachedProducts([(1.0, copy(x00))], 2 * Li
     callback=build_callback(trajectoryBPCG_quadratic),
 );
 
-as_quad = FrankWolfe.ActiveSetQuadraticCachedProducts([(1.0, copy(x00))], 2 * LinearAlgebra.I, -2xp)
+as_quad = FrankWolfe.ActiveSetQuadraticProductCaching([(1.0, copy(x00))], 2 * LinearAlgebra.I, -2xp)
 
 # with quadratic active set
 trajectoryBPCG_quadratic_as = []
