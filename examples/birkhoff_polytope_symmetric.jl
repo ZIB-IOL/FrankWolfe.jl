@@ -36,7 +36,7 @@ x0 = FrankWolfe.compute_extreme_point(lmo_nat, randn(n, n))
     x -> cf(x, xp, normxp2),
     (str, x) -> cgrad!(str, x, xp),
     lmo_nat,
-    FrankWolfe.ActiveSetQuadratic([(1.0, x0)], 2I/n^2, -2xp/n^2);
+    FrankWolfe.ActiveSetQuadraticProductCaching([(1.0, x0)], 2I/n^2, -2xp/n^2);
     max_iteration=k,
     line_search=FrankWolfe.Shortstep(2/n^2),
     lazy=true,
@@ -48,15 +48,15 @@ x0 = FrankWolfe.compute_extreme_point(lmo_nat, randn(n, n))
 # here the problem is invariant under mirror symmetry around the diagonal and the anti-diagonal
 # each solution of the LMO can then be added to the active set together with its orbit
 # on top of that, the effective dimension of the space is reduced
-# the following function constructs the functions `reduce` and `inflate` needed for SymmetricLMO
-# `reduce` maps a matrix to the invariant vector space
+# the following function constructs the functions `deflate` and `inflate` needed for SubspaceLMO
+# `deflate` maps a matrix to the invariant vector space
 # `inflate` maps a vector in this space back to a matrix
-# using `FrankWolfe.SymmetricArray` is a convenience to avoid reallocating the result of `inflate`
-function build_reduce_inflate(p::Matrix{T}) where {T <: Number}
+# using `FrankWolfe.SubspaceVector` is a convenience to avoid reallocating the result of `inflate`
+function build_deflate_inflate(p::Matrix{T}) where {T <: Number}
     n = size(p, 1)
     @assert n == size(p, 2) # square matrix
-    dimension = floor(Int, (n+1)^2 / 4) # reduced dimension
-    function reduce(A::AbstractMatrix{T}, lmo)
+    dimension = floor(Int, (n+1)^2 / 4) # deflated dimension
+    function deflate(A::AbstractMatrix{T}, lmo)
         vec = Vector{T}(undef, dimension)
         cnt = 0
         @inbounds for i in 1:(n+1)÷2, j in i:n+1-i
@@ -75,9 +75,9 @@ function build_reduce_inflate(p::Matrix{T}) where {T <: Number}
                 end
             end
         end
-        return FrankWolfe.SymmetricArray(A, vec)
+        return FrankWolfe.SubspaceVector(A, vec)
     end
-    function inflate(x::FrankWolfe.SymmetricArray, lmo)
+    function inflate(x::FrankWolfe.SubspaceVector, lmo)
         cnt = 0
         @inbounds for i in 1:(n+1)÷2, j in i:n+1-i
             cnt += 1
@@ -102,22 +102,22 @@ function build_reduce_inflate(p::Matrix{T}) where {T <: Number}
         end
         return x.data
     end
-    return reduce, inflate
+    return deflate, inflate
 end
 
-reduce, inflate = build_reduce_inflate(xpi)
-const rxp = reduce(xpi, nothing)
-@assert dot(rxp, rxp) ≈ normxp2 # should be correct thanks to the factors sqrt(2) and 2 in reduce and inflate
+deflate, inflate = build_deflate_inflate(xpi)
+const rxp = deflate(xpi, nothing)
+@assert dot(rxp, rxp) ≈ normxp2 # should be correct thanks to the factors sqrt(2) and 2 in deflate and inflate
 
-lmo_sym = FrankWolfe.SymmetricLMO(lmo_nat, reduce, inflate)
+lmo_sym = FrankWolfe.SubspaceLMO(lmo_nat, deflate, inflate)
 
-rx0 = FrankWolfe.compute_extreme_point(lmo_sym, reduce(sparse(randn(n, n)), nothing))
+rx0 = FrankWolfe.compute_extreme_point(lmo_sym, deflate(sparse(randn(n, n)), nothing))
 
 @time rx, rv, rprimal, rdual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     x -> cf(x, rxp, normxp2),
     (str, x) -> cgrad!(str, x, rxp),
     lmo_sym,
-    FrankWolfe.ActiveSetQuadratic([(1.0, rx0)], 2I/n^2, -2rxp/n^2);
+    FrankWolfe.ActiveSetQuadraticProductCaching([(1.0, rx0)], 2I/n^2, -2rxp/n^2);
     max_iteration=k,
     line_search=FrankWolfe.Shortstep(2/n^2),
     lazy=true,

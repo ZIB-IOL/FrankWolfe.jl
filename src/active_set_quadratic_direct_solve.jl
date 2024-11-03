@@ -55,7 +55,7 @@ end
 """
     ActiveSetQuadraticLinearSolve(tuple_values::Vector{Tuple{R,AT}}, A, b, lp_optimizer)
 
-Creates an `ActiveSetQuadraticLinearSolve` from the given Hessian `A`, linear term `b` and `lp_optimizer` by creating an inner `ActiveSetQuadratic` active set.
+Creates an `ActiveSetQuadraticLinearSolve` from the given Hessian `A`, linear term `b` and `lp_optimizer` by creating an inner `ActiveSetQuadraticProductCaching` active set.
 """
 function ActiveSetQuadraticLinearSolve(
     tuple_values::Vector{Tuple{R,AT}},
@@ -64,7 +64,7 @@ function ActiveSetQuadraticLinearSolve(
     lp_optimizer;
     scheduler=LogScheduler(),
 ) where {AT,R,H}
-    inner_as = ActiveSetQuadratic(tuple_values, A, b)
+    inner_as = ActiveSetQuadraticProductCaching(tuple_values, A, b)
     return ActiveSetQuadraticLinearSolve(
         inner_as.weights,
         inner_as.atoms,
@@ -155,7 +155,7 @@ function ActiveSetQuadraticLinearSolve{AT,R}(
     lp_optimizer;
     scheduler=LogScheduler(),
 ) where {AT,R,H}
-    inner_as = ActiveSetQuadratic{AT,R}(tuple_values, A, b)
+    inner_as = ActiveSetQuadraticProductCaching{AT,R}(tuple_values, A, b)
     as = ActiveSetQuadraticLinearSolve{AT,R,typeof(x),H}(
         inner_as.weights,
         inner_as.atoms,

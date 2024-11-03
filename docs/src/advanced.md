@@ -53,7 +53,7 @@ See [Extra-lazification](@ref) for a complete example.
 
 ## Specialized active set for quadratic functions
 
-If the objective function is quadratic, a considerable speedup can be obtained by using the structure `ActiveSetQuadratic`.
+If the objective function is quadratic, a considerable speedup can be obtained by using the structure `ActiveSetQuadraticProductCaching`.
 It relies on the storage of various scalar products to efficiently determine the best (and worst for `blended_pairwise_conditional_gradient`) atom in the active set without the need of computing many scalar products in each iteration.
 The user should provide the Hessian matrix `A` as well as the linear part `b` of the function, such that:
 ```math
@@ -228,6 +228,6 @@ This subspace is the image of the Reynolds operator defined by
 \mathcal{R}(x)=\frac{1}{|G|}\sum_{g\in G}g\cdot x.
 ```
 
-In practice, the type `SymmetricLMO` allows the user to provide the Reynolds operator $\mathcal{R}$ as well as its adjoint $\mathcal{R}^\ast$.
+In practice, the type `SubspaceLMO` allows the user to provide the Reynolds operator $\mathcal{R}$ as well as its adjoint $\mathcal{R}^\ast$.
 The gradient is symmetrised with $\mathcal{R}^\ast$, then passed to the non-symmetric LMO, and the resulting output is symmetrised with $\mathcal{R}$.
 In many cases, the gradient is already symmetric so that `reynolds_adjoint(gradient, lmo) = gradient` is a fast and valid choice.

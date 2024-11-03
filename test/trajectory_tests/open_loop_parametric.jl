@@ -26,7 +26,7 @@ using LinearAlgebra
         line_search=FrankWolfe.Agnostic(2),
         print_iter=k / 10,
         epsilon=1e-5,
-        verbose=true,
+        verbose=false,
         trajectory=true,
     )
 
@@ -39,7 +39,7 @@ using LinearAlgebra
         line_search=FrankWolfe.Agnostic(10),
         print_iter=k / 10,
         epsilon=1e-5,
-        verbose=true,
+        verbose=false,
         trajectory=true,
     )
 
@@ -68,7 +68,7 @@ using LinearAlgebra
         line_search=FrankWolfe.Agnostic(2),
         print_iter=k / 10,
         epsilon=1e-5,
-        verbose=true,
+        verbose=false,
         trajectory=true,
     )
 
@@ -81,7 +81,7 @@ using LinearAlgebra
         line_search=FrankWolfe.Agnostic(10),
         print_iter=k / 10,
         epsilon=1e-5,
-        verbose=true,
+        verbose=false,
         trajectory=true,
     )
 

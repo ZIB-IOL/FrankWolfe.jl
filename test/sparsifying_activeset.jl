@@ -21,7 +21,7 @@ k = 10000
 
 # s = rand(1:100)
 s = 10
-@info "Seed $s"
+# @info "Seed $s"
 Random.seed!(s)
 
 xpi = rand(n);

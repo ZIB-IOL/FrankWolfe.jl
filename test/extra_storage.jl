@@ -11,7 +11,7 @@ function grad!(storage, x)
     return storage .= x .- center0
 end
 
-@testset "Blended Pairwise Conditional Gradient" begin
+@testset "Blended Pairwise Conditional Gradient             " begin
     lmo = FrankWolfe.UnitSimplexOracle(4.3)
     tlmo = FrankWolfe.TrackingLMO(lmo)
 
@@ -59,7 +59,7 @@ end
     end
 end
 
-@testset "Away-Frank-Wolfe" begin
+@testset "Away-Frank-Wolfe                                  " begin
     lmo = FrankWolfe.UnitSimplexOracle(4.3)
     tlmo = FrankWolfe.TrackingLMO(lmo)
 
@@ -107,7 +107,7 @@ end
     end
 end
 
-@testset "Blended Pairwise Conditional Gradient" begin
+@testset "Blended Pairwise Conditional Gradient             " begin
     lmo = FrankWolfe.UnitSimplexOracle(4.3)
     tlmo = FrankWolfe.TrackingLMO(lmo)
 
