@@ -54,7 +54,7 @@ FrankWolfe.benchmark_oracles(
     x -> cf(x, xp, normxp2),
     (str, x) -> cgrad!(str, x, xp),
     lmo,
-    FrankWolfe.ActiveSetQuadratic([(1.0, collect(x0))], 2I/n^2, -2xp/n^2); # surprisingly faster and more memory efficient with collect
+    FrankWolfe.ActiveSetQuadraticProductCaching([(1.0, collect(x0))], 2I/n^2, -2xp/n^2); # surprisingly faster and more memory efficient with collect
     max_iteration=k,
     line_search=FrankWolfe.Shortstep(2/n^2),
     lazy=true,
