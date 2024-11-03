@@ -266,7 +266,7 @@ function pairwise_frank_wolfe(
                 add_dropped_vertices=use_extra_vertex_storage,
                 vertex_storage=extra_vertex_storage,
             )
-            if add_dropped_vertices && gamma == gamma_max
+            if add_dropped_vertices && gamma ≈ gamma_max
                 for vtx in active_set.atoms
                     if vtx != v
                         push!(extra_vertex_storage, vtx)
