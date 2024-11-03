@@ -256,55 +256,60 @@ Base.@propagate_inbounds function muladd_memory_mode(::InplaceEmphasis, x::Matri
 end
 
 """
-    SymmetricArray{T, DT}
+    SubspaceVector{HasMultiplicities, T}
 
+Companion structure of `SubspaceLMO` containing three fields:
+- `data` is the full structure to be deflated,
+- `vec` is a vector in the reduced subspace in which computations are performed,
+- `mul` is only used to compute scalar products when `HasMultiplicities = true`,
+which should be avoided (when possible) for performance reasons.
 """
-struct SymmetricArray{HasMultiplicities,T,DT,V<:AbstractVector{T}} <: AbstractVector{T}
+struct SubspaceVector{HasMultiplicities,T,DT,V<:AbstractVector{T}} <: AbstractVector{T}
     data::DT # full array to be symmetrised, will generally fall out of sync wrt vec
     vec::V # vector representing the array
     mul::Vector{T} # only used for scalar products
 end
 
-function SymmetricArray(data::DT, vec::V) where {DT,V<:AbstractVector{T}} where {T}
-    return SymmetricArray{false,T,DT,V}(data, vec, T[])
+function SubspaceVector(data::DT, vec::V) where {DT,V<:AbstractVector{T}} where {T}
+    return SubspaceVector{false,T,DT,V}(data, vec, T[])
 end
 
-function SymmetricArray(data::DT, vec::V, mul::Vector) where {DT,V<:AbstractVector{T}} where {T}
-    return SymmetricArray{true,T,DT,V}(data, vec, convert(Vector{T}, mul))
+function SubspaceVector(data::DT, vec::V, mul::Vector) where {DT,V<:AbstractVector{T}} where {T}
+    return SubspaceVector{true,T,DT,V}(data, vec, convert(Vector{T}, mul))
 end
 
-Base.@propagate_inbounds function Base.getindex(A::SymmetricArray, i)
+Base.@propagate_inbounds function Base.getindex(A::SubspaceVector, i)
     @boundscheck checkbounds(A.vec, i)
     return @inbounds getindex(A.vec, i)
 end
 
-Base.@propagate_inbounds function Base.setindex!(A::SymmetricArray, x, i)
+Base.@propagate_inbounds function Base.setindex!(A::SubspaceVector, x, i)
     @boundscheck checkbounds(A.vec, i)
     return @inbounds setindex!(A.vec, x, i)
 end
 
-Base.size(A::SymmetricArray) = size(A.vec)
-Base.eltype(A::SymmetricArray) = eltype(A.vec)
-Base.similar(A::SymmetricArray{true}) = SymmetricArray(similar(A.data), similar(A.vec), A.mul)
-Base.similar(A::SymmetricArray{false}) = SymmetricArray(similar(A.data), similar(A.vec))
-Base.similar(A::SymmetricArray{true}, ::Type{T}) where {T} = SymmetricArray(similar(A.data, T), similar(A.vec, T), convert(Vector{T}, A.mul))
-Base.similar(A::SymmetricArray{false}, ::Type{T}) where {T} = SymmetricArray(similar(A.data, T), similar(A.vec, T))
-Base.collect(A::SymmetricArray{true}) = SymmetricArray(collect(A.data), collect(A.vec), A.mul)
-Base.collect(A::SymmetricArray{false}) = SymmetricArray(collect(A.data), collect(A.vec))
-Base.copyto!(dest::SymmetricArray, src::SymmetricArray) = copyto!(dest.vec, src.vec)
-Base.:*(scalar::Real, A::SymmetricArray{true}) = SymmetricArray(A.data, scalar * A.vec, A.mul)
-Base.:*(scalar::Real, A::SymmetricArray{false}) = SymmetricArray(A.data, scalar * A.vec)
-Base.:*(A::SymmetricArray, scalar::Real) = scalar * A
-Base.:/(A::SymmetricArray, scalar::Real) = inv(scalar) * A
-Base.:+(A1::SymmetricArray{true,T}, A2::SymmetricArray{true,T}) where {T} = SymmetricArray(A1.data, A1.vec + A2.vec, A1.mul)
-Base.:+(A1::SymmetricArray{false,T}, A2::SymmetricArray{false,T}) where {T} = SymmetricArray(A1.data, A1.vec + A2.vec)
-Base.:-(A1::SymmetricArray{true,T}, A2::SymmetricArray{true,T}) where {T} = SymmetricArray(A1.data, A1.vec - A2.vec, A1.mul)
-Base.:-(A1::SymmetricArray{false,T}, A2::SymmetricArray{false,T}) where {T} = SymmetricArray(A1.data, A1.vec - A2.vec)
-Base.:-(A::SymmetricArray{true,T}) where {T} = SymmetricArray(A.data, -A.vec, A.mul)
-Base.:-(A::SymmetricArray{false,T}) where {T} = SymmetricArray(A.data, -A.vec)
+Base.size(A::SubspaceVector) = size(A.vec)
+Base.eltype(A::SubspaceVector) = eltype(A.vec)
+Base.similar(A::SubspaceVector{true}) = SubspaceVector(similar(A.data), similar(A.vec), A.mul)
+Base.similar(A::SubspaceVector{false}) = SubspaceVector(similar(A.data), similar(A.vec))
+Base.similar(A::SubspaceVector{true}, ::Type{T}) where {T} = SubspaceVector(similar(A.data, T), similar(A.vec, T), convert(Vector{T}, A.mul))
+Base.similar(A::SubspaceVector{false}, ::Type{T}) where {T} = SubspaceVector(similar(A.data, T), similar(A.vec, T))
+Base.collect(A::SubspaceVector{true}) = SubspaceVector(collect(A.data), collect(A.vec), A.mul)
+Base.collect(A::SubspaceVector{false}) = SubspaceVector(collect(A.data), collect(A.vec))
+Base.copyto!(dest::SubspaceVector, src::SubspaceVector) = copyto!(dest.vec, src.vec)
+Base.:*(scalar::Real, A::SubspaceVector{true}) = SubspaceVector(A.data, scalar * A.vec, A.mul)
+Base.:*(scalar::Real, A::SubspaceVector{false}) = SubspaceVector(A.data, scalar * A.vec)
+Base.:*(A::SubspaceVector, scalar::Real) = scalar * A
+Base.:/(A::SubspaceVector, scalar::Real) = inv(scalar) * A
+Base.:+(A1::SubspaceVector{true,T}, A2::SubspaceVector{true,T}) where {T} = SubspaceVector(A1.data, A1.vec + A2.vec, A1.mul)
+Base.:+(A1::SubspaceVector{false,T}, A2::SubspaceVector{false,T}) where {T} = SubspaceVector(A1.data, A1.vec + A2.vec)
+Base.:-(A1::SubspaceVector{true,T}, A2::SubspaceVector{true,T}) where {T} = SubspaceVector(A1.data, A1.vec - A2.vec, A1.mul)
+Base.:-(A1::SubspaceVector{false,T}, A2::SubspaceVector{false,T}) where {T} = SubspaceVector(A1.data, A1.vec - A2.vec)
+Base.:-(A::SubspaceVector{true,T}) where {T} = SubspaceVector(A.data, -A.vec, A.mul)
+Base.:-(A::SubspaceVector{false,T}) where {T} = SubspaceVector(A.data, -A.vec)
 
-LinearAlgebra.dot(A1::SymmetricArray{true}, A2::SymmetricArray{true}) = dot(A1.vec, Diagonal(A1.mul), A2.vec)
-LinearAlgebra.dot(A1::SymmetricArray{false}, A2::SymmetricArray{false}) = dot(A1.vec, A2.vec)
-LinearAlgebra.norm(A::SymmetricArray) = sqrt(dot(A, A))
+LinearAlgebra.dot(A1::SubspaceVector{true}, A2::SubspaceVector{true}) = dot(A1.vec, Diagonal(A1.mul), A2.vec)
+LinearAlgebra.dot(A1::SubspaceVector{false}, A2::SubspaceVector{false}) = dot(A1.vec, A2.vec)
+LinearAlgebra.norm(A::SubspaceVector) = sqrt(dot(A, A))
 
-Base.@propagate_inbounds Base.isequal(A1::SymmetricArray, A2::SymmetricArray) = isequal(A1.vec, A2.vec)
+Base.@propagate_inbounds Base.isequal(A1::SubspaceVector, A2::SubspaceVector) = isequal(A1.vec, A2.vec)

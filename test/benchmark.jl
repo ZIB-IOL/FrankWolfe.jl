@@ -1,7 +1,6 @@
 import FrankWolfe
 import LinearAlgebra
 
-
 n = Int(1e6);
 
 xpi = rand(n);

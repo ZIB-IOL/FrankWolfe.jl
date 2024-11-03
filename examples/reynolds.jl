@@ -86,12 +86,12 @@ function benchmark_Bell(p::Array{T, 3}, sym::Bool; kwargs...) where {T <: Number
     end
     lmo = BellCorrelationsLMO{T}(size(p, 1), zeros(T, size(p, 1)))
     if sym
-        lmo = FrankWolfe.SymmetricLMO(lmo, reynolds_permutedims, reynolds_adjoint)
+        lmo = FrankWolfe.SubspaceLMO(lmo, reynolds_permutedims, reynolds_adjoint)
     end
     x0 = FrankWolfe.compute_extreme_point(lmo, -p)
     println("Output type of the LMO: ", typeof(x0))
     active_set = FrankWolfe.ActiveSet([(one(T), x0)])
-    # active_set = FrankWolfe.ActiveSetQuadratic([(one(T), x0)], I, -p)
+    # active_set = FrankWolfe.ActiveSetQuadraticProductCaching([(one(T), x0)], I, -p)
     return FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo, active_set; lazy=true, line_search=FrankWolfe.Shortstep(one(T)), kwargs...)
 end
 

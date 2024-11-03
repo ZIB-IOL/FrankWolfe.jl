@@ -258,23 +258,28 @@ function compute_extreme_point(
 end
 
 """
-    SymmetricLMO{LMO, TR, TI}
+    SubspaceLMO{LMO, TD, TI}
 
-Symmetric LMO for the reduction operator defined by `TR`
+Subspace LMO for the deflation operator defined by `TD`
 and the inflation operator defined by `TI`.
-Computations are performed in the reduced subspace, and the
+Computations are performed in the deflated subspace, and the
 effective call of the LMO first inflates the gradient, then
-use the non-symmetric LMO, and finally reduces the output.
+uses the full LMO, and finally deflates the output.
+
+Deflation operators typically project onto symmetric subspaces
+or select relevant elements of a full tensor.
+Scalar products should be treated carefully to ensure correctness
+of the results; see also the companion `SubspaceVector` structure.
 """
-struct SymmetricLMO{LMO<:LinearMinimizationOracle,TR,TI} <: LinearMinimizationOracle
+struct SubspaceLMO{LMO<:LinearMinimizationOracle,TD,TI} <: LinearMinimizationOracle
     lmo::LMO
-    reduce::TR
+    deflate::TD
     inflate::TI
-    function SymmetricLMO(lmo::LMO, reduce, inflate=(x, lmo) -> x) where {LMO<:LinearMinimizationOracle}
-        return new{typeof(lmo),typeof(reduce),typeof(inflate)}( lmo, reduce, inflate)
+    function SubspaceLMO(lmo::LMO, deflate, inflate=(x, lmo) -> x) where {LMO<:LinearMinimizationOracle}
+        return new{typeof(lmo),typeof(deflate),typeof(inflate)}( lmo, deflate, inflate)
     end
 end
 
-function compute_extreme_point(sym::SymmetricLMO, direction; kwargs...)
-    return sym.reduce(compute_extreme_point(sym.lmo, sym.inflate(direction, sym.lmo)), sym.lmo)
+function compute_extreme_point(sym::SubspaceLMO, direction; kwargs...)
+    return sym.deflate(compute_extreme_point(sym.lmo, sym.inflate(direction, sym.lmo)), sym.lmo)
 end

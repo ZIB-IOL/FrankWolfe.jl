@@ -7,7 +7,7 @@ import FrankWolfe: compute_gradient, compute_value, compute_value_gradient
 
 Random.seed!(123)
 
-@testset "Simple and stochastic function gradient interface" begin
+@testset "Simple and stochastic function gradient interface " begin
     for n in (1, 5, 20)
         A = rand(Float16, n, n)
         A .+= A'

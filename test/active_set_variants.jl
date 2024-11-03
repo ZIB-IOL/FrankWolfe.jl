@@ -9,7 +9,7 @@ function test_callback(state, active_set, args...)
     @test grad0 ≈ state.gradient
 end
 
-@testset "Testing active set Frank-Wolfe variants, BPFW, AFW, and PFW, including their lazy versions" begin
+@testset "Testing active set based Frank-Wolfe variants     " begin
     f(x) = norm(x)^2
     function grad!(storage, x)
         @. storage = 2x
@@ -134,7 +134,7 @@ end
     )
 end
 
-@testset "recompute or not last vertex" begin
+@testset "Recompute or not last vertex                      " begin
     n = 10
     f(x) = norm(x)^2
     function grad!(storage, x)
@@ -171,7 +171,7 @@ end
     @test lmo.counter == prev_counter - 1
 end
 
-@testset "Quadratic active set" begin
+@testset "Quadratic active set                              " begin
     n = 2 # number of dimensions
     p = 10 # number of points
     function simple_reg_loss(θ, data_point)
@@ -218,7 +218,7 @@ end
     end
     lmo = FrankWolfe.LpNormLMO{Float64, 2}(1.05 * norm(params_perfect))
     x0 = FrankWolfe.compute_extreme_point(lmo, zeros(Float64, n+1))
-    active_set = FrankWolfe.ActiveSetQuadratic([(1.0, x0)], gradf)
+    active_set = FrankWolfe.ActiveSetQuadraticProductCaching([(1.0, x0)], gradf)
     res = FrankWolfe.blended_pairwise_conditional_gradient(
         f,
         gradf,
