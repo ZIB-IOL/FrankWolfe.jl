@@ -254,8 +254,6 @@ function pairwise_frank_wolfe(
 
             gamma = min(gamma_max, gamma)
 
-            # cleanup and renormalize every x iterations. Only for the fw steps.
-            renorm = mod(t, renorm_interval) == 0
             # away update
             active_set_update!(
                 active_set,
@@ -274,7 +272,7 @@ function pairwise_frank_wolfe(
                 end
             end
             # fw update
-            active_set_update!(active_set, gamma, fw_vertex, renorm, fw_index)
+            active_set_update!(active_set, gamma, fw_vertex, true, fw_index)
         end
         # println(active_set.weights)
         # println([atom[1] for atom in active_set.atoms])
