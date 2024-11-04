@@ -56,13 +56,13 @@ function grad!(storage, x)
     @. storage = 2 * (x - xp)
 end
 
-# lmo = FrankWolfe.KSparseLMO(5, 1000.0)
 
 ## other LMOs to try
 # lmo_big = FrankWolfe.KSparseLMO(100, big"1.0")
 # lmo = FrankWolfe.LpNormLMO{Float64,5}(100.0)
 # lmo = FrankWolfe.ProbabilitySimplexOracle(100.0);
-lmo = FrankWolfe.UnitSimplexOracle(10000.0);
+lmo = FrankWolfe.KSparseLMO(5, 1000.0)
+# lmo = FrankWolfe.UnitSimplexOracle(10000.0);
 
 x00 = FrankWolfe.compute_extreme_point(lmo, rand(n))
 
@@ -105,7 +105,7 @@ x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
 
 active_set_quadratic_wolfe = FrankWolfe.ActiveSetQuadraticLinearSolve(
     FrankWolfe.ActiveSet([(1.0, copy(x00))]),
-    grad!,
+    2I, -2xp,
     MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
     scheduler=FrankWolfe.LogScheduler(start_time=10, scaling_factor=1),
     wolfe_step=true,
@@ -134,3 +134,5 @@ labelSparsity = [
 
 # Plot trajectories
 plot_trajectories(dataSparsity, labelSparsity, xscalelog=false)
+
+# plot_sparsity(dataSparsity, labelSparsity, xscalelog=false)

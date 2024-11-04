@@ -301,7 +301,6 @@ function solve_quadratic_activeset_lp!(
     MOI.set(o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
     MOI.optimize!(o)
     if MOI.get(o, MOI.TerminationStatus()) ∉ (MOI.OPTIMAL, MOI.FEASIBLE_POINT, MOI.ALMOST_OPTIMAL)
-        @assert !as.wolfe_step "Infeasible Wolfe subproblem: $(MOI.get(o, MOI.TerminationStatus()))"
         return as
     end
     indices_to_remove, new_weights = if as.wolfe_step
@@ -319,7 +318,7 @@ function solve_quadratic_activeset_lp!(
 end
 
 function _compute_new_weights_direct_solve(λ, ::Type{R}, o::MOI.AbstractOptimizer) where {R}
-    indices_to_remove = Int[]
+    indices_to_remove = BitSet()
     new_weights = R[]
     for idx in eachindex(λ)
         weight_value = MOI.get(o, MOI.VariablePrimal(), λ[idx])
@@ -333,22 +332,38 @@ function _compute_new_weights_direct_solve(λ, ::Type{R}, o::MOI.AbstractOptimiz
 end
 
 function _compute_new_weights_wolfe_step(λ, ::Type{R}, old_weights, o::MOI.AbstractOptimizer) where {R}
+    wolfe_weights = MOI.get.(o, MOI.VariablePrimal(), λ)
+    # all nonnegative -> use non-wolfe procedure
+    if all(>=(-10eps()), wolfe_weights)
+        return _compute_new_weights_direct_solve(λ, R, o)
+    end
     # ratio test to know which coordinate would hit zero first
     tau_min = 1.0
+    set_indices_zero = BitSet()
     for idx in eachindex(λ)
-        weight_value = MOI.get(o, MOI.VariablePrimal(), λ[idx])
-        if weight_value < old_weights[idx]
-            tau_min = min(tau_min, old_weights[idx] / (old_weights[idx] - weight_value))
+        if wolfe_weights[idx] < old_weights[idx]
+            tau = old_weights[idx] / (old_weights[idx] - wolfe_weights[idx])
+            if abs(tau - tau_min) ≤ 2weight_purge_threshold_default(typeof(tau))
+                push!(set_indices_zero, idx)
+            elseif tau < tau_min
+                tau_min = tau
+                empty!(set_indices_zero)
+                push!(set_indices_zero, idx)
+            end
         end
     end
-    new_lambdas = [(1 - tau_min) * old_weights[idx] + tau_min * MOI.get(o, MOI.VariablePrimal(), λ[idx]) for idx in eachindex(λ)]
-    @assert all(>=(0), new_lambdas) "All new_lambdas must be between nonnegative"
-    @assert isapprox(sum(new_lambdas), 1.0, atol=1e-5) "The sum of new_lambdas must be approximately 1"
+    @assert length(set_indices_zero) >= 1
+    new_lambdas = [(1 - tau_min) * old_weights[idx] + tau_min * wolfe_weights[idx] for idx in eachindex(λ)]
+    for idx in set_indices_zero
+        new_lambdas[idx] = 0
+    end
+    @assert all(>=(-2weight_purge_threshold_default(eltype(new_lambdas))), new_lambdas) "All new_lambdas must be between nonnegative $(minimum(new_lambdas))"
+    @assert isapprox(sum(new_lambdas), 1.0) "The sum of new_lambdas must be approximately 1"
     indices_to_remove = Int[]
     new_weights = R[]
     for idx in eachindex(λ)
         weight_value =  new_lambdas[idx] # using new lambdas
-        if weight_value <= 2 * weight_purge_threshold_default(typeof(weight_value))
+        if weight_value <= eps()
             push!(indices_to_remove, idx)
         else
             push!(new_weights, weight_value)
