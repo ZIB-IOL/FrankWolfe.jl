@@ -10,7 +10,7 @@ include("utils.jl")
 include("active_set_variants.jl")
 include("alternating_methods_tests.jl")
 
-@testset "Testing vanilla Frank-Wolfe with various step size and momentum strategies" begin
+@testset "Testing vanilla Frank-Wolfe" begin
     f(x) = norm(x)^2
     function grad!(storage, x)
         return storage .= 2x
@@ -25,7 +25,7 @@ include("alternating_methods_tests.jl")
             x0,
             max_iteration=10000,
             line_search=FrankWolfe.GeneralizedAgnostic(),
-            verbose=true,
+            verbose=false,
         )[3] - 0.2,
     ) < 1.0e-5
     g(x) = 2 + log(1 + log(x + 1))
@@ -37,7 +37,7 @@ include("alternating_methods_tests.jl")
             x0,
             max_iteration=10000,
             line_search=FrankWolfe.GeneralizedAgnostic(g),
-            verbose=true,
+            verbose=false,
         )[3] - 0.2,
     ) < 1.0e-5
     @test abs(
@@ -48,7 +48,7 @@ include("alternating_methods_tests.jl")
             x0,
             max_iteration=1000,
             line_search=FrankWolfe.Agnostic(),
-            verbose=true,
+            verbose=false,
         )[3] - 0.2,
     ) < 1.0e-5
     @test abs(
@@ -71,7 +71,7 @@ include("alternating_methods_tests.jl")
             x0,
             max_iteration=1000,
             line_search=FrankWolfe.Goldenratio(),
-            verbose=true,
+            verbose=false,
         )[3] - 0.2,
     ) < 1.0e-5
     @test abs(
@@ -160,7 +160,7 @@ end
     include("momentum_memory.jl")
 end
 
-@testset "Testing Lazified Conditional Gradients with various step size strategies" begin
+@testset "Testing Lazified Conditional Gradients" begin
     f(x) = norm(x)^2
     function grad!(storage, x)
         @. storage = 2x
@@ -176,7 +176,7 @@ end
             x0,
             max_iteration=1000,
             line_search=FrankWolfe.Goldenratio(),
-            verbose=true,
+            verbose=false,
         )[3] - 0.2,
     ) < 1.0e-5
     @test abs(
@@ -187,7 +187,7 @@ end
             x0,
             max_iteration=1000,
             line_search=FrankWolfe.Backtracking(),
-            verbose=true,
+            verbose=false,
         )[3] - 0.2,
     ) < 1.0e-5
     @test abs(
@@ -198,7 +198,7 @@ end
             x0,
             max_iteration=1000,
             line_search=FrankWolfe.Shortstep(2.0),
-            verbose=true,
+            verbose=false,
         )[3] - 0.2,
     ) < 1.0e-5
     @test abs(
@@ -209,12 +209,12 @@ end
             x0,
             max_iteration=1000,
             line_search=FrankWolfe.AdaptiveZerothOrder(),
-            verbose=true,
+            verbose=false,
         )[3] - 0.2,
     ) < 1.0e-5
 end
 
-@testset "Testing Lazified Conditional Gradients with cache strategies" begin
+@testset "Testing caching in Lazified Conditional Gradients" begin
     n = Int(1e5)
     L = 2
     k = 1000
@@ -235,7 +235,7 @@ end
         x0,
         max_iteration=k,
         line_search=FrankWolfe.Shortstep(2.0),
-        verbose=true,
+        verbose=false,
     )
 
     @test primal - 1 / n <= bound
@@ -377,7 +377,7 @@ end
         line_search=FrankWolfe.Agnostic(),
         print_iter=k / 10,
         memory_mode=FrankWolfe.InplaceEmphasis(),
-        verbose=true,
+        verbose=false,
     )
     @test eltype(x0) == eltype(x) == Rational{BigInt}
     @test f(x) <= 1e-4
@@ -393,7 +393,7 @@ end
         line_search=FrankWolfe.Shortstep(2 // 1),
         print_iter=k / 100,
         memory_mode=FrankWolfe.InplaceEmphasis(),
-        verbose=true,
+        verbose=false,
     )
 
     x0 = FrankWolfe.compute_extreme_point(lmo, direction)
@@ -406,7 +406,7 @@ end
         line_search=FrankWolfe.Shortstep(2 // 1),
         print_iter=k / 10,
         memory_mode=FrankWolfe.InplaceEmphasis(),
-        verbose=true,
+        verbose=false,
     )
     @test eltype(x) == Rational{BigInt}
 end
@@ -470,7 +470,7 @@ end
             line_search=FrankWolfe.AdaptiveZerothOrder(),
             print_iter=k / 10,
             memory_mode=FrankWolfe.InplaceEmphasis(),
-            verbose=true,
+            verbose=false,
         )
 
         @test eltype(x0) == T
@@ -485,7 +485,7 @@ end
             line_search=FrankWolfe.AdaptiveZerothOrder(),
             print_iter=k / 10,
             memory_mode=FrankWolfe.InplaceEmphasis(),
-            verbose=true,
+            verbose=false,
         )
 
         @test eltype(x0) == T
@@ -612,7 +612,7 @@ end
         max_iteration=k,
         line_search=FrankWolfe.Backtracking(),
         print_iter=k / 10,
-        verbose=true,
+        verbose=false,
         memory_mode=FrankWolfe.OutplaceEmphasis(),
     )
 
@@ -627,7 +627,7 @@ end
         max_iteration=k,
         line_search=FrankWolfe.Backtracking(),
         print_iter=k / 10,
-        verbose=true,
+        verbose=false,
         memory_mode=FrankWolfe.OutplaceEmphasis(),
     )
 
@@ -643,7 +643,7 @@ end
         away_steps=false,
         line_search=FrankWolfe.Backtracking(),
         print_iter=k / 10,
-        verbose=true,
+        verbose=false,
         memory_mode=FrankWolfe.OutplaceEmphasis(),
     )
 
@@ -658,7 +658,7 @@ end
         max_iteration=k,
         line_search=FrankWolfe.Backtracking(),
         print_iter=k / 10,
-        verbose=true,
+        verbose=false,
         memory_mode=FrankWolfe.OutplaceEmphasis(),
     )
 
@@ -673,7 +673,7 @@ end
         max_iteration=k,
         line_search=FrankWolfe.Backtracking(),
         print_iter=k / 10,
-        verbose=true,
+        verbose=false,
         memory_mode=FrankWolfe.InplaceEmphasis(),
     )
 
@@ -689,7 +689,7 @@ end
         away_steps=false,
         line_search=FrankWolfe.Backtracking(),
         print_iter=k / 10,
-        verbose=true,
+        verbose=false,
         memory_mode=FrankWolfe.InplaceEmphasis(),
     )
 
@@ -704,7 +704,7 @@ end
         max_iteration=k,
         line_search=FrankWolfe.Backtracking(),
         print_iter=k / 10,
-        verbose=true,
+        verbose=false,
         memory_mode=FrankWolfe.InplaceEmphasis(),
     )
 
@@ -720,12 +720,12 @@ end
         max_iteration=k,
         line_search=FrankWolfe.Backtracking(),
         print_iter=k / 10,
-        verbose=true,
+        verbose=false,
         memory_mode=FrankWolfe.OutplaceEmphasis(),
     )
 end
 
-@testset "Blended conditional gradient" begin
+@testset "Testing Blended Conditional Gradient" begin
     n = 50
     lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1.0)
     x0 = FrankWolfe.compute_extreme_point(lmo_prob, randn(n))
@@ -743,7 +743,7 @@ end
         x0,
         max_iteration=k,
         line_search=FrankWolfe.Backtracking(),
-        verbose=true,
+        verbose=false,
         memory_mode=FrankWolfe.OutplaceEmphasis(),
     )
 
@@ -764,7 +764,6 @@ end
     @test f(x) ≈ f(xref)
 
 end
-
 
 include("oddities.jl")
 include("tracking.jl")
@@ -807,7 +806,7 @@ end
 
 module LpDirectSolveTestProjection
 using Test
-@testset "LP solving for quadratic functions and active set" begin
+@testset "LP solving for standard quadratic function and active set" begin
     include("as_quadratic_projection.jl")
 end
 end

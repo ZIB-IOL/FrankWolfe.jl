@@ -14,7 +14,6 @@ s = 10
 @info "Seed $s"
 Random.seed!(s)
 
-
 xpi = rand(n);
 total = sum(xpi);
 

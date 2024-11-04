@@ -57,7 +57,7 @@ end
 """
     ActiveSetQuadraticLinearSolve(tuple_values::Vector{Tuple{R,AT}}, A, b, lp_optimizer)
 
-Creates an `ActiveSetQuadraticLinearSolve` from the given Hessian `A`, linear term `b` and `lp_optimizer` by creating an inner `ActiveSetQuadratic` active set.
+Creates an `ActiveSetQuadraticLinearSolve` from the given Hessian `A`, linear term `b` and `lp_optimizer` by creating an inner `ActiveSetQuadraticProductCaching` active set.
 """
 function ActiveSetQuadraticLinearSolve(
     tuple_values::Vector{Tuple{R,AT}},
@@ -67,7 +67,7 @@ function ActiveSetQuadraticLinearSolve(
     scheduler=LogScheduler(),
     wolfe_step=false,
 ) where {AT,R,H}
-    inner_as = ActiveSetQuadratic(tuple_values, A, b)
+    inner_as = ActiveSetQuadraticProductCaching(tuple_values, A, b)
     return ActiveSetQuadraticLinearSolve(
         inner_as.weights,
         inner_as.atoms,
@@ -164,7 +164,7 @@ function ActiveSetQuadraticLinearSolve{AT,R}(
     lp_optimizer;
     scheduler=LogScheduler(),
 ) where {AT,R,H}
-    inner_as = ActiveSetQuadratic{AT,R}(tuple_values, A, b)
+    inner_as = ActiveSetQuadraticProductCaching{AT,R}(tuple_values, A, b)
     as = ActiveSetQuadraticLinearSolve{AT,R,typeof(x),H}(
         inner_as.weights,
         inner_as.atoms,
@@ -370,6 +370,14 @@ function _compute_new_weights_wolfe_step(λ, ::Type{R}, old_weights, o::MOI.Abst
         end
     end
     return indices_to_remove, new_weights
+end
+
+function _compute_quadratic_constraint_term(atom1, A::AbstractMatrix, atom2, λ)
+    return MOI.ScalarAffineTerm(fast_dot(atom1, A, atom2), λ)
+end
+
+function _compute_quadratic_constraint_term(atom1, A::Union{Identity,LinearAlgebra.UniformScaling}, atom2, λ)
+    return MOI.ScalarAffineTerm(A.λ * fast_dot(atom1, atom2), λ)
 end
 
 function _compute_quadratic_constraint_term(atom1, A::AbstractMatrix, atom2, λ)

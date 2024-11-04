@@ -9,7 +9,7 @@ n = Int(1e4)
 k = 5000
 
 s = 10
-@info "Seed $s"
+# @info "Seed $s"
 Random.seed!(s)
 
 xpi = rand(n);
@@ -78,7 +78,7 @@ x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     as_quad_direct_generic,
     max_iteration=k,
     line_search=FrankWolfe.Shortstep(2.0),
-    verbose=true,
+    verbose=false,
     callback=build_callback(trajectoryBPCG_quadratic_direct_generic),
 );
 
@@ -97,7 +97,7 @@ x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     as_quad_direct_basic_as,
     max_iteration=k,
     line_search=FrankWolfe.Shortstep(2.0),
-    verbose=true,
+    verbose=false,
     callback=build_callback(trajectoryBPCG_quadratic_noqas),
 );
 

@@ -17,7 +17,7 @@ using SparseArrays
             x0,
             max_iteration=1000,
             line_search=FrankWolfe.Agnostic(),
-            verbose=true,
+            verbose=false,
         )[3] - 0.2,
     ) < 1.0e-5
     @test abs(
@@ -40,7 +40,7 @@ using SparseArrays
             x0,
             max_iteration=1000,
             line_search=FrankWolfe.Goldenratio(),
-            verbose=true,
+            verbose=false,
         )[3] - 0.2,
     ) < 1.0e-5
     @test abs(

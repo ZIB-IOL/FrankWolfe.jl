@@ -4,7 +4,7 @@ using LinearAlgebra
 using FrankWolfe
 using SparseArrays
 
-@testset "Block array behaviour" begin
+@testset "Block array behavior" begin
     arr = FrankWolfe.BlockVector([
         [
             1 3
@@ -53,7 +53,7 @@ using SparseArrays
 
 end
 
-@testset "FrankWolfe array methods" begin
+@testset "Frank-Wolfe array methods" begin
     @testset "Block arrays" begin
         mem = FrankWolfe.InplaceEmphasis()
         arr0 = FrankWolfe.BlockVector([
