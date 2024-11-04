@@ -380,14 +380,6 @@ function _compute_quadratic_constraint_term(atom1, A::Union{Identity,LinearAlgeb
     return MOI.ScalarAffineTerm(A.λ * fast_dot(atom1, atom2), λ)
 end
 
-function _compute_quadratic_constraint_term(atom1, A::AbstractMatrix, atom2, λ)
-    return MOI.ScalarAffineTerm(fast_dot(atom1, A, atom2), λ)
-end
-
-function _compute_quadratic_constraint_term(atom1, A::Union{Identity,LinearAlgebra.UniformScaling}, atom2, λ)
-    return MOI.ScalarAffineTerm(A.λ * fast_dot(atom1, atom2), λ)
-end
-
 struct LogScheduler{T}
     start_time::Int
     scaling_factor::T
