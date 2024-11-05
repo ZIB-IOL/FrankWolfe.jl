@@ -4,7 +4,7 @@
 
 ```@autodocs
 Modules = [FrankWolfe]
-Pages = ["active_set.jl"]
+Pages = ["active_set.jl", "active_set_quadratic.jl", "active_set_quadratic_direct_solve.jl", "active_set_sparsifier.jl"]
 ```
 
 ## Functions and gradients
@@ -67,6 +67,7 @@ FrankWolfe.select_update_indices
 FrankWolfe.FullUpdate
 FrankWolfe.CyclicUpdate
 FrankWolfe.StochasticUpdate
+FrankWolfe.LazyUpdate
 ```
 
 ## Update step for block-coordinate Frank-Wolfe

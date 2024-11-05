@@ -3,7 +3,7 @@ using LinearAlgebra
 using SparseArrays
 using FrankWolfe
 
-@testset "Tracking Testset" begin
+@testset "Tracking Testset                                  " begin
     f(x) = norm(x)^2
     function grad!(storage, x)
         return storage .= 2x
@@ -41,7 +41,7 @@ using FrankWolfe
     end
 end
 
-@testset "Testing vanilla Frank-Wolfe with various step size and momentum strategies" begin
+@testset "Testing vanilla Frank-Wolfe                       " begin
     f(x) = norm(x)^2
 
     function grad!(storage, x)
@@ -68,7 +68,7 @@ end
         trajectory=true,
         callback=nothing,
         traj_data=storage,
-        verbose=true,
+        verbose=false,
     )
 
     @test length(storage[1]) == 5
@@ -79,7 +79,7 @@ end
     @test tlmo.counter == niters + 1 # x0 computation and initialization
 end
 
-@testset "Testing lazified Frank-Wolfe with various step size and momentum strategies" begin
+@testset "Testing lazified Frank-Wolfe                      " begin
     f(x) = norm(x)^2
 
     function grad!(storage, x)

@@ -57,7 +57,7 @@ function correlation_tensor_GHZ_polygon(N::Int, m::Int; type=Float64)
     return res
 end
 
-function build_reduce_inflate_permutedims(p::Array{T, 2}) where {T <: Number}
+function build_deflate_inflate_permutedims(p::Array{T, 2}) where {T <: Number}
     n = size(p, 1)
     @assert n == size(p, 2)
     dimension = (n * (n + 1)) ÷ 2
@@ -72,8 +72,8 @@ function build_reduce_inflate_permutedims(p::Array{T, 2}) where {T <: Number}
                 vec[cnt+j] = (A[i, j] + A[j, i]) / sqrt2
             end
         end
-        return FrankWolfe.SymmetricArray(A, vec)
-    end, function(x::FrankWolfe.SymmetricArray, lmo)
+        return FrankWolfe.SubspaceVector(A, vec)
+    end, function(x::FrankWolfe.SubspaceVector, lmo)
         cnt = 0
         @inbounds for i in 1:n
             x.data[i, i] = x.vec[i]
@@ -90,9 +90,9 @@ end
 function benchmark_Bell(p::Array{T, 2}, sym::Bool; fw_method=FrankWolfe.blended_pairwise_conditional_gradient, kwargs...) where {T <: Number}
     Random.seed!(0)
     if sym
-        reduce, inflate = build_reduce_inflate_permutedims(p)
-        lmo = FrankWolfe.SymmetricLMO(BellCorrelationsLMOHeuristic{T}(size(p, 1), zeros(T, size(p, 1))), reduce, inflate)
-        p = reduce(p, lmo)
+        deflate, inflate = build_deflate_inflate_permutedims(p)
+        lmo = FrankWolfe.SubspaceLMO(BellCorrelationsLMOHeuristic{T}(size(p, 1), zeros(T, size(p, 1))), deflate, inflate)
+        p = deflate(p, lmo)
     else
         lmo = BellCorrelationsLMOHeuristic{T}(size(p, 1), zeros(T, size(p, 1)))
     end
@@ -109,7 +109,7 @@ function benchmark_Bell(p::Array{T, 2}, sym::Bool; fw_method=FrankWolfe.blended_
         end
     end
     x0 = FrankWolfe.compute_extreme_point(lmo, -p)
-    active_set = FrankWolfe.ActiveSetQuadratic([(one(T), x0)], I, -p)
+    active_set = FrankWolfe.ActiveSetQuadraticProductCaching([(one(T), x0)], I, -p)
     res = fw_method(f, grad!, lmo, active_set; line_search=FrankWolfe.Shortstep(one(T)), lazy=true, verbose=false, max_iteration=10^2)
     return fw_method(f, grad!, lmo, res[6]; line_search=FrankWolfe.Shortstep(one(T)), lazy=true, lazy_tolerance=10^6, kwargs...)
 end
