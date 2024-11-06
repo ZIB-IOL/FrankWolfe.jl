@@ -2,7 +2,7 @@ using FrankWolfe
 using LinearAlgebra
 using SparseArrays
 
-@testset "Timing out                                        " begin
+@testset "Timing out" begin
     f(x) = norm(x)^2
     function grad!(storage, x)
         return storage .= 2x
