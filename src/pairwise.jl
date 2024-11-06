@@ -7,7 +7,6 @@ The algorithm maintains the current iterate as a convex combination of vertices 
 [`FrankWolfe.ActiveSet`](@ref) data structure.
 See [M. Besançon, A. Carderera and S. Pokutta 2021](https://arxiv.org/abs/2104.06675) for illustrations of away steps. 
 Unlike away-step, it transfers weight from an away vertex to another vertex.
-
 """
 function pairwise_frank_wolfe(
     f,
@@ -119,9 +118,6 @@ function pairwise_frank_wolfe(
     if isempty(active_set)
         throw(ArgumentError("Empty active set"))
     end
-
-    # note that we also use the standard FW gap and not the strong FW gap for lazification as in BPCG
-    # see blended_pairwise.jl or a more complete derivation can be found in https://hackmd.io/@spokutta/B14MTMsLF
 
     t = 0
     dual_gap = Inf
@@ -258,28 +254,28 @@ function pairwise_frank_wolfe(
 
             gamma = min(gamma_max, gamma)
 
-            # cleanup and renormalize every x iterations. Only for the fw steps.
-            renorm = mod(t, renorm_interval) == 0
             # away update
             active_set_update!(
                 active_set,
                 -gamma,
                 away_vertex,
-                true,
+                false,
                 away_index,
                 add_dropped_vertices=use_extra_vertex_storage,
                 vertex_storage=extra_vertex_storage,
             )
-            if add_dropped_vertices && gamma == gamma_max
+            if add_dropped_vertices && gamma ≈ gamma_max
                 for vtx in active_set.atoms
                     if vtx != v
                         push!(extra_vertex_storage, vtx)
                     end
                 end
             end
-            # fw update 
-            active_set_update!(active_set, gamma, fw_vertex, renorm, fw_index)
+            # fw update
+            active_set_update!(active_set, gamma, fw_vertex, true, fw_index)
         end
+        # println(active_set.weights)
+        # println([atom[1] for atom in active_set.atoms])
 
         if callback !== nothing
             state = CallbackState(
@@ -328,6 +324,7 @@ function pairwise_frank_wolfe(
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
+    dual_gap = min(phi_value, dual_gap)
     step_type = ST_LAST
     tot_time = (time_ns() - time_start) / 1e9
     if callback !== nothing
