@@ -3,7 +3,7 @@ using LinearAlgebra
 using Test
 using SparseArrays
 
-@testset "Simple benchmark_oracles function                 " begin
+@testset "Simple benchmark_oracles function" begin
     n = Int(1e3)
 
     xpi = rand(n)
@@ -21,7 +21,7 @@ using SparseArrays
     FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo_prob; k=100)
 end
 
-@testset "RankOneMatrix                                     " begin
+@testset "RankOneMatrix" begin
     for n in (1, 2, 5)
         for _ in 1:5
             v = rand(n)
@@ -82,7 +82,7 @@ end
     end
 end
 
-@testset "Line Search methods                               " begin
+@testset "Line Search methods" begin
     a = [-1.0, -1.0, -1.0]
     b = [1.0, 1.0, 1.0]
     function grad!(storage, x)
@@ -214,14 +214,14 @@ end
     )
 end
 
-@testset "Momentum tests                                    " begin
+@testset "Momentum tests" begin
     it = FrankWolfe.ExpMomentumIterator()
     it.num = 0
     # no momentum -> 1
     @test FrankWolfe.momentum_iterate(it) == 1
 end
 
-@testset "Fast dot complex & norm                           " begin
+@testset "Fast dot complex & norm" begin
     s = sparse(I, 3, 3)
     m = randn(Complex{Float64}, 3, 3)
     @test dot(s, m) ≈ FrankWolfe.fast_dot(s, m)
