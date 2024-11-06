@@ -308,3 +308,4 @@ m = 300
         @test isapprox(f(x_s), f(x_d_m))
     end
 end
+
