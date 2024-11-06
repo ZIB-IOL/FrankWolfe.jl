@@ -274,6 +274,79 @@ The method is specialized by type `H` of the Hessian matrix `A`.
 function solve_quadratic_activeset_lp!(
     as::ActiveSetQuadraticLinearSolve{AT,R,IT,H},
 ) where {AT,R,IT,H}
+    should_update, indices_to_remove, new_weights = if as.wolfe_step
+        wolfe_weights = solve_quadratic_activeset_wolfe!(as)
+        _compute_new_weights_wolfe_step(wolfe_weights, as.weights)
+    else
+        _compute_new_weights_direct_solve(as)
+    end
+    if !should_update
+        return as
+    end
+    deleteat!(as.active_set, indices_to_remove)
+    @assert length(as) == length(new_weights)
+    update_weights!(as.active_set, new_weights)
+    active_set_cleanup!(as)
+    active_set_renormalize!(as)
+    compute_active_set_iterate!(as)
+    return as
+end
+
+function solve_quadratic_activeset_wolfe!(as)
+    # Vᵗ A V λ == -Vᵗ b
+    # ∑ λ == 1
+    # ⇔
+    # B λ = r
+    # B = [ Vᵀ A V     r = [-Vᵀ b
+    #        - 1 - ]           1  ]
+    B, r = if SparseArrays.issparse(as.atoms[1])
+         _build_wolfe_system_sparse(as)
+    else
+        _build_wolfe_system_dense(as)
+    end
+    return B \ r
+end
+
+function _build_wolfe_system_sparse(as::ActiveSetQuadraticLinearSolve)
+    V = spzeros(eltype(as.atoms[1]), length(as.atoms[1]), length(as.atoms))
+    for (idx, atom) in enumerate(as.atoms)
+        copyto!(@view(V[:, idx]), atom)
+    end
+    B = spzeros(length(as) + 1, length(as))
+    for idx in eachindex(as)
+        B[end, idx] = 1
+    end
+    copyto!(@view(B[1:end-1, :]), V' * as.A * V)
+    r = collect(-V' * as.b)
+    push!(r, 1)
+    # for idx in eachindex(as)
+    #     copyto!(@view(B[idx, :]), atom)
+    #     B[idx, end] = 1
+    # end
+    return B, r
+end
+
+function _build_wolfe_system_dense(as::ActiveSetQuadraticLinearSolve)
+    V = zeros(eltype(as.atoms[1]), length(as.atoms[1]), length(as.atoms))
+    for (idx, atom) in enumerate(as.atoms)
+        copyto!(@view(V[:, idx]), atom)
+    end
+    B = zeros(length(as) + 1, length(as.atoms[1]))
+    for idx in eachindex(as)
+        B[end, idx] = 1
+    end
+    copyto!(B[1:end-1, :], V' * as * V)
+    r = collect(-V' * as.b)
+    push!(r, 1)
+    # for idx in eachindex(as)
+    #     copyto!(@view(B[idx, :]), atom)
+    #     B[idx, end] = 1
+    # end
+    return B, r
+end
+
+function _compute_new_weights_direct_solve(as)
+    R = eltype(as.weights)
     nv = length(as)
     o = as.lp_optimizer
     MOI.empty!(o)
@@ -301,26 +374,11 @@ function solve_quadratic_activeset_lp!(
     MOI.set(o, MOI.ObjectiveFunction{typeof(sum_of_variables)}(), sum_of_variables)
     MOI.set(o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
     MOI.optimize!(o)
-    if MOI.get(o, MOI.TerminationStatus()) ∉ (MOI.OPTIMAL, MOI.FEASIBLE_POINT, MOI.ALMOST_OPTIMAL)
-        return as
-    end
-    indices_to_remove, new_weights = if as.wolfe_step
-        _compute_new_weights_wolfe_step(λ, R, as.weights, o)
-    else
-        _compute_new_weights_direct_solve(λ, R, o)
-    end
-    deleteat!(as.active_set, indices_to_remove)
-    @assert length(as) == length(new_weights)
-    update_weights!(as.active_set, new_weights)
-    active_set_cleanup!(as)
-    active_set_renormalize!(as)
-    compute_active_set_iterate!(as)
-    return as
-end
-
-function _compute_new_weights_direct_solve(λ, ::Type{R}, o::MOI.AbstractOptimizer) where {R}
     indices_to_remove = BitSet()
     new_weights = R[]
+    if MOI.get(o, MOI.TerminationStatus()) ∉ (MOI.OPTIMAL, MOI.FEASIBLE_POINT, MOI.ALMOST_OPTIMAL)
+        return false, indices_to_remove, new_weights
+    end
     for idx in eachindex(λ)
         weight_value = MOI.get(o, MOI.VariablePrimal(), λ[idx])
         if weight_value <= 2 * weight_purge_threshold_default(typeof(weight_value))
@@ -329,19 +387,27 @@ function _compute_new_weights_direct_solve(λ, ::Type{R}, o::MOI.AbstractOptimiz
             push!(new_weights, weight_value)
         end
     end
-    return indices_to_remove, new_weights
+    return true, indices_to_remove, new_weights
 end
 
-function _compute_new_weights_wolfe_step(λ, ::Type{R}, old_weights, o::MOI.AbstractOptimizer) where {R}
-    wolfe_weights = MOI.get.(o, MOI.VariablePrimal(), λ)
+function _compute_new_weights_wolfe_step(wolfe_weights, old_weights::AbstractVector{R}) where {R}
     # all nonnegative -> use non-wolfe procedure
     if all(>=(-10eps()), wolfe_weights)
-        return _compute_new_weights_direct_solve(λ, R, o)
+        indices_to_remove = BitSet()
+        new_weights = R[]
+        for (idx, weight_value) in enumerate(wolfe_weights)
+            if weight_value <= 2 * weight_purge_threshold_default(typeof(weight_value))
+                push!(indices_to_remove, idx)
+            else
+                push!(new_weights, weight_value)
+            end
+        end
+        return true, indices_to_remove, new_weights
     end
     # ratio test to know which coordinate would hit zero first
-    tau_min = 1.0
+    tau_min = one(eltype(wolfe_weights))
     set_indices_zero = BitSet()
-    for idx in eachindex(λ)
+    for idx in eachindex(wolfe_weights)
         if wolfe_weights[idx] < old_weights[idx]
             tau = old_weights[idx] / (old_weights[idx] - wolfe_weights[idx])
             if abs(tau - tau_min) ≤ 2weight_purge_threshold_default(typeof(tau))
@@ -370,7 +436,7 @@ function _compute_new_weights_wolfe_step(λ, ::Type{R}, old_weights, o::MOI.Abst
             push!(new_weights, weight_value)
         end
     end
-    return indices_to_remove, new_weights
+    return true, indices_to_remove, new_weights
 end
 
 function _compute_quadratic_constraint_term(atom1, A::AbstractMatrix, atom2, λ)

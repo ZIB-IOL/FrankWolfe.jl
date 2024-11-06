@@ -19,7 +19,7 @@ import MathOptInterface as MOI
 
 include("../examples/plot_utils.jl")
 
-n = Int(1e2)
+n = Int(1e3)
 k = 10000
 
 # s = rand(1:100)
@@ -59,7 +59,7 @@ end
 lmo = FrankWolfe.KSparseLMO(5, 500.0)
 
 ## other LMOs to try
-lmo = FrankWolfe.KSparseLMO(10, big"500.0")
+# lmo = FrankWolfe.KSparseLMO(10, big"500.0")
 # lmo = FrankWolfe.LpNormLMO{Float64,5}(100.0)
 # lmo = FrankWolfe.ProbabilitySimplexOracle(100.0);
 # lmo = FrankWolfe.UnitSimplexOracle(10000.0);
