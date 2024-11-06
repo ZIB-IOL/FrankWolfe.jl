@@ -56,10 +56,10 @@ function grad!(storage, x)
     @. storage = 2 * (x - xp)
 end
 
-lmo = FrankWolfe.KSparseLMO(5, 1000.0)
+lmo = FrankWolfe.KSparseLMO(5, 500.0)
 
 ## other LMOs to try
-# lmo_big = FrankWolfe.KSparseLMO(100, big"1.0")
+lmo = FrankWolfe.KSparseLMO(10, big"500.0")
 # lmo = FrankWolfe.LpNormLMO{Float64,5}(100.0)
 # lmo = FrankWolfe.ProbabilitySimplexOracle(100.0);
 # lmo = FrankWolfe.UnitSimplexOracle(10000.0);

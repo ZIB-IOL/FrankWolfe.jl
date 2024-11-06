@@ -11,7 +11,8 @@ so that the gradient is `∇f(x)=Ax+b`.
 This active set stores an inner `active_set` that keeps track of the current set of vertices and convex decomposition.
 It therefore delegates all update, deletion, and addition operations to this inner active set.
 The `weight`, `atoms`, and `x` fields should only be accessed to read and are effectively the same objects as those in the inner active set.
-The Boolean flag `wolfe_step` determines whether to use a Wolfe step from the min-norm point algorithm or  
+The flag `wolfe_step` determines whether to use a Wolfe step from the min-norm point algorithm or the normal direct solve.
+The Wolfe step solves the auxiliary subproblem over the affine hull of the current active set (instead of the convex hull).
 
 The structure also contains a scheduler struct which is called with the `should_solve_lp` function.
 To define a new frequency at which the LP should be solved, one can define another scheduler struct and implement the corresponding method.
@@ -295,7 +296,7 @@ function solve_quadratic_activeset_lp!(
             )
         end
         rhs = -dot(atom, as.b)
-        MOI.add_constraint(o, lhs, MOI.EqualTo(rhs))
+        MOI.add_constraint(o, lhs, MOI.EqualTo{Float64}(rhs))
     end
     MOI.set(o, MOI.ObjectiveFunction{typeof(sum_of_variables)}(), sum_of_variables)
     MOI.set(o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
