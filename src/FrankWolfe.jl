@@ -36,6 +36,8 @@ include("moi_oracle.jl")
 include("function_gradient.jl")
 include("active_set.jl")
 include("active_set_quadratic.jl")
+include("active_set_quadratic_direct_solve.jl")
+include("active_set_sparsifier.jl")
 
 include("blended_cg.jl")
 include("afw.jl")
@@ -45,9 +47,9 @@ include("block_coordinate_algorithms.jl")
 include("alternating_methods.jl")
 include("blended_pairwise.jl")
 include("pairwise.jl")
+include("dicg.jl")
 include("tracking.jl")
 include("callback.jl")
-include("dicg.jl")
 
 # collecting most common data types etc and precompile
 # min version req set to 1.5 to prevent stalling of julia 1

@@ -14,7 +14,7 @@ import Clp
 import Hypatia
 using JuMP
 
-@testset "Simplex LMOs" begin
+@testset "Simplex LMOs                                      " begin
     n = 6
     direction = zeros(6)
     rhs = 10 * rand()
@@ -60,7 +60,7 @@ using JuMP
     end
 end
 
-@testset "Hypersimplex" begin
+@testset "Hypersimplex                                      " begin
     @testset "Hypersimplex $n $K" for n in (2, 5, 10), K in (1, min(n, 4))
         K = 1
         n = 5
@@ -191,7 +191,7 @@ end
     end
 end
 
-@testset "Lp-norm epigraph LMO" begin
+@testset "Lp-norm epigraph LMO                              " begin
     for n in (1, 2, 5, 10)
         τ = 5 + 3 * rand()
         # tests that the "special" p behaves like the "any" p, i.e. 2.0 and 2
@@ -234,7 +234,7 @@ end
     end
 end
 
-@testset "K-sparse polytope LMO" begin
+@testset "K-sparse polytope LMO                             " begin
     @testset "$n-dimension" for n in (1, 2, 10)
         τ = 5 + 3 * rand()
         for K in 1:n
@@ -264,7 +264,7 @@ end
     @test norm(v) > 0
 end
 
-@testset "Caching on simplex LMOs" begin
+@testset "Caching on simplex LMOs                           " begin
     n = 6
     direction = zeros(6)
     rhs = 10 * rand()
@@ -314,7 +314,7 @@ function _is_doubly_stochastic(m)
     end
 end
 
-@testset "Birkhoff polytope" begin
+@testset "Birkhoff polytope                                 " begin
     Random.seed!(42)
     lmo = FrankWolfe.BirkhoffPolytopeLMO()
     for n in (1, 2, 10)
@@ -358,7 +358,7 @@ end
     ]
 end
 
-@testset "Matrix completion and nuclear norm" begin
+@testset "Matrix completion and nuclear norm                " begin
     nfeat = 50
     nobs = 100
     r = 5
@@ -425,7 +425,7 @@ end
     )
 end
 
-@testset "Spectral norms" begin
+@testset "Spectral norms                                    " begin
     Random.seed!(42)
     o = Hypatia.Optimizer()
     MOI.set(o, MOI.Silent(), true)
@@ -514,7 +514,7 @@ end
     end
 end
 
-@testset "MOI oracle consistency" begin
+@testset "MOI oracle consistency                            " begin
     Random.seed!(42)
     o = GLPK.Optimizer()
     MOI.set(o, MOI.Silent(), true)
@@ -649,7 +649,7 @@ end
     end
 end
 
-@testset "MOI oracle on Birkhoff polytope" begin
+@testset "MOI oracle on Birkhoff polytope                   " begin
     o = GLPK.Optimizer()
     o_ref = GLPK.Optimizer()
     for n in (1, 2, 10)
@@ -687,7 +687,7 @@ end
     end
 end
 
-@testset "MOI oracle and KSparseLMO" begin
+@testset "MOI oracle and KSparseLMO                         " begin
     o_base = GLPK.Optimizer()
     cached = MOI.Utilities.CachingOptimizer(
         MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
@@ -751,7 +751,7 @@ end
     end
 end
 
-@testset "Product LMO" begin
+@testset "Product LMO                                       " begin
     lmo = FrankWolfe.ProductLMO(FrankWolfe.LpNormLMO{Inf}(3.0), FrankWolfe.LpNormLMO{1}(2.0))
     dinf = randn(10)
     d1 = randn(5)
@@ -770,7 +770,7 @@ end
     @test FrankWolfe.BlockVector([vinf, v1]) == v_block
 end
 
-@testset "Scaled L-1 norm polytopes" begin
+@testset "Scaled L-1 norm polytopes                         " begin
     lmo = FrankWolfe.ScaledBoundL1NormBall(-ones(10), ones(10))
     # equivalent to LMO
     lmo_ref = FrankWolfe.LpNormLMO{1}(1)
@@ -802,7 +802,7 @@ end
     @test v ≈ [-1, 0]
 end
 
-@testset "Scaled L-inf norm polytopes" begin
+@testset "Scaled L-inf norm polytopes                       " begin
     # tests ScaledBoundLInfNormBall for the standard hypercube, a shifted one, and a scaled one
     lmo = FrankWolfe.ScaledBoundLInfNormBall(-ones(10), ones(10))
     lmo_ref = FrankWolfe.LpNormLMO{Inf}(1)
@@ -847,7 +847,7 @@ end
     end
 end
 
-@testset "Copy MathOpt LMO" begin
+@testset "Copy MathOpt LMO                                  " begin
     o_clp = MOI.Utilities.CachingOptimizer(
         MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
         Clp.Optimizer(),
@@ -869,7 +869,7 @@ end
     end
 end
 
-@testset "MathOpt LMO with BlockVector" begin
+@testset "MathOpt LMO with BlockVector                      " begin
     o = GLPK.Optimizer()
     MOI.set(o, MOI.Silent(), true)
     x = MOI.add_variables(o, 10)
@@ -888,7 +888,7 @@ end
 
 end
 
-@testset "Inplace LMO correctness" begin
+@testset "Inplace LMO correctness                           " begin
 
     V = [-6.0, -6.15703, -5.55986]
     M = [3.0 2.8464949 2.4178848; 2.8464949 3.0 2.84649498; 2.4178848 2.84649498 3.0]
@@ -912,7 +912,7 @@ end
     @test x_dense == x_standard
 end
 
-@testset "Ellipsoid LMO $n" for n in (2, 5, 10)
+@testset "Ellipsoid LMO $n                                   " for n in (2, 5, 9)
     A = zeros(n, n)
     A[1, 1] = 3
     @test_throws PosDefException FrankWolfe.EllipsoidLMO(A)
@@ -944,7 +944,7 @@ end
     @test dot(xv, d) ≈ dot(v, d) atol = 1e-5 * n
 end
 
-@testset "Convex hull" begin
+@testset "Convex hull                                       " begin
     lmo = FrankWolfe.ConvexHullOracle([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
     for _ in 1:100
         d = randn(3)
@@ -957,7 +957,7 @@ end
     @test v == lmo.vertices[1]
 end
 
-@testset "Symmetric LMO" begin
+@testset "Symmetric LMO                                     " begin
     # See examples/reynolds.jl
     struct BellCorrelationsLMO{T} <: FrankWolfe.LinearMinimizationOracle
         m::Int # number of inputs
@@ -1023,7 +1023,7 @@ end
     end
     reynolds_adjoint(gradient, lmo) = gradient
     lmo = BellCorrelationsLMO{Float64}(size(p, 1), zeros(size(p, 1)))
-    sym = FrankWolfe.SymmetricLMO(lmo, reynolds_permutedims, reynolds_adjoint)
+    sym = FrankWolfe.SubspaceLMO(lmo, reynolds_permutedims, reynolds_adjoint)
     x0 = FrankWolfe.compute_extreme_point(sym, -p)
     active_set = FrankWolfe.ActiveSet([(1.0, x0)])
     res = FrankWolfe.blended_pairwise_conditional_gradient(
@@ -1038,7 +1038,7 @@ end
     @test length(res[6]) < 25
 end
 
-@testset "Ordered Weighted Norm LMO" begin
+@testset "Ordered Weighted Norm LMO                         " begin
     Random.seed!(4321)
     N = Int(1e3)
     for _ in 1:10 

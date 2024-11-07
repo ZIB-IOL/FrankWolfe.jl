@@ -331,5 +331,8 @@ end
         res_fw = FrankWolfe.frank_wolfe(f, grad!, lmo, FrankWolfe.compute_extreme_point(lmo, randn(n)))
         res_dicg = FrankWolfe.decomposition_invariant_conditional_gradient(f, grad!, lmo, FrankWolfe.compute_extreme_point(lmo, randn(n)))
         @test norm(res_fw.x - res_dicg.x) ≤ 1e-4
+        lmo_tracking = FrankWolfe.TrackingLMO(lmo)
+        res_dicg_tracking = FrankWolfe.decomposition_invariant_conditional_gradient(f, grad!, lmo_tracking, FrankWolfe.compute_extreme_point(lmo, randn(n)))
+        @test norm(res_dicg_tracking.x - res_dicg.x) ≤ 1e-4
     end
 end

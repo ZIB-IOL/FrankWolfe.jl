@@ -2,7 +2,7 @@ import FrankWolfe
 using LinearAlgebra
 using Test
 
-@testset "Testing adaptive LS when already optimal and gradient is 0" begin
+@testset "Testing adaptive LS at optimality                 " begin
     f(x) = norm(x)^2
     function grad!(storage, x)
         return storage .= 2x
@@ -19,7 +19,7 @@ using Test
             x0,
             max_iteration=1000,
             line_search=FrankWolfe.Agnostic(),
-            verbose=true,
+            verbose=false,
         )[3],
     ) < 1.0e-10
 
@@ -32,7 +32,7 @@ using Test
             x0,
             max_iteration=1000,
             line_search=FrankWolfe.AdaptiveZerothOrder(),
-            verbose=true,
+            verbose=false,
         )[3],
     ) < 1.0e-10
     @test abs(
@@ -43,7 +43,7 @@ using Test
             x0,
             max_iteration=1000,
             line_search=FrankWolfe.Adaptive(),
-            verbose=true,
+            verbose=false,
         )[3],
     ) < 1.0e-10
 
@@ -58,7 +58,7 @@ using Test
             max_iteration=1000,
             lazy=true,
             line_search=FrankWolfe.AdaptiveZerothOrder(),
-            verbose=true,
+            verbose=false,
         )[3],
     ) < 1.0e-10
     @test abs(
@@ -70,7 +70,7 @@ using Test
             max_iteration=1000,
             lazy=true,
             line_search=FrankWolfe.Adaptive(),
-            verbose=true,
+            verbose=false,
         )[3],
     ) < 1.0e-10
 
@@ -83,7 +83,7 @@ using Test
             x0,
             max_iteration=1000,
             line_search=FrankWolfe.Adaptive(),
-            verbose=true,
+            verbose=false,
         )[3],
     ) < 1.0e-10
 

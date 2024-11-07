@@ -27,17 +27,7 @@ ActiveSet{AT,R}() where {AT,R} = ActiveSet{AT,R,Vector{float(eltype(AT))}}([], [
 ActiveSet{AT}() where {AT} = ActiveSet{AT,Float64,Vector{float(eltype(AT))}}()
 
 function ActiveSet(tuple_values::AbstractVector{Tuple{R,AT}}) where {AT,R}
-    n = length(tuple_values)
-    weights = Vector{R}(undef, n)
-    atoms = Vector{AT}(undef, n)
-    @inbounds for idx in 1:n
-        weights[idx] = tuple_values[idx][1]
-        atoms[idx] = tuple_values[idx][2]
-    end
-    x = similar(atoms[1], float(eltype(atoms[1])))
-    as = ActiveSet{AT,R,typeof(x)}(weights, atoms, x)
-    compute_active_set_iterate!(as)
-    return as
+    return ActiveSet{AT,R}(tuple_values)
 end
 
 function ActiveSet{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}) where {AT,R}
@@ -48,7 +38,7 @@ function ActiveSet{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}) 
         weights[idx] = tuple_values[idx][1]
         atoms[idx] = tuple_values[idx][2]
     end
-    x = similar(tuple_values[1][2], float(eltype(tuple_values[1][2])))
+    x = similar(atoms[1], float(eltype(atoms[1])))
     as = ActiveSet{AT,R,typeof(x)}(weights, atoms, x)
     compute_active_set_iterate!(as)
     return as
@@ -325,4 +315,8 @@ function compute_active_set_iterate!(active_set::AbstractActiveSet{<:ScaledHotVe
         active_set.x[ai.val_idx] += λi * ai.active_val
     end
     return active_set.x
+end
+
+function update_weights!(as::AbstractActiveSet, new_weights)
+    as.weights .= new_weights
 end

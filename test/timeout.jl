@@ -2,7 +2,7 @@ using FrankWolfe
 using LinearAlgebra
 using SparseArrays
 
-@testset "Timing out" begin
+@testset "Timing out                                        " begin
     f(x) = norm(x)^2
     function grad!(storage, x)
         return storage .= 2x
@@ -17,7 +17,7 @@ using SparseArrays
             x0,
             max_iteration=1000,
             line_search=FrankWolfe.Agnostic(),
-            verbose=true,
+            verbose=false,
         )[3] - 0.2,
     ) < 1.0e-5
     @test abs(
@@ -40,7 +40,7 @@ using SparseArrays
             x0,
             max_iteration=1000,
             line_search=FrankWolfe.Goldenratio(),
-            verbose=true,
+            verbose=false,
         )[3] - 0.2,
     ) < 1.0e-5
     @test abs(

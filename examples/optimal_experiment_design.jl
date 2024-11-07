@@ -259,19 +259,19 @@ m = 300
         x0, active_set = build_start_point(A)
         domain_oracle = build_domain_oracle(A)
         x_d, _, primal, dual_gap, traj_data_d = FrankWolfe.decomposition_invariant_conditional_gradient(f, grad!, lmo, x0, verbose=true,line_search=FrankWolfe.Secant(domain_oracle=domain_oracle), trajectory=true)
-
-        lmo = build_moi_lmo(m)
+  
+        lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
         f, grad! = build_a_criterion(A, build_safe=false)
         x0, active_set = build_start_point(A)
         domain_oracle = build_domain_oracle(A)
-        x_d_m, _, primal, dual_gap, traj_data_d_m = FrankWolfe.decomposition_invariant_conditional_gradient(f, grad!, lmo, x0, verbose=true,line_search=FrankWolfe.Secant(domain_oracle=domain_oracle), trajectory=true)
+        x_b, _, primal, dual_gap, traj_data_b, _ = FrankWolfe.blended_conditional_gradient(f, grad!, lmo, x0, verbose=true, trajectory=true,line_search=FrankWolfe.Secant(domain_oracle=domain_oracle))
 
         @test traj_data_s[end][1] < traj_data[end][1]
         @test traj_data_d[end][1] <= traj_data_s[end][1]
-        @test traj_data_d_m[end][1] <= traj_data_s[end][1]
+        @test traj_data_b[end][1] <= traj_data_s[end][1]
         @test isapprox(f(x_s), f(x))
         @test isapprox(f(x_s), f(x_d))
-        @test isapprox(f(x_s), f(x_d_m))
+        @test isapprox(f(x_s), f(x_b))
     end
 
     @testset "D-Optimal Design" begin
@@ -294,18 +294,19 @@ m = 300
         domain_oracle = build_domain_oracle(A)
         x_d, _, primal, dual_gap, traj_data_d = FrankWolfe.decomposition_invariant_conditional_gradient(f, grad!, lmo, x0, verbose=true,line_search=FrankWolfe.Secant(domain_oracle=domain_oracle), trajectory=true)
 
-        lmo = build_moi_lmo(m)
+        domain_oracle = build_domain_oracle(A)
+        lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
         f, grad! = build_d_criterion(A, build_safe=false)
         x0, active_set = build_start_point(A)
         domain_oracle = build_domain_oracle(A)
-        x_d_m, _, primal, dual_gap, traj_data_d_m = FrankWolfe.decomposition_invariant_conditional_gradient(f, grad!, lmo, x0, verbose=true,line_search=FrankWolfe.Secant(domain_oracle=domain_oracle), trajectory=true)
+        x_b, _, primal, dual_gap, traj_data_b, _ = FrankWolfe.blended_conditional_gradient(f, grad!, lmo, x0, verbose=true, trajectory=true,line_search=FrankWolfe.Secant(domain_oracle=domain_oracle))
 
         @test traj_data_s[end][1] < traj_data[end][1]
         @test traj_data_d[end][1] <= traj_data_s[end][1]
-        @test traj_data_d_m[end][1] <= traj_data_s[end][1]
+        @test traj_data_b[end][1] <= traj_data_s[end][1]
         @test isapprox(f(x_s), f(x))
         @test isapprox(f(x_s), f(x_d))
-        @test isapprox(f(x_s), f(x_d_m))
+        @test isapprox(f(x_s), f(x_b))
     end
 end
 
