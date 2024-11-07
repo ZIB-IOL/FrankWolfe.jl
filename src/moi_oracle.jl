@@ -124,10 +124,13 @@ end
 # Second version of compute_inface_extreme_point.
 # Copy and modify the constriants if necesssary.
 function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x; solve_data=Dict(), kwargs...) where {OT}
+    dims = size(direction)
     lmo2 = copy(lmo)
     MOI.set(lmo2.o, MOI.Silent(), true)
     variables = MOI.get(lmo2.o, MOI.ListOfVariableIndices())
-    MOI.add_variables(lmo2.o, length(variables))
+    if length(dims) == 2
+        vec(transpose(direction))
+    end
     terms = [MOI.ScalarAffineTerm(d, v) for (d, v) in zip(direction, variables)]
     obj = MOI.ScalarAffineFunction(terms, zero(Float64))
     MOI.set(lmo2.o, MOI.ObjectiveFunction{typeof(obj)}(), obj)
@@ -147,6 +150,9 @@ function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x; solve_d
     end
     a = MOI.get(lmo2.o, MOI.VariablePrimal(), variables)
     MOI.empty!(lmo2.o)
+    if length(dims) == 2
+        a = reshape(a, dims...)
+    end
     return a
 end
 
@@ -217,6 +223,17 @@ function compute_inface_extreme_point_subroutine(lmo::MathOptLMO{OT}, ::Type{F},
         end
     end
     return true
+end
+
+function compute_inface_extreme_point(
+	lmo::MathOptLMO{OT},
+	direction::AbstractMatrix{T},
+	x::AbstractMatrix{T};
+	kwargs...,
+) where {OT, T <: Real}
+	n = size(direction, 1)
+	a = compute_inface_extreme_point(lmo, vec(direction), x)
+	return reshape(a, n, n)
 end
 
 # Fast way to compute gamma_max.

@@ -1,4 +1,5 @@
 
+
 ## interface functions for LMOs that are supported by the decomposition-invariant algorithm
 
 """
@@ -85,14 +86,6 @@ function decomposition_invariant_conditional_gradient(
     end
 
     x = x0
-
-    if lazy
-        if extra_vertex_storage === nothing
-            pre_computed_set = [x]
-        else
-            pre_computed_set = extra_vertex_storage
-        end
-    end
     
     if memory_mode isa InplaceEmphasis && !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
         # if integer, convert element type to most appropriate float
@@ -124,7 +117,7 @@ function decomposition_invariant_conditional_gradient(
         println("GRADIENstep_typeYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance")
         println("LMO: $(typeof(lmo))")
         if memory_mode isa InplaceEmphasis
-            @info("In memory_mode memory iterates are written back into x0!")
+            @info("In memory_mode memory iterates are wristep_typeen back into x0!")
         end
     end
 
@@ -132,6 +125,15 @@ function decomposition_invariant_conditional_gradient(
     v = x0
     phi = primal
     gamma = one(phi)
+
+    if lazy
+	if extra_vertex_storage === nothing
+	   v = compute_extreme_point(lmo, gradient, lazy = lazy)
+	   pre_computed_set = [v]
+	else
+	   pre_computed_set = extra_vertex_storage
+	end
+    end
 
     if linesearch_workspace === nothing
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
@@ -350,7 +352,7 @@ function blended_decomposition_invariant_conditional_gradient(
         println("GRADIENstep_typeYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance")
         println("LMO: $(typeof(lmo))")
         if memory_mode isa InplaceEmphasis
-            @info("In memory_mode memory iterates are written back into x0!")
+            @info("In memory_mode memory iterates are wristep_typeen back into x0!")
         end
     end
 
