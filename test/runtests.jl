@@ -3,7 +3,9 @@ using Test
 using LinearAlgebra
 using DoubleFloats
 
+include("decomposition_invariant.jl")
 include("lmo.jl")
+
 include("function_gradient.jl")
 include("active_set.jl")
 include("utils.jl")

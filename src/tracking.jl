@@ -62,3 +62,11 @@ is_tracking_lmo(lmo) = false
 is_tracking_lmo(lmo::TrackingLMO) = true
 
 TrackingLMO(lmo) = TrackingLMO(lmo, 0)
+
+is_decomposition_invariant_oracle(lmo::TrackingLMO) = is_decomposition_invariant_oracle(lmo.lmo)
+
+function compute_inface_extreme_point(lmo::TrackingLMO, direction, x; lazy, kwargs...)
+    return compute_inface_extreme_point(lmo.lmo, direction, x; lazy=lazy, kwargs...)
+end
+
+dicg_maximum_step(lmo::TrackingLMO, direction, x) = dicg_maximum_step(lmo.lmo, direction, x)

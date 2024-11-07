@@ -171,7 +171,7 @@ function frank_wolfe(
             linesearch_workspace,
             memory_mode,
         )
-        t = t + 1
+        t += 1
         if callback !== nothing
             state = CallbackState(
                 t,
