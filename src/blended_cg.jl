@@ -163,7 +163,7 @@ function blended_conditional_gradient(
     end
 
     if verbose
-        println("\nBlended Conditional Gradients Algorithm.")
+        println("\nBlended Conditional Gradient Algorithm.")
         NumType = eltype(x)
         println(
             "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
