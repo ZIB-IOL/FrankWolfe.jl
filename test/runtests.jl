@@ -12,7 +12,7 @@ include("utils.jl")
 include("active_set_variants.jl")
 include("alternating_methods_tests.jl")
 
-@testset "Testing vanilla Frank-Wolfe                       " begin
+@testset "Testing vanilla Frank-Wolfe" begin
     f(x) = norm(x)^2
     function grad!(storage, x)
         return storage .= 2x
@@ -157,12 +157,12 @@ include("alternating_methods_tests.jl")
     ) < 1.0e-3
 end
 
-@testset "Gradient with momentum correctly updated          " begin
+@testset "Gradient with momentum correctly updated" begin
     # fixing https://github.com/ZIB-IOL/FrankWolfe.jl/issues/47
     include("momentum_memory.jl")
 end
 
-@testset "Testing Lazified Conditional Gradients            " begin
+@testset "Testing Lazified Conditional Gradients" begin
     f(x) = norm(x)^2
     function grad!(storage, x)
         @. storage = 2x
@@ -216,7 +216,7 @@ end
     ) < 1.0e-5
 end
 
-@testset "Testing caching in Lazified Conditional Gradients " begin
+@testset "Testing caching in Lazified Conditional Gradients" begin
     n = Int(1e5)
     L = 2
     k = 1000
@@ -270,7 +270,7 @@ end
     @test primal - 1 / n <= bound
 end
 
-@testset "Testing memory_mode blas vs memory                " begin
+@testset "Testing memory_mode blas vs memory" begin
     n = Int(1e5)
     k = 100
     xpi = rand(n)
@@ -337,7 +337,7 @@ end
         @test primal < f(x0)
     end
 end
-@testset "Testing rational variant                          " begin
+@testset "Testing rational variant" begin
     rhs = 1
     n = 40
     k = 1000
@@ -412,7 +412,7 @@ end
     )
     @test eltype(x) == Rational{BigInt}
 end
-@testset "Multi-precision tests                             " begin
+@testset "Multi-precision tests" begin
     rhs = 1
     n = 100
     k = 1000
@@ -496,7 +496,7 @@ end
     end
 end
 
-@testset "Stochastic FW linear regression                   " begin
+@testset "Stochastic FW linear regression" begin
     function simple_reg_loss(θ, data_point)
         (xi, yi) = data_point
         (a, b) = (θ[1:end-1], θ[end])
@@ -583,7 +583,7 @@ end
     )
 end
 
-@testset "Away-step FW                                      " begin
+@testset "Away-step FW" begin
     n = 50
     lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1.0)
     x0 = FrankWolfe.compute_extreme_point(lmo_prob, rand(n))
@@ -727,7 +727,7 @@ end
     )
 end
 
-@testset "Testing Blended Conditional Gradient              " begin
+@testset "Testing Blended Conditional Gradient" begin
     n = 50
     lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1.0)
     x0 = FrankWolfe.compute_extreme_point(lmo_prob, randn(n))
@@ -773,49 +773,49 @@ include("tracking.jl")
 # in separate module for name space issues
 module BCGDirectionError
 using Test
-@testset "BCG direction accuracy                            " begin
+@testset "BCG direction accuracy" begin
     include("bcg_direction_error.jl")
 end
 end
 
 module RationalTest
 using Test
-@testset "Rational test and shortstep                       " begin
+@testset "Rational test and shortstep" begin
     include("rational_test.jl")
 end
 end
 
 module BCGAccel
 using Test
-@testset "BCG acceleration with different types             " begin
+@testset "BCG acceleration with different types" begin
     include("blended_accelerated.jl")
 end
 end
 
 module VertexStorageTest
 using Test
-@testset "Vertex storage                                    " begin
+@testset "Vertex storage" begin
     include("extra_storage.jl")
 end
 end
 
 module LpDirectSolveTest
 using Test
-@testset "LP solving for quadratic functions and active set " begin
+@testset "LP solving for quadratic functions and active set" begin
     include("quadratic_lp_active_set.jl")
 end
 end
 
 module LpDirectSolveTestProjection
 using Test
-@testset "LP solving for quadratic functions and active set " begin
+@testset "LP solving for standard quadratic function and active set" begin
     include("as_quadratic_projection.jl")
 end
 end
 
 module SparsifyingActiveSetTest
 using Test
-@testset "Sparsifying active set                            " begin
+@testset "Sparsifying active set" begin
     include("sparsifying_activeset.jl")
 end
 end
@@ -824,7 +824,7 @@ include("generic-arrays.jl")
 
 include("blocks.jl")
 
-@testset "End-to-end trajectory tests                       " begin
+@testset "End-to-end trajectory tests" begin
     trajectory_testfiles = readdir(joinpath(@__DIR__, "trajectory_tests"), join=true)
     for file in trajectory_testfiles
         @eval Module() begin
