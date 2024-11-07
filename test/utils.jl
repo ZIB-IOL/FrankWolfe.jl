@@ -235,3 +235,15 @@ end
     @test dot(c, a) ≈ dot(c, collect(a))
     @test norm(a) ≈ norm(collect(a))
 end
+
+@testset "NegatingArray" begin
+    d = randn(4)
+    nd = FrankWolfe.NegatingArray(d)
+    @test norm(nd + d) ≤ eps()
+    d2 = randn(4, 3)
+    nd2 = FrankWolfe.NegatingArray(d2)
+    @test norm(nd2 + d2) ≤ eps()
+
+    @test dot(nd, 4nd) ≈ 4 * norm(d)^2
+    @test norm(nd) ≈ norm(d)
+end

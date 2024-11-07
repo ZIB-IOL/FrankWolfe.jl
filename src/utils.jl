@@ -379,6 +379,34 @@ end
 Base.length(storage::DeletedVertexStorage) = length(storage.storage)
 
 """
+Computes the linear minimizer in the direction on the precomputed_set.
+Precomputed_set stores the vertices computed as extreme points v in each iteration.
+"""
+function pre_computed_set_argminmax(pre_computed_set, direction)
+    val = convert(eltype(direction), Inf)
+    valM = convert(eltype(direction), -Inf)
+    idx = -1
+    idxM = -1
+    for i in eachindex(pre_computed_set)
+        temp_val = fast_dot(pre_computed_set[i], direction)
+        if temp_val < val
+            val = temp_val
+            idx = i
+        end
+        if valM < temp_val
+            valM = temp_val
+            idxM = i
+        end
+    end
+    if idx == -1 || idxM == -1
+        error("Infinite minimum $val or maximum $valM in the precomputed set. Does the gradient contain invalid (NaN / Inf) entries?")
+    end
+    v_local = pre_computed_set[idx]
+    a_local = pre_computed_set[idxM]
+    return (v_local, idx, val, a_local, idxM, valM)
+end
+
+"""
 Give the vertex `v` in the storage that minimizes `s = direction ⋅ v` and whether `s` achieves
 `s ≤ lazy_threshold`.
 """
@@ -432,7 +460,26 @@ function argmin_(v::SparseArrays.SparseVector{T}) where {T}
     error("unreachable")
 end
 
+"""
+Given an array `array`, `NegatingArray` represents `-1 * array` lazily.
+"""
+struct NegatingArray{T, N, AT <: AbstractArray{T,N}} <: AbstractArray{T, N}
+    array::AT
+    function NegatingArray(array::AT) where {T, N, AT <: AbstractArray{T,N}}
+        return new{T, N, AT}(array)
+    end
+end
+
+Base.size(a::NegatingArray) = Base.size(a.array)
+Base.getindex(a::NegatingArray, idxs...) = -Base.getindex(a.array, idxs...)
+
+LinearAlgebra.dot(a1::NegatingArray, a2::NegatingArray) = dot(a1.array, a2.array)
+LinearAlgebra.dot(a1::NegatingArray{T1, N}, a2::AbstractArray{T2, N}) where {T1, T2, N} = -dot(a1.array, a2)
+LinearAlgebra.dot(a1::AbstractArray{T1, N}, a2::NegatingArray{T2, N}) where {T1, T2, N} = -dot(a1, a2.array)
+Base.sum(a::NegatingArray) = -sum(a.array)
+
 function weight_purge_threshold_default(::Type{T}) where {T<:AbstractFloat}
     return sqrt(eps(T) * Base.rtoldefault(T)) # around 1e-12 for Float64
 end
 weight_purge_threshold_default(::Type{T}) where {T<:Number} = Base.rtoldefault(T)
+

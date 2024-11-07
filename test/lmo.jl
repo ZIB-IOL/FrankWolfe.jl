@@ -62,6 +62,8 @@ end
 
 @testset "Hypersimplex" begin
     @testset "Hypersimplex $n $K" for n in (2, 5, 10), K in (1, min(n, 4))
+        K = 1
+        n = 5
         direction = randn(n)
         hypersimplex = FrankWolfe.HyperSimplexOracle(K, 3.0)
         unit_hypersimplex = FrankWolfe.UnitHyperSimplexOracle(K, 3.0)
@@ -77,6 +79,115 @@ end
             FrankWolfe.convert_mathopt(unit_hypersimplex, optimizer; dimension=n)
         v_moi_unit = FrankWolfe.compute_extreme_point(moi_unit_hypersimpler, direction)
         @test norm(v_moi_unit - v_unit) ≤ 1e-4
+        @testset "Inface oracle" begin
+            # inface oracles
+            v = FrankWolfe.compute_extreme_point(hypersimplex, direction)
+            # in-face for face at a single point is always that same point
+            @test v == FrankWolfe.compute_inface_extreme_point(hypersimplex, direction, v)
+            @test v == FrankWolfe.compute_inface_extreme_point(hypersimplex, -direction, v)
+            # in-face for a point in the relint is the same as extreme point
+            x_int = fill(hypersimplex.K * hypersimplex.radius / n, n)
+            for _ in 1:5
+                rand_direction = randn(n)
+                v_fw = FrankWolfe.compute_extreme_point(hypersimplex, rand_direction)
+                v_face =
+                    FrankWolfe.compute_inface_extreme_point(hypersimplex, rand_direction, x_int)
+                @test v_fw == v_face
+                # maximum step is one for x in the relint
+                @test FrankWolfe.dicg_maximum_step(hypersimplex, x_int - v_face, x_int) ≈ 1
+            end
+            if K < n # otherwise setting index to zero is invalid
+                # set one index to zero and renormalize to project back onto hypersimplex
+                x_int2 = copy(x_int)
+                x_int2[2] = 0
+                x_int2 = x_int2 ./ sum(x_int2) * hypersimplex.K * hypersimplex.radius
+                v = FrankWolfe.compute_inface_extreme_point(hypersimplex, direction, x_int2)
+                v2 = FrankWolfe.compute_inface_extreme_point(hypersimplex, -direction, x_int2)
+                # test that vertex has correct coordinate fixed
+                @test v[2] ≈ 0
+                @test v2[2] ≈ 0
+                # both directions are in-face FW, maximal step is 1
+                @test FrankWolfe.dicg_maximum_step(hypersimplex, x_int2 - v, x_int2) ≈ 1
+                @test FrankWolfe.dicg_maximum_step(hypersimplex, x_int2 - v2, x_int2) ≈ 1
+                # away step stays in polytope
+                gamma_max = FrankWolfe.dicg_maximum_step(hypersimplex, v - x_int2, x_int2)
+                x_away = x_int2 - gamma_max * (v - x_int2)
+                @test sum(x_away) ≈ hypersimplex.K * hypersimplex.radius
+                @test all(-10eps() .<= x_away .<= hypersimplex.radius + 10eps())
+                gamma_max2 = FrankWolfe.dicg_maximum_step(hypersimplex, v - x_int, x_int)
+                x_away2 = x_int - gamma_max2 * (v - x_int)
+                @test sum(x_away2) ≈ hypersimplex.K * hypersimplex.radius
+                @test all(-10eps() .<= x_away2 .<= hypersimplex.radius + 10eps())
+                # if direction crosses an active face, maximal step is zero
+                direction = zeros(n)
+                direction[2] = 1
+                @test FrankWolfe.dicg_maximum_step(hypersimplex, direction, x_int2) ≈ 0
+            end
+            v = FrankWolfe.compute_extreme_point(unit_hypersimplex, direction)
+            @test v == FrankWolfe.compute_inface_extreme_point(unit_hypersimplex, direction, v)
+            @test v == FrankWolfe.compute_inface_extreme_point(unit_hypersimplex, -direction, v)
+            # relative interior of the simplex face
+            x_on_simplex_face = fill(unit_hypersimplex.K * unit_hypersimplex.radius / n, n)
+            for _ in 1:5
+                rand_direction = randn(n)
+                v_fw = FrankWolfe.compute_extreme_point(unit_hypersimplex, rand_direction)
+                v_face = FrankWolfe.compute_inface_extreme_point(
+                    hypersimplex,
+                    rand_direction,
+                    x_on_simplex_face,
+                )
+                # if both vertices are on the simplex face
+                if sum(v_fw) >= unit_hypersimplex.K * unit_hypersimplex.radius
+                    @test v_fw == v_face
+                    # maximum step is one for x in the relint of simplex face
+                    @test FrankWolfe.dicg_maximum_step(
+                        unit_hypersimplex,
+                        x_on_simplex_face - v_face,
+                        x_on_simplex_face,
+                    ) ≈ 1
+                    # maximum step is zero for a direction moving from zero to any point on the face, since we are already on the face
+                    @test FrankWolfe.dicg_maximum_step(
+                        unit_hypersimplex,
+                        -v_face,
+                        x_on_simplex_face,
+                    ) ≈ 0
+                    @test FrankWolfe.dicg_maximum_step(
+                        unit_hypersimplex,
+                        -x_on_simplex_face,
+                        x_on_simplex_face,
+                    ) ≈ 0
+                    # same thing but with a point in the interior: gamma is greater than 0
+                    @test FrankWolfe.dicg_maximum_step(
+                        unit_hypersimplex,
+                        -v_face,
+                        0.5 * x_on_simplex_face,
+                    ) > 0
+                    @test FrankWolfe.dicg_maximum_step(
+                        unit_hypersimplex,
+                        -x_on_simplex_face,
+                        0.5 * x_on_simplex_face,
+                    ) > 0
+                end
+            end
+            if K < n # otherwise setting index to zero is invalid
+                # create iterate at the boundary of one coordinate bound, loose on every other constraint
+                x2 = copy(x_on_simplex_face)
+                x2[2] = 0
+                v = FrankWolfe.compute_inface_extreme_point(unit_hypersimplex, direction, x2)
+                v2 = FrankWolfe.compute_inface_extreme_point(unit_hypersimplex, -direction, x2)
+                # test that vertex has correct coordinate fixed
+                @test v[2] ≈ 0
+                @test v2[2] ≈ 0
+                # both directions are in-face FW, maximal step is 1
+                @test FrankWolfe.dicg_maximum_step(unit_hypersimplex, x2 - v, x2) ≈ 1
+                @test FrankWolfe.dicg_maximum_step(unit_hypersimplex, x2 - v2, x2) ≈ 1
+                # away step stays in polytope
+                gamma_max = FrankWolfe.dicg_maximum_step(unit_hypersimplex, v - x2, x2)
+                x_away = x2 - gamma_max * (v - x2)
+                @test sum(x_away) <= unit_hypersimplex.K * unit_hypersimplex.radius + eps()
+                @test all(-10eps() .<= x_away .<= unit_hypersimplex.radius + 10eps())
+            end
+        end
     end
 end
 

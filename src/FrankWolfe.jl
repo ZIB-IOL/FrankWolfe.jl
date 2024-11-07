@@ -14,6 +14,8 @@ import MathOptInterface
 const MOI = MathOptInterface
 const MOIU = MOI.Utilities
 
+import MathOptSetDistances as MOD
+
 # for Birkhoff polytope LMO
 import Hungarian
 
@@ -45,6 +47,7 @@ include("block_coordinate_algorithms.jl")
 include("alternating_methods.jl")
 include("blended_pairwise.jl")
 include("pairwise.jl")
+include("dicg.jl")
 include("tracking.jl")
 include("callback.jl")
 
