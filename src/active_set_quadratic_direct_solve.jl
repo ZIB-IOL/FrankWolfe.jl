@@ -216,7 +216,7 @@ end
 
 Base.push!(as::ActiveSetQuadraticLinearSolve, tuple) = push!(as.active_set, tuple)
 
-Base.deleteat!(as::ActiveSetQuadraticLinearSolve, idx) = deleteat!(as.active_set, idx)
+Base.deleteat!(as::ActiveSetQuadraticLinearSolve, idx::Int) = deleteat!(as.active_set, idx)
 
 Base.empty!(as::ActiveSetQuadraticLinearSolve) = empty!(as.active_set)
 
