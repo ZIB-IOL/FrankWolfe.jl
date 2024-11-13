@@ -14,8 +14,6 @@ import MathOptInterface
 const MOI = MathOptInterface
 const MOIU = MOI.Utilities
 
-import MathOptSetDistances as MOD
-
 # for Birkhoff polytope LMO
 import Hungarian
 
