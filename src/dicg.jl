@@ -198,10 +198,10 @@ function decomposition_invariant_conditional_gradient(
             linesearch_workspace,
             memory_mode,
         )
-
+        
         if lazy
             idx = findfirst(x -> x == v, pre_computed_set)
-            if idx !== nothing
+            if idx === nothing
                 push!(pre_computed_set, v)
             end
         end
@@ -228,6 +228,13 @@ function decomposition_invariant_conditional_gradient(
             end
         end
         x = muladd_memory_mode(memory_mode, x, gamma, d)
+        if lazy 
+            x_inds = setdiff(collect(1:length(x)), SparseArrays.nonzeroinds(x))
+            if !iszero(a[x_inds])
+                idy = findfirst(x -> x == a, pre_computed_set) 
+                idy !== nothing ? deleteat!(pre_computed_set, idy) : nothing
+            end
+        end
     end
 
     # recompute everything once more for final verfication / do not record to trajectory though
@@ -524,7 +531,7 @@ function lazy_dicg_step(
             a = a_local
             away_index = a_local_loc
         else
-            a = compute_inface_extreme_point(lmo, NegatingArray(gradient), x)
+            a = compute_inface_extreme_point(lmo, NegatingArray(gradient), x, lazy=true)
         end
         
         # Real dual gap promises enough progress.
