@@ -198,7 +198,7 @@ function decomposition_invariant_conditional_gradient(
             linesearch_workspace,
             memory_mode,
         )
-        
+
         if lazy
             idx = findfirst(x -> x == v, pre_computed_set)
             if idx === nothing
@@ -228,13 +228,6 @@ function decomposition_invariant_conditional_gradient(
             end
         end
         x = muladd_memory_mode(memory_mode, x, gamma, d)
-        if lazy 
-            x_inds = setdiff(collect(1:length(x)), SparseArrays.nonzeroinds(x))
-            if !iszero(a[x_inds])
-                idy = findfirst(x -> x == a, pre_computed_set) 
-                idy !== nothing ? deleteat!(pre_computed_set, idy) : nothing
-            end
-        end
     end
 
     # recompute everything once more for final verfication / do not record to trajectory though
@@ -504,7 +497,7 @@ function lazy_dicg_step(
     memory_mode::MemoryEmphasis=InplaceEmphasis(),
 )
     v_local, v_local_loc, val, a_local, a_local_loc, valM =
-        pre_computed_set_argminmax(pre_computed_set, gradient)
+        pre_computed_set_argminmax(pre_computed_set, gradient, x)
     step_type = ST_REGULAR
     away_index = nothing
     fw_index = nothing
