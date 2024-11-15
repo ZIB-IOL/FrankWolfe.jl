@@ -491,14 +491,15 @@ function lazy_dicg_step(
     phi,
     epsilon,
     d;
-    use_extra_vertex_storage=false,
-    extra_vertex_storage=nothing,
-    lazy_tolerance=2.0,
-    memory_mode::MemoryEmphasis=InplaceEmphasis(),
+    variant = "standard",
+    use_extra_vertex_storage = false,
+    extra_vertex_storage = nothing,
+    lazy_tolerance = 2.0,
+    memory_mode::MemoryEmphasis = InplaceEmphasis(),
 )
     v_local, v_local_loc, val, a_local, a_local_loc, valM =
-        pre_computed_set_argminmax(pre_computed_set, gradient)
-    step_type = ST_REGULAR
+        pre_computed_set_argminmax(lmo, pre_computed_set, gradient, x)
+    step_type = ST_PAIRWISE
     away_index = nothing
     fw_index = nothing
     grad_dot_x = fast_dot(x, gradient)
@@ -517,27 +518,48 @@ function lazy_dicg_step(
     else
         v = compute_extreme_point(lmo, gradient)
         grad_dot_v = fast_dot(gradient, v)
-        # Do lazy inface_point
-        if grad_dot_a_local - grad_dot_v >= phi / lazy_tolerance && 
-            grad_dot_a_local - grad_dot_v >= epsilon
-            step_type = ST_LAZY
-            a = a_local
-            away_index = a_local_loc
-        else
-            a = compute_inface_extreme_point(lmo, NegatingArray(gradient), x)
+        dual_gap = grad_dot_x - grad_dot_v
+        phi = dual_gap
+        if variant == "standard"
+            # Do lazy inface_point
+            if grad_dot_a_local - grad_dot_v >= phi / lazy_tolerance &&
+               grad_dot_a_local - grad_dot_v >= epsilon
+                step_type = ST_LAZY
+                a = a_local
+                away_index = a_local_loc
+                d = muladd_memory_mode(memory_mode, d, a, v)
+            else
+                # step_type = ST_DUALSTEP
+                # phi = min(dual_gap, phi / 2.0)
+                # a = a_local
+                a = compute_inface_extreme_point(lmo, NegatingArray(gradient), x)
+                d = muladd_memory_mode(memory_mode, d, a, v)
+
+            end
+        elseif variant == "blended"
+            v_inface = compute_inface_extreme_point(lmo, gradient, x;)
+            grad_dot_v_inface = fast_dot(gradient, v_inface)
+            if grad_dot_a_local - grad_dot_v_inface >= phi / lazy_tolerance &&
+               grad_dot_a_local - grad_dot_v >= epsilon
+                step_type = ST_LAZY
+                a = a_local
+                v = v_inface
+                away_index = a_local_loc
+                d = muladd_memory_mode(memory_mode, d, a, v)
+            else
+                a = compute_inface_extreme_point(lmo, NegatingArray(gradient), x;)
+                grad_dot_a = fast_dot(gradient, a)
+                inface_gap = grad_dot_a - grad_dot_v_inface
+                if inface_gap >= phi / lazy_tolerance
+                    step_type = ST_PAIRWISE
+                    d = muladd_memory_mode(memory_mode, d, a, v)
+                else # global FW step
+                    step_type = ST_REGULAR
+                    d = muladd_memory_mode(memory_mode, d, x, v)
+                end
+            end
         end
-        
-        # Real dual gap promises enough progress.
-        grad_dot_fw_vertex = fast_dot(v, gradient)
-        dual_gap = grad_dot_x - grad_dot_fw_vertex
-        
-        if dual_gap >= phi / lazy_tolerance
-            d = muladd_memory_mode(memory_mode, d, a, v)
-            #Lower our expectation for progress.
-        else
-            d = muladd_memory_mode(memory_mode, d, a, v)
-            phi = min(dual_gap, phi / 2.0)
-        end
+
     end
     return d, v, fw_index, a, away_index, phi, step_type
 end
