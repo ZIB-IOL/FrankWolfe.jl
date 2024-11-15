@@ -310,17 +310,17 @@ function is_inface_feasible(lmo::MathOptLMO{OT}, a, x;) where {OT}
 					end
 				end
 			elseif S <: MOI.LessThan
-				if isapprox(set.upper, val; atol = 1e-6, rtol = sqrt(eps()))
+				if isapprox(set.upper, val; atol = 1e-15, rtol = sqrt(eps()))
 					if !isapprox(set.upper, val_; atol = 1e-15, rtol = 1e-5)
 						return false
 					end
 				end
 			elseif S <: MOI.Interval
-				if isapprox(set.upper, val; atol = 1e-6, rtol = sqrt(eps()))
+				if isapprox(set.upper, val; atol = 1e-15, rtol = sqrt(eps()))
 					if !isapprox(set.upper, val_; atol = 1e-15, rtol = 1e-5)
 						return false
 					end
-				elseif isapprox(set.lower, val; atol = 1e-6, rtol = sqrt(eps()))
+				elseif isapprox(set.lower, val; atol = 1e-15, rtol = sqrt(eps()))
 					if !isapprox(set.lower, val_; atol = 1e-15, rtol = 1e-5)
 						return false
 					end
