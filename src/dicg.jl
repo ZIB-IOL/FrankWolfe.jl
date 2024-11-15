@@ -361,6 +361,15 @@ function blended_decomposition_invariant_conditional_gradient(
     phi = primal
     gamma = one(phi)
 
+	if lazy
+		if extra_vertex_storage === nothing
+			v = compute_extreme_point(lmo, gradient, lazy = lazy)
+			pre_computed_set = [v]
+		else
+			pre_computed_set = extra_vertex_storage
+		end
+	end
+
     if linesearch_workspace === nothing
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
     end
@@ -393,7 +402,17 @@ function blended_decomposition_invariant_conditional_gradient(
         end
 
         if lazy
-            error("not implemented yet")
+			d, v, v_index, a, away_index, phi, step_type =
+				lazy_dicg_step(
+					x,
+					gradient,
+					lmo,
+					pre_computed_set,
+					phi,
+					epsilon,
+					d;
+					variant = "blended",
+				)
         else # non-lazy, call the simple and modified
             a = compute_inface_extreme_point(lmo, NegatingArray(gradient), x; lazy=lazy)
             v_inface = compute_inface_extreme_point(lmo, gradient, x; lazy=lazy)
@@ -412,6 +431,11 @@ function blended_decomposition_invariant_conditional_gradient(
                 gamma_max = one(phi)
             end
         end
+		if step_type == ST_REGULAR
+			gamma_max = one(phi)
+		else
+			gamma_max = dicg_maximum_step(lmo, d, x)
+		end
         gamma = perform_line_search(
             line_search,
             t,
