@@ -292,6 +292,45 @@ function dicg_maximum_step(lmo::MathOptLMO{OT}, direction, x) where {OT}
     end
 end
 
+function is_inface_feasible(lmo::MathOptLMO{OT}, a, x;) where {OT}
+	variables = MOI.get(lmo.o, MOI.ListOfVariableIndices())
+	valvar(f) = x[f.value]
+	valvar_(f) = a[f.value]
+	for (F, S) in MOI.get(lmo.o, MOI.ListOfConstraintTypesPresent())
+		const_list = MOI.get(lmo.o, MOI.ListOfConstraintIndices{F, S}())
+		for c_idx in const_list
+			func = MOI.get(lmo.o, MOI.ConstraintFunction(), c_idx)
+			val = MOIU.eval_variables(valvar, func)
+			val_ = MOIU.eval_variables(valvar_, func)
+			set = MOI.get(lmo.o, MOI.ConstraintSet(), c_idx)
+			if S <: MOI.GreaterThan
+				if isapprox(set.lower, val; atol = 1e-15, rtol = 1e-5)
+					if !isapprox(set.lower, val_; atol = 1e-15, rtol = 1e-5)
+						return false
+					end
+				end
+			elseif S <: MOI.LessThan
+				if isapprox(set.upper, val; atol = 1e-6, rtol = sqrt(eps()))
+					if !isapprox(set.upper, val_; atol = 1e-15, rtol = 1e-5)
+						return false
+					end
+				end
+			elseif S <: MOI.Interval
+				if isapprox(set.upper, val; atol = 1e-6, rtol = sqrt(eps()))
+					if !isapprox(set.upper, val_; atol = 1e-15, rtol = 1e-5)
+						return false
+					end
+				elseif isapprox(set.lower, val; atol = 1e-6, rtol = sqrt(eps()))
+					if !isapprox(set.lower, val_; atol = 1e-15, rtol = 1e-5)
+						return false
+					end
+				end
+			end
+		end
+	end
+	return true
+end
+
 function Base.copy(lmo::MathOptLMO{OT}; ensure_identity=true) where {OT}
     opt = OT() # creates the empty optimizer
     index_map = MOI.copy_to(opt, lmo.o)
