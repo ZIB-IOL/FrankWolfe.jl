@@ -362,8 +362,8 @@ Convergence is not guaranteed in general.
 
 
 # Arguments
-- `inner_ls::LSM`: A fallback line search. Is only used if `safe==true`. (default `Backtracking`)
-- `safe::Bool`: Flag indicating whether the fallback line search should be used. (default `true`)  
+- `inner_ls::LSM`: A fallback line search in case the last gamma in Secant does not satisfy the tolerance. Is only used if `safe==true`. (default `Backtracking`)
+- `safe::Bool`: Flag indicating whether the fallback line search should be used. If false, the best gamma from Secant is used. (default `true`)  
 - `limit_num_steps::Int`: Maximum number of iterations for the secant method. (default 40)
 - `tol::Float64`: Tolerance for convergence. (default 1e-8)
 - `domain_oracle::Function`, returns true if the argument x is in the domain of the objective function f.
