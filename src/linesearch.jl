@@ -454,7 +454,7 @@ function perform_line_search(
         dot_gdir = dot_gdir_new
         i += 1
     end
-    if safe && abs(dot_gdir) > line_search.tol
+    if line_search.safe && abs(dot_gdir) > line_search.tol
         # Choose gamma_max to be domain feasible
         storage = muladd_memory_mode(memory_mode, storage, x, gamma_max, d)
         while !line_search.domain_oracle(storage)
