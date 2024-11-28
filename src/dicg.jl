@@ -589,10 +589,8 @@ function lazy_dicg_step(
                         step_type = ST_REGULAR
                         d = muladd_memory_mode(memory_mode, d, x, v)
                     end
-
                 end
             end
-
         else
             step_type = ST_DUALSTEP
             phi = min(dual_gap, phi / 2.0)
