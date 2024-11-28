@@ -516,27 +516,34 @@ function lazy_dicg_step(
     epsilon,
     d;
     variant = "standard",
+    strong_lazification = false,
     use_extra_vertex_storage = false,
     extra_vertex_storage = nothing,
     lazy_tolerance = 2.0,
     memory_mode::MemoryEmphasis = InplaceEmphasis(),
 )
     v_local, v_local_loc, val, a_local, a_local_loc, valM =
-        pre_computed_set_argminmax(lmo, pre_computed_set, gradient, x)
+        pre_computed_set_argminmax(lmo, pre_computed_set, gradient, x; strong_lazification = strong_lazification)
     step_type = ST_PAIRWISE
     away_index = nothing
     fw_index = nothing
     grad_dot_x = fast_dot(x, gradient)
     grad_dot_a_local = valM
-
-    # Do lazy pairwise step
     grad_dot_lazy_fw_vertex = val
 
-    if grad_dot_a_local - grad_dot_lazy_fw_vertex >= phi / lazy_tolerance &&
-       grad_dot_a_local - grad_dot_lazy_fw_vertex >= epsilon
+    if strong_lazification
+        a_taken = a_local
+        grad_dot_a_taken = grad_dot_a_local
+    else
+        a_taken = compute_inface_extreme_point(lmo, NegatingArray(gradient), x)
+        grad_dot_a_taken = fast_dot(gradient, a_taken)
+    end
+    # Do lazy pairwise step
+    if grad_dot_a_taken - grad_dot_lazy_fw_vertex >= phi / lazy_tolerance &&
+       grad_dot_a_taken - grad_dot_lazy_fw_vertex >= epsilon
         step_type = ST_LAZY
         v = v_local
-        a = a_local
+        a = a_taken
         d = muladd_memory_mode(memory_mode, d, a, v)
         fw_index = v_local_loc
     else
@@ -544,46 +551,53 @@ function lazy_dicg_step(
         grad_dot_v = fast_dot(gradient, v)
         dual_gap = grad_dot_x - grad_dot_v
         phi = dual_gap
-        if variant == "standard"
-            # Do lazy inface_point
-            if grad_dot_a_local - grad_dot_v >= phi / lazy_tolerance &&
-               grad_dot_a_local - grad_dot_v >= epsilon
-                step_type = ST_LAZY
-                a = a_local
-                away_index = a_local_loc
-                d = muladd_memory_mode(memory_mode, d, a, v)
-            else
-                # step_type = ST_DUALSTEP
-                # phi = min(dual_gap, phi / 2.0)
-                # a = a_local
-                a = compute_inface_extreme_point(lmo, NegatingArray(gradient), x)
-                d = muladd_memory_mode(memory_mode, d, a, v)
 
-            end
-        elseif variant == "blended"
-            v_inface = compute_inface_extreme_point(lmo, gradient, x;)
-            grad_dot_v_inface = fast_dot(gradient, v_inface)
-            if grad_dot_a_local - grad_dot_v_inface >= phi / lazy_tolerance &&
-               grad_dot_a_local - grad_dot_v >= epsilon
-                step_type = ST_LAZY
-                a = a_local
-                v = v_inface
-                away_index = a_local_loc
-                d = muladd_memory_mode(memory_mode, d, a, v)
-            else
-                a = compute_inface_extreme_point(lmo, NegatingArray(gradient), x;)
-                grad_dot_a = fast_dot(gradient, a)
-                inface_gap = grad_dot_a - grad_dot_v_inface
-                if inface_gap >= phi / lazy_tolerance
+        if variant == "standard"
+            v_taken = v
+            grad_dot_v_taken = grad_dot_v
+        else
+            v_taken = compute_inface_extreme_point(lmo, gradient, x;)
+            grad_dot_v_taken = fast_dot(gradient, v_taken)
+
+        end
+        # Do lazy inface_point
+        if dual_gap >= phi / lazy_tolerance
+            if (grad_dot_a_taken - grad_dot_v_taken >= phi / lazy_tolerance &&
+                grad_dot_a_taken - grad_dot_v_taken >= epsilon) || !strong_lazification
+                if !strong_lazification
+                    a = a_taken
+                    d = muladd_memory_mode(memory_mode, d, a, v_taken)
                     step_type = ST_PAIRWISE
+                    away_index = -1
+                else
+                    a = a_taken
+                    d = muladd_memory_mode(memory_mode, d, a, v_taken)
+                    step_type = ST_PAIRWISE
+                    away_index = a_local_loc
+                end
+            else
+                a = compute_inface_extreme_point(lmo, NegatingArray(gradient), x)
+                if variant == "standard"
                     d = muladd_memory_mode(memory_mode, d, a, v)
-                else # global FW step
-                    step_type = ST_REGULAR
-                    d = muladd_memory_mode(memory_mode, d, x, v)
+                else
+                    grad_dot_a = fast_dot(gradient, a)
+                    inface_gap = grad_dot_a - grad_dot_v_taken
+                    if inface_gap >= phi / lazy_tolerance
+                        step_type = ST_PAIRWISE
+                        d = muladd_memory_mode(memory_mode, d, a, v)
+                    else # global FW step
+                        step_type = ST_REGULAR
+                        d = muladd_memory_mode(memory_mode, d, x, v)
+                    end
+
                 end
             end
-        end
 
+        else
+            step_type = ST_DUALSTEP
+            phi = min(dual_gap, phi / 2.0)
+            a = a_taken
+        end
     end
     return d, v, fw_index, a, away_index, phi, step_type
 end
