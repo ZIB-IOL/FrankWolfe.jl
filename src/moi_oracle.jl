@@ -232,7 +232,7 @@ function compute_inface_extreme_point(
 	kwargs...,
 ) where {OT, T <: Real}
 	n = size(direction, 1)
-	a = compute_inface_extreme_point(lmo, vec(direction), x)
+	a = compute_inface_extreme_point(lmo, vec(direction), vec(x))
 	return reshape(a, n, n)
 end
 
