@@ -157,14 +157,14 @@ function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x; solve_d
 end
 
 # function barrier for performance
-function compute_inface_extreme_point_subroutine(lmo::MathOptLMO{OT}, ::Type{F}, ::Type{S}, valvar) where {OT,F,S}
+function compute_inface_extreme_point_subroutine(lmo::MathOptLMO{OT}, ::Type{F}, ::Type{S}, valvar;atol=1e-6) where {OT,F,S}
     const_list = MOI.get(lmo.o, MOI.ListOfConstraintIndices{F,S}())
     for c_idx in const_list
         func = MOI.get(lmo.o, MOI.ConstraintFunction(), c_idx)
         val = MOIU.eval_variables(valvar, func)
         set = MOI.get(lmo.o, MOI.ConstraintSet(), c_idx)
         if S <: MOI.GreaterThan
-            if set.lower ≈ val
+            if isapprox(set.lower, val; atol = atol)
                 MOI.delete(lmo.o, c_idx)
                 if F <: MOI.VariableIndex
                     check_cidx = MOI.ConstraintIndex{F,MOI.LessThan{Float64}}(c_idx.value)
@@ -191,7 +191,7 @@ function compute_inface_extreme_point_subroutine(lmo::MathOptLMO{OT}, ::Type{F},
                 MOI.add_constraint(lmo.o, func, MOI.EqualTo(set.lower))
             end
         elseif S <: MOI.LessThan
-            if set.upper ≈ val
+            if isapprox(set.upper, val; atol = atol)
                 MOI.delete(lmo.o, c_idx)
                 if F <: MOI.VariableIndex
                     check_cidx = MOI.ConstraintIndex{F,MOI.GreaterThan{Float64}}(c_idx.value)
@@ -213,10 +213,10 @@ function compute_inface_extreme_point_subroutine(lmo::MathOptLMO{OT}, ::Type{F},
                 MOI.add_constraint(lmo.o, func, MOI.EqualTo(set.upper))
             end
         elseif S <: MOI.Interval
-            if set.upper ≈ val
+            if isapprox(set.upper, val; atol = atol)
                 MOI.delete(lmo.o, c_idx)
                 MOI.add_constraint(lmo.o, func, MOI.EqualTo(set.upper))
-            elseif set.lower ≈ val
+            elseif isapprox(set.lower, val; atol = atol)
                 MOI.delete(lmo.o, c_idx)
                 MOI.add_constraint(lmo.o, func, MOI.EqualTo(set.lower))
             end
@@ -232,17 +232,17 @@ function compute_inface_extreme_point(
 	kwargs...,
 ) where {OT, T <: Real}
 	n = size(direction, 1)
-	a = compute_inface_extreme_point(lmo, vec(direction), x)
+	a = compute_inface_extreme_point(lmo, vec(direction), vec(x))
 	return reshape(a, n, n)
 end
 
 # Fast way to compute gamma_max.
 # Check every constraint and compute the corresponding gamma_upper_bound. 
-function dicg_maximum_step(lmo::MathOptLMO{OT}, direction, x) where {OT}
+function dicg_maximum_step(lmo::MathOptLMO{OT}, direction, x;tol=1e-6) where {OT}
     gamma_less_than = Float64[]
     for (F, S) in MOI.get(lmo.o, MOI.ListOfConstraintTypesPresent())
         valvar(f) = x[f.value]
-        valvar_(f) = direction[f.value]
+        valvar_d(f) = direction[f.value]
         const_list = MOI.get(lmo.o, MOI.ListOfConstraintIndices{F,S}())
         
         # Constraints need to satisfy g(x+γ*d) ∈ ConstraintSet.
@@ -252,28 +252,28 @@ function dicg_maximum_step(lmo::MathOptLMO{OT}, direction, x) where {OT}
             # Compute g(x).
             val = MOIU.eval_variables(valvar, func)
             # Compute g(d).
-            val_d = MOIU.eval_variables(valvar_, func)
+            val_d = MOIU.eval_variables(valvar_d, func)
             set = MOI.get(lmo.o, MOI.ConstraintSet(), c_idx)
             if S <: MOI.Interval
-                if val_d < 0.0
+                if val_d < -tol
                     upper_bound_gamma = (val - set.upper) / val_d
                     push!(gamma_less_than, upper_bound_gamma)
                 end
-                if val_d > 0.0
+                if val_d > tol
                     upper_bound_gamma = (val - set.lower) / val_d
                     push!(gamma_less_than, upper_bound_gamma)
                 end
             end
 
             if S <: MOI.LessThan
-                if val_d < 0.0
+                if val_d < -tol
                     upper_bound_gamma = (val - set.upper) / val_d
                     push!(gamma_less_than, upper_bound_gamma)
                 end
             end
 
             if S <: MOI.GreaterThan
-                if val_d > 0.0
+                if val_d > tol
                     upper_bound_gamma = (val - set.lower) / val_d
                     push!(gamma_less_than, upper_bound_gamma)
                 end
@@ -290,6 +290,36 @@ function dicg_maximum_step(lmo::MathOptLMO{OT}, direction, x) where {OT}
     else
         return 1.0
     end
+end
+
+function is_inface_feasible(lmo::MathOptLMO{OT}, a, x;) where {OT}
+    variables = MOI.get(lmo.o, MOI.ListOfVariableIndices())
+    valvar(f) = x[f.value]
+    valvar_away(f) = a[f.value]
+    for (F, S) in MOI.get(lmo.o, MOI.ListOfConstraintTypesPresent())
+        const_list = MOI.get(lmo.o, MOI.ListOfConstraintIndices{F, S}())
+        for c_idx in const_list
+            func = MOI.get(lmo.o, MOI.ConstraintFunction(), c_idx)
+            val = MOIU.eval_variables(valvar, func)
+            val_away = MOIU.eval_variables(valvar_away, func)
+            set = MOI.get(lmo.o, MOI.ConstraintSet(), c_idx)
+            if S <: MOI.GreaterThan || S <: MOI.Interval
+                if isapprox(set.lower, val; atol = 1e-15, rtol = 1e-5)
+                    if !isapprox(set.lower, val_away; atol = 1e-15, rtol = 1e-5)
+                        return false
+                    end
+                end
+            end
+            if S <: MOI.LessThan || S <: MOI.Interval
+                if isapprox(set.upper, val; atol = 1e-15, rtol = sqrt(eps()))
+                    if !isapprox(set.upper, val_; atol = 1e-15, rtol = 1e-5)
+                        return false
+                    end
+                end
+            end
+        end
+    end
+    return true
 end
 
 function Base.copy(lmo::MathOptLMO{OT}; ensure_identity=true) where {OT}
