@@ -242,7 +242,7 @@ function dicg_maximum_step(lmo::MathOptLMO{OT}, direction, x;tol=1e-6) where {OT
     gamma_less_than = Float64[]
     for (F, S) in MOI.get(lmo.o, MOI.ListOfConstraintTypesPresent())
         valvar(f) = x[f.value]
-        valvar_(f) = direction[f.value]
+        valvar_d(f) = direction[f.value]
         const_list = MOI.get(lmo.o, MOI.ListOfConstraintIndices{F,S}())
         
         # Constraints need to satisfy g(x+γ*d) ∈ ConstraintSet.
@@ -252,7 +252,7 @@ function dicg_maximum_step(lmo::MathOptLMO{OT}, direction, x;tol=1e-6) where {OT
             # Compute g(x).
             val = MOIU.eval_variables(valvar, func)
             # Compute g(d).
-            val_d = MOIU.eval_variables(valvar_, func)
+            val_d = MOIU.eval_variables(valvar_d, func)
             set = MOI.get(lmo.o, MOI.ConstraintSet(), c_idx)
             if S <: MOI.Interval
                 if val_d < -tol
