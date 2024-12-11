@@ -258,6 +258,12 @@ m = 300
         f, grad! = build_a_criterion(A, build_safe=false)
         x0, active_set = build_start_point(A)
         domain_oracle = build_domain_oracle(A)
+        x_s_ns, _, primal, dual_gap, traj_data_s_ns, _ = FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo, active_set, verbose=true, line_search=FrankWolfe.Secant(safe=false,domain_oracle=domain_oracle), trajectory=true)
+
+        lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
+        f, grad! = build_a_criterion(A, build_safe=false)
+        x0, active_set = build_start_point(A)
+        domain_oracle = build_domain_oracle(A)
         x_d, _, primal, dual_gap, traj_data_d = FrankWolfe.decomposition_invariant_conditional_gradient(f, grad!, lmo, x0, verbose=true,line_search=FrankWolfe.Secant(domain_oracle=domain_oracle), trajectory=true)
   
         lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
@@ -287,6 +293,12 @@ m = 300
         x0, active_set = build_start_point(A)
         domain_oracle = build_domain_oracle(A)
         x_s, _, primal, dual_gap, traj_data_s, _ = FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo, active_set, verbose=true, line_search=FrankWolfe.Secant(domain_oracle=domain_oracle), trajectory=true)
+
+        lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
+        f, grad! = build_d_criterion(A, build_safe=false)
+        x0, active_set = build_start_point(A)
+        domain_oracle = build_domain_oracle(A)
+        x_s_ns, _, primal, dual_gap, traj_data_s_ns, _ = FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo, active_set, verbose=true, line_search=FrankWolfe.Secant(safe=false,domain_oracle=domain_oracle), trajectory=true)
 
         lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
         f, grad! = build_d_criterion(A, build_safe=false)
