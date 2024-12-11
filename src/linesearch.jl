@@ -709,9 +709,10 @@ function perform_line_search(
     niter = 0
     clipping = false
     gradient_storage = storage.gradient_storage
+    f_x = f(x)
 
     grad!(gradient_storage, x_storage)
-    while 0 > fast_dot(gradient_storage, d) && γ ≥ 100 * eps(float(γ))
+    while f(x_storage) > f_x || 0 > fast_dot(gradient_storage, d) && γ ≥ 100 * eps(float(γ))
         M *= line_search.tau
         γ = min(max(dot_dir / (M * ndir2), 0), gamma_max)
         x_storage = muladd_memory_mode(memory_mode, x_storage, x, γ, d)
