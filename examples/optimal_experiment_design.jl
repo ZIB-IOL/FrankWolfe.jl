@@ -4,7 +4,7 @@ using Random
 using Distributions
 using LinearAlgebra
 using Statistics
-using SCIP
+using HiGHS
 using MathOptInterface
 const MOI = MathOptInterface
 using SparseArrays
@@ -51,7 +51,7 @@ end
 Build MOI version of the lmo.
 """
 function build_moi_lmo(m)
-    o = SCIP.Optimizer()
+    o = HiGHS.Optimizer()
     MOI.empty!(o)
     MOI.set(o, MOI.Silent(), true)
 
