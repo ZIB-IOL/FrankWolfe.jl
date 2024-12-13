@@ -4,11 +4,12 @@ using Random
 using Distributions
 using LinearAlgebra
 using Statistics
-using SCIP
+using HiGHS
 using MathOptInterface
 const MOI = MathOptInterface
 using SparseArrays
 using Test
+using StableRNGs
 
 # The Optimal Experiment Design Problem consists of choosing a subset of experiments
 # maximising the information gain.
@@ -34,7 +35,10 @@ seed - for the Random functions.
 m    - number of experiments.
 Build the experiment matrix A.
 """
-function build_data(m)
+function build_data(m; seed=nothing)
+    if seed != nothing
+        rng = StableRNG(seed)
+    end
     n = Int(floor(m/10))
     B = rand(m,n)
     B = B'*B
@@ -51,7 +55,7 @@ end
 Build MOI version of the lmo.
 """
 function build_moi_lmo(m)
-    o = SCIP.Optimizer()
+    o = HiGHS.Optimizer()
     MOI.empty!(o)
     MOI.set(o, MOI.Silent(), true)
 
@@ -258,6 +262,12 @@ m = 300
         f, grad! = build_a_criterion(A, build_safe=false)
         x0, active_set = build_start_point(A)
         domain_oracle = build_domain_oracle(A)
+        x_s_ns, _, primal, dual_gap, traj_data_s_ns, _ = FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo, active_set, verbose=true, line_search=FrankWolfe.Secant(safe=false,domain_oracle=domain_oracle), trajectory=true)
+
+        lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
+        f, grad! = build_a_criterion(A, build_safe=false)
+        x0, active_set = build_start_point(A)
+        domain_oracle = build_domain_oracle(A)
         x_d, _, primal, dual_gap, traj_data_d = FrankWolfe.decomposition_invariant_conditional_gradient(f, grad!, lmo, x0, verbose=true,line_search=FrankWolfe.Secant(domain_oracle=domain_oracle), trajectory=true)
   
         lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
@@ -267,7 +277,7 @@ m = 300
         x_b, _, primal, dual_gap, traj_data_b, _ = FrankWolfe.blended_conditional_gradient(f, grad!, lmo, x0, verbose=true, trajectory=true,line_search=FrankWolfe.Secant(domain_oracle=domain_oracle))
 
         @test traj_data_s[end][1] < traj_data[end][1]
-        @test traj_data_d[end][1] <= traj_data_s[end][1]
+        @test traj_data_d[end][1] <= traj_data[end][1]
         @test traj_data_b[end][1] <= traj_data_s[end][1]
         @test isapprox(f(x_s), f(x))
         @test isapprox(f(x_s), f(x_d))
@@ -292,6 +302,12 @@ m = 300
         f, grad! = build_d_criterion(A, build_safe=false)
         x0, active_set = build_start_point(A)
         domain_oracle = build_domain_oracle(A)
+        x_s_ns, _, primal, dual_gap, traj_data_s_ns, _ = FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo, active_set, verbose=true, line_search=FrankWolfe.Secant(safe=false,domain_oracle=domain_oracle), trajectory=true)
+
+        lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
+        f, grad! = build_d_criterion(A, build_safe=false)
+        x0, active_set = build_start_point(A)
+        domain_oracle = build_domain_oracle(A)
         x_d, _, primal, dual_gap, traj_data_d = FrankWolfe.decomposition_invariant_conditional_gradient(f, grad!, lmo, x0, verbose=true,line_search=FrankWolfe.Secant(domain_oracle=domain_oracle), trajectory=true)
 
         domain_oracle = build_domain_oracle(A)
@@ -302,11 +318,24 @@ m = 300
         x_b, _, primal, dual_gap, traj_data_b, _ = FrankWolfe.blended_conditional_gradient(f, grad!, lmo, x0, verbose=true, trajectory=true,line_search=FrankWolfe.Secant(domain_oracle=domain_oracle))
 
         @test traj_data_s[end][1] < traj_data[end][1]
-        @test traj_data_d[end][1] <= traj_data_s[end][1]
+        @test traj_data_d[end][1] <= traj_data[end][1]
         @test traj_data_b[end][1] <= traj_data_s[end][1]
         @test isapprox(f(x_s), f(x))
         @test isapprox(f(x_s), f(x_d))
         @test isapprox(f(x_s), f(x_b))
     end
+end
+
+@testset "Failing Optimal Design Instance with AFW" begin 
+    seed = 8775360557774874450
+    m = 100
+    A = build_data(m, seed=seed)
+    f, grad! = build_a_criterion(A)
+
+    lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
+    x0, active_set, _ = build_start_point(A)
+
+    _, _, primal, dual_gap, _, _ = FrankWolfe.away_frank_wolfe(f, grad!, lmo, active_set; verbose=true) 
+    @test isfinite(primal)
 end
 

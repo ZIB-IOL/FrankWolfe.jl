@@ -362,6 +362,8 @@ Convergence is not guaranteed in general.
 
 
 # Arguments
+- `inner_ls::LSM`: A fallback line search in case the last gamma in Secant does not satisfy the tolerance. Is only used if `safe==true`. (default `Backtracking`)
+- `safe::Bool`: Flag indicating whether the fallback line search should be used. If false, the best gamma from Secant is used. (default `true`)  
 - `limit_num_steps::Int`: Maximum number of iterations for the secant method. (default 40)
 - `tol::Float64`: Tolerance for convergence. (default 1e-8)
 - `domain_oracle::Function`, returns true if the argument x is in the domain of the objective function f.
@@ -371,17 +373,18 @@ Convergence is not guaranteed in general.
 """
 struct Secant{F,LSM<:LineSearchMethod} <: LineSearchMethod
     inner_ls::LSM
+    safe::Bool
     limit_num_steps::Int
     tol::Float64
     domain_oracle::F
 end
 
 function Secant(limit_num_steps, tol)
-    return Secant(Backtracking(), limit_num_steps, tol, x -> true)
+    return Secant(Backtracking(), true, limit_num_steps, tol, x -> true)
 end
 
-function Secant(;inner_ls=Backtracking(), limit_num_steps=40, tol=1e-8, domain_oracle=(x -> true))
-    return Secant(inner_ls, limit_num_steps, tol, domain_oracle)
+function Secant(;inner_ls=Backtracking(), safe=true, limit_num_steps=40, tol=1e-8, domain_oracle=(x -> true))
+    return Secant(inner_ls, safe, limit_num_steps, tol, domain_oracle)
 end
 
 mutable struct SecantWorkspace{XT,GT, IWS}
@@ -451,7 +454,7 @@ function perform_line_search(
         dot_gdir = dot_gdir_new
         i += 1
     end
-    if abs(dot_gdir) > line_search.tol
+    if line_search.safe && abs(dot_gdir) > line_search.tol
         # Choose gamma_max to be domain feasible
         storage = muladd_memory_mode(memory_mode, storage, x, gamma_max, d)
         while !line_search.domain_oracle(storage)
@@ -709,9 +712,10 @@ function perform_line_search(
     niter = 0
     clipping = false
     gradient_storage = storage.gradient_storage
+    f_x = f(x)
 
     grad!(gradient_storage, x_storage)
-    while 0 > fast_dot(gradient_storage, d) && γ ≥ 100 * eps(float(γ))
+    while f(x_storage) > f_x || 0 > fast_dot(gradient_storage, d) && γ ≥ 100 * eps(float(γ))
         M *= line_search.tau
         γ = min(max(dot_dir / (M * ndir2), 0), gamma_max)
         x_storage = muladd_memory_mode(memory_mode, x_storage, x, γ, d)
