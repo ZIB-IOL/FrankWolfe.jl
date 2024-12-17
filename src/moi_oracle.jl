@@ -56,71 +56,6 @@ end
 
 is_decomposition_invariant_oracle(::MathOptLMO) = true
 
-function set_constraint(o, S, func, val, set, var_constraint_list::Dict)
-    is_set = haskey(var_constraint_list, func)
-    set_equal = false
-    if S <: MOI.GreaterThan
-        if set.lower ≈ val
-            # VariableIndex LessThan-constraint is already set, needs to be deleted first
-            if is_set
-                c_idx = var_constraint_list[func]
-                MOI.delete(o, c_idx)
-            end
-            MOI.add_constraint(o, func, MOI.EqualTo(set.lower))
-            set_equal = true
-        end
-    elseif S <: MOI.LessThan
-        if set.upper ≈ val
-            # VariableIndex GreaterThan-constraint is already set, needs to be deleted first
-            if is_set
-                c_idx = var_constraint_list[func]
-                MOI.delete(o, c_idx)
-            end
-            MOI.add_constraint(o, func, MOI.EqualTo(set.upper))
-            set_equal = true
-        end
-    elseif S <: MOI.Interval
-        if set.upper ≈ val || set.lower ≈ val
-            set_equal = true
-            if set.upper ≈ val
-                MOI.add_constraint(o, func, MOI.EqualTo(set.upper))
-            else
-                MOI.add_constraint(o, func, MOI.EqualTo(set.lower))
-            end
-        end
-    end
-    if !set_equal 
-        idx = MOI.add_constraint(o, func, set)
-        var_constraint_list[func] = idx
-    end     
-end
-
-function compute_inface_extreme_point!(lmo::MathOptLMO{OT}, direction, x; kwargs...) where {OT}
-    var_constraint_list = Dict([])
-    lmo2 = copy(lmo)
-    MOI.empty!(lmo2.o)
-    MOI.set(lmo2.o, MOI.Silent(), true)
-    variables = MOI.get(lmo.o, MOI.ListOfVariableIndices())
-    terms = [MOI.ScalarAffineTerm(d, v) for (d, v) in zip(direction, variables)]
-    obj = MOI.ScalarAffineFunction(terms, zero(Float64))
-    MOI.set(lmo2.o, MOI.ObjectiveFunction{typeof(obj)}(), obj)
-    for (F, S) in MOI.get(lmo.o, MOI.ListOfConstraintTypesPresent())
-        valvar(f) = x[f.value]
-        const_list = MOI.get(lmo.o, MOI.ListOfConstraintIndices{F,S}())
-        for c_idx in const_list
-            func = MOI.get(lmo.o, MOI.ConstraintFunction(), c_idx)
-            val = MOIU.eval_variables(valvar, func)
-            set = MOI.get(lmo.o, MOI.ConstraintSet(), c_idx)
-            set_constraint(lmo2.o, S, func, val, set, var_constraint_list)  
-        end
-    end
-    MOI.set(lmo2.o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
-    MOI.optimize!(lmo2.o)
-    a = MOI.get(lmo2.o, MOI.VariablePrimal(), variables)
-    MOI.empty!(lmo2.o)
-    return a
-end
-
 # Second version of compute_inface_extreme_point.
 # Copy and modify the constriants if necesssary.
 function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x; solve_data=Dict(), kwargs...) where {OT}
@@ -154,6 +89,17 @@ function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x; solve_d
         a = reshape(a, dims...)
     end
     return a
+end
+
+function compute_inface_extreme_point(
+	lmo::MathOptLMO{OT},
+	direction::AbstractMatrix{T},
+	x::AbstractMatrix{T};
+	kwargs...,
+) where {OT, T <: Real}
+	n = size(direction, 1)
+	a = compute_inface_extreme_point(lmo, vec(direction), vec(x))
+	return reshape(a, n, n)
 end
 
 # function barrier for performance
@@ -223,17 +169,6 @@ function compute_inface_extreme_point_subroutine(lmo::MathOptLMO{OT}, ::Type{F},
         end
     end
     return true
-end
-
-function compute_inface_extreme_point(
-	lmo::MathOptLMO{OT},
-	direction::AbstractMatrix{T},
-	x::AbstractMatrix{T};
-	kwargs...,
-) where {OT, T <: Real}
-	n = size(direction, 1)
-	a = compute_inface_extreme_point(lmo, vec(direction), vec(x))
-	return reshape(a, n, n)
 end
 
 # Fast way to compute gamma_max.
