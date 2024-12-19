@@ -371,20 +371,23 @@ Convergence is not guaranteed in general.
 # References
 - [Secant Method](https://en.wikipedia.org/wiki/Secant_method)
 """
-struct Secant{F,LSM<:LineSearchMethod} <: LineSearchMethod
+mutable struct Secant{F,LSM<:LineSearchMethod} <: LineSearchMethod
     inner_ls::LSM
     safe::Bool
     limit_num_steps::Int
     tol::Float64
     domain_oracle::F
+    number_not_converging::Int
+    best_improvement_by_backtracking::Float64
+    max_violation::Float64
 end
 
 function Secant(limit_num_steps, tol)
-    return Secant(Backtracking(), true, limit_num_steps, tol, x -> true)
+    return Secant(Backtracking(), true, limit_num_steps, tol, x -> true, 0, -Inf, tol)
 end
 
 function Secant(;inner_ls=Backtracking(), safe=true, limit_num_steps=40, tol=1e-8, domain_oracle=(x -> true))
-    return Secant(inner_ls, safe, limit_num_steps, tol, domain_oracle)
+    return Secant(inner_ls, safe, limit_num_steps, tol, domain_oracle, 0, -Inf, tol)
 end
 
 mutable struct SecantWorkspace{XT,GT, IWS}
@@ -455,6 +458,8 @@ function perform_line_search(
         i += 1
     end
     if line_search.safe && abs(dot_gdir) > line_search.tol
+        line_search.number_not_converging += 1
+        line_search.max_violation = max(line_search.max_violation, abs(dot_gdir))
         # Choose gamma_max to be domain feasible
         storage = muladd_memory_mode(memory_mode, storage, x, gamma_max, d)
         while !line_search.domain_oracle(storage)
@@ -478,6 +483,7 @@ function perform_line_search(
         new_val = f(storage)
 
         if new_val <= best_val
+            line_search.best_improvement_by_backtracking = max(best_val - new_val, line_search.best_improvement_by_backtracking)
             best_gamma = gamma
         end
     end
