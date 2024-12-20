@@ -4,13 +4,13 @@ using LinearAlgebra
 using Test
 
 ## Data setup
-n = Int(100)
+n = Int(10000)
 
 xpi = rand(n);
 total = sum(xpi);
 const xp = xpi ./ total;
 
-f(x) = norm(x - xp)^2
+f(x) = sum(abs2, x-xp)
 
 println("Automatic differentiation")
 
@@ -41,6 +41,8 @@ x_au, _, primal_au, dual_gap_au, _ = FrankWolfe.frank_wolfe(
 );
 
 println("\nHandwritten Gradient")
+
+f(x) = norm(x-xp)^2
 
 function grad!(storage, x)
     @. storage = 2 * (x - xp)
