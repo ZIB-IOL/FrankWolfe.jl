@@ -284,18 +284,20 @@ function solve_quadratic_activeset_lp!(
     end
     sum_of_variables = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, λ), 0.0)
     MOI.add_constraint(o, sum_of_variables, MOI.EqualTo(1.0))
-    # Vᵗ A V λ == -Vᵗ b
-    for atom in as.atoms
+    # Wᵗ A V λ == -Wᵗ b
+    # V has columns vi
+    # W has columns vi - v1
+    for i in 2:nv
         lhs = MOI.ScalarAffineFunction{Float64}([], 0.0)
         Base.sizehint!(lhs.terms, nv)
         # replaces direct sum because of MOI and MutableArithmetic slow sums
         for j in 1:nv
             push!(
                 lhs.terms,
-                _compute_quadratic_constraint_term(atom, as.A, as.atoms[j], λ[j]),
+                _compute_quadratic_constraint_term(as.atoms[i] - as.atoms[1], as.A, as.atoms[j], λ[j]),
             )
         end
-        rhs = -dot(atom, as.b)
+        rhs = -dot(as.atoms[i] - as.atoms[1], as.b)
         MOI.add_constraint(o, lhs, MOI.EqualTo{Float64}(rhs))
     end
     MOI.set(o, MOI.ObjectiveFunction{typeof(sum_of_variables)}(), sum_of_variables)
