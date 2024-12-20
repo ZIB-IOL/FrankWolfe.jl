@@ -24,8 +24,9 @@ function build_birkhoff_problem(seed, n)
     # initial direction for first vertex
     direction_mat = randn(n, n)
     x0 = FrankWolfe.compute_extreme_point(lmo, direction_mat)
+    active_set = FrankWolfe.ActiveSet([(1.0, x0)])
 
-    return cf, cgrad!, lmo, x0, [], x -> true
+    return cf, cgrad!, lmo, x0, active_set, x -> true
 
 end
 
