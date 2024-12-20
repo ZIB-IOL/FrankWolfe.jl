@@ -55,7 +55,8 @@ function build_spectrahedron(seed, n)
 
     lmo = FrankWolfe.SpectraplexLMO(1.0, n, false)
     x0 = FrankWolfe.compute_extreme_point(lmo, spzeros(n, n))
+    active_set = FrankWolfe.ActiveSet([(1.0, x0)])
 
-    return f, grad!, lmo, x0, [], x -> true
+    return f, grad!, lmo, x0, active_set, x -> true
 end
 
