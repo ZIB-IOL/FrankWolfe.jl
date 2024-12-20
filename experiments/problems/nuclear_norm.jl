@@ -37,7 +37,8 @@ function build_nuclear_norm_problem(seed, dim)
 
     lmo = FrankWolfe.NuclearNormLMO(275_000.0)
     x0 = FrankWolfe.compute_extreme_point(lmo, zero(Xreal))
+    active_set = FrankWolfe.ActiveSet([(1.0, x0)])
 
-    return f, grad!, lmo, x0, [], x -> true
+    return f, grad!, lmo, x0, active_set, x -> true
 end
 
