@@ -445,8 +445,7 @@ function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon, d; use_extra_
                 away_step_taken = false
                 fw_step_taken = true
                 index = -1
-                #Lower our expectation for progress.
-            else
+            else # Lower our expectation for progress.
                 step_type = ST_DUALSTEP
                 phi = min(dual_gap, phi / 2.0)
                 gamma_max = zero(a_lambda)
