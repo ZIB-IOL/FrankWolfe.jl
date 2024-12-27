@@ -440,9 +440,8 @@ function lazy_pfw_step(
         grad_dot_fw_vertex = fast_dot(v, gradient)
         dual_gap = grad_dot_x - grad_dot_fw_vertex
         if dual_gap >= phi / lazy_tolerance
-            d = muladd_memory_mode(memory_mode, d, a_local, v)
-            #Lower our expectation for progress.
-        else
+            d = muladd_memory_mode(memory_mode, d, a_local, v)            
+        else # Lower our expectation for progress.
             step_type = ST_DUALSTEP
             phi = min(dual_gap, phi / 2.0)
         end

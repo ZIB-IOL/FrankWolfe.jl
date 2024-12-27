@@ -533,8 +533,7 @@ function lazy_dicg_step(
         
         if dual_gap >= phi / lazy_tolerance
             d = muladd_memory_mode(memory_mode, d, a, v)
-            #Lower our expectation for progress.
-        else
+        else # Lower our expectation for progress.
             d = muladd_memory_mode(memory_mode, d, a, v)
             phi = min(dual_gap, phi / 2.0)
         end
