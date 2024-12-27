@@ -223,7 +223,7 @@ function decomposition_invariant_conditional_gradient(
                 gradient,
                 step_type,
             )
-            if callback(state) === false
+            if callback(state, a, v) === false
                 break
             end
         end
@@ -259,7 +259,7 @@ function decomposition_invariant_conditional_gradient(
                 gradient,
                 step_type,
             )
-            callback(state)
+            callback(state, nothing, v)
         end
     end
     return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data)
@@ -441,7 +441,7 @@ function blended_decomposition_invariant_conditional_gradient(
                 gradient,
                 step_type,
             )
-            if callback(state) === false
+            if callback(state, a, v) === false
                 break
             end
         end
@@ -477,7 +477,7 @@ function blended_decomposition_invariant_conditional_gradient(
                 gradient,
                 step_type,
             )
-            callback(state)
+            callback(state, nothing, v)
         end
     end
     return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data)
