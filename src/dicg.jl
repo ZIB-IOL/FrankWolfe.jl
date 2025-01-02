@@ -127,7 +127,7 @@ function decomposition_invariant_conditional_gradient(
     gamma = one(phi)
 
     if lazy
-	if extra_vertex_storage === nothing
+	if extra_vertex_storage === nothing || isempty(extra_vertex_storage)
 	   v = compute_extreme_point(lmo, gradient, lazy = lazy)
 	   pre_computed_set = [v]
 	else
