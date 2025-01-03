@@ -339,6 +339,15 @@ end
 
 is_decomposition_invariant_oracle(::ZeroOneHypercube) = true
 
+function is_inface_feasible(ZeroOneHypercube, a, x)
+    for idx in eachindex(a)
+        if (x[idx] == 0 && a[idx] !== 0) || (x[idx] == 1 && a[idx] !== 1)
+            return false
+        end
+    end
+    return true
+end
+
 function compute_extreme_point(::ZeroOneHypercube, direction; lazy=false, kwargs...)
     v = BitVector(signbit(di) for di in direction)
     return v
