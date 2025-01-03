@@ -185,6 +185,7 @@ function decomposition_invariant_conditional_gradient(
             a = compute_inface_extreme_point(lmo, NegatingArray(gradient), x; lazy=lazy)
 	    d = muladd_memory_mode(memory_mode, d, a, v)
         end
+		
         gamma_max = dicg_maximum_step(lmo, d, x)
         gamma = perform_line_search(
             line_search,
