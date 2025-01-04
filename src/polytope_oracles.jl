@@ -119,7 +119,7 @@ function is_inface_feasible(::BirkhoffPolytopeLMO, a, x)
                 if x[i, j] <= eps(Float64) && a[i, j] > eps(Float64)
                     return false
                 elseif x[i, j] >= 1 - eps(Float64)
-                    if a[i, j] < >= 1 - eps(Float64)
+                    if a[i, j] < 1 - eps(Float64)
                         return false
                     else
                         push!(fixed_cols, j)
