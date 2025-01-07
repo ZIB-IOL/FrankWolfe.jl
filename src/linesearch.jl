@@ -706,12 +706,13 @@ function perform_line_search(
     end
     
     # Deal with not trivial domain
-    storage = storage.x
-    storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
-    while !line_search.domain_oracle(storage)
+    x_storage = similar(x)
+    gamma = gamma_max
+    x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
+    while !line_search.domain_oracle(x_storage)
         gamma_max /= 2
         gamma = min(gamma, gamma_max)
-        storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
+        x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
     end
     gamma_max = gamma
 
