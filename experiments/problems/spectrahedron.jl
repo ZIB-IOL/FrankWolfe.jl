@@ -29,8 +29,7 @@ using SparseArrays
 
 function build_spectrahedron(seed, n)
     Random.seed!(seed)
-    n = 1500
-    n_entries = 1000
+    n_entries = Int(floor(2*n/3))
 
     const entry_indices = unique!([minmax(rand(1:n, 2)...) for _ in 1:n_entries])
     const entry_values = randn(length(entry_indices))
