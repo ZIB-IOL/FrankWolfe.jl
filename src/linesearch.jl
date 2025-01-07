@@ -659,20 +659,21 @@ Modified adaptive line search test from:
 It replaces the original test implemented in the AdaptiveZerothOrder line search based on:
 > Pedregosa, F., Negiar, G., Askari, A., and Jaggi, M. (2020). "Linearly convergent Frank–Wolfe with backtracking line-search", Proceedings of AISTATS.
 """
-mutable struct Adaptive{T,TT} <: LineSearchMethod
+mutable struct Adaptive{T,TT,F} <: LineSearchMethod
     eta::T
     tau::TT
     L_est::T
     max_estimate::T
     verbose::Bool
     relaxed_smoothness::Bool
+    domain_oracle::F
 end
 
 Adaptive(eta::T, tau::TT) where {T,TT} =
-    Adaptive{T,TT}(eta, tau, T(Inf), T(1e10), T(0.5), true, false)
+    Adaptive{T,TT}(eta, tau, T(Inf), T(1e10), T(0.5), true, false, x->true)
 
-Adaptive(; eta=0.9, tau=2, L_est=Inf, max_estimate=1e10, verbose=true, relaxed_smoothness=false) =
-    Adaptive(eta, tau, L_est, max_estimate, verbose, relaxed_smoothness)
+Adaptive(; eta=0.9, tau=2, L_est=Inf, max_estimate=1e10, verbose=true, relaxed_smoothness=false, domain_oracle=x->true) =
+    Adaptive(eta, tau, L_est, max_estimate, verbose, relaxed_smoothness, domain_oracle)
 
 struct AdaptiveWorkspace{XT,BT}
     x::XT
@@ -703,6 +704,17 @@ function perform_line_search(
             return zero(promote_type(eltype(d), eltype(gradient)))
         end
     end
+    
+    # Deal with not trivial domain
+    storage = storage.x
+    storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
+    while !line_search.domain_oracle(storage)
+        gamma_max /= 2
+        gamma = min(gamma, gamma_max)
+        storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
+    end
+    gamma_max = gamma
+
     x_storage = storage.x
     if !isfinite(line_search.L_est)
         epsilon_step = min(1e-3, gamma_max)
