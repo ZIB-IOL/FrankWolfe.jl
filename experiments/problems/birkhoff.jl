@@ -10,11 +10,11 @@ function build_birkhoff_problem(seed, n)
     normxp2 = dot(xp, xp)
 
     # better for memory consumption as we do coordinate-wise ops
-    function cf(x, xp, normxp2)
+    function cf(x)
         return (normxp2 - 2dot(x, xp) + dot(x, x)) / n^2
     end
 
-    function cgrad!(storage, x, xp)
+    function cgrad!(storage, x)
         return @. storage = 2 * (x - xp) / n^2
     end
 
