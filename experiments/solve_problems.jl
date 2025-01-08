@@ -25,11 +25,11 @@ const linesearchvariant_string = (
     LS_ADAPTIVE="Adaptive",
 )
 
-function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, write=true, verbose=true, FW_variant="BPCG")
+function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, write=true, verbose=true, FW_variant="BPCG", max_iter=Inf)
     f, grad!, lmo, x0, active_set, domain_oracle = if problem == "OEDP_A"
-        build_optimal_criterion(seed, dimension^2, criterion="A")
+        build_optimal_design(seed, dimension^2, criterion="A")
     elseif problem == "OEDP_D"
-        build_optimal_criterion(seed, dimension^2, criterion="D")
+        build_optimal_design(seed, dimension^2, criterion="D")
     elseif problem == "Nuclear"
         build_nuclear_norm_problem(seed, dimension)
     elseif problem == "Birkhoff"
@@ -53,18 +53,18 @@ function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, w
     # Set the line search
     line_search = if ls_variant == LS_ONLY_SECANT
         FrankWolfe.Secant(safe=false, domain_oracle=domain_oracle)
-    elseif ls == LS_BACKTRACKING_AND_SECANT
+    elseif ls_variant == LS_BACKTRACKING_AND_SECANT
         FrankWolfe.BacktrackingAndSecant(domain_oracle=domain_oracle)
-    elseif ls == LS_SECANT_WITH_BACKTRACKING
+    elseif ls_variant == LS_SECANT_WITH_BACKTRACKING
         FrankWolfe.Secant(safe=true, domain_oracle=domain_oracle)
-    elseif ls == LS_ADAPTIVE
+    elseif ls_variant == LS_ADAPTIVE
         FrankWolfe.Adaptive(domain_oracle=domain_oracle)
     end
     # Precompile run
-    fw_variant(f, grad!, lmo, active_set, line_search=line_search, timeout=10, max_iteration=Inf)
+    fw_variant(f, grad!, lmo, active_set, line_search=line_search, timeout=10, max_iteration=max_iter)
 
     # Actual run
-    data = @timed fw_variant(f, grad!, lmo, active_set, line_search=line_search, timeout=time_limit, max_iteration=Inf, verbose=verbose, trajectory=true)
+    data = @timed fw_variant(f, grad!, lmo, active_set, line_search=line_search, timeout=time_limit, max_iteration=max_iter, verbose=verbose, trajectory=true)
 
     @show data.value.primal, data.value.dual_gap
     @show data.value.traj_data[end][1], data.value.traj_data[end][end]
