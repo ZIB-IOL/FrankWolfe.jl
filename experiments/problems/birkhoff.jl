@@ -6,8 +6,8 @@ function build_birkhoff_problem(seed, n)
     Random.seed!(seed)
     xpi = rand(n, n)
     # total = sum(xpi)
-    const xp = xpi # / total
-    const normxp2 = dot(xp, xp)
+    xp = xpi # / total
+    normxp2 = dot(xp, xp)
 
     # better for memory consumption as we do coordinate-wise ops
     function cf(x, xp, normxp2)
