@@ -14,7 +14,6 @@ time_limit = 3600 # one hour time limit
 seeds = seed == 0 ? [1,2,3,4,5] : [seed]
 
 ls = ENV["LINESEARCH"]
-linesearches = ["Secant", "SecantBT", "Adaptive"] #"BacktrackingSecant 
 line_search = if ls == "Secant"
     LS_ONLY_SECANT
 elseif ls == "SecantBT"
