@@ -26,15 +26,15 @@ const linesearchvariant_string = (
 
 function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, write=true, verbose=true, FW_variant="BPCG")
     f, grad!, lmo, x0, active_set, domain_oracle = if problem == "OEDP_A"
-        build_a_criterion(seed, dimension, criterion="A")
+        build_a_criterion(seed, dimension^2, criterion="A")
     elseif problem == "OEDP_D"
-        build_a_criterion(seed, dimension, criterion="D")
+        build_a_criterion(seed, dimension^2, criterion="D")
     elseif problem == "Nuclear"
         build_nuclear_norm_problem(seed, dimension)
     elseif problem == "Birkhoff"
         build_birkhoff_problem(seed, dimension)
     elseif problem == "QuadraticProbSimplex"
-        build_simple_self_concordant_problem(seed, dimension)
+        build_simple_self_concordant_problem(seed, dimension^2)
     elseif problem == "Spectrahedron"
         build_spectrahedron(seed, dimension)
     else
@@ -68,8 +68,8 @@ function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, w
     @show data.value.v
     @show data.value.active_set
 
-    df = DataFrame(seed=seed, dimension=m, time=data.time, fw_time=data.value.traj_data[end][end], primal = data.value.primal, dual_gap=data.value.dual_gap, iterations=data.value.traj_data[end][1])
+    df = DataFrame(seed=seed, dimension=dimension^2, time=data.time, fw_time=data.value.traj_data[end][end], primal = data.value.primal, dual_gap=data.value.dual_gap, iterations=data.value.traj_data[end][1])
     
-    file_name = joinpath(@__DIR__, "../csv/" * problem * "/" * string(ls_variant) * string(m) * "_" * string(seed) * ".csv")
+    file_name = joinpath(@__DIR__, "../csv/" * problem * "/" * string(ls_variant) * string(dimension^2) * "_" * string(seed) * ".csv")
     CSV.write(file_name, df, append=false, writeheader=true)
 end
