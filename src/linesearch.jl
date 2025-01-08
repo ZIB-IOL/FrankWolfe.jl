@@ -380,14 +380,15 @@ mutable struct Secant{F,LSM<:LineSearchMethod} <: LineSearchMethod
     number_not_converging::Int
     best_improvement_by_backtracking::Float64
     max_violation::Float64
+    inner_iter::Int
 end
 
 function Secant(limit_num_steps, tol)
-    return Secant(Backtracking(), true, limit_num_steps, tol, x -> true, 0, -Inf, tol)
+    return Secant(Backtracking(), true, limit_num_steps, tol, x -> true, 0, -Inf, tol, 0)
 end
 
 function Secant(;inner_ls=Backtracking(), safe=true, limit_num_steps=40, tol=1e-8, domain_oracle=(x -> true))
-    return Secant(inner_ls, safe, limit_num_steps, tol, domain_oracle, 0, -Inf, tol)
+    return Secant(inner_ls, safe, limit_num_steps, tol, domain_oracle, 0, -Inf, tol, 0)
 end
 
 mutable struct SecantWorkspace{XT,GT, IWS}
@@ -457,6 +458,7 @@ function perform_line_search(
         dot_gdir = dot_gdir_new
         i += 1
     end
+    line_search.inner_iter += i
     if line_search.safe && abs(dot_gdir) > line_search.tol
         line_search.number_not_converging += 1
         line_search.max_violation = max(line_search.max_violation, abs(dot_gdir))
@@ -492,6 +494,87 @@ function perform_line_search(
 end
 
 Base.print(io::IO, ::Secant) = print(io, "Secant")
+
+
+"""
+For testing purposes/verifying the theory: 
+Do a couple of BackTracking steps and then use that gamma as gamma_max for Secant.
+"""
+mutable struct BacktrackingAndSecant{F,LSM1<:LineSearchMethod,LSM2<:LineSearchMethod} <: LineSearchMethod
+    backtracking_ls::LSM1
+    secant_ls::LSM2
+    limit_num_steps::Int
+    safe::Bool
+    tol::Float64
+    domain_oracle::F
+    number_not_converging::Int
+end
+
+function BacktrackingAndSecant(;limit_num_steps=5, safe=false, tol=1e-8, domain_oracle=x->true)
+    return BacktrackingAndSecant(BackTracking(), Secant(safe=false), limit_num_steps=limit_num_steps, safe=safe, tol=tol, domain_oracle=domain_oracle)
+end
+
+mutable struct BacktrackingAndSecantWorkspace{BWS, SWS}
+    backtracking_ws::BWS
+    secant_ws::SWS
+end
+
+function build_linesearch_workspace(ls::BacktrackingAndSecant, x, gradient)
+    secant_ws = build_linesearch_workspace(ls.secant_ls, x, gradient)
+    backtracking_ws = build_linesearch_workspace(ls.backtracking_ls, x, gradient)
+    return BacktrackingAndSecantWorkspace(backtracking_ws, secant_ws)  # Initialize last_gamma to 1.0
+end
+
+function perform_line_search(
+    line_search::BacktrackingAndSecant,
+    t,
+    f,
+    grad!,
+    gradient,
+    x,
+    d,
+    gamma_max,
+    workspace::BacktrackingAndSecantWorkspace,
+    memory_mode,
+)
+    # Check for domain feasibility
+    storage = similar(x)
+    gamma = gamma_max
+    storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
+    while !line_search.domain_oracle(storage)
+        gamma_max /= 2
+        gamma = min(gamma, gamma_max)
+        storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
+    end
+    gamma_max = gamma
+
+    gamma_max_new = perform_line_search(
+        line_search.backtracking_ls, 
+        t, 
+        f, 
+        grad!, 
+        gradient, 
+        x, 
+        d, 
+        gamma_max, 
+        workspace.backtracking_ws, 
+        memory_mode
+    )
+
+    gamma = perform_line_search(
+        line_search.secant_ls,
+        t,
+        f,
+        grad!,
+        gradient,
+        x, 
+        d, 
+        gamma_max_new,
+        workspace.secant_ws,
+        memory_mode
+    )
+    return gamma
+end
 
 
 """
