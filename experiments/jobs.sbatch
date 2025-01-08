@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --cpus-per-task=4  # No. of cpus to allocate per task
 #SBATCH --time=0-12:00:00 # Specify a Time limit in the format days-hrs:min:sec. Use sinfo to see node time limits
-#SBATCH --chdir=/scratch/htc/dhendryc/research_projects/FrankWolfe.jl/experiments # Navigate to the working directory where your script lies
+#SBATCH --chdir=/scratch/htc/dhendryc/research_projects/FrankWolfe.jl # Navigate to the working directory where your script lies
 #SBATCH --partition=big  # Specify the desired partition, e.g. gpu, cpu or big (GPU is reserved for ML stuff)
 ## We want to run on htc-cmp[101-148], exlude all others
 #in case of small: exclude=htc-cmp[001-008,014-022,024-025,501-532]
@@ -37,7 +37,7 @@ export LINESEARCH=$1
 export PROBLEM=$2
 export DIMENSION=$3
 export SEED=$4
-julia --project run_jobs.jl &> cb_$1_$2_$3_$4_$SLURM_JOB_ID.txt
+julia --project experiments/run_jobs.jl &> cb_$1_$2_$3_$4_$SLURM_JOB_ID.txt
 
 # Finish the script
 exit 0
