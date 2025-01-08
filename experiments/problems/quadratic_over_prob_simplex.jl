@@ -6,7 +6,7 @@ function build_simple_self_concordant_problem(seed, n)
 
     xpi = rand(n);
     total = sum(xpi);
-    const xp = xpi ./ total;
+    xp = xpi ./ total;
 
     f(x) = LinearAlgebra.norm(x - xp)^2
 

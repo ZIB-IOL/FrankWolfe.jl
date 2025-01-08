@@ -2,19 +2,18 @@ using FrankWolfe
 import Random
 using SparseArrays, LinearAlgebra
 using Test
-using Plots
 
 function build_nuclear_norm_problem(seed, dim)
     Random.seed!(seed)
     # rank of the real data
     nobs = dim
     nfeat = dim
-    const r = 30
-    const Xreal = Matrix{Float64}(undef, nobs, nfeat)
+    r = 30
+    Xreal = Matrix{Float64}(undef, nobs, nfeat)
 
-    const X_gen_cols = randn(nfeat, r)
-    const X_gen_rows = randn(r, nobs)
-    const svals = 100 * rand(r)
+    X_gen_cols = randn(nfeat, r)
+    X_gen_rows = randn(r, nobs)
+    svals = 100 * rand(r)
     for i in 1:nobs
         for j in 1:nfeat
             Xreal[i, j] = sum(X_gen_cols[j, k] * X_gen_rows[k, i] * svals[k] for k in 1:r)
@@ -22,8 +21,8 @@ function build_nuclear_norm_problem(seed, dim)
     end
     @test rank(Xreal) == r
     # 0.2 of entries missing
-    const missing_entries = unique!([(rand(1:nobs), rand(1:nfeat)) for _ in 1:10000])
-    const present_entries = [(i, j) for i in 1:nobs, j in 1:nfeat if (i, j) ∉ missing_entries]
+    missing_entries = unique!([(rand(1:nobs), rand(1:nfeat)) for _ in 1:10000])
+    present_entries = [(i, j) for i in 1:nobs, j in 1:nfeat if (i, j) ∉ missing_entries]
 
     f(X) = 0.5 * sum((X[i, j] - Xreal[i, j])^2 for (i, j) in present_entries)
 
