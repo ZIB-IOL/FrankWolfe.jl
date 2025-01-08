@@ -8,7 +8,7 @@ function build_nuclear_norm_problem(seed, dim)
     # rank of the real data
     nobs = dim
     nfeat = dim
-    r = 30
+    r = max(Int(floor(dim/100)), 1)
     Xreal = Matrix{Float64}(undef, nobs, nfeat)
 
     X_gen_cols = randn(nfeat, r)
@@ -21,10 +21,10 @@ function build_nuclear_norm_problem(seed, dim)
     end
     @test rank(Xreal) == r
     # 0.2 of entries missing
-    missing_entries = unique!([(rand(1:nobs), rand(1:nfeat)) for _ in 1:10000])
+    missing_entries = unique!([(rand(1:nobs), rand(1:nfeat)) for _ in 1:dim*10])
     present_entries = [(i, j) for i in 1:nobs, j in 1:nfeat if (i, j) ∉ missing_entries]
 
-    f(X) = 0.5 * sum((X[i, j] - Xreal[i, j])^2 for (i, j) in present_entries)
+    f(X) = 0.5 * sum((X[i, j] - Xreal[i, j])^2 for (i, j) in present_entries, init=0.0)
 
     function grad!(storage, X)
         storage .= 0
