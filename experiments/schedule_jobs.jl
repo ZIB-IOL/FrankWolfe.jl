@@ -1,7 +1,7 @@
-problems = ["OEDP_A", "OEDP_D", "Nuclear", "Birkhoff", "QuadraticProbSimplex", "Spectrahedron"] 
+problems = ["OEDP_A", "OEDP_D", "Nuclear", "Birkhoff", "QuadraticProbSimplex", "Spectrahedron", "IllConditionedQuadratic"] 
 dimensions = collect(100:100:1000) # square root of the dimension
 seeds = [0] # [1,2,3,4,5]
-linesearches = ["Secant", "SecantBT", "Adaptive"] #"BacktrackingSecant 
+linesearches = ["Secant", "SecantBT", "Adaptive", "BacktrackingSecant"] #"BacktrackingSecant 
 
 for line_search in linesearches
     for problem in problems
