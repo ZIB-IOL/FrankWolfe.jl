@@ -41,6 +41,8 @@ function build_data(seed, m)
     
     A = rand(D, m)'
     @assert rank(A) == n 
+
+    A /= (n/10)
         
     return A 
 end
