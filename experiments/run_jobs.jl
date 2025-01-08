@@ -27,11 +27,6 @@ else
     error("Unknown linesearch")
 end
 
-# For the vector.valued problems, square the input dimension
-if problem in ["OEDP_A", "OEDP_D", "QuadraticProbSimplex"]
-    m = m^2
-end
-
 @show problem, string(line_search), m, seed
 
 for seed in seeds
