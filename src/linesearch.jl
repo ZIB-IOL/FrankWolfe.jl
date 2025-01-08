@@ -510,8 +510,8 @@ mutable struct BacktrackingAndSecant{F,LSM1<:LineSearchMethod,LSM2<:LineSearchMe
     number_not_converging::Int
 end
 
-function BacktrackingAndSecant(;limit_num_steps=5, safe=false, tol=1e-8, domain_oracle=x->true)
-    return BacktrackingAndSecant(BackTracking(), Secant(safe=false), limit_num_steps=limit_num_steps, safe=safe, tol=tol, domain_oracle=domain_oracle)
+function BacktrackingAndSecant(;limit_num_steps=20, safe=false, tol=1e-8, domain_oracle=x->true)
+    return BacktrackingAndSecant(Backtracking(limit_num_steps=limit_num_steps), Secant(safe=false), limit_num_steps, safe, tol, domain_oracle, 0)
 end
 
 mutable struct BacktrackingAndSecantWorkspace{BWS, SWS}
@@ -575,6 +575,8 @@ function perform_line_search(
     )
     return gamma
 end
+
+Base.print(io::IO, ::BacktrackingAndSecant) = print(io, "Backtracking and Secant")
 
 
 """
