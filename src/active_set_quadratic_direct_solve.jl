@@ -294,10 +294,10 @@ function solve_quadratic_activeset_lp!(
         for j in 1:nv
             push!(
                 lhs.terms,
-                _compute_quadratic_constraint_term(as.atoms[i] - as.atoms[1], as.A, as.atoms[j], λ[j]),
+                _compute_quadratic_constraint_term(as.atoms[i], as.atoms[1], as.A, as.atoms[j], λ[j]),
             )
         end
-        rhs = -dot(as.atoms[i] - as.atoms[1], as.b)
+        rhs =  dot(as.atoms[1], as.b) - dot(as.atoms[i], as.b)
         MOI.add_constraint(o, lhs, MOI.EqualTo{Float64}(rhs))
     end
     MOI.set(o, MOI.ObjectiveFunction{typeof(sum_of_variables)}(), sum_of_variables)
@@ -375,12 +375,12 @@ function _compute_new_weights_wolfe_step(λ, ::Type{R}, old_weights, o::MOI.Abst
     return indices_to_remove, new_weights
 end
 
-function _compute_quadratic_constraint_term(atom1, A::AbstractMatrix, atom2, λ)
-    return MOI.ScalarAffineTerm(fast_dot(atom1, A, atom2), λ)
+function _compute_quadratic_constraint_term(atom1, atom0, A::AbstractMatrix, atom2, λ)
+    return MOI.ScalarAffineTerm(fast_dot(atom1, A, atom2) - fast_dot(atom0, A, atom2), λ)
 end
 
-function _compute_quadratic_constraint_term(atom1, A::Union{Identity,LinearAlgebra.UniformScaling}, atom2, λ)
-    return MOI.ScalarAffineTerm(A.λ * fast_dot(atom1, atom2), λ)
+function _compute_quadratic_constraint_term(atom1, atom0, A::Union{Identity,LinearAlgebra.UniformScaling}, atom2, λ)
+    return MOI.ScalarAffineTerm(A.λ * (fast_dot(atom1, atom2) - fast_dot(atom0, atom2)), λ)
 end
 
 struct LogScheduler{T}
