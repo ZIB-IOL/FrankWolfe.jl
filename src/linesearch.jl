@@ -498,35 +498,34 @@ Base.print(io::IO, ::Secant) = print(io, "Secant")
 
 """
 For testing purposes/verifying the theory: 
-Do a couple of BackTracking steps and then use that gamma as gamma_max for Secant.
+Do a couple of Backtracking/Adaptive/Adaptive Zeroth steps and then use that gamma as gamma_max for Secant.
 """
-mutable struct BacktrackingAndSecant{F,LSM1<:LineSearchMethod,LSM2<:LineSearchMethod} <: LineSearchMethod
-    backtracking_ls::LSM1
-    secant_ls::LSM2
-    limit_num_steps::Int
+mutable struct ImprovedGammaSecant{F,LSM<:LineSearchMethod, LSMS<:LineSearchMethod} <: LineSearchMethod
+    first_ls::LSM
+    secant_ls::LSMS
     safe::Bool
     tol::Float64
     domain_oracle::F
     number_not_converging::Int
 end
 
-function BacktrackingAndSecant(;limit_num_steps=20, safe=false, tol=1e-8, domain_oracle=x->true)
-    return BacktrackingAndSecant(Backtracking(limit_num_steps=limit_num_steps), Secant(safe=false), limit_num_steps, safe, tol, domain_oracle, 0)
+function ImprovedGammaSecant(;first_ls=Backtracking(), safe=false, tol=1e-8, domain_oracle=x->true) 
+    return ImprovedGammaSecant(first_ls, Secant(safe=false), safe, tol, domain_oracle, 0)
 end
 
-mutable struct BacktrackingAndSecantWorkspace{BWS, SWS}
-    backtracking_ws::BWS
+mutable struct ImprovedGammaSecantWorkspace{BWS, SWS}
+    first_ws::BWS
     secant_ws::SWS
 end
 
-function build_linesearch_workspace(ls::BacktrackingAndSecant, x, gradient)
+function build_linesearch_workspace(ls::ImprovedGammaSecant, x, gradient)
     secant_ws = build_linesearch_workspace(ls.secant_ls, x, gradient)
-    backtracking_ws = build_linesearch_workspace(ls.backtracking_ls, x, gradient)
-    return BacktrackingAndSecantWorkspace(backtracking_ws, secant_ws)  # Initialize last_gamma to 1.0
+    first_ws = build_linesearch_workspace(ls.first_ls, x, gradient)
+    return ImprovedGammaSecantWorkspace(first_ws, secant_ws)  # Initialize last_gamma to 1.0
 end
 
 function perform_line_search(
-    line_search::BacktrackingAndSecant,
+    line_search::ImprovedGammaSecant,
     t,
     f,
     grad!,
@@ -534,7 +533,7 @@ function perform_line_search(
     x,
     d,
     gamma_max,
-    workspace::BacktrackingAndSecantWorkspace,
+    workspace::ImprovedGammaSecantWorkspace,
     memory_mode,
 )
     # Check for domain feasibility
@@ -549,7 +548,7 @@ function perform_line_search(
     gamma_max = gamma
 
     gamma_max_new = perform_line_search(
-        line_search.backtracking_ls, 
+        line_search.first_ls, 
         t, 
         f, 
         grad!, 
@@ -557,7 +556,7 @@ function perform_line_search(
         x, 
         d, 
         gamma_max, 
-        workspace.backtracking_ws, 
+        workspace.first_ws, 
         memory_mode
     )
 
@@ -576,7 +575,7 @@ function perform_line_search(
     return gamma
 end
 
-Base.print(io::IO, ::BacktrackingAndSecant) = print(io, "Backtracking and Secant")
+Base.print(io::IO, ::ImprovedGammaSecant) = print(io, "Improved Gamma Secant")
 
 
 """
