@@ -663,7 +663,7 @@ mutable struct Adaptive{T,TT} <: LineSearchMethod
 end
 
 Adaptive(eta::T, tau::TT) where {T,TT} =
-    Adaptive{T,TT}(eta, tau, T(Inf), T(1e10), T(0.5), true, false)
+    Adaptive{T,TT}(eta, tau, T(Inf), T(1e10), true, false)
 
 Adaptive(; eta=0.9, tau=2, L_est=Inf, max_estimate=1e10, verbose=true, relaxed_smoothness=false) =
     Adaptive(eta, tau, L_est, max_estimate, verbose, relaxed_smoothness)
