@@ -22,6 +22,10 @@ elseif ls == "Adaptive"
     LS_ADAPTIVE
 elseif ls == "BacktrackingSecant"
     LS_BACKTRACKING_AND_SECANT
+elseif ls == "AdaptiveSecant"
+    LS_ADAPTIVE_AND_SECANT
+elseif ls == "AdaptiveZeroSecant"
+    LS_ADAPTIVE_ZERO_AND_SECANT
 else
     error("Unknown linesearch")
 end
