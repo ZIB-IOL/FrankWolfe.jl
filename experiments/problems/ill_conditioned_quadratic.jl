@@ -13,6 +13,7 @@ function build_ill_conditioned_quadratic(seed, n)
         A = randn(n, n)
         A' * A
     end
+    A /= (n^(3/2))
     @assert isposdef(A) == true
 
     y = Random.rand(Bool, n) * 0.6 .+ 0.3

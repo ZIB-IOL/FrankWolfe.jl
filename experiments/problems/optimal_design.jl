@@ -33,7 +33,8 @@ Build the experiment matrix A.
 function build_data(seed, m)
     Random.seed!(seed)
 
-    n = Int(floor(m/10))
+    #n = Int(floor(m/100))
+    n = Int(floor(sqrt(m)))
     B = rand(m,n)
     B = B'*B
     @assert isposdef(B)
@@ -42,7 +43,7 @@ function build_data(seed, m)
     A = rand(D, m)'
     @assert rank(A) == n 
 
-    A /= (n/10)
+    A /= (n^(3/2))
         
     return A 
 end
@@ -111,6 +112,7 @@ function build_a_criterion(A; μ=0.0, build_safe=false)
     domain_oracle = build_domain_oracle(A)
 
     function f_a(x)
+        #x = BigFloat.(x)
         X = transpose(A)*diagm(x)*A + Matrix(μ *I, n, n)
         X = Symmetric(X)
         U = cholesky(X)
@@ -119,9 +121,16 @@ function build_a_criterion(A; μ=0.0, build_safe=false)
     end
 
     function grad_a!(storage, x)
+        #x .= BigFloat.(x)
         X = transpose(A)*diagm(x)*A + Matrix(μ *I, n, n)
         X = Symmetric(X*X)
-        F = cholesky(X)
+        F = similar(X)
+        #try 
+            F = cholesky(X)
+        #catch e
+        #    @show minimum(eigvals(X)), maximum(eigvals(X))
+        #    throw(e)
+        #end
         for i in 1:length(x)
             storage[i] = LinearAlgebra.tr(- (F \ A[i,:]) * transpose(A[i,:]))/a
         end
