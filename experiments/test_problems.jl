@@ -6,7 +6,7 @@ using Test
 include("solve_problems.jl")
 
 seed = 1
-m = 50
+m = 100
 problems = ["OEDP_A", "OEDP_D", "Nuclear", "Birkhoff", "QuadraticProbSimplex", "Spectrahedron", "IllConditionedQuadratic"] #"IllConditionedQuadratic"
 
 #problems = ["IllConditionedQuadratic"]
