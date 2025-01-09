@@ -19,6 +19,7 @@ function build_non_grouped_csv(problem; dimensions=collect(100:100:1000), seeds=
         df[!, Symbol(string(ls)*"_Time")] = df_temp[!, :time]
         df[!, Symbol(string(ls)*"_Primal")] = df_temp[!, :primal]
         df[!, Symbol(string(ls)*"_DualGap")] = df_temp[!, :dual_gap]
+        df[!, Symbol(sting(ls)*"_SmallestDualGap")] = df_temp[!, :smallest_dual_gap]
         df[!, Symbol(string(ls)*"_Iterations")] = df_temp[!, :iterations]
     end
 
@@ -76,6 +77,23 @@ function custom_mean(group)
     return sum/n
 end
 
+function geo_standard_deviation(xs, mean)
+    a = length(xs)  
+    n= 0
+    sum = 0.0
+    if a != 0 
+        for xi in xs
+            if xi != Inf 
+                sum = log(xs[i] / mean)^2
+                n += 1
+            end
+        end
+        return exp(sum / n)
+    end
+    return Inf
+    #return exp(sum((log.(group ./ mean)).^2) / length(group))
+end
+
 function build_summary(problem; time_slots=[0, 10, 300, 900, 1800, 2700], dimensions=collect(100:100:1000), by_time=true)
     df = DataFrame()
     df_ng = DataFrame(CSV.File(joinpath(@__DIR__, "csv/" * problem * "_non_grouped.csv")))
@@ -83,20 +101,27 @@ function build_summary(problem; time_slots=[0, 10, 300, 900, 1800, 2700], dimens
     for ls in [LS_ONLY_SECANT, LS_SECANT_WITH_BACKTRACKING, LS_ADAPTIVE, LS_BACKTRACKING_AND_SECANT]
         times = []
         dual_gap_all = []
+        dual_gap_all_sd = []
         dual_gap = []
+        dual_gap_sd = []
         iterations = []
 
         for time_slot in time_slots
             instances = by_time ? findall(x -> x>time_slot, df_ng[!,:minimumTime]) : findall(x -> x==dimension^2, df_ng[!,:dimension])
-            not_solved 
+            not_solved = findall(x-> x > 1e-7, df_ng[instances, Symbol(string(ls)*"_SmallestDualGap")])
             push!(times, geom_shifted_mean(df_ng[instances, Symbol(string(ls)*"_Time")], shift=Big"1.0"))
+            push!(dual_gap_all_sd, geo_standard_deviation(df_ng[instances, Symbol(string(ls)*"_DualGap")], geom_shifted_mean(df_ng[instances, Symbol(string(ls)*"_DualGap")], shift=1e-8)))
             push!(dual_gap_all, geom_shifted_mean(df_ng[instances, Symbol(string(ls)*"_DualGap")], shift=1e-8))
-            #push!(dual_gap, geom_shifted_mean(df_ng[instances, Symbol(string(ls)*"_Time")], shift=1e-8))
+            push!(dual_gap, geom_shifted_mean(df_ng[intersect(instances,not_solved), Symbol(string(ls)*"_DualGap")], shift=1e-8))
+            push!(dual_gap_sd, geo_standard_deviation(df_ng[intersect(instances,not_solved), Symbol(string(ls)*"_DualGap")], geom_shifted_mean(df_ng[intersect(instances,not_solved), Symbol(string(ls)*"_DualGap")], shift=1e-8)))
             push!(iterations, custom_mean(df_ng[instances, Symbol(string(ls)*"_Iterations")]))
         end
 
         df[!, Symbol(string(ls)*"_Time")] = times
         df[!, Symbol(string(ls)*"_DualGap")] = dual_gap_all
+        df[!, Symbol(string(ls)*"_DualGapSD")] = dual_gap_all_sd
+        df[!, Symbol(string(ls)*"_DualGapNotSolved")] = dual_gap
+        df[!, Symbol(string(ls)*"_DualGapNotSolvedSD")] = dual_gap_sd
         df[!, Symbol(string(ls)*"_Iterations")] = iterations
     end
 
