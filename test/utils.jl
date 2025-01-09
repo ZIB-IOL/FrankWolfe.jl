@@ -64,7 +64,7 @@ end
     end
 end
 
-@testset "RankOne muladd_memory_mode $n                      " for n in (1, 2, 5)
+@testset "RankOne muladd_memory_mode $n" for n in (1, 2, 5)
     for _ in 1:5
         n = 5
         v = rand(n)
@@ -212,6 +212,11 @@ end
         FrankWolfe.build_linesearch_workspace(ls, a, gradient),
         FrankWolfe.InplaceEmphasis(),
     )
+    # constructor for Adaptive
+    ls1 = FrankWolfe.Adaptive(0.2, 0.3)
+    ls2 = FrankWolfe.Adaptive(eta=0.2, tau=0.3)
+    @test ls1.eta == ls2.eta
+    @test ls1.tau == ls2.tau
 end
 
 @testset "Momentum tests" begin
