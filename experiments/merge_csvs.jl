@@ -7,7 +7,7 @@ function merge_csvs(problem, ls)
     dimensions = collect(100:100:1000)
     seeds = collect(1:5)
 
-    file_name = joinpath(@__DIR__, "csv/" * problem * "/" * string(ls_variant) * string(dimensions[1]) * "_" * string(seeds[1]) * ".csv")
+    file_name = joinpath(@__DIR__, "csv/" * problem * "/" * string(ls_variant) * "_" * string(dimensions[1]) * "_" * string(seeds[1]) * ".csv")
     df = DataFrame(CSV.File(file_name))
     
     select!(df, Not(:time))
