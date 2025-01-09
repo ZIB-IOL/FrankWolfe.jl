@@ -75,7 +75,11 @@ function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, w
 
     # Actual run
     data = @timed fw_variant(f, grad!, lmo, active_set, line_search=line_search, timeout=time_limit, max_iteration=max_iter, verbose=verbose, trajectory=true)
-    smallest_dual_gap = data.value.traj_data[end-2][end-1]
+    smallest_dual_gap = if data.value.traj_data[end][1] != 0
+        data.value.traj_data[end-2][end-1]
+    else
+        0.0
+    end
 
     @show data.value.primal, data.value.dual_gap
     @show data.value.traj_data[end][1], data.value.traj_data[end][end]
