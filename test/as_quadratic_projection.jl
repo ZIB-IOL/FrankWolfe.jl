@@ -113,3 +113,35 @@ for traj in traj_data
     @test traj[end][2] ≤ 1e-8
     @test traj[end][4] ≤ 1e-7
 end
+
+lmo = FrankWolfe.LpNormLMO{Float64,5}(100.0)
+
+active_set_quadratic_manual_wolfe = FrankWolfe.ActiveSetQuadraticLinearSolve(
+    FrankWolfe.ActiveSet([(1.0, copy(x00))]),
+    2.0 * I, -2xp,
+    MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
+    scheduler=FrankWolfe.LogScheduler(start_time=10, scaling_factor=1),
+    wolfe_step=true,
+)
+
+trajectoryBPCG_quadratic_manual = []
+x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    active_set_quadratic_manual,
+    max_iteration=k,
+    callback=build_callback(trajectoryBPCG_quadratic_manual),
+);
+trajectoryBPCG_quadratic_manual_wolfe = []
+x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    active_set_quadratic_manual_wolfe,
+    max_iteration=k,
+    callback=build_callback(trajectoryBPCG_quadratic_manual),
+);
+
+@test length(trajectoryBPCG_quadratic_manual) < 450
+@test length(trajectoryBPCG_quadratic_manual_wolfe) < 450
