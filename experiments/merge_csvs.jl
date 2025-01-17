@@ -1,7 +1,7 @@
 using CSV
 using DataFrames
 
-include("solve_problems.jl")
+include("utilities.jl")
 
 function merge_csvs(problem, ls)
     dimensions = collect(100:100:1000)
