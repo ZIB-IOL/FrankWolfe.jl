@@ -4,30 +4,13 @@ using DataFrames
 using CSV
 using Random
 
-
 for file in readdir(joinpath(@__DIR__, "problems/"), join=true)
     if endswith(file, "jl")
         include(file)
     end
 end
 
-@enum LineSearchVariant begin
-    LS_ONLY_SECANT = 1
-    LS_SECANT_WITH_BACKTRACKING = 2
-    LS_BACKTRACKING_AND_SECANT = 3
-    LS_ADAPTIVE = 4
-    LS_ADAPTIVE_AND_SECANT = 5
-    LS_ADAPTIVE_ZERO_AND_SECANT = 6
-end
-
-const linesearchvariant_string = (
-    LS_ONLY_SECANT ="Only_Secant",
-    LS_SECANT_WITH_BACKTRACKING="Secant_with_Backtracking",
-    LS_BACKTRACKING_AND_SECANT="Backtracking_and_Secant",
-    LS_ADAPTIVE="Adaptive",
-    LS_ADAPTIVE_AND_SECANT="Adaptive_and_Secant",
-    LS_ADAPTIVE_ZERO_AND_SECANT="Adaptive_Zero_and_Secant",
-)
+include("utilities.jl")
 
 function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, write=true, verbose=true, FW_variant="BPCG", max_iter=Inf)
     f, grad!, lmo, x0, active_set, domain_oracle = if problem == "OEDP_A"
@@ -67,6 +50,14 @@ function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, w
         FrankWolfe.ImprovedGammaSecant(first_ls=FrankWolfe.Adaptive(), domain_oracle=domain_oracle)
     elseif ls_variant == LS_ADAPTIVE_ZERO_AND_SECANT
         FrankWolfe.ImprovedGammaSecant(first_ls=FrankWolfe.AdaptiveZerothOrder(), domain_oracle=domain_oracle)
+    elseif ls_variant == LS_SECANT_3
+        FrankWolfe.Secant(safe=false, domain_oracle=domain_oracle, limit_num_steps=3)
+    elseif ls_variant == LS_SECANT_5
+        FrankWolfe.Secant(safe=false, domain_oracle=domain_oracle, limit_num_steps=5)
+    elseif ls_variant == LS_SECANT_7
+        FrankWolfe.Secant(safe=false, domain_oracle=domain_oracle, limit_num_steps=7)
+    elseif ls_variant == LS_SECANT_12
+        FrankWolfe.Secant(safe=false, domain_oracle=domain_oracle, limit_num_steps=12)
     else
         error("Line search variant not known.")
     end
@@ -89,7 +80,60 @@ function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, w
     #@show data.value.active_set
 
     if write
-        df = DataFrame(seed=seed, dimension=dimension^2, time=data.time, fw_time=data.value.traj_data[end][end], primal = data.value.primal, dual_gap=data.value.dual_gap, smallest_dual_gap=smallest_dual_gap, iterations=data.value.traj_data[end][1])
+        # trajectory
+        df_traj = DataFrame(data.value.traj_data)
+        rename!(df_traj, Dict(1 => "iterations", 2 => "primal", 3 => "dual_bound", 4 => "dual_gap", 5 => "time"))
+        file_name_traj = joinpath(@__DIR__, "csv/" * problem * "/trajectory/" * string(ls_variant) * "_" * string(dimension^2) * "_" * string(seed) * ".csv")
+        CSV.write(file_name_traj, df_traj, append=false, writeheader=true)
+
+        df = DataFrame()
+        if is_type_secant(ls_variant)
+            mean_iter = mean(line_search.inner_iter)
+            std_iter = std(line_search.inner_iter)
+
+            mean_gap = geom_shifted_mean(line_search.gap, shift=1e-8)
+            std_gap = geo_standard_deviation(line_search.gap, mean_gap)
+
+            df = DataFrame(seed=seed, 
+                dimension=dimension^2, 
+                time=data.time, 
+                fw_time=data.value.traj_data[end][end], 
+                primal = data.value.primal, 
+                dual_gap=data.value.dual_gap, 
+                smallest_dual_gap=smallest_dual_gap, 
+                iterations=data.value.traj_data[end][1],
+                iter_not_converging = line_search.iter_not_converging,
+                fallback_helped = line_search.fallback_help,
+                average_iter = mean_iter,
+                std_iter = std_iter,
+                average_gap = mean_gap,
+                std_gap = std_gap
+            )
+        elseif ls_variant == LS_ADAPTIVE
+            mean_iter = mean(line_search.number_itertions)
+            std_iter = std(line_search.number_itertions)
+            df = DataFrame(seed=seed, 
+                dimension=dimension^2, 
+                time=data.time, 
+                fw_time=data.value.traj_data[end][end], 
+                primal = data.value.primal, 
+                dual_gap=data.value.dual_gap, 
+                smallest_dual_gap=smallest_dual_gap, 
+                iterations=data.value.traj_data[end][1],
+                average_iter = mean_iter,
+                std_iter = std_iter
+            )
+        else
+            df = DataFrame(seed=seed, 
+                dimension=dimension^2, 
+                time=data.time, 
+                fw_time=data.value.traj_data[end][end], 
+                primal = data.value.primal, 
+                dual_gap=data.value.dual_gap, 
+                smallest_dual_gap=smallest_dual_gap, 
+                iterations=data.value.traj_data[end][1]
+            )
+        end
         
         file_name = joinpath(@__DIR__, "csv/" * problem * "/" * string(ls_variant) * "_" * string(dimension^2) * "_" * string(seed) * ".csv")
         CSV.write(file_name, df, append=false, writeheader=true)

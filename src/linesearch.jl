@@ -378,17 +378,17 @@ mutable struct Secant{F,LSM<:LineSearchMethod} <: LineSearchMethod
     tol::Float64
     domain_oracle::F
     number_not_converging::Int
-    best_improvement_by_backtracking::Float64
-    max_violation::Float64
-    inner_iter::Int
+    fallback_help::Int
+    inner_iter::Vector{Int}
+    gaps::Vector{Float64}
 end
 
 function Secant(limit_num_steps, tol)
-    return Secant(Backtracking(), true, limit_num_steps, tol, x -> true, 0, -Inf, tol, 0)
+    return Secant(Backtracking(), true, limit_num_steps, tol, x -> true, 0, 0, Vector{Int}(), Vector{Float64}())
 end
 
 function Secant(;inner_ls=Backtracking(), safe=true, limit_num_steps=40, tol=1e-8, domain_oracle=(x -> true))
-    return Secant(inner_ls, safe, limit_num_steps, tol, domain_oracle, 0, -Inf, tol, 0)
+    return Secant(inner_ls, safe, limit_num_steps, tol, domain_oracle, 0, 0, Vector{Int}(), Vector{Float64}())
 end
 
 mutable struct SecantWorkspace{XT,GT, IWS}
@@ -458,9 +458,10 @@ function perform_line_search(
         dot_gdir = dot_gdir_new
         i += 1
     end
-    line_search.inner_iter += i
+    push!(line_search.inner_iter, i)
     if line_search.safe && abs(dot_gdir) > line_search.tol
         line_search.number_not_converging += 1
+        push!(line_search.gaps, abs(dot_gdir))
         line_search.max_violation = max(line_search.max_violation, abs(dot_gdir))
         # Choose gamma_max to be domain feasible
         storage = muladd_memory_mode(memory_mode, storage, x, gamma_max, d)
@@ -485,7 +486,7 @@ function perform_line_search(
         new_val = f(storage)
 
         if new_val <= best_val
-            line_search.best_improvement_by_backtracking = max(best_val - new_val, line_search.best_improvement_by_backtracking)
+            line_search.fallback_help += 1
             best_gamma = gamma
         end
     end
@@ -751,13 +752,14 @@ mutable struct Adaptive{T,TT,F} <: LineSearchMethod
     verbose::Bool
     relaxed_smoothness::Bool
     domain_oracle::F
+    number_itertions::Vector{Int}
 end
 
 Adaptive(eta::T, tau::TT) where {T,TT} =
-    Adaptive{T,TT}(eta, tau, T(Inf), T(1e10), true, false, x->true)
+    Adaptive{T,TT}(eta, tau, T(Inf), T(1e10), true, false, x->true, Vector{Int}())
 
 Adaptive(; eta=0.9, tau=2, L_est=Inf, max_estimate=1e10, verbose=true, relaxed_smoothness=false, domain_oracle=x->true) =
-    Adaptive(eta, tau, L_est, max_estimate, verbose, relaxed_smoothness, domain_oracle)
+    Adaptive(eta, tau, L_est, max_estimate, verbose, relaxed_smoothness, domain_oracle, Vector{Int}())
 
 struct AdaptiveWorkspace{XT,BT}
     x::XT
@@ -830,6 +832,7 @@ function perform_line_search(
             # if we were not using the relaxed smoothness, we try it first as a stable fallback
             # note that the smoothness estimate is not updated at this iteration.
             if !line_search.relaxed_smoothness
+                push!(line_search.number_itertions, niter)
                 linesearch_fallback = deepcopy(line_search)
                 linesearch_fallback.relaxed_smoothness = true
                 return perform_line_search(
@@ -846,6 +849,7 @@ function perform_line_search(
                     should_upgrade=should_upgrade,
                 )
             end
+            push!(line_search.number_itertions, niter)
             # if we are already in relaxed smoothness, produce a warning:
             # one might see negative progess, cycling, or stalling.
             # Potentially upgrade accuracy or use an alternative line search strategy
