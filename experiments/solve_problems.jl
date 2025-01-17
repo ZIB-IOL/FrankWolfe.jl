@@ -93,8 +93,8 @@ function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, w
             mean_iter = mean(line_search.inner_iter)
             std_iter = std(line_search.inner_iter)
 
-            mean_gap = geom_shifted_mean(line_search.gap, shift=1e-8)
-            std_gap = geo_standard_deviation(line_search.gap, mean_gap)
+            mean_gap = geom_shifted_mean(line_search.gaps, shift=1e-8)
+            std_gap = geo_standard_deviation(line_search.gaps, mean_gap)
 
             df = DataFrame(seed=seed, 
                 dimension=dim, 
