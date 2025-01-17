@@ -18,7 +18,7 @@ function build_simple_self_concordant_problem(seed, n)
     x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
     active_set = FrankWolfe.ActiveSet([(1.0, x0)])
 
-    return f, grad!, lmo, x0, active_set, x -> true
+    return f, grad!, lmo, x0, active_set, x -> true, n
 
 end
 

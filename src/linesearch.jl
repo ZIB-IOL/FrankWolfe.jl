@@ -462,7 +462,6 @@ function perform_line_search(
     if line_search.safe && abs(dot_gdir) > line_search.tol
         line_search.number_not_converging += 1
         push!(line_search.gaps, abs(dot_gdir))
-        line_search.max_violation = max(line_search.max_violation, abs(dot_gdir))
         # Choose gamma_max to be domain feasible
         storage = muladd_memory_mode(memory_mode, storage, x, gamma_max, d)
         while !line_search.domain_oracle(storage)
