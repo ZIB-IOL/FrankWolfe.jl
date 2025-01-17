@@ -35,7 +35,6 @@ function build_non_grouped_csv(problem; dimensions=collect(100:100:1000), seeds=
     println("\n")
 end
 
-
 function build_summary(problem; time_slots=[0, 10, 300, 900, 1800, 2700], dimensions=collect(100:100:1000), by_time=true)
     df = DataFrame()
     df_ng = DataFrame(CSV.File(joinpath(@__DIR__, "csv/" * problem * "_non_grouped.csv")))
