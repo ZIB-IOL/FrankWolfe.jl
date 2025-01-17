@@ -13,20 +13,22 @@ end
 include("utilities.jl")
 
 function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, write=true, verbose=true, FW_variant="BPCG", max_iter=Inf)
-    f, grad!, lmo, x0, active_set, domain_oracle = if problem == "OEDP_A"
-        build_optimal_design(seed, dimension^2, criterion="A")
+    f, grad!, lmo, x0, active_set, domain_oracle, dim = if problem == "OEDP_A"
+        build_optimal_design(seed, dimension, criterion="A"), dimension
     elseif problem == "OEDP_D"
-        build_optimal_design(seed, dimension^2, criterion="D")
+        build_optimal_design(seed, dimension, criterion="D"), dimension
     elseif problem == "Nuclear"
-        build_nuclear_norm_problem(seed, dimension)
+        build_nuclear_norm_problem(seed, dimension), dimension^2
     elseif problem == "Birkhoff"
-        build_birkhoff_problem(seed, dimension)
+        build_birkhoff_problem(seed, dimension), dimension^2
     elseif problem == "QuadraticProbSimplex"
-        build_simple_self_concordant_problem(seed, dimension^2)
+        build_simple_self_concordant_problem(seed, dimension^2), dimension^2
     elseif problem == "Spectrahedron"
-        build_spectrahedron(seed, dimension)
+        build_spectrahedron(seed, dimension), dimension^2
     elseif problem == "IllConditionedQuadratic"
-        build_ill_conditioned_quadratic(seed, dimension^2)
+        build_ill_conditioned_quadratic(seed, dimension), dimension
+    elseif problem == "Portfolio"
+        build_portfolio(seed, dimension)
     else
         error("Problem type not known.")
     end
@@ -83,7 +85,7 @@ function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, w
         # trajectory
         df_traj = DataFrame(data.value.traj_data)
         rename!(df_traj, Dict(1 => "iterations", 2 => "primal", 3 => "dual_bound", 4 => "dual_gap", 5 => "time"))
-        file_name_traj = joinpath(@__DIR__, "csv/" * problem * "/trajectory/" * string(ls_variant) * "_" * string(dimension^2) * "_" * string(seed) * ".csv")
+        file_name_traj = joinpath(@__DIR__, "csv/" * problem * "/trajectory/" * string(ls_variant) * "_" * string(dim) * "_" * string(seed) * ".csv")
         CSV.write(file_name_traj, df_traj, append=false, writeheader=true)
 
         df = DataFrame()
@@ -95,7 +97,7 @@ function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, w
             std_gap = geo_standard_deviation(line_search.gap, mean_gap)
 
             df = DataFrame(seed=seed, 
-                dimension=dimension^2, 
+                dimension=dim, 
                 time=data.time, 
                 fw_time=data.value.traj_data[end][end], 
                 primal = data.value.primal, 
@@ -113,7 +115,7 @@ function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, w
             mean_iter = mean(line_search.number_itertions)
             std_iter = std(line_search.number_itertions)
             df = DataFrame(seed=seed, 
-                dimension=dimension^2, 
+                dimension=dim, 
                 time=data.time, 
                 fw_time=data.value.traj_data[end][end], 
                 primal = data.value.primal, 
@@ -125,7 +127,7 @@ function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, w
             )
         else
             df = DataFrame(seed=seed, 
-                dimension=dimension^2, 
+                dimension=dim, 
                 time=data.time, 
                 fw_time=data.value.traj_data[end][end], 
                 primal = data.value.primal, 
@@ -135,7 +137,7 @@ function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, w
             )
         end
         
-        file_name = joinpath(@__DIR__, "csv/" * problem * "/" * string(ls_variant) * "_" * string(dimension^2) * "_" * string(seed) * ".csv")
+        file_name = joinpath(@__DIR__, "csv/" * problem * "/" * string(ls_variant) * "_" * string(dim) * "_" * string(seed) * ".csv")
         CSV.write(file_name, df, append=false, writeheader=true)
     end
 
