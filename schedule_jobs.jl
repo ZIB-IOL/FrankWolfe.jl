@@ -30,7 +30,7 @@ for line_search in linesearches
 end
 
 problems = ["Portfolio"]
-dimensions = [800, 1200, 1500, 2000, 5000]
+dimensions = [800, 1200, 1500]
 
 for line_search in linesearches
     for problem in problems
