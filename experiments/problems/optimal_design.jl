@@ -239,6 +239,6 @@ function build_optimal_design(seed, m; criterion="A")
     x0, active_set = build_start_point(A)
     domain_oracle = build_domain_oracle(A)
 
-    return f, grad!, lmo, x0, active_set, domain_oracle
+    return f, grad!, lmo, x0, active_set, domain_oracle, m
 end
 

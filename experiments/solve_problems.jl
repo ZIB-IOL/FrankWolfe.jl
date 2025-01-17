@@ -14,19 +14,19 @@ include("utilities.jl")
 
 function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, write=true, verbose=true, FW_variant="BPCG", max_iter=Inf)
     f, grad!, lmo, x0, active_set, domain_oracle, dim = if problem == "OEDP_A"
-        build_optimal_design(seed, dimension, criterion="A"), dimension
+        build_optimal_design(seed, dimension, criterion="A")
     elseif problem == "OEDP_D"
-        build_optimal_design(seed, dimension, criterion="D"), dimension
+        build_optimal_design(seed, dimension, criterion="D")
     elseif problem == "Nuclear"
-        build_nuclear_norm_problem(seed, dimension), dimension^2
+        build_nuclear_norm_problem(seed, dimension)
     elseif problem == "Birkhoff"
-        build_birkhoff_problem(seed, dimension), dimension^2
+        build_birkhoff_problem(seed, dimension)
     elseif problem == "QuadraticProbSimplex"
-        build_simple_self_concordant_problem(seed, dimension^2), dimension^2
+        build_simple_self_concordant_problem(seed, dimension^2)
     elseif problem == "Spectrahedron"
-        build_spectrahedron(seed, dimension), dimension^2
+        build_spectrahedron(seed, dimension)
     elseif problem == "IllConditionedQuadratic"
-        build_ill_conditioned_quadratic(seed, dimension), dimension
+        build_ill_conditioned_quadratic(seed, dimension)
     elseif problem == "Portfolio"
         build_portfolio(seed, dimension)
     else

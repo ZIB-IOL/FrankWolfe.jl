@@ -41,5 +41,5 @@ function build_ill_conditioned_quadratic(seed, n)
 
     active_set = FrankWolfe.ActiveSet([(1.0, x0)])
 
-    return f, grad!, lmo, x0, active_set, x -> true
+    return f, grad!, lmo, x0, active_set, x -> true, n
 end
