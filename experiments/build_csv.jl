@@ -1,7 +1,7 @@
 using DataFrames
 using CSV
 
-inlcude("solve_problems.jl")
+inlcude("utilities.jl")
 
 function build_non_grouped_csv(problem; dimensions=collect(100:100:1000), seeds=collect(1:5))
 
@@ -34,65 +34,7 @@ function build_non_grouped_csv(problem; dimensions=collect(100:100:1000), seeds=
     CSV.write(file_name, df, append=false)
     println("\n")
 end
-function geom_shifted_mean(xs; shift=big"1.0")
-    a = length(xs)  
-    n= 0
-    prod = 1.0  
-    if a != 0 
-        for xi in xs
-            if xi != Inf 
-                prod = prod*(xi+shift)  
-                n += 1
-            end
-        end
-        return Float64(prod^(1/n) - shift)
-    end
-    return Inf
-end
 
-function custom_mean(group)
-    sum = 0.0
-    n = 0
-    dash = false
-
-    if isempty(group)
-        return Inf
-    end
-    for element in group
-        if element == "-"
-            dash = true
-            continue
-        end
-        if element != Inf 
-            if typeof(element) == String7 || typeof(element) == String3
-                element = parse(Float64, element)
-            end
-            sum += element
-            n += 1
-        end
-    end
-    if n == 0
-        return dash ? "-" : Inf
-    end
-    return sum/n
-end
-
-function geo_standard_deviation(xs, mean)
-    a = length(xs)  
-    n= 0
-    sum = 0.0
-    if a != 0 
-        for xi in xs
-            if xi != Inf 
-                sum = log(xs[i] / mean)^2
-                n += 1
-            end
-        end
-        return exp(sum / n)
-    end
-    return Inf
-    #return exp(sum((log.(group ./ mean)).^2) / length(group))
-end
 
 function build_summary(problem; time_slots=[0, 10, 300, 900, 1800, 2700], dimensions=collect(100:100:1000), by_time=true)
     df = DataFrame()
