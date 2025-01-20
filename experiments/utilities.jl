@@ -73,12 +73,13 @@ end
 
 function geo_standard_deviation(xs, mean)
     a = length(xs)  
+   # @show xs
     n= 0
     sum = 0.0
     if a != 0 
         for xi in xs
             if xi != Inf 
-                sum = log(xs[i] / mean)^2
+                sum = log(xi / mean)^2
                 n += 1
             end
         end
