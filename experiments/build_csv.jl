@@ -45,7 +45,8 @@ function build_summary(problem; time_slots=[0, 10, 300, 900, 1800, 2700], dimens
         dual_gap_all_sd = []
         dual_gap = []
         dual_gap_sd = []
-        iterations = []
+        iterations_all = []
+        iterations_solved = []
 
         for time_slot in time_slots
             instances = by_time ? findall(x -> x>time_slot, df_ng[!,:minimumTime]) : findall(x -> x==dimension^2, df_ng[!,:dimension])
@@ -55,7 +56,8 @@ function build_summary(problem; time_slots=[0, 10, 300, 900, 1800, 2700], dimens
             push!(dual_gap_all, geom_shifted_mean(df_ng[instances, Symbol(string(ls)*"_DualGap")], shift=1e-8))
             push!(dual_gap, geom_shifted_mean(df_ng[intersect(instances,not_solved), Symbol(string(ls)*"_DualGap")], shift=1e-8))
             push!(dual_gap_sd, geo_standard_deviation(df_ng[intersect(instances,not_solved), Symbol(string(ls)*"_DualGap")], geom_shifted_mean(df_ng[intersect(instances,not_solved), Symbol(string(ls)*"_DualGap")], shift=1e-8)))
-            push!(iterations, custom_mean(df_ng[instances, Symbol(string(ls)*"_Iterations")]))
+            push!(iterations_all, custom_mean(df_ng[instances, Symbol(string(ls)*"_Iterations")]))
+            push!(iterations_solved, custom_mean(df_ng[diff(instances, not_solved), Symbol(string(ls)*"_Iterations")]))
         end
 
         df[!, Symbol(string(ls)*"_Time")] = times
@@ -63,7 +65,8 @@ function build_summary(problem; time_slots=[0, 10, 300, 900, 1800, 2700], dimens
         df[!, Symbol(string(ls)*"_DualGapSD")] = dual_gap_all_sd
         df[!, Symbol(string(ls)*"_DualGapNotSolved")] = dual_gap
         df[!, Symbol(string(ls)*"_DualGapNotSolvedSD")] = dual_gap_sd
-        df[!, Symbol(string(ls)*"_Iterations")] = iterations
+        df[!, Symbol(string(ls)*"_IterationsAll")] = iterations_all
+        df[!, Symbol(string(ls)*"_IterationsSolved")] = iterations_solved
     end
 
     summary_by = by_time ? "difficulty" : "dimension"
@@ -72,10 +75,11 @@ function build_summary(problem; time_slots=[0, 10, 300, 900, 1800, 2700], dimens
     println("\n")
 end
 
-problems = problems = ["OEDP_A", "OEDP_D", "Nuclear", "Birkhoff", "QuadraticProbSimplex", "Spectrahedron", "IllConditionedQuadratic"] 
+problems = ["OEDP_A", "OEDP_D", "Nuclear", "Birkhoff", "QuadraticProbSimplex", "Spectrahedron", "IllConditionedQuadratic"] 
 
 for problem in problems
-   build_non_grouped_csv(problem)
+    dimensions = problem in ["OEDP_A", "OEDP_D", "IllConditionedQuadratic"] ? collect(500:500:5000) : collect(100:100:1000)
+   build_non_grouped_csv(problem, dimensions=dimensions)
    build_summary(problem, by_time=true) # difficulty
-    build_summary(problem, by_time=false) # dimension
+    build_summary(problem, by_time=false, dimensions=dimensions) # dimension
 end
