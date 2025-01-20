@@ -3,8 +3,7 @@ using DataFrames
 
 include("utilities.jl")
 
-function merge_csvs(problem, ls)
-    dimensions = collect(100:100:1000)
+function merge_csvs(problem, ls; dimensions = collect(100:100:1000))
     seeds = collect(1:5)
 
     file_name = joinpath(@__DIR__, "csv/" * problem * "/" * string(ls_variant) * "_" * string(dimensions[1]) * "_" * string(seeds[1]) * ".csv")
@@ -40,7 +39,8 @@ problems = problems = ["OEDP_A", "OEDP_D", "Nuclear", "Birkhoff", "QuadraticProb
 
 for problem in problems
     for ls in [LS_ONLY_SECANT, LS_ADAPTIVE, LS_BACKTRACKING_AND_SECANT, LS_SECANT_WITH_BACKTRACKING]
-        merge_csvs(problem, ls)
+        dimensions = problem in ["OEDP_A", "OEDP_D", "IllConditionedQuadratic"] ? collect(500:500:5000) : collect(100:100:1000)
+        merge_csvs(problem, ls, dimensions=dimensions)
     end
 end
 
