@@ -25,7 +25,7 @@ function export_data(
 end
 
 
-function extract_data(problem, ls; subfolder="", termination=false, trajectory=false, dim=0, seed=0)
+function extract_data(problem, ls; subfolder="", termination=false, trajectory=false, termination_iter=false, dim=0, seed=0)
     data = []
     if trajectory
         @assert dim > 0 && seed > 0
@@ -36,13 +36,20 @@ function extract_data(problem, ls; subfolder="", termination=false, trajectory=f
     elseif termination
         df = DataFrame(CSV.File(joinpath(@__DIR__, "../csv/" * problem * "_non_grouped.csv")))
         termination = [row > 1e-7 ? 0 : 1 for row in df[!,Symbol(string(ls) * "_SmallestDualGap")]]
-        df[df[!, Symbol(string(ls)*"_Time")].>3600, Symbol(string(ls)*"_Time")] .= 3600
         df[!,:boolTerm] = termination
-
-        filter!(row -> !(row.boolTerm == 0),  df)
-        x = sort(df[!,Symbol(string(ls)*"_Time")])
-        for i in 1:nrow(df)
-            push!(data, [x[i], i])
+        if termination_iter
+            filter!(row -> !(row.boolTerm == 0),  df)
+            x = sort(df[!,Symbol(string(ls)*"_LineSearchIter")])
+            for i in 1:nrow(df)
+                push!(data, [x[i], i])
+            end
+        else
+            df[df[!, Symbol(string(ls)*"_Time")].>3600, Symbol(string(ls)*"_Time")] .= 3600
+            filter!(row -> !(row.boolTerm == 0),  df)
+            x = sort(df[!,Symbol(string(ls)*"_Time")])
+            for i in 1:nrow(df)
+                push!(data, [x[i], i])
+            end
         end
     else
         df = DataFrame(CSV.File(joinpath(@__DIR__, "../csv/" * problem * "_grouped_by_dimension.csv")))
@@ -63,6 +70,7 @@ for ls in linesearches
         end
         data = extract_data(problem, ls, termination=true)
         export_data(data, ["time", "termination"], filename_prefix=problem * "_" * string(ls), filename_suffix="termination", compute_FWgaps=false)
+        export_data(data, ["ls_iter", "termination"], filename_prefix=problem * "_" * string(ls), filename_suffix="termination_iter", compute_FWgaps=false, termination_iter=true)
 
         data = extract_data(problem, ls)
         export_data(data, ["dimension", "time", "dual_gap", "dual_gap_sd", "dual_gap_ns", "dual_gap_ns_sd", "iterations", "iterations_s"], filename_prefix=problem * "_" * string(ls), filename_suffix="dual_gap", compute_FWgaps=false)
@@ -71,5 +79,5 @@ end
 
 # data_trajectories
 #data = extract_data(problem, ls, trajectory=true, dim=100, seed=0)
-#export_data(data, ["iteration", "primal", "dual_bound", "dual_gap", "time"], filename_suffix="trajectory", compute_FWgaps=false)
+#export_data(data, ["iteration", "primal", "dual_bound", "dual_gap", "time"],filename_prefix="trajectory/" * problem * "_" * string(dim) * "_" * string(seed) * "_" * string(ls), filename_suffix="trajectory", compute_FWgaps=false)
 

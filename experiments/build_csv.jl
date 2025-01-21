@@ -24,6 +24,11 @@ function build_non_grouped_csv(problem; dimensions=collect(100:100:1000), seeds=
         df[!, Symbol(string(ls)*"_DualGap")] = df_temp[!, :dual_gap]
         df[!, Symbol(string(ls)*"_SmallestDualGap")] = df_temp[!, :smallest_dual_gap]
         df[!, Symbol(string(ls)*"_Iterations")] = df_temp[!, :iterations]
+        if ls == LS_ADAPTIVE
+            df[!, Symbol(string(ls)*"_LineSearchIter")] = df_temp[!, :average_iter]
+        elseif is_type_secant(ls)
+            df[!, Symbol(string(ls)*"_LineSearchIter")] = df_temp[!, :average_iter] .- 2
+        end
     end
 
     df[!,:minimumTime] = if problem != "Nuclear" 
