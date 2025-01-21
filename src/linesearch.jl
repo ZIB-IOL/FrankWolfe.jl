@@ -381,7 +381,7 @@ mutable struct Secant{F,LSM<:LineSearchMethod} <: LineSearchMethod
     fallback_help::Int
     inner_iter::Vector{Int}
     gaps::Vector{Float64}
-    step_sizes::Vecttor{Float64}
+    step_sizes::Vector{Float64}
 end
 
 function Secant(limit_num_steps, tol)
@@ -493,7 +493,7 @@ function perform_line_search(
         end
     end
     workspace.last_gamma = best_gamma  # Update last_gamma before returning
-    push!(line_seach.step_sizes, best_gamma)
+    push!(line_search.step_sizes, best_gamma)
     return best_gamma
 end
 
