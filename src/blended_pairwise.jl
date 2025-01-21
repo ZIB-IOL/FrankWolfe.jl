@@ -361,6 +361,7 @@ function blended_pairwise_conditional_gradient(
                     active_set_update!(active_set, gamma, v, renorm, nothing)
                 end
             else # dual step
+                push!(line_search.step_sizes, 0.0)
                 # set to computed dual_gap for consistency between the lazy and non-lazy run.
                 # that is ok as we scale with the K = 2.0 default anyways
                 # we only update the dual gap if the step was regular (not lazy from discarded set)
