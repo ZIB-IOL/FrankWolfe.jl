@@ -381,14 +381,15 @@ mutable struct Secant{F,LSM<:LineSearchMethod} <: LineSearchMethod
     fallback_help::Int
     inner_iter::Vector{Int}
     gaps::Vector{Float64}
+    step_sizes::Vecttor{Float64}
 end
 
 function Secant(limit_num_steps, tol)
-    return Secant(Backtracking(), true, limit_num_steps, tol, x -> true, 0, 0, Vector{Int}(), Vector{Float64}())
+    return Secant(Backtracking(), true, limit_num_steps, tol, x -> true, 0, 0, Vector{Int}(), Vector{Float64}(), Vector{Float64}())
 end
 
 function Secant(;inner_ls=Backtracking(), safe=true, limit_num_steps=40, tol=1e-8, domain_oracle=(x -> true))
-    return Secant(inner_ls, safe, limit_num_steps, tol, domain_oracle, 0, 0, Vector{Int}(), Vector{Float64}())
+    return Secant(inner_ls, safe, limit_num_steps, tol, domain_oracle, 0, 0, Vector{Int}(), Vector{Float64}(), Vector{Float64}())
 end
 
 mutable struct SecantWorkspace{XT,GT, IWS}
@@ -429,6 +430,7 @@ function perform_line_search(
     best_val = new_val
     i = 1
     gamma_prev = zero(best_gamma)
+    clamping = false
     while abs(dot_gdir) > line_search.tol
         if i > line_search.limit_num_steps
             workspace.last_gamma = best_gamma  # Update last_gamma before returning
@@ -439,6 +441,7 @@ function perform_line_search(
         dot_gdir_new = fast_dot(grad_storage, d)
 
         if dot_gdir_new ≈ dot_gdir
+            clamping = true
             workspace.last_gamma = best_gamma  # Update last_gamma before returning
             break
         end
@@ -459,7 +462,7 @@ function perform_line_search(
         i += 1
     end
     push!(line_search.inner_iter, i)
-    if line_search.safe && abs(dot_gdir) > line_search.tol
+    if line_search.safe && !clamping && abs(dot_gdir) > line_search.tol
         line_search.number_not_converging += 1
         push!(line_search.gaps, abs(dot_gdir))
         # Choose gamma_max to be domain feasible
@@ -490,6 +493,7 @@ function perform_line_search(
         end
     end
     workspace.last_gamma = best_gamma  # Update last_gamma before returning
+    push!(line_seach.step_sizes, best_gamma)
     return best_gamma
 end
 
@@ -752,13 +756,14 @@ mutable struct Adaptive{T,TT,F} <: LineSearchMethod
     relaxed_smoothness::Bool
     domain_oracle::F
     number_itertions::Vector{Int}
+    step_sizes::Vector{Float64}
 end
 
 Adaptive(eta::T, tau::TT) where {T,TT} =
-    Adaptive{T,TT}(eta, tau, T(Inf), T(1e10), true, false, x->true, Vector{Int}())
+    Adaptive{T,TT}(eta, tau, T(Inf), T(1e10), true, false, x->true, Vector{Int}(), Vector{Float64}())
 
 Adaptive(; eta=0.9, tau=2, L_est=Inf, max_estimate=1e10, verbose=true, relaxed_smoothness=false, domain_oracle=x->true) =
-    Adaptive(eta, tau, L_est, max_estimate, verbose, relaxed_smoothness, domain_oracle, Vector{Int}())
+    Adaptive(eta, tau, L_est, max_estimate, verbose, relaxed_smoothness, domain_oracle, Vector{Int}(), Vector{Float64}())
 
 struct AdaptiveWorkspace{XT,BT}
     x::XT
@@ -784,8 +789,10 @@ function perform_line_search(
 )
     if norm(d) ≤ length(d) * eps(float(real(eltype(d))))
         if should_upgrade isa Val{true}
+            push!(line_search.step_sizes, big(zero(promote_type(eltype(d), eltype(gradient)))))
             return big(zero(promote_type(eltype(d), eltype(gradient))))
         else
+            push!(line_search.step_sizes, zero(promote_type(eltype(d), eltype(gradient))))
             return zero(promote_type(eltype(d), eltype(gradient)))
         end
     end
@@ -834,7 +841,7 @@ function perform_line_search(
                 push!(line_search.number_itertions, niter)
                 linesearch_fallback = deepcopy(line_search)
                 linesearch_fallback.relaxed_smoothness = true
-                return perform_line_search(
+                γ = perform_line_search(
                     linesearch_fallback,
                     t,
                     f,
@@ -847,6 +854,8 @@ function perform_line_search(
                     memory_mode;
                     should_upgrade=should_upgrade,
                 )
+                push!(line_search.step_sizes, γ)
+                return γ
             end
             push!(line_search.number_itertions, niter)
             # if we are already in relaxed smoothness, produce a warning:
@@ -863,6 +872,7 @@ function perform_line_search(
         line_search.L_est = M
     end
     γ = min(max(dot_dir / (line_search.L_est * ndir2), 0), gamma_max)
+    push!(line_search.step_sizes, γ)
     return γ
 end
 
