@@ -78,7 +78,7 @@ function geo_standard_deviation(xs, mean)
     if a != 0 
         for xi in xs
             if xi != Inf 
-                sum = log(xs[i] / mean)^2
+                sum = log(xi / mean)^2
                 n += 1
             end
         end
