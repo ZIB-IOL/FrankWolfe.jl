@@ -871,6 +871,7 @@ function perform_line_search(
     if !clipping
         line_search.L_est = M
     end
+    push!(line_search.number_itertions, niter)
     γ = min(max(dot_dir / (line_search.L_est * ndir2), 0), gamma_max)
     push!(line_search.step_sizes, γ)
     return γ
