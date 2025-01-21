@@ -26,8 +26,11 @@ function build_portfolio(seed, dimension)
 
     n, p = size(W)
 
+    # lower bound on objective value
+    true_obj_value = -10.0
+
     function f(x)
-        return -sum(log(dot(x, @view(W[:, t]))) for t in 1:p)
+        return -sum(log(dot(x, @view(W[:, t]))) for t in 1:p) - true_obj_value
     end
 
     function grad!(storage, x)
@@ -40,7 +43,7 @@ function build_portfolio(seed, dimension)
     end
 
     lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
-    x0 = FrankWolfe.compute_extreme_point(lmo, rand(n))
+    x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
     active_set = FrankWolfe.ActiveSet([(1.0, x0)])
 
     return f, grad!, lmo, x0, active_set, x -> true, n
