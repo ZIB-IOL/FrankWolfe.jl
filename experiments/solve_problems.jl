@@ -93,7 +93,8 @@ function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, w
         df_traj = DataFrame(data.value.traj_data)
         rename!(df_traj, Dict(1 => "iterations", 2 => "primal", 3 => "dual_bound", 4 => "dual_gap", 5 => "time"))
         if is_type_secant(ls_variant) || ls_variant == LS_ADAPTIVE
-            df_traj[!, :step_sizes] = line_search.step_sizes
+            last_gamma = isempty(line_search.step_sizes) ? 0.0 : line_search.step_sizes[end]
+            df_traj[!, :step_sizes] = vcat(line_search.step_sizes, last_gamma, last_gamma)
         end
         file_name_traj = joinpath(@__DIR__, "csv/" * problem * "/trajectory/" * string(ls_variant) * "_" * string(dim) * "_" * string(seed) * ".csv")
         CSV.write(file_name_traj, df_traj, append=false, writeheader=true)
