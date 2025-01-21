@@ -73,6 +73,7 @@ end
 
 function geo_standard_deviation(xs, mean)
     a = length(xs)  
+   # @show xs
     n= 0
     sum = 0.0
     if a != 0 
