@@ -12,6 +12,33 @@ end
 
 include("utilities.jl")
 
+function build_linesearch(ls_variant, domain_oracle)
+    line_search = if ls_variant == LS_ONLY_SECANT
+        FrankWolfe.Secant(safe=false, domain_oracle=domain_oracle)
+    elseif ls_variant == LS_BACKTRACKING_AND_SECANT
+        FrankWolfe.ImprovedGammaSecant(first_ls=FrankWolfe.Backtracking(),domain_oracle=domain_oracle)
+    elseif ls_variant == LS_SECANT_WITH_BACKTRACKING
+        FrankWolfe.Secant(safe=true, domain_oracle=domain_oracle)
+    elseif ls_variant == LS_ADAPTIVE
+        FrankWolfe.Adaptive(domain_oracle=domain_oracle)
+    elseif ls_variant == LS_ADAPTIVE_AND_SECANT
+        FrankWolfe.ImprovedGammaSecant(first_ls=FrankWolfe.Adaptive(), domain_oracle=domain_oracle)
+    elseif ls_variant == LS_ADAPTIVE_ZERO_AND_SECANT
+        FrankWolfe.ImprovedGammaSecant(first_ls=FrankWolfe.AdaptiveZerothOrder(), domain_oracle=domain_oracle)
+    elseif ls_variant == LS_SECANT_3
+        FrankWolfe.Secant(safe=false, domain_oracle=domain_oracle, limit_num_steps=3)
+    elseif ls_variant == LS_SECANT_5
+        FrankWolfe.Secant(safe=false, domain_oracle=domain_oracle, limit_num_steps=5)
+    elseif ls_variant == LS_SECANT_7
+        FrankWolfe.Secant(safe=false, domain_oracle=domain_oracle, limit_num_steps=7)
+    elseif ls_variant == LS_SECANT_12
+        FrankWolfe.Secant(safe=false, domain_oracle=domain_oracle, limit_num_steps=12)
+    else
+        error("Line search variant not known.")
+    end
+    return line_search
+end
+
 function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, write=true, verbose=true, FW_variant="BPCG", max_iter=Inf)
     f, grad!, lmo, x0, active_set, domain_oracle, dim = if problem == "OEDP_A"
         build_optimal_design(seed, dimension, criterion="A")
@@ -39,33 +66,13 @@ function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, w
         error("Frank-Wolfe variant not known.")
     end
 
-    # Set the line search
-    line_search = if ls_variant == LS_ONLY_SECANT
-        FrankWolfe.Secant(safe=false, domain_oracle=domain_oracle)
-    elseif ls_variant == LS_BACKTRACKING_AND_SECANT
-        FrankWolfe.ImprovedGammaSecant(first_ls=FrankWolfe.Backtracking(),domain_oracle=domain_oracle)
-    elseif ls_variant == LS_SECANT_WITH_BACKTRACKING
-        FrankWolfe.Secant(safe=true, domain_oracle=domain_oracle)
-    elseif ls_variant == LS_ADAPTIVE
-        FrankWolfe.Adaptive(domain_oracle=domain_oracle)
-    elseif ls_variant == LS_ADAPTIVE_AND_SECANT
-        FrankWolfe.ImprovedGammaSecant(first_ls=FrankWolfe.Adaptive(), domain_oracle=domain_oracle)
-    elseif ls_variant == LS_ADAPTIVE_ZERO_AND_SECANT
-        FrankWolfe.ImprovedGammaSecant(first_ls=FrankWolfe.AdaptiveZerothOrder(), domain_oracle=domain_oracle)
-    elseif ls_variant == LS_SECANT_3
-        FrankWolfe.Secant(safe=false, domain_oracle=domain_oracle, limit_num_steps=3)
-    elseif ls_variant == LS_SECANT_5
-        FrankWolfe.Secant(safe=false, domain_oracle=domain_oracle, limit_num_steps=5)
-    elseif ls_variant == LS_SECANT_7
-        FrankWolfe.Secant(safe=false, domain_oracle=domain_oracle, limit_num_steps=7)
-    elseif ls_variant == LS_SECANT_12
-        FrankWolfe.Secant(safe=false, domain_oracle=domain_oracle, limit_num_steps=12)
-    else
-        error("Line search variant not known.")
-    end
+    # Set the line search for precompiling
+    line_search = build_linesearch(ls_variant, domain_oracle)
     # Precompile run
     fw_variant(f, grad!, lmo, active_set, line_search=line_search, timeout=10, max_iteration=max_iter)
 
+    # Set line search again to avoid carry over issues from the first run
+    line_search = build_linesearch(ls_variant, domain_oracle)
     # Actual run
     data = @timed fw_variant(f, grad!, lmo, active_set, line_search=line_search, timeout=time_limit, max_iteration=max_iter, verbose=verbose, trajectory=true)
     smallest_dual_gap = if data.value.traj_data[end][1] != 0
@@ -85,6 +92,9 @@ function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, w
         # trajectory
         df_traj = DataFrame(data.value.traj_data)
         rename!(df_traj, Dict(1 => "iterations", 2 => "primal", 3 => "dual_bound", 4 => "dual_gap", 5 => "time"))
+        if is_type_secant(ls_variant) || ls_variant == LS_ADAPTIVE
+            df_traj[!, :step_sizes] = line_search.step_sizes
+        end
         file_name_traj = joinpath(@__DIR__, "csv/" * problem * "/trajectory/" * string(ls_variant) * "_" * string(dim) * "_" * string(seed) * ".csv")
         CSV.write(file_name_traj, df_traj, append=false, writeheader=true)
 
@@ -93,7 +103,7 @@ function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, w
             mean_iter = mean(line_search.inner_iter)
             std_iter = std(line_search.inner_iter)
 
-            mean_gap = geom_shifted_mean(line_search.gaps, shift=1e-8)
+            mean_gap = problem == "Nuclear" && dimension >= 800 ? geom_shifted_mean(line_search.gaps, shift=1e-5) : geom_shifted_mean(line_search.gaps, shift=1e-8)
             std_gap = geo_standard_deviation(line_search.gaps, mean_gap)
 
             df = DataFrame(seed=seed, 
