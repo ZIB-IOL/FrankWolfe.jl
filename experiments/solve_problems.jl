@@ -88,8 +88,6 @@ function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, w
     #@show data.value.v
     #@show data.value.active_set
 
-    @show line_search.step_sizes
-
     if write
         # trajectory
         df_traj = DataFrame(data.value.traj_data)
