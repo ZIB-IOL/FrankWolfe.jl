@@ -65,7 +65,7 @@ for ls in linesearches
         export_data(data, ["time", "termination"], filename_prefix=problem * "_" * string(ls), filename_suffix="termination", compute_FWgaps=false)
 
         data = extract_data(problem, ls)
-        export_data(data, ["time", "dual_gap", "dual_gap_sd", "dual_gap_ns", "dual_gap_ns_sd", "iterations", "iterations_s"], filename_prefix=problem * "_" * string(ls), filename_suffix="dual_gap", compute_FWgaps=false)
+        export_data(data, ["dimension", "time", "dual_gap", "dual_gap_sd", "dual_gap_ns", "dual_gap_ns_sd", "iterations", "iterations_s"], filename_prefix=problem * "_" * string(ls), filename_suffix="dual_gap", compute_FWgaps=false)
     end
 end
 

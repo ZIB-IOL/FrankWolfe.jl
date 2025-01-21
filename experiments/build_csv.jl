@@ -88,6 +88,12 @@ function build_summary(problem; time_slots=[0, 10, 300, 900, 1800, 2700], dimens
             push!(iterations_solved, custom_mean(df_ng[setdiff(instances, not_solved), Symbol(string(ls)*"_Iterations")]))
         end
 
+        if by_time
+            df[!,:TimeSlots] = time_slots
+        else
+            df[!,:Dimension] = dimensions
+        end
+
         df[!, Symbol(string(ls)*"_Time")] = times
         df[!, Symbol(string(ls)*"_DualGap")] = dual_gap_all
         df[!, Symbol(string(ls)*"_DualGapSD")] = dual_gap_all_sd
