@@ -21,7 +21,6 @@ function build_portfolio(seed, dimension)
         error("Problem: $(problem) Seed: $(seed) Dimension: $(dimension)")
     end   
 
-    joinpath(@__DIR__, "data/syn_1000_800_10_50_1.mat")
     W = MAT.matread(problem_instance)["W"]
 
     n, p = size(W)
@@ -46,7 +45,7 @@ function build_portfolio(seed, dimension)
     x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
     active_set = FrankWolfe.ActiveSet([(1.0, x0)])
 
-    return f, grad!, lmo, x0, active_set, x -> true, n
+    return f, grad!, lmo, x0, active_set, x -> true, p
 end
 #=
 problem_instance = joinpath(@__DIR__, "portfolio_data/syn_1000_800_10_50_1.mat")
