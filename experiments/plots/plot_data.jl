@@ -29,8 +29,13 @@ function extract_data(problem, ls; subfolder="", termination=false, trajectory=f
     data = []
     if trajectory
         @assert dim > 0 && seed > 0
-        df = DataFrame(CSV.File(joinpath(@__DIR__, "../csv/" * problem * "/trajectory/" * string(ls) * "_" * string(dim) * "_" * string(seed) * ".csv")))
-        for row in df
+        traj_file = joinpath(@__DIR__, "../csv/" * problem * "/trajectory/" * string(ls) * "_" * string(dim) * "_" * string(seed) * ".csv")
+        if !isfile(traj_file)
+            println("Trajectory of $(problem)_$(string(ls)) with dimension $(dim) and seed $(seed) does not exists.")
+            return nothing
+        end
+        df = DataFrame(CSV.File(traj_file))
+        for row in eachrow(df)
             push!(data, collect(row))
         end
     elseif termination
@@ -63,6 +68,8 @@ end
 
 linesearches = [LS_ADAPTIVE, LS_ADAPTIVE_AND_SECANT, LS_BACKTRACKING_AND_SECANT, LS_ONLY_SECANT, LS_SECANT_WITH_BACKTRACKING, LS_SECANT_12, LS_SECANT_3, LS_SECANT_5, LS_SECANT_7, LS_ADAPTIVE_ZERO_AND_SECANT]
 problems = ["Birkhoff", "IllConditionedQuadratic", "Nuclear", "OEDP_A", "OEDP_D", "QuadraticProbSimplex", "Spectrahedron"] #"Portfolio"
+
+println("Termination and Dual Gap spread plots")
 for ls in linesearches
     for problem in problems
         if problem == "Nuclear" && ls == LS_SECANT_WITH_BACKTRACKING
@@ -70,14 +77,41 @@ for ls in linesearches
         end
         data = extract_data(problem, ls, termination=true)
         export_data(data, ["time", "termination"], filename_prefix=problem * "_" * string(ls), filename_suffix="termination", compute_FWgaps=false)
-        export_data(data, ["ls_iter", "termination"], filename_prefix=problem * "_" * string(ls), filename_suffix="termination_iter", compute_FWgaps=false, termination_iter=true)
+
+        if is_type_secant(ls) || ls == LS_ADAPTIVE
+            data = extract_data(problem, ls, termination=true,termination_iter=true)
+            export_data(data, ["ls_iter", "termination"], filename_prefix=problem * "_" * string(ls), filename_suffix="termination_iter", compute_FWgaps=false)
+        end
 
         data = extract_data(problem, ls)
         export_data(data, ["dimension", "time", "dual_gap", "dual_gap_sd", "dual_gap_ns", "dual_gap_ns_sd", "iterations", "iterations_s"], filename_prefix=problem * "_" * string(ls), filename_suffix="dual_gap", compute_FWgaps=false)
     end
 end
 
-# data_trajectories
-#data = extract_data(problem, ls, trajectory=true, dim=100, seed=0)
-#export_data(data, ["iteration", "primal", "dual_bound", "dual_gap", "time"],filename_prefix="trajectory/" * problem * "_" * string(dim) * "_" * string(seed) * "_" * string(ls), filename_suffix="trajectory", compute_FWgaps=false)
+println("Trajectory Plots")
+seeds = collect(1:5)
+for ls in linesearches
+    for problem in problems
+        dimensions = if problem in ["IllConditionedQuadratic", "OEDP_A", "OEDP_D"]
+            collect(500:500:5000)
+        elseif problem == "Portfolio"
+            [800, 1200, 1500]
+        else
+            collect(100:100:1000).^2
+        end
+        @show problem
+        for dim in dimensions
+            for seed in seeds
+                # data_trajectories
+                data = extract_data(problem, ls, trajectory=true, dim=dim, seed=seed)
+                if data === nothing
+                    continue
+                end
+                export_data(data, ["iteration", "primal", "dual_bound", "dual_gap", "time", "step_size"],filename_prefix="trajectory/" * problem * "_" * string(dim) * "_" * string(seed) * "_" * string(ls), filename_suffix="trajectory", compute_FWgaps=false)
+            end 
+        end
+    end
+end
+
+
 
