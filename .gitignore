@@ -28,7 +28,6 @@ cc/*
 docs/src/contributing.md
 docs/src/index.md
 .DS_Store
-experiments/csv/Spectrahedron/trajectory/
 experiments/csv/QuadraticProbSimplex/trajectory/LS_BACKTRACKING_AND_SECANT_10000_2.csv
 experiments/csv/QuadraticProbSimplex/trajectory/LS_BACKTRACKING_AND_SECANT_10000_4.csv
 experiments/csv/QuadraticProbSimplex/trajectory/LS_BACKTRACKING_AND_SECANT_10000_3.csv
