@@ -39,7 +39,7 @@ function build_linesearch(ls_variant, domain_oracle)
     return line_search
 end
 
-function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, write=true, verbose=true, FW_variant="BPCG", max_iter=Inf)
+function build_function_data(problem, seed, dimension)
     f, grad!, lmo, x0, active_set, domain_oracle, dim = if problem == "OEDP_A"
         build_optimal_design(seed, dimension, criterion="A")
     elseif problem == "OEDP_D"
@@ -60,6 +60,12 @@ function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, w
         error("Problem type not known.")
     end
 
+    return f, grad!, lmo, x0, active_set, domain_oracle, dim
+end
+
+function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, write=true, verbose=true, FW_variant="BPCG", max_iter=Inf)
+    f, grad!, lmo, x0, active_set, domain_oracle, dim = build_function_data(problem, seed, dimension)
+
     fw_variant = if FW_variant == "BPCG"
         FrankWolfe.blended_pairwise_conditional_gradient
     else
@@ -69,10 +75,11 @@ function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, w
     # Set the line search for precompiling
     line_search = build_linesearch(ls_variant, domain_oracle)
     # Precompile run
-    fw_variant(f, grad!, lmo, active_set, line_search=line_search, timeout=10, max_iteration=max_iter)
+    fw_variant(f, grad!, lmo, active_set, line_search=line_search, timeout=10, max_iteration=max_iter, store_step_sizes=is_type_secant(ls_variant) || ls_variant == LS_ADAPTIVE)
 
     # Set line search again to avoid carry over issues from the first run
     line_search = build_linesearch(ls_variant, domain_oracle)
+    f, grad!, lmo, x0, active_set, domain_oracle, dim = build_function_data(problem, seed, dimension)
     # Actual run
     data = @timed fw_variant(f, grad!, lmo, active_set, line_search=line_search, timeout=time_limit, max_iteration=max_iter, verbose=verbose, trajectory=true)
     smallest_dual_gap = if data.value.traj_data[end][1] != 0
