@@ -5,13 +5,18 @@ include("utilities.jl")
 
 function build_non_grouped_csv(problem; dimensions=collect(100:100:1000), seeds=collect(1:5))
 
-    function set_up_data(df, dimensions, seeds)
-        df[!, :seed] = repeat(seeds, length(dimensions))
-        df[!, :dimension] = vcat([fill(i, length(seeds)) for i in dimensions]...)
+    function set_up_data(df, dimensions, seeds, problem)
+        if problem == "Portfolio"
+            df[!, :seed] = [1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 5]
+            df[!, :dimension] = [800, 800, 800, 800, 1200, 1200, 1200, 1200, 1500, 1500, 1500, 1500, 1500]
+        else
+            df[!, :seed] = repeat(seeds, length(dimensions))
+            df[!, :dimension] = vcat([fill(i, length(seeds)) for i in dimensions]...)
+        end
     end
 
     df = DataFrame()
-    set_up_data(df, dimensions, seeds)
+    set_up_data(df, dimensions, seeds, problem)
 
     for ls in [LS_ONLY_SECANT, LS_SECANT_WITH_BACKTRACKING, LS_ADAPTIVE, LS_BACKTRACKING_AND_SECANT, LS_ADAPTIVE_AND_SECANT, LS_ADAPTIVE_ZERO_AND_SECANT, LS_SECANT_3, LS_SECANT_5, LS_SECANT_7, LS_SECANT_12]
        if problem == "Nuclear" && ls == LS_SECANT_WITH_BACKTRACKING
@@ -63,9 +68,11 @@ function build_non_grouped_csv(problem; dimensions=collect(100:100:1000), seeds=
     println("\n")
 end
 
-function build_summary(problem; time_slots=[0, 10, 300, 900, 1800, 2700], dimensions=collect(100:100:1000), by_time=true)
+function build_summary(problem; time_slots=[0, 10, 300, 900, 1800, 2700], dimensions=collect(100:100:1000), by_time=true, table=false)
     df = DataFrame()
     df_ng = DataFrame(CSV.File(joinpath(@__DIR__, "csv/" * problem * "_non_grouped.csv")))
+
+    line_searches = table ? [LS_ONLY_SECANT, LS_ADAPTIVE] : [LS_ONLY_SECANT, LS_SECANT_WITH_BACKTRACKING, LS_ADAPTIVE, LS_BACKTRACKING_AND_SECANT, LS_ADAPTIVE_AND_SECANT, LS_ADAPTIVE_ZERO_AND_SECANT, LS_SECANT_3, LS_SECANT_5, LS_SECANT_7, LS_SECANT_12]
 
     for ls in [LS_ONLY_SECANT, LS_SECANT_WITH_BACKTRACKING, LS_ADAPTIVE, LS_BACKTRACKING_AND_SECANT, LS_ADAPTIVE_AND_SECANT, LS_ADAPTIVE_ZERO_AND_SECANT, LS_SECANT_3, LS_SECANT_5, LS_SECANT_7, LS_SECANT_12]
         if problem == "Nuclear" && ls == LS_SECANT_WITH_BACKTRACKING
@@ -99,6 +106,29 @@ function build_summary(problem; time_slots=[0, 10, 300, 900, 1800, 2700], dimens
             df[!,:Dimension] = dimensions
         end
 
+        # rounding
+        non_inf = findall(isfinite, times)
+        times[non_inf] = round.(times[non_inf], digits=3)
+
+        non_inf = findall(isfinite, dual_gap_all)
+        dual_gap_all[non_inf] = round.(dual_gap_all[non_inf], digits=3)
+
+        non_inf = findall(isfinite, dual_gap_all_sd)
+        dual_gap_all_sd[non_inf] = round.(dual_gap_all_sd[non_inf], digits=2)
+
+        non_inf = findall(isfinite, dual_gap)
+        dual_gap[non_inf] = round.(dual_gap[non_inf], digits=3)
+
+        non_inf = findall(isfinite, dual_gap_sd)
+        dual_gap_sd[non_inf] = round.(dual_gap_sd[non_inf], digits=3)
+
+        non_inf = findall(isfinite, iterations_all)
+        iterations_all[non_inf] = convert.(Int64, round.(iterations_all[non_inf]))
+
+        non_inf = findall(isfinite, iterations_solved)
+        iterations_solved[non_inf] = convert.(Int64, round.(iterations_solved[non_inf]))
+
+
         df[!, Symbol(string(ls)*"_Time")] = times
         df[!, Symbol(string(ls)*"_DualGap")] = dual_gap_all
         df[!, Symbol(string(ls)*"_DualGapSD")] = dual_gap_all_sd
@@ -106,20 +136,30 @@ function build_summary(problem; time_slots=[0, 10, 300, 900, 1800, 2700], dimens
         df[!, Symbol(string(ls)*"_DualGapNotSolvedSD")] = dual_gap_sd
         df[!, Symbol(string(ls)*"_IterationsAll")] = iterations_all
         df[!, Symbol(string(ls)*"_IterationsSolved")] = iterations_solved
+
     end
 
     summary_by = by_time ? "difficulty" : "dimension"
+    summary_by = table ? summary_by * "_table" : nothing
     file_name = joinpath(@__DIR__, "csv/" * problem * "_grouped_by_" * summary_by * ".csv")
     CSV.write(file_name, df, append=false)
     #println("\n")
 end
 
-problems = ["OEDP_A", "OEDP_D", "Nuclear", "Birkhoff", "QuadraticProbSimplex", "Spectrahedron", "IllConditionedQuadratic"] 
+problems = ["OEDP_A", "OEDP_D", "Nuclear", "Birkhoff", "QuadraticProbSimplex", "Spectrahedron", "IllConditionedQuadratic", "Portfolio"] 
 
 for problem in problems
     @show problem
-    dimensions = problem in ["OEDP_A", "OEDP_D", "IllConditionedQuadratic"] ? collect(500:500:5000) : collect(100:100:1000).^2
-   build_non_grouped_csv(problem, dimensions=dimensions)
-   build_summary(problem, by_time=true) # difficulty
+    dimensions = if problem in ["OEDP_A", "OEDP_D", "IllConditionedQuadratic"]
+        collect(500:500:5000)
+    elseif problem == "Portfolio"
+        [800, 1200, 1500]
+    else
+        collect(100:100:1000).^2
+    end
+    build_non_grouped_csv(problem, dimensions=dimensions)
+    build_summary(problem, by_time=true) # difficulty
     build_summary(problem, by_time=false, dimensions=dimensions) # dimension
+    build_summary(problem, by_time=true, table=true) # difficulty
+    build_summary(problem, by_time=false, dimensions=dimensions, table=true) # dimension
 end

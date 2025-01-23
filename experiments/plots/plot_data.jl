@@ -18,14 +18,15 @@ function export_data(
     file_name = joinpath(@__DIR__, "data/" * filename_prefix * "_" * filename_suffix * ".txt")
     open(file_name, "w") do io 
         println(io, join(labels, " "))
-        for i in range(1,step=iter_skip,stop=length(data))
+        stop = length(data) >= 2000 ? 2000 : length(data)
+        for i in range(1,step=iter_skip,stop=stop)
             println(io, join(data[i], " "))
         end
     end
 end
 
 
-function extract_data(problem, ls; subfolder="", termination=false, trajectory=false, termination_iter=false, dim=0, seed=0)
+function extract_data(problem, ls; subfolder="", termination=false, trajectory=false, termination_iter=false, no_termination_iter=false, secant_dual_gap=false, dim=0, seed=0)
     data = []
     if trajectory
         @assert dim > 0 && seed > 0
@@ -48,6 +49,12 @@ function extract_data(problem, ls; subfolder="", termination=false, trajectory=f
             for i in 1:nrow(df)
                 push!(data, [x[i], i])
             end
+        elseif no_termination_iter
+            filter!(row -> !(row.boolTerm == 1),  df)
+            x = sort(df[!,Symbol(string(ls)*"_LineSearchIter")])
+            for i in 1:nrow(df)
+                push!(data, [x[i], i])
+            end
         else
             df[df[!, Symbol(string(ls)*"_Time")].>3600, Symbol(string(ls)*"_Time")] .= 3600
             filter!(row -> !(row.boolTerm == 0),  df)
@@ -55,6 +62,12 @@ function extract_data(problem, ls; subfolder="", termination=false, trajectory=f
             for i in 1:nrow(df)
                 push!(data, [x[i], i])
             end
+        end
+    elseif secant_dual_gap
+        df = DataFrame(CSV.File(joinpath(@__DIR__, "../csv/" * problem * "_non_grouped.csv")))
+        idx = sortperm(df[!,Symbol(string(ls)*"_LineSearchIter")])
+        for i in idx
+            push!(data, [df[i,Symbol(string(ls)*"_LineSearchIter")], df[i, Symbol(string(ls)*"_DualGap")]])
         end
     else
         df = DataFrame(CSV.File(joinpath(@__DIR__, "../csv/" * problem * "_grouped_by_dimension.csv")))
@@ -67,7 +80,7 @@ function extract_data(problem, ls; subfolder="", termination=false, trajectory=f
 end
 
 linesearches = [LS_ADAPTIVE, LS_ADAPTIVE_AND_SECANT, LS_BACKTRACKING_AND_SECANT, LS_ONLY_SECANT, LS_SECANT_WITH_BACKTRACKING, LS_SECANT_12, LS_SECANT_3, LS_SECANT_5, LS_SECANT_7, LS_ADAPTIVE_ZERO_AND_SECANT]
-problems = ["Birkhoff", "IllConditionedQuadratic", "Nuclear", "OEDP_A", "OEDP_D", "QuadraticProbSimplex", "Spectrahedron"] #"Portfolio"
+problems = ["Birkhoff", "IllConditionedQuadratic", "Nuclear", "OEDP_A", "OEDP_D", "QuadraticProbSimplex", "Spectrahedron", "Portfolio"] #"Portfolio"
 
 println("Termination and Dual Gap spread plots")
 for ls in linesearches
@@ -83,21 +96,33 @@ for ls in linesearches
             export_data(data, ["ls_iter", "termination"], filename_prefix=problem * "_" * string(ls), filename_suffix="termination_iter", compute_FWgaps=false)
         end
 
+        if ls == LS_ONLY_SECANT
+            data = extract_data(problem, ls, secant_dual_gap=true)
+            export_data(data, ["ls_iter", "dual_gap"], filename_prefix=problem * "_" * string(ls),filename_suffix="iter_dual_gap", compute_FWgaps=false)
+        end
+
+        if problem in ["OEDP_A", "OEDP_D", "Portfolio"] && is_type_secant(ls)
+            data = extract_data(problem, ls, termination=true,no_termination_iter=true)
+            export_data(data, ["ls_iter", "termination"], filename_prefix=problem * "_" * string(ls), filename_suffix="no_termination_iter", compute_FWgaps=false)
+        end
+
         data = extract_data(problem, ls)
         export_data(data, ["dimension", "time", "dual_gap", "dual_gap_sd", "dual_gap_ns", "dual_gap_ns_sd", "iterations", "iterations_s"], filename_prefix=problem * "_" * string(ls), filename_suffix="dual_gap", compute_FWgaps=false)
     end
 end
 
 println("Trajectory Plots")
+linesearches = [LS_ADAPTIVE, LS_ONLY_SECANT]
+problems = ["Birkhoff", "IllConditionedQuadratic", "Nuclear", "OEDP_A", "OEDP_D", "QuadraticProbSimplex", "Spectrahedron", "Portfolio"]
 seeds = collect(1:5)
 for ls in linesearches
     for problem in problems
         dimensions = if problem in ["IllConditionedQuadratic", "OEDP_A", "OEDP_D"]
-            collect(500:500:5000)
+            collect(500:500:2000)
         elseif problem == "Portfolio"
             [800, 1200, 1500]
         else
-            collect(100:100:1000).^2
+            collect(100:100:300).^2
         end
         @show problem
         for dim in dimensions
