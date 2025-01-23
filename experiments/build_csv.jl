@@ -68,9 +68,11 @@ function build_non_grouped_csv(problem; dimensions=collect(100:100:1000), seeds=
     println("\n")
 end
 
-function build_summary(problem; time_slots=[0, 10, 300, 900, 1800, 2700], dimensions=collect(100:100:1000), by_time=true)
+function build_summary(problem; time_slots=[0, 10, 300, 900, 1800, 2700], dimensions=collect(100:100:1000), by_time=true, table=false)
     df = DataFrame()
     df_ng = DataFrame(CSV.File(joinpath(@__DIR__, "csv/" * problem * "_non_grouped.csv")))
+
+    line_searches = table ? [LS_ONLY_SECANT, LS_ADAPTIVE] : [LS_ONLY_SECANT, LS_SECANT_WITH_BACKTRACKING, LS_ADAPTIVE, LS_BACKTRACKING_AND_SECANT, LS_ADAPTIVE_AND_SECANT, LS_ADAPTIVE_ZERO_AND_SECANT, LS_SECANT_3, LS_SECANT_5, LS_SECANT_7, LS_SECANT_12]
 
     for ls in [LS_ONLY_SECANT, LS_SECANT_WITH_BACKTRACKING, LS_ADAPTIVE, LS_BACKTRACKING_AND_SECANT, LS_ADAPTIVE_AND_SECANT, LS_ADAPTIVE_ZERO_AND_SECANT, LS_SECANT_3, LS_SECANT_5, LS_SECANT_7, LS_SECANT_12]
         if problem == "Nuclear" && ls == LS_SECANT_WITH_BACKTRACKING
@@ -138,12 +140,13 @@ function build_summary(problem; time_slots=[0, 10, 300, 900, 1800, 2700], dimens
     end
 
     summary_by = by_time ? "difficulty" : "dimension"
+    summary_by = table ? summary_by * "_table" : nothing
     file_name = joinpath(@__DIR__, "csv/" * problem * "_grouped_by_" * summary_by * ".csv")
     CSV.write(file_name, df, append=false)
     #println("\n")
 end
 
-problems = ["OEDP_A", "OEDP_D", "Nuclear", "Birkhoff", "QuadraticProbSimplex", "Spectrahedron", "IllConditionedQuadratic"] 
+problems = ["OEDP_A", "OEDP_D", "Nuclear", "Birkhoff", "QuadraticProbSimplex", "Spectrahedron", "IllConditionedQuadratic", "Portfolio"] 
 
 for problem in problems
     @show problem
@@ -157,4 +160,6 @@ for problem in problems
     build_non_grouped_csv(problem, dimensions=dimensions)
     build_summary(problem, by_time=true) # difficulty
     build_summary(problem, by_time=false, dimensions=dimensions) # dimension
+    build_summary(problem, by_time=true, table=true) # difficulty
+    build_summary(problem, by_time=false, dimensions=dimensions, table=true) # dimension
 end
