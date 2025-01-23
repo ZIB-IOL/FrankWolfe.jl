@@ -26,7 +26,7 @@ function export_data(
 end
 
 
-function extract_data(problem, ls; subfolder="", termination=false, trajectory=false, termination_iter=false, no_termination_iter=false, dim=0, seed=0)
+function extract_data(problem, ls; subfolder="", termination=false, trajectory=false, termination_iter=false, no_termination_iter=false, secant_dual_gap=false, dim=0, seed=0)
     data = []
     if trajectory
         @assert dim > 0 && seed > 0
@@ -63,6 +63,12 @@ function extract_data(problem, ls; subfolder="", termination=false, trajectory=f
                 push!(data, [x[i], i])
             end
         end
+    elseif secant_dual_gap
+        df = DataFrame(CSV.File(joinpath(@__DIR__, "../csv/" * problem * "_non_grouped.csv")))
+        idx = sortperm(df[!,Symbol(string(ls)*"_LineSearchIter")])
+        for i in idx
+            push!(data, [df[i,Symbol(string(ls)*"_LineSearchIter")], df[i, Symbol(string(ls)*"_DualGap")]])
+        end
     else
         df = DataFrame(CSV.File(joinpath(@__DIR__, "../csv/" * problem * "_grouped_by_dimension.csv")))
         for row in eachrow(df)
@@ -88,6 +94,11 @@ for ls in linesearches
         if is_type_secant(ls) || ls == LS_ADAPTIVE
             data = extract_data(problem, ls, termination=true,termination_iter=true)
             export_data(data, ["ls_iter", "termination"], filename_prefix=problem * "_" * string(ls), filename_suffix="termination_iter", compute_FWgaps=false)
+        end
+
+        if ls == LS_ONLY_SECANT
+            data = extract_data(problem, ls, secant_dual_gap=true)
+            export_data(data, ["ls_iter", "dual_gap"], filename_prefix=problem * "_" * string(ls),filename_suffix="iter_dual_gap", compute_FWgaps=false)
         end
 
         if problem in ["OEDP_A", "OEDP_D", "Portfolio"] && is_type_secant(ls)
