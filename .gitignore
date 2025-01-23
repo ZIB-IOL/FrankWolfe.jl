@@ -36,6 +36,7 @@ experiments/csv/QuadraticProbSimplex/trajectory/LS_BACKTRACKING_AND_SECANT_10000
 experiments/csv/Nuclear/trajectory/LS_ADAPTIVE_AND_SECANT_10000_5.csv
 experiments/csv/Nuclear/trajectory/LS_ADAPTIVE_AND_SECANT_10000_4.csv
 experiments/csv/Nuclear/trajectory/LS_ADAPTIVE_10000_4.csv
+experiments/csv/Nuclear/trajectory/LS_ADAPTIVE_10000_5.csv
 experiments/csv/Nuclear/trajectory/LS_BACKTRACKING_AND_SECANT_10000_2.csv
 experiments/csv/Nuclear/trajectory/LS_BACKTRACKING_AND_SECANT_10000_4.csv
 experiments/csv/Nuclear/trajectory/LS_BACKTRACKING_AND_SECANT_10000_3.csv
