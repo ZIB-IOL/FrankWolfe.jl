@@ -42,3 +42,6 @@ experiments/csv/Nuclear/trajectory/LS_BACKTRACKING_AND_SECANT_10000_4.csv
 experiments/csv/Nuclear/trajectory/LS_BACKTRACKING_AND_SECANT_10000_3.csv
 experiments/csv/Nuclear/trajectory/LS_BACKTRACKING_AND_SECANT_10000_5.csv
 experiments/csv/Nuclear/trajectory/LS_BACKTRACKING_AND_SECANT_10000_1.csv
+experiments/csv/Portfolio/trajectory/LS_ADAPTIVE_1500_2.csv
+experiments/csv/Portfolio/trajectory/LS_ADAPTIVE_AND_SECANT_800_1.csv
+experiments/csv/Portfolio/trajectory/LS_ADAPTIVE_ZERO_AND_SECANT_1200_1.csv
