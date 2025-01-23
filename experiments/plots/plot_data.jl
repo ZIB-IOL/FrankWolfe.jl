@@ -18,7 +18,8 @@ function export_data(
     file_name = joinpath(@__DIR__, "data/" * filename_prefix * "_" * filename_suffix * ".txt")
     open(file_name, "w") do io 
         println(io, join(labels, " "))
-        for i in range(1,step=iter_skip,stop=length(data))
+        stop = length(data) >= 2000 ? 2000 : length(data)
+        for i in range(1,step=iter_skip,stop=stop)
             println(io, join(data[i], " "))
         end
     end
@@ -89,15 +90,16 @@ for ls in linesearches
 end
 
 println("Trajectory Plots")
+problems = ["Birkhoff", "IllConditionedQuadratic", "Nuclear", "OEDP_A", "OEDP_D", "QuadraticProbSimplex", "Spectrahedron", "Portfolio"]
 seeds = collect(1:5)
 for ls in linesearches
     for problem in problems
         dimensions = if problem in ["IllConditionedQuadratic", "OEDP_A", "OEDP_D"]
-            collect(500:500:5000)
+            collect(500:500:2000)
         elseif problem == "Portfolio"
             [800, 1200, 1500]
         else
-            collect(100:100:1000).^2
+            collect(100:100:300).^2
         end
         @show problem
         for dim in dimensions
