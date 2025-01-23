@@ -1,0 +1,2 @@
+seed,dimension,time,fw_time,primal,dual_gap,smallest_dual_gap,iterations,iter_not_converging,fallback_helped,average_iter,std_iter,average_gap,std_gap
+4,1500,0.2985369,0.295504659,4.3010066203032356,5.155561666470021e-8,5.858714757778216e-8,33,0,0,3.393939393939394,0.7044232543095956,Inf,Inf
