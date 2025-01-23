@@ -5,13 +5,18 @@ include("utilities.jl")
 
 function build_non_grouped_csv(problem; dimensions=collect(100:100:1000), seeds=collect(1:5))
 
-    function set_up_data(df, dimensions, seeds)
-        df[!, :seed] = repeat(seeds, length(dimensions))
-        df[!, :dimension] = vcat([fill(i, length(seeds)) for i in dimensions]...)
+    function set_up_data(df, dimensions, seeds, problem)
+        if problem == "Portfolio"
+            df[!, :seed] = [1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 5]
+            df[!, :dimension] = [800, 800, 800, 800, 1200, 1200, 1200, 1200, 1500, 1500, 1500, 1500, 1500]
+        else
+            df[!, :seed] = repeat(seeds, length(dimensions))
+            df[!, :dimension] = vcat([fill(i, length(seeds)) for i in dimensions]...)
+        end
     end
 
     df = DataFrame()
-    set_up_data(df, dimensions, seeds)
+    set_up_data(df, dimensions, seeds, problem)
 
     for ls in [LS_ONLY_SECANT, LS_SECANT_WITH_BACKTRACKING, LS_ADAPTIVE, LS_BACKTRACKING_AND_SECANT, LS_ADAPTIVE_AND_SECANT, LS_ADAPTIVE_ZERO_AND_SECANT, LS_SECANT_3, LS_SECANT_5, LS_SECANT_7, LS_SECANT_12]
        if problem == "Nuclear" && ls == LS_SECANT_WITH_BACKTRACKING
@@ -118,8 +123,14 @@ problems = ["OEDP_A", "OEDP_D", "Nuclear", "Birkhoff", "QuadraticProbSimplex", "
 
 for problem in problems
     @show problem
-    dimensions = problem in ["OEDP_A", "OEDP_D", "IllConditionedQuadratic"] ? collect(500:500:5000) : collect(100:100:1000).^2
-   build_non_grouped_csv(problem, dimensions=dimensions)
-   build_summary(problem, by_time=true) # difficulty
+    dimensions = if problem in ["OEDP_A", "OEDP_D", "IllConditionedQuadratic"]
+        collect(500:500:5000)
+    elseif problem == "Portfolio"
+        [800, 1200, 1500]
+    else
+        collect(100:100:1000).^2
+    end
+    build_non_grouped_csv(problem, dimensions=dimensions)
+    build_summary(problem, by_time=true) # difficulty
     build_summary(problem, by_time=false, dimensions=dimensions) # dimension
 end

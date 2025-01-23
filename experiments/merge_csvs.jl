@@ -37,11 +37,17 @@ function merge_csvs(problem, ls_variant; dimensions = collect(100:100:1000))
     CSV.write(file_name, df, append=false)
 end
 
-problems = problems = ["OEDP_A", "OEDP_D", "Nuclear", "Birkhoff", "QuadraticProbSimplex", "Spectrahedron", "IllConditionedQuadratic"] 
+problems = problems = ["OEDP_A", "OEDP_D", "Nuclear", "Birkhoff", "QuadraticProbSimplex", "Spectrahedron", "IllConditionedQuadratic", "Portfolio"] 
 
 for problem in problems
     for ls in [LS_ONLY_SECANT, LS_ADAPTIVE, LS_BACKTRACKING_AND_SECANT, LS_SECANT_WITH_BACKTRACKING, LS_ADAPTIVE_AND_SECANT, LS_ADAPTIVE_ZERO_AND_SECANT, LS_SECANT_3, LS_SECANT_5, LS_SECANT_7, LS_SECANT_12]
-        dimensions = problem in ["OEDP_A", "OEDP_D", "IllConditionedQuadratic"] ? collect(500:500:5000) : collect(100:100:1000).^2
+        dimensions = if problem in ["OEDP_A", "OEDP_D", "IllConditionedQuadratic"]
+            collect(500:500:5000)
+        elseif problem == "Portfolio"
+            [800, 1200, 1500]
+        else
+            collect(100:100:1000).^2
+        end
         merge_csvs(problem, ls, dimensions=dimensions)
     end
 end
