@@ -104,6 +104,29 @@ function build_summary(problem; time_slots=[0, 10, 300, 900, 1800, 2700], dimens
             df[!,:Dimension] = dimensions
         end
 
+        # rounding
+        non_inf = findall(isfinite, times)
+        times[non_inf] = round.(times[non_inf], digits=3)
+
+        non_inf = findall(isfinite, dual_gap_all)
+        dual_gap_all[non_inf] = round.(dual_gap_all[non_inf], digits=3)
+
+        non_inf = findall(isfinite, dual_gap_all_sd)
+        dual_gap_all_sd[non_inf] = round.(dual_gap_all_sd[non_inf], digits=2)
+
+        non_inf = findall(isfinite, dual_gap)
+        dual_gap[non_inf] = round.(dual_gap[non_inf], digits=3)
+
+        non_inf = findall(isfinite, dual_gap_sd)
+        dual_gap_sd[non_inf] = round.(dual_gap_sd[non_inf], digits=3)
+
+        non_inf = findall(isfinite, iterations_all)
+        iterations_all[non_inf] = convert.(Int64, round.(iterations_all[non_inf]))
+
+        non_inf = findall(isfinite, iterations_solved)
+        iterations_solved[non_inf] = convert.(Int64, round.(iterations_solved[non_inf]))
+
+
         df[!, Symbol(string(ls)*"_Time")] = times
         df[!, Symbol(string(ls)*"_DualGap")] = dual_gap_all
         df[!, Symbol(string(ls)*"_DualGapSD")] = dual_gap_all_sd
@@ -111,6 +134,7 @@ function build_summary(problem; time_slots=[0, 10, 300, 900, 1800, 2700], dimens
         df[!, Symbol(string(ls)*"_DualGapNotSolvedSD")] = dual_gap_sd
         df[!, Symbol(string(ls)*"_IterationsAll")] = iterations_all
         df[!, Symbol(string(ls)*"_IterationsSolved")] = iterations_solved
+
     end
 
     summary_by = by_time ? "difficulty" : "dimension"
