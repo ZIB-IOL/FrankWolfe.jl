@@ -90,6 +90,7 @@ for ls in linesearches
 end
 
 println("Trajectory Plots")
+linesearches = [LS_ADAPTIVE, LS_ONLY_SECANT]
 problems = ["Birkhoff", "IllConditionedQuadratic", "Nuclear", "OEDP_A", "OEDP_D", "QuadraticProbSimplex", "Spectrahedron", "Portfolio"]
 seeds = collect(1:5)
 for ls in linesearches
