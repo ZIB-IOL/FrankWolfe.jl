@@ -26,7 +26,7 @@ function export_data(
 end
 
 
-function extract_data(problem, ls; subfolder="", termination=false, trajectory=false, termination_iter=false, dim=0, seed=0)
+function extract_data(problem, ls; subfolder="", termination=false, trajectory=false, termination_iter=false, no_termination_iter=false, dim=0, seed=0)
     data = []
     if trajectory
         @assert dim > 0 && seed > 0
@@ -45,6 +45,12 @@ function extract_data(problem, ls; subfolder="", termination=false, trajectory=f
         df[!,:boolTerm] = termination
         if termination_iter
             filter!(row -> !(row.boolTerm == 0),  df)
+            x = sort(df[!,Symbol(string(ls)*"_LineSearchIter")])
+            for i in 1:nrow(df)
+                push!(data, [x[i], i])
+            end
+        elseif no_termination_iter
+            filter!(row -> !(row.boolTerm == 1),  df)
             x = sort(df[!,Symbol(string(ls)*"_LineSearchIter")])
             for i in 1:nrow(df)
                 push!(data, [x[i], i])
@@ -82,6 +88,11 @@ for ls in linesearches
         if is_type_secant(ls) || ls == LS_ADAPTIVE
             data = extract_data(problem, ls, termination=true,termination_iter=true)
             export_data(data, ["ls_iter", "termination"], filename_prefix=problem * "_" * string(ls), filename_suffix="termination_iter", compute_FWgaps=false)
+        end
+
+        if problem in ["OEDP_A", "OEDP_D", "Portfolio"] && is_type_secant(ls)
+            data = extract_data(problem, ls, termination=true,no_termination_iter=true)
+            export_data(data, ["ls_iter", "termination"], filename_prefix=problem * "_" * string(ls), filename_suffix="no_termination_iter", compute_FWgaps=false)
         end
 
         data = extract_data(problem, ls)
