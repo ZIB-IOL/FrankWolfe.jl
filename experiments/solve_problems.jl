@@ -63,7 +63,7 @@ function build_function_data(problem, seed, dimension)
     return f, grad!, lmo, x0, active_set, domain_oracle, dim
 end
 
-function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, write=true, verbose=true, FW_variant="BPCG", max_iter=Inf)
+function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, write=true, verbose=true, FW_variant="BPCG", max_iter=Inf, print_iter=1000)
     f, grad!, lmo, x0, active_set, domain_oracle, dim = build_function_data(problem, seed, dimension)
 
     fw_variant = if FW_variant == "BPCG"
@@ -74,14 +74,15 @@ function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, w
 
     # Set the line search for precompiling
     line_search = build_linesearch(ls_variant, domain_oracle)
+    store_step_sizes= is_type_secant(ls_variant) || ls_variant == LS_ADAPTIVE
     # Precompile run
-    fw_variant(f, grad!, lmo, active_set, line_search=line_search, timeout=10, max_iteration=max_iter, store_step_sizes=is_type_secant(ls_variant) || ls_variant == LS_ADAPTIVE)
+    fw_variant(f, grad!, lmo, active_set, line_search=line_search, timeout=10, max_iteration=max_iter, store_step_sizes=store_step_sizes)
 
     # Set line search again to avoid carry over issues from the first run
     line_search = build_linesearch(ls_variant, domain_oracle)
     f, grad!, lmo, x0, active_set, domain_oracle, dim = build_function_data(problem, seed, dimension)
     # Actual run
-    data = @timed fw_variant(f, grad!, lmo, active_set, line_search=line_search, timeout=time_limit, max_iteration=max_iter, verbose=verbose, trajectory=true)
+    data = @timed fw_variant(f, grad!, lmo, active_set, line_search=line_search, timeout=time_limit, max_iteration=max_iter, verbose=verbose, trajectory=true, print_iter=print_iter, store_step_sizes=store_step_sizes)
     smallest_dual_gap = if data.value.traj_data[end][1] != 0
         data.value.traj_data[end-2][end-1]
     else
@@ -101,6 +102,7 @@ function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, w
         rename!(df_traj, Dict(1 => "iterations", 2 => "primal", 3 => "dual_bound", 4 => "dual_gap", 5 => "time"))
         if is_type_secant(ls_variant) || ls_variant == LS_ADAPTIVE
             last_gamma = isempty(line_search.step_sizes) ? 0.0 : line_search.step_sizes[end]
+            @show length(line_search.step_sizes), length(df_traj[!, :iterations])
             df_traj[!, :step_sizes] = vcat(line_search.step_sizes, last_gamma, last_gamma)
         end
         file_name_traj = joinpath(@__DIR__, "csv/" * problem * "/trajectory/" * string(ls_variant) * "_" * string(dim) * "_" * string(seed) * ".csv")
