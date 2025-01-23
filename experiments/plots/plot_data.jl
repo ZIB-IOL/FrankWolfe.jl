@@ -80,7 +80,7 @@ function extract_data(problem, ls; subfolder="", termination=false, trajectory=f
 end
 
 linesearches = [LS_ADAPTIVE, LS_ADAPTIVE_AND_SECANT, LS_BACKTRACKING_AND_SECANT, LS_ONLY_SECANT, LS_SECANT_WITH_BACKTRACKING, LS_SECANT_12, LS_SECANT_3, LS_SECANT_5, LS_SECANT_7, LS_ADAPTIVE_ZERO_AND_SECANT]
-problems = ["Birkhoff", "IllConditionedQuadratic", "Nuclear", "OEDP_A", "OEDP_D", "QuadraticProbSimplex", "Spectrahedron"] #"Portfolio"
+problems = ["Birkhoff", "IllConditionedQuadratic", "Nuclear", "OEDP_A", "OEDP_D", "QuadraticProbSimplex", "Spectrahedron", "Portfolio"] #"Portfolio"
 
 println("Termination and Dual Gap spread plots")
 for ls in linesearches
