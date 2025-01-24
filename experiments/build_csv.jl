@@ -140,7 +140,7 @@ function build_summary(problem; time_slots=[0, 10, 300, 900, 1800, 2700], dimens
     end
 
     summary_by = by_time ? "difficulty" : "dimension"
-    summary_by = table ? summary_by * "_table" : nothing
+    summary_by = table ? summary_by * "_table" : summary_by
     file_name = joinpath(@__DIR__, "csv/" * problem * "_grouped_by_" * summary_by * ".csv")
     CSV.write(file_name, df, append=false)
     #println("\n")
