@@ -1,5 +1,6 @@
 using CSV
 using DataFrames
+using Plots
 
 include("../utilities.jl")
 
@@ -25,6 +26,43 @@ function export_data(
     end
 end
 
+# Function to plot two lines and save the plot to a file
+function plot_lines_save(x1, y1, x2, y2; label1="Line 1", label2="Line 2", title="Plot", xlabel="x", ylabel="y")
+    # Create the plot
+    plot(x1, y1, label=label1, xlabel=xlabel, ylabel=ylabel, title=title, color=:blue)
+    plot!(x2, y2, label=label2, color=:red)  # Add second line to the same plot
+    
+    # Save the plot to a file
+    filename = joinpath(@__DIR__, "figures/" * title * ".pdf")
+    savefig(filename)
+end
+
+function plot_subplots_save(x1, y1, x2, y2, x3, y3, x4, y4; label1="Line 1", label2="Line 2", title="Plot 1", x1label="", y1label="", x2label="", y2label="")
+    # Create a 2x2 grid of subplots
+    #x1scale = x1[end] > 1000 && x3[end] > 1000 ? :log10 : :identity
+    x1scale = :identity
+    #x2scale = x2[end] > 300 && x4[end] > 300 ? :log10 : :identity
+    x2scale = :identity
+    p1 = plot(x1, y1, label=label1, xlabel=x1label, ylabel=y1label, color=:blue,xscale=x1scale) #xscale=:log10
+    plot!(x3, y3, label=label2, color=:red)  # Adding second line to the first subplot
+
+    p2 = plot(x2, y1, label=label1, xlabel=x2label, ylabel=y1label, color=:blue, xscale=x2scale)
+    plot!(x4, y3, label=label2, color=:red)  # Adding second line to the second subplot
+
+    p3 = plot(x1, y2, label=label1, xlabel=x1label, ylabel=y2label, color=:blue, xscale=x1scale)
+    plot!(x3, y4, label=label2, color=:red)  # Adding second line to the third subplot
+
+    p4 = plot(x2, y2, label=label1, xlabel=x2label, ylabel=y2label, color=:blue, xscale=x2scale)
+    plot!(x4, y4, label=label2, color=:red)  # Adding second line to the fourth subplot
+
+    # Combine the plots into one figure with a 2x2 layout
+    plot(p1, p2, p3, p4, layout=(2, 2))
+
+    # Save the plot to a file
+    filename = joinpath(@__DIR__, "figures/" * title * ".pdf")
+    savefig(filename)
+end
+
 
 function extract_data(problem, ls; subfolder="", termination=false, trajectory=false, termination_iter=false, no_termination_iter=false, secant_dual_gap=false, dim=0, seed=0)
     data = []
@@ -36,8 +74,12 @@ function extract_data(problem, ls; subfolder="", termination=false, trajectory=f
             return nothing
         end
         df = DataFrame(CSV.File(traj_file))
+        length = nrow(df)
+        indices =  length > 1000 ? Int.(round.(collect(1:length/1000:length))) : Int.(collect(1:length))
         for row in eachrow(df)
-            push!(data, collect(row))
+            if rownumber(row) in indices
+                push!(data, collect(row))
+            end
         end
     elseif termination
         df = DataFrame(CSV.File(joinpath(@__DIR__, "../csv/" * problem * "_non_grouped.csv")))
@@ -139,4 +181,38 @@ for ls in linesearches
 end
 
 
-
+#=
+# plots 
+println("Plots")
+linesearches = [LS_ADAPTIVE, LS_ONLY_SECANT]
+problems = ["Birkhoff", "IllConditionedQuadratic", "Nuclear", "OEDP_A", "OEDP_D", "QuadraticProbSimplex", "Spectrahedron", "Portfolio"]
+seeds = collect(1:5)
+for problem in problems
+    dimensions = if problem in ["IllConditionedQuadratic", "OEDP_A", "OEDP_D"]
+        collect(500:500:2000)
+    elseif problem == "Portfolio"
+        [800, 1200, 1500]
+    else
+        collect(100:100:300).^2
+    end
+    @show problem
+    for dim in dimensions
+        for seed in seeds
+            # data_trajectories
+            data_a = extract_data(problem, LS_ADAPTIVE, trajectory=true, dim=dim, seed=seed)
+            data_s = extract_data(problem, LS_ONLY_SECANT, trajectory=true, dim=dim, seed=seed)
+            if data_s === nothing || data_a === nothing
+                continue
+            end
+           # @show getindex.(data_a, 1)
+           # plot_lines_save(getindex.(data_a, 1), getindex.(data_a, 2), getindex.(data_s, 1), getindex.(data_s, 2), label1="Adaptive", label2="Secant", title=problem * "_" * string(dim) * "_" * string(seed), xlabel="Iteration", ylabel="Primal")
+           try
+           plot_subplots_save(getindex.(data_a, 1), getindex.(data_a, 2), getindex.(data_a, 5), getindex.(data_a, 4), getindex.(data_s, 1), getindex.(data_s, 2), getindex.(data_s, 5), getindex.(data_s, 4), label1="Adaptive", label2="Secant", title=problem * "_" * string(dim) * "_" * string(seed), x1label="Iteration", y1label="Primal", x2label="Time", y2label="FW Gap")
+           catch e
+            println("Problem $(problem) with dimension $(dim) and seed $(seed) could not be plotted.")
+                println(e)
+           end
+        end 
+    end
+end
+=#
