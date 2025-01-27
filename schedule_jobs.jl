@@ -1,6 +1,11 @@
 seeds = [0] # [1,2,3,4,5]
 linesearches = ["Secant", "SecantBT", "Adaptive", "BacktrackingSecant", "AdaptiveSecant", "AdaptiveZeroSecant", "Secant_3", "Secant_5", "Secant_7", "Secant_12"] #"BacktrackingSecant 
 
+linesearches = ["Monotonic"]
+Fw_variant = "BPCG"
+
+# Fw_variant = "Vanilla
+# problems = ["Nuclear", "Spectrahedron"]
 problems = ["Nuclear", "Birkhoff", "QuadraticProbSimplex", "Spectrahedron"] 
 dimensions = collect(100:100:1000) # square root of the dimension
 
@@ -9,7 +14,7 @@ for line_search in linesearches
         for dim in dimensions
             for seed in seeds
                 @show line_search, problem, dim, seed
-                run(`sbatch -A optimi -J SeBig jobs.sbatch $line_search $problem $dim $seed`) # CB
+                run(`sbatch -A optimi -J SeBig jobs.sbatch $line_search $problem $dim $seed $Fw_variant`) # CB
             end
         end
     end
@@ -23,7 +28,7 @@ for line_search in linesearches
         for dim in dimensions
             for seed in seeds
                 @show line_search, problem, dim, seed
-                run(`sbatch -A optimi -J SeSmall jobs.sbatch $line_search $problem $dim $seed`) # CB
+                run(`sbatch -A optimi -J SeSmall jobs.sbatch $line_search $problem $dim $seed $Fw_variant`) # CB
             end
         end
     end
@@ -37,7 +42,7 @@ for line_search in linesearches
         for dim in dimensions
             for seed in seeds
                 @show line_search, problem, dim, seed
-                run(`sbatch -A optimi -J SePort jobs.sbatch $line_search $problem $dim $seed`) # CB
+                run(`sbatch -A optimi -J SePort jobs.sbatch $line_search $problem $dim $seed $Fw_variant`) # CB
             end
         end
     end

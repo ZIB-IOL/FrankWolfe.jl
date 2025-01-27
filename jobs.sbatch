@@ -29,6 +29,7 @@ echo "Line Search: $1"
 echo "Problem: $2"
 echo "Dimension: $3"
 echo "Seed: $4"
+echo "Variant: $5"
 
 echo 'Running script'
 bash
@@ -37,7 +38,8 @@ export LINESEARCH=$1
 export PROBLEM=$2
 export DIMENSION=$3
 export SEED=$4
-julia --project experiments/run_jobs.jl &> cb_$1_$2_$3_$4_$SLURM_JOB_ID.txt
+export VARIANT=$5
+julia --project experiments/run_jobs.jl &> cb_$1_$2_$3_$4_$5_$SLURM_JOB_ID.txt
 
 # Finish the script
 exit 0

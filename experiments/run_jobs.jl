@@ -9,6 +9,7 @@ DON'T FORGET TO ADD e AGAIN ONCE YOU ARE DONE DEBUGGING!!
 problem = ENV["PROBLEM"]
 seed = parse(Int, ENV["SEED"])
 m = parse(Int, ENV["DIMENSION"])
+fw_variant = ENV["FW_VARIANT"]
 
 time_limit = 3600 # one hour time limit
 seeds = seed == 0 ? [1,2,3,4,5] : [seed]
@@ -34,6 +35,8 @@ elseif ls == "Secant_7"
     LS_SECANT_7
 elseif ls == "Secant_12"
     LS_SECANT_12
+elseif ls == "Monotonic"
+    LS_MONOTONIC
 else
     error("Unknown linesearch")
 end
@@ -43,10 +46,10 @@ end
 for seed in seeds
     @show seed
     try
-        solve_problems(seed, m, problem, line_search)
+        solve_problems(seed, m, problem, line_search, FW_variant=fw_variant)
     catch e
         showerror(stdout, e, catch_backtrace())
-        error_file = problem * "_" * string(line_search) * ".txt" 
+        error_file = problem * "_" * string(line_search) * "_" * fw_variant * ".txt" 
         open(error_file,"a") do io
             println(io, seed, " ", m, " : ", e)
         end

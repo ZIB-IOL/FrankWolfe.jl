@@ -33,6 +33,7 @@ problems = ["OEDP_A", "OEDP_D", "Nuclear", "Birkhoff", "QuadraticProbSimplex", "
             _, primal_s_5, dual_gap_s_5 = solve_problems(seed, m, problem, LS_SECANT_5, write=false, time_limit=60)
             _, primal_s_7, dual_gap_s_7 = solve_problems(seed, m, problem, LS_SECANT_7, write=false, time_limit=60)
             _, primal_s_12, dual_gap_s_12 = solve_problems(seed, m, problem, LS_SECANT_12, write=false, time_limit=60)
+            _, primal_m, dual_gap_m = solve_problems(seed, m, problem, LS_MONOTONIC, write=false, time_limit=60)
 
 
             @test primal_s >= primal_s_bt - dual_gap_s_bt
@@ -44,7 +45,12 @@ problems = ["OEDP_A", "OEDP_D", "Nuclear", "Birkhoff", "QuadraticProbSimplex", "
             @test primal_s_3 >= primal_s_5 - dual_gap_s_5
             @test primal_s_5 >= primal_s_7 - dual_gap_s_7
             @test primal_s_7 >= primal_s_12 - dual_gap_s_12
-            @test primal_s_12 >= primal_s - dual_gap_s
+            @test primal_s_12 >= primal_m - dual_gap_m
+            @test primal_m >= primal_s - dual_gap_s
+
+            _, primal_s, dual_gap_s = solve_problems(seed, m, problem, LS_ONLY_SECANT, write=false, time_limit=60, FW_variant="Vanilla")
+
+            @test primal_s >= primal_s_bt - dual_gap_s_bt
         end
     end
 end

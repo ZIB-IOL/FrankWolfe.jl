@@ -34,6 +34,7 @@ function away_frank_wolfe(
     use_extra_vertex_storage=false,
     linesearch_workspace=nothing,
     recompute_last_vertex=true,
+    store_step_sizes=false,
 )
     # add the first vertex to active set from initialization
     active_set = ActiveSet([(1.0, x0)])
@@ -66,6 +67,7 @@ function away_frank_wolfe(
         use_extra_vertex_storage=use_extra_vertex_storage,
         linesearch_workspace=linesearch_workspace,
         recompute_last_vertex=recompute_last_vertex,
+        store_step_sizes=store_step_sizes,
     )
 end
 
@@ -98,6 +100,7 @@ function away_frank_wolfe(
     use_extra_vertex_storage=false,
     linesearch_workspace=nothing,
     recompute_last_vertex=true,
+    store_step_sizes=false,
 ) where {AT,R}
     # format string for output of the algorithm
     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"

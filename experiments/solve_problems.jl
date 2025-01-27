@@ -33,6 +33,8 @@ function build_linesearch(ls_variant, domain_oracle)
         FrankWolfe.Secant(safe=false, domain_oracle=domain_oracle, limit_num_steps=7)
     elseif ls_variant == LS_SECANT_12
         FrankWolfe.Secant(safe=false, domain_oracle=domain_oracle, limit_num_steps=12)
+    elseif ls_variant == LS_MONOTONIC
+        FrankWolfe.MonotonicStepSize(domain_oracle)
     else
         error("Line search variant not known.")
     end
@@ -68,6 +70,8 @@ function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, w
 
     fw_variant = if FW_variant == "BPCG"
         FrankWolfe.blended_pairwise_conditional_gradient
+    elseif FW_variant == "Vanilla"
+        FrankWolfe.away_frank_wolfe
     else
         error("Frank-Wolfe variant not known.")
     end
@@ -76,13 +80,23 @@ function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, w
     line_search = build_linesearch(ls_variant, domain_oracle)
     store_step_sizes= is_type_secant(ls_variant) || ls_variant == LS_ADAPTIVE
     # Precompile run
-    fw_variant(f, grad!, lmo, active_set, line_search=line_search, timeout=10, max_iteration=max_iter, store_step_sizes=store_step_sizes)
+    if FW_variant == "BPCG"
+        @show "BPCG"
+        fw_variant(f, grad!, lmo, active_set, line_search=line_search, timeout=10, max_iteration=max_iter, store_step_sizes=store_step_sizes, lazy=false)
+    else
+        @show "Vanilla"
+        fw_variant(f, grad!, lmo, active_set, line_search=line_search, timeout=10, max_iteration=max_iter, store_step_sizes=store_step_sizes, lazy=false, away_steps=false)
+    end
 
     # Set line search again to avoid carry over issues from the first run
     line_search = build_linesearch(ls_variant, domain_oracle)
     f, grad!, lmo, x0, active_set, domain_oracle, dim = build_function_data(problem, seed, dimension)
     # Actual run
-    data = @timed fw_variant(f, grad!, lmo, active_set, line_search=line_search, timeout=time_limit, max_iteration=max_iter, verbose=verbose, trajectory=true, print_iter=print_iter, store_step_sizes=store_step_sizes)
+    data = if FW_variant == "BPCG" 
+        @timed fw_variant(f, grad!, lmo, active_set, line_search=line_search, timeout=time_limit, max_iteration=max_iter, verbose=verbose, trajectory=true, print_iter=print_iter, store_step_sizes=store_step_sizes, lazy=false)
+    else
+        @timed fw_variant(f, grad!, lmo, active_set, line_search=line_search, timeout=time_limit, max_iteration=max_iter, verbose=verbose, trajectory=true, print_iter=print_iter, store_step_sizes=store_step_sizes, lazy=false,away_steps=false)
+    end
     smallest_dual_gap = if data.value.traj_data[end][1] != 0
         data.value.traj_data[end-2][end-1]
     else
@@ -98,6 +112,7 @@ function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, w
 
     if write
         # trajectory
+        sub_dir = fw_variant == "BPCG" ? "" : fw_variant
         df_traj = DataFrame(data.value.traj_data)
         rename!(df_traj, Dict(1 => "iterations", 2 => "primal", 3 => "dual_bound", 4 => "dual_gap", 5 => "time"))
         if is_type_secant(ls_variant) || ls_variant == LS_ADAPTIVE
@@ -105,7 +120,7 @@ function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, w
             @show length(line_search.step_sizes), length(df_traj[!, :iterations])
             df_traj[!, :step_sizes] = vcat(line_search.step_sizes, last_gamma, last_gamma)
         end
-        file_name_traj = joinpath(@__DIR__, "csv/" * problem * "/trajectory/" * string(ls_variant) * "_" * string(dim) * "_" * string(seed) * ".csv")
+        file_name_traj = joinpath(@__DIR__, "csv/" * problem * "/trajectory/" * sub_dir * "/" * string(ls_variant) * "_" * string(dim) * "_" * string(seed) * ".csv")
         CSV.write(file_name_traj, df_traj, append=false, writeheader=true)
 
         df = DataFrame()
@@ -157,7 +172,7 @@ function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, w
             )
         end
         
-        file_name = joinpath(@__DIR__, "csv/" * problem * "/" * string(ls_variant) * "_" * string(dim) * "_" * string(seed) * ".csv")
+        file_name = joinpath(@__DIR__, "csv/" * subdir * "/" * problem * "/" * string(ls_variant) * "_" * string(dim) * "_" * string(seed) * ".csv")
         CSV.write(file_name, df, append=false, writeheader=true)
     end
 
