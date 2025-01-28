@@ -176,7 +176,7 @@ function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, w
             )
         end
         
-        file_name = joinpath(@__DIR__, "csv/" * subdir * "/" * problem * "/" * string(ls_variant) * "_" * string(dim) * "_" * string(seed) * ".csv")
+        file_name = joinpath(@__DIR__, "csv/" * sub_dir * "/" * problem * "/" * string(ls_variant) * "_" * string(dim) * "_" * string(seed) * ".csv")
         CSV.write(file_name, df, append=false, writeheader=true)
     end
 
