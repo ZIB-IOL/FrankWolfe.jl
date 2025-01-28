@@ -112,7 +112,7 @@ function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, w
 
     if write
         # trajectory
-        sub_dir = fw_variant == "BPCG" ? "" : fw_variant
+        sub_dir = FW_variant == "BPCG" ? "" : FW_variant
         df_traj = DataFrame(data.value.traj_data)
         rename!(df_traj, Dict(1 => "iterations", 2 => "primal", 3 => "dual_bound", 4 => "dual_gap", 5 => "time"))
         if is_type_secant(ls_variant) || ls_variant == LS_ADAPTIVE
