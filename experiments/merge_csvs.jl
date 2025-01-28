@@ -40,13 +40,16 @@ end
 problems = problems = ["OEDP_A", "OEDP_D", "Nuclear", "Birkhoff", "QuadraticProbSimplex", "Spectrahedron", "IllConditionedQuadratic", "Portfolio"] 
 
 for problem in problems
-    for ls in [LS_ONLY_SECANT, LS_ADAPTIVE, LS_BACKTRACKING_AND_SECANT, LS_SECANT_WITH_BACKTRACKING, LS_ADAPTIVE_AND_SECANT, LS_ADAPTIVE_ZERO_AND_SECANT, LS_SECANT_3, LS_SECANT_5, LS_SECANT_7, LS_SECANT_12]
+    for ls in [LS_ONLY_SECANT, LS_ADAPTIVE, LS_BACKTRACKING_AND_SECANT, LS_SECANT_WITH_BACKTRACKING, LS_ADAPTIVE_AND_SECANT, LS_ADAPTIVE_ZERO_AND_SECANT, LS_SECANT_3, LS_SECANT_5, LS_SECANT_7, LS_SECANT_12, LS_MONOTONIC, LS_AGNOSTIC, LS_ADAPTIVE_ZERO, LS_BACKTRACKING, LS_GOLDEN_RATIO]
         dimensions = if problem in ["OEDP_A", "OEDP_D", "IllConditionedQuadratic"]
             collect(500:500:5000)
         elseif problem == "Portfolio"
             [800, 1200, 1500]
         else
             collect(100:100:1000).^2
+        end
+        if problem == "OEDP_A" && ls == LS_BACKTRACKING
+            continue
         end
         merge_csvs(problem, ls, dimensions=dimensions)
     end
