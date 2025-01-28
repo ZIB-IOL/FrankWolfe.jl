@@ -37,6 +37,10 @@ elseif ls == "Secant_12"
     LS_SECANT_12
 elseif ls == "Monotonic"
     LS_MONOTONIC
+elseif ls == "Agnostic"
+    LS_AGNOSTIC
+elseif ls == "AdaptiveZero"
+    LS_ADAPTIVE_ZERO
 else
     error("Unknown linesearch")
 end
