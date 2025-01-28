@@ -104,3 +104,9 @@ experiments/csv/Nuclear/trajectory/LS_GOLDEN_RATIO_10000_1.csv
 experiments/csv/Nuclear/trajectory/LS_GOLDEN_RATIO_10000_3.csv
 experiments/csv/Nuclear/trajectory/LS_BACKTRACKING_AND_SECANT_10000_1.csv
 experiments/csv/Nuclear/trajectory/LS_AGNOSTIC_10000_1.csv
+experiments/csv/Vanilla/Spectrahedron/trajectory/LS_GOLDEN_RATIO_10000_4.csv
+experiments/csv/Vanilla/Spectrahedron/trajectory/LS_GOLDEN_RATIO_10000_3.csv
+experiments/csv/Vanilla/Nuclear/trajectory/LS_MONOTONIC_10000_4.csv
+experiments/csv/Vanilla/Nuclear/trajectory/LS_MONOTONIC_10000_5.csv
+experiments/csv/Vanilla/Nuclear/trajectory/LS_MONOTONIC_10000_3.csv
+experiments/csv/Vanilla/Nuclear/trajectory/LS_MONOTONIC_10000_1.csv
