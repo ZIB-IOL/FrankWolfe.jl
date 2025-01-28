@@ -10,6 +10,8 @@
     LS_SECANT_7 = 9
     LS_SECANT_12 = 10
     LS_MONOTONIC = 11
+    LS_AGNOSTIC = 12
+    LS_ADAPITVE_ZERO = 13
 end
 
 const linesearchvariant_string = (
@@ -24,6 +26,8 @@ const linesearchvariant_string = (
     LS_SECANT_7="Secant_7",
     LS_SECANT_12="Secant_12",
     LS_MONOTONIC="Monotonic",
+    LS_AGNOSTIC="Agnostic",
+    LS_ADAPITVE_ZERO="Adaptive_Zero",
 )
 
 function is_type_secant(ls::LineSearchVariant)

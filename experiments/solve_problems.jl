@@ -35,6 +35,10 @@ function build_linesearch(ls_variant, domain_oracle)
         FrankWolfe.Secant(safe=false, domain_oracle=domain_oracle, limit_num_steps=12)
     elseif ls_variant == LS_MONOTONIC
         FrankWolfe.MonotonicStepSize(domain_oracle)
+    elseif ls_variant == LS_AGNOSTIC    
+        FrankWolfe.Agnostic()
+    elseif ls_variant == LS_ADAPTIVE_ZERO
+        FrankWolfe.AdaptiveZerothOrder(domain_oracle=domain_oracle)
     else
         error("Line search variant not known.")
     end
