@@ -204,11 +204,14 @@ Simple golden-ratio based line search
 based on [Combettes, Pokutta (2020)](http://proceedings.mlr.press/v119/combettes20a/combettes20a.pdf)
 code and adapted.
 """
-struct Goldenratio{T} <: LineSearchMethod
+struct Goldenratio{T,F} <: LineSearchMethod
     tol::T
+    domain_oracle::F
 end
 
-Goldenratio() = Goldenratio(1e-7)
+Goldenratio() = Goldenratio(1e-7, x->true)
+
+Goldenratio(domain_oracle) = Goldenratio(1e-7, domain_oracle)
 
 struct GoldenratioWorkspace{XT,GT}
     y::XT
@@ -242,6 +245,18 @@ function perform_line_search(
     workspace::GoldenratioWorkspace,
     memory_mode,
 )
+
+    # Deal with not trivial domain
+    x_storage = similar(x)
+    gamma = gamma_max
+    x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
+    while !line_search.domain_oracle(x_storage)
+        gamma_max /= 2
+        gamma = min(gamma, gamma_max)
+        x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
+    end
+    gamma_max = gamma
+
     # restrict segment of search to [x, y]
     @. workspace.y = x - gamma_max * d
     @. workspace.left = x

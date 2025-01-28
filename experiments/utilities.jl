@@ -11,7 +11,9 @@
     LS_SECANT_12 = 10
     LS_MONOTONIC = 11
     LS_AGNOSTIC = 12
-    LS_ADAPITVE_ZERO = 13
+    LS_ADAPTIVE_ZERO = 13
+    LS_BACKTRACKING = 14
+    LS_GOLDEN_RATIO = 15
 end
 
 const linesearchvariant_string = (
@@ -27,7 +29,9 @@ const linesearchvariant_string = (
     LS_SECANT_12="Secant_12",
     LS_MONOTONIC="Monotonic",
     LS_AGNOSTIC="Agnostic",
-    LS_ADAPITVE_ZERO="Adaptive_Zero",
+    LS_ADAPTIVE_ZERO="Adaptive_Zero",
+    LS_BACKTRACKING="Backtracking",
+    LS_GOLDEN_RATIO="Golden_Ratio",
 )
 
 function is_type_secant(ls::LineSearchVariant)

@@ -41,6 +41,10 @@ elseif ls == "Agnostic"
     LS_AGNOSTIC
 elseif ls == "AdaptiveZero"
     LS_ADAPTIVE_ZERO
+elseif ls == "Backtracking"
+    LS_BACKTRACKING
+elseif ls == "GoldenRatio"
+    LS_GOLDEN_RATIO
 else
     error("Unknown linesearch")
 end
