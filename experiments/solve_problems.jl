@@ -128,7 +128,7 @@ function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, w
             @show length(line_search.step_sizes), length(df_traj[!, :iterations])
             df_traj[!, :step_sizes] = vcat(line_search.step_sizes, last_gamma, last_gamma)
         end
-        file_name_traj = joinpath(@__DIR__, "csv/" * problem * "/trajectory/" * sub_dir * "/" * string(ls_variant) * "_" * string(dim) * "_" * string(seed) * ".csv")
+        file_name_traj = joinpath(@__DIR__, "csv/" * sub_dir * "/" * problem * "/trajectory/" * string(ls_variant) * "_" * string(dim) * "_" * string(seed) * ".csv")
         CSV.write(file_name_traj, df_traj, append=false, writeheader=true)
 
         df = DataFrame()
