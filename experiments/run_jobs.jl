@@ -43,7 +43,7 @@ elseif ls == "AdaptiveZero"
     LS_ADAPTIVE_ZERO
 elseif ls == "Backtracking"
     LS_BACKTRACKING
-elseif ls == "GoldenRatio"
+elseif ls == "Goldenratio"
     LS_GOLDEN_RATIO
 else
     error("Unknown linesearch")
