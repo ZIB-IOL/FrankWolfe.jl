@@ -64,7 +64,7 @@ function plot_subplots_save(x1, y1, x2, y2, x3, y3, x4, y4; label1="Line 1", lab
 end
 
 
-function extract_data(problem, ls; subfolder="", termination=false, trajectory=false, termination_iter=false, no_termination_iter=false, secant_dual_gap=false, dim=0, seed=0)
+function extract_data(problem, ls; subfolder="", termination=false, trajectory=false, termination_iter=false, no_termination_iter=false, secant_dual_gap=false, secant_iter=false, dim=0, seed=0)
     data = []
     if trajectory
         @assert dim > 0 && seed > 0
@@ -81,9 +81,15 @@ function extract_data(problem, ls; subfolder="", termination=false, trajectory=f
                 push!(data, collect(row))
             end
         end
+    elseif secant_iter
+        df = DataFrame(CSV.File(joinpath(@__DIR__, "../csv/" * problem * "_non_grouped.csv")))
+        x = sort(df[!,Symbol(string(ls)*"_LineSearchIter")])
+        for i in 1:nrow(df)
+            push!(data, [x[i], i])
+        end
     elseif termination
         df = DataFrame(CSV.File(joinpath(@__DIR__, "../csv/" * problem * "_non_grouped.csv")))
-        termination = [row > 1e-7 ? 0 : 1 for row in df[!,Symbol(string(ls) * "_SmallestDualGap")]]
+        termination = [row > 1e-5 ? 0 : 1 for row in df[!,Symbol(string(ls) * "_SmallestDualGap")]]
         df[!,:boolTerm] = termination
         if termination_iter
             filter!(row -> !(row.boolTerm == 0),  df)
@@ -141,6 +147,9 @@ for ls in linesearches
         if ls == LS_ONLY_SECANT
             data = extract_data(problem, ls, secant_dual_gap=true)
             export_data(data, ["ls_iter", "dual_gap"], filename_prefix=problem * "_" * string(ls),filename_suffix="iter_dual_gap", compute_FWgaps=false)
+
+            data = extract_data(problem, ls, secant_iter=true)
+            export_data(data, ["ls_iter", "no_instance"], filename_prefix=problem * "_" * string(ls), filename_suffix="secant_iter", compute_FWgaps=false)
         end
 
         if problem in ["OEDP_A", "OEDP_D", "Portfolio"] && is_type_secant(ls)
@@ -154,7 +163,7 @@ for ls in linesearches
 end
 
 println("Trajectory Plots")
-linesearches = [LS_ADAPTIVE, LS_ONLY_SECANT]
+linesearches = [LS_ADAPTIVE, LS_ONLY_SECANT, LS_ADAPITVE_ZERO, LS_AGNOSTIC, LS_GOLDEN_RATIO, LS_BACKTRACKING, LS_MONOTONIC]
 problems = ["Birkhoff", "IllConditionedQuadratic", "Nuclear", "OEDP_A", "OEDP_D", "QuadraticProbSimplex", "Spectrahedron", "Portfolio"]
 seeds = collect(1:5)
 for ls in linesearches

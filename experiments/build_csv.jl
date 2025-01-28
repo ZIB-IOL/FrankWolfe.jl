@@ -18,7 +18,7 @@ function build_non_grouped_csv(problem; dimensions=collect(100:100:1000), seeds=
     df = DataFrame()
     set_up_data(df, dimensions, seeds, problem)
 
-    for ls in [LS_ONLY_SECANT, LS_SECANT_WITH_BACKTRACKING, LS_ADAPTIVE, LS_BACKTRACKING_AND_SECANT, LS_ADAPTIVE_AND_SECANT, LS_ADAPTIVE_ZERO_AND_SECANT, LS_SECANT_3, LS_SECANT_5, LS_SECANT_7, LS_SECANT_12]
+    for ls in [LS_ONLY_SECANT, LS_SECANT_WITH_BACKTRACKING, LS_ADAPTIVE, LS_BACKTRACKING_AND_SECANT, LS_ADAPTIVE_AND_SECANT, LS_ADAPTIVE_ZERO_AND_SECANT, LS_SECANT_3, LS_SECANT_5, LS_SECANT_7, LS_SECANT_12, LS_MONOTONIC, LS_AGNOSTIC, LS_ADAPTIVE_ZERO]
        if problem == "Nuclear" && ls == LS_SECANT_WITH_BACKTRACKING
             continue
         end
@@ -72,12 +72,16 @@ function build_summary(problem; time_slots=[0, 10, 300, 900, 1800, 2700], dimens
     df = DataFrame()
     df_ng = DataFrame(CSV.File(joinpath(@__DIR__, "csv/" * problem * "_non_grouped.csv")))
 
-    line_searches = table ? [LS_ONLY_SECANT, LS_ADAPTIVE] : [LS_ONLY_SECANT, LS_SECANT_WITH_BACKTRACKING, LS_ADAPTIVE, LS_BACKTRACKING_AND_SECANT, LS_ADAPTIVE_AND_SECANT, LS_ADAPTIVE_ZERO_AND_SECANT, LS_SECANT_3, LS_SECANT_5, LS_SECANT_7, LS_SECANT_12]
+    line_searches = table ? [LS_ONLY_SECANT, LS_ADAPTIVE, LS_AGNOSTIC] : [LS_ONLY_SECANT, LS_SECANT_WITH_BACKTRACKING, LS_ADAPTIVE, LS_BACKTRACKING_AND_SECANT, LS_ADAPTIVE_AND_SECANT, LS_ADAPTIVE_ZERO_AND_SECANT, LS_SECANT_3, LS_SECANT_5, LS_SECANT_7, LS_SECANT_12, LS_MONOTONIC, LS_AGNOSTIC, LS_ADAPTIVE_ZERO]
 
-    for ls in [LS_ONLY_SECANT, LS_SECANT_WITH_BACKTRACKING, LS_ADAPTIVE, LS_BACKTRACKING_AND_SECANT, LS_ADAPTIVE_AND_SECANT, LS_ADAPTIVE_ZERO_AND_SECANT, LS_SECANT_3, LS_SECANT_5, LS_SECANT_7, LS_SECANT_12]
+    for ls in line_searches
         if problem == "Nuclear" && ls == LS_SECANT_WITH_BACKTRACKING
             continue
         end
+        if problem == "OEDP_A" && ls == LS_BACKTRACKING
+            continue
+        end
+        num_instances = []
         times = []
         dual_gap_all = []
         dual_gap_all_sd = []
@@ -90,6 +94,7 @@ function build_summary(problem; time_slots=[0, 10, 300, 900, 1800, 2700], dimens
 
         for filter in filters
             instances = by_time ? findall(x -> x>filter, df_ng[!,:minimumTime]) : findall(x -> x==filter, df_ng[!,:dimension])
+            push!(num_instances, length(instances))
             not_solved = findall(x-> x > 1e-7, df_ng[instances, Symbol(string(ls)*"_SmallestDualGap")])
             push!(times, geom_shifted_mean(df_ng[instances, Symbol(string(ls)*"_Time")], shift=1.0))
             push!(dual_gap_all_sd, geo_standard_deviation(df_ng[instances, Symbol(string(ls)*"_DualGap")], geom_shifted_mean(df_ng[instances, Symbol(string(ls)*"_DualGap")], shift=1e-5)))
@@ -105,6 +110,8 @@ function build_summary(problem; time_slots=[0, 10, 300, 900, 1800, 2700], dimens
         else
             df[!,:Dimension] = dimensions
         end
+
+        df[!,:NumInstances] = num_instances
 
         # rounding
         non_inf = findall(isfinite, times)
