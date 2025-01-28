@@ -9,7 +9,7 @@ DON'T FORGET TO ADD e AGAIN ONCE YOU ARE DONE DEBUGGING!!
 problem = ENV["PROBLEM"]
 seed = parse(Int, ENV["SEED"])
 m = parse(Int, ENV["DIMENSION"])
-fw_variant = ENV["FW_VARIANT"]
+fw_variant = ENV["VARIANT"]
 
 time_limit = 3600 # one hour time limit
 seeds = seed == 0 ? [1,2,3,4,5] : [seed]
