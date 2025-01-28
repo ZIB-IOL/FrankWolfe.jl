@@ -397,14 +397,15 @@ mutable struct Secant{F,LSM<:LineSearchMethod} <: LineSearchMethod
     inner_iter::Vector{Int}
     gaps::Vector{Float64}
     step_sizes::Vector{Float64}
+    norm_d::Vector{Float64}
 end
 
 function Secant(limit_num_steps, tol)
-    return Secant(Backtracking(), true, limit_num_steps, tol, x -> true, 0, 0, Vector{Int}(), Vector{Float64}(), Vector{Float64}())
+    return Secant(Backtracking(), true, limit_num_steps, tol, x -> true, 0, 0, Vector{Int}(), Vector{Float64}(), Vector{Float64}(), Vector{Float64}())
 end
 
 function Secant(;inner_ls=Backtracking(), safe=true, limit_num_steps=40, tol=1e-8, domain_oracle=(x -> true))
-    return Secant(inner_ls, safe, limit_num_steps, tol, domain_oracle, 0, 0, Vector{Int}(), Vector{Float64}(), Vector{Float64}())
+    return Secant(inner_ls, safe, limit_num_steps, tol, domain_oracle, 0, 0, Vector{Int}(), Vector{Float64}(), Vector{Float64}(), Vector{Float64}())
 end
 
 mutable struct SecantWorkspace{XT,GT, IWS}
@@ -477,6 +478,7 @@ function perform_line_search(
         i += 1
     end
     push!(line_search.inner_iter, i)
+    push!(line_search.norm_d, norm(d))
     if line_search.safe && !clamping && abs(dot_gdir) > line_search.tol
         line_search.number_not_converging += 1
         push!(line_search.gaps, abs(dot_gdir))
