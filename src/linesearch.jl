@@ -601,7 +601,7 @@ It is also the fallback when the Lipschitz constant estimation fails due to nume
 `perform_line_search` also has a `should_upgrade` keyword argument on
 whether there should be a temporary upgrade to `BigFloat` for extended precision.
 """
-mutable struct AdaptiveZerothOrder{T,TT} <: LineSearchMethod
+mutable struct AdaptiveZerothOrder{T,TT,F} <: LineSearchMethod
     eta::T
     tau::TT
     L_est::T
@@ -609,10 +609,11 @@ mutable struct AdaptiveZerothOrder{T,TT} <: LineSearchMethod
     alpha::T
     verbose::Bool
     relaxed_smoothness::Bool
+    domain_oracle::F
 end
 
 AdaptiveZerothOrder(eta::T, tau::TT) where {T,TT} =
-    AdaptiveZerothOrder{T,TT}(eta, tau, T(Inf), T(1e10), T(0.5), true, false)
+    AdaptiveZerothOrder{T,TT}(eta, tau, T(Inf), T(1e10), T(0.5), true, false, x->true)
 
 AdaptiveZerothOrder(;
     eta=0.9,
@@ -622,7 +623,8 @@ AdaptiveZerothOrder(;
     alpha=0.5,
     verbose=true,
     relaxed_smoothness=false,
-) = AdaptiveZerothOrder(eta, tau, L_est, max_estimate, alpha, verbose, relaxed_smoothness)
+    domain_oracle=x->true,
+) = AdaptiveZerothOrder(eta, tau, L_est, max_estimate, alpha, verbose, relaxed_smoothness, domain_oracle)
 
 struct AdaptiveZerothOrderWorkspace{XT,BT}
     x::XT
@@ -652,6 +654,19 @@ function perform_line_search(
             return zero(promote_type(eltype(d), eltype(gradient)))
         end
     end
+
+    # Deal with not trivial domain
+    x_storage = similar(x)
+    gamma = gamma_max
+    x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
+    while !line_search.domain_oracle(x_storage)
+        gamma_max /= 2
+        gamma = min(gamma, gamma_max)
+        x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
+    end
+    gamma_max = gamma
+
+    
     x_storage = storage.x
     if !isfinite(line_search.L_est)
         epsilon_step = min(1e-3, gamma_max)
