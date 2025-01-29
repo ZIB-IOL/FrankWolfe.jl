@@ -88,18 +88,20 @@ function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, w
     line_search = build_linesearch(ls_variant, domain_oracle)
     store_step_sizes= is_type_secant(ls_variant) || ls_variant == LS_ADAPTIVE
     # Precompile run
+    println("PRECOMPILATION")
     if FW_variant == "BPCG"
         @show "BPCG"
-        fw_variant(f, grad!, lmo, active_set, line_search=line_search, timeout=10, max_iteration=max_iter, store_step_sizes=store_step_sizes, lazy=false)
+        fw_variant(f, grad!, lmo, active_set, line_search=line_search, timeout=30, max_iteration=max_iter, verbose=verbose, trajectory=true, print_iter=print_iter, store_step_sizes=store_step_sizes, lazy=false)
     else
         @show "Vanilla"
-        fw_variant(f, grad!, lmo, active_set, line_search=line_search, timeout=10, max_iteration=max_iter, store_step_sizes=store_step_sizes, lazy=false, away_steps=false)
+        fw_variant(f, grad!, lmo, active_set, line_search=line_search, timeout=30, max_iteration=max_iter, store_step_sizes=store_step_sizes, lazy=false, away_steps=false)
     end
 
     # Set line search again to avoid carry over issues from the first run
     line_search = build_linesearch(ls_variant, domain_oracle)
     f, grad!, lmo, x0, active_set, domain_oracle, dim = build_function_data(problem, seed, dimension)
     # Actual run
+    println("\nACTUAL RUN")
     data = if FW_variant == "BPCG" 
         @timed fw_variant(f, grad!, lmo, active_set, line_search=line_search, timeout=time_limit, max_iteration=max_iter, verbose=verbose, trajectory=true, print_iter=print_iter, store_step_sizes=store_step_sizes, lazy=false)
     else
@@ -110,7 +112,7 @@ function solve_problems(seed, dimension, problem, ls_variant; time_limit=3600, w
     else
         0.0
     end
-
+@show data.time
     @show data.value.primal, data.value.dual_gap
     @show data.value.traj_data[end][1], data.value.traj_data[end][end]
     @show smallest_dual_gap
