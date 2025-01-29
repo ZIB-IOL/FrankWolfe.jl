@@ -120,18 +120,6 @@ function build_summary(problem; time_slots=[0, 10, 300, 900, 1800, 2700], dimens
         non_inf = findall(isfinite, times)
         times[non_inf] = round.(times[non_inf], digits=3)
 
-        #non_inf = findall(isfinite, dual_gap_all)
-        #dual_gap_all[non_inf] = round.(dual_gap_all[non_inf], digits=3)
-
-        #non_inf = findall(isfinite, dual_gap_all_sd)
-        #dual_gap_all_sd[non_inf] = round.(dual_gap_all_sd[non_inf], digits=2)
-
-        #non_inf = findall(isfinite, dual_gap)
-        #dual_gap[non_inf] = round.(dual_gap[non_inf], digits=3)
-
-        #non_inf = findall(isfinite, dual_gap_sd)
-        #dual_gap_sd[non_inf] = round.(dual_gap_sd[non_inf], digits=3)
-
         non_inf = findall(isfinite, iterations_all)
         iterations_all[non_inf] = convert.(Int64, round.(iterations_all[non_inf]))
 
@@ -185,22 +173,16 @@ function summary_table()
     file_name = joinpath(@__DIR__, "csv/summary_table.csv")
     CSV.write(file_name, df_summary_table, append=false)
 end
-#=
+
 problems = ["OEDP_A", "OEDP_D", "Nuclear", "Birkhoff", "QuadraticProbSimplex", "Spectrahedron", "IllConditionedQuadratic", "Portfolio"] 
 for problem in problems
     @show problem
-    dimensions = if problem in ["OEDP_A", "OEDP_D", "IllConditionedQuadratic"]
-        collect(500:500:5000)
-    elseif problem == "Portfolio"
-        [800, 1200, 1500]
-    else
-        collect(100:100:1000).^2
-    end
+    dimensions = get_dimensions(problem)
     build_non_grouped_csv(problem, dimensions=dimensions)
     build_summary(problem, by_time=true) # difficulty
     build_summary(problem, by_time=false, dimensions=dimensions) # dimension
     build_summary(problem, by_time=true, table=true, df_summary_table) # difficulty
     build_summary(problem, by_time=false, dimensions=dimensions, table=true) # dimension
 end
-=#
+
 summary_table()

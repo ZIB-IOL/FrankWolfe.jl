@@ -34,6 +34,21 @@ const linesearchvariant_string = (
     LS_GOLDEN_RATIO="Golden_Ratio",
 )
 
+function get_dimensions(problem)
+    dimensions = if problem in ["IllConditionedQuadratic"]
+        collect(500:500:5000)
+    elseif problem in ["OEDP_A", "OEDP_D"]
+        collect(100:100:1000)
+    elseif problem in ["Birkhoff", "Nuclear", "QuadraticProbSimplex"]
+        collect(50:50:300).^2
+    elseif problem == "Portfolio"
+        [800, 1200, 1500]
+    else
+        collect(100:100:1000).^2
+    end
+    return dimensions
+end
+
 function is_type_secant(ls::LineSearchVariant)
     return ls in [LS_ONLY_SECANT, LS_SECANT_12, LS_SECANT_3, LS_SECANT_5, LS_SECANT_7, LS_SECANT_WITH_BACKTRACKING]
 end
