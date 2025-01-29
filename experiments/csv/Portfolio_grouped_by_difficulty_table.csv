@@ -1,7 +1,7 @@
-TimeSlots,NumInstances,LS_ONLY_SECANT_Time,LS_ONLY_SECANT_DualGap,LS_ONLY_SECANT_DualGapSD,LS_ONLY_SECANT_DualGapNotSolved,LS_ONLY_SECANT_DualGapNotSolvedSD,LS_ONLY_SECANT_IterationsAll,LS_ONLY_SECANT_IterationsSolved,LS_ADAPTIVE_Time,LS_ADAPTIVE_DualGap,LS_ADAPTIVE_DualGapSD,LS_ADAPTIVE_DualGapNotSolved,LS_ADAPTIVE_DualGapNotSolvedSD,LS_ADAPTIVE_IterationsAll,LS_ADAPTIVE_IterationsSolved,LS_AGNOSTIC_Time,LS_AGNOSTIC_DualGap,LS_AGNOSTIC_DualGapSD,LS_AGNOSTIC_DualGapNotSolved,LS_AGNOSTIC_DualGapNotSolvedSD,LS_AGNOSTIC_IterationsAll,LS_AGNOSTIC_IterationsSolved
-0,13,0.545,0.0,1.0,Inf,Inf,28,28,4.639,0.0,1.01,0.0,1.009,70223,66,2083.818,0.0,1.04,0.0,1.087,1493808,1263
-10,0,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf
-300,0,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf
-900,0,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf
-1800,0,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf
-2700,0,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf,Inf
+TimeSlots,NumInstances,LS_ONLY_SECANT_Time,LS_ONLY_SECANT_DualGapNotSolved,LS_ONLY_SECANT_IterationsSolved,LS_ADAPTIVE_Time,LS_ADAPTIVE_DualGapNotSolved,LS_ADAPTIVE_IterationsSolved,LS_AGNOSTIC_Time,LS_AGNOSTIC_DualGapNotSolved,LS_AGNOSTIC_IterationsSolved
+0,13,0.545,<1E-07,28,4.639,1.43E-07,66,2083.654,1.49E-06,1263
+10,0,Inf,<1E-07,,Inf,<1E-07,,Inf,<1E-07,
+300,0,Inf,<1E-07,,Inf,<1E-07,,Inf,<1E-07,
+900,0,Inf,<1E-07,,Inf,<1E-07,,Inf,<1E-07,
+1800,0,Inf,<1E-07,,Inf,<1E-07,,Inf,<1E-07,
+2700,0,Inf,<1E-07,,Inf,<1E-07,,Inf,<1E-07,

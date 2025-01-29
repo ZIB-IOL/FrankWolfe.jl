@@ -1,5 +1,6 @@
 using DataFrames
 using CSV
+using Printf
 
 include("utilities.jl")
 
@@ -23,6 +24,7 @@ function build_non_grouped_csv(problem; dimensions=collect(100:100:1000), seeds=
             continue
         end
         df_temp = DataFrame(CSV.File(joinpath(@__DIR__, "csv/" * problem * "/" * string(ls) * ".csv"))) 
+        df_temp[df_temp.time .> 3600.00, :time] .= 3600.00
         
         df[!, Symbol(string(ls)*"_Time")] = df_temp[!, :time]
         df[!, Symbol(string(ls)*"_Primal")] = df_temp[!, :primal]
@@ -91,16 +93,17 @@ function build_summary(problem; time_slots=[0, 10, 300, 900, 1800, 2700], dimens
         iterations_solved = []
 
         filters = by_time ? time_slots : dimensions
-
+        not_solved_all = findall(x-> x > 1e-7, df_ng[!, Symbol(string(ls)*"_SmallestDualGap")])
         for filter in filters
             instances = by_time ? findall(x -> x>filter, df_ng[!,:minimumTime]) : findall(x -> x==filter, df_ng[!,:dimension])
             push!(num_instances, length(instances))
-            not_solved = findall(x-> x > 1e-7, df_ng[instances, Symbol(string(ls)*"_SmallestDualGap")])
+            not_solved = intersect(instances, not_solved_all)
+            @show filter, length(not_solved)
             push!(times, geom_shifted_mean(df_ng[instances, Symbol(string(ls)*"_Time")], shift=1.0))
             push!(dual_gap_all_sd, geo_standard_deviation(df_ng[instances, Symbol(string(ls)*"_DualGap")], geom_shifted_mean(df_ng[instances, Symbol(string(ls)*"_DualGap")], shift=1e-5)))
-            push!(dual_gap_all, geom_shifted_mean(df_ng[instances, Symbol(string(ls)*"_DualGap")], shift=1e-5))
-            push!(dual_gap, geom_shifted_mean(df_ng[intersect(instances,not_solved), Symbol(string(ls)*"_DualGap")], shift=1e-8))
-            push!(dual_gap_sd, geo_standard_deviation(df_ng[intersect(instances,not_solved), Symbol(string(ls)*"_DualGap")], geom_shifted_mean(df_ng[intersect(instances,not_solved), Symbol(string(ls)*"_DualGap")], shift=1e-8)))
+            push!(dual_gap_all, geom_shifted_mean(df_ng[instances, Symbol(string(ls)*"_DualGap")], shift=0.0))
+            push!(dual_gap, geom_shifted_mean(df_ng[not_solved, Symbol(string(ls)*"_DualGap")], shift=0.0))
+            push!(dual_gap_sd, geo_standard_deviation(df_ng[not_solved, Symbol(string(ls)*"_DualGap")], geom_shifted_mean(df_ng[not_solved, Symbol(string(ls)*"_DualGap")], shift=1e-8)))
             push!(iterations_all, custom_mean(df_ng[instances, Symbol(string(ls)*"_Iterations")]))
             push!(iterations_solved, custom_mean(df_ng[setdiff(instances, not_solved), Symbol(string(ls)*"_Iterations")]))
         end
@@ -117,17 +120,17 @@ function build_summary(problem; time_slots=[0, 10, 300, 900, 1800, 2700], dimens
         non_inf = findall(isfinite, times)
         times[non_inf] = round.(times[non_inf], digits=3)
 
-        non_inf = findall(isfinite, dual_gap_all)
-        dual_gap_all[non_inf] = round.(dual_gap_all[non_inf], digits=3)
+        #non_inf = findall(isfinite, dual_gap_all)
+        #dual_gap_all[non_inf] = round.(dual_gap_all[non_inf], digits=3)
 
-        non_inf = findall(isfinite, dual_gap_all_sd)
-        dual_gap_all_sd[non_inf] = round.(dual_gap_all_sd[non_inf], digits=2)
+        #non_inf = findall(isfinite, dual_gap_all_sd)
+        #dual_gap_all_sd[non_inf] = round.(dual_gap_all_sd[non_inf], digits=2)
 
-        non_inf = findall(isfinite, dual_gap)
-        dual_gap[non_inf] = round.(dual_gap[non_inf], digits=3)
+        #non_inf = findall(isfinite, dual_gap)
+        #dual_gap[non_inf] = round.(dual_gap[non_inf], digits=3)
 
-        non_inf = findall(isfinite, dual_gap_sd)
-        dual_gap_sd[non_inf] = round.(dual_gap_sd[non_inf], digits=3)
+        #non_inf = findall(isfinite, dual_gap_sd)
+        #dual_gap_sd[non_inf] = round.(dual_gap_sd[non_inf], digits=3)
 
         non_inf = findall(isfinite, iterations_all)
         iterations_all[non_inf] = convert.(Int64, round.(iterations_all[non_inf]))
@@ -136,13 +139,28 @@ function build_summary(problem; time_slots=[0, 10, 300, 900, 1800, 2700], dimens
         iterations_solved[non_inf] = convert.(Int64, round.(iterations_solved[non_inf]))
 
 
-        df[!, Symbol(string(ls)*"_Time")] = times
-        df[!, Symbol(string(ls)*"_DualGap")] = dual_gap_all
-        df[!, Symbol(string(ls)*"_DualGapSD")] = dual_gap_all_sd
-        df[!, Symbol(string(ls)*"_DualGapNotSolved")] = dual_gap
-        df[!, Symbol(string(ls)*"_DualGapNotSolvedSD")] = dual_gap_sd
-        df[!, Symbol(string(ls)*"_IterationsAll")] = iterations_all
-        df[!, Symbol(string(ls)*"_IterationsSolved")] = iterations_solved
+        if table
+            df[!, Symbol(string(ls)*"_Time")] = times
+            dual_gap_print = []
+            for d in dual_gap
+                if d == Inf
+                    push!(dual_gap_print, "<1E-07")
+                else
+                    push!(dual_gap_print, @sprintf("%.2E", d))
+                end
+            end
+            df[!, Symbol(string(ls)*"_DualGapNotSolved")] = dual_gap_print
+            iteration_print = [x != Inf ? string(x) : "" for x in iterations_solved]
+            df[!, Symbol(string(ls)*"_IterationsSolved")] = iteration_print
+        else
+            df[!, Symbol(string(ls)*"_Time")] = times
+            df[!, Symbol(string(ls)*"_DualGap")] = dual_gap_all
+            df[!, Symbol(string(ls)*"_DualGapSD")] = dual_gap_all_sd
+            df[!, Symbol(string(ls)*"_DualGapNotSolved")] = dual_gap
+            df[!, Symbol(string(ls)*"_DualGapNotSolvedSD")] = dual_gap_sd
+            df[!, Symbol(string(ls)*"_IterationsAll")] = iterations_all
+            df[!, Symbol(string(ls)*"_IterationsSolved")] = iterations_solved
+        end
 
     end
 
@@ -153,8 +171,22 @@ function build_summary(problem; time_slots=[0, 10, 300, 900, 1800, 2700], dimens
     #println("\n")
 end
 
-problems = ["OEDP_A", "OEDP_D", "Nuclear", "Birkhoff", "QuadraticProbSimplex", "Spectrahedron", "IllConditionedQuadratic", "Portfolio"] 
+function summary_table()
+    problems = ["Birkhoff", "IllConditionedQuadratic", "Nuclear", "OEDP_A", "OEDP_D", "Portfolio", "QuadraticProbSimplex", "Spectrahedron"]
+    df_summary_table = DataFrame([[],[],[], [], [], [], [], [], [], [], []], ["Problem", "Instances", "TimeS", "DualGapS", "IterationS", "TimeAD", "DualGapAD", "IterationAD", "TimeAG", "DualGapAG", "IterationAG"])
 
+    for problem in problems
+        file_name = joinpath(@__DIR__, "csv/" * problem * "_grouped_by_difficulty_table.csv")
+        df = DataFrame(CSV.File(file_name))
+@show df[1,:NumInstances]
+        push!(df_summary_table, [problem, df[1,:NumInstances],df[1,:LS_ONLY_SECANT_Time],df[1,:LS_ONLY_SECANT_DualGapNotSolved],df[1, :LS_ONLY_SECANT_IterationsSolved],df[1,:LS_ADAPTIVE_Time],df[1,:LS_ADAPTIVE_DualGapNotSolved],df[1,:LS_ADAPTIVE_IterationsSolved],df[1,:LS_AGNOSTIC_Time],df[1,:LS_AGNOSTIC_DualGapNotSolved],df[1,:LS_AGNOSTIC_IterationsSolved]])
+    end
+
+    file_name = joinpath(@__DIR__, "csv/summary_table.csv")
+    CSV.write(file_name, df_summary_table, append=false)
+end
+#=
+problems = ["OEDP_A", "OEDP_D", "Nuclear", "Birkhoff", "QuadraticProbSimplex", "Spectrahedron", "IllConditionedQuadratic", "Portfolio"] 
 for problem in problems
     @show problem
     dimensions = if problem in ["OEDP_A", "OEDP_D", "IllConditionedQuadratic"]
@@ -167,6 +199,8 @@ for problem in problems
     build_non_grouped_csv(problem, dimensions=dimensions)
     build_summary(problem, by_time=true) # difficulty
     build_summary(problem, by_time=false, dimensions=dimensions) # dimension
-    build_summary(problem, by_time=true, table=true) # difficulty
+    build_summary(problem, by_time=true, table=true, df_summary_table) # difficulty
     build_summary(problem, by_time=false, dimensions=dimensions, table=true) # dimension
 end
+=#
+summary_table()

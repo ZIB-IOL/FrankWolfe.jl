@@ -38,7 +38,7 @@ function is_type_secant(ls::LineSearchVariant)
     return ls in [LS_ONLY_SECANT, LS_SECANT_12, LS_SECANT_3, LS_SECANT_5, LS_SECANT_7, LS_SECANT_WITH_BACKTRACKING]
 end
 
-function geom_shifted_mean(xs; shift=big"1.0")
+function geom_shifted_mean(xs; shift=big"1.0", dash=false)
     a = length(xs)  
     n= 0
     prod = 1.0  
@@ -51,7 +51,7 @@ function geom_shifted_mean(xs; shift=big"1.0")
         end
         return Float64(prod^(1/n) - shift)
     end
-    return Inf
+    return dash ? "-" : Inf
 end
 
 function custom_mean(group)
