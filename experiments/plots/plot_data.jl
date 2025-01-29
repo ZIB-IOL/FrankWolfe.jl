@@ -127,7 +127,7 @@ function extract_data(problem, ls; subfolder="", termination=false, trajectory=f
     return data
 end
 
-linesearches = [LS_ADAPTIVE, LS_ADAPTIVE_AND_SECANT, LS_BACKTRACKING_AND_SECANT, LS_ONLY_SECANT, LS_SECANT_WITH_BACKTRACKING, LS_SECANT_12, LS_SECANT_3, LS_SECANT_5, LS_SECANT_7, LS_ADAPTIVE_ZERO_AND_SECANT]
+linesearches = [LS_ADAPTIVE, LS_ONLY_SECANT]
 problems = ["Birkhoff", "IllConditionedQuadratic", "Nuclear", "OEDP_A", "OEDP_D", "QuadraticProbSimplex", "Spectrahedron", "Portfolio"] #"Portfolio"
 
 println("Termination and Dual Gap spread plots")
@@ -136,8 +136,8 @@ for ls in linesearches
         if problem == "Nuclear" && ls == LS_SECANT_WITH_BACKTRACKING
             continue
         end
-        data = extract_data(problem, ls, termination=true)
-        export_data(data, ["time", "termination"], filename_prefix=problem * "_" * string(ls), filename_suffix="termination", compute_FWgaps=false)
+       # data = extract_data(problem, ls, termination=true)
+       # export_data(data, ["time", "termination"], filename_prefix=problem * "_" * string(ls), filename_suffix="termination", compute_FWgaps=false)
 
         if is_type_secant(ls) || ls == LS_ADAPTIVE
             data = extract_data(problem, ls, termination=true,termination_iter=true)
@@ -152,10 +152,10 @@ for ls in linesearches
             export_data(data, ["ls_iter", "no_instance"], filename_prefix=problem * "_" * string(ls), filename_suffix="secant_iter", compute_FWgaps=false)
         end
 
-        if problem in ["OEDP_A", "OEDP_D", "Portfolio"] && is_type_secant(ls)
-            data = extract_data(problem, ls, termination=true,no_termination_iter=true)
-            export_data(data, ["ls_iter", "termination"], filename_prefix=problem * "_" * string(ls), filename_suffix="no_termination_iter", compute_FWgaps=false)
-        end
+        #if problem in ["OEDP_A", "OEDP_D", "Portfolio"] && is_type_secant(ls)
+        #    data = extract_data(problem, ls, termination=true,no_termination_iter=true)
+        #    export_data(data, ["ls_iter", "termination"], filename_prefix=problem * "_" * string(ls), filename_suffix="no_termination_iter", compute_FWgaps=false)
+        #end
 
         data = extract_data(problem, ls)
         export_data(data, ["dimension", "time", "dual_gap", "dual_gap_sd", "dual_gap_ns", "dual_gap_ns_sd", "iterations", "iterations_s"], filename_prefix=problem * "_" * string(ls), filename_suffix="dual_gap", compute_FWgaps=false)
