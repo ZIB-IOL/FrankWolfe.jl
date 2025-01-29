@@ -184,20 +184,14 @@ for ls in linesearches
 end
 
 
-#=
+
 # plots 
 println("Plots")
 linesearches = [LS_ADAPTIVE, LS_ONLY_SECANT]
 problems = ["Birkhoff", "IllConditionedQuadratic", "Nuclear", "OEDP_A", "OEDP_D", "QuadraticProbSimplex", "Spectrahedron", "Portfolio"]
 seeds = collect(1:5)
 for problem in problems
-    dimensions = if problem in ["IllConditionedQuadratic", "OEDP_A", "OEDP_D"]
-        collect(500:500:2000)
-    elseif problem == "Portfolio"
-        [800, 1200, 1500]
-    else
-        collect(100:100:300).^2
-    end
+    dimensions = get_dimensions(problem)
     @show problem
     for dim in dimensions
         for seed in seeds
@@ -218,4 +212,4 @@ for problem in problems
         end 
     end
 end
-=#
+
