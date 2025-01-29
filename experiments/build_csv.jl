@@ -19,8 +19,16 @@ function build_non_grouped_csv(problem; dimensions=collect(100:100:1000), seeds=
     df = DataFrame()
     set_up_data(df, dimensions, seeds, problem)
 
-    for ls in [LS_ONLY_SECANT, LS_SECANT_WITH_BACKTRACKING, LS_ADAPTIVE, LS_BACKTRACKING_AND_SECANT, LS_ADAPTIVE_AND_SECANT, LS_ADAPTIVE_ZERO_AND_SECANT, LS_SECANT_3, LS_SECANT_5, LS_SECANT_7, LS_SECANT_12, LS_MONOTONIC, LS_AGNOSTIC, LS_ADAPTIVE_ZERO]
-       if problem == "Nuclear" && ls == LS_SECANT_WITH_BACKTRACKING
+    minimumTime = fill(Inf, nrow(df))
+
+    line_searches = [LS_ONLY_SECANT, LS_SECANT_WITH_BACKTRACKING, LS_ADAPTIVE, LS_BACKTRACKING_AND_SECANT, LS_ADAPTIVE_AND_SECANT, LS_ADAPTIVE_ZERO_AND_SECANT, LS_SECANT_3, LS_SECANT_5, LS_SECANT_7, LS_SECANT_12, LS_MONOTONIC, LS_AGNOSTIC, LS_ADAPTIVE_ZERO]
+
+    line_searches = [LS_ONLY_SECANT, LS_ADAPTIVE, LS_MONOTONIC, LS_AGNOSTIC, LS_ADAPTIVE_ZERO, LS_GOLDEN_RATIO, LS_BACKTRACKING]
+    for ls in line_searches
+       if problem in ["OEDP_A", "OEDP_D"] && ls == LS_BACKTRACKING
+            continue
+        end
+        if problem == "Spectrahedron" && ls in [LS_BACKTRACKING, LS_GOLDEN_RATIO]
             continue
         end
         df_temp = DataFrame(CSV.File(joinpath(@__DIR__, "csv/" * problem * "/" * string(ls) * ".csv"))) 
@@ -36,34 +44,10 @@ function build_non_grouped_csv(problem; dimensions=collect(100:100:1000), seeds=
         elseif is_type_secant(ls)
             df[!, Symbol(string(ls)*"_LineSearchIter")] = df_temp[!, :average_iter] .- 2
         end
+        minimumTime = min.(minimumTime, df_temp[!, :time])
     end
 
-    df[!,:minimumTime] = if problem != "Nuclear" 
-        min.(
-        df[!,Symbol(string(LS_ONLY_SECANT) * "_Time")], 
-        df[!,Symbol(string(LS_SECANT_WITH_BACKTRACKING) * "_Time")], 
-        df[!,Symbol(string(LS_ADAPTIVE) * "_Time")], 
-        df[!,Symbol(string(LS_BACKTRACKING_AND_SECANT) * "_Time")],
-        df[!,Symbol(string(LS_ADAPTIVE_AND_SECANT) * "_Time")],
-        df[!,Symbol(string(LS_ADAPTIVE_ZERO_AND_SECANT) * "_Time")],
-        df[!,Symbol(string(LS_SECANT_3) * "_Time")],
-        df[!,Symbol(string(LS_SECANT_5) * "_Time")],
-        df[!,Symbol(string(LS_SECANT_7) * "_Time")],
-        df[!,Symbol(string(LS_SECANT_12) * "_Time")]
-    )
-    else
-        min.(
-        df[!,Symbol(string(LS_ONLY_SECANT) * "_Time")], 
-        df[!,Symbol(string(LS_ADAPTIVE) * "_Time")], 
-        df[!,Symbol(string(LS_BACKTRACKING_AND_SECANT) * "_Time")],
-        df[!,Symbol(string(LS_ADAPTIVE_AND_SECANT) * "_Time")],
-        df[!,Symbol(string(LS_ADAPTIVE_ZERO_AND_SECANT) * "_Time")],
-        df[!,Symbol(string(LS_SECANT_3) * "_Time")],
-        df[!,Symbol(string(LS_SECANT_5) * "_Time")],
-        df[!,Symbol(string(LS_SECANT_7) * "_Time")],
-        df[!,Symbol(string(LS_SECANT_12) * "_Time")]
-    )
-    end
+    df[!,:minimumTime] = minimumTime
 
     file_name = joinpath(@__DIR__, "csv/" * problem * "_non_grouped.csv")
     CSV.write(file_name, df, append=false)
@@ -74,13 +58,17 @@ function build_summary(problem; time_slots=[0, 10, 300, 900, 1800, 2700], dimens
     df = DataFrame()
     df_ng = DataFrame(CSV.File(joinpath(@__DIR__, "csv/" * problem * "_non_grouped.csv")))
 
-    line_searches = table ? [LS_ONLY_SECANT, LS_ADAPTIVE, LS_AGNOSTIC] : [LS_ONLY_SECANT, LS_SECANT_WITH_BACKTRACKING, LS_ADAPTIVE, LS_BACKTRACKING_AND_SECANT, LS_ADAPTIVE_AND_SECANT, LS_ADAPTIVE_ZERO_AND_SECANT, LS_SECANT_3, LS_SECANT_5, LS_SECANT_7, LS_SECANT_12, LS_MONOTONIC, LS_AGNOSTIC, LS_ADAPTIVE_ZERO]
+    line_searches = [LS_ONLY_SECANT, LS_ADAPTIVE, LS_MONOTONIC, LS_AGNOSTIC, LS_ADAPTIVE_ZERO, LS_GOLDEN_RATIO, LS_BACKTRACKING]
+    line_searches = table ? [LS_ONLY_SECANT, LS_ADAPTIVE, LS_AGNOSTIC] : line_searches
 
     for ls in line_searches
         if problem == "Nuclear" && ls == LS_SECANT_WITH_BACKTRACKING
             continue
         end
-        if problem == "OEDP_A" && ls == LS_BACKTRACKING
+        if problem in ["OEDP_A", "OEDP_D"] && ls == LS_BACKTRACKING
+            continue
+        end
+        if problem == "Spectrahedron" && ls in [LS_BACKTRACKING, LS_GOLDEN_RATIO]
             continue
         end
         num_instances = []
@@ -181,7 +169,7 @@ for problem in problems
     build_non_grouped_csv(problem, dimensions=dimensions)
     build_summary(problem, by_time=true) # difficulty
     build_summary(problem, by_time=false, dimensions=dimensions) # dimension
-    build_summary(problem, by_time=true, table=true, df_summary_table) # difficulty
+    build_summary(problem, by_time=true, table=true) # difficulty
     build_summary(problem, by_time=false, dimensions=dimensions, table=true) # dimension
 end
 
