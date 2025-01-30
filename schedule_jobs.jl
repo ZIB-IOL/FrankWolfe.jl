@@ -2,7 +2,7 @@ seeds = [0] # [1,2,3,4,5]
 seeds = [1,2,3,4,5]
 #linesearches = ["Secant", "SecantBT", "Adaptive", "BacktrackingSecant", "AdaptiveSecant", "AdaptiveZeroSecant", "Secant_3", "Secant_5", "Secant_7", "Secant_12"] #"BacktrackingSecant 
 
-linesearches = ["Secant", "Monotonic", "Agnostic", "Adaptive", "AdaptiveZero", "Goldenratio", "Backtracking"]  #"Monotonic", "Agnostic", "Backtracking",
+linesearches = ["Backtracking"]  #"Monotonic", "Agnostic", "Backtracking", "Secant", "Monotonic", "Agnostic", "Adaptive", "AdaptiveZero", "Goldenratio", 
 Fw_variant = "BPCG"
 
 #Fw_variant = "Vanilla"
@@ -25,6 +25,7 @@ for line_search in linesearches
     end
 end
 =#
+#=
 problems = ["Nuclear", "Birkhoff", "QuadraticProbSimplex"] 
 dimensions = collect(50:50:300) # square root of the dimension
 #dimensions = collect(100:100:300)
@@ -54,8 +55,8 @@ for line_search in linesearches
         end
     end
 end
-
-problems = ["OEDP_A", "OEDP_D"]
+=#
+problems = ["OEDP_A"] #"OEDP_D"
 dimensions = collect(100:100:1000)
 #dimensions = collect(500:500:2000)
 

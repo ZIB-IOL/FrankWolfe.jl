@@ -312,16 +312,17 @@ Base.print(io::IO, ::Goldenratio) = print(io, "Goldenratio")
 Backtracking line search strategy, see
 [Pedregosa, Negiar, Askari, Jaggi (2018)](https://arxiv.org/pdf/1806.05123).
 """
-struct Backtracking{T} <: LineSearchMethod
+struct Backtracking{T,F} <: LineSearchMethod
     limit_num_steps::Int
     tol::T
     tau::T
+    domain_oracle::F
 end
 
 build_linesearch_workspace(::Backtracking, x, gradient) = similar(x)
 
-function Backtracking(; limit_num_steps=20, tol=1e-10, tau=0.5)
-    return Backtracking(limit_num_steps, tol, tau)
+function Backtracking(; limit_num_steps=20, tol=1e-10, tau=0.5, domain_oracle = x->true)
+    return Backtracking(limit_num_steps, tol, tau, domain_oracle)
 end
 
 function perform_line_search(
@@ -336,6 +337,17 @@ function perform_line_search(
     storage,
     memory_mode,
 )
+    dot_gdir = dot(gradient, d)
+    gamma = min(workspace.last_gamma, gamma_max)  # Start from last gamma, but don't exceed gamma_max
+    stor = similar(x)
+    stor = muladd_memory_mode(memory_mode, stor, x, gamma, d)
+    while !line_search.domain_oracle(storage)
+        gamma_max /= 2
+        gamma = min(gamma, gamma_max)
+        stor = muladd_memory_mode(memory_mode, stor, x, gamma, d)
+    end
+    gamma_max = gamma
+    
     gamma = gamma_max * one(line_search.tau)
     i = 0
 
