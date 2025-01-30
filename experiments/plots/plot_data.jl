@@ -168,9 +168,20 @@ for ls in linesearches
 end
 =#
 println("Trajectory Plots")
-linesearches = [LS_ADAPTIVE, LS_ONLY_SECANT, LS_ADAPTIVE_ZERO, LS_AGNOSTIC, LS_GOLDEN_RATIO, LS_BACKTRACKING, LS_MONOTONIC, LS_ONLY_SECANT]
-linesearches = [LS_BACKTRACKING]
+linesearches = [LS_ADAPTIVE, LS_ADAPTIVE_ZERO, LS_AGNOSTIC, LS_GOLDEN_RATIO, LS_BACKTRACKING, LS_MONOTONIC, LS_ONLY_SECANT]
 problems = ["Birkhoff", "IllConditionedQuadratic", "Nuclear", "OEDP_A", "OEDP_D", "QuadraticProbSimplex", "Spectrahedron", "Portfolio"]
+dimension = [40000, 2000, 10000, 500, 1000, 10000, 90000, 800]
+seeds = [1,3,1,5,4,1,1,3]
+
+for ls in linesearches
+for i in 1:length(problems)
+    @show problems[i]
+    @show ls
+    data = extract_data(problems[i], ls, trajectory=true, dim=dimension[i], seed=seeds[i])
+    export_data(data, ["iteration", "primal", "dual_bound", "dual_gap", "time", "step_size"],filename_prefix="trajectory/" * problems[i] * "_" * string(dimension[i]) * "_" * string(seeds[i]) * "_" * string(ls), filename_suffix="trajectory", compute_FWgaps=false)
+end
+end
+#=
 seeds = collect(1:5)
 for ls in linesearches
     for problem in problems
@@ -188,7 +199,7 @@ for ls in linesearches
         end
     end
 end
-
+=#
 
 #=
 # plots 
