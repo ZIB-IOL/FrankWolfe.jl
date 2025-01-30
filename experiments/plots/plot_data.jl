@@ -129,7 +129,7 @@ end
 
 linesearches = [LS_ADAPTIVE, LS_ONLY_SECANT]
 problems = ["Birkhoff", "IllConditionedQuadratic", "Nuclear", "OEDP_A", "OEDP_D", "QuadraticProbSimplex", "Spectrahedron", "Portfolio"] #"Portfolio"
-
+#=
 println("Termination and Dual Gap spread plots")
 for ls in linesearches
     for problem in problems
@@ -161,10 +161,12 @@ for ls in linesearches
         export_data(data, ["dimension", "time", "dual_gap", "dual_gap_sd", "dual_gap_ns", "dual_gap_ns_sd", "iterations", "iterations_s"], filename_prefix=problem * "_" * string(ls), filename_suffix="dual_gap", compute_FWgaps=false)
     end
 end
-
+=#
 println("Trajectory Plots")
 linesearches = [LS_ADAPTIVE, LS_ONLY_SECANT, LS_ADAPTIVE_ZERO, LS_AGNOSTIC, LS_GOLDEN_RATIO, LS_BACKTRACKING, LS_MONOTONIC]
+linesearches = [LS_BACKTRACKING]
 problems = ["Birkhoff", "IllConditionedQuadratic", "Nuclear", "OEDP_A", "OEDP_D", "QuadraticProbSimplex", "Spectrahedron", "Portfolio"]
+problems = ["OEDP_A", "OEDP_D"]
 seeds = collect(1:5)
 for ls in linesearches
     for problem in problems
@@ -184,7 +186,7 @@ for ls in linesearches
 end
 
 
-
+#=
 # plots 
 println("Plots")
 linesearches = [LS_ADAPTIVE, LS_ONLY_SECANT]
@@ -212,4 +214,4 @@ for problem in problems
         end 
     end
 end
-
+=#
