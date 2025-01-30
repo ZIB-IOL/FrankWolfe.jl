@@ -74,6 +74,7 @@ function extract_data(problem, ls; subfolder="", termination=false, trajectory=f
             return nothing
         end
         df = DataFrame(CSV.File(traj_file))
+        df[1,:time] = 0.0001
         length = nrow(df)
         indices =  if length > 1000 
             vcat(collect(1:999), Int.(round.(collect(1000:(length-1000)/1000:(length-1000))))) 
