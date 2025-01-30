@@ -40,7 +40,7 @@ function build_linesearch(ls_variant, domain_oracle)
     elseif ls_variant == LS_ADAPTIVE_ZERO
         FrankWolfe.AdaptiveZerothOrder(domain_oracle=domain_oracle)
     elseif ls_variant == LS_BACKTRACKING
-        FrankWolfe.Backtracking(domain_oracle=domain_oracle)
+        FrankWolfe.Backtracking(domain_oracle=domain_oracle,tol=1e-8)
     elseif ls_variant == LS_GOLDEN_RATIO
         FrankWolfe.Goldenratio(domain_oracle)
     else

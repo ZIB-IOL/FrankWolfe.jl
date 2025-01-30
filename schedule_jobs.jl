@@ -9,7 +9,7 @@ Fw_variant = "BPCG"
 # problems = ["Nuclear", "Spectrahedron"]
 #linesearches = ["Secant", "Adaptive", "Monotonic","Goldenratio","Agnostic","AdaptiveZero"]
 
-#=
+
 problems = ["Spectrahedron"] 
 dimensions = collect(100:100:1000) # square root of the dimension
 #dimensions = collect(100:100:300)
@@ -24,8 +24,8 @@ for line_search in linesearches
         end
     end
 end
-=#
-#=
+
+
 problems = ["Nuclear", "Birkhoff", "QuadraticProbSimplex"] 
 dimensions = collect(50:50:300) # square root of the dimension
 #dimensions = collect(100:100:300)
@@ -70,7 +70,7 @@ for line_search in linesearches
         end
     end
 end
-#=
+
 problems = ["Portfolio"]
 dimensions = [800, 1200, 1500]
 
@@ -84,4 +84,3 @@ for line_search in linesearches
         end
     end
 end
-=#
