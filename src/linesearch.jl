@@ -338,7 +338,7 @@ function perform_line_search(
     memory_mode,
 )
     dot_gdir = dot(gradient, d)
-    gamma = min(workspace.last_gamma, gamma_max)  # Start from last gamma, but don't exceed gamma_max
+    gamma = gamma_max  # Start from last gamma, but don't exceed gamma_max
     stor = similar(x)
     stor = muladd_memory_mode(memory_mode, stor, x, gamma, d)
     while !line_search.domain_oracle(storage)
