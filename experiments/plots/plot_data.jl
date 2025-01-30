@@ -64,11 +64,15 @@ function plot_subplots_save(x1, y1, x2, y2, x3, y3, x4, y4; label1="Line 1", lab
 end
 
 
-function extract_data(problem, ls; subfolder="", termination=false, trajectory=false, termination_iter=false, no_termination_iter=false, secant_dual_gap=false, secant_iter=false, dim=0, seed=0)
+function extract_data(problem, ls; subfolder="", termination=false, trajectory=false, termination_iter=false, no_termination_iter=false, secant_dual_gap=false, secant_iter=false, dim=0, seed=0, vanilla=false)
     data = []
     if trajectory
         @assert dim > 0 && seed > 0
-        traj_file = joinpath(@__DIR__, "../csv/" * problem * "/trajectory/" * string(ls) * "_" * string(dim) * "_" * string(seed) * ".csv")
+        traj_file = if vanilla 
+            joinpath(@__DIR__, "../csv/Vanilla/" * problem * "/trajectory/" * string(ls) * "_" * string(dim) * "_" * string(seed) * ".csv")
+        else
+            joinpath(@__DIR__, "../csv/" * problem * "/trajectory/" * string(ls) * "_" * string(dim) * "_" * string(seed) * ".csv")
+        end
         if !isfile(traj_file)
             println("Trajectory of $(problem)_$(string(ls)) with dimension $(dim) and seed $(seed) does not exists.")
             return nothing
@@ -169,6 +173,15 @@ end
 =#
 println("Trajectory Plots")
 linesearches = [LS_ADAPTIVE, LS_ADAPTIVE_ZERO, LS_AGNOSTIC, LS_GOLDEN_RATIO, LS_BACKTRACKING, LS_MONOTONIC, LS_ONLY_SECANT]
+for ls in linesearches
+    data = extract_data("Spectrahedron", ls, trajectory=true, dim=90000, seed=1, vanilla=true)
+    export_data(data, ["iteration", "primal", "dual_bound", "dual_gap", "time", "step_size"],filename_prefix="trajectory/" * "Spectrahedron_Vanilla" * "_" * string(90000) * "_" * string(1) * "_" * string(ls), filename_suffix="trajectory", compute_FWgaps=false)
+
+    data = extract_data("Nuclear", ls, trajectory=true, dim=10000, seed=1, vanilla=true)
+    export_data(data, ["iteration", "primal", "dual_bound", "dual_gap", "time", "step_size"],filename_prefix="trajectory/" * "Nuclear_Vanilla" * "_" * string(10000) * "_" * string(1) * "_" * string(ls), filename_suffix="trajectory", compute_FWgaps=false)
+end
+
+#=
 problems = ["Birkhoff", "IllConditionedQuadratic", "Nuclear", "OEDP_A", "OEDP_D", "QuadraticProbSimplex", "Spectrahedron", "Portfolio"]
 dimension = [40000, 2000, 10000, 500, 1000, 10000, 90000, 800]
 seeds = [1,3,1,5,4,1,1,3]
@@ -181,6 +194,7 @@ for i in 1:length(problems)
     export_data(data, ["iteration", "primal", "dual_bound", "dual_gap", "time", "step_size"],filename_prefix="trajectory/" * problems[i] * "_" * string(dimension[i]) * "_" * string(seeds[i]) * "_" * string(ls), filename_suffix="trajectory", compute_FWgaps=false)
 end
 end
+=#
 #=
 seeds = collect(1:5)
 for ls in linesearches
