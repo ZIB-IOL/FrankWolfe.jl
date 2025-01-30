@@ -167,7 +167,7 @@ for ls in linesearches
 end
 =#
 println("Trajectory Plots")
-linesearches = [LS_ADAPTIVE, LS_ONLY_SECANT, LS_ADAPTIVE_ZERO, LS_AGNOSTIC, LS_GOLDEN_RATIO, LS_BACKTRACKING, LS_MONOTONIC]
+linesearches = [LS_ADAPTIVE, LS_ONLY_SECANT, LS_ADAPTIVE_ZERO, LS_AGNOSTIC, LS_GOLDEN_RATIO, LS_BACKTRACKING, LS_MONOTONIC, LS_ONLY_SECANT]
 linesearches = [LS_BACKTRACKING]
 problems = ["Birkhoff", "IllConditionedQuadratic", "Nuclear", "OEDP_A", "OEDP_D", "QuadraticProbSimplex", "Spectrahedron", "Portfolio"]
 seeds = collect(1:5)
