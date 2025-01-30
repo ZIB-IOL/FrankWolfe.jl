@@ -169,7 +169,7 @@ function summary_table()
     CSV.write(file_name, df_summary_table, append=false)
 end
 
-problems = ["OEDP_A", "OEDP_D", "Nuclear", "Birkhoff", "QuadraticProbSimplex", "IllConditionedQuadratic", "Portfolio"] #"Spectrahedron",
+problems = ["OEDP_A", "OEDP_D", "Nuclear", "Birkhoff", "QuadraticProbSimplex", "IllConditionedQuadratic", "Spectrahedron", "Portfolio"] #"Spectrahedron",
 for problem in problems
     @show problem
     dimensions = get_dimensions(problem)
