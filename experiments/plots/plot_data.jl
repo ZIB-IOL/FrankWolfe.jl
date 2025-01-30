@@ -75,7 +75,11 @@ function extract_data(problem, ls; subfolder="", termination=false, trajectory=f
         end
         df = DataFrame(CSV.File(traj_file))
         length = nrow(df)
-        indices =  length > 1000 ? Int.(round.(collect(1:length/1000:length))) : Int.(collect(1:length))
+        indices =  if length > 1000 
+            vcat(collect(1:999), Int.(round.(collect(1000:(length-1000)/1000:(length-1000))))) 
+        else
+             Int.(collect(1:length))
+        end
         for row in eachrow(df)
             if rownumber(row) in indices
                 push!(data, collect(row))
@@ -166,7 +170,6 @@ println("Trajectory Plots")
 linesearches = [LS_ADAPTIVE, LS_ONLY_SECANT, LS_ADAPTIVE_ZERO, LS_AGNOSTIC, LS_GOLDEN_RATIO, LS_BACKTRACKING, LS_MONOTONIC]
 linesearches = [LS_BACKTRACKING]
 problems = ["Birkhoff", "IllConditionedQuadratic", "Nuclear", "OEDP_A", "OEDP_D", "QuadraticProbSimplex", "Spectrahedron", "Portfolio"]
-problems = ["OEDP_A", "OEDP_D"]
 seeds = collect(1:5)
 for ls in linesearches
     for problem in problems

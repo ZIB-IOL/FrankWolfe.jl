@@ -97,9 +97,6 @@ line_searches = [LS_ONLY_SECANT, LS_ADAPTIVE, LS_MONOTONIC, LS_AGNOSTIC, LS_ADAP
 for problem in problems
     for ls in line_searches
         dimensions = get_dimensions(problem)
-        if problem in ["OEDP_A", "OEDP_D"] && ls == LS_BACKTRACKING
-            continue
-        end
         merge_csvs(problem, ls, dimensions=dimensions)
         println("\n")
     end

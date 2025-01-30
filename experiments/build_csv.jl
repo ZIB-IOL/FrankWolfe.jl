@@ -25,10 +25,7 @@ function build_non_grouped_csv(problem; dimensions=collect(100:100:1000), seeds=
 
     line_searches = [LS_ONLY_SECANT, LS_ADAPTIVE, LS_MONOTONIC, LS_AGNOSTIC, LS_ADAPTIVE_ZERO, LS_GOLDEN_RATIO, LS_BACKTRACKING]
     for ls in line_searches
-       if problem in ["OEDP_A", "OEDP_D"] && ls == LS_BACKTRACKING
-            continue
-        end
-        if problem == "Spectrahedron" && ls in [LS_BACKTRACKING, LS_GOLDEN_RATIO]
+        if problem == "Spectrahedron" && ls in [LS_GOLDEN_RATIO]
             continue
         end
         df_temp = DataFrame(CSV.File(joinpath(@__DIR__, "csv/" * problem * "/" * string(ls) * ".csv"))) 
@@ -59,16 +56,13 @@ function build_summary(problem; time_slots=[0, 10, 300, 900, 1800, 2700], dimens
     df_ng = DataFrame(CSV.File(joinpath(@__DIR__, "csv/" * problem * "_non_grouped.csv")))
 
     line_searches = [LS_ONLY_SECANT, LS_ADAPTIVE, LS_MONOTONIC, LS_AGNOSTIC, LS_ADAPTIVE_ZERO, LS_GOLDEN_RATIO, LS_BACKTRACKING]
-    line_searches = table ? [LS_ONLY_SECANT, LS_ADAPTIVE, LS_AGNOSTIC] : line_searches
+    line_searches = table ? [LS_ONLY_SECANT, LS_ADAPTIVE, LS_AGNOSTIC, LS_BACKTRACKING] : line_searches
 
     for ls in line_searches
         if problem == "Nuclear" && ls == LS_SECANT_WITH_BACKTRACKING
             continue
         end
-        if problem in ["OEDP_A", "OEDP_D"] && ls == LS_BACKTRACKING
-            continue
-        end
-        if problem == "Spectrahedron" && ls in [LS_BACKTRACKING, LS_GOLDEN_RATIO]
+        if problem == "Spectrahedron" && ls in [LS_GOLDEN_RATIO]
             continue
         end
         num_instances = []
@@ -106,7 +100,7 @@ function build_summary(problem; time_slots=[0, 10, 300, 900, 1800, 2700], dimens
 
         # rounding
         non_inf = findall(isfinite, times)
-        times[non_inf] = round.(times[non_inf], digits=3)
+        times[non_inf] = round.(times[non_inf], digits=1)
 
         non_inf = findall(isfinite, iterations_all)
         iterations_all[non_inf] = convert.(Int64, round.(iterations_all[non_inf]))
@@ -114,20 +108,33 @@ function build_summary(problem; time_slots=[0, 10, 300, 900, 1800, 2700], dimens
         non_inf = findall(isfinite, iterations_solved)
         iterations_solved[non_inf] = convert.(Int64, round.(iterations_solved[non_inf]))
 
+        iter_time_ratio = round.(iterations_all ./ times, digits=1)
 
         if table
             df[!, Symbol(string(ls)*"_Time")] = times
             dual_gap_print = []
             for d in dual_gap
                 if d == Inf
-                    push!(dual_gap_print, "<1E-07")
+                    push!(dual_gap_print, "<1e-7")
+                elseif d == 0.0
+                    push!(dual_gap_print, "[<1e-7]")
                 else
-                    push!(dual_gap_print, @sprintf("%.2E", d))
+                    push!(dual_gap_print, @sprintf("%.2e", d))
                 end
             end
             df[!, Symbol(string(ls)*"_DualGapNotSolved")] = dual_gap_print
-            iteration_print = [x != Inf ? string(x) : "" for x in iterations_solved]
+            iteration_print = []
+            for x in iterations_solved
+                if x == Inf
+                    push!(iteration_print, "--")
+                elseif x > 10e5
+                    push!(iteration_print, "> $(Int(floor(x/10e5)))M")
+                else
+                    push!(iteration_print, string(x))
+                end
+            end
             df[!, Symbol(string(ls)*"_IterationsSolved")] = iteration_print
+            df[!,Symbol(string(ls)*"_IterTimeRatio")] = iter_time_ratio
         else
             df[!, Symbol(string(ls)*"_Time")] = times
             df[!, Symbol(string(ls)*"_DualGap")] = dual_gap_all
@@ -149,20 +156,20 @@ end
 
 function summary_table()
     problems = ["Birkhoff", "IllConditionedQuadratic", "Nuclear", "OEDP_A", "OEDP_D", "Portfolio", "QuadraticProbSimplex", "Spectrahedron"]
-    df_summary_table = DataFrame([[],[],[], [], [], [], [], [], [], [], []], ["Problem", "Instances", "TimeS", "DualGapS", "IterationS", "TimeAD", "DualGapAD", "IterationAD", "TimeAG", "DualGapAG", "IterationAG"])
+    df_summary_table = DataFrame([[],[],[], [], [], [], [], [], [], [], [], [], [], []], ["Problem", "Instances", "TimeS", "DualGapS", "IterationS", "TimeAD", "DualGapAD", "IterationAD", "TimeAG", "DualGapAG", "IterationAG", "TimeB", "DualGapB", "IterationsB"])
 
     for problem in problems
         file_name = joinpath(@__DIR__, "csv/" * problem * "_grouped_by_difficulty_table.csv")
         df = DataFrame(CSV.File(file_name))
 @show df[1,:NumInstances]
-        push!(df_summary_table, [problem, df[1,:NumInstances],df[1,:LS_ONLY_SECANT_Time],df[1,:LS_ONLY_SECANT_DualGapNotSolved],df[1, :LS_ONLY_SECANT_IterationsSolved],df[1,:LS_ADAPTIVE_Time],df[1,:LS_ADAPTIVE_DualGapNotSolved],df[1,:LS_ADAPTIVE_IterationsSolved],df[1,:LS_AGNOSTIC_Time],df[1,:LS_AGNOSTIC_DualGapNotSolved],df[1,:LS_AGNOSTIC_IterationsSolved]])
+        push!(df_summary_table, [problem, df[1,:NumInstances],df[1,:LS_ONLY_SECANT_Time],df[1,:LS_ONLY_SECANT_DualGapNotSolved],df[1, :LS_ONLY_SECANT_IterationsSolved],df[1,:LS_ADAPTIVE_Time],df[1,:LS_ADAPTIVE_DualGapNotSolved],df[1,:LS_ADAPTIVE_IterationsSolved],df[1,:LS_AGNOSTIC_Time],df[1,:LS_AGNOSTIC_DualGapNotSolved],df[1,:LS_AGNOSTIC_IterationsSolved], df[1,:LS_BACKTRACKING_Time], df[1,:LS_BACKTRACKING_DualGapNotSolved], df[1,:LS_BACKTRACKING_IterationsSolved]])
     end
 
     file_name = joinpath(@__DIR__, "csv/summary_table.csv")
     CSV.write(file_name, df_summary_table, append=false)
 end
 
-problems = ["OEDP_A", "OEDP_D", "Nuclear", "Birkhoff", "QuadraticProbSimplex", "Spectrahedron", "IllConditionedQuadratic", "Portfolio"] 
+problems = ["OEDP_A", "OEDP_D", "Nuclear", "Birkhoff", "QuadraticProbSimplex", "IllConditionedQuadratic", "Portfolio"] #"Spectrahedron",
 for problem in problems
     @show problem
     dimensions = get_dimensions(problem)
