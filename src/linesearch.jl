@@ -341,13 +341,14 @@ function perform_line_search(
     gamma = gamma_max  # Start from last gamma, but don't exceed gamma_max
     stor = similar(x)
     stor = muladd_memory_mode(memory_mode, stor, x, gamma, d)
-    while !line_search.domain_oracle(storage)
+    while !line_search.domain_oracle(stor)
         gamma_max /= 2
         gamma = min(gamma, gamma_max)
         stor = muladd_memory_mode(memory_mode, stor, x, gamma, d)
     end
     gamma_max = gamma
-    
+
+
     gamma = gamma_max * one(line_search.tau)
     i = 0
 

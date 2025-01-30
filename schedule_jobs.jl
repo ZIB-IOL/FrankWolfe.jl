@@ -56,7 +56,7 @@ for line_search in linesearches
     end
 end
 =#
-problems = ["OEDP_A"] #"OEDP_D"
+problems = ["OEDP_A", "OEDP_D"] #
 dimensions = collect(100:100:1000)
 #dimensions = collect(500:500:2000)
 
