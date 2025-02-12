@@ -504,7 +504,7 @@ It is also the fallback when the Lipschitz constant estimation fails due to nume
 `perform_line_search` also has a `should_upgrade` keyword argument on
 whether there should be a temporary upgrade to `BigFloat` for extended precision.
 """
-mutable struct AdaptiveZerothOrder{T,TT} <: LineSearchMethod
+mutable struct AdaptiveZerothOrder{T,TT,F} <: LineSearchMethod
     eta::T
     tau::TT
     L_est::T
@@ -512,10 +512,11 @@ mutable struct AdaptiveZerothOrder{T,TT} <: LineSearchMethod
     alpha::T
     verbose::Bool
     relaxed_smoothness::Bool
+    domain_oracle::F
 end
 
 AdaptiveZerothOrder(eta::T, tau::TT) where {T,TT} =
-    AdaptiveZerothOrder{T,TT}(eta, tau, T(Inf), T(1e10), T(0.5), true, false)
+    AdaptiveZerothOrder{T,TT}(eta, tau, T(Inf), T(1e10), T(0.5), true, false, x->true)
 
 AdaptiveZerothOrder(;
     eta=0.9,
@@ -525,7 +526,8 @@ AdaptiveZerothOrder(;
     alpha=0.5,
     verbose=true,
     relaxed_smoothness=false,
-) = AdaptiveZerothOrder(eta, tau, L_est, max_estimate, alpha, verbose, relaxed_smoothness)
+    domain_oracle=x->true,
+) = AdaptiveZerothOrder(eta, tau, L_est, max_estimate, alpha, verbose, relaxed_smoothness, domain_oracle)
 
 struct AdaptiveZerothOrderWorkspace{XT,BT}
     x::XT
@@ -555,6 +557,19 @@ function perform_line_search(
             return zero(promote_type(eltype(d), eltype(gradient)))
         end
     end
+
+    # Deal with not trivial domain
+    x_storage = similar(x)
+    gamma = gamma_max
+    x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
+    while !line_search.domain_oracle(x_storage)
+        gamma_max /= 2
+        gamma = min(gamma, gamma_max)
+        x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
+    end
+    gamma_max = gamma
+
+    
     x_storage = storage.x
     if !isfinite(line_search.L_est)
         epsilon_step = min(1e-3, gamma_max)
@@ -650,20 +665,21 @@ Modified adaptive line search test from:
 It replaces the original test implemented in the AdaptiveZerothOrder line search based on:
 > Pedregosa, F., Negiar, G., Askari, A., and Jaggi, M. (2020). "Linearly convergent Frank–Wolfe with backtracking line-search", Proceedings of AISTATS.
 """
-mutable struct Adaptive{T,TT} <: LineSearchMethod
+mutable struct Adaptive{T,TT,F} <: LineSearchMethod
     eta::T
     tau::TT
     L_est::T
     max_estimate::T
     verbose::Bool
     relaxed_smoothness::Bool
+    domain_oracle::F
 end
 
 Adaptive(eta::T, tau::TT) where {T,TT} =
-    Adaptive{T,TT}(eta, tau, T(Inf), T(1e10), true, false)
+    Adaptive{T,TT}(eta, tau, T(Inf), T(1e10), true, false, x->true)
 
-Adaptive(; eta=0.9, tau=2, L_est=Inf, max_estimate=1e10, verbose=true, relaxed_smoothness=false) =
-    Adaptive(eta, tau, L_est, max_estimate, verbose, relaxed_smoothness)
+Adaptive(; eta=0.9, tau=2, L_est=Inf, max_estimate=1e10, verbose=true, relaxed_smoothness=false, domain_oracle=x->true) =
+    Adaptive(eta, tau, L_est, max_estimate, verbose, relaxed_smoothness, domain_oracle)
 
 struct AdaptiveWorkspace{XT,BT}
     x::XT
@@ -694,6 +710,18 @@ function perform_line_search(
             return zero(promote_type(eltype(d), eltype(gradient)))
         end
     end
+    
+    # Deal with not trivial domain
+    x_storage = similar(x)
+    gamma = gamma_max
+    x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
+    while !line_search.domain_oracle(x_storage)
+        gamma_max /= 2
+        gamma = min(gamma, gamma_max)
+        x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
+    end
+    gamma_max = gamma
+
     x_storage = storage.x
     if !isfinite(line_search.L_est)
         epsilon_step = min(1e-3, gamma_max)
@@ -726,7 +754,7 @@ function perform_line_search(
             if !line_search.relaxed_smoothness
                 linesearch_fallback = deepcopy(line_search)
                 linesearch_fallback.relaxed_smoothness = true
-                return perform_line_search(
+                γ = perform_line_search(
                     linesearch_fallback,
                     t,
                     f,
@@ -739,6 +767,7 @@ function perform_line_search(
                     memory_mode;
                     should_upgrade=should_upgrade,
                 )
+                return γ
             end
             # if we are already in relaxed smoothness, produce a warning:
             # one might see negative progess, cycling, or stalling.
