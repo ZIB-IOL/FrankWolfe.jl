@@ -31,7 +31,7 @@ docs/src/index.md
 experiments/csv/Birkhoff/trajectory/
 experiments/csv/IllConditionedQuadratic/trajectory/
 experiments/csv/Nuclear/trajectory/
-experiments/csv/OEAP_A/trajectory/
+experiments/csv/OEDP_A/trajectory/
 experiments/csv/OEDP_D/trajectory/
 experiments/csv/Portfolio/trajectory/
 experiments/csv/QuadraticProbSimplex/trajectory/
