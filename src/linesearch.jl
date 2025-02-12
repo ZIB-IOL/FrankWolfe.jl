@@ -380,10 +380,10 @@ struct Secant{F,LSM<:LineSearchMethod} <: LineSearchMethod
 end
 
 function Secant(limit_num_steps, tol)
-    return Secant(Backtracking(), true, limit_num_steps, tol, x -> true)
+    return Secant(Backtracking(), false, limit_num_steps, tol, x -> true)
 end
 
-function Secant(;inner_ls=Backtracking(), safe=true, limit_num_steps=40, tol=1e-8, domain_oracle=(x -> true))
+function Secant(;inner_ls=Backtracking(), safe=false, limit_num_steps=40, tol=1e-8, domain_oracle=(x -> true))
     return Secant(inner_ls, safe, limit_num_steps, tol, domain_oracle)
 end
 
@@ -425,6 +425,7 @@ function perform_line_search(
     best_val = new_val
     i = 1
     gamma_prev = zero(best_gamma)
+    clamping = false
     while abs(dot_gdir) > line_search.tol
         if i > line_search.limit_num_steps
             workspace.last_gamma = best_gamma  # Update last_gamma before returning
@@ -435,6 +436,7 @@ function perform_line_search(
         dot_gdir_new = fast_dot(grad_storage, d)
 
         if dot_gdir_new ≈ dot_gdir
+            clamping = true
             workspace.last_gamma = best_gamma  # Update last_gamma before returning
             break
         end
@@ -454,13 +456,8 @@ function perform_line_search(
         dot_gdir = dot_gdir_new
         i += 1
     end
-    if line_search.safe && abs(dot_gdir) > line_search.tol
-        # Choose gamma_max to be domain feasible
-        storage = muladd_memory_mode(memory_mode, storage, x, gamma_max, d)
-        while !line_search.domain_oracle(storage)
-            gamma_max /= 2
-            storage = muladd_memory_mode(memory_mode, storage, x, gamma_max, d)
-        end
+
+    if line_search.safe && !clamping && abs(dot_gdir) > line_search.tol
         gamma = perform_line_search(
             line_search.inner_ls,
             0,
