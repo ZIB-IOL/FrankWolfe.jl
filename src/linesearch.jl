@@ -786,6 +786,8 @@ function perform_line_search(
     return γ
 end
 
+Base.print(io::IO, ::Adaptive) = print(io, "Adaptive")
+
 """
     MonotonicStepSize{F}
 
