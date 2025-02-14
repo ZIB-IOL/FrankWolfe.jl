@@ -515,8 +515,8 @@ mutable struct AdaptiveZerothOrder{T,TT,F} <: LineSearchMethod
     domain_oracle::F
 end
 
-AdaptiveZerothOrder(eta::T, tau::TT) where {T,TT} =
-    AdaptiveZerothOrder{T,TT}(eta, tau, T(Inf), T(1e10), T(0.5), true, false, x->true)
+AdaptiveZerothOrder(eta::T, tau::TT; domain_oracle=x->true) where {T,TT} =
+    AdaptiveZerothOrder{T,TT, typeof(domain_oracle)}(eta, tau, T(Inf), T(1e10), T(0.5), true, false, domain_oracle)
 
 AdaptiveZerothOrder(;
     eta=0.9,
