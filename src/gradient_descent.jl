@@ -308,7 +308,10 @@ function proximal_adaptive_gradient_descent(
 
     # error-function
     function error_function(x_curr, x_prev, step)
-        return norm(x_curr - x_prev) / step 
+        if x_curr == x_prev
+            return 0.0
+        end
+        return norm(x_curr - x_prev) / step
     end
 
     # Storage for callback
@@ -357,7 +360,9 @@ function proximal_adaptive_gradient_descent(
         # x_curr = prox(x_curr - step_new * grad_curr, step_new)
 
         # Take proximal gradient step
-        @memory_mode(memory_mode, x_curr = x_curr - step_new * grad_curr)
+        if !isnan(L_k)
+            @memory_mode(memory_mode, x_curr = x_curr - step_new * grad_curr)
+        end
         x_curr = prox(x_curr, step_new)
         
         # Update theta
@@ -398,3 +403,136 @@ function proximal_adaptive_gradient_descent(
     
     return x_curr, f(x_curr), cb_storage
 end
+
+
+########################################################
+# Projection and Proximal Operators
+########################################################
+
+function proj_l1_ball(x, τ=1.0)
+    @assert !any(isnan.(x)) "Input vector x contains NaN values"
+
+    if τ < 0
+        throw(DomainError(τ, "L1 ball radius must be non-negative"))
+    end
+    
+    # Handle trivial cases
+    if norm(x, 1) <= τ
+        return copy(x)
+    end
+    if τ == 0
+        return zero(x)
+    end
+    
+    # Sort absolute values in descending order
+    u = sort(abs.(x), rev=true)
+    
+    # Find largest k such that u_k > θ
+    cumsum_u = cumsum(u)
+    k = findlast(i -> u[i] > (cumsum_u[i] - τ) / i, 1:length(x))
+    # println("k: $k")
+    # Debug output if k is nothing
+    if isnothing(k)
+        println("Debug: cumsum_u = ", cumsum_u)
+        println("Debug: norm(x,1) = ", norm(x,1))
+    end
+    
+    # Compute θ
+    θ = (cumsum_u[k] - τ) / k
+    
+    # Apply soft-thresholding
+    return sign.(x) .* max.(abs.(x) .- θ, 0)
+end
+
+
+
+"""
+    proj_probability_simplex(x)
+
+Project a vector onto the probability simplex Δₙ = {x ∈ ℝⁿ | x ≥ 0, ∑xᵢ = 1}.
+
+# Arguments
+- `x`: Input vector to project
+
+# Returns
+- Projected vector onto probability simplex
+"""
+function proj_probability_simplex(x)
+    @assert !any(isnan.(x)) "Input vector x contains NaN values"
+    # Sort x in descending order
+    u = sort(x, rev=true)
+    
+    # Find largest k such that u_k + θ > 0 where θ = (1 - ∑ᵢ₌₁ᵏ uᵢ)/k
+    cumsum_u = cumsum(u)
+    k = findlast(i -> u[i] + (1 - cumsum_u[i])/i > 0, 1:length(x))
+    
+    # If no such k exists, return zero vector
+    if isnothing(k)
+        return zero(x)
+    end
+    
+    # Compute θ
+    θ = (1 - cumsum_u[k])/k
+    
+    # Return projection
+    return max.(x .+ θ, 0)
+end
+
+"""
+    proj_unit_simplex(x, τ=1.0)
+
+Project a vector onto the unit simplex {x ∈ ℝⁿ | x ≥ 0, ∑xᵢ ≤ τ}.
+
+# Arguments
+- `x`: Input vector to project
+- `τ`: Upper bound on sum (default: 1.0)
+
+# Returns
+- Projected vector onto unit simplex with inequality constraint
+"""
+function proj_unit_simplex(x, τ=1.0)
+    @assert !any(isnan.(x)) "Input vector x contains NaN values"
+    if τ < 0
+        throw(DomainError(τ, "Unit simplex parameter must be non-negative"))
+    end
+    
+    # Handle trivial case
+    if τ == 0
+        return zero(x)
+    end
+    
+    # First project onto non-negative orthant
+    y = max.(x, 0)
+    
+    # If sum is already ≤ τ, we're done
+    if sum(y) ≤ τ
+        return y
+    end
+    
+    # Otherwise project onto probability simplex scaled by τ
+    return τ * proj_probability_simplex(y ./ τ)
+end
+
+"""
+    proj_box(x, τ=1.0)
+
+Project a vector onto the box [0,τ]ⁿ.
+
+# Arguments
+- `x`: Input vector to project
+- `τ`: Upper bound (default: 1.0)
+
+# Returns
+- Projected vector onto [0,τ]ⁿ
+"""
+function proj_box(x, τ=1.0)
+    @assert !any(isnan.(x)) "Input vector x contains NaN values"
+    if τ < 0
+        throw(DomainError(τ, "Box parameter must be non-negative"))
+    end
+    
+    # Clamp each component to [0,τ]
+    return clamp.(x, 0, τ)
+end
+
+
