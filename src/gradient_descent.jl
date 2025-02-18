@@ -327,7 +327,7 @@ function proximal_adaptive_gradient_descent(
         println("\n")
         println("=" ^ 88)
         @printf("%12s %15s %15s %15s %12s %12s\n", 
-                "Iteration", "Obj Value", "Grad Norm", "Time (s)", "L_k", "Step")
+                "Iteration", "Obj Value", "GM Norm", "Time (s)", "L_k", "Step")
         println("-" ^ 88)
     end
     
@@ -359,17 +359,12 @@ function proximal_adaptive_gradient_descent(
         # Take proximal gradient step
         @memory_mode(memory_mode, x_curr = x_curr - step_new * grad_curr)
         x_curr = prox(x_curr, step_new)
-
-        # # Debug output
-        # if prox !== identity_prox
-        #     println("Iteration $k: x_curr = ", x_curr)
-        # end
         
         # Update theta
         theta = step_new / step
         step = step_new
         
-        error = error_function(x_curr, x_prev, step)
+        error = error_function(x_curr, x_prev, step) # basically gradient mapping -> collapses to gradient norm for identity prox
         # Check stopping criterion
         if error < epsilon
             if verbose

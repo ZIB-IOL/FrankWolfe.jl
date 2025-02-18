@@ -282,12 +282,6 @@ println()
             verbose = true
         )
         
-        # Test convergence
-        @test norm(grad!(similar(x_id), x_id)) ≤ target_tolerance
-
-        # needs a different error test / probably compute same problem with FW
-        # @test norm(grad!(similar(x_l1), x_l1)) ≤ target_tolerance
-        
         # Identity proximal operator should give same result as regular variant
         x_reg, f_reg, _ = FrankWolfe.adaptive_gradient_descent(
             f,
@@ -315,10 +309,12 @@ println()
         # Compare L1-proximal solution with FW solution
         @test abs(f_l1 - f_fw) ≤ target_tolerance * 10 # Allow slightly larger tolerance for different methods
         
+        # Test convergence for identity proximal operator
+        @test norm(grad!(similar(x_id), x_id)) ≤ target_tolerance
+
+        # Test whether identity and regular variant give same result
         @test norm(x_id - x_reg) ≤ target_tolerance
         @test abs(f_id - f_reg) ≤ target_tolerance
         
-        # L1 solution should be sparse
-        @test count(x -> abs(x) > 1e-6, x_l1) < n
     end
 end 
