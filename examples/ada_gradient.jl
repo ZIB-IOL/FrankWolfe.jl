@@ -22,7 +22,7 @@ function quadratic_gradient!(storage, x, Q, b)
     return storage
 end
 
-# Set random seed for reproducibility
+# Set random seed for reproducibility. 42 is the answer to the ultimate question of life, the universe, and everything.
 Random.seed!(42)
 
 # Problem dimension
