@@ -2,9 +2,9 @@ using FrankWolfe
 using LinearAlgebra
 using Random
 
-max_iter = Int(1e5)
+max_iter = Int(1e9)
 print_iter = max_iter // 100
-epsilon = 1e-10
+epsilon = 0 # 1e-10
 
 """
 Simple quadratic function f(x) = 1/2 * x'Qx + b'x
@@ -26,7 +26,7 @@ end
 Random.seed!(42)
 
 # Problem dimension
-n = 100
+n = 10000
 
 # Generate positive definite Q matrix and random b vector
 Q = rand(n, n)
@@ -49,7 +49,7 @@ x1, f1, hist1 = FrankWolfe.adaptive_gradient_descent(
     x0;
     step0 = 0.1,
     max_iterations = max_iter,
-    print_iter = print_iter,
+    print_iter = 100 + 0 * print_iter,
     epsilon = epsilon,
     verbose = true
 )
@@ -65,7 +65,7 @@ x2, f2, hist2 = FrankWolfe.adaptive_gradient_descent2(
     grad!,
     x0;
     step0 = 0.1,
-    max_iterations = max_iter,
+    max_iterations = 100 + 0 * max_iter,
     print_iter = print_iter,
     epsilon = epsilon,
     verbose = true

@@ -49,6 +49,7 @@ function adaptive_gradient_descent(
     theta = 0.0
     step = step0
     L_k = Inf
+    k_final = 0
     
     # Compute initial gradient and step
     grad!(grad_prev, x_prev)
@@ -75,51 +76,65 @@ function adaptive_gradient_descent(
     
     start_time = time()
     
-    for k in 1:max_iterations
-        iter_start = time()
-        # Compute current gradient
-        grad!(grad_curr, x_curr)
-        
-        # Compute local Lipschitz estimate
-        dx = x_curr - x_prev
-        dg = grad_curr - grad_prev
-        L_k = norm(dg) / norm(dx)
-        
-        # Update step size
-        step_new = min(sqrt(1 + theta) * step, 1 / (sqrt(2) * L_k))
-        
-        # Store previous iterates
-        copyto!(x_prev, x_curr)
-        copyto!(grad_prev, grad_curr)
-        
-        # Take step
-        @memory_mode(memory_mode, x_curr = x_curr - step_new * grad_curr)
-        
-        # Update theta
-        theta = step_new / step
-        step = step_new
-        
-        # Check stopping criterion
-        if norm(grad_curr) < epsilon
-            if verbose
+    try
+        for k in 1:max_iterations
+            k_final = k
+            iter_start = time()
+            # Compute current gradient
+            grad!(grad_curr, x_curr)
+            
+            # Compute local Lipschitz estimate
+            dx = x_curr - x_prev
+            dg = grad_curr - grad_prev
+            L_k = norm(dg) / norm(dx)
+            
+            # Update step size
+            step_new = min(sqrt(1 + theta) * step, 1 / (sqrt(2) * L_k))
+            
+            # Store previous iterates
+            copyto!(x_prev, x_curr)
+            copyto!(grad_prev, grad_curr)
+            
+            # Take step
+            @memory_mode(memory_mode, x_curr = x_curr - step_new * grad_curr)
+            
+            # Update theta
+            theta = step_new / step
+            step = step_new
+            
+            # Check stopping criterion
+            if norm(grad_curr) < epsilon
+                if verbose
+                    elapsed = time() - start_time
+                    @printf("%12d %15.6e %15.6e %15.3f %12.2e %12.2e (Converged)\n", 
+                            k, f(x_curr), norm(grad_curr), elapsed, L_k, step_new)
+                end
+                break
+            end
+            
+            # Handle callback
+            if !isnothing(callback)
+                state = (k, f(x_curr), norm(grad_curr), L_k, step_new)  # Format matching FW callbacks
+                callback(state)
+                push!(cb_storage, state)
+            end
+            
+            if verbose && k % print_iter == 0
                 elapsed = time() - start_time
-                @printf("%12d %15.6e %15.6e %15.3f %12.2e %12.2e (Converged)\n", 
+                @printf("%12d %15.6e %15.6e %15.3f %12.2e %12.2e\n", 
                         k, f(x_curr), norm(grad_curr), elapsed, L_k, step_new)
             end
-            break
         end
-        
-        # Handle callback
-        if !isnothing(callback)
-            state = (k, f(x_curr), norm(grad_curr), L_k, step_new)  # Format matching FW callbacks
-            callback(state)
-            push!(cb_storage, state)
-        end
-        
-        if verbose && k % print_iter == 0
-            elapsed = time() - start_time
-            @printf("%12d %15.6e %15.6e %15.3f %12.2e %12.2e\n", 
-                    k, f(x_curr), norm(grad_curr), elapsed, L_k, step_new)
+    catch e
+        if isa(e, InterruptException)
+            if verbose
+                elapsed = time() - start_time
+                @printf("\n%12d %15.6e %15.6e %15.3f %12.2e %12.2e (Interrupted)\n", 
+                        k_final, f(x_curr), norm(grad_curr), elapsed, L_k, step)
+            end
+            return x_curr, f(x_curr), cb_storage
+        else
+            rethrow(e)
         end
     end
     
@@ -127,7 +142,7 @@ function adaptive_gradient_descent(
     if verbose && norm(grad_curr) >= epsilon
         elapsed = time() - start_time
         @printf("%12d %15.6e %15.6e %15.3f %12.2e %12.2e (Max iterations)\n", 
-                max_iterations, f(x_curr), norm(grad_curr), elapsed, L_k, step)
+                k_final, f(x_curr), norm(grad_curr), elapsed, L_k, step)
     end
     
     return x_curr, f(x_curr), cb_storage
