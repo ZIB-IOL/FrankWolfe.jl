@@ -409,10 +409,10 @@ end
 
 # Default identity proximal operator
 struct IdentityProx end
-ProximalCore.prox!(y, f, x, t) = copyto!(y, x)
+ProximalCore.prox!(y, ::IdentityProx, x, t) = copyto!(y, x)
 
 struct ProbabilitySimplexProx end
-function ProximalCore.prox!(y, f, x, t)
+function ProximalCore.prox!(y, ::ProbabilitySimplexProx, x, t)
     # Sort x in descending order
     u = sort(x, rev=true)
     
