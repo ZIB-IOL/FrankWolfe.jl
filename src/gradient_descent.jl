@@ -326,7 +326,7 @@ function proximal_adaptive_gradient_descent(
         println("  epsilon        = $(epsilon)")
         println("  memory_mode    = $(memory_mode)")
         println("  x0 type        = $(typeof(x0))")
-        println("  prox           = $(nameof(prox))")
+        println("  prox           = $(string(typeof(prox)))")
         println("\n")
         println("=" ^ 88)
         @printf("%12s %15s %15s %15s %12s %12s\n", 
