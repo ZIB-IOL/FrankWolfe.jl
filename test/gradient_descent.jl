@@ -311,7 +311,7 @@ println()
                     f,
                     grad!,
                     x0;
-                    prox = (x, t) -> FrankWolfe.proj_probability_simplex(x),
+                    prox = ProximalOperators.IndSimplex(1.0),
                     epsilon = target_tolerance,
                     print_iter = print_iter,
                     verbose = true
