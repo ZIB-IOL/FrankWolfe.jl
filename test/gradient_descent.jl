@@ -2,7 +2,7 @@ using LinearAlgebra
 using Random
 using Test
 using FrankWolfe
-using DoubleFloats
+using ProximalOperators
 
 n = 100
 k = Int(1e4)
@@ -26,7 +26,7 @@ end
 const hessian = transpose(matrix) * matrix
 const linear = rand(n)
 
-f(x) = dot(linear, x) + 0.5 * transpose(x) * hessian * x
+f(x) = dot(linear, x) + 0.5 * dot(x, hessian, x)
 
 function grad!(storage, x)
     return storage .= linear + hessian * x
@@ -270,7 +270,7 @@ println()
             f,
             grad!,
             x0;
-            prox = (x, t) -> FrankWolfe.proj_l1_ball(x, 1.0),
+            prox = ProximalOperators.IndBallL1(1.0),
             epsilon = target_tolerance,
             print_iter = print_iter,
             verbose = true
