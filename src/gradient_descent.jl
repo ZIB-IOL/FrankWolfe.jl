@@ -1,9 +1,6 @@
 using LinearAlgebra
 using Printf
 
-# Default identity proximal operator
-identity_prox(x, t) = x
-
 # BASED ON: https://arxiv.org/abs/2308.02261
 
 """
@@ -76,65 +73,52 @@ function adaptive_gradient_descent(
     
     start_time = time()
     
-    try
-        for k in 1:max_iterations
-            k_final = k
-            iter_start = time()
-            # Compute current gradient
-            grad!(grad_curr, x_curr)
-            
-            # Compute local Lipschitz estimate
-            dx = x_curr - x_prev
-            dg = grad_curr - grad_prev
-            L_k = norm(dg) / norm(dx)
-            
-            # Update step size
-            step_new = min(sqrt(1 + theta) * step, 1 / (sqrt(2) * L_k))
-            
-            # Store previous iterates
-            copyto!(x_prev, x_curr)
-            copyto!(grad_prev, grad_curr)
-            
-            # Take step
-            @memory_mode(memory_mode, x_curr = x_curr - step_new * grad_curr)
-            
-            # Update theta
-            theta = step_new / step
-            step = step_new
-            
-            # Check stopping criterion
-            if norm(grad_curr) < epsilon
-                if verbose
-                    elapsed = time() - start_time
-                    @printf("%12d %15.6e %15.6e %15.3f %12.2e %12.2e (Converged)\n", 
-                            k, f(x_curr), norm(grad_curr), elapsed, L_k, step_new)
-                end
-                break
-            end
-            
-            # Handle callback
-            if !isnothing(callback)
-                state = (k, f(x_curr), norm(grad_curr), L_k, step_new)  # Format matching FW callbacks
-                callback(state)
-                push!(cb_storage, state)
-            end
-            
-            if verbose && k % print_iter == 0
-                elapsed = time() - start_time
-                @printf("%12d %15.6e %15.6e %15.3f %12.2e %12.2e\n", 
-                        k, f(x_curr), norm(grad_curr), elapsed, L_k, step_new)
-            end
-        end
-    catch e
-        if isa(e, InterruptException)
+    for k in 1:max_iterations
+        k_final = k
+        iter_start = time()
+        # Compute current gradient
+        grad!(grad_curr, x_curr)
+        
+        # Compute local Lipschitz estimate
+        dx = x_curr - x_prev
+        dg = grad_curr - grad_prev
+        L_k = norm(dg) / norm(dx)
+        
+        # Update step size
+        step_new = min(sqrt(1 + theta) * step, 1 / (sqrt(2) * L_k))
+        
+        # Store previous iterates
+        copyto!(x_prev, x_curr)
+        copyto!(grad_prev, grad_curr)
+        
+        # Take step
+        @memory_mode(memory_mode, x_curr = x_curr - step_new * grad_curr)
+        
+        # Update theta
+        theta = step_new / step
+        step = step_new
+        
+        # Check stopping criterion
+        if norm(grad_curr) < epsilon
             if verbose
                 elapsed = time() - start_time
-                @printf("\n%12d %15.6e %15.6e %15.3f %12.2e %12.2e (Interrupted)\n", 
-                        k_final, f(x_curr), norm(grad_curr), elapsed, L_k, step)
+                @printf("%12d %15.6e %15.6e %15.3f %12.2e %12.2e (Converged)\n", 
+                        k, f(x_curr), norm(grad_curr), elapsed, L_k, step_new)
             end
-            return x_curr, f(x_curr), cb_storage
-        else
-            rethrow(e)
+            break
+        end
+        
+        # Handle callback
+        if !isnothing(callback)
+            state = (k, f(x_curr), norm(grad_curr), L_k, step_new)  # Format matching FW callbacks
+            callback(state)
+            push!(cb_storage, state)
+        end
+        
+        if verbose && k % print_iter == 0
+            elapsed = time() - start_time
+            @printf("%12d %15.6e %15.6e %15.3f %12.2e %12.2e\n", 
+                    k, f(x_curr), norm(grad_curr), elapsed, L_k, step_new)
         end
     end
     
@@ -288,7 +272,7 @@ function proximal_adaptive_gradient_descent(
     f,
     grad!,
     x0;
-    prox = identity_prox,  # Add default identity proximal operator
+    prox = IdentityProx(),  # Add default identity proximal operator
     step0 = 1.0,
     max_iterations = 10000,
     epsilon = 1e-7,
@@ -314,7 +298,8 @@ function proximal_adaptive_gradient_descent(
 
     # proximal step (non-memory)
     # println("very first x_curr: $(x_prev - step * grad_prev)")
-    x_curr = prox(x_prev - step * grad_prev, step)
+    x_curr = similar(x_prev)
+    ProximalCore.prox!(x_curr, IdentityProx(), x_prev - step * grad_prev, step)
     # println("very first x_curr after prox: $(x_curr)")
 
     # proximal step (memory) / does not work because x_curr is not defined just yet -> defaulting to the above
@@ -378,7 +363,7 @@ function proximal_adaptive_gradient_descent(
         if !isnan(L_k)
             @memory_mode(memory_mode, x_curr = x_curr - step_new * grad_curr)
         end
-        x_curr = prox(x_curr, step_new)
+        ProximalCore.prox!(x_curr, prox, x_curr, step_new)
         
         # Update theta
         theta = step_new / step
@@ -419,61 +404,15 @@ function proximal_adaptive_gradient_descent(
     return x_curr, f(x_curr), cb_storage
 end
 
-
-########################################################
 # Projection and Proximal Operators
-########################################################
+# More are present in ProximalOperators.jl
 
-function proj_l1_ball(x, τ=1.0)
-    @assert !any(isnan.(x)) "Input vector x contains NaN values"
+# Default identity proximal operator
+struct IdentityProx end
+ProximalCore.prox!(y, f, x, t) = copyto!(y, x)
 
-    if τ < 0
-        throw(DomainError(τ, "L1 ball radius must be non-negative"))
-    end
-    
-    # Handle trivial cases
-    if norm(x, 1) <= τ
-        return copy(x)
-    end
-    if τ == 0
-        return zero(x)
-    end
-    
-    # Sort absolute values in descending order
-    u = sort(abs.(x), rev=true)
-    
-    # Find largest k such that u_k > θ
-    cumsum_u = cumsum(u)
-    k = findlast(i -> u[i] > (cumsum_u[i] - τ) / i, 1:length(x))
-    # println("k: $k")
-    # Debug output if k is nothing
-    if isnothing(k)
-        println("Debug: cumsum_u = ", cumsum_u)
-        println("Debug: norm(x,1) = ", norm(x,1))
-    end
-    
-    # Compute θ
-    θ = (cumsum_u[k] - τ) / k
-    
-    # Apply soft-thresholding
-    return sign.(x) .* max.(abs.(x) .- θ, 0)
-end
-
-
-
-"""
-    proj_probability_simplex(x)
-
-Project a vector onto the probability simplex Δₙ = {x ∈ ℝⁿ | x ≥ 0, ∑xᵢ = 1}.
-
-# Arguments
-- `x`: Input vector to project
-
-# Returns
-- Projected vector onto probability simplex
-"""
-function proj_probability_simplex(x)
-    @assert !any(isnan.(x)) "Input vector x contains NaN values"
+struct ProbabilitySimplexProx end
+function ProximalCore.prox!(y, f, x, t)
     # Sort x in descending order
     u = sort(x, rev=true)
     
@@ -488,66 +427,9 @@ function proj_probability_simplex(x)
     
     # Compute θ
     θ = (1 - cumsum_u[k])/k
-    
-    # Return projection
-    return max.(x .+ θ, 0)
+
+    for idx in eachindex(x)
+        y[idx] = max(x[idx] + θ, 0)
+    end
+    return y
 end
-
-"""
-    proj_unit_simplex(x, τ=1.0)
-
-Project a vector onto the unit simplex {x ∈ ℝⁿ | x ≥ 0, ∑xᵢ ≤ τ}.
-
-# Arguments
-- `x`: Input vector to project
-- `τ`: Upper bound on sum (default: 1.0)
-
-# Returns
-- Projected vector onto unit simplex with inequality constraint
-"""
-function proj_unit_simplex(x, τ=1.0)
-    @assert !any(isnan.(x)) "Input vector x contains NaN values"
-    if τ < 0
-        throw(DomainError(τ, "Unit simplex parameter must be non-negative"))
-    end
-    
-    # Handle trivial case
-    if τ == 0
-        return zero(x)
-    end
-    
-    # First project onto non-negative orthant
-    y = max.(x, 0)
-    
-    # If sum is already ≤ τ, we're done
-    if sum(y) ≤ τ
-        return y
-    end
-    
-    # Otherwise project onto probability simplex scaled by τ
-    return τ * proj_probability_simplex(y ./ τ)
-end
-
-"""
-    proj_box(x, τ=1.0)
-
-Project a vector onto the box [0,τ]ⁿ.
-
-# Arguments
-- `x`: Input vector to project
-- `τ`: Upper bound (default: 1.0)
-
-# Returns
-- Projected vector onto [0,τ]ⁿ
-"""
-function proj_box(x, τ=1.0)
-    @assert !any(isnan.(x)) "Input vector x contains NaN values"
-    if τ < 0
-        throw(DomainError(τ, "Box parameter must be non-negative"))
-    end
-    
-    # Clamp each component to [0,τ]
-    return clamp.(x, 0, τ)
-end
-
-

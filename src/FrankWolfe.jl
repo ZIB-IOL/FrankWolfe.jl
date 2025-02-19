@@ -9,6 +9,7 @@ using SparseArrays: spzeros, SparseVector
 import SparseArrays
 import Random
 using Setfield: @set
+import ProximalCore
 
 import MathOptInterface
 const MOI = MathOptInterface
