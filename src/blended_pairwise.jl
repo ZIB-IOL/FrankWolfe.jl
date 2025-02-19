@@ -166,7 +166,7 @@ function blended_pairwise_conditional_gradient(
         use_extra_vertex_storage = add_dropped_vertices = false
     end
 
-    while t <= max_iteration && phi >= max(epsilon, eps(epsilon))
+    @interruptable while t ≤ max_iteration && phi ≥ max(epsilon, eps(epsilon))
 
         # managing time limit
         time_at_loop = time_ns()

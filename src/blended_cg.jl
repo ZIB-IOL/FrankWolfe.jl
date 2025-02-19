@@ -196,11 +196,10 @@ function blended_conditional_gradient(
         use_extra_vertex_storage = add_dropped_vertices = false
     end
 
-
     # this is never used and only defines gamma in the scope outside of the loop
     gamma = NaN
 
-    while t <= max_iteration && (phi ≥ epsilon || t == 0) # do at least one iteration for consistency with other algos
+    @interruptable while t ≤ max_iteration && (phi ≥ epsilon || t == 0) # do at least one iteration for consistency with other algos
         #####################
         # managing time and Ctrl-C
         #####################
@@ -925,7 +924,7 @@ function simplex_gradient_descent_over_convex_hull(
     if line_search_inner isa Adaptive
         line_search_inner.L_est = Inf
     end
-    while t + number_of_steps ≤ max_iteration
+    @interruptable while t + number_of_steps ≤ max_iteration
         grad!(gradient, x)
         #Check if strong Wolfe gap over the convex hull is small enough.
         c = [fast_dot(gradient, a) for a in active_set.atoms]

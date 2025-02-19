@@ -483,3 +483,36 @@ function weight_purge_threshold_default(::Type{T}) where {T<:AbstractFloat}
 end
 weight_purge_threshold_default(::Type{T}) where {T<:Number} = Base.rtoldefault(T)
 
+macro interruptable(ex, extra_iterations::Integer=1)
+    @assert ex.head == :while
+    cond, body = ex.args # Extract condition and body
+    quote
+        local interrupted = false
+        try
+            $(esc(ex)) # Run the loop normally
+        catch e
+            if e isa InterruptException
+                interrupted = true
+            else
+                rethrow(e)
+            end
+        end
+        if interrupted
+            print("\nInterrupted!")
+            if $extra_iterations ≤ 0
+                println()
+            else
+                local remaining = $extra_iterations
+                if $extra_iterations == 1
+                    println(" Running one more iteration...")
+                else
+                    println(" Running $remaining more iterations...")
+                end
+                while $(esc(cond)) && remaining > 0
+                    $(esc(body)) # Directly execute the original loop body
+                    remaining -= 1
+                end
+            end
+        end
+    end
+end

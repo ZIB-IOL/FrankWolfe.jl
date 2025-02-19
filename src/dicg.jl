@@ -139,7 +139,7 @@ function decomposition_invariant_conditional_gradient(
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
     end
 
-    while t <= max_iteration && phi >= max(epsilon, eps(epsilon))
+    @interruptable while t ≤ max_iteration && phi ≥ max(epsilon, eps(epsilon))
 
         # managing time limit
         time_at_loop = time_ns()
@@ -357,7 +357,7 @@ function blended_decomposition_invariant_conditional_gradient(
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
     end
 
-    while t <= max_iteration && phi >= max(epsilon, eps(epsilon))
+    @interruptable while t ≤ max_iteration && phi ≥ max(epsilon, eps(epsilon))
 
         # managing time limit
         time_at_loop = time_ns()
