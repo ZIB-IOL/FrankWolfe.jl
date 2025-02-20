@@ -498,7 +498,7 @@ macro interruptable(ex, extra_iterations::Integer=1)
             end
         end
         if interrupted
-            print("\nInterrupted!")
+            print("\nInterrupted, unexpected behaviors may happen!")
             if $extra_iterations ≤ 0
                 println()
             else
