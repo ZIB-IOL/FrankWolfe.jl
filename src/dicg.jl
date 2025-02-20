@@ -52,7 +52,7 @@ function decomposition_invariant_conditional_gradient(
     timeout=Inf,
     lazy=false,
     linesearch_workspace=nothing,
-    lazy_tolerance=2.0,
+    sparsity_control=2.0,
     extra_vertex_storage=nothing,
 )
 
@@ -114,7 +114,7 @@ function decomposition_invariant_conditional_gradient(
             "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
         )
         grad_type = typeof(gradient)
-        println("GRADIENstep_typeYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance")
+        println("GRADIENstep_typeYPE: $grad_type LAZY: $lazy sparsity_control: $sparsity_control")
         println("LMO: $(typeof(lmo))")
         if memory_mode isa InplaceEmphasis
             @info("In memory_mode memory iterates are written back into x0!")
@@ -281,7 +281,7 @@ function blended_decomposition_invariant_conditional_gradient(
     timeout=Inf,
     lazy=false,
     linesearch_workspace=nothing,
-    lazy_tolerance=2.0,
+    sparsity_control=2.0,
 )
 
     if !is_decomposition_invariant_oracle(lmo)
@@ -341,7 +341,7 @@ function blended_decomposition_invariant_conditional_gradient(
             "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
         )
         grad_type = typeof(gradient)
-        println("GRADIENstep_typeYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance")
+        println("GRADIENstep_typeYPE: $grad_type LAZY: $lazy sparsity_control: $sparsity_control")
         println("LMO: $(typeof(lmo))")
         if memory_mode isa InplaceEmphasis
             @info("In memory_mode memory iterates are written back into x0!")
@@ -394,7 +394,7 @@ function blended_decomposition_invariant_conditional_gradient(
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
             phi = dual_gap
             # in-face step
-            if inface_gap >= phi / lazy_tolerance
+            if inface_gap >= phi / sparsity_control
                 step_type = ST_PAIRWISE
                 d = muladd_memory_mode(memory_mode, d, a, v)
                 gamma_max = dicg_maximum_step(lmo, d, x)
@@ -485,7 +485,7 @@ function lazy_dicg_step(
     d;
     use_extra_vertex_storage=false,
     extra_vertex_storage=nothing,
-    lazy_tolerance=2.0,
+    sparsity_control=2.0,
     memory_mode::MemoryEmphasis=InplaceEmphasis(),
 )
     v_local, v_local_loc, val, a_local, a_local_loc, valM =
@@ -499,7 +499,7 @@ function lazy_dicg_step(
     # Do lazy pairwise step
     grad_dot_lazy_fw_vertex = val
 
-    if grad_dot_a_local - grad_dot_lazy_fw_vertex >= phi / lazy_tolerance &&
+    if grad_dot_a_local - grad_dot_lazy_fw_vertex >= phi / sparsity_control &&
        grad_dot_a_local - grad_dot_lazy_fw_vertex >= epsilon
         step_type = ST_LAZY
         v = v_local
@@ -510,7 +510,7 @@ function lazy_dicg_step(
         v = compute_extreme_point(lmo, gradient)
         grad_dot_v = fast_dot(gradient, v)
         # Do lazy inface_point
-        if grad_dot_a_local - grad_dot_v >= phi / lazy_tolerance &&
+        if grad_dot_a_local - grad_dot_v >= phi / sparsity_control &&
            grad_dot_a_local - grad_dot_v >= epsilon
             step_type = ST_LAZY
             a = a_local
@@ -523,7 +523,7 @@ function lazy_dicg_step(
         grad_dot_fw_vertex = fast_dot(v, gradient)
         dual_gap = grad_dot_x - grad_dot_fw_vertex
 
-        if dual_gap >= phi / lazy_tolerance
+        if dual_gap >= phi / sparsity_control
             d = muladd_memory_mode(memory_mode, d, a, v)
             #Lower our expectation for progress.
         else
