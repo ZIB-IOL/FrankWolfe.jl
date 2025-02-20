@@ -279,8 +279,8 @@ function Base.copy(obj::BPCGStep)
     end
 end
 
-BPCGStep() = BPCGStep(false, nothing, 1000, 2.0, Inf)
 BPCGStep(lazy::Bool) = BPCGStep(lazy, nothing, 1000, 2.0, Inf)
+BPCGStep() = BPCGStep(false)
 
 function update_iterate(
     ::FrankWolfeStep,

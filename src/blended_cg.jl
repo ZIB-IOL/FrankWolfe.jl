@@ -131,6 +131,17 @@ function blended_conditional_gradient(
         return rep
     end
 
+    isempty(active_set) && throw(ArgumentError("Empty active set"))
+    sparsity_control < 1 && throw(ArgumentError("sparsity_control cannot be smaller than one"))
+
+    if trajectory
+        callback = make_trajectory_callback(callback, traj_data)
+    end
+
+    if verbose
+        callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
+    end
+
     t = 0
     primal = Inf
     dual_gap = Inf
@@ -145,14 +156,6 @@ function blended_conditional_gradient(
     vmax = compute_extreme_point(lmo, gradient)
     phi = (fast_dot(gradient, x) - fast_dot(gradient, vmax)) / 2
     dual_gap = phi
-
-    if trajectory
-        callback = make_trajectory_callback(callback, traj_data)
-    end
-
-    if verbose
-        callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
-    end
 
     step_type = ST_REGULAR
     time_start = time_ns()

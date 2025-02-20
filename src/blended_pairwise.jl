@@ -111,6 +111,9 @@ function blended_pairwise_conditional_gradient(
         return rep
     end
 
+    isempty(active_set) && throw(ArgumentError("Empty active set"))
+    sparsity_control < 1 && throw(ArgumentError("sparsity_control cannot be smaller than one"))
+
     if trajectory
         callback = make_trajectory_callback(callback, traj_data)
     end

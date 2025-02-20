@@ -77,6 +77,8 @@ function decomposition_invariant_conditional_gradient(
         return rep
     end
 
+    sparsity_control < 1 && throw(ArgumentError("sparsity_control cannot be smaller than one"))
+
     if trajectory
         callback = make_trajectory_callback(callback, traj_data)
     end

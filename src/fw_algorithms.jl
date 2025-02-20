@@ -289,6 +289,16 @@ function lazified_conditional_gradient(
         return rep
     end
 
+    sparsity_control < 1 && throw(ArgumentError("sparsity_control cannot be smaller than one"))
+
+    if trajectory
+        callback = make_trajectory_callback(callback, traj_data)
+    end
+
+    if verbose
+        callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
+    end
+
     lmo = VectorCacheLMO{typeof(lmo_base),VType}(lmo_base)
     if isfinite(cache_size)
         Base.sizehint!(lmo.vertices, cache_size)
@@ -302,13 +312,6 @@ function lazified_conditional_gradient(
     phi = Inf
     step_type = ST_REGULAR
 
-    if trajectory
-        callback = make_trajectory_callback(callback, traj_data)
-    end
-
-    if verbose
-        callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
-    end
     time_start = time_ns()
 
     if line_search isa Agnostic || line_search isa Nonconvex
