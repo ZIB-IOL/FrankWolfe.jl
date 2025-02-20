@@ -147,7 +147,7 @@ Base.precompile(
                 :memory_mode,
                 :verbose,
                 :trajectory,
-                :lazy_tolerance,
+                :sparsity_control,
                 :weight_purge_threshold,
             ),
             Tuple{
@@ -183,7 +183,7 @@ Base.precompile(
                 :accelerated,
                 :verbose,
                 :trajectory,
-                :lazy_tolerance,
+                :sparsity_control,
                 :weight_purge_threshold,
             ),
             Tuple{
@@ -219,7 +219,7 @@ Base.precompile(
                 :memory_mode,
                 :verbose,
                 :trajectory,
-                :lazy_tolerance,
+                :sparsity_control,
                 :weight_purge_threshold,
             ),
             Tuple{
@@ -300,7 +300,7 @@ Base.precompile(Tuple{Type{ActiveSet},Vector{Tuple{Float64,SparseVector{Float64,
 Base.precompile(
     Tuple{
         Core.kwftype(typeof(lazy_afw_step)),
-        NamedTuple{(:lazy_tolerance,),Tuple{Float64}},
+        NamedTuple{(:sparsity_control,),Tuple{Float64}},
         typeof(lazy_afw_step),
         SparseVector{Float64,Int64},
         SparseVector{Float64,Int64},
@@ -1115,7 +1115,7 @@ Base.precompile(
 Base.precompile(
     Tuple{
         Core.kwftype(typeof(lazy_afw_step)),
-        NamedTuple{(:lazy_tolerance,),Tuple{Float64}},
+        NamedTuple{(:sparsity_control,),Tuple{Float64}},
         typeof(lazy_afw_step),
         Vector{Float64},
         Vector{Float64},
