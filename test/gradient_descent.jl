@@ -53,93 +53,93 @@ println()
     @testset "Type $T" for T in (Float64, Double64)
         x0 = 10 * rand(T, n)
         target_tolerance = convert(T, 1e-8)
-        
+
         # Test first variant
         x1, f1, hist1 = FrankWolfe.adaptive_gradient_descent(
             f,
             grad!,
             convert.(T, x0);
-            step0 = convert(T, 0.1),
-            max_iteration = k,
-            print_iter = print_iter,
-            epsilon = target_tolerance,
-            memory_mode = FrankWolfe.InplaceEmphasis(),
-            verbose = true
+            step0=convert(T, 0.1),
+            max_iteration=k,
+            print_iter=print_iter,
+            epsilon=target_tolerance,
+            memory_mode=FrankWolfe.InplaceEmphasis(),
+            verbose=true,
         )
-        
+
         # Test second variant
         x2, f2, hist2 = FrankWolfe.adaptive_gradient_descent2(
             f,
             grad!,
             convert.(T, x0);
-            step0 = convert(T, 0.1),
-            max_iteration = k,
-            print_iter = print_iter,
-            epsilon = target_tolerance,
-            memory_mode = FrankWolfe.InplaceEmphasis(),
-            verbose = true
+            step0=convert(T, 0.1),
+            max_iteration=k,
+            print_iter=print_iter,
+            epsilon=target_tolerance,
+            memory_mode=FrankWolfe.InplaceEmphasis(),
+            verbose=true,
         )
-        
+
         # Test convergence to optimal solution
         @test norm(grad!(similar(x1), x1)) ≤ target_tolerance
         @test norm(grad!(similar(x2), x2)) ≤ target_tolerance
-        
+
         # Test objective values
         @test abs(f1 - f_opt) ≤ target_tolerance * L
         @test abs(f2 - f_opt) ≤ target_tolerance * L
-        
+
         # Test solution accuracy
         @test norm(x1 - x_opt) ≤ sqrt(target_tolerance)
         @test norm(x2 - x_opt) ≤ sqrt(target_tolerance)
     end
-    
+
     @testset "Memory modes" begin
         x0 = rand(n)
         target_tolerance = 1e-8
-        
+
         # Test with InplaceEmphasis
         x_inplace, f_inplace, _ = FrankWolfe.adaptive_gradient_descent(
             f,
             grad!,
             x0;
-            epsilon = target_tolerance,
-            memory_mode = FrankWolfe.InplaceEmphasis(),
-            print_iter = print_iter,
-            verbose = true
+            epsilon=target_tolerance,
+            memory_mode=FrankWolfe.InplaceEmphasis(),
+            print_iter=print_iter,
+            verbose=true,
         )
-        
+
         # Test with OutplaceEmphasis
         x_outplace, f_outplace, _ = FrankWolfe.adaptive_gradient_descent(
             f,
             grad!,
             x0;
-            epsilon = target_tolerance,
-            memory_mode = FrankWolfe.OutplaceEmphasis(),
-            print_iter = print_iter,
-            verbose = true
+            epsilon=target_tolerance,
+            memory_mode=FrankWolfe.OutplaceEmphasis(),
+            print_iter=print_iter,
+            verbose=true,
         )
-        
+
         # Results should be the same regardless of memory mode
         @test norm(x_inplace - x_outplace) ≤ target_tolerance
         @test abs(f_inplace - f_outplace) ≤ target_tolerance
     end
-    
+
     @testset "Callback functionality" begin
         x0 = rand(n)
         history = []
-        
+
         callback(state) = push!(history, state)
-        
+
         _, _, _ = FrankWolfe.adaptive_gradient_descent(
             f,
             grad!,
             x0;
-            callback = callback,
-            max_iteration = 10,
-            print_iter = 1,
-            verbose = true
+            callback=callback,
+            max_iteration=10,
+            print_iter=1,
+            verbose=true,
         )
-        
+
         # Test that callback was called and stored states
         @test length(history) == 10
         @test all(state -> length(state) == 5, history)
@@ -151,47 +151,44 @@ println()
     @testset "Proximal variant" begin
         x0 = rand(n)
         target_tolerance = 1e-8
-        
+
         # Test with identity proximal operator (should match regular variant)
         x_id, f_id, _ = FrankWolfe.proximal_adaptive_gradient_descent(
             f,
             grad!,
             x0;
-            epsilon = target_tolerance,
-            verbose = true
+            epsilon=target_tolerance,
+            verbose=true,
         )
-        
+
         # Test with L1 proximal operator
         x_l1, f_l1, _ = FrankWolfe.proximal_adaptive_gradient_descent(
             f,
             grad!,
             x0,
             ProximalOperators.IndBallL1(1.0);
-            epsilon = target_tolerance,
+            epsilon=target_tolerance,
             max_iteration=k,
             verbose=true,
         )
-        
+
         # Identity proximal operator should give same result as regular variant
-        x_reg, f_reg, _ = FrankWolfe.adaptive_gradient_descent(
-            f,
-            grad!,
-            x0;
-            epsilon = target_tolerance,
-        )
+        x_reg, f_reg, _ =
+            FrankWolfe.adaptive_gradient_descent(f, grad!, x0; epsilon=target_tolerance)
 
         @testset "Comparison with FW variants" begin
             @testset "L1-ball comparison" begin
-                x0 = FrankWolfe.compute_extreme_point(FrankWolfe.LpNormLMO{Float64,1}(1.0), zeros(n))
+                x0 =
+                    FrankWolfe.compute_extreme_point(FrankWolfe.LpNormLMO{Float64,1}(1.0), zeros(n))
                 x_fw_l1, _ = FrankWolfe.blended_pairwise_conditional_gradient(
                     f,
                     grad!,
                     FrankWolfe.LpNormLMO{Float64,1}(1.0),
                     line_search=FrankWolfe.Secant(),
                     x0;
-                    epsilon = target_tolerance,
-                    max_iteration = k,
-                    verbose = false,
+                    epsilon=target_tolerance,
+                    max_iteration=k,
+                    verbose=false,
                 )
                 f_fw_l1 = f(x_fw_l1)
                 @test abs(f_l1 - f_fw_l1) ≤ target_tolerance * 10
@@ -203,20 +200,23 @@ println()
                     grad!,
                     x0,
                     ProximalOperators.IndSimplex(1.0);
-                    epsilon = target_tolerance,
-                    verbose = false,
+                    epsilon=target_tolerance,
+                    verbose=false,
                 )
 
-                x0 = FrankWolfe.compute_extreme_point(FrankWolfe.ProbabilitySimplexOracle(1.0), zeros(n))
+                x0 = FrankWolfe.compute_extreme_point(
+                    FrankWolfe.ProbabilitySimplexOracle(1.0),
+                    zeros(n),
+                )
                 x_fw_prob, _ = FrankWolfe.blended_pairwise_conditional_gradient(
                     f,
                     grad!,
                     FrankWolfe.ProbabilitySimplexOracle(1.0),
                     line_search=FrankWolfe.Secant(),
                     x0;
-                    epsilon = target_tolerance,
-                    max_iteration = k,
-                    verbose = false,
+                    epsilon=target_tolerance,
+                    max_iteration=k,
+                    verbose=false,
                 )
                 f_fw_prob = f(x_fw_prob)
                 @test abs(f_prox_prob - f_fw_prob) ≤ target_tolerance * 10
@@ -230,9 +230,9 @@ println()
                     grad!,
                     x0,
                     ProximalOperators.IndBox(-τ_box, τ_box);
-                    epsilon = target_tolerance,
-                    print_iter = print_iter,
-                    verbose = false,
+                    epsilon=target_tolerance,
+                    print_iter=print_iter,
+                    verbose=false,
                 )
                 lmo_box = FrankWolfe.ScaledBoundLInfNormBall(-τ_box * zeros(n), τ_box * ones(n))
                 x0 = FrankWolfe.compute_extreme_point(lmo_box, zeros(n))
@@ -242,9 +242,9 @@ println()
                     lmo_box,
                     line_search=FrankWolfe.Secant(),
                     x0;
-                    epsilon = target_tolerance,
-                    max_iteration = k,
-                    verbose = false,
+                    epsilon=target_tolerance,
+                    max_iteration=k,
+                    verbose=false,
                 )
                 f_fw_box = f(x_fw_box)
                 @test abs(f_prox_box - f_fw_box) ≤ target_tolerance * 10
@@ -301,47 +301,44 @@ println()
 
         x0 = rand(n)
         target_tolerance = 1e-8
-        
+
         # Test with identity proximal operator (should match regular variant)
         x_id, f_id, _ = FrankWolfe.proximal_adaptive_gradient_descent(
             f,
             grad!,
             x0;
-            epsilon = target_tolerance,
-            print_iter = print_iter,
-            verbose = true
+            epsilon=target_tolerance,
+            print_iter=print_iter,
+            verbose=true,
         )
-        
+
         # Test with L1 proximal operator
         x_l1, f_l1, _ = FrankWolfe.proximal_adaptive_gradient_descent(
             f,
             grad!,
             x0,
             ProximalOperators.IndBallL1(1.0);
-            epsilon = target_tolerance,
+            epsilon=target_tolerance,
         )
-        
+
         # Identity proximal operator should give same result as regular variant
-        x_reg, f_reg, _ = FrankWolfe.adaptive_gradient_descent(
-            f,
-            grad!,
-            x0;
-            epsilon = target_tolerance,
-        )
+        x_reg, f_reg, _ =
+            FrankWolfe.adaptive_gradient_descent(f, grad!, x0; epsilon=target_tolerance)
 
         @testset "Comparison with FW variants" begin
             @testset "L1-ball comparison" begin
-                x0 = FrankWolfe.compute_extreme_point(FrankWolfe.LpNormLMO{Float64,1}(1.0), zeros(n));
+                x0 =
+                    FrankWolfe.compute_extreme_point(FrankWolfe.LpNormLMO{Float64,1}(1.0), zeros(n))
                 x_fw_l1, _ = FrankWolfe.blended_pairwise_conditional_gradient(
                     f,
                     grad!,
                     FrankWolfe.LpNormLMO{Float64,1}(1.0),
                     line_search=FrankWolfe.Secant(),
                     x0;
-                    epsilon = target_tolerance,
-                    max_iteration = k,
-                    print_iter = print_iter,
-                    verbose = true
+                    epsilon=target_tolerance,
+                    max_iteration=k,
+                    print_iter=print_iter,
+                    verbose=true,
                 )
                 f_fw_l1 = f(x_fw_l1)
                 @test abs(f_l1 - f_fw_l1) ≤ target_tolerance * 10
@@ -353,7 +350,7 @@ println()
                     grad!,
                     x0,
                     FrankWolfe.ProbabilitySimplexProx();
-                    epsilon = target_tolerance,
+                    epsilon=target_tolerance,
                 )
                 lmo_probsimplex = FrankWolfe.ProbabilitySimplexOracle(1.0)
                 x0 = FrankWolfe.compute_extreme_point(lmo_probsimplex, zeros(n))
@@ -363,8 +360,8 @@ println()
                     lmo_probsimplex,
                     line_search=FrankWolfe.Secant(),
                     x0;
-                    epsilon = target_tolerance,
-                    max_iteration = k,
+                    epsilon=target_tolerance,
+                    max_iteration=k,
                 )
                 f_fw_prob = f(x_fw_prob)
                 @test abs(f_prox_prob - f_fw_prob) ≤ target_tolerance * 10
@@ -379,7 +376,7 @@ println()
                     grad!,
                     x0,
                     ProximalOperators.IndBox(-τ_box, τ_box);
-                    epsilon = target_tolerance,
+                    epsilon=target_tolerance,
                 )
                 lmo_box = FrankWolfe.ScaledBoundLInfNormBall(-τ_box * zeros(n), τ_box * ones(n))
                 x0 = FrankWolfe.compute_extreme_point(lmo_box, zeros(n))
@@ -389,8 +386,8 @@ println()
                     lmo_box,
                     line_search=FrankWolfe.Secant(),
                     x0;
-                    epsilon = target_tolerance,
-                    max_iteration = k,
+                    epsilon=target_tolerance,
+                    max_iteration=k,
                 )
                 f_fw_box = f(x_fw_box)
                 @test abs(f_prox_box - f_fw_box) ≤ target_tolerance * 10
