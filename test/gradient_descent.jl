@@ -352,7 +352,7 @@ println()
                     f,
                     grad!,
                     x0,
-                    prox = FrankWolfe.ProbabilitySimplexProx();
+                    FrankWolfe.ProbabilitySimplexProx();
                     epsilon = target_tolerance,
                 )
                 lmo_probsimplex = FrankWolfe.ProbabilitySimplexOracle(1.0)
