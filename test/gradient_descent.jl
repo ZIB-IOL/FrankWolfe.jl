@@ -3,7 +3,7 @@ using Random
 using Test
 using FrankWolfe
 using ProximalOperators
-using Double64
+using DoubleFloats
 
 n = 100
 k = Int(1e4)
