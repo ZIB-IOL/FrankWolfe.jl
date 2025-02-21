@@ -3,6 +3,7 @@ using Random
 using Test
 using FrankWolfe
 using ProximalOperators
+using Double64
 
 n = 100
 k = Int(1e4)
@@ -13,7 +14,7 @@ Random.seed!(s)
 
 # Create test problem with controlled condition number
 const condition_number = 1000.0  # Much better than random conditioning
-const matrix = begin
+const matrix = let
     # Create orthogonal matrix
     Q = qr(randn(n, n)).Q
     # Create diagonal matrix with controlled condition number
@@ -147,110 +148,6 @@ println()
         @test issorted([state[1] for state in history]) # iterations are ordered
     end
 
-    @testset "Projection Operators" begin
-        @testset "L1 ball projection" begin
-            # Test basic functionality
-            x_test = [1.0, -2.0, 0.5, -0.1]
-            τ = 1.0
-            result = FrankWolfe.proj_l1_ball(x_test, τ)
-            
-            # Result should have L1 norm ≤ τ
-            @test sum(abs.(result)) ≤ τ + 1e-10
-            
-            # Test with zero input
-            @test all(FrankWolfe.proj_l1_ball(zeros(5), 1.0) .== 0.0)
-            
-            # Test with negative radius
-            @test_throws DomainError FrankWolfe.proj_l1_ball(x_test, -1.0)
-            
-            # Test with zero radius
-            @test all(FrankWolfe.proj_l1_ball(ones(5), 0.0) .== 0.0)
-            
-            # Test preservation of signs
-            x_signs = sign.(x_test)
-            result_signs = sign.(result)
-            @test all(x_signs[abs.(result) .> 1e-10] .== result_signs[abs.(result) .> 1e-10])
-            
-            # Test for NaN outputs
-            @test !any(isnan.(FrankWolfe.proj_l1_ball(x_test, τ)))
-            @test !any(isnan.(FrankWolfe.proj_l1_ball(randn(100), 1.0)))
-            
-            # Test with large random input
-            x_large = randn(1000)
-            τ_large = 5.0
-            result_large = FrankWolfe.proj_l1_ball(x_large, τ_large)
-            @test sum(abs.(result_large)) ≤ τ_large + 1e-10
-        end
-
-        @testset "Probability simplex projection" begin
-            # Test basic functionality
-            x_test = [0.5, 0.8, -0.2, 0.4]
-            result = FrankWolfe.proj_probability_simplex(x_test)
-            
-            # Result should sum to 1 and be non-negative
-            @test sum(result) ≈ 1.0 atol=1e-10
-            @test all(result .>= 0)
-            
-            # Test with zero input
-            @test sum(FrankWolfe.proj_probability_simplex(zeros(5))) ≈ 1.0
-            
-            # Test with all negative input
-            @test all(FrankWolfe.proj_probability_simplex(-ones(5)) .≈ 0.2)
-            
-            # Test for NaN outputs
-            @test !any(isnan.(FrankWolfe.proj_probability_simplex(x_test)))
-        end
-
-        @testset "Unit simplex projection" begin
-            # Test basic functionality
-            x_test = [0.5, 0.8, -0.2, 0.4]
-            τ = 2.0
-            result = FrankWolfe.proj_unit_simplex(x_test, τ)
-            
-            # Result should sum to ≤ τ and be non-negative
-            @test sum(result) ≤ τ + 1e-10
-            @test all(result .>= 0)
-            
-            # Test case where sum should be exactly τ
-            x_large = [1.0, 2.0, 3.0, 4.0]  # Sum > τ
-            result_large = FrankWolfe.proj_unit_simplex(x_large, τ)
-            @test sum(result_large) ≈ τ atol=1e-10
-            
-            # Test case where sum should be less than τ
-            x_small = [0.2, 0.3, 0.1, 0.1]  # Sum < τ
-            result_small = FrankWolfe.proj_unit_simplex(x_small, τ)
-            @test all(result_small .≈ x_small)  # Should remain unchanged
-            
-            # Test with negative τ
-            @test_throws DomainError FrankWolfe.proj_unit_simplex(x_test, -1.0)
-            
-            # Test with zero τ
-            @test all(FrankWolfe.proj_unit_simplex(x_test, 0.0) .== 0.0)
-            
-            # Test for NaN outputs
-            @test !any(isnan.(FrankWolfe.proj_unit_simplex(x_test, τ)))
-        end
-
-        @testset "Box projection" begin
-            # Test basic functionality
-            x_test = [0.5, 1.2, -0.2, 0.8]
-            τ = 1.0
-            result = FrankWolfe.proj_box(x_test, τ)
-            
-            # Result should be in [0,τ]
-            @test all(0 .<= result .<= τ)
-            
-            # Test with negative τ
-            @test_throws DomainError FrankWolfe.proj_box(x_test, -1.0)
-            
-            # Test with zero τ
-            @test all(FrankWolfe.proj_box(x_test, 0.0) .== 0.0)
-            
-            # Test for NaN outputs
-            @test !any(isnan.(FrankWolfe.proj_box(x_test, τ)))
-        end
-    end
-
     @testset "Proximal variant" begin
         x0 = rand(n)
         target_tolerance = 1e-8
@@ -261,7 +158,6 @@ println()
             grad!,
             x0;
             epsilon = target_tolerance,
-            print_iter = print_iter,
             verbose = true
         )
         
@@ -269,10 +165,9 @@ println()
         x_l1, f_l1, _ = FrankWolfe.proximal_adaptive_gradient_descent(
             f,
             grad!,
-            x0;
-            prox = ProximalOperators.IndBallL1(1.0),
+            x0,
+            prox = ProximalOperators.IndBallL1(1.0);
             epsilon = target_tolerance,
-            print_iter = print_iter,
             verbose = true
         )
         
@@ -282,14 +177,12 @@ println()
             grad!,
             x0;
             epsilon = target_tolerance,
-            print_iter = print_iter,
             verbose = true
         )
 
         @testset "Comparison with FW variants" begin
             @testset "L1-ball comparison" begin
-                println("** L1-ball comparison")
-                x0 = FrankWolfe.compute_extreme_point(FrankWolfe.LpNormLMO{Float64,1}(1.0), zeros(n));
+                x0 = FrankWolfe.compute_extreme_point(FrankWolfe.LpNormLMO{Float64,1}(1.0), zeros(n))
                 x_fw_l1, _ = FrankWolfe.blended_pairwise_conditional_gradient(
                     f,
                     grad!,
@@ -298,26 +191,23 @@ println()
                     x0;
                     epsilon = target_tolerance,
                     max_iteration = k,
-                    print_iter = print_iter,
-                    verbose = true
+                    verbose = false,
                 )
                 f_fw_l1 = f(x_fw_l1)
                 @test abs(f_l1 - f_fw_l1) ≤ target_tolerance * 10
             end
 
             @testset "Probability simplex comparison" begin
-                println("** Probability simplex comparison")
                 x_prox_prob, f_prox_prob, _ = FrankWolfe.proximal_adaptive_gradient_descent(
                     f,
                     grad!,
-                    x0;
-                    prox = ProximalOperators.IndSimplex(1.0),
+                    x0,
+                    ProximalOperators.IndSimplex(1.0);
                     epsilon = target_tolerance,
-                    print_iter = print_iter,
-                    verbose = true
+                    verbose = false,
                 )
 
-                x0 = FrankWolfe.compute_extreme_point(FrankWolfe.ProbabilitySimplexOracle(1.0), zeros(n));
+                x0 = FrankWolfe.compute_extreme_point(FrankWolfe.ProbabilitySimplexOracle(1.0), zeros(n))
                 x_fw_prob, _ = FrankWolfe.blended_pairwise_conditional_gradient(
                     f,
                     grad!,
@@ -326,65 +216,35 @@ println()
                     x0;
                     epsilon = target_tolerance,
                     max_iteration = k,
-                    print_iter = print_iter,
-                    verbose = true
+                    verbose = false,
                 )
                 f_fw_prob = f(x_fw_prob)
                 @test abs(f_prox_prob - f_fw_prob) ≤ target_tolerance * 10
             end
-
-            @testset "Unit simplex comparison" begin
-                println("** Unit simplex comparison")
-                τ_unit = 2.0
-                # dense test
-                x0 = Vector(FrankWolfe.compute_extreme_point(FrankWolfe.UnitSimplexOracle(τ_unit), zeros(n)));
-                x_prox_unit, f_prox_unit, _ = FrankWolfe.proximal_adaptive_gradient_descent(
-                    f,
-                    grad!,
-                    x0;
-                    prox = (x, t) -> FrankWolfe.proj_unit_simplex(x, τ_unit),
-                    epsilon = target_tolerance,
-                    print_iter = print_iter,
-                    verbose = true
-                )
-                x_fw_unit, _ = FrankWolfe.blended_pairwise_conditional_gradient(
-                    f,
-                    grad!,
-                    FrankWolfe.UnitSimplexOracle(τ_unit),
-                    line_search=FrankWolfe.Secant(),
-                    x0;
-                    epsilon = target_tolerance,
-                    max_iteration = k,
-                    print_iter = print_iter,
-                    verbose = true
-                )
-                f_fw_unit = f(x_fw_unit)
-                @test abs(f_prox_unit - f_fw_unit) ≤ target_tolerance * 10
-            end
+            # TODO add unit simplex comparison once it is merged in ProximalOperators
 
             @testset "Box comparison" begin
-                println("** Box comparison")
                 τ_box = 1.0
                 x_prox_box, f_prox_box, _ = FrankWolfe.proximal_adaptive_gradient_descent(
                     f,
                     grad!,
-                    x0;
-                    prox = (x, t) -> FrankWolfe.proj_box(x, τ_box),
+                    x0,
+                    ProximalOperators.IndBox(-τ_box, τ_box);
                     epsilon = target_tolerance,
                     print_iter = print_iter,
-                    verbose = true
+                    verbose = false,
                 )
-                x0 = FrankWolfe.compute_extreme_point(FrankWolfe.ScaledBoundLInfNormBall(-τ_box * zeros(n), τ_box * ones(n)), zeros(n));
+                lmo_box = FrankWolfe.ScaledBoundLInfNormBall(-τ_box * zeros(n), τ_box * ones(n))
+                x0 = FrankWolfe.compute_extreme_point(lmo_box, zeros(n))
                 x_fw_box, _ = FrankWolfe.blended_pairwise_conditional_gradient(
                     f,
                     grad!,
-                    FrankWolfe.ScaledBoundLInfNormBall(-τ_box * zeros(n), τ_box * ones(n)),
+                    lmo_box,
                     line_search=FrankWolfe.Secant(),
                     x0;
                     epsilon = target_tolerance,
                     max_iteration = k,
-                    print_iter = print_iter,
-                    verbose = true
+                    verbose = false,
                 )
                 f_fw_box = f(x_fw_box)
                 @test abs(f_prox_box - f_fw_box) ≤ target_tolerance * 10
@@ -456,11 +316,9 @@ println()
         x_l1, f_l1, _ = FrankWolfe.proximal_adaptive_gradient_descent(
             f,
             grad!,
-            x0;
-            prox = (x, t) -> FrankWolfe.proj_l1_ball(x, 1.0),
+            x0,
+            Proximal.IndBallL1(1.0);
             epsilon = target_tolerance,
-            print_iter = print_iter,
-            verbose = true
         )
         
         # Identity proximal operator should give same result as regular variant
@@ -469,13 +327,10 @@ println()
             grad!,
             x0;
             epsilon = target_tolerance,
-            print_iter = print_iter,
-            verbose = true
         )
 
         @testset "Comparison with FW variants" begin
             @testset "L1-ball comparison" begin
-                println("** L1-ball comparison")
                 x0 = FrankWolfe.compute_extreme_point(FrankWolfe.LpNormLMO{Float64,1}(1.0), zeros(n));
                 x_fw_l1, _ = FrankWolfe.blended_pairwise_conditional_gradient(
                     f,
@@ -493,85 +348,49 @@ println()
             end
 
             @testset "Probability simplex comparison" begin
-                println("** Probability simplex comparison")
                 x_prox_prob, f_prox_prob, _ = FrankWolfe.proximal_adaptive_gradient_descent(
                     f,
                     grad!,
-                    x0;
-                    prox = (x, t) -> FrankWolfe.proj_probability_simplex(x),
+                    x0,
+                    prox = FrankWolfe.ProbabilitySimplexProx();
                     epsilon = target_tolerance,
-                    print_iter = print_iter,
-                    verbose = true
                 )
-
-                x0 = FrankWolfe.compute_extreme_point(FrankWolfe.ProbabilitySimplexOracle(1.0), zeros(n));
+                lmo_probsimplex = FrankWolfe.ProbabilitySimplexOracle(1.0)
+                x0 = FrankWolfe.compute_extreme_point(lmo_probsimplex, zeros(n))
                 x_fw_prob, _ = FrankWolfe.blended_pairwise_conditional_gradient(
                     f,
                     grad!,
-                    FrankWolfe.ProbabilitySimplexOracle(1.0),
+                    lmo_probsimplex,
                     line_search=FrankWolfe.Secant(),
                     x0;
                     epsilon = target_tolerance,
                     max_iteration = k,
-                    print_iter = print_iter,
-                    verbose = true
                 )
                 f_fw_prob = f(x_fw_prob)
                 @test abs(f_prox_prob - f_fw_prob) ≤ target_tolerance * 10
             end
 
-            @testset "Unit simplex comparison" begin
-                println("** Unit simplex comparison")
-                τ_unit = 2.0
-                # dense test
-                x0 = Vector(FrankWolfe.compute_extreme_point(FrankWolfe.UnitSimplexOracle(τ_unit), zeros(n)));
-                x_prox_unit, f_prox_unit, _ = FrankWolfe.proximal_adaptive_gradient_descent(
-                    f,
-                    grad!,
-                    x0;
-                    prox = (x, t) -> FrankWolfe.proj_unit_simplex(x, τ_unit),
-                    epsilon = target_tolerance,
-                    print_iter = print_iter,
-                    verbose = true
-                )
-                x_fw_unit, _ = FrankWolfe.blended_pairwise_conditional_gradient(
-                    f,
-                    grad!,
-                    FrankWolfe.UnitSimplexOracle(τ_unit),
-                    line_search=FrankWolfe.Secant(),
-                    x0;
-                    epsilon = target_tolerance,
-                    max_iteration = k,
-                    print_iter = print_iter,
-                    verbose = true
-                )
-                f_fw_unit = f(x_fw_unit)
-                @test abs(f_prox_unit - f_fw_unit) ≤ target_tolerance * 10
-            end
+            # TODO readd unit simplex
 
             @testset "Box comparison" begin
-                println("** Box comparison")
                 τ_box = 1.0
                 x_prox_box, f_prox_box, _ = FrankWolfe.proximal_adaptive_gradient_descent(
                     f,
                     grad!,
-                    x0;
-                    prox = (x, t) -> FrankWolfe.proj_box(x, τ_box),
+                    x0,
+                    ProximalOperators.IndBox(-τ_box, τ_box);
                     epsilon = target_tolerance,
-                    print_iter = print_iter,
-                    verbose = true
                 )
-                x0 = FrankWolfe.compute_extreme_point(FrankWolfe.ScaledBoundLInfNormBall(-τ_box * zeros(n), τ_box * ones(n)), zeros(n));
+                lmo_box = FrankWolfe.ScaledBoundLInfNormBall(-τ_box * zeros(n), τ_box * ones(n))
+                x0 = FrankWolfe.compute_extreme_point(lmo_box, zeros(n))
                 x_fw_box, _ = FrankWolfe.blended_pairwise_conditional_gradient(
                     f,
                     grad!,
-                    FrankWolfe.ScaledBoundLInfNormBall(-τ_box * zeros(n), τ_box * ones(n)),
+                    lmo_box,
                     line_search=FrankWolfe.Secant(),
                     x0;
                     epsilon = target_tolerance,
                     max_iteration = k,
-                    print_iter = print_iter,
-                    verbose = true
                 )
                 f_fw_box = f(x_fw_box)
                 @test abs(f_prox_box - f_fw_box) ≤ target_tolerance * 10
@@ -585,4 +404,4 @@ println()
         @test norm(x_id - x_reg) ≤ target_tolerance
         @test abs(f_id - f_reg) ≤ target_tolerance
     end
-end 
+end

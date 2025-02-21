@@ -271,8 +271,9 @@ Tuple containing:
 function proximal_adaptive_gradient_descent(
     f,
     grad!,
-    x0;
-    prox = IdentityProx(),  # Add default identity proximal operator
+    x0,
+    prox = IdentityProx(); # Default prox operator is the identity
+    ;
     step0 = 1.0,
     max_iterations = 10000,
     epsilon = 1e-7,
