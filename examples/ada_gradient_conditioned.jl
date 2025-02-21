@@ -60,7 +60,7 @@ x1, f1, hist1 = FrankWolfe.adaptive_gradient_descent(
     grad!,
     x0;
     step0 = 0.1,
-    max_iterations = max_iter,
+    max_iteration = max_iter,
     print_iter = print_iter,
     epsilon = epsilon,
     verbose = true
@@ -77,7 +77,7 @@ x2, f2, hist2 = FrankWolfe.adaptive_gradient_descent2(
     grad!,
     x0;
     step0 = 0.1,
-    max_iterations = max_iter,
+    max_iteration = max_iter,
     print_iter = print_iter,
     epsilon = epsilon,
     verbose = true

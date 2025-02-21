@@ -14,7 +14,7 @@ Lipschitz estimates.
 - `grad!`: In-place gradient function
 - `x0`: Initial point
 - `step0`: Initial step size (default: 1.0)
-- `max_iterations`: Maximum number of iterations (default: 10000)
+- `max_iteration`: Maximum number of iterations (default: 10000)
 - `epsilon`: Tolerance for stopping criterion (default: 1e-7)
 - `callback`: Optional callback function (default: nothing)
 - `verbose`: Whether to print progress (default: false)
@@ -31,7 +31,7 @@ function adaptive_gradient_descent(
     grad!,
     x0;
     step0 = 1.0,
-    max_iterations = 10000,
+    max_iteration = 10000,
     epsilon = 1e-7,
     callback = nothing,
     verbose = false,
@@ -60,7 +60,7 @@ function adaptive_gradient_descent(
         println("\nAdaptive Gradient Descent")
         println("Parameters:")
         println("  step0          = $(step0)")
-        println("  max_iterations = $(max_iterations)")
+        println("  max_iteration = $(max_iteration)")
         println("  epsilon        = $(epsilon)")
         println("  memory_mode    = $(memory_mode)")
         println("  x0 type        = $(typeof(x0))")
@@ -73,7 +73,7 @@ function adaptive_gradient_descent(
     
     start_time = time()
     
-    for k in 1:max_iterations
+    for k in 1:max_iteration
         k_final = k
         iter_start = time()
         # Compute current gradient
@@ -144,7 +144,7 @@ function adaptive_gradient_descent2(
     grad!,
     x0;
     step0 = 1.0,
-    max_iterations = 10000,
+    max_iteration = 10000,
     epsilon = 1e-7,
     callback = nothing,
     verbose = false,
@@ -172,7 +172,7 @@ function adaptive_gradient_descent2(
         println("\nAdaptive Gradient Descent (Variant 2)")
         println("Parameters:")
         println("  step0          = $(step0)")
-        println("  max_iterations = $(max_iterations)")
+        println("  max_iteration = $(max_iteration)")
         println("  epsilon        = $(epsilon)")
         println("  memory_mode    = $(memory_mode)")
         println("  x0 type        = $(typeof(x0))")
@@ -185,7 +185,7 @@ function adaptive_gradient_descent2(
     
     start_time = time()
     
-    for k in 1:max_iterations
+    for k in 1:max_iteration
         iter_start = time()
         # Compute current gradient
         grad!(grad_curr, x_curr)
@@ -239,7 +239,7 @@ function adaptive_gradient_descent2(
     if verbose && norm(grad_curr) >= epsilon
         elapsed = time() - start_time
         @printf("%12d %15.6e %15.6e %15.3f %12.2e %12.2e (Max iterations)\n", 
-                max_iterations, f(x_curr), norm(grad_curr), elapsed, L_k, step)
+                max_iteration, f(x_curr), norm(grad_curr), elapsed, L_k, step)
     end
     
     return x_curr, f(x_curr), cb_storage
@@ -256,7 +256,7 @@ Proximal variant of adaptive gradient descent that includes a proximal operator 
 - `prox`: Proximal operator (default: identity)
 - `x0`: Initial point
 - `step0`: Initial step size (default: 1.0)
-- `max_iterations`: Maximum number of iterations (default: 10000)
+- `max_iteration`: Maximum number of iterations (default: 10000)
 - `epsilon`: Tolerance for stopping criterion (default: 1e-7)
 - `callback`: Optional callback function (default: nothing)
 - `verbose`: Whether to print progress (default: false)
@@ -274,7 +274,7 @@ function proximal_adaptive_gradient_descent(
     x0,
     prox = IdentityProx(); # Default prox operator is the identity
     step0 = 1.0,
-    max_iterations = 10000,
+    max_iteration = 10000,
     epsilon = 1e-7,
     callback = nothing,
     verbose = false,
@@ -322,7 +322,7 @@ function proximal_adaptive_gradient_descent(
         println("\nProximal Adaptive Gradient Descent")
         println("Parameters:")
         println("  step0          = $(step0)")
-        println("  max_iterations = $(max_iterations)")
+        println("  max_iteration = $(max_iteration)")
         println("  epsilon        = $(epsilon)")
         println("  memory_mode    = $(memory_mode)")
         println("  x0 type        = $(typeof(x0))")
@@ -336,7 +336,7 @@ function proximal_adaptive_gradient_descent(
     
     start_time = time()
     
-    for k in 1:max_iterations
+    for k in 1:max_iteration
         iter_start = time()
         # Compute current gradient
         grad!(grad_curr, x_curr)
@@ -398,7 +398,7 @@ function proximal_adaptive_gradient_descent(
     if verbose && error >= epsilon
         elapsed = time() - start_time
         @printf("%12d %15.6e %15.6e %15.3f %12.2e %12.2e (Max iterations)\n", 
-                max_iterations, f(x_curr), error, elapsed, L_k, step)
+                max_iteration, f(x_curr), error, elapsed, L_k, step)
     end
     
     return x_curr, f(x_curr), cb_storage

@@ -60,7 +60,7 @@ println()
             grad!,
             convert.(T, x0);
             step0 = convert(T, 0.1),
-            max_iterations = k,
+            max_iteration = k,
             print_iter = print_iter,
             epsilon = target_tolerance,
             memory_mode = FrankWolfe.InplaceEmphasis(),
@@ -73,7 +73,7 @@ println()
             grad!,
             convert.(T, x0);
             step0 = convert(T, 0.1),
-            max_iterations = k,
+            max_iteration = k,
             print_iter = print_iter,
             epsilon = target_tolerance,
             memory_mode = FrankWolfe.InplaceEmphasis(),
@@ -135,7 +135,7 @@ println()
             grad!,
             x0;
             callback = callback,
-            max_iterations = 10,
+            max_iteration = 10,
             print_iter = 1,
             verbose = true
         )
@@ -168,6 +168,8 @@ println()
             x0,
             ProximalOperators.IndBallL1(1.0);
             epsilon = target_tolerance,
+            max_iteration=k,
+            verbose=true,
         )
         
         # Identity proximal operator should give same result as regular variant
