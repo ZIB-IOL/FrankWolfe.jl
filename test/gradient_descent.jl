@@ -166,9 +166,8 @@ println()
             f,
             grad!,
             x0,
-            prox = ProximalOperators.IndBallL1(1.0);
+            ProximalOperators.IndBallL1(1.0);
             epsilon = target_tolerance,
-            verbose = true
         )
         
         # Identity proximal operator should give same result as regular variant
@@ -177,7 +176,6 @@ println()
             grad!,
             x0;
             epsilon = target_tolerance,
-            verbose = true
         )
 
         @testset "Comparison with FW variants" begin
