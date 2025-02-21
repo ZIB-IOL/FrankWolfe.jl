@@ -317,7 +317,7 @@ println()
             f,
             grad!,
             x0,
-            Proximal.IndBallL1(1.0);
+            ProximalOperators.IndBallL1(1.0);
             epsilon = target_tolerance,
         )
         
