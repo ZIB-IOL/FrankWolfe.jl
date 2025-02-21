@@ -47,11 +47,11 @@ x1, f1, hist1 = FrankWolfe.adaptive_gradient_descent(
     f,
     grad!,
     x0;
-    step0 = 0.1,
-    max_iteration = max_iter,
-    print_iter = print_iter,
-    epsilon = epsilon,
-    verbose = true
+    step0=0.1,
+    max_iteration=max_iter,
+    print_iter=print_iter,
+    epsilon=epsilon,
+    verbose=true,
 )
 
 println("\nFinal objective value: $(f1)")
@@ -64,11 +64,11 @@ x2, f2, hist2 = FrankWolfe.adaptive_gradient_descent2(
     f,
     grad!,
     x0;
-    step0 = 0.1,
-    max_iteration = max_iter,
-    print_iter = print_iter,
-    epsilon = epsilon,
-    verbose = true
+    step0=0.1,
+    max_iteration=max_iter,
+    print_iter=print_iter,
+    epsilon=epsilon,
+    verbose=true,
 )
 
 println("\nFinal objective value: $(f2)")
@@ -80,4 +80,4 @@ println("==========")
 println("Method 1 final objective: $(f1)")
 println("Method 2 final objective: $(f2)")
 println("Objective difference: $(abs(f1 - f2))")
-println("Solution difference norm: $(norm(x1 - x2))") 
+println("Solution difference norm: $(norm(x1 - x2))")
