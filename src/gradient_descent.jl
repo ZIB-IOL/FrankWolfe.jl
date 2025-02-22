@@ -426,7 +426,7 @@ function proximal_adaptive_gradient_descent(
         if !isnan(L_k)
             @memory_mode(memory_mode, x_curr = x_curr - step_new * grad_curr)
         end
-        ProximalCore.prox!(x_curr, prox, x_curr, step_new)
+        x_curr, _ = ProximalCore.prox(prox, x_curr)
 
         # Update theta
         theta = step_new / step

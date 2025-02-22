@@ -174,7 +174,7 @@ println()
 
         # Identity proximal operator should give same result as regular variant
         x_reg, f_reg, _ =
-            FrankWolfe.adaptive_gradient_descent(f, grad!, x0; epsilon=target_tolerance)
+            FrankWolfe.adaptive_gradient_descent(f, grad!, x0; epsilon=target_tolerance, verbose=true)
 
         @testset "Comparison with FW variants" begin
             @testset "L1-ball comparison" begin
@@ -229,7 +229,7 @@ println()
                     f,
                     grad!,
                     x0,
-                    ProximalOperators.IndBox(-τ_box, τ_box);
+                    ProximalOperators.IndBox(0.0, τ_box);
                     epsilon=target_tolerance,
                     print_iter=print_iter,
                     verbose=false,
