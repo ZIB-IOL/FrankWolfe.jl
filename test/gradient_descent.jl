@@ -378,7 +378,7 @@ println()
                     ProximalOperators.IndBox(-τ_box, τ_box);
                     epsilon=target_tolerance,
                 )
-                lmo_box = FrankWolfe.ScaledBoundLInfNormBall(-τ_box * ones(n), τ_box * ones(n))
+                lmo_box = FrankWolfe.LpNormLMO{Inf, Float64}(τ_box)
                 x0 = FrankWolfe.compute_extreme_point(lmo_box, zeros(n))
                 x_fw_box, _ = FrankWolfe.blended_pairwise_conditional_gradient(
                     f,
