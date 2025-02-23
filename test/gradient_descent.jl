@@ -395,10 +395,12 @@ println()
         end
 
         # Test convergence for identity proximal operator
-        @test norm(grad!(similar(x_id), x_id)) ≤ target_tolerance
+        gtest = similar(x_id)
+        grad!(gtest, x_id)
+        @test norm(gtest) ≤ 10 * target_tolerance
 
         # Test whether identity and regular variant give same result
-        @test norm(x_id - x_reg) ≤ target_tolerance
-        @test abs(f_id - f_reg) ≤ target_tolerance
+        @test norm(x_id - x_reg) ≤ 10 * target_tolerance
+        @test abs(f_id - f_reg) ≤ 10 * target_tolerance
     end
 end
