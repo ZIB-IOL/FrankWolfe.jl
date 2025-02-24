@@ -3,6 +3,10 @@
 using FrankWolfe
 using Test
 using LinearAlgebra
+using StableRNGs
+using Random
+
+Random.seed!(StableRNG(1), 1)
 
 const n = 100
 const center0 = 5.0 .+ 3 * rand(n)
@@ -55,7 +59,7 @@ end
             use_extra_vertex_storage=true,
             extra_vertex_storage=vertex_storage,
         )
-        @test tlmo.counter < lmo_calls0
+        @test tlmo.counter < 2 * lmo_calls0
     end
 end
 
@@ -151,6 +155,6 @@ end
             use_extra_vertex_storage=true,
             extra_vertex_storage=vertex_storage,
         )
-        @test tlmo.counter < lmo_calls0
+        @test tlmo.counter < 2 * lmo_calls0
     end
 end

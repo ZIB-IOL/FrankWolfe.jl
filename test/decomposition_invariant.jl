@@ -5,11 +5,13 @@ using Random
 using SparseArrays
 using GLPK
 import MathOptInterface
+using StableRNGs
 
 const MOI = MathOptInterface
 const MOIU = MOI.Utilities
 
-Random.seed!(42)
+Random.seed!(StableRNG(42), 42)
+
 o = GLPK.Optimizer()
 MOI.set(o, MOI.Silent(), true)
 MOI.empty!(o)
@@ -219,7 +221,7 @@ end
             grad!,
             cube,
             x0,
-            verbose=true,
+            verbose=false,
             trajectory=true,
         )
         
@@ -228,18 +230,18 @@ end
             grad!,
             cube_MOI,
             x0,
-            verbose=true,
+            verbose=false,
             trajectory=true,
         )
         
-        res_fw = FrankWolfe.frank_wolfe(f, grad!, cube, x0, verbose=true, trajectory=true)
+        res_fw = FrankWolfe.frank_wolfe(f, grad!, cube, x0, verbose=false, trajectory=true)
 
         res_blended = FrankWolfe.blended_decomposition_invariant_conditional_gradient(
             f,
             grad!,
             cube,
             x0,
-            verbose=true,
+            verbose=false,
             trajectory=true,
         )
         @test norm(res[1] - res_fw[1]) ≤ n * 1e-4
