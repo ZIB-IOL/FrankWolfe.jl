@@ -4,13 +4,14 @@ using Test
 using FrankWolfe
 using ProximalOperators
 using DoubleFloats
+using StableRNGs
 
 n = 100
 k = Int(1e4)
 print_iter = k // 10
 
 s = 42
-Random.seed!(s)
+Random.seed!(StableRNG(s), s)
 
 # Create test problem with controlled condition number
 const condition_number = 1000.0  # Much better than random conditioning

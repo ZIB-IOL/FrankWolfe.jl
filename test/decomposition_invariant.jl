@@ -5,11 +5,13 @@ using Random
 using SparseArrays
 using GLPK
 import MathOptInterface
+using StableRNGs
 
 const MOI = MathOptInterface
 const MOIU = MOI.Utilities
 
-Random.seed!(42)
+Random.seed!(StableRNG(42), 42)
+
 o = GLPK.Optimizer()
 MOI.set(o, MOI.Silent(), true)
 MOI.empty!(o)

@@ -3,6 +3,7 @@ using FrankWolfe
 using LinearAlgebra
 import SparseArrays
 using Random
+using StableRNGs
 
 import FrankWolfe: compute_extreme_point, LpNormLMO, KSparseLMO
 
@@ -315,7 +316,7 @@ function _is_doubly_stochastic(m)
 end
 
 @testset "Birkhoff polytope" begin
-    Random.seed!(42)
+    Random.seed!(StableRNG(42), 42)
     lmo = FrankWolfe.BirkhoffPolytopeLMO()
     for n in (1, 2, 10)
         cost = rand(n, n)
@@ -426,7 +427,7 @@ end
 end
 
 @testset "Spectral norms" begin
-    Random.seed!(42)
+    Random.seed!(StableRNG(42), 42)
     o = Hypatia.Optimizer()
     MOI.set(o, MOI.Silent(), true)
     optimizer = MOI.Bridges.full_bridge_optimizer(
@@ -515,7 +516,7 @@ end
 end
 
 @testset "MOI oracle consistency" begin
-    Random.seed!(42)
+    Random.seed!(StableRNG(42), 42)
     o = GLPK.Optimizer()
     MOI.set(o, MOI.Silent(), true)
     @testset "MOI oracle consistent with unit simplex" for n in (1, 2, 10)
@@ -1039,7 +1040,7 @@ end
 end
 
 @testset "Ordered Weighted Norm LMO" begin
-    Random.seed!(4321)
+    Random.seed!(StableRNG(42), 42)
     N = Int(1e3)
     for _ in 1:10 
         radius = abs(randn())+1
