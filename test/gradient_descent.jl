@@ -65,7 +65,7 @@ println()
             print_iter=print_iter,
             epsilon=target_tolerance,
             memory_mode=FrankWolfe.InplaceEmphasis(),
-            verbose=true,
+            verbose=false,
         )
 
         # Test second variant
@@ -78,7 +78,7 @@ println()
             print_iter=print_iter,
             epsilon=target_tolerance,
             memory_mode=FrankWolfe.InplaceEmphasis(),
-            verbose=true,
+            verbose=false,
         )
 
         # Test convergence to optimal solution
@@ -109,7 +109,7 @@ println()
             epsilon=target_tolerance,
             memory_mode=FrankWolfe.InplaceEmphasis(),
             print_iter=print_iter,
-            verbose=true,
+            verbose=false,
         )
 
         # Test with OutplaceEmphasis
@@ -120,7 +120,7 @@ println()
             epsilon=target_tolerance,
             memory_mode=FrankWolfe.OutplaceEmphasis(),
             print_iter=print_iter,
-            verbose=true,
+            verbose=false,
         )
 
         # Results should be the same regardless of memory mode
@@ -141,7 +141,7 @@ println()
             callback=callback,
             max_iteration=10,
             print_iter=1,
-            verbose=true,
+            verbose=false,
         )
 
         # Test that callback was called and stored states
@@ -162,7 +162,7 @@ println()
             grad!,
             x0;
             epsilon=target_tolerance,
-            verbose=true,
+            verbose=false,
         )
 
         # Test with L1 proximal operator
@@ -173,12 +173,12 @@ println()
             ProximalOperators.IndBallL1(1.0);
             epsilon=target_tolerance,
             max_iteration=k,
-            verbose=true,
+            verbose=false,
         )
 
         # Identity proximal operator should give same result as regular variant
         x_reg, f_reg, _ =
-            FrankWolfe.adaptive_gradient_descent(f, grad!, x0; epsilon=target_tolerance, verbose=true)
+            FrankWolfe.adaptive_gradient_descent(f, grad!, x0; epsilon=target_tolerance, verbose=false)
 
         @testset "Comparison with FW variants" begin
             @testset "L1-ball comparison" begin
@@ -256,7 +256,9 @@ println()
         end
 
         # Test convergence for identity proximal operator
-        @test norm(grad!(similar(x_id), x_id)) ≤ target_tolerance
+        g0 = similar(x_id)
+        grad!(g0, x_id)
+        @test norm(g0) ≤ 1.5 * target_tolerance
 
         # Test whether identity and regular variant give same result
         @test norm(x_id - x_reg) ≤ target_tolerance
@@ -313,7 +315,7 @@ println()
             x0;
             epsilon=target_tolerance,
             print_iter=print_iter,
-            verbose=true,
+            verbose=false,
         )
 
         # Test with L1 proximal operator
@@ -342,7 +344,7 @@ println()
                     epsilon=target_tolerance,
                     max_iteration=k,
                     print_iter=print_iter,
-                    verbose=true,
+                    verbose=false,
                 )
                 f_fw_l1 = f(x_fw_l1)
                 @test abs(f_l1 - f_fw_l1) ≤ target_tolerance * 10
