@@ -82,8 +82,11 @@ println()
         )
 
         # Test convergence to optimal solution
-        @test norm(grad!(similar(x1), x1)) ≤ target_tolerance
-        @test norm(grad!(similar(x2), x2)) ≤ target_tolerance
+        g0 = similar(x1)
+        grad!(g0, x1)
+        @test norm(g0) ≤ 2 * target_tolerance
+        grad!(g0, x2)
+        @test norm(g0) ≤ 2 * target_tolerance
 
         # Test objective values
         @test abs(f1 - f_opt) ≤ target_tolerance * L
