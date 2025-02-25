@@ -51,6 +51,7 @@ function decomposition_invariant_conditional_gradient(
     traj_data=[],
     timeout=Inf,
     lazy=false,
+    use_strong_lazy = false,
     linesearch_workspace=nothing,
     lazy_tolerance=2.0,
     extra_vertex_storage=nothing,
@@ -168,16 +169,17 @@ function decomposition_invariant_conditional_gradient(
         end
 
         if lazy
-            d, v, v_index, a, away_index, phi, step_type = 
+            d, v, v_index, a, away_index, phi, step_type =
                 lazy_standard_dicg_step(
-                    x, 
-                    gradient, 
-                    lmo, 
-                    pre_computed_set, 
-                    phi, 
-                    epsilon, 
+                    x,
+                    gradient,
+                    lmo,
+                    pre_computed_set,
+                    phi,
+                    epsilon,
                     d;
-		    lazy_tolerance = lazy_tolerance,
+                    strong_lazification = use_strong_lazy,
+                    lazy_tolerance = lazy_tolerance,
                 )
         else # non-lazy, call the simple and modified
             v = compute_extreme_point(lmo, gradient, lazy=lazy)
@@ -185,6 +187,7 @@ function decomposition_invariant_conditional_gradient(
             phi = dual_gap
             a = compute_inface_extreme_point(lmo, NegatingArray(gradient), x; lazy=lazy)
 	    d = muladd_memory_mode(memory_mode, d, a, v)
+	    step_type = ST_PAIRWISE
         end
 		
         gamma_max = dicg_maximum_step(lmo, d, x)
@@ -200,7 +203,7 @@ function decomposition_invariant_conditional_gradient(
             linesearch_workspace,
             memory_mode,
         )
-
+		
         if lazy
             idx = findfirst(x -> x == v, pre_computed_set)
             if idx !== nothing
@@ -414,6 +417,7 @@ function blended_decomposition_invariant_conditional_gradient(
                     phi,
                     epsilon,
                     d;
+                    strong_lazification = use_strong_lazy,
                     lazy_tolerance = lazy_tolerance,
                 )
         else # non-lazy, call the simple and modified
