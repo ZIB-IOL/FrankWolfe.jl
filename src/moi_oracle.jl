@@ -56,8 +56,9 @@ end
 
 is_decomposition_invariant_oracle(::MathOptLMO) = true
 
-# Second version of compute_inface_extreme_point.
-# Copy and modify the constriants if necesssary.
+"""
+Copy and modify the constriants if necesssary for computing in-face vertex.
+"""
 function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x; solve_data=Dict(), kwargs...) where {OT}
     dims = size(direction)
     lmo2 = copy(lmo)
@@ -102,7 +103,9 @@ function compute_inface_extreme_point(
 	return reshape(a, n, n)
 end
 
-# function barrier for performance
+"""
+function barrier for performance
+"""
 function compute_inface_extreme_point_subroutine(lmo::MathOptLMO{OT}, ::Type{F}, ::Type{S}, valvar;atol=1e-6) where {OT,F,S}
     const_list = MOI.get(lmo.o, MOI.ListOfConstraintIndices{F,S}())
     for c_idx in const_list
@@ -171,8 +174,10 @@ function compute_inface_extreme_point_subroutine(lmo::MathOptLMO{OT}, ::Type{F},
     return true
 end
 
-# Fast way to compute gamma_max.
-# Check every constraint and compute the corresponding gamma_upper_bound. 
+"""
+Fast way to compute gamma_max.
+Check every constraint and compute the corresponding gamma_upper_bound. 
+"""
 function dicg_maximum_step(lmo::MathOptLMO{OT}, direction, x;tol=1e-6) where {OT}
     gamma_less_than = Float64[]
     for (F, S) in MOI.get(lmo.o, MOI.ListOfConstraintTypesPresent())
