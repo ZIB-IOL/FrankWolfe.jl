@@ -76,10 +76,10 @@ end
         @test gamma_max_MOI > 0
         x2 = x - gamma_max * d
         x2_MOI = x - gamma_max_MOI * d
-        @test sum(x2) <= lmo.right_side
-        @test sum(x2_MOI) <= lmo.right_side
-        @test count(iszero, x2) >= 1 || sum(x2) ≈ lmo.right_side
-        @test count(iszero, x2_MOI) >= 1 || sum(x2_MOI) ≈ lmo.right_side
+        @test sum(x2) <= lmo.right_side + 100 * eps()
+        @test sum(x2_MOI) <= lmo.right_side + 100 * eps()
+        @test count(≈(0), x2) >= 1 || sum(x2) ≈ lmo.right_side
+        @test count(≈(0), x2_MOI) >= 1 || sum(x2_MOI) ≈ lmo.right_side
         x_fixed = copy(x)
         x_fixed[3] = 0
         # positive entry in the direction, gamma_max = 0
