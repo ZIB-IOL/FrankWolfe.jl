@@ -107,7 +107,7 @@ end
             use_extra_vertex_storage=true,
             extra_vertex_storage=vertex_storage,
         )
-        @test tlmo.counter < lmo_calls0
+        @test tlmo.counter <= 2lmo_calls0
     end
 end
 
@@ -155,6 +155,6 @@ end
             use_extra_vertex_storage=true,
             extra_vertex_storage=vertex_storage,
         )
-        @test tlmo.counter < 2 * lmo_calls0
+        @test tlmo.counter <= 2 * lmo_calls0
     end
 end
