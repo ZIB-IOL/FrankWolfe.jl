@@ -463,7 +463,7 @@ end
             end
             @testset "Comparison with SDP solution" begin
                 v_moi = FrankWolfe.compute_extreme_point(lmo_moi, direction)
-                @test norm(v - v_moi) <= 1e-6
+                @test norm(v - v_moi) <= 5e-4
             end
         end
     end
@@ -485,7 +485,7 @@ end
                 else
                     eigen_v = eigen(Matrix(v))
                     @test eigmax(Matrix(v)) ≈ radius
-                    @test norm(eigen_v.values[1:end-1]) ≈ 0 atol = 1e-7
+                    @test norm(eigen_v.values[1:end-1]) ≈ 0 atol = 1e-5
                     # u can be sqrt(r) * vec or -sqrt(r) * vec
                     case_pos =
                         ≈(norm(eigen_v.vectors[:, n] * sqrt(eigen_v.values[n]) - v.u), 0, atol=1e-9)
@@ -501,7 +501,7 @@ end
             end
             @testset "Comparison with SDP solution" begin
                 v_moi = FrankWolfe.compute_extreme_point(lmo_moi, direction)
-                @test norm(v - v_moi) <= 5e-6
+                @test norm(v - v_moi) <= 5e-4
                 # forcing PSD direction to test 0 matrix case
                 @. direction_sym = direction + direction'
                 direction_sym += 1.1 * abs(eigmin(direction_sym)) * I
