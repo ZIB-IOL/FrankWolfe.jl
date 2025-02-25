@@ -57,6 +57,7 @@ ReverseDiff = "37e2e3b7-166d-5795-8a7a-e32c996b4267"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Tullio = "bc48ee85-29a4-5162-ae0b-a64e1601d4bc"
 ZipFile = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
+StableRNGs = "860ef19b-820b-49d6-a774-d7a799459cd3"
 
 [targets]
-test = ["CSV", "Combinatorics", "DataFrames", "Distributions", "DoubleFloats", "DynamicPolynomials", "FiniteDifferences", "ForwardDiff", "GLPK", "HiGHS", "JSON", "JuMP", "LaTeXStrings", "MAT", "MultivariatePolynomials", "Plots", "PlotThemes", "Polyhedra", "ReverseDiff", "ZipFile", "Test", "Tullio", "Clp", "Hypatia"]
+test = ["CSV", "Combinatorics", "DataFrames", "Distributions", "DoubleFloats", "DynamicPolynomials", "FiniteDifferences", "ForwardDiff", "GLPK", "HiGHS", "JSON", "JuMP", "LaTeXStrings", "MAT", "MultivariatePolynomials", "Plots", "PlotThemes", "Polyhedra", "ReverseDiff", "ZipFile", "Test", "Tullio", "Clp", "Hypatia", "StableRNGs"]
