@@ -170,7 +170,7 @@ function decomposition_invariant_conditional_gradient(
 
         if lazy
             d, v, v_index, a, away_index, phi, step_type =
-                lazy_standard_dicg_step(
+                lazy_dicg_step(
                     x,
                     gradient,
                     lmo,
@@ -514,7 +514,7 @@ function blended_decomposition_invariant_conditional_gradient(
     return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data)
 end
 
-function lazy_standard_dicg_step(
+function lazy_dicg_step(
     x,
     gradient,
     lmo,
