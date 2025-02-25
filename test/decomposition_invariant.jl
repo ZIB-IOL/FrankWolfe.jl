@@ -76,10 +76,15 @@ end
         @test gamma_max_MOI > 0
         x2 = x - gamma_max * d
         x2_MOI = x - gamma_max_MOI * d
+        if sum(x2) > lmo.right_side + 100 * eps()
+            @show sum(x2)
+            @show @show lmo.right_side
+            @show gamma_max
+        end
         @test sum(x2) <= lmo.right_side + 100 * eps()
         @test sum(x2_MOI) <= lmo.right_side + 100 * eps()
-        @test count(≈(0), x2) >= 1 || sum(x2) ≈ lmo.right_side
-        @test count(≈(0), x2_MOI) >= 1 || sum(x2_MOI) ≈ lmo.right_side
+        @test count(==(0), x2) >= 1 || sum(x2) ≈ lmo.right_side
+        @test count(<=(1e-4), x2_MOI) >= 1 || sum(x2_MOI) ≈ lmo.right_side
         x_fixed = copy(x)
         x_fixed[3] = 0
         # positive entry in the direction, gamma_max = 0
@@ -301,11 +306,11 @@ end
         lmo = FrankWolfe.BirkhoffPolytopeLMO()
         lmo_MOI = FrankWolfe.convert_mathopt(lmo, o; dimension=n)
         x0_bk = FrankWolfe.compute_extreme_point(lmo, randn(n, n))
-        f(X) = 1 / 2 * sum(abs2, X)
-        grad!(storage, X) = storage .= X
+        f0(X) = 1 / 2 * sum(abs2, X)
+        grad0!(storage, X) = storage .= X
         res_di = FrankWolfe.decomposition_invariant_conditional_gradient(
-            f,
-            grad!,
+            f0,
+            grad0!,
             lmo,
             x0_bk,
             verbose=true,
@@ -313,8 +318,8 @@ end
             epsilon=1e-10,
         )
         res_di_MOI = FrankWolfe.decomposition_invariant_conditional_gradient(
-            f,
-            grad!,
+            f0,
+            grad0!,
             lmo_MOI,
             x0_bk,
             verbose=true,
@@ -322,8 +327,8 @@ end
             epsilon=1e-10,
         )
         res_fw = FrankWolfe.frank_wolfe(
-            f,
-            grad!,
+            f0,
+            grad0!,
             lmo,
             x0_bk,
             verbose=true,

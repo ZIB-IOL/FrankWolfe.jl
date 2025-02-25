@@ -40,16 +40,6 @@ const L = eigmax(hessian)
 const x_opt = -hessian \ linear
 const f_opt = f(x_opt)
 
-println("\nTesting adaptive gradient descent algorithms...\n")
-println("Test instance statistics:")
-println("------------------------")
-println("Dimension n: $n")
-println("Lipschitz constant L: $L")
-println("Optimal objective value f*: $f_opt")
-println("Optimal solution norm: $(norm(x_opt))")
-println("Problem condition number: $(eigmax(hessian)/eigmin(hessian))")
-println()
-
 @testset "Adaptive Gradient Descent" begin
     @testset "Type $T" for T in (Float64, Double64)
         x0 = 10 * rand(T, n)
@@ -294,16 +284,7 @@ println()
         x_opt_pos = -hessian_pos \ linear_pos
         f_opt_pos = f(x_opt_pos)
 
-        println("\nTesting proximal gradient descent with positive orthant solution...")
-        println("Test instance statistics:")
-        println("------------------------")
-        println("Dimension n: $n")
-        println("Lipschitz constant L: $L")
-        println("Optimal objective value f*: $f_opt_pos")
-        println("Optimal solution norm: $(norm(x_opt_pos))")
-        println("Problem condition number: $(eigmax(hessian_pos)/eigmin(hessian_pos))")
-        println("Min component of optimal solution: $(minimum(x_opt_pos))")
-        println()
+        # Testing proximal gradient descent with positive orthant solution
 
         x0 = rand(n)
         target_tolerance = 1e-8
