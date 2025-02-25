@@ -60,4 +60,4 @@ ZipFile = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
 StableRNGs = "860ef19b-820b-49d6-a774-d7a799459cd3"
 
 [targets]
-test = ["CSV", "Combinatorics", "DataFrames", "Distributions", "DoubleFloats", "DynamicPolynomials", "FiniteDifferences", "ForwardDiff", "GLPK", "HiGHS", "JSON", "JuMP", "LaTeXStrings", "MAT", "MultivariatePolynomials", "Plots", "PlotThemes", "Polyhedra", "ReverseDiff", "ZipFile", "Test", "Tullio", "Clp", "Hypatia", "StableRNGs]
+test = ["CSV", "Combinatorics", "DataFrames", "Distributions", "DoubleFloats", "DynamicPolynomials", "FiniteDifferences", "ForwardDiff", "GLPK", "HiGHS", "JSON", "JuMP", "LaTeXStrings", "MAT", "MultivariatePolynomials", "Plots", "PlotThemes", "Polyhedra", "ReverseDiff", "ZipFile", "Test", "Tullio", "Clp", "Hypatia", "StableRNGs"]
