@@ -557,7 +557,7 @@ function lazy_standard_dicg_step(
         grad_dot_v = fast_dot(gradient, v)
         dual_gap = grad_dot_x - grad_dot_v
 
-        if grad_dot_a_taken - grad_dot_v >= phi &&
+        if grad_dot_a_taken - grad_dot_v >= phi/lazy_tolerance &&
            grad_dot_a_taken - grad_dot_v >= epsilon
             a = a_taken
             d = muladd_memory_mode(memory_mode, d, a, v)
