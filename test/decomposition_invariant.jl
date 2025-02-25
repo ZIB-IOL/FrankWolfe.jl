@@ -77,7 +77,10 @@ end
         x2 = x - gamma_max * d
         x2_MOI = x - gamma_max_MOI * d
         if sum(x2) > lmo.right_side + 100 * eps()
+            @show sum(x)
             @show sum(x2)
+            @show x
+            @show x2
             @show @show lmo.right_side
             @show gamma_max
         end
