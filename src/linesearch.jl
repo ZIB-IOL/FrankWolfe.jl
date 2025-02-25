@@ -380,7 +380,6 @@ struct Secant{F,LSM<:LineSearchMethod} <: LineSearchMethod
 end
 
 function Secant(limit_num_steps, tol)
-    #return Secant(Backtracking(), false, limit_num_steps, tol, x -> true)
     return Secant(Adaptive(), false, limit_num_steps, tol, x -> true)
 end
 
