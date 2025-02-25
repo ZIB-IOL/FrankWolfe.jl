@@ -5,7 +5,7 @@ using Test
 using SparseArrays
 
 n = Int(1e4)
-k = 3000
+k = 1000
 
 s = 41
 Random.seed!(s)

@@ -355,7 +355,7 @@ function update_iterate(
 
     # minor modification from original paper for improved sparsity
     # (proof follows with minor modification when estimating the step)
-    if local_gap > max(s.phi / s.lazy_tolerance, 0) # Robust condition to not drop the zero-vector if the dual_gap is negative by inaccuracy
+    if local_gap > s.phi / s.lazy_tolerance && local_gap ≥ epsilon
         d = muladd_memory_mode(memory_mode, d, a, v_local)
         vertex_taken = v_local
         gamma_max = a_lambda
@@ -401,7 +401,7 @@ function update_iterate(
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
         end
 
-        if !s.lazy || dual_gap ≥ s.phi / s.lazy_tolerance
+        if (dual_gap ≥ epsilon) && (!s.lazy || dual_gap ≥ s.phi / s.lazy_tolerance)
 
             d = muladd_memory_mode(memory_mode, d, x, v)
 

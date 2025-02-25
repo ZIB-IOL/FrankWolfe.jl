@@ -87,7 +87,7 @@ function decomposition_invariant_conditional_gradient(
     end
 
     x = x0
-    
+
     if memory_mode isa InplaceEmphasis && !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
         # if integer, convert element type to most appropriate float
         if eltype(x) <: Integer
@@ -118,7 +118,7 @@ function decomposition_invariant_conditional_gradient(
         println("GRADIENstep_typeYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance")
         println("LMO: $(typeof(lmo))")
         if memory_mode isa InplaceEmphasis
-            @info("In memory_mode memory iterates are wristep_typeen back into x0!")
+            @info("In memory_mode memory iterates are written back into x0!")
         end
     end
 
@@ -210,7 +210,7 @@ function decomposition_invariant_conditional_gradient(
                 push!(pre_computed_set, v)
             end
         end
-        
+
         if callback !== nothing
             state = CallbackState(
                 t,
@@ -228,7 +228,7 @@ function decomposition_invariant_conditional_gradient(
                 gradient,
                 step_type,
             )
-            if callback(state) === false
+            if callback(state, a, v) === false
                 break
             end
         end
@@ -264,7 +264,7 @@ function decomposition_invariant_conditional_gradient(
                 gradient,
                 step_type,
             )
-            callback(state)
+            callback(state, nothing, v)
         end
     end
     return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data)
@@ -358,7 +358,7 @@ function blended_decomposition_invariant_conditional_gradient(
         println("GRADIENstep_typeYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance")
         println("LMO: $(typeof(lmo))")
         if memory_mode isa InplaceEmphasis
-            @info("In memory_mode memory iterates are wristep_typeen back into x0!")
+            @info("In memory_mode memory iterates are written back into x0!")
         end
     end
 
@@ -472,7 +472,7 @@ function blended_decomposition_invariant_conditional_gradient(
                 gradient,
                 step_type,
             )
-            if callback(state) === false
+            if callback(state, a, v) === false
                 break
             end
         end
@@ -508,7 +508,7 @@ function blended_decomposition_invariant_conditional_gradient(
                 gradient,
                 step_type,
             )
-            callback(state)
+            callback(state, nothing, v)
         end
     end
     return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data)
