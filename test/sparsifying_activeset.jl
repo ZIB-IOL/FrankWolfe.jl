@@ -22,7 +22,7 @@ n = Int(1e4)
 k = 10000
 
 s = 10
-Random.seed!(StableRNG(s))
+Random.seed!(StableRNG(s), s)
 
 xpi = rand(n);
 total = sum(xpi);
