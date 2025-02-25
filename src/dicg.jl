@@ -514,6 +514,10 @@ function blended_decomposition_invariant_conditional_gradient(
     return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data)
 end
 
+"""
+Search for both lazified FW vertex and in-face vetex in strong version.
+Otherwise, only search for the lazified FW vertex.
+"""
 function lazy_standard_dicg_step(
     x,
     gradient,
@@ -582,6 +586,10 @@ function lazy_standard_dicg_step(
     return d, v, fw_index, a, away_index, phi, step_type
 end
 
+"""
+Lazification for Blended DICG.
+Search for in-face vertex and local FW vertex only in strong version.
+"""
 function lazy_blended_dicg_step(
     x,
     gradient,
