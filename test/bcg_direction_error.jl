@@ -3,12 +3,13 @@ using LinearAlgebra
 using Random
 using Test
 using SparseArrays
+using StableRNGs
 
 n = Int(1e4)
 k = 1000
 
 s = 41
-Random.seed!(s)
+Random.seed!(StableRNG(s), s)
 
 xpi = rand(n);
 total = sum(xpi);

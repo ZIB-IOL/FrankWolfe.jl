@@ -2,8 +2,9 @@ import FrankWolfe
 using LinearAlgebra
 using Test
 using Random
+using StableRNGs
 
-Random.seed!(100)
+Random.seed!(StableRNG(100), 100)
 
 f(x) = dot(x, x)
 
