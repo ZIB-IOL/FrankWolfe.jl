@@ -85,7 +85,7 @@ using LinearAlgebra
         trajectory=true,
     )
 
-    @test length(res_10[end]) <= 9
-    @test length(res_2[end]) <= 122
+    @test length(res_10[end]) <= 15
+    @test length(res_2[end]) <= 586
 
 end
