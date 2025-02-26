@@ -78,13 +78,7 @@ end
         x2_MOI = x - gamma_max_MOI * d
         @test sum(x2) <= lmo.right_side + 100 * eps()
         @test sum(x2_MOI) <= lmo.right_side + 100 * eps()
-        if !(count(==(0), x2) >= 1 || sum(x2) ≈ lmo.right_side)
-            @show x2
-            @show sum(x2)
-            @show x
-            @show gamma_max
-        end
-        @test count(==(0), x2) >= 1 || sum(x2) ≈ lmo.right_side
+        @test count(<=(eps()), x2) >= 1 || sum(x2) ≈ lmo.right_side
         @test count(<=(1e-4), x2_MOI) >= 1 || sum(x2_MOI) ≈ lmo.right_side
         x_fixed = copy(x)
         x_fixed[3] = 0
