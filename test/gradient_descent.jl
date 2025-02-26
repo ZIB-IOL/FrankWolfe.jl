@@ -38,7 +38,7 @@ const L = eigmax(hessian)
 
 # Compute optimal solution using direct solve for testing
 const x_opt = -hessian \ linear
-const f_opt = g_df(x_opt)
+const f_opt = f_gd(x_opt)
 
 @testset "Adaptive Gradient Descent" begin
     @testset "Type $T" for T in (Float64, Double64)
