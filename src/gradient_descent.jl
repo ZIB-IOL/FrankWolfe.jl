@@ -120,7 +120,7 @@ function adaptive_gradient_descent(
         end
 
         # Handle callback
-        if !isnothing(callback)
+        if callback !== nothing
             state = (k, f(x_curr), norm(grad_curr), L_k, step_new)  # Format matching FW callbacks
             callback(state)
             push!(cb_storage, state)
@@ -261,7 +261,7 @@ function adaptive_gradient_descent2(
         end
 
         # Handle callback
-        if !isnothing(callback)
+        if callback !== nothing
             state = (k, f(x_curr), norm(grad_curr), L_k, step_new)  # Format matching FW callbacks
             callback(state)
             push!(cb_storage, state)
@@ -448,7 +448,7 @@ function proximal_adaptive_gradient_descent(
         end
 
         # Handle callback
-        if !isnothing(callback)
+        if callback !== nothing
             state = (k, f(x_curr), error, L_k, step_new)  # Format matching FW callbacks
             callback(state)
             push!(cb_storage, state)
@@ -502,7 +502,7 @@ function ProximalCore.prox!(y, ::ProbabilitySimplexProx, x, t)
     k = findlast(i -> u[i] + (1 - cumsum_u[i]) / i > 0, 1:length(x))
 
     # If no such k exists, return zero vector
-    if isnothing(k)
+    if k === nothing
         return zero(x)
     end
 
