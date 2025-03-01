@@ -204,7 +204,7 @@ function away_frank_wolfe(
 
         # compute current iterate from active set
         x = get_active_set_iterate(active_set)
-        if isnothing(momentum)
+        if momentum === nothing
             grad!(gradient, x)
         else
             grad!(gtemp, x)

@@ -493,7 +493,7 @@ function minimize_over_convex_hull!(
             tolerance,
         )
         #Early exit if we have detected that the strong-Wolfe gap is below the desired tolerance while building the reduced problem.
-        if isnothing(M)
+        if M === nothing
             return 0
         end
         T = eltype(M)

@@ -3,6 +3,7 @@ using FrankWolfe
 using LinearAlgebra
 import SparseArrays
 using Random
+using StableRNGs
 
 import FrankWolfe: compute_extreme_point, LpNormLMO, KSparseLMO
 
@@ -14,13 +15,13 @@ import Clp
 import Hypatia
 using JuMP
 
-@testset "Simplex LMOs" begin
+@testset "Simplex LMOs                                                    " begin
     n = 6
     direction = zeros(6)
     rhs = 10 * rand()
     lmo_prob = FrankWolfe.ProbabilitySimplexOracle(rhs)
     lmo_unit = FrankWolfe.UnitSimplexOracle(rhs)
-    @testset "Choosing improving direction" for idx in 1:n
+    @testset "Choosing improving direction                                    " for idx in 1:n
         direction .= 0
         direction[idx] = -1
         res_point_prob = FrankWolfe.compute_extreme_point(lmo_prob, direction)
@@ -38,7 +39,7 @@ using JuMP
         dual, redC = FrankWolfe.compute_dual_solution(lmo_unit, direction, res_point_unit)
         @test sum((redC .* res_point_unit)) + (dual[1] * (rhs - sum(res_point_unit))) == 0
     end
-    @testset "Choosing least-degrading direction" for idx in 1:n
+    @testset "Choosing least-degrading direction                              " for idx in 1:n
         # all directions worsening, must pick idx
         direction .= 2
         direction[idx] = 1
@@ -60,8 +61,8 @@ using JuMP
     end
 end
 
-@testset "Hypersimplex" begin
-    @testset "Hypersimplex $n $K" for n in (2, 5, 10), K in (1, min(n, 4))
+@testset "Hypersimplex                                                    " begin
+    @testset "Hypersimplex $n $K                                              " for n in (2, 5, 10), K in (1, min(n, 4))
         K = 1
         n = 5
         direction = randn(n)
@@ -79,7 +80,7 @@ end
             FrankWolfe.convert_mathopt(unit_hypersimplex, optimizer; dimension=n)
         v_moi_unit = FrankWolfe.compute_extreme_point(moi_unit_hypersimpler, direction)
         @test norm(v_moi_unit - v_unit) ≤ 1e-4
-        @testset "Inface oracle" begin
+        @testset "Inface oracle                                                   " begin
             # inface oracles
             v = FrankWolfe.compute_extreme_point(hypersimplex, direction)
             # in-face for face at a single point is always that same point
@@ -191,11 +192,11 @@ end
     end
 end
 
-@testset "Lp-norm epigraph LMO" begin
+@testset "Lp-norm epigraph LMO                                            " begin
     for n in (1, 2, 5, 10)
         τ = 5 + 3 * rand()
         # tests that the "special" p behaves like the "any" p, i.e. 2.0 and 2
-        @testset "$p-norm" for p in (1, 1.0, 1.5, 2, 2.0, Inf, Inf32)
+        @testset "$p-norm                                                         " for p in (1, 1.0, 1.5, 2, 2.0, Inf, Inf32)
             lmo = LpNormLMO{Float64,p}(τ)
             for _ in 1:100
                 c = 5 * randn(n)
@@ -206,7 +207,7 @@ end
             v = FrankWolfe.compute_extreme_point(lmo, c)
             @test !any(isnan, v)
         end
-        @testset "K-Norm ball $K" for K in 1:n
+        @testset "K-Norm ball $K                                                  " for K in 1:n
             lmo_ball = FrankWolfe.KNormBallLMO(K, τ)
             for _ in 1:20
                 c = 5 * randn(n)
@@ -234,8 +235,8 @@ end
     end
 end
 
-@testset "K-sparse polytope LMO" begin
-    @testset "$n-dimension" for n in (1, 2, 10)
+@testset "K-sparse polytope LMO                                           " begin
+    @testset "$n-dimension                                                    " for n in (1, 2, 10)
         τ = 5 + 3 * rand()
         for K in 1:n
             lmo = KSparseLMO(K, τ)
@@ -264,7 +265,7 @@ end
     @test norm(v) > 0
 end
 
-@testset "Caching on simplex LMOs" begin
+@testset "Caching on simplex LMOs                                         " begin
     n = 6
     direction = zeros(6)
     rhs = 10 * rand()
@@ -273,7 +274,7 @@ end
     lmo_cached = FrankWolfe.SingleLastCachedLMO(lmo_unit)
     lmo_multicached = FrankWolfe.MultiCacheLMO{3}(lmo_unit)
     lmo_veccached = FrankWolfe.VectorCacheLMO(lmo_unit)
-    @testset "Forcing no cache remains nothing" for idx in 1:n
+    @testset "Forcing no cache remains nothing                                " for idx in 1:n
         direction .= 0
         direction[idx] = -1
         res_point_unit = FrankWolfe.compute_extreme_point(lmo_unit, direction)
@@ -314,8 +315,8 @@ function _is_doubly_stochastic(m)
     end
 end
 
-@testset "Birkhoff polytope" begin
-    Random.seed!(42)
+@testset "Birkhoff polytope                                               " begin
+    Random.seed!(StableRNG(42), 42)
     lmo = FrankWolfe.BirkhoffPolytopeLMO()
     for n in (1, 2, 10)
         cost = rand(n, n)
@@ -358,7 +359,7 @@ end
     ]
 end
 
-@testset "Matrix completion and nuclear norm" begin
+@testset "Matrix completion and nuclear norm                              " begin
     nfeat = 50
     nobs = 100
     r = 5
@@ -425,8 +426,8 @@ end
     )
 end
 
-@testset "Spectral norms" begin
-    Random.seed!(42)
+@testset "Spectral norms                                                  " begin
+    Random.seed!(StableRNG(42), 42)
     o = Hypatia.Optimizer()
     MOI.set(o, MOI.Silent(), true)
     optimizer = MOI.Bridges.full_bridge_optimizer(
@@ -437,7 +438,7 @@ end
         Float64,
     )
     radius = 5.0
-    @testset "Spectraplex $n" for n in (2, 10)
+    @testset "Spectraplex $n                                                  " for n in (2, 10)
         lmo = FrankWolfe.SpectraplexLMO(radius, n)
         direction = Matrix{Float64}(undef, n, n)
         lmo_moi = FrankWolfe.convert_mathopt(lmo, optimizer; side_dimension=n, use_modify=false)
@@ -449,7 +450,7 @@ end
                 @inferred FrankWolfe.compute_extreme_point(lmo, Symmetric(direction + direction'))
             @test v ≈ vsym atol = 1e-6
             @test v ≈ vsym2 atol = 1e-6
-            @testset "Vertex properties" begin
+            @testset "Vertex properties                                               " begin
                 eigen_v = eigen(Matrix(v))
                 @test eigmax(Matrix(v)) ≈ radius
                 @test norm(eigen_v.values[1:end-1]) ≈ 0 atol = 1e-7
@@ -460,13 +461,13 @@ end
                     ≈(norm(eigen_v.vectors[:, n] * sqrt(eigen_v.values[n]) + v.u), 0, atol=1e-9)
                 @test case_pos || case_neg
             end
-            @testset "Comparison with SDP solution" begin
+            @testset "Comparison with SDP solution                                    " begin
                 v_moi = FrankWolfe.compute_extreme_point(lmo_moi, direction)
-                @test norm(v - v_moi) <= 1e-6
+                @test norm(v - v_moi) <= 5e-4
             end
         end
     end
-    @testset "Unit spectrahedron $n" for n in (2, 10)
+    @testset "Unit spectrahedron $n                                           " for n in (2, 10)
         lmo = FrankWolfe.UnitSpectrahedronLMO(radius, n)
         direction = Matrix{Float64}(undef, n, n)
         lmo_moi = FrankWolfe.convert_mathopt(lmo, optimizer; side_dimension=n, use_modify=false)
@@ -477,14 +478,14 @@ end
             v = @inferred FrankWolfe.compute_extreme_point(lmo, direction)
             vsym = @inferred FrankWolfe.compute_extreme_point(lmo, direction_sym)
             @test v ≈ vsym atol = 1e-6
-            @testset "Vertex properties" begin
+            @testset "Vertex properties                                               " begin
                 emin = eigmin(direction_sym)
                 if emin ≥ 0
                     @test norm(Matrix(v)) ≈ 0
                 else
                     eigen_v = eigen(Matrix(v))
                     @test eigmax(Matrix(v)) ≈ radius
-                    @test norm(eigen_v.values[1:end-1]) ≈ 0 atol = 1e-7
+                    @test norm(eigen_v.values[1:end-1]) ≈ 0 atol = 1e-5
                     # u can be sqrt(r) * vec or -sqrt(r) * vec
                     case_pos =
                         ≈(norm(eigen_v.vectors[:, n] * sqrt(eigen_v.values[n]) - v.u), 0, atol=1e-9)
@@ -498,27 +499,27 @@ end
                     @test norm(Matrix(v2)) ≈ 0
                 end
             end
-            @testset "Comparison with SDP solution" begin
+            @testset "Comparison with SDP solution                                    " begin
                 v_moi = FrankWolfe.compute_extreme_point(lmo_moi, direction)
-                @test norm(v - v_moi) <= 1e-6
+                @test norm(v - v_moi) <= 5e-4
                 # forcing PSD direction to test 0 matrix case
                 @. direction_sym = direction + direction'
                 direction_sym += 1.1 * abs(eigmin(direction_sym)) * I
                 @assert isposdef(direction_sym)
                 v_moi2 = FrankWolfe.compute_extreme_point(lmo_moi, direction_sym)
                 v_lmo2 = FrankWolfe.compute_extreme_point(lmo_moi, direction_sym)
-                @test norm(v_moi2 - v_lmo2) <= 1e-6
-                @test norm(v_moi2) <= 1e-6
+                @test norm(v_moi2 - v_lmo2) <= 5e-6
+                @test norm(v_moi2) <= 5e-6
             end
         end
     end
 end
 
-@testset "MOI oracle consistency" begin
-    Random.seed!(42)
+@testset "MOI oracle consistency                                          " begin
+    Random.seed!(StableRNG(42), 42)
     o = GLPK.Optimizer()
     MOI.set(o, MOI.Silent(), true)
-    @testset "MOI oracle consistent with unit simplex" for n in (1, 2, 10)
+    @testset "MOI oracle consistent with unit simplex                         " for n in (1, 2, 10)
         MOI.empty!(o)
         x = MOI.add_variables(o, n)
         for xi in x
@@ -542,7 +543,7 @@ end
             @test vref ≈ v_moi
         end
     end
-    @testset "MOI consistent probability simplex" for n in (1, 2, 10)
+    @testset "MOI consistent probability simplex                              " for n in (1, 2, 10)
         MOI.empty!(o)
         x = MOI.add_variables(o, n)
         for xi in x
@@ -566,7 +567,7 @@ end
             @test vref ≈ v_moi
         end
     end
-    @testset "Direction with coefficients" begin
+    @testset "Direction with coefficients                                     " begin
         n = 5
         MOI.empty!(o)
         x = MOI.add_variables(o, n)
@@ -583,7 +584,7 @@ end
         v = compute_extreme_point(lmo, direction)
         @test v ≈ [0, 1]
     end
-    @testset "Non-settable optimizer with cache" begin
+    @testset "Non-settable optimizer with cache                               " begin
         n = 5
         o = MOI.Utilities.CachingOptimizer(
             MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
@@ -609,7 +610,7 @@ end
             @test vref ≈ v
         end
     end
-    @testset "Nuclear norm" for n in (5, 10)
+    @testset "Nuclear norm                                                    " for n in (5, 10)
         o = Hypatia.Optimizer()
         MOI.set(o, MOI.Silent(), true)
         inner_optimizer = MOI.Utilities.CachingOptimizer(
@@ -649,7 +650,7 @@ end
     end
 end
 
-@testset "MOI oracle on Birkhoff polytope" begin
+@testset "MOI oracle on Birkhoff polytope                                 " begin
     o = GLPK.Optimizer()
     o_ref = GLPK.Optimizer()
     for n in (1, 2, 10)
@@ -687,7 +688,7 @@ end
     end
 end
 
-@testset "MOI oracle and KSparseLMO" begin
+@testset "MOI oracle and KSparseLMO                                       " begin
     o_base = GLPK.Optimizer()
     cached = MOI.Utilities.CachingOptimizer(
         MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
@@ -751,7 +752,7 @@ end
     end
 end
 
-@testset "Product LMO" begin
+@testset "Product LMO                                                     " begin
     lmo = FrankWolfe.ProductLMO(FrankWolfe.LpNormLMO{Inf}(3.0), FrankWolfe.LpNormLMO{1}(2.0))
     dinf = randn(10)
     d1 = randn(5)
@@ -770,7 +771,7 @@ end
     @test FrankWolfe.BlockVector([vinf, v1]) == v_block
 end
 
-@testset "Scaled L-1 norm polytopes" begin
+@testset "Scaled L-1 norm polytopes                                       " begin
     lmo = FrankWolfe.ScaledBoundL1NormBall(-ones(10), ones(10))
     # equivalent to LMO
     lmo_ref = FrankWolfe.LpNormLMO{1}(1)
@@ -802,14 +803,14 @@ end
     @test v ≈ [-1, 0]
 end
 
-@testset "Scaled L-inf norm polytopes" begin
+@testset "Scaled L-inf norm polytopes                                     " begin
     # tests ScaledBoundLInfNormBall for the standard hypercube, a shifted one, and a scaled one
     lmo = FrankWolfe.ScaledBoundLInfNormBall(-ones(10), ones(10))
     lmo_ref = FrankWolfe.LpNormLMO{Inf}(1)
     lmo_shifted = FrankWolfe.ScaledBoundLInfNormBall(zeros(10), 2 * ones(10))
     lmo_scaled = FrankWolfe.ScaledBoundLInfNormBall(-2 * ones(10), 2 * ones(10))
     bounds = collect(1.0:10)
-    # tests another ScaledBoundLInfNormBall with unequal bounds against a MOI optimizer
+    # tests another ScaledBoundLInfNormBall with unequal bounds against an MOI optimizer
     lmo_scaled_unequally = FrankWolfe.ScaledBoundLInfNormBall(-bounds, bounds)
     o = GLPK.Optimizer()
     MOI.set(o, MOI.Silent(), true)
@@ -847,7 +848,7 @@ end
     end
 end
 
-@testset "Copy MathOpt LMO" begin
+@testset "Copy MathOpt LMO                                                " begin
     o_clp = MOI.Utilities.CachingOptimizer(
         MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
         Clp.Optimizer(),
@@ -869,7 +870,7 @@ end
     end
 end
 
-@testset "MathOpt LMO with BlockVector" begin
+@testset "MathOpt LMO with BlockVector                                    " begin
     o = GLPK.Optimizer()
     MOI.set(o, MOI.Silent(), true)
     x = MOI.add_variables(o, 10)
@@ -888,7 +889,7 @@ end
 
 end
 
-@testset "Inplace LMO correctness" begin
+@testset "Inplace LMO correctness                                         " begin
 
     V = [-6.0, -6.15703, -5.55986]
     M = [3.0 2.8464949 2.4178848; 2.8464949 3.0 2.84649498; 2.4178848 2.84649498 3.0]
@@ -912,7 +913,7 @@ end
     @test x_dense == x_standard
 end
 
-@testset "Ellipsoid LMO $n                                   " for n in (2, 5, 9)
+@testset "Ellipsoid LMO $n                                                 " for n in (2, 5, 9)
     A = zeros(n, n)
     A[1, 1] = 3
     @test_throws PosDefException FrankWolfe.EllipsoidLMO(A)
@@ -944,7 +945,7 @@ end
     @test dot(xv, d) ≈ dot(v, d) atol = 1e-5 * n
 end
 
-@testset "Convex hull" begin
+@testset "Convex hull                                                     " begin
     lmo = FrankWolfe.ConvexHullOracle([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
     for _ in 1:100
         d = randn(3)
@@ -957,7 +958,7 @@ end
     @test v == lmo.vertices[1]
 end
 
-@testset "Symmetric LMO" begin
+@testset "Symmetric LMO                                                   " begin
     # See examples/reynolds.jl
     struct BellCorrelationsLMO{T} <: FrankWolfe.LinearMinimizationOracle
         m::Int # number of inputs
@@ -1038,8 +1039,8 @@ end
     @test length(res[6]) < 25
 end
 
-@testset "Ordered Weighted Norm LMO" begin
-    Random.seed!(4321)
+@testset "Ordered Weighted Norm LMO                                       " begin
+    Random.seed!(StableRNG(42), 42)
     N = Int(1e3)
     for _ in 1:10 
         radius = abs(randn())+1

@@ -3,7 +3,7 @@ using LinearAlgebra
 using SparseArrays
 using FrankWolfe
 
-@testset "Tracking Testset" begin
+@testset "Tracking Testset                                                " begin
     f(x) = norm(x)^2
     function grad!(storage, x)
         return storage .= 2x
@@ -16,7 +16,7 @@ using FrankWolfe
     direction = zeros(6)
     direction[1] = -1
 
-    @testset "TrackingGradient" begin
+    @testset "TrackingGradient                                                " begin
         tgrad! = FrankWolfe.TrackingGradient(grad!)
         @test tgrad!.counter == 0
         @test tgrad!.grad! === grad!
@@ -24,7 +24,7 @@ using FrankWolfe
         @test tgrad!.counter == 1
     end
 
-    @testset "TrackingObjective" begin
+    @testset "TrackingObjective                                               " begin
         tf = FrankWolfe.TrackingObjective(f, 0)
         @test tf.counter == 0
         tf(x)
@@ -32,7 +32,7 @@ using FrankWolfe
 
     end
 
-    @testset "TrackingLMO" begin
+    @testset "TrackingLMO                                                     " begin
         tlmo_prob = FrankWolfe.TrackingLMO(lmo, 0)
         @test tlmo_prob.counter == 0
         @test tlmo_prob.lmo === lmo
@@ -41,7 +41,7 @@ using FrankWolfe
     end
 end
 
-@testset "Testing vanilla Frank-Wolfe" begin
+@testset "Testing vanilla Frank-Wolfe                                     " begin
     f(x) = norm(x)^2
 
     function grad!(storage, x)
@@ -79,7 +79,7 @@ end
     @test tlmo.counter == niters + 1 # x0 computation and initialization
 end
 
-@testset "Testing lazified Frank-Wolfe" begin
+@testset "Testing lazified Frank-Wolfe                                    " begin
     f(x) = norm(x)^2
 
     function grad!(storage, x)

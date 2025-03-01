@@ -5,12 +5,13 @@ using Test
 using Test
 using FrankWolfe
 using DoubleFloats
+using StableRNGs
 
 n = 200
 k = 200
 
 s = 42
-Random.seed!(s)
+Random.seed!(StableRNG(s), s)
 
 const matrix = rand(n, n)
 const hessian = transpose(matrix) * matrix
@@ -23,8 +24,8 @@ const L = eigmax(hessian)
 
 # This test covers the generic types with accelerated BCG
 # only few iterations are run because linear algebra with BigFloat is intensive
-@testset "Type $T" for T in (Float64, Double64, BigFloat)
-    @testset "LMO $(typeof(lmo)) Probability simplex" for lmo in (
+@testset "Type $T                                                         " for T in (Float64, Double64, BigFloat)
+    @testset "LMO $(typeof(lmo)) Probability simplex                          " for lmo in (
         FrankWolfe.ProbabilitySimplexOracle{T}(1.0),
         FrankWolfe.KSparseLMO{T}(100, 100.0),
     )
