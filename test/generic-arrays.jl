@@ -8,7 +8,7 @@ function Base.convert(::Type{GenericArray{Float64,1}}, v::FrankWolfe.ScaledHotVe
     return GenericArray(collect(v))
 end
 
-@testset "GenericArray is maintained" begin
+@testset "GenericArray is maintained                                      " begin
     n = Int(1e3)
     k = n
 
@@ -65,8 +65,8 @@ end
     )
 end
 
-@testset "Testing fast_equal for special types" begin
-    @testset "ScaledHotVector" begin
+@testset "Testing fast_equal for special types                            " begin
+    @testset "ScaledHotVector                                                 " begin
         a = FrankWolfe.ScaledHotVector(3.5, 3, 10)
         b = FrankWolfe.ScaledHotVector(3.5, 3, 11)
         @test !isequal(a, b)
@@ -87,7 +87,7 @@ end
         copyto!(v2, collect(e))
         @test v == v2
     end
-    @testset "RankOneMatrix" begin
+    @testset "RankOneMatrix                                                   " begin
         a = FrankWolfe.RankOneMatrix(ones(3), ones(4))
         b = FrankWolfe.RankOneMatrix(ones(3), 2 * ones(4))
         @test !isequal(a, b)

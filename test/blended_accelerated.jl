@@ -24,8 +24,8 @@ const L = eigmax(hessian)
 
 # This test covers the generic types with accelerated BCG
 # only few iterations are run because linear algebra with BigFloat is intensive
-@testset "Type $T" for T in (Float64, Double64, BigFloat)
-    @testset "LMO $(typeof(lmo)) Probability simplex" for lmo in (
+@testset "Type $T                                                         " for T in (Float64, Double64, BigFloat)
+    @testset "LMO $(typeof(lmo)) Probability simplex                          " for lmo in (
         FrankWolfe.ProbabilitySimplexOracle{T}(1.0),
         FrankWolfe.KSparseLMO{T}(100, 100.0),
     )

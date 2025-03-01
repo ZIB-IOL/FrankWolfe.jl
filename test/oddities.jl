@@ -2,7 +2,7 @@ import FrankWolfe
 using LinearAlgebra
 using Test
 
-@testset "Testing adaptive LS at optimality" begin
+@testset "Testing adaptive LS at optimality                               " begin
     f(x) = norm(x)^2
     function grad!(storage, x)
         return storage .= 2x
