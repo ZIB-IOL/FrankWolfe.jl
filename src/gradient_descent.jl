@@ -1,6 +1,3 @@
-using LinearAlgebra
-using Printf
-
 # BASED ON: https://arxiv.org/abs/2308.02261
 
 """
@@ -18,7 +15,7 @@ Lipschitz estimates.
 - `epsilon`: Tolerance for stopping criterion (default: 1e-7)
 - `callback`: Optional callback function (default: nothing)
 - `verbose`: Whether to print progress (default: false)
-- `memory_mode`: Memory emphasis mode (default: OutplaceEmphasis())
+- `memory_mode`: Memory emphasis mode (default: InplaceEmphasis())
 
 # Returns
 Tuple containing:
@@ -144,7 +141,7 @@ function adaptive_gradient_descent(
     end
 
     # Print final iteration if not converged
-    if verbose && norm(grad_curr) >= epsilon
+    if verbose && norm(grad_curr) ≥ epsilon
         elapsed = time() - start_time
         @printf(
             "%12d %15.6e %15.6e %15.3f %12.2e %12.2e (Max iterations)\n",
@@ -285,7 +282,7 @@ function adaptive_gradient_descent2(
     end
 
     # Print final iteration if not converged
-    if verbose && norm(grad_curr) >= epsilon
+    if verbose && norm(grad_curr) ≥ epsilon
         elapsed = time() - start_time
         @printf(
             "%12d %15.6e %15.6e %15.3f %12.2e %12.2e (Max iterations)\n",
@@ -316,7 +313,7 @@ Proximal variant of adaptive gradient descent that includes a proximal operator 
 - `epsilon`: Tolerance for stopping criterion (default: 1e-7)
 - `callback`: Optional callback function (default: nothing)
 - `verbose`: Whether to print progress (default: false)
-- `memory_mode`: Memory emphasis mode (default: OutplaceEmphasis())
+- `memory_mode`: Memory emphasis mode (default: InplaceEmphasis())
 
 # Returns
 Tuple containing:
@@ -472,7 +469,7 @@ function proximal_adaptive_gradient_descent(
     end
 
     # Print final iteration if not converged
-    if verbose && error >= epsilon
+    if verbose && error ≥ epsilon
         elapsed = time() - start_time
         @printf(
             "%12d %15.6e %15.6e %15.3f %12.2e %12.2e (Max iterations)\n",
@@ -498,7 +495,7 @@ ProximalCore.prox!(y, ::IdentityProx, x, t) = copyto!(y, x)
 struct ProbabilitySimplexProx end
 function ProximalCore.prox!(y, ::ProbabilitySimplexProx, x, t)
     # Sort x in descending order
-    u = sort(x, rev=true)
+    u = sort(x; rev=true)
 
     # Find largest k such that u_k + θ > 0 where θ = (1 - ∑ᵢ₌₁ᵏ uᵢ)/k
     cumsum_u = cumsum(u)
