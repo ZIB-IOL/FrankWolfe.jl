@@ -64,6 +64,19 @@ end
 
 is_decomposition_invariant_oracle(::UnitSimplexOracle) = true
 
+function is_inface_feasible(lmo::UnitSimplexOracle{T}, a, x) where {T}
+    for idx in eachindex(x)
+        if x[idx] ≈ lmo.right_side && a[idx] ≉  lmo.right_side
+            return false
+        elseif x[idx] ≈ 0.0 && a[idx] ≉  0.0
+            return false
+        elseif sum(x) ≈ lmo.right_side && sum(a) ≉  lmo.right_side
+            return false
+        end
+    end
+    return true
+end
+
 function compute_inface_extreme_point(lmo::UnitSimplexOracle{T}, direction, x; kwargs...) where {T}
     # faces for the unit simplex are:
     # - coordinate faces: {x_i = 0}
@@ -162,6 +175,15 @@ function compute_extreme_point(
 end
 
 is_decomposition_invariant_oracle(::ProbabilitySimplexOracle) = true
+
+function is_inface_feasible(lmo::ProbabilitySimplexOracle, a, x)
+    for idx in eachindex(x)
+        if (x[idx] ≈ lmo.right_side && a[idx] ≉  lmo.right_side) || (x[idx] ≈ 0.0 && a[idx] ≉  0.0)
+            return false
+        end
+    end
+    return true
+end
 
 function compute_inface_extreme_point(
     lmo::ProbabilitySimplexOracle{T},
