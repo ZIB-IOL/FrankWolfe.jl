@@ -40,8 +40,8 @@ const L = eigmax(hessian)
 const x_opt = -hessian \ linear
 const f_opt = f_gd(x_opt)
 
-@testset "Adaptive Gradient Descent                                       " begin
-    @testset "Type $T                                                         " for T in (Float64, Double64)
+@testset "Adaptive Gradient Descent" begin
+    @testset "Type $T" for T in (Float64, Double64)
         x0 = 10 * rand(T, n)
         target_tolerance = convert(T, 1e-8)
 
@@ -87,7 +87,7 @@ const f_opt = f_gd(x_opt)
         @test norm(x2 - x_opt) ≤ sqrt(target_tolerance)
     end
 
-    @testset "Memory modes                                                    " begin
+    @testset "Memory modes" begin
         x0 = rand(n)
         target_tolerance = 1e-8
 
@@ -118,7 +118,7 @@ const f_opt = f_gd(x_opt)
         @test abs(f_inplace - f_outplace) ≤ target_tolerance
     end
 
-    @testset "Callback functionality                                          " begin
+    @testset "Callback functionality" begin
         x0 = rand(n)
         history = []
 
@@ -142,7 +142,7 @@ const f_opt = f_gd(x_opt)
         @test issorted([state[1] for state in history]) # iterations are ordered
     end
 
-    @testset "Proximal variant                                                " begin
+    @testset "Proximal variant" begin
         x0 = rand(n)
         target_tolerance = 1e-8
 
@@ -170,8 +170,8 @@ const f_opt = f_gd(x_opt)
         x_reg, f_reg, _ =
             FrankWolfe.adaptive_gradient_descent(f_gd, grad_gd!, x0; epsilon=target_tolerance, verbose=false)
 
-        @testset "Comparison with FW variants                                     " begin
-            @testset "L1-ball comparison                                              " begin
+        @testset "Comparison with FW variants" begin
+            @testset "L1-ball comparison" begin
                 x0 =
                     FrankWolfe.compute_extreme_point(FrankWolfe.LpNormLMO{Float64,1}(1.0), zeros(n))
                 x_fw_l1, _ = FrankWolfe.blended_pairwise_conditional_gradient(
@@ -188,7 +188,7 @@ const f_opt = f_gd(x_opt)
                 @test abs(f_l1 - f_fw_l1) ≤ target_tolerance * 10
             end
 
-            @testset "Probability simplex comparison                                  " begin
+            @testset "Probability simplex comparison" begin
                 x_prox_prob, f_prox_prob, _ = FrankWolfe.proximal_adaptive_gradient_descent(
                     f_gd,
                     grad_gd!,
@@ -217,7 +217,7 @@ const f_opt = f_gd(x_opt)
             end
             # TODO add unit simplex comparison once it is merged in ProximalOperators
 
-            @testset "Box comparison                                                  " begin
+            @testset "Box comparison" begin
                 τ_box = 1.0
                 x_prox_box, f_prox_box, _ = FrankWolfe.proximal_adaptive_gradient_descent(
                     f_gd,
@@ -331,7 +331,7 @@ const f_opt = f_gd(x_opt)
                 @test abs(f_l1 - f_fw_l1) ≤ target_tolerance * 10
             end
 
-            @testset "Probability simplex comparison                                  " begin
+            @testset "Probability simplex comparison" begin
                 x_prox_prob, f_prox_prob, _ = FrankWolfe.proximal_adaptive_gradient_descent(
                     f_gd,
                     grad_gd!,
@@ -356,7 +356,7 @@ const f_opt = f_gd(x_opt)
 
             # TODO readd unit simplex
 
-            @testset "Box comparison                                                  " begin
+            @testset "Box comparison" begin
                 τ_box = 1.0
                 x_prox_box, f_prox_box, _ = FrankWolfe.proximal_adaptive_gradient_descent(
                     f_gd,

@@ -8,13 +8,13 @@ import FrankWolfe: compute_gradient, compute_value, compute_value_gradient
 
 Random.seed!(StableRNG(123), 123)
 
-@testset "Simple and stochastic function gradient interface               " begin
+@testset "Simple and stochastic function gradient interface" begin
     for n in (1, 5, 20)
         A = rand(Float16, n, n)
         A .+= A'
         b = rand(Float16, n)
         c = rand(Float16)
-        @testset "Simple function                                                 " begin
+        @testset "Simple function" begin
             simple_quad(x) = A * x ⋅ x / 2 + b ⋅ x + c
             function ∇simple_quad(storage, x)
                 return storage .= A * x + b
@@ -35,7 +35,7 @@ Random.seed!(StableRNG(123), 123)
                 @test FrankWolfe.compute_value(f_simple, convert(Vector{Float32}, x)) isa Float32
             end
         end
-        @testset "Stochastic function linear regression                           " begin
+        @testset "Stochastic function linear regression" begin
             function simple_reg_loss(θ, data_point)
                 (xi, yi) = data_point
                 (a, b) = (θ[1:end-1], θ[end])
@@ -53,7 +53,7 @@ Random.seed!(StableRNG(123), 123)
             params = rand(6) .- 1 # start params in (-1,0)
             bias = 4π
             params_perfect = [1:5; bias]
-            @testset "Perfectly representable data                                    " begin
+            @testset "Perfectly representable data" begin
                 # Y perfectly representable by X
                 data_perfect = [(x, x ⋅ (1:5) + bias) for x in xs]
                 storage = similar(params_perfect)
@@ -96,7 +96,7 @@ Random.seed!(StableRNG(123), 123)
                     rng=Random.seed!(StableRNG(33), 33),
                 )
             end
-            @testset "Noisy data                                                      " begin
+            @testset "Noisy data" begin
                 data_noisy = [(x, x ⋅ (1:5) + bias + 0.5 * randn()) for x in xs]
                 storage = similar(params_perfect)
                 f_stoch_noisy = FrankWolfe.StochasticObjective(

@@ -3,7 +3,7 @@ using LinearAlgebra
 using Test
 using SparseArrays
 
-@testset "Simple benchmark_oracles function                               " begin
+@testset "Simple benchmark_oracles function" begin
     n = Int(1e3)
 
     xpi = rand(n)
@@ -21,7 +21,7 @@ using SparseArrays
     FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo_prob; k=100)
 end
 
-@testset "RankOneMatrix                                                   " begin
+@testset "RankOneMatrix" begin
     for n in (1, 2, 5)
         for _ in 1:5
             v = rand(n)
@@ -33,19 +33,19 @@ end
                     @test M[i, j] ≈ R[i, j]
                 end
             end
-            @testset "Right- left-mul                                                 " for _ in 1:5
+            @testset "Right- left-mul" for _ in 1:5
                 x = rand(n)
                 r1 = R * x
                 r2 = M * x
                 @test r1 ≈ r2
             end
-            @testset "Identity test                                                   " begin
+            @testset "Identity test" begin
                 x = 1.0
                 r1 = R
                 r2 = R * x
                 @test r1 ≈ r2
             end
-            @testset "Add and sub                                                     " begin
+            @testset "Add and sub" begin
                 @test M + R ≈ R + R
                 @test M - R ≈ R - R
                 MR = -R
@@ -53,7 +53,7 @@ end
                 @test -MR == R
                 @test 3R isa FrankWolfe.RankOneMatrix
             end
-            @testset "Dot, norm, mul                                                  " begin
+            @testset "Dot, norm, mul" begin
                 @test dot(R, M) ≈ dot(collect(R), M)
                 @test dot(M, R) ≈ dot(M, collect(R))
                 @test dot(R, sparse(M)) ≈ dot(collect(R), M)
@@ -64,7 +64,7 @@ end
     end
 end
 
-@testset "RankOne muladd_memory_mode $n                                    " for n in (1, 2, 5)
+@testset "RankOne muladd_memory_mode $n" for n in (1, 2, 5)
     for _ in 1:5
         n = 5
         v = rand(n)
@@ -82,7 +82,7 @@ end
     end
 end
 
-@testset "Line Search methods                                             " begin
+@testset "Line Search methods" begin
     a = [-1.0, -1.0, -1.0]
     b = [1.0, 1.0, 1.0]
     function grad!(storage, x)
@@ -128,7 +128,7 @@ end
         FrankWolfe.InplaceEmphasis(),
     )
     @test gamma_secant ≈ 0.5
-
+    
     ls_gr = FrankWolfe.Goldenratio()
     reset_state()
     gamma_gr = @inferred FrankWolfe.perform_line_search(
@@ -219,14 +219,14 @@ end
     @test ls1.tau == ls2.tau
 end
 
-@testset "Momentum tests                                                  " begin
+@testset "Momentum tests" begin
     it = FrankWolfe.ExpMomentumIterator()
     it.num = 0
     # no momentum -> 1
     @test FrankWolfe.momentum_iterate(it) == 1
 end
 
-@testset "Fast dot complex & norm                                         " begin
+@testset "Fast dot complex & norm" begin
     s = sparse(I, 3, 3)
     m = randn(Complex{Float64}, 3, 3)
     @test dot(s, m) ≈ FrankWolfe.fast_dot(s, m)
@@ -241,7 +241,7 @@ end
     @test norm(a) ≈ norm(collect(a))
 end
 
-@testset "NegatingArray                                                   " begin
+@testset "NegatingArray" begin
     d = randn(4)
     nd = FrankWolfe.NegatingArray(d)
     @test norm(nd + d) ≤ eps()

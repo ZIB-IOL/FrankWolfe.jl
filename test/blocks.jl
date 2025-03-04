@@ -4,7 +4,7 @@ using LinearAlgebra
 using FrankWolfe
 using SparseArrays
 
-@testset "Block array behavior                                            " begin
+@testset "Block array behavior" begin
     arr = FrankWolfe.BlockVector([
         [
             1 3
@@ -53,8 +53,8 @@ using SparseArrays
 
 end
 
-@testset "Frank-Wolfe array methods                                       " begin
-    @testset "Block arrays                                                    " begin
+@testset "Frank-Wolfe array methods" begin
+    @testset "Block arrays" begin
         mem = FrankWolfe.InplaceEmphasis()
         arr0 = FrankWolfe.BlockVector([
             [
@@ -96,7 +96,7 @@ end
         end
         @test norm(x_copy - x) ≤ 1e-12
     end
-    @testset "Sparse vectors as atoms                                         " begin
+    @testset "Sparse vectors as atoms" begin
         v1 = spzeros(3)
         v2 = spzeros(3) .+ 1
         v3 = spzeros(3)
@@ -115,7 +115,7 @@ end
         FrankWolfe.compute_active_set_iterate!(active_set_dense)
         @test active_set.x ≈ active_set_dense.x
     end
-    @testset "Sparse matrices as atoms                                        " begin
+    @testset "Sparse matrices as atoms" begin
         v1 = sparse(1.0I, 3, 3)
         v2 = sparse(2.0I, 3, 3)
         v2[1,2] = 2
