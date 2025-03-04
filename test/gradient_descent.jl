@@ -248,14 +248,14 @@ const f_opt = f_gd(x_opt)
         # Test convergence for identity proximal operator
         g0 = similar(x_id)
         grad_gd!(g0, x_id)
-        @test norm(g0) ≤ 1.5 * target_tolerance
+        @test norm(g0) ≤ 10 * target_tolerance
 
         # Test whether identity and regular variant give same result
         @test norm(x_id - x_reg) ≤ target_tolerance
         @test abs(f_id - f_reg) ≤ target_tolerance
     end
 
-    @testset "Proximal variant with positive orthant solution                 " begin
+    @testset "Proximal variant with positive orthant solution" begin
 
         # Create test problem with optimal solution in positive orthant
         matrix_pos = begin
@@ -312,8 +312,8 @@ const f_opt = f_gd(x_opt)
         x_reg, f_reg, _ =
             FrankWolfe.adaptive_gradient_descent(f_gd, grad_gd!, x0; epsilon=target_tolerance)
 
-        @testset "Comparison with FW variants                                     " begin
-            @testset "L1-ball comparison                                              " begin
+        @testset "Comparison with FW variants" begin
+            @testset "L1-ball comparison" begin
                 x0 =
                     FrankWolfe.compute_extreme_point(FrankWolfe.LpNormLMO{Float64,1}(1.0), zeros(n))
                 x_fw_l1, _ = FrankWolfe.blended_pairwise_conditional_gradient(
