@@ -5,12 +5,13 @@ using Test
 using Test
 using FrankWolfe
 using DoubleFloats
+using StableRNGs
 
 n = 200
 k = 200
 
 s = 42
-Random.seed!(s)
+Random.seed!(StableRNG(s), s)
 
 const matrix = rand(n, n)
 const hessian = transpose(matrix) * matrix

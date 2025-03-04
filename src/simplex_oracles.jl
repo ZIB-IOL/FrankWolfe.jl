@@ -107,14 +107,18 @@ function compute_inface_extreme_point(lmo::UnitSimplexOracle{T}, direction, x; k
     return ScaledHotVector(lmo.right_side, min_idx, length(direction))
 end
 
-function dicg_maximum_step(::UnitSimplexOracle{T}, direction, x) where {T}
-    # the direction should never violate the simplex constraint because it would correspond to a gamma_max > 1
+function dicg_maximum_step(lmo::UnitSimplexOracle{T}, direction, x) where {T}
     gamma_max = one(promote_type(T, eltype(direction)))
+    # first check the simplex x_i = 0 faces
     @inbounds for idx in eachindex(x)
         di = direction[idx]
         if di > 0
             gamma_max = min(gamma_max, x[idx] / di)
         end
+    end
+    # then the sum(x) <= radius face
+    if sum(direction) < 0
+        gamma_max = min(gamma_max, -(lmo.right_side - sum(x)) / sum(direction))
     end
     return gamma_max
 end
