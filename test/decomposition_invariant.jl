@@ -16,7 +16,7 @@ o = GLPK.Optimizer()
 MOI.set(o, MOI.Silent(), true)
 MOI.empty!(o)
 
-@testset "Hypercube interface                                             " begin
+@testset "Hypercube interface" begin
     # no fixed variable
     cube = FrankWolfe.ZeroOneHypercube()
     n = 5
@@ -62,8 +62,8 @@ MOI.empty!(o)
     @test gamma_max3_MOI == 0
 end
 
-@testset "Simplex interfaces                                              " begin
-    @testset "Unit simplex                                                    " begin
+@testset "Simplex interfaces" begin
+    @testset "Unit simplex" begin
         lmo = FrankWolfe.UnitSimplexOracle(4.0)
         n = 5
         lmo_MOI = FrankWolfe.convert_mathopt(lmo, o; dimension=n)
@@ -138,7 +138,7 @@ end
         d_test[3] = 10
         FrankWolfe.compute_inface_extreme_point(lmo, d_test, x_fixed)
     end
-    @testset "Probability simplex                                             " begin
+    @testset "Probability simplex" begin
         lmo = FrankWolfe.ProbabilitySimplexOracle(5.0)
         n = 5
         lmo_MOI = FrankWolfe.convert_mathopt(lmo, o; dimension=n)
@@ -173,7 +173,7 @@ end
     end
 end
 
-@testset "Birkhoff polytope                                               " begin
+@testset "Birkhoff polytope" begin
     n = 4
     d = randn(n, n)
     lmo = FrankWolfe.BirkhoffPolytopeLMO()
@@ -215,7 +215,7 @@ end
     @test v_zero_MOI[1, 4] == 0
 end
 
-@testset "DICG standard run                                               " begin
+@testset "DICG standard run" begin
     n = 100
     xref = fill(0.4, n)
     function f(x)
@@ -225,7 +225,7 @@ end
         @. storage = x - xref
     end
 
-    @testset "Zero-one cube                                                   " begin
+    @testset "Zero-one cube" begin
         cube = FrankWolfe.ZeroOneHypercube()
         cube_MOI = FrankWolfe.convert_mathopt(cube, o; dimension=n)
         x0 = FrankWolfe.compute_extreme_point(cube, randn(n))
@@ -264,7 +264,7 @@ end
         @test norm(res_MOI[1] - res_blended[1]) ≤ n * 1e-4
     end
 
-    @testset "LMO: $(rpad(                                                    "$lmo", 59))" for lmo in (
+    @testset "LMO: $lmo" for lmo in (
         FrankWolfe.UnitSimplexOracle(1.0),
         FrankWolfe.ProbabilitySimplexOracle(1.0),
         FrankWolfe.convert_mathopt(FrankWolfe.UnitSimplexOracle(1.0), o; dimension=n),
@@ -295,7 +295,7 @@ end
         @test f(res_di[1]) < f(res_fw[1])
     end
 
-    @testset "Birkhoff polytope                                               " begin
+    @testset "Birkhoff polytope" begin
         n = 10
         lmo = FrankWolfe.BirkhoffPolytopeLMO()
         lmo_MOI = FrankWolfe.convert_mathopt(lmo, o; dimension=n)
@@ -334,7 +334,7 @@ end
     end
 end
 
-@testset "DICG Hypersimplex $(lpad("$n", 5)) $(lpad("$K", 4))                                    " for n in (20, 500, 10000), K in (1, n ÷ 10, n ÷ 2)
+@testset "DICG Hypersimplex $n $K" for n in (20, 500, 10000), K in (1, n ÷ 10, n ÷ 2)
     for lmo in (FrankWolfe.HyperSimplexOracle(K, 3.0), FrankWolfe.UnitHyperSimplexOracle(K, 3.0))
         K = 4
         n = 10

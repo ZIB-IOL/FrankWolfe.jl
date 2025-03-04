@@ -913,7 +913,7 @@ end
     @test x_dense == x_standard
 end
 
-@testset "Ellipsoid LMO $n                                   " for n in (2, 5, 9)
+@testset "Ellipsoid LMO $n" for n in (2, 5, 9)
     A = zeros(n, n)
     A[1, 1] = 3
     @test_throws PosDefException FrankWolfe.EllipsoidLMO(A)
