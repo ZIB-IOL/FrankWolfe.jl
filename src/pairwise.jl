@@ -177,7 +177,7 @@ function pairwise_frank_wolfe(
         use_extra_vertex_storage = add_dropped_vertices = false
     end
 
-    while t <= max_iteration && phi_value >= max(eps(float(typeof(phi_value))), epsilon)
+    @interruptable while t ≤ max_iteration && phi_value ≥ max(eps(float(typeof(phi_value))), epsilon)
         #####################
         # managing time and Ctrl-C
         #####################
