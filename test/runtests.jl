@@ -12,6 +12,7 @@ include("utils.jl")
 include("active_set_variants.jl")
 include("alternating_methods_tests.jl")
 include("gradient_descent.jl")
+include("corrective_steps.jl")
 
 @testset "Testing vanilla Frank-Wolfe" begin
     f(x) = norm(x)^2

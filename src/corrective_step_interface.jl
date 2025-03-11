@@ -26,12 +26,12 @@ end
 
 AwayStep() = AwayStep(false)
 
-function prepare_corrective_step(corrective_step::AwayStep, f, grad!, gradient, active_set, t, lmo, primal, phi, tot_time)
+function prepare_corrective_step(corrective_step::AwayStep, f, grad!, gradient, active_set, t, lmo, primal, phi)
     should_compute_vertex = !corrective_step.lazy
     return should_compute_vertex
 end
 
-function run_corrective_step(corrective_step::AwayStep, f, grad!, gradient, x, v, dual_gap, active_set, t, lmo, line_search, linesearch_workspace, primal, phi, tot_time, callback, renorm_interval, memory_mode, epsilon, lazy_tolerance)
+function run_corrective_step(corrective_step::AwayStep, f, grad!, gradient, x, v, dual_gap, active_set, t, lmo, line_search, linesearch_workspace, primal, phi, tot_time, callback, renorm_interval, memory_mode, epsilon, lazy_tolerance, d)
     _, v_lazy, v_loc, _, a_lambda, a, a_loc, _, _ = active_set_argminmax(active_set, gradient)
     grad_dot_x = fast_dot(x, gradient)
     grad_dot_a = fast_dot(a, gradient)

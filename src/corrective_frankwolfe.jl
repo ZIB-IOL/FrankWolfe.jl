@@ -88,6 +88,7 @@ function corrective_frankwolfe(
     v = compute_extreme_point(lmo, gradient)
     # if !lazy, phi is maintained as the global dual gap
     phi = max(0, fast_dot(x, gradient) - fast_dot(v, gradient))
+    dual_gap = phi
     gamma = one(phi)
 
     if linesearch_workspace === nothing
