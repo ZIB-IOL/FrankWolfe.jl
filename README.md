@@ -55,7 +55,7 @@ The main function is **`FrankWolfe.frank_wolfe`** and it requires:
 ```julia
 julia> using FrankWolfe
 
-# #objective function f(p) = p_1^2 + ... + p_n^2
+# objective function f(p) = p_1^2 + ... + p_n^2
 julia> f(p) = sum(abs2, p)
 
 # #in-place gradient computation for f thanks to '.='
