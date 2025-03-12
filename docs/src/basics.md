@@ -42,7 +42,7 @@ is required that
 FrankWolfe.compute_extreme_point(lmo::MyLMO, direction; v, kwargs...) -> v
 ```
 
-Note that the constraint set $\mathcal{C}$ defined by `MyLMO` doesn't have to be represented explicitly.
+Note that the constraint set $\mathcal{C}$ defined by `MyLMO` doesn't have to be represented explicitly, e.g., as a set of inequalities.
 Indeed, all we need is to minimize a linear function over $\mathcal{C}$, which does not necessarily require an explicit representation of $\mathcal{C}$.
 Even black box minimization procedures can be considered!
 
