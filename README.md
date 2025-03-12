@@ -58,16 +58,16 @@ julia> using FrankWolfe
 # objective function f(p) = p_1^2 + ... + p_n^2
 julia> f(p) = sum(abs2, p)
 
-# #in-place gradient computation for f thanks to '.='
+# in-place gradient computation for f thanks to '.='
 julia> grad!(storage, p) = storage .= 2p  
 
 # pre-defined type implementing the linear minimization oracle interface for the simplex
 julia> lmo = FrankWolfe.ProbabilitySimplexOracle(1.)
 
-# #starting vector (of dimension n=3)
+# starting vector (of dimension n=3)
 julia> p0 = [1., 0., 0.]
 
-# #an optimal solution is returned in p_opt
+# an optimal solution is returned in p_opt
 julia> p_opt, _ = frank_wolfe(f, grad!, lmo, p0; verbose=true);
 
 Vanilla Frank-Wolfe Algorithm.
