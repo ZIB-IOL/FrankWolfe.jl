@@ -47,7 +47,7 @@ where $`Δ(n)= \{p \in R^n_{\geq 0} | p_1 + \dots + p_n =1\}`$ is the _probabili
 Using `FrankWolfe.jl`, let's write a minimal code solving this problem in dimension $n=3$.
 The main function is **`FrankWolfe.frank_wolfe`** and it requires: 
 
-* an **function `f`** that computes the values of the objective function $f$;
+* a **function `f`** that computes the values of the objective function $f$;
 * a **function `grad!`** that computes in-place the gradient of the objective function $f$;
 * a **subtype of `FrankWolfe.LinearMinimizationOracle`** for which a method of        `FrankWolfe.compute_extreme_point` has been implemented (see [here](https://zib-iol.github.io/FrankWolfe.jl/dev/basics/#Linear-Minimization-Oracles));
 * a **starting vector `p0`**.
