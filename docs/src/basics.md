@@ -22,7 +22,7 @@ v \in \arg \min_{x\in \mathcal{C}} \langle d,x \rangle.
 ```
 
 
-### Pre-defined LMOs
+### Pre-defined LMO for key feasible sets
 
 Several common implementations of LMOS s are available out-of-the-box:
 
@@ -32,8 +32,13 @@ Several common implementations of LMOS s are available out-of-the-box:
   
 See [Combettes, Pokutta (2021)](https://arxiv.org/abs/2101.10040) for references on most LMOs implemented in the package and their comparison with projection operators.
 
-### Custom LMOs
+### The MathOptLMO
+You can use an oracle defined via a Linear Programming solver (e.g. `SCIP` or `HiGHS`) with `MathOptInferface`: see [`FrankWolfe.MathOptLMO`](@ref).
 
+### Wrapper to combine LMOs
+We provide wrappers to combine oracles easily, for example in a product.
+
+### User-defined LMOs
 If you want use  your own custom LMO `MyLMO` in the algorithms provided here, it
 is required that
 * `MyLMO` be a subtype of [`FrankWolfe.LinearMinimizationOracle`](@ref);
@@ -46,11 +51,6 @@ Note that the constraint set $\mathcal{C}$ defined by `MyLMO` doesn't have to be
 Indeed, all we need is to minimize a linear function over $\mathcal{C}$, which does not necessarily require an explicit representation of $\mathcal{C}$.
 Even black box minimization procedures can be considered!
 
-### Interfaces for LMO
- 
-1. You can use an oracle defined via a Linear Programming solver (e.g. `SCIP` or `HiGHS`) with `MathOptInferface`: see [`FrankWolfe.MathOptLMO`](@ref).
-
-2. We provide wrappers to combine oracles easily, for example in a product.
 
 ## Optimization algorithms
 
