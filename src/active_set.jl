@@ -141,6 +141,38 @@ function active_set_update_scale!(x::IT, lambda, atom::SparseArrays.SparseVector
 end
 
 """
+    active_set_update_pairwise!(active_set, gamma, gamma_max, v_local_loc, a_loc, v_local, a, add_dropped_vertices, extra_vertex_storage)
+
+Updates the active set for a pairwise step with step size gamma.
+"""
+function active_set_update_pairwise!(
+    active_set::AbstractActiveSet{AT,R},
+    gamma::Real,
+    gamma_max::Real,
+    v_local_loc::Integer,
+    a_loc::Integer,
+    v_local::AT,
+    a::AT,
+    add_dropped_vertices::Bool,
+    extra_vertex_storage=nothing,
+) where {AT,R}
+    # reached maximum of lambda -> dropping away vertex
+    if gamma ≈ gamma_max
+        active_set.weights[v_local_loc] += gamma
+        deleteat!(active_set, a_loc)
+        if add_dropped_vertices
+            push!(extra_vertex_storage, a)
+        end
+    else # transfer weight from away to local FW
+        active_set.weights[a_loc] -= gamma
+        active_set.weights[v_local_loc] += gamma
+        @assert active_set_validate(active_set)
+    end
+    active_set_update_iterate_pairwise!(active_set.x, gamma, v_local, a)
+    return active_set
+end
+
+"""
     active_set_update_iterate_pairwise!(active_set, x, lambda, fw_atom, away_atom)
 
 Operates `x ← x + λ a_fw - λ a_aw`.
