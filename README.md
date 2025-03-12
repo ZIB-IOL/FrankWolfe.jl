@@ -61,7 +61,7 @@ julia> f(p) = sum(abs2, p)
 # #in-place gradient computation for f thanks to '.='
 julia> grad!(storage, p) = storage .= 2p  
 
-# #pre-defined type for which a method computes a solution of min ⟨p,d⟩ st. p ∈ Δ 
+# pre-defined type implementing the linear minimization oracle interface for the simplex
 julia> lmo = FrankWolfe.ProbabilitySimplexOracle(1.)
 
 # #starting vector (of dimension n=3)
