@@ -33,7 +33,7 @@ Several common implementations of LMOS s are available out-of-the-box:
 See [Combettes, Pokutta (2021)](https://arxiv.org/abs/2101.10040) for references on most LMOs implemented in the package and their comparison with projection operators.
 
 ### The MathOptLMO
-You can use an oracle defined via a Linear Programming solver (e.g. `SCIP` or `HiGHS`) with `MathOptInferface`: see [`FrankWolfe.MathOptLMO`](@ref).
+You can use an oracle defined via a Linear Programming solver (e.g. `SCIP` or `HiGHS`) with [MathOptInferface](https://github.com/jump-dev/MathOptInterface.jl): see [`FrankWolfe.MathOptLMO`](@ref).
 
 ### Wrapper to combine LMOs
 We provide wrappers to combine oracles easily, for example [`FrankWolfe.ProductLMO`](@ref) for product of oracles or [`FrankWolfe.SubspaceLMO`](@ref) for projections composed with oracles.
