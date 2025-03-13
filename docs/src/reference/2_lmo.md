@@ -2,7 +2,7 @@
 
 The Linear Minimization Oracle (LMO) is a key component called at each iteration of the FW algorithm. Given ``d\in \mathcal{X}``, it returns a vertex of the feasible set:
 ```math
-v\in \arg \min_{x\in \mathcal{C}} \langle d,x \rangle.
+v\in \argmin_{x\in \mathcal{C}} \langle d,x \rangle.
 ```
 
 See [Combettes, Pokutta 2021](https://arxiv.org/abs/2101.10040) for references on most LMOs
