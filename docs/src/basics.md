@@ -18,7 +18,7 @@ These routines work by solving a sequence of linear subproblems:
 The Linear Minimization Oracle (LMO) is a key component, which is called at each iteration of the FW algorithm. Given a direction $d$, it returns an optimal vertex of the feasible set:
 
 ```math
-v \in \arg \min_{x\in \mathcal{C}} \langle d,x \rangle.
+v \in \argmin_{x\in \mathcal{C}} \langle d,x \rangle.
 ```
 
 
