@@ -177,8 +177,8 @@ function active_set_mul_weights!(active_set::ActiveSetQuadraticProductCaching, l
 end
 
 function active_set_add_weight!(active_set::ActiveSetQuadraticProductCaching, lambda::Real, i::Integer)
-    active_set.weights[i] += lambda
-    active_set.modified[i] = true
+    @inbounds active_set.weights[i] += lambda
+    @inbounds active_set.modified[i] = true
 end
 
 function active_set_renormalize!(active_set::ActiveSetQuadraticProductCaching)

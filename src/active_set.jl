@@ -178,7 +178,7 @@ end
 Multiplies all weights in `active_set` by `lambda`.
 """
 function active_set_mul_weights!(active_set::AbstractActiveSet, lambda::Real)
-    active_set.weights .*= lambda
+    @inbounds active_set.weights .*= lambda
 end
 
 """
