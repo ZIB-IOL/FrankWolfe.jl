@@ -200,6 +200,11 @@ function active_set_update!(
     return active_set
 end
 
+function active_set_add_weight!(active_set::ActiveSetQuadraticProductCaching, lambda::Real, i::Integer)
+    active_set.weights[i] += lambda
+    active_set.modified[i] = true
+end
+
 function active_set_renormalize!(active_set::ActiveSetQuadraticProductCaching)
     renorm = sum(active_set.weights)
     active_set.weights ./= renorm

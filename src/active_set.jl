@@ -164,12 +164,21 @@ function active_set_update_pairwise!(
             push!(extra_vertex_storage, a)
         end
     else # transfer weight from away to local FW
-        active_set.weights[a_loc] -= gamma
-        active_set.weights[v_local_loc] += gamma
+        active_set_add_weight!(active_set, -gamma, a_loc)
+        active_set_add_weight!(active_set, gamma, v_local_loc)
         @assert active_set_validate(active_set)
     end
     active_set_update_iterate_pairwise!(active_set.x, gamma, v_local, a)
     return active_set
+end
+
+"""
+    active_set_add_weight!(active_set, lambda, i)
+
+Add `lambda` to the weight of the `i`th atom in `active_set`.
+"""
+function active_set_add_weight!(active_set::AbstractActiveSet, lambda::Real, i::Integer)
+    active_set.weights[i] += lambda
 end
 
 """
