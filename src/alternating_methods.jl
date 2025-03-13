@@ -372,7 +372,7 @@ function alternating_projections(
 
     first_iter = true
 
-    while t <= max_iteration && dual_gap >= max(epsilon, eps(float(typeof(dual_gap))))
+    @interruptable while t ≤ max_iteration && dual_gap ≥ max(epsilon, eps(float(typeof(dual_gap))))
 
         #####################
         # managing time and Ctrl-C
