@@ -36,7 +36,7 @@ See [Combettes, Pokutta (2021)](https://arxiv.org/abs/2101.10040) for references
 You can use an oracle defined via a Linear Programming solver (e.g. `SCIP` or `HiGHS`) with `MathOptInferface`: see [`FrankWolfe.MathOptLMO`](@ref).
 
 ### Wrapper to combine LMOs
-We provide wrappers to combine oracles easily, for example in a product.
+We provide wrappers to combine oracles easily, for example [`FrankWolfe.ProductLMO`](@ref) for product of oracles or [`FrankWolfe.SubspaceLMO`](@ref) for projections composed with oracles.
 
 ### User-defined LMOs
 If you want use  your own custom LMO `MyLMO` in the algorithms provided here, it
