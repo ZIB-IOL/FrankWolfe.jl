@@ -39,7 +39,7 @@ You can use an oracle defined via a Linear Programming solver (e.g. `SCIP` or `H
 We provide wrappers to combine oracles easily, for example [`FrankWolfe.ProductLMO`](@ref) for product of oracles or [`FrankWolfe.SubspaceLMO`](@ref) for projections composed with oracles.
 
 ### User-defined LMOs
-If you want use  your own custom LMO `MyLMO` in the algorithms provided here, it
+If you want use your own custom LMO `MyLMO` in the algorithms provided here, it
 is required that
 * `MyLMO` be a subtype of [`FrankWolfe.LinearMinimizationOracle`](@ref);
 * the method `FrankWolfe.compute_extreme_point` (see below) be defined and minimize $v \mapsto \langle d, v \rangle$ over the set $\mathcal{C}$ defined by the custom LMO `MyLMO`.
