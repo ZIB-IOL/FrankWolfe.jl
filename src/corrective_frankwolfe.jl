@@ -25,7 +25,6 @@ function corrective_frankwolfe(
     traj_data=[],
     timeout=Inf,
     renorm_interval=1000,
-    lazy=false,
     linesearch_workspace=nothing,
     lazy_tolerance=2.0,
     weight_purge_threshold=weight_purge_threshold_default(R),
@@ -80,13 +79,13 @@ function corrective_frankwolfe(
             "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
         )
         grad_type = typeof(gradient)
-        println("GRADIENTTYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance")
+        println("GRADIENTTYPE: $grad_type")
         println("LMO: $(typeof(lmo))")
     end
 
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
-    # if !lazy, phi is maintained as the global dual gap
+    # if not a lazy corrector, phi is maintained as the global dual gap
     phi = max(0, fast_dot(x, gradient) - fast_dot(v, gradient))
     dual_gap = phi
     gamma = one(phi)
@@ -151,8 +150,9 @@ function corrective_frankwolfe(
                 x = get_active_set_iterate(active_set)
                 grad!(gradient, x)
                 dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
+                primal = f(x)
             end
-            if (dual_gap ≥ epsilon) && (!lazy || dual_gap ≥ phi / lazy_tolerance)
+            if dual_gap ≥ epsilon
                 d = muladd_memory_mode(memory_mode, d, x, v)
 
                 gamma = perform_line_search(
@@ -167,6 +167,9 @@ function corrective_frankwolfe(
                     linesearch_workspace,
                     memory_mode,
                 )
+                if gamma ≈ 1
+                    step_type = ST_DROP
+                end
                 if callback !== nothing
                     state = CallbackState(
                         t,
@@ -195,7 +198,12 @@ function corrective_frankwolfe(
                 else
                     renorm = mod(t, renorm_interval) == 0
                     active_set_update!(active_set, gamma, v, renorm, nothing)
+                    if renorm
+                        active_set_renormalize!(active_set)
+                        x = compute_active_set_iterate!(active_set)
+                    end
                 end
+                primal = f(x)
             end
         end
     end

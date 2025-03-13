@@ -22,30 +22,43 @@ using LinearAlgebra
 
     lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
     x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
-    active_set = FrankWolfe.ActiveSet([(1.0, copy(x0))])
 
-    # Run corrective FW with away steps
-    x_cfw, v_cfw, primal_cfw, dual_gap_cfw, traj_cfw = FrankWolfe.corrective_frankwolfe(
-        f,
-        grad!,
-        lmo,
-        FrankWolfe.AwayStep(),
-        active_set,
-        max_iteration=k,
-        verbose=false
-    )
-
-    # Run away FW
     x_afw, v_afw, primal_afw, dual_gap_afw, traj_afw = FrankWolfe.away_frank_wolfe(
         f,
         grad!,
         lmo,
         copy(x0),
         max_iteration=k,
-        verbose=false
+        verbose=true,
+        print_iter=1,
+        lazy=true
     )
 
-    # Check solutions match
-    @test abs(primal_cfw - primal_afw) <= 1e-6
-    @test isapprox(x_cfw, x_afw, rtol=1e-6)
+    for lazy in (true, false)
+        x_cfw, v_cfw, primal_cfw, dual_gap_cfw, traj_cfw = FrankWolfe.corrective_frankwolfe(
+            f,
+            grad!,
+            lmo,
+            FrankWolfe.AwayStep(lazy),
+            FrankWolfe.ActiveSet([(1.0, copy(x0))]),
+            max_iteration=k,
+            verbose=false,
+        )
+        @test abs(primal_cfw - primal_afw) <= 1e-6
+        @test isapprox(x_cfw, x_afw, rtol=1e-5)
+
+        x_bp, _, primal_bp, dual_gap_bp, _ = FrankWolfe.corrective_frankwolfe(
+            f,
+            grad!,
+            lmo,
+            FrankWolfe.BlendedPairwiseStep(lazy),
+            FrankWolfe.ActiveSet([(1.0, copy(x0))]),
+            max_iteration=k,
+            verbose=false,
+        )
+        # Check solutions match
+        @test abs(primal_bp - primal_afw) <= 1e-6
+        @test isapprox(x_bp, x_afw, rtol=1e-5)
+    end
+
 end
