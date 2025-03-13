@@ -206,7 +206,7 @@ end
 
 function active_set_renormalize!(active_set::AbstractActiveSet)
     renorm = sum(active_set.weights)
-    active_set.weights ./= renorm
+    active_set_mul_weights!(active_set, inv(renorm))
     return active_set
 end
 

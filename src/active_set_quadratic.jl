@@ -181,15 +181,6 @@ function active_set_add_weight!(active_set::ActiveSetQuadraticProductCaching, la
     @inbounds active_set.modified[i] = true
 end
 
-function active_set_renormalize!(active_set::ActiveSetQuadraticProductCaching)
-    renorm = sum(active_set.weights)
-    active_set.weights ./= renorm
-    active_set.weights_prev ./= renorm
-    # WARNING: it might sometimes be necessary to recompute dots_x to prevent discrepancy due to numerical errors
-    active_set.dots_x ./= renorm
-    return active_set
-end
-
 function active_set_argmin(active_set::ActiveSetQuadraticProductCaching, direction)
     valm = typemax(eltype(direction))
     idxm = -1
