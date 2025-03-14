@@ -10,7 +10,11 @@ This package is a toolbox for Frank-Wolfe and conditional gradients algorithms.
 
 ## Overview
 
-Frank-Wolfe algorithms were designed to solve optimization problems of the form $\min_{x ∈ C} f(x)$, where $f$ is a differentiable convex function and $C$ is a convex and compact set.
+Frank-Wolfe algorithms were designed to solve optimization problems of the form 
+```math
+\min_{x ∈ C} f(x),
+```
+where $f$ is a differentiable convex function and $C$ is a convex and compact set.
 They are especially useful when we know how to optimize a linear function over $C$ in an efficient way.
 
 A paper presenting the package with mathematical explanations and numerous examples can be found here:
@@ -34,20 +38,36 @@ Pkg.add(url="https://github.com/ZIB-IOL/FrankWolfe.jl", rev="master")
 
 ## Getting started
 
-Let's say we want to minimize the Euclidian norm over the probability simplex `Δ`. Using `FrankWolfe.jl`, this is what the code looks like (in dimension 3):
+Let's say we want to solve the following minimization problem 
+```math
+\min_{p \in  Δ(n)} p_1^2 + \dots + p_n^2,
+```
+where $`Δ(n)= \{p \in R^n_{\geq 0} | p_1 + \dots + p_n =1\}`$ is the _probability simplex_.
+
+Using `FrankWolfe.jl`, let's write a minimal code solving this problem in dimension $n=3$.
+The main function is **`FrankWolfe.frank_wolfe`** and it requires: 
+
+* a **function `f`** that computes the values of the objective function $f$;
+* a **function `grad!`** that computes in-place the gradient of the objective function $f$;
+* a **subtype of `FrankWolfe.LinearMinimizationOracle`** for which a method of        `FrankWolfe.compute_extreme_point` has been implemented (see [here](https://zib-iol.github.io/FrankWolfe.jl/dev/basics/#Linear-Minimization-Oracles));
+* a **starting vector `p0`**.
 
 ```julia
 julia> using FrankWolfe
 
-julia> f(p) = sum(abs2, p)  # objective function
+# objective function f(p) = p_1^2 + ... + p_n^2
+julia> f(p) = sum(abs2, p)
 
-julia> grad!(storage, p) = storage .= 2p  # in-place gradient computation
+# in-place gradient computation for f thanks to '.='
+julia> grad!(storage, p) = storage .= 2p  
 
-# # function d ⟼ argmin ⟨p,d⟩ st. p ∈ Δ
+# pre-defined type implementing the linear minimization oracle interface for the simplex
 julia> lmo = FrankWolfe.ProbabilitySimplexOracle(1.)
 
+# starting vector (of dimension n=3)
 julia> p0 = [1., 0., 0.]
 
+# an optimal solution is returned in p_opt
 julia> p_opt, _ = frank_wolfe(f, grad!, lmo, p0; verbose=true);
 
 Vanilla Frank-Wolfe Algorithm.
@@ -69,7 +89,7 @@ julia> p_opt
  0.3333333286623478
 ```
 
-Note that active-set based methods like Away Frank-Wolfe and Blended Pairwise Conditional Gradient also include a post processing step. 
+**Note** that active-set based methods like the Away-step Frank-Wolfe and Blended Pairwise Conditional Gradients also include a post-processing step. 
 In post-processing all values are recomputed and in particular the dual gap is computed at the current FW vertex, which might be slightly larger than the best dual gap observed as the gap is not monotonic. This is expected behavior.
 
 
