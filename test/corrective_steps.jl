@@ -3,6 +3,7 @@ using Test
 using StableRNGs
 using Random
 using LinearAlgebra
+using SparseArrays
 
 @testset "Corrective steps" begin
     n = 100
@@ -60,4 +61,17 @@ using LinearAlgebra
         @test abs(primal_bp - primal_afw) <= 1e-6
         @test isapprox(x_bp, x_afw, rtol=1e-5)
     end
+
+    lazy = true
+    x_hyb, _, primal_hyb, _ = FrankWolfe.corrective_frankwolfe(
+        f,
+        grad!,
+        lmo,
+        FrankWolfe.HybridPairAwayStep(lazy, copy(x0)),
+        FrankWolfe.ActiveSet([(1.0, copy(x0))]),
+        max_iteration=k,
+        verbose=false,
+    )
+    @test abs(primal_hyb - primal_afw) <= 1e-6
+    @test isapprox(x_hyb, x_afw, rtol=1e-5)    
 end

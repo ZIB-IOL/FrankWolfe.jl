@@ -441,12 +441,12 @@ function run_corrective_step(corrective_step::HybridPairAwayStep, f, grad!, grad
         # cleanup and renormalize every x iterations. Only for the fw steps.
         renorm = mod(t, renorm_interval) == 0
         if select_away
-            active_set_update!(active_set, -gamma, a, renorm, index)
+            active_set_update!(active_set, -gamma, a, renorm, a_loc)
         else
             active_set_update_pairwise!(
                 active_set,
                 gamma,
-                gamma_max,
+                gamma_max_pairiwse,
                 v_loc,
                 a_loc,
                 v_local,
@@ -483,7 +483,6 @@ function run_corrective_step(corrective_step::HybridPairAwayStep, f, grad!, grad
         gamma_max = one(a_lambda)
         d = muladd_memory_mode(memory_mode, d, x, v_lazy)
         vertex = v_lazy
-        index = v_loc
 
         gamma = perform_line_search(
             line_search,
@@ -519,7 +518,7 @@ function run_corrective_step(corrective_step::HybridPairAwayStep, f, grad!, grad
             should_continue = callback(state, active_set)
         end
         renorm = mod(t, renorm_interval) == 0
-        active_set_update!(active_set, gamma, vertex, renorm, index)
+        active_set_update!(active_set, gamma, vertex, renorm, v_loc)
         if mod(t, renorm_interval) == 0
             active_set_renormalize!(active_set)
             x = compute_active_set_iterate!(active_set)
