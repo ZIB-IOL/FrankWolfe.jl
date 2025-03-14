@@ -294,3 +294,236 @@ function run_corrective_step(corrective_step::BlendedPairwiseStep, f, grad!, gra
     end
     return x, v, phi, dual_gap, should_fw_step, should_continue
 end
+
+"""
+Compares a pairwise and away step and chooses the one with most progress.
+The line search is computed for both steps.
+If one step incurs a drop, it is favored, otherwise the one decreasing the primal value the most is favored.
+"""
+struct CombinedPairAwayStep{DT} <: CorrectiveStep
+    lazy::Bool
+    d_pairwise::DT
+end
+
+
+function prepare_corrective_step(corrective_step::CombinedStep, f, grad!, gradient, active_set, t, lmo, primal, phi)
+    return !corrective_step.lazy
+end
+
+function run_corrective_step(corrective_step::CombinedStep, f, grad!, gradient, x, v, dual_gap, active_set, t, lmo, line_search, linesearch_workspace, primal, phi, tot_time, callback, renorm_interval, memory_mode, epsilon, lazy_tolerance, d)
+    _, v_local, v_loc, _, a_lambda, a, a_loc, _, _ = active_set_argminmax(active_set, gradient)
+    grad_dot_x = fast_dot(x, gradient)
+    grad_dot_a = fast_dot(a, gradient)
+    grad_dot_local_fw_vertex = fast_dot(v_local, gradient)
+    pairwise_gap = grad_dot_a - grad_dot_local_fw_vertex
+    lazy_gap = grad_dot_x - grad_dot_local_fw_vertex
+    # flag for whether callback interrupts the solving process
+    should_continue = true
+    # if not enough progress from pairwise or local, directly perform a FW step
+    if max(pairwise_gap, lazy_gap) < max(phi / lazy_tolerance, epsilon)
+        if !corrective_step.lazy
+            # v computed above already
+            should_fw_step = true
+        else # lazy case, v needs to be computed here
+            v = compute_extreme_point(lmo, gradient)
+            dual_gap = grad_dot_x - fast_dot(gradient, v)
+            # FW vertex promises progress
+            if dual_gap ≥ max(epsilon, phi / lazy_tolerance)
+                should_fw_step = true
+            else
+                should_fw_step = false
+                step_type = ST_DUALSTEP
+                phi = min(dual_gap, phi / 2)
+                if callback !== nothing
+                    gamma = zero(a_lambda)
+                    state = CallbackState(
+                        t,
+                        primal,
+                        primal - phi,
+                        phi,
+                        tot_time,
+                        x,
+                        v,
+                        nothing,
+                        gamma,
+                        f,
+                        grad!,
+                        lmo,
+                        gradient,
+                        step_type,
+                    )
+                    should_continue = callback(state, active_set)
+                end
+            end
+        end
+    elseif pairwise_gap > max(phi / lazy_tolerance, epsilon)
+        should_fw_step = false
+        d_pairwise = muladd_memory_mode(memory_mode, corrective_step.d_pairwise, a, v_local)
+        vertex_taken = v_local
+        gamma_max_pairiwse = a_lambda
+        gamma_pairwise = perform_line_search(
+            line_search,
+            t,
+            f,
+            grad!,
+            gradient,
+            x,
+            d_pairwise,
+            gamma_max_pairiwse,
+            linesearch_workspace,
+            memory_mode,
+        )
+        gamma_pairwise = min(gamma_max_pairiwse, gamma_pairwise)
+        step_type_pairwise = gamma_pairwise ≈ gamma_max_pairiwse ? ST_DROP : ST_PAIRWISE
+
+        d_away = muladd_memory_mode(memory_mode, d, a, x)
+        vertex_taken = v_local
+        gamma_max_away = a_lambda / (1 - a_lambda)
+        gamma_away = perform_line_search(
+            line_search,
+            t,
+            f,
+            grad!,
+            gradient,
+            x,
+            d_away,
+            gamma_max_away,
+            linesearch_workspace,
+            memory_mode,
+        )
+        gamma_away = min(gamma_max_away, gamma_away)
+        step_type_away = gamma_away ≈ gamma_max_away ? ST_DROP : ST_AWAY
+
+        select_away = false
+        # both drop, take the most primal progress
+        if step_type_away == ST_DROP && step_type_pairwise == ST_DROP
+            if f(x - gamma_away * d_away) < f(x - gamma_pairwise * d_pairwise)
+                select_away = true
+            end
+        elseif step_type_away == ST_DROP
+            select_away = true
+        elseif step_type_pairwise == ST_DROP
+            select_away = false
+        else # none drops, take the most primal progress
+            if f(x - gamma_away * d_away) < f(x - gamma_pairwise * d_pairwise)
+                select_away = true
+            end
+        end
+        if select_away
+            d = d_away
+            gamma = gamma_away
+            step_type = step_type_away
+        else
+            d = d_pairwise
+            gamma = gamma_pairwise
+            step_type = step_type_pairwise
+        end
+        
+        state = CallbackState(
+            t,
+            primal,
+            primal - phi,
+            phi,
+            tot_time,
+            x,
+            v_local,
+            d,
+            gamma,
+            f,
+            grad!,
+            lmo,
+            gradient,
+            step_type,
+        )
+        if callback !== nothing
+            should_continue = callback(state, active_set)
+        end
+        # cleanup and renormalize every x iterations. Only for the fw steps.
+        renorm = mod(t, renorm_interval) == 0
+        if select_away
+            active_set_update!(active_set, -gamma, a, renorm, index)
+        else
+            active_set_update_pairwise!(
+                active_set,
+                gamma,
+                gamma_max,
+                v_loc,
+                a_loc,
+                v_local,
+                a,
+                false,
+                nothing,
+            )
+        end
+        state = CallbackState(
+            t,
+            primal,
+            primal - phi,
+            phi,
+            tot_time,
+            x,
+            v,
+            d,
+            gamma,
+            f,
+            grad!,
+            lmo,
+            gradient,
+            step_type,
+        )
+        if callback !== nothing
+            should_continue = callback(state, active_set)
+        end
+        if mod(t, renorm_interval) == 0
+            active_set_renormalize!(active_set)
+            x = compute_active_set_iterate!(active_set)
+        end
+    else # perform local step if one of the local gaps promises enough progress
+        step_type = ST_LAZY
+        gamma_max = one(a_lambda)
+        d = muladd_memory_mode(memory_mode, d, x, v_lazy)
+        vertex = v_lazy
+        index = v_loc
+
+        gamma = perform_line_search(
+            line_search,
+            t,
+            f,
+            grad!,
+            gradient,
+            x,
+            d,
+            gamma_max,
+            linesearch_workspace,
+            memory_mode,
+        )
+        gamma = min(gamma_max, gamma)
+        step_type = gamma ≈ gamma_max ? ST_DROP : step_type
+        state = CallbackState(
+            t,
+            primal,
+            primal - phi,
+            phi,
+            tot_time,
+            x,
+            vertex,
+            d,
+            gamma,
+            f,
+            grad!,
+            lmo,
+            gradient,
+            step_type,
+        )
+        if callback !== nothing
+            should_continue = callback(state, active_set)
+        end
+        renorm = mod(t, renorm_interval) == 0
+        active_set_update!(active_set, gamma, vertex, renorm, index)
+        if mod(t, renorm_interval) == 0
+            active_set_renormalize!(active_set)
+            x = compute_active_set_iterate!(active_set)
+        end
+    end
+    return x, v, phi, dual_gap, should_fw_step, should_continue
+end

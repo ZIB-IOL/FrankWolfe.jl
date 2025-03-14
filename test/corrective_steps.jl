@@ -60,5 +60,4 @@ using LinearAlgebra
         @test abs(primal_bp - primal_afw) <= 1e-6
         @test isapprox(x_bp, x_afw, rtol=1e-5)
     end
-
 end
