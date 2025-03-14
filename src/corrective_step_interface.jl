@@ -300,17 +300,17 @@ Compares a pairwise and away step and chooses the one with most progress.
 The line search is computed for both steps.
 If one step incurs a drop, it is favored, otherwise the one decreasing the primal value the most is favored.
 """
-struct CombinedPairAwayStep{DT} <: CorrectiveStep
+struct HybridPairAwayStep{DT} <: CorrectiveStep
     lazy::Bool
     d_pairwise::DT
 end
 
 
-function prepare_corrective_step(corrective_step::CombinedStep, f, grad!, gradient, active_set, t, lmo, primal, phi)
+function prepare_corrective_step(corrective_step::HybridPairAwayStep, f, grad!, gradient, active_set, t, lmo, primal, phi)
     return !corrective_step.lazy
 end
 
-function run_corrective_step(corrective_step::CombinedStep, f, grad!, gradient, x, v, dual_gap, active_set, t, lmo, line_search, linesearch_workspace, primal, phi, tot_time, callback, renorm_interval, memory_mode, epsilon, lazy_tolerance, d)
+function run_corrective_step(corrective_step::HybridPairAwayStep, f, grad!, gradient, x, v, dual_gap, active_set, t, lmo, line_search, linesearch_workspace, primal, phi, tot_time, callback, renorm_interval, memory_mode, epsilon, lazy_tolerance, d)
     _, v_local, v_loc, _, a_lambda, a, a_loc, _, _ = active_set_argminmax(active_set, gradient)
     grad_dot_x = fast_dot(x, gradient)
     grad_dot_a = fast_dot(a, gradient)
