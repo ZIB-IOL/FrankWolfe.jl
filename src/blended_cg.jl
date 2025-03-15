@@ -457,6 +457,7 @@ function minimize_over_convex_hull!(
     use_extra_vertex_storage=false,
     extra_vertex_storage=nothing,
 ) where {AT,R}
+println("minimize_over_convex_hull!")
     #No hessian is known, use simplex gradient descent.
     if hessian === nothing
         number_of_steps = simplex_gradient_descent_over_convex_hull(
@@ -701,6 +702,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
     memory_mode::MemoryEmphasis,
     non_simplex_iter=0,
 )
+println("accelerated_simplex_gradient_descent_over_probability_simplex")
     number_of_steps = 0
     x = deepcopy(initial_point)
     x_old = deepcopy(initial_point)
@@ -792,6 +794,7 @@ function simplex_gradient_descent_over_probability_simplex(
     callback,
     timeout=Inf,
 )
+println("simplex_gradient_descent_over_probability_simplex")
     number_of_steps = 0
     x = deepcopy(initial_point)
     gradient = collect(x)
@@ -920,15 +923,18 @@ function simplex_gradient_descent_over_convex_hull(
     use_extra_vertex_storage=false,
     extra_vertex_storage=nothing,
 ) where {AT,R}
+println("simplex_gradient_descent_over_convex_hull")
     number_of_steps = 0
     x = get_active_set_iterate(active_set)
     if line_search_inner isa Adaptive
         line_search_inner.L_est = Inf
     end
     while t + number_of_steps ≤ max_iteration
+        @show number_of_steps
         grad!(gradient, x)
         #Check if strong Wolfe gap over the convex hull is small enough.
         c = [fast_dot(gradient, a) for a in active_set.atoms]
+        @show tolerance, maximum(c), minimum(c), maximum(c) - minimum(c)
         if maximum(c) - minimum(c) <= tolerance || t + number_of_steps ≥ max_iteration
             return number_of_steps
         end
@@ -977,10 +983,12 @@ function simplex_gradient_descent_over_convex_hull(
         # TODO at some point avoid materializing both x and y
         x = copy(active_set.x)
         η = max(0, η)
+        @show η
         @. active_set.weights -= η * d
         y = copy(compute_active_set_iterate!(active_set))
         number_of_steps += 1
         gamma = NaN
+        @show f(x), f(y)
         if f(x) ≥ f(y)
             active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold, add_dropped_vertices=use_extra_vertex_storage, vertex_storage=extra_vertex_storage)
         else
@@ -1030,6 +1038,7 @@ function simplex_gradient_descent_over_convex_hull(
                 )
             end
             gamma = min(1, gamma)
+            @show gamma
             # step back from y to x by (1 - γ) η d
             # new point is x - γ η d
             if gamma == 1.0
@@ -1044,6 +1053,7 @@ function simplex_gradient_descent_over_convex_hull(
         dual_gap = tolerance
         step_type = ST_SIMPLEXDESCENT
         if callback !== nothing
+            println("Callback in simplex descent")
             state = CallbackState(
                 t,
                 primal,
@@ -1097,6 +1107,7 @@ function lp_separation_oracle(
     phi=Inf,
     kwargs...,
 )
+println("lp_separation_oracle")
     # if FW step forced, ignore active set
     if !force_fw_step
         ybest = active_set.atoms[1]
