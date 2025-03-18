@@ -249,24 +249,12 @@ function blended_pairwise_conditional_gradient(
                     break
                 end
             end
-            # reached maximum of lambda -> dropping away vertex
-            if gamma ≈ gamma_max
-                active_set.weights[v_local_loc] += gamma
-                deleteat!(active_set, a_loc)
-                if add_dropped_vertices
-                    push!(extra_vertex_storage, a)
-                end
-            else # transfer weight from away to local FW
-                active_set.weights[a_loc] -= gamma
-                active_set.weights[v_local_loc] += gamma
-                @assert active_set_validate(active_set)
-            end
-            active_set_update_iterate_pairwise!(active_set.x, gamma, v_local, a)
+            active_set_update_pairwise!(active_set, gamma, gamma_max, v_local_loc, a_loc, v_local, a, add_dropped_vertices, extra_vertex_storage)
         else # add to active set
             if lazy # otherwise, v computed above already
                 # optionally try to use the storage
                 if use_extra_vertex_storage
-                    lazy_threshold = fast_dot(gradient, x) - phi / lazy_tolerance
+                    lazy_threshold = fast_dot(gradient, x) - max(epsilon, phi / lazy_tolerance)
                     (found_better_vertex, new_forward_vertex) =
                         storage_find_argmin_vertex(extra_vertex_storage, gradient, lazy_threshold)
                     if found_better_vertex

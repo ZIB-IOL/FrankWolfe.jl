@@ -13,16 +13,16 @@ It also demonstrates how to set up custom callbacks for tracking algorithm progr
 using LinearAlgebra
 using Test
 using Random
+using StableRNGs
+
 using FrankWolfe
 import HiGHS
 
 n = Int(1e4)
 k = 10000
 
-# s = rand(1:100)
 s = 10
-# @info "Seed $s"
-Random.seed!(s)
+Random.seed!(StableRNG(s), s)
 
 xpi = rand(n);
 total = sum(xpi);
