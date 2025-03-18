@@ -178,10 +178,6 @@ function blended_conditional_gradient(
             )
         end
     end
-    # ensure x is a mutable type
-    if !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
-        x = copyto!(similar(x), x)
-    end
     non_simplex_iter = 0
     force_fw_step = false
 
