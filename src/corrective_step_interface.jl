@@ -526,3 +526,13 @@ function run_corrective_step(corrective_step::HybridPairAwayStep, f, grad!, grad
     end
     return x, v, phi, dual_gap, should_fw_step, should_continue
 end
+
+struct BlendedStep <: CorrectiveStep
+end
+
+# BCG never needs the vertex to perform the step
+prepare_corrective_step(::BlendedStep, f, grad!, gradient, active_set, t, lmo, primal, phi) = false
+
+function run_corrective_step(corrective_step::BlendedStep, f, grad!, gradient, x, v, dual_gap, active_set, t, lmo, line_search, linesearch_workspace, primal, phi, tot_time, callback, renorm_interval, memory_mode, epsilon, lazy_tolerance, d)
+    
+end
