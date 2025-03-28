@@ -48,6 +48,59 @@ end
 mutable struct CndGState 
     status::CndGStatus
 end
+
+
+"""
+Supertype for parameters of the condiditional gradient descent.
+    All MomentumStepsize must implement `compute_CnGD_parameters(parameters_rule::ConstantLZParameters,...)`
+    and return a tuple of parameters `param` for conditional_gradient_descent
+    See Algorithm 1 in https://doi.org/10.1137/140992382.
+"""
+
+abstract type CnGDParameters end
+
+function compute_CnGD_parameters end
+
+
+"""
+Supertype for parameters for  `LanZhouProcedure`
+See Algorithm 1 in https://doi.org/10.1137/140992382.
+"""
+abstract type LZParameters <:CnGDParameters end
+
+"""
+    ConstantLZParameters <:CnGDParameters 
+    Constant parameters eta and beta for condiditional gradient step.
+"""
+
+struct ConstantLZParameters <:CnGDParameters 
+    threshold::Real
+    regularization::Real
+end
+
+function compute_CnGD_parameters(parameters_rule::ConstantLZParameters,
+                                t
+                                )
+    return parameters_rule.threshold, parameters_rule.regularization
+end
+
+"""
+    FixedLZParameters <:CnGDParameters  
+    Fixed trajectory only depending on the iteration t of parameters eta and beta for condiditional gradient step.
+"""
+struct FixedLZParameters <:CnGDParameters 
+    threshold_trajectory
+    regularization_trajectory
+end
+
+function compute_CnGD_parameters(parameters_rule::FixedLZParameters,
+                                t
+                                )                                
+    return parameters_rule.threshold_trajectory(t), parameters_rule.regularization_trajectory(t)
+end
+
+
+
 """
     LanZhouProcedure <: CndGO
 
@@ -175,49 +228,6 @@ function compute_momentum_stepsize(stepsize_rule::FixedMStepsize,
                                 )                                
     return stepsize_rule.stepsize_trajectory(t)
 end
-
-"""
-Supertype for parameters eta and beta of the condiditional gradient descent.
-    All MomentumStepsize must implement `compute_CnGD_parameters(parameters_rule::ConstantCnGDParameters,...)`
-    and return a threshold and a regularization parameters.
-    See Algorithm 1 in https://doi.org/10.1137/140992382.
-"""
-
-abstract type CnGDParameters end
-
-function compute_CnGD_parameters end
-
-"""
-    ConstantCnGDParameters <:CnGDParameters 
-    Constant parameters eta and beta for condiditional gradient step.
-"""
-
-struct ConstantCnGDParameters <:CnGDParameters 
-    threshold::Real
-    regularization::Real
-end
-
-function compute_CnGD_parameters(parameters_rule::ConstantCnGDParameters,
-                                t
-                                )
-    return parameters_rule.threshold, parameters_rule.regularization
-end
-
-"""
-    FixedCnGDParameters <:CnGDParameters  
-    Fixed trajectory only depending on the iteration t of parameters eta and beta for condiditional gradient step.
-"""
-struct FixedCnGDParameters <:CnGDParameters 
-    threshold_trajectory
-    regularization_trajectory
-end
-
-function compute_CnGD_parameters(parameters_rule::FixedCnGDParameters,
-                                t
-                                )                                
-    return parameters_rule.threshold_trajectory(t), parameters_rule.regularization_trajectory(t)
-end
-
 
 
 """
