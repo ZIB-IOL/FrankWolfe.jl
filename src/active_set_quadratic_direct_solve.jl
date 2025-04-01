@@ -37,6 +37,7 @@ struct ActiveSetQuadraticLinearSolve{
     wolfe_step::Bool
     scheduler::SF
     counter::Base.RefValue{Int}
+    cg_solve::Union{Nothing, Function}
 end
 
 """
@@ -50,9 +51,10 @@ function ActiveSetQuadraticLinearSolve(
     lp_optimizer;
     scheduler=LogScheduler(),
     wolfe_step=false,
+    cg_solve=nothing,
 ) where {AT,R}
     A, b = detect_quadratic_function(grad!, tuple_values[1][2])
-    return ActiveSetQuadraticLinearSolve(tuple_values, A, b, lp_optimizer, scheduler=scheduler, wolfe_step=wolfe_step)
+    return ActiveSetQuadraticLinearSolve(tuple_values, A, b, lp_optimizer, scheduler=scheduler, wolfe_step=wolfe_step, cg_solve=cg_solve)
 end
 
 """
@@ -67,6 +69,7 @@ function ActiveSetQuadraticLinearSolve(
     lp_optimizer;
     scheduler=LogScheduler(),
     wolfe_step=false,
+    cg_solve=nothing,
 ) where {AT,R,H}
     inner_as = ActiveSetQuadraticProductCaching(tuple_values, A, b)
     return ActiveSetQuadraticLinearSolve(
@@ -80,6 +83,7 @@ function ActiveSetQuadraticLinearSolve(
         wolfe_step,
         scheduler,
         Ref(0),
+        cg_solve,
     )
 end
 
@@ -90,6 +94,7 @@ function ActiveSetQuadraticLinearSolve(
     lp_optimizer;
     scheduler=LogScheduler(),
     wolfe_step=false,
+    cg_solve=nothing,
 )
     as = ActiveSetQuadraticLinearSolve(
         inner_as.weights,
@@ -102,6 +107,7 @@ function ActiveSetQuadraticLinearSolve(
         wolfe_step,
         scheduler,
         Ref(0),
+        cg_solve,
     )
     compute_active_set_iterate!(as)
     return as
@@ -114,6 +120,7 @@ function ActiveSetQuadraticLinearSolve(
     lp_optimizer;
     scheduler=LogScheduler(),
     wolfe_step=false,
+    cg_solve=nothing,
 )
     as = ActiveSetQuadraticLinearSolve(
         inner_as.weights,
@@ -126,20 +133,22 @@ function ActiveSetQuadraticLinearSolve(
         wolfe_step,
         scheduler,
         Ref(0),
+        cg_solve,
     )
     compute_active_set_iterate!(as)
     return as
 end
 
 function ActiveSetQuadraticLinearSolve(
-    inner_as::AbstractActiveSet,
+    inner_as::AbstractActiveSet,    
     grad!::Function,
     lp_optimizer;
     scheduler=LogScheduler(),
     wolfe_step=false,
+    cg_solve=nothing,
 )
     A, b = detect_quadratic_function(grad!, inner_as.atoms[1])
-    return ActiveSetQuadraticLinearSolve(inner_as, A, b, lp_optimizer; scheduler=scheduler, wolfe_step=wolfe_step)
+    return ActiveSetQuadraticLinearSolve(inner_as, A, b, lp_optimizer; scheduler=scheduler, wolfe_step=wolfe_step, cg_solve=cg_solve)
 end
 
 function ActiveSetQuadraticLinearSolve{AT,R}(
@@ -275,6 +284,75 @@ function solve_quadratic_activeset_lp!(
     as::ActiveSetQuadraticLinearSolve{AT,R,IT,H},
 ) where {AT,R,IT,H}
     nv = length(as)
+
+    if as.cg_solve !== nothing
+        if !as.wolfe_step
+            error("CG is not supported for non-Wolfe steps")
+        end
+
+
+        cg1_time = time()
+
+        nv = length(as)
+        n_reduced = nv - 1
+        
+        # Pre-allocate arrays
+        A_mat = Matrix{Float64}(undef, n_reduced, n_reduced)
+        r_vec = Vector{Float64}(undef, n_reduced)
+        temp1 = similar(as.atoms[1])
+        temp2 = similar(as.atoms[1])
+        temp3 = similar(as.atoms[1])
+        
+        # Cache the first atom and its transformation
+        atom1 = as.atoms[1]
+        A_atom1 = mul!(temp3, as.A, atom1)
+        
+        # Construct A_mat and rhs more efficiently
+        for i in 2:nv
+            # Calculate (as.atoms[i] - atom1) once
+            diff_i = mul!(temp1, I, as.atoms[i])
+            @. diff_i -= atom1
+            
+            # Calculate A * (as.atoms[i] - atom1) once for reuse
+            A_diff_i = mul!(temp2, as.A, diff_i)
+            
+            # Fill rhs
+            r_vec[i-1] = -dot(diff_i, A_atom1 + as.b)
+            
+            # Fill A_mat
+            for j in 2:i
+                diff_j = mul!(temp2, I, as.atoms[j])
+                @. diff_j -= atom1
+                A_mat[i-1, j-1] = dot(diff_i, mul!(temp2, as.A, diff_j))
+                if i != j
+                    A_mat[j-1, i-1] = A_mat[i-1, j-1]  # Exploit symmetry
+                end
+            end
+        end
+        
+        # Define matrix-vector multiplication function
+        A = (b, x) -> mul!(b, A_mat, x)
+        
+        # Solve system
+        μ = as.cg_solve(A_mat, r_vec)
+        
+        # Return result with first coefficient
+        x = [1 - sum(μ); μ]
+
+        cg1_time = time() - cg1_time
+
+
+        cg2_time = time()
+        nv = length(as)
+        M = [dot(as.atoms[i], as.A * as.atoms[j]) for i in 1:nv, j in 1:nv]
+        w = as.cg_solve(M, ones(nv))
+        u = as.cg_solve(M, [-dot(as.atoms[i], as.b) for i in 1:nv])
+        x2 = u - (sum(u) - 1)/sum(w) * w
+        cg2_time = time() - cg2_time
+
+
+    end
+    moi_time = time()
     o = as.lp_optimizer
     MOI.empty!(o)
     λ = MOI.add_variables(o, nv)
@@ -303,6 +381,61 @@ function solve_quadratic_activeset_lp!(
     MOI.set(o, MOI.ObjectiveFunction{typeof(sum_of_variables)}(), sum_of_variables)
     MOI.set(o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
     MOI.optimize!(o)
+    moi_time = time() - moi_time
+
+
+    mo2_time = time()
+    o = as.lp_optimizer
+    MOI.empty!(o)
+    λ2 = MOI.add_variables(o, nv)
+    # λ ≥ 0, ∑ λ == 1
+    if !as.wolfe_step
+        MOI.add_constraint.(o, λ2, MOI.GreaterThan(0.0))
+    end
+    sum_of_variables = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, λ2), 0.0)
+    MOI.add_constraint(o, sum_of_variables, MOI.EqualTo(1.0))
+    # Wᵗ A V λ == -Wᵗ b
+    # V has columns vi
+    # W has columns vi - v1
+    for i in 2:nv
+        lhs = MOI.ScalarAffineFunction{Float64}([], 0.0)
+        Base.sizehint!(lhs.terms, nv)
+        # replaces direct sum because of MOI and MutableArithmetic slow sums
+        for j in 1:nv
+            push!(
+                lhs.terms,
+                _compute_quadratic_constraint_term2(as.atoms[i], as.atoms[1], as.A, as.atoms[j], λ2[j]),
+            )
+        end
+        rhs =  dot(as.atoms[1], as.b) - dot(as.atoms[i], as.b) + fast_dot(as.atoms[1], as.A, as.atoms[1]) - fast_dot(as.atoms[i], as.A, as.atoms[1])
+        MOI.add_constraint(o, lhs, MOI.EqualTo{Float64}(rhs))
+    end
+    MOI.set(o, MOI.ObjectiveFunction{typeof(sum_of_variables)}(), sum_of_variables)
+    MOI.set(o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+    MOI.optimize!(o)
+    mo2_time = time() - mo2_time
+
+
+
+    if as.cg_solve !== nothing
+
+        M = [dot(as.atoms[i]-as.atoms[1], as.A * as.atoms[j]) for i in 1:nv, j in 1:nv]
+        c = [-dot(as.atoms[i]-as.atoms[1], as.b) for i in 1:nv]
+
+        moi_error = norm(M*MOI.get.(o, MOI.VariablePrimal(), λ) - c)
+        mo2_error = norm(M*MOI.get.(o, MOI.VariablePrimal(), λ2) - c)
+        cg1_error = norm(M*x - c)
+        cg2_error = norm(M*x2 - c)
+
+        moi_error2 = norm(A_mat*MOI.get.(o, MOI.VariablePrimal(), λ)[2:end] - r_vec)
+        mo2_error2 = norm(M*MOI.get.(o, MOI.VariablePrimal(), λ2) - c)
+        cg1_error2 = norm(A_mat*x[2:end] - r_vec)
+        cg2_error2 = norm(A_mat*x2[2:end] - r_vec)
+
+        @info "Time $(moi_time/cg1_time)" moi_time mo2_time cg1_time cg2_time 
+        #@info "Error $(moi_error/cg1_error)" moi_error mo2_error cg1_error cg2_error moi_error2 mo2_error2 cg1_error2 cg2_error2
+
+    end
     if MOI.get(o, MOI.TerminationStatus()) ∉ (MOI.OPTIMAL, MOI.FEASIBLE_POINT, MOI.ALMOST_OPTIMAL)
         return as
     end
@@ -321,31 +454,38 @@ function solve_quadratic_activeset_lp!(
 end
 
 function _compute_new_weights_direct_solve(λ, ::Type{R}, o::MOI.AbstractOptimizer) where {R}
+    return _compute_new_weights_direct_solve(MOI.get.(o, MOI.VariablePrimal(), λ))
+end
+
+function _compute_new_weights_direct_solve(weights::Vector{R}) where {R}
     indices_to_remove = BitSet()
     new_weights = R[]
-    for idx in eachindex(λ)
-        weight_value = MOI.get(o, MOI.VariablePrimal(), λ[idx])
-        if weight_value <= 2 * weight_purge_threshold_default(typeof(weight_value))
+    for (idx, w) in enumerate(weights)
+        if w <= 2 * weight_purge_threshold_default(typeof(w))
             push!(indices_to_remove, idx)
         else
-            push!(new_weights, weight_value)
+            push!(new_weights, w)
         end
     end
     return indices_to_remove, new_weights
 end
 
-function _compute_new_weights_wolfe_step(λ, ::Type{R}, old_weights, o::MOI.AbstractOptimizer) where {R}
+function _compute_new_weights_wolfe_step(λ::Vector{MathOptInterface.VariableIndex}, ::Type{R}, old_weights, o::MOI.AbstractOptimizer) where {R}
     wolfe_weights = MOI.get.(o, MOI.VariablePrimal(), λ)
+    return _compute_new_weights_wolfe_step(wolfe_weights, old_weights)
+end
+
+function _compute_new_weights_wolfe_step(wolfe_weights::Vector{R}, old_weights) where {R}
     # all nonnegative -> use non-wolfe procedure
     if all(>=(-10eps()), wolfe_weights)
-        return _compute_new_weights_direct_solve(λ, R, o)
+        return _compute_new_weights_direct_solve(wolfe_weights)
     end
     # ratio test to know which coordinate would hit zero first
     tau_min = 1.0
     set_indices_zero = BitSet()
-    for idx in eachindex(λ)
-        if wolfe_weights[idx] < old_weights[idx]
-            tau = old_weights[idx] / (old_weights[idx] - wolfe_weights[idx])
+    for (idx,w) in enumerate(wolfe_weights)
+        if w < old_weights[idx]
+            tau = old_weights[idx] / (old_weights[idx] - w)
             if abs(tau - tau_min) ≤ 2weight_purge_threshold_default(typeof(tau))
                 push!(set_indices_zero, idx)
             elseif tau < tau_min
@@ -356,16 +496,15 @@ function _compute_new_weights_wolfe_step(λ, ::Type{R}, old_weights, o::MOI.Abst
         end
     end
     @assert length(set_indices_zero) >= 1
-    new_lambdas = [(1 - tau_min) * old_weights[idx] + tau_min * wolfe_weights[idx] for idx in eachindex(λ)]
+    new_lambdas = [(1 - tau_min) * old_weights[idx] + tau_min * wolfe_weights[idx] for idx in eachindex(wolfe_weights)]
     for idx in set_indices_zero
         new_lambdas[idx] = 0
     end
     @assert all(>=(-2weight_purge_threshold_default(eltype(new_lambdas))), new_lambdas) "All new_lambdas must be between nonnegative $(minimum(new_lambdas))"
-    @assert isapprox(sum(new_lambdas), 1.0) "The sum of new_lambdas must be approximately 1"
+    @assert isapprox(sum(new_lambdas), 1.0, atol=1e-5) "The sum of new_lambdas must be approximately 1, but is $(sum(new_lambdas))"
     indices_to_remove = Int[]
     new_weights = R[]
-    for idx in eachindex(λ)
-        weight_value =  new_lambdas[idx] # using new lambdas
+    for (idx,weight_value) in enumerate(new_lambdas)
         if weight_value <= eps()
             push!(indices_to_remove, idx)
         else
@@ -381,6 +520,14 @@ end
 
 function _compute_quadratic_constraint_term(atom1, atom0, A::Union{Identity,LinearAlgebra.UniformScaling}, atom2, λ)
     return MOI.ScalarAffineTerm(A.λ * (fast_dot(atom1, atom2) - fast_dot(atom0, atom2)), λ)
+end
+
+function _compute_quadratic_constraint_term2(atom1, atom0, A::Union{Identity,LinearAlgebra.UniformScaling}, atom2, λ)
+    return MOI.ScalarAffineTerm(A.λ * (fast_dot(atom1, atom2) - fast_dot(atom0, atom2) - fast_dot(atom1, atom0) + fast_dot(atom0, atom0)), λ)
+end
+
+function _compute_quadratic_constraint_term2(atom1, atom0, A::AbstractMatrix, atom2, λ)
+    return MOI.ScalarAffineTerm(fast_dot(atom1, A, atom2) - fast_dot(atom0, A, atom2) - fast_dot(atom1, A, atom0) + fast_dot(atom0, A, atom0), λ)
 end
 
 struct LogScheduler{T}
