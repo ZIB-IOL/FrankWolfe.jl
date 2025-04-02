@@ -704,6 +704,7 @@ function perform_line_search(
     should_upgrade::Val=Val{false}(),
 )
     if norm(d) ≤ length(d) * eps(float(real(eltype(d))))
+        println("Norm of direction too small, hence adaptive returns zero.")
         if should_upgrade isa Val{true}
             return big(zero(promote_type(eltype(d), eltype(gradient))))
         else
@@ -783,6 +784,7 @@ function perform_line_search(
         line_search.L_est = M
     end
     γ = min(max(dot_dir / (line_search.L_est * ndir2), 0), gamma_max)
+    @show γ, dot_dir / (line_search.L_est * ndir2), dot_dir, ndir2, line_search.L_est
     return γ
 end
 
