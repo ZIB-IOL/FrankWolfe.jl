@@ -526,3 +526,87 @@ function run_corrective_step(corrective_step::HybridPairAwayStep, f, grad!, grad
     end
     return x, v, phi, dual_gap, should_fw_step, should_continue
 end
+
+"""
+Computes a classic pairwise step, i.e., `d = v^FW - v^away`.
+"""
+struct PairwiseStep <: CorrectiveStep
+    lazy::Bool
+end
+
+function prepare_corrective_step(corrective_step::PairwiseStep, f, grad!, gradient, active_set, t, lmo, primal, phi)
+    return !corrective_step.lazy
+end
+
+function run_corrective_step(corrective_step::PairwiseStep, f, grad!, gradient, x, v, dual_gap, active_set, t, lmo, line_search, linesearch_workspace, primal, phi, tot_time, callback, renorm_interval, memory_mode, epsilon, lazy_tolerance, d)
+    _, v_local, v_loc, _, a_lambda, a, a_loc, _, _ = active_set_argminmax(active_set, gradient)
+    grad_dot_x = fast_dot(x, gradient)
+    grad_dot_a = fast_dot(a, gradient)
+    grad_dot_local_fw_vertex = fast_dot(v_local, gradient)
+    local_pairwise_gap = grad_dot_a - grad_dot_local_fw_vertex
+    # flag for whether callback interrupts the solving process
+    should_continue = true
+    should_fw_step = false
+    take_local = false
+    fw_index = v_loc
+    if corrective_step.lazy && local_pairwise_gap >= max(phi / lazy_tolerance, epsilon)
+        fw_vertex = v_local
+        d = muladd_memory_mode(memory_mode, d, a, v_local)
+        take_local = true
+    else
+        # if not lazy, v is already computed
+        if corrective_step.lazy
+            v = compute_extreme_point(lmo, gradient)
+            dual_gap = grad_dot_x - fast_dot(gradient, v)
+            phi = min(phi, dual_gap)
+        end
+        d = muladd_memory_mode(memory_mode, d, a, v)
+        fw_vertex = v
+    end
+    gamma_max = a_lambda
+    gamma = perform_line_search(
+        line_search,
+        t,
+        f,
+        grad!,
+        gradient,
+        x,
+        d,
+        gamma_max,
+        linesearch_workspace,
+        memory_mode,
+    )
+    gamma = min(gamma_max, gamma)
+    step_type = if gamma ≈ gamma_max
+        ST_DROP
+    elseif take_local
+        ST_LAZY
+    else
+        ST_PAIRWISE
+    end
+    state = CallbackState(
+        t,
+        primal,
+        primal - phi,
+        phi,
+        tot_time,
+        x,
+        fw_vertex,
+        d,
+        gamma,
+        f,
+        grad!,
+        lmo,
+        gradient,
+        step_type,
+    )
+    if callback !== nothing
+        should_continue = callback(state, active_set)
+    end
+    # away update
+    active_set_update!(active_set, -gamma, a, false, a_loc)
+    # fw update
+    fw_index = take_local ? v_loc : nothing
+    active_set_update!(active_set, gamma, fw_vertex, true, fw_index)
+    return x, v, phi, dual_gap, should_fw_step, should_continue
+end

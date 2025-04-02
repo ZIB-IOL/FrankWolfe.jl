@@ -60,6 +60,27 @@ using SparseArrays
         # Check solutions match
         @test abs(primal_bp - primal_afw) <= 1e-6
         @test isapprox(x_bp, x_afw, rtol=1e-5)
+        x_pw, _, primal_pw, dualgap_pw, _ = FrankWolfe.corrective_frankwolfe(
+            f,
+            grad!,
+            lmo,
+            FrankWolfe.PairwiseStep(lazy),
+            FrankWolfe.ActiveSet([(1.0, copy(x0))]),
+            max_iteration=k,
+            verbose=false,
+        )
+        x_pw0, _, primal_pw0, dualgap_pw0, _ = FrankWolfe.pairwise_frank_wolfe(
+            f,
+            grad!,
+            lmo,
+            FrankWolfe.ActiveSet([(1.0, copy(x0))]),
+            max_iteration=k,
+            verbose=false,
+            lazy=lazy,
+        )
+
+        @test abs(primal_pw - primal_pw0) <= 1e-6
+        @test isapprox(x_pw, x_pw0, rtol=1e-5)
     end
 
     lazy = true

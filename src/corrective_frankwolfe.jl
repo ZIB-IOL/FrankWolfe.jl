@@ -150,7 +150,6 @@ function corrective_frankwolfe(
                 x = get_active_set_iterate(active_set)
                 grad!(gradient, x)
                 dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
-                primal = f(x)
             end
             if dual_gap ≥ epsilon
                 d = muladd_memory_mode(memory_mode, d, x, v)
@@ -203,7 +202,6 @@ function corrective_frankwolfe(
                         x = compute_active_set_iterate!(active_set)
                     end
                 end
-                primal = f(x)
             end
         end
     end
