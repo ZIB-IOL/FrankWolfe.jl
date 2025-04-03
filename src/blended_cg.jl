@@ -972,7 +972,7 @@ function simplex_gradient_descent_over_convex_hull(
         end
         # TODO at some point avoid materializing both x and y
         x = copy(active_set.x)
-        η = max(0, η)
+        η = isfinite(η) ? max(0, η) : 0
         @. active_set.weights -= η * d
         y = copy(compute_active_set_iterate!(active_set))
         number_of_steps += 1
