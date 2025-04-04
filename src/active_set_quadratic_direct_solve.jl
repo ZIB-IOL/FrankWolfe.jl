@@ -1,4 +1,4 @@
-abstract type LinearSolver end
+abstract type AffineMinSolver end
 
 function compute_affine_min end
 
@@ -41,7 +41,7 @@ struct ActiveSetQuadraticLinearSolve{
     wolfe_step::Bool
     scheduler::SF
     counter::Base.RefValue{Int}
-    lin_solver::LinearSolver
+    affine_min_solver::AffineMinSolver
 end
 
 """
@@ -55,10 +55,10 @@ function ActiveSetQuadraticLinearSolve(
     lp_optimizer;
     scheduler=LogScheduler(),
     wolfe_step=false,
-    lin_solver=nothing,
+    affine_min_solver=nothing,
 ) where {AT,R}
     A, b = detect_quadratic_function(grad!, tuple_values[1][2])
-    return ActiveSetQuadraticLinearSolve(tuple_values, A, b, lp_optimizer, scheduler=scheduler, wolfe_step=wolfe_step, lin_solver=lin_solver)
+    return ActiveSetQuadraticLinearSolve(tuple_values, A, b, lp_optimizer, scheduler=scheduler, wolfe_step=wolfe_step, affine_min_solver=affine_min_solver)
 end
 
 """
@@ -73,7 +73,7 @@ function ActiveSetQuadraticLinearSolve(
     lp_optimizer;
     scheduler=LogScheduler(),
     wolfe_step=false,
-    lin_solver=nothing,
+    affine_min_solver=nothing,
 ) where {AT,R,H}
     inner_as = ActiveSetQuadraticProductCaching(tuple_values, A, b)
     return ActiveSetQuadraticLinearSolve(
@@ -87,7 +87,7 @@ function ActiveSetQuadraticLinearSolve(
         wolfe_step,
         scheduler,
         Ref(0),
-        lin_solver,
+        affine_min_solver,
     )
 end
 
@@ -98,7 +98,7 @@ function ActiveSetQuadraticLinearSolve(
     lp_optimizer;
     scheduler=LogScheduler(),
     wolfe_step=false,
-    lin_solver=nothing,
+    affine_min_solver=nothing,
 )
     as = ActiveSetQuadraticLinearSolve(
         inner_as.weights,
@@ -111,7 +111,7 @@ function ActiveSetQuadraticLinearSolve(
         wolfe_step,
         scheduler,
         Ref(0),
-        lin_solver,
+        affine_min_solver,
     )
     compute_active_set_iterate!(as)
     return as
@@ -124,7 +124,7 @@ function ActiveSetQuadraticLinearSolve(
     lp_optimizer;
     scheduler=LogScheduler(),
     wolfe_step=false,
-    lin_solver=nothing,
+    affine_min_solver=nothing,
 )
     as = ActiveSetQuadraticLinearSolve(
         inner_as.weights,
@@ -137,7 +137,7 @@ function ActiveSetQuadraticLinearSolve(
         wolfe_step,
         scheduler,
         Ref(0),
-        lin_solver,
+        affine_min_solver,
     )
     compute_active_set_iterate!(as)
     return as
@@ -149,10 +149,10 @@ function ActiveSetQuadraticLinearSolve(
     lp_optimizer;
     scheduler=LogScheduler(),
     wolfe_step=false,
-    lin_solver=nothing,
+    affine_min_solver=nothing,
 )
     A, b = detect_quadratic_function(grad!, inner_as.atoms[1])
-    return ActiveSetQuadraticLinearSolve(inner_as, A, b, lp_optimizer; scheduler=scheduler, wolfe_step=wolfe_step, lin_solver=lin_solver)
+    return ActiveSetQuadraticLinearSolve(inner_as, A, b, lp_optimizer; scheduler=scheduler, wolfe_step=wolfe_step, affine_min_solver=affine_min_solver)
 end
 
 function ActiveSetQuadraticLinearSolve{AT,R}(
@@ -277,21 +277,22 @@ function active_set_argminmax(as::ActiveSetQuadraticLinearSolve, direction; Φ=0
 end
 
 
-struct TranslationSolverCG{T} <: LinearSolver where {T}
+mutable struct TranslationSolverCG{T} <: AffineMinSolver where {T}
     solve!::Function
     last_sol::T
     warm_start::Int
 end
 
-struct LagrangeSolverCG{T} <: LinearSolver where {T}
+mutable struct LagrangeSolverCG{T} <: AffineMinSolver where {T}
     solve!::Function
-    last_sol::T
+    last_w::T
+    last_u::T
     warm_start::Int
 end
 
-struct SymmetricLPSolver <: LinearSolver
-    lp_optimizer::MOI.AbstractOptimizer
-end
+struct SymmetricLPSolver <: AffineMinSolver end
+
+struct UnsymmetricLPSolver <: AffineMinSolver end
 
 function compute_affine_min(s::TranslationSolverCG, as::ActiveSetQuadraticLinearSolve)
 
@@ -300,11 +301,11 @@ function compute_affine_min(s::TranslationSolverCG, as::ActiveSetQuadraticLinear
 
     # Handle warm start
     if s.warm_start == 1
-        μ .= [s.last_sol[2:end]; zeros(eltype(as.weights[1]), nv - length(s.last_sol))]
+        μ = [s.last_sol[2:end]; zeros(eltype(as.weights[1]), nv - length(s.last_sol))]
     elseif s.warm_start == 2
-        μ .= copy(as.weights[2:end])
+        μ = copy(as.weights[2:end])
     else
-        μ .= zeros(eltype(b), n_reduced)
+        μ = zeros(eltype(as.weights[1]), n_reduced)
     end
 
     
@@ -343,7 +344,7 @@ function compute_affine_min(s::TranslationSolverCG, as::ActiveSetQuadraticLinear
     end
     
     # Solve system
-    μ = s.solve!(A_mat, r_vec)
+    s.solve!(μ, A_mat, r_vec)
     s.last_sol = [1 - sum(μ); μ]
 
     indices_to_remove, new_weights = _compute_new_weights_wolfe_step(s.last_sol, as.weights)
@@ -357,12 +358,33 @@ function compute_affine_min(s::TranslationSolverCG, as::ActiveSetQuadraticLinear
 end
 
 function compute_affine_min(s::LagrangeSolverCG, as::ActiveSetQuadraticLinearSolve)
+
     nv = length(as)
+
+    # Warmstarting with previous solution
+    if s.warm_start == 1
+        println(length(s.last_w), " ", length(s.last_u), " ", nv)
+        w = [s.last_w; zeros(eltype(as.weights[1]), nv - length(s.last_w))]
+        u = [s.last_u; zeros(eltype(as.weights[1]), nv - length(s.last_u))]
+    else
+        w = zeros(eltype(as.weights[1]), nv)
+        u = zeros(eltype(as.weights[1]), nv)
+    end
+
+    # Solve systems
     M = [dot(as.atoms[i], as.A * as.atoms[j]) for i in 1:nv, j in 1:nv]
-    w = s.solve(M, ones(nv))
-    u = s.solve(M, [-dot(as.atoms[i], as.b) for i in 1:nv])
-    s.last_sol = u - (sum(u) - 1)/sum(w) * w
-    return _compute_new_weights_wolfe_step(s.last_sol, as.weights)
+    s.solve!(w, M, ones(nv))
+    s.solve!(u, M, [-dot(as.atoms[i], as.b) for i in 1:nv])
+    s.last_w = w
+    s.last_u = u
+    
+    indices_to_remove, new_weights = _compute_new_weights_wolfe_step(u - (sum(u) - 1)/sum(w) * w, as.weights)
+
+    if s.warm_start == 1
+        deleteat!(s.last_w, indices_to_remove)
+        deleteat!(s.last_u, indices_to_remove)
+    end
+    return indices_to_remove, new_weights
 end
 
 function compute_affine_min(::SymmetricLPSolver, as::ActiveSetQuadraticLinearSolve)
@@ -370,7 +392,10 @@ function compute_affine_min(::SymmetricLPSolver, as::ActiveSetQuadraticLinearSol
     MOI.empty!(o)
     nv = length(as)
     λ = MOI.add_variables(o, nv)
-    #∑ λ == 1
+    # λ ≥ 0, ∑ λ == 1
+    if !as.wolfe_step
+        MOI.add_constraint.(o, λ, MOI.GreaterThan(0.0))
+    end
     sum_of_variables = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, λ), 0.0)
     MOI.add_constraint(o, sum_of_variables, MOI.EqualTo(1.0))
     # Wᵗ A W λ == -Wᵗ(A v1 + b)
@@ -391,7 +416,58 @@ function compute_affine_min(::SymmetricLPSolver, as::ActiveSetQuadraticLinearSol
     MOI.set(o, MOI.ObjectiveFunction{typeof(sum_of_variables)}(), sum_of_variables)
     MOI.set(o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
     MOI.optimize!(o)
-    return _compute_new_weights_wolfe_step(MOI.get.(o, MOI.VariablePrimal(), λ), as.weights)
+
+    if MOI.get(o, MOI.TerminationStatus()) ∉ (MOI.OPTIMAL, MOI.FEASIBLE_POINT, MOI.ALMOST_OPTIMAL)
+        return [], as.weights
+    end
+    indices_to_remove, new_weights = if as.wolfe_step
+        _compute_new_weights_wolfe_step(MOI.get.(o, MOI.VariablePrimal(), λ), as.weights)
+    else
+        _compute_new_weights_direct_solve(MOI.get.(o, MOI.VariablePrimal(), λ))
+    end
+    return indices_to_remove, new_weights
+end
+
+function compute_affine_min(::UnsymmetricLPSolver, as::ActiveSetQuadraticLinearSolve)
+    nv = length(as)
+    o = as.lp_optimizer
+    MOI.empty!(o)
+    λ = MOI.add_variables(o, nv)
+    # λ ≥ 0, ∑ λ == 1
+    if !as.wolfe_step
+        MOI.add_constraint.(o, λ, MOI.GreaterThan(0.0))
+    end
+    sum_of_variables = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, λ), 0.0)
+    MOI.add_constraint(o, sum_of_variables, MOI.EqualTo(1.0))
+    # Wᵗ A V λ == -Wᵗ b
+    # V has columns vi
+    # W has columns vi - v1
+    for i in 2:nv
+        lhs = MOI.ScalarAffineFunction{Float64}([], 0.0)
+        Base.sizehint!(lhs.terms, nv)
+        # replaces direct sum because of MOI and MutableArithmetic slow sums
+        for j in 1:nv
+            push!(
+                lhs.terms,
+                _compute_quadratic_constraint_term(as.atoms[i], as.atoms[1], as.A, as.atoms[j], λ[j]),
+            )
+        end
+        rhs =  dot(as.atoms[1], as.b) - dot(as.atoms[i], as.b)
+        MOI.add_constraint(o, lhs, MOI.EqualTo{Float64}(rhs))
+    end
+    MOI.set(o, MOI.ObjectiveFunction{typeof(sum_of_variables)}(), sum_of_variables)
+    MOI.set(o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+    MOI.optimize!(o)
+
+    if MOI.get(o, MOI.TerminationStatus()) ∉ (MOI.OPTIMAL, MOI.FEASIBLE_POINT, MOI.ALMOST_OPTIMAL)
+        return [], as.weights
+    end
+    indices_to_remove, new_weights = if as.wolfe_step
+        _compute_new_weights_wolfe_step(MOI.get.(o, MOI.VariablePrimal(), λ), as.weights)
+    else
+        _compute_new_weights_direct_solve(MOI.get.(o, MOI.VariablePrimal(), λ))
+    end
+    return indices_to_remove, new_weights
 end
 
 # generic quadratic with quadratic information provided
@@ -405,59 +481,21 @@ The method is specialized by type `H` of the Hessian matrix `A`.
 function solve_quadratic_activeset_lp!(
     as::ActiveSetQuadraticLinearSolve{AT,R,IT,H},
 ) where {AT,R,IT,H}
-    nv = length(as)
 
-    if as.lin_solver !== nothing
-        if !as.wolfe_step
-            error("CG is not supported for non-Wolfe steps")
-        end
-        indices_to_remove, new_weights = compute_affine_min(as.lin_solver, as)
-    else
-        o = as.lp_optimizer
-        MOI.empty!(o)
-        λ = MOI.add_variables(o, nv)
-        # λ ≥ 0, ∑ λ == 1
-        if !as.wolfe_step
-            MOI.add_constraint.(o, λ, MOI.GreaterThan(0.0))
-        end
-        sum_of_variables = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, λ), 0.0)
-        MOI.add_constraint(o, sum_of_variables, MOI.EqualTo(1.0))
-        # Wᵗ A V λ == -Wᵗ b
-        # V has columns vi
-        # W has columns vi - v1
-        for i in 2:nv
-            lhs = MOI.ScalarAffineFunction{Float64}([], 0.0)
-            Base.sizehint!(lhs.terms, nv)
-            # replaces direct sum because of MOI and MutableArithmetic slow sums
-            for j in 1:nv
-                push!(
-                    lhs.terms,
-                    _compute_quadratic_constraint_term(as.atoms[i], as.atoms[1], as.A, as.atoms[j], λ[j]),
-                )
-            end
-            rhs =  dot(as.atoms[1], as.b) - dot(as.atoms[i], as.b)
-            MOI.add_constraint(o, lhs, MOI.EqualTo{Float64}(rhs))
-        end
-        MOI.set(o, MOI.ObjectiveFunction{typeof(sum_of_variables)}(), sum_of_variables)
-        MOI.set(o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
-        MOI.optimize!(o)
-
-        if MOI.get(o, MOI.TerminationStatus()) ∉ (MOI.OPTIMAL, MOI.FEASIBLE_POINT, MOI.ALMOST_OPTIMAL)
-            return as
-        end
-        indices_to_remove, new_weights = if as.wolfe_step
-            _compute_new_weights_wolfe_step(λ, R, as.weights, o)
-        else
-            _compute_new_weights_direct_solve(λ, R, o)
-        end
+    if !as.wolfe_step && !(as.affine_min_solver isa UnsymmetricLPSolver || as.affine_min_solver isa UnsymmetricLPSolver)
+        error("This solver is not supported for non-Wolfe steps")
     end
-    
-    deleteat!(as.active_set, indices_to_remove)
-    @assert length(as) == length(new_weights)
-    update_weights!(as.active_set, new_weights)
-    active_set_cleanup!(as)
-    active_set_renormalize!(as)
-    compute_active_set_iterate!(as)
+
+    indices_to_remove, new_weights = compute_affine_min(as.affine_min_solver, as)
+
+    if length(indices_to_remove) > 0
+        deleteat!(as.active_set, indices_to_remove)
+        @assert length(as) == length(new_weights)
+        update_weights!(as.active_set, new_weights)
+        active_set_cleanup!(as)
+        active_set_renormalize!(as)
+        compute_active_set_iterate!(as)
+    end
     return as
 end
 
