@@ -46,7 +46,7 @@ x, v, primal, dual_gap, trajectoryBCG_accel_simplex, _ = FrankWolfe.blended_cond
     accelerated=true,
     verbose=true,
     trajectory=true,
-    lazy_tolerance=1.0,
+    sparsity_control=1.0,
     weight_purge_threshold=1e-10,
 )
 
@@ -65,7 +65,7 @@ x, v, primal, dual_gap, trajectoryBCG_simplex, _ = FrankWolfe.blended_conditiona
     accelerated=false,
     verbose=true,
     trajectory=true,
-    lazy_tolerance=1.0,
+    sparsity_control=1.0,
     weight_purge_threshold=1e-10,
 )
 
@@ -82,7 +82,7 @@ x, v, primal, dual_gap, trajectoryBCG_convex, _ = FrankWolfe.blended_conditional
     memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
-    lazy_tolerance=1.0,
+    sparsity_control=1.0,
     weight_purge_threshold=1e-10,
 )
 
@@ -120,7 +120,7 @@ x, v, primal, dual_gap, trajectoryBCG_accel_simplex,_ = FrankWolfe.blended_condi
     accelerated=true,
     verbose=true,
     trajectory=true,
-    lazy_tolerance=1.0,
+    sparsity_control=1.0,
     weight_purge_threshold=1e-10,
 )
 
@@ -139,7 +139,7 @@ x, v, primal, dual_gap, trajectoryBCG_simplex, _ = FrankWolfe.blended_conditiona
     accelerated=false,
     verbose=true,
     trajectory=true,
-    lazy_tolerance=1.0,
+    sparsity_control=1.0,
     weight_purge_threshold=1e-10,
 )
 
@@ -156,7 +156,7 @@ x, v, primal, dual_gap, trajectoryBCG_convex, _ = FrankWolfe.blended_conditional
     memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     trajectory=true,
-    lazy_tolerance=1.0,
+    sparsity_control=1.0,
     weight_purge_threshold=1e-10,
 )
 

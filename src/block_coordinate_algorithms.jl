@@ -265,7 +265,7 @@ mutable struct BPCGStep <: UpdateStep
     lazy::Bool
     active_set::Union{FrankWolfe.AbstractActiveSet,Nothing}
     renorm_interval::Int
-    lazy_tolerance::Float64
+    sparsity_control::Float64
     phi::Float64
 end
 
@@ -273,14 +273,14 @@ Base.copy(::FrankWolfeStep) = FrankWolfeStep()
 
 function Base.copy(obj::BPCGStep)
     if obj.active_set === nothing
-        return BPCGStep(obj.lazy, nothing, obj.renorm_interval, obj.lazy_tolerance, obj.phi)
+        return BPCGStep(obj.lazy, nothing, obj.renorm_interval, obj.sparsity_control, obj.phi)
     else
-        return BPCGStep(obj.lazy, copy(obj.active_set), obj.renorm_interval, obj.lazy_tolerance, obj.phi)
+        return BPCGStep(obj.lazy, copy(obj.active_set), obj.renorm_interval, obj.sparsity_control, obj.phi)
     end
 end
 
-BPCGStep() = BPCGStep(false, nothing, 1000, 2.0, Inf)
 BPCGStep(lazy::Bool) = BPCGStep(lazy, nothing, 1000, 2.0, Inf)
+BPCGStep() = BPCGStep(false)
 
 function update_iterate(
     ::FrankWolfeStep,
@@ -355,7 +355,7 @@ function update_iterate(
 
     # minor modification from original paper for improved sparsity
     # (proof follows with minor modification when estimating the step)
-    if local_gap > s.phi / s.lazy_tolerance && local_gap ≥ epsilon
+    if local_gap > s.phi / s.sparsity_control && local_gap ≥ epsilon
         d = muladd_memory_mode(memory_mode, d, a, v_local)
         vertex_taken = v_local
         gamma_max = a_lambda
@@ -401,7 +401,7 @@ function update_iterate(
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
         end
 
-        if (dual_gap ≥ epsilon) && (!s.lazy || dual_gap ≥ s.phi / s.lazy_tolerance)
+        if (dual_gap ≥ epsilon) && (!s.lazy || dual_gap ≥ s.phi / s.sparsity_control)
 
             d = muladd_memory_mode(memory_mode, d, x, v)
 
