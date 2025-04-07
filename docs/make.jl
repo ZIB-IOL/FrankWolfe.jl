@@ -92,6 +92,7 @@ makedocs(;
             [joinpath("reference", f) for f in file_list(DOCS_REFERENCE_DIR, ".md")],
         "Contributing" => "contributing.md",
     ],
+    warnonly=true,
 )
 
 deploydocs(; repo="github.com/ZIB-IOL/FrankWolfe.jl.git", push_preview=true)

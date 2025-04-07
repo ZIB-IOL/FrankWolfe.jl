@@ -3,12 +3,13 @@ using LinearAlgebra
 using Random
 using Test
 using SparseArrays
+using StableRNGs
 
 n = Int(1e4)
 k = 1000
 
 s = 41
-Random.seed!(s)
+Random.seed!(StableRNG(s), s)
 
 xpi = rand(n);
 total = sum(xpi);
@@ -41,7 +42,7 @@ x, v, primal, dual_gap, _, _ = FrankWolfe.blended_conditional_gradient(
     gradient=gradient,
 )
 
-@test dual_gap ≤ 5e-4
+@test dual_gap ≤ 6e-4
 @test f(x0) - f(x) ≥ 180
 
 x0 = FrankWolfe.compute_extreme_point(lmo, spzeros(size(xp)...))

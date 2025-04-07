@@ -1,16 +1,15 @@
 import FrankWolfe
 import LinearAlgebra
 import Random
+using StableRNGs
 
 using Test
 
 n = Int(1e3)
 k = 10000
 
-s = rand(1:100)
-# @info "Seed: $s"
-
-Random.seed!(s)
+s = 50
+Random.seed!(StableRNG(s), s)
 
 xpi = rand(n);
 total = sum(xpi);

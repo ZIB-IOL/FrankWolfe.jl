@@ -18,33 +18,39 @@ These routines work by solving a sequence of linear subproblems:
 The Linear Minimization Oracle (LMO) is a key component, which is called at each iteration of the FW algorithm. Given a direction $d$, it returns an optimal vertex of the feasible set:
 
 ```math
-v \in \arg \min_{x\in \mathcal{C}} \langle d,x \rangle.
+v \in \argmin_{x\in \mathcal{C}} \langle d,x \rangle.
 ```
 
-### Custom LMOs
 
-To be used by the algorithms provided here, an LMO must be a subtype of [`FrankWolfe.LinearMinimizationOracle`](@ref) and implement the following method:
+### Pre-defined LMO for key feasible sets
 
-```julia
-compute_extreme_point(lmo::LMO, direction; kwargs...) -> v
-```
+Several common implementations of LMOS s are available out-of-the-box:
 
-This method should minimize $v \mapsto \langle d, v \rangle$ over the set $\mathcal{C}$ defined by the LMO.
-Note that this means the set $\mathcal{C}$ doesn't have to be represented explicitly: all we need is to be able to minimize a linear function over it, even if the minimization procedure is a black box.
-
-### Pre-defined LMOs
-
-If you don't want to define your LMO manually, several common implementations are available out-of-the-box:
-
-- Simplices: unit simplex, probability simplex
-- Balls in various norms
-- Polytopes: K-sparse, Birkhoff
-
-You can use an oracle defined via a Linear Programming solver (e.g. `SCIP` or `HiGHS`) with `MathOptInferface`: see [`FrankWolfe.MathOptLMO`](@ref).
-
-Finally, we provide wrappers to combine oracles easily, for example in a product.
-
+- **simplices**: unit simplex [`FrankWolfe.UnitSimplexOracle`](@ref) , probability simplex [`FrankWolfe.ProbabilitySimplexOracle`](@ref);
+- **balls** in various norms [`FrankWolfe.LpNormLMO`](@ref);
+- **polytopes**: K-sparse [`FrankWolfe.KSparseLMO`](@ref) , Birkhoff [`FrankWolfe.BirkhoffPolytopeLMO `](@ref).
+  
 See [Combettes, Pokutta (2021)](https://arxiv.org/abs/2101.10040) for references on most LMOs implemented in the package and their comparison with projection operators.
+
+### The MathOptLMO
+You can use an oracle defined via a Linear Programming solver (e.g. `SCIP` or `HiGHS`) with [MathOptInferface](https://github.com/jump-dev/MathOptInterface.jl): see [`FrankWolfe.MathOptLMO`](@ref).
+
+### Wrapper to combine LMOs
+We provide wrappers to combine oracles easily, for example [`FrankWolfe.ProductLMO`](@ref) for product of oracles or [`FrankWolfe.SubspaceLMO`](@ref) for projections composed with oracles.
+
+### User-defined LMOs
+If you want use your own custom LMO `MyLMO` in the algorithms provided here, it
+is required that
+* `MyLMO` be a subtype of [`FrankWolfe.LinearMinimizationOracle`](@ref);
+* the method `FrankWolfe.compute_extreme_point` (see below) be defined and minimize $v \mapsto \langle d, v \rangle$ over the set $\mathcal{C}$ defined by the custom LMO `MyLMO`.
+```julia
+FrankWolfe.compute_extreme_point(lmo::MyLMO, direction; v, kwargs...) -> v
+```
+
+Note that the constraint set $\mathcal{C}$ defined by `MyLMO` doesn't have to be represented explicitly, e.g., as a set of inequalities.
+Indeed, all we need is to minimize a linear function over $\mathcal{C}$, which does not necessarily require an explicit representation of $\mathcal{C}$.
+Even black box minimization procedures can be considered!
+
 
 ## Optimization algorithms
 

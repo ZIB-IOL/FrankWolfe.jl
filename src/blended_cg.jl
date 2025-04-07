@@ -181,10 +181,6 @@ function blended_conditional_gradient(
             )
         end
     end
-    # ensure x is a mutable type
-    if !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
-        x = copyto!(similar(x), x)
-    end
     non_simplex_iter = 0
     force_fw_step = false
 
@@ -496,7 +492,7 @@ function minimize_over_convex_hull!(
             tolerance,
         )
         #Early exit if we have detected that the strong-Wolfe gap is below the desired tolerance while building the reduced problem.
-        if isnothing(M)
+        if M === nothing
             return 0
         end
         T = eltype(M)
@@ -979,7 +975,7 @@ function simplex_gradient_descent_over_convex_hull(
         end
         # TODO at some point avoid materializing both x and y
         x = copy(active_set.x)
-        η = max(0, η)
+        η = isfinite(η) ? max(0, η) : 0
         @. active_set.weights -= η * d
         y = copy(compute_active_set_iterate!(active_set))
         number_of_steps += 1

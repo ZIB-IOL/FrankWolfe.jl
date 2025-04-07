@@ -51,6 +51,7 @@ function decomposition_invariant_conditional_gradient(
     traj_data=[],
     timeout=Inf,
     lazy=false,
+    use_strong_lazy = false,
     linesearch_workspace=nothing,
     sparsity_control=2.0,
     extra_vertex_storage=nothing,
@@ -171,14 +172,26 @@ function decomposition_invariant_conditional_gradient(
 
         if lazy
             d, v, v_index, a, away_index, phi, step_type =
-                lazy_dicg_step(x, gradient, lmo, pre_computed_set, phi, epsilon, d;)
+                lazy_standard_dicg_step(
+                    x,
+                    gradient,
+                    lmo,
+                    pre_computed_set,
+                    phi,
+                    epsilon,
+                    d;
+                    strong_lazification = use_strong_lazy,
+                    sparsity_control = sparsity_control,
+                )
         else # non-lazy, call the simple and modified
             v = compute_extreme_point(lmo, gradient, lazy=lazy)
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
             phi = dual_gap
             a = compute_inface_extreme_point(lmo, NegatingArray(gradient), x; lazy=lazy)
+	    d = muladd_memory_mode(memory_mode, d, a, v)
+	    step_type = ST_PAIRWISE
         end
-        d = muladd_memory_mode(memory_mode, d, a, v)
+		
         gamma_max = dicg_maximum_step(lmo, d, x)
         gamma = perform_line_search(
             line_search,
@@ -192,7 +205,7 @@ function decomposition_invariant_conditional_gradient(
             linesearch_workspace,
             memory_mode,
         )
-
+		
         if lazy
             idx = findfirst(x -> x == v, pre_computed_set)
             if idx !== nothing
@@ -284,6 +297,7 @@ function blended_decomposition_invariant_conditional_gradient(
     lazy=false,
     linesearch_workspace=nothing,
     sparsity_control=2.0,
+    extra_vertex_storage = nothing,
 )
 
     if !is_decomposition_invariant_oracle(lmo)
@@ -355,6 +369,15 @@ function blended_decomposition_invariant_conditional_gradient(
     phi = primal
     gamma = one(phi)
 
+    if lazy
+        if extra_vertex_storage === nothing
+            v = compute_extreme_point(lmo, gradient, lazy = lazy)
+            pre_computed_set = [v]
+        else
+            pre_computed_set = extra_vertex_storage
+        end
+    end
+	
     if linesearch_workspace === nothing
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
     end
@@ -387,7 +410,18 @@ function blended_decomposition_invariant_conditional_gradient(
         end
 
         if lazy
-            error("not implemented yet")
+            d, v, v_index, a, away_index, phi, step_type =
+                lazy_blended_dicg_step(
+                    x,
+                    gradient,
+                    lmo,
+                    pre_computed_set,
+                    phi,
+                    epsilon,
+                    d;
+                    strong_lazification = use_strong_lazy,
+                    sparsity_control = sparsity_control,
+                )
         else # non-lazy, call the simple and modified
             a = compute_inface_extreme_point(lmo, NegatingArray(gradient), x; lazy=lazy)
             v_inface = compute_inface_extreme_point(lmo, gradient, x; lazy=lazy)
@@ -405,6 +439,11 @@ function blended_decomposition_invariant_conditional_gradient(
                 d = muladd_memory_mode(memory_mode, d, x, v)
                 gamma_max = one(phi)
             end
+        end
+        if step_type == ST_REGULAR
+            gamma_max = one(phi)
+        else
+            gamma_max = dicg_maximum_step(lmo, d, x)
         end
         gamma = perform_line_search(
             line_search,
@@ -477,7 +516,11 @@ function blended_decomposition_invariant_conditional_gradient(
     return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data)
 end
 
-function lazy_dicg_step(
+"""
+Search for both lazified FW vertex and in-face vetex in strong version.
+Otherwise, only search for the lazified FW vertex.
+"""
+function lazy_standard_dicg_step(
     x,
     gradient,
     lmo,
@@ -485,52 +528,156 @@ function lazy_dicg_step(
     phi,
     epsilon,
     d;
-    use_extra_vertex_storage=false,
-    extra_vertex_storage=nothing,
-    sparsity_control=2.0,
-    memory_mode::MemoryEmphasis=InplaceEmphasis(),
+    strong_lazification = false,
+    sparsity_control = 2.0,
+    memory_mode::MemoryEmphasis = InplaceEmphasis(),
 )
     v_local, v_local_loc, val, a_local, a_local_loc, valM =
-        pre_computed_set_argminmax(pre_computed_set, gradient)
-    step_type = ST_REGULAR
+        pre_computed_set_argminmax(lmo, pre_computed_set, gradient, x; strong_lazification = strong_lazification)
+    step_type = ST_PAIRWISE
     away_index = nothing
     fw_index = nothing
     grad_dot_x = fast_dot(x, gradient)
     grad_dot_a_local = valM
-
-    # Do lazy pairwise step
     grad_dot_lazy_fw_vertex = val
 
-    if grad_dot_a_local - grad_dot_lazy_fw_vertex >= phi / sparsity_control &&
-       grad_dot_a_local - grad_dot_lazy_fw_vertex >= epsilon
+    if strong_lazification
+        a_taken = a_local
+        grad_dot_a_taken = grad_dot_a_local
+        # in-face LMO is called directly
+    else
+        a_taken = compute_inface_extreme_point(lmo, NegatingArray(gradient), x)
+        grad_dot_a_taken = fast_dot(gradient, a_taken)
+    end
+
+    # Do lazy pairwise step
+    if grad_dot_a_taken - grad_dot_lazy_fw_vertex >= phi &&
+       grad_dot_a_taken - grad_dot_lazy_fw_vertex >= epsilon
         step_type = ST_LAZY
         v = v_local
-        a = a_local
+        a = a_taken
         d = muladd_memory_mode(memory_mode, d, a, v)
         fw_index = v_local_loc
     else
         v = compute_extreme_point(lmo, gradient)
         grad_dot_v = fast_dot(gradient, v)
-        # Do lazy inface_point
-        if grad_dot_a_local - grad_dot_v >= phi / sparsity_control &&
-           grad_dot_a_local - grad_dot_v >= epsilon
-            step_type = ST_LAZY
-            a = a_local
-            away_index = a_local_loc
+        dual_gap = grad_dot_x - grad_dot_v
+
+        if grad_dot_a_taken - grad_dot_v >= phi / sparsity_control &&
+           grad_dot_a_taken - grad_dot_v >= epsilon
+            a = a_taken
+            d = muladd_memory_mode(memory_mode, d, a, v)
+            step_type = strong_lazification ? ST_LAZY : ST_PAIRWISE
+            away_index = strong_lazification ? a_local_loc : nothing
+        elseif dual_gap >= phi / sparsity_control
+            if strong_lazification
+                a = compute_inface_extreme_point(lmo, NegatingArray(gradient), x)
+            else
+                a = a_taken
+            end
+            d = muladd_memory_mode(memory_mode, d, a, v)
+            # lower our expectation
         else
-            a = compute_inface_extreme_point(lmo, NegatingArray(gradient), x)
+            step_type = ST_DUALSTEP
+            phi = min(dual_gap, phi / 2.0)
+            a = a_taken
+            d = zeros(length(x))
+        end
+    end
+
+    return d, v, fw_index, a, away_index, phi, step_type
+end
+
+"""
+Lazification for Blended DICG.
+Search for in-face vertex and local FW vertex only in strong version.
+"""
+function lazy_blended_dicg_step(
+    x,
+    gradient,
+    lmo,
+    pre_computed_set,
+    phi,
+    epsilon,
+    d;
+    strong_lazification = false,
+    sparsity_control = 2.0,
+    memory_mode::MemoryEmphasis = InplaceEmphasis(),
+)
+    v_local, v_local_loc, val, a_local, a_local_loc, valM =
+        pre_computed_set_argminmax(lmo, pre_computed_set, gradient, x; strong_lazification = strong_lazification)
+    step_type = ST_PAIRWISE
+    away_index = nothing
+    fw_index = nothing
+    grad_dot_x = fast_dot(x, gradient)
+    grad_dot_a_local = valM
+    grad_dot_lazy_fw_vertex = val
+
+    if strong_lazification
+        a_taken = a_local
+        v_taken = v_local
+        grad_dot_a_taken = grad_dot_a_local
+        grad_dot_v_taken = grad_dot_lazy_fw_vertex
+    else
+        a_taken = compute_inface_extreme_point(lmo, NegatingArray(gradient), x)
+        v_taken = compute_inface_extreme_point(lmo, gradient, x)
+        grad_dot_a_taken = fast_dot(gradient, a_taken)
+        grad_dot_v_taken = fast_dot(gradient, v_taken)
+    end
+
+    # Do lazy pairwise step
+    if grad_dot_a_taken - grad_dot_v_taken >= phi &&
+       grad_dot_a_taken - grad_dot_v_taken >= epsilon
+        step_type = ST_LAZY
+        v = v_taken
+        a = a_taken
+        d = muladd_memory_mode(memory_mode, d, a, v)
+        fw_index = v_local_loc
+        away_index = a_local_loc
+    else
+        if strong_lazification
+            v_inface = compute_inface_extreme_point(lmo, gradient)
+            grad_dot_v_inface = fast_dot(gradient, v_inface)
+
+            if grad_dot_a_taken - grad_dot_v_inface >= phi &&
+               grad_dot_a_taken - grad_dot_v_inface >= epsilon
+                step_type = ST_LAZY
+                v = v_inface
+                a = a_taken
+                d = muladd_memory_mode(memory_mode, d, a, v)
+                away_index = a_local_loc
+            end
+        else
+            v_inface = v_taken
+            grad_dot_v_inface = grad_dot_v_taken
         end
 
-        # Real dual gap promises enough progress.
-        grad_dot_fw_vertex = fast_dot(v, gradient)
-        dual_gap = grad_dot_x - grad_dot_fw_vertex
+        if step_type !== ST_LAZY
+            v = compute_extreme_point(lmo, gradient)
+            grad_dot_v = fast_dot(gradient, v)
+            dual_gap = grad_dot_x - grad_dot_v
+            if dual_gap >= phi / sparsity_control
 
-        if dual_gap >= phi / sparsity_control
-            d = muladd_memory_mode(memory_mode, d, a, v)
-            #Lower our expectation for progress.
-        else
-            d = muladd_memory_mode(memory_mode, d, a, v)
-            phi = min(dual_gap, phi / 2.0)
+                if strong_lazification
+                    a_taken = compute_inface_extreme_point(lmo, NegatingArray(gradient), x)
+                    grad_dot_a_taken = fast_dot(gradient, a_taken)
+                end
+
+                if grad_dot_a_taken - grad_dot_v_inface >= grad_dot_x - grad_dot_v / sparsity_control
+                    step_type = ST_PAIRWISE
+                    a = a_taken
+                    d = muladd_memory_mode(memory_mode, d, a, v_inface)
+                else
+                    step_type = ST_REGULAR
+                    a = x
+                    d = muladd_memory_mode(memory_mode, d, x, v)
+                end
+            else
+                step_type = ST_DUALSTEP
+                phi = min(dual_gap, phi / 2.0)
+                a = a_taken
+                d = zeros(length(x))
+            end
         end
     end
     return d, v, fw_index, a, away_index, phi, step_type

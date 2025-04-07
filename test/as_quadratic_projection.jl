@@ -5,14 +5,13 @@ using Random
 import HiGHS
 import MathOptInterface as MOI
 using Test
+using StableRNGs
 
 n = Int(1e2)
 k = 10000
 
-# s = rand(1:100)
 s = 10
-@info "Seed $s"
-Random.seed!(s)
+Random.seed!(StableRNG(s), s)
 
 xpi = rand(n);
 total = sum(xpi);
@@ -34,13 +33,11 @@ lmo = FrankWolfe.UnitSimplexOracle(10000.0);
 
 x00 = FrankWolfe.compute_extreme_point(lmo, rand(n))
 
-
 function build_callback(trajectory_arr)
     return function callback(state, active_set, args...)
         return push!(trajectory_arr, (FrankWolfe.callback_state(state)..., length(active_set)))
     end
 end
-
 
 trajectoryBPCG_standard = []
 x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
@@ -51,7 +48,6 @@ x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     max_iteration=k,
     callback=build_callback(trajectoryBPCG_standard),
 );
-
 
 active_set_quadratic_automatic_standard = FrankWolfe.ActiveSetQuadraticLinearSolve(
     FrankWolfe.ActiveSet([(1.0, copy(x00))]),

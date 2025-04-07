@@ -2,10 +2,11 @@ using Test
 using FrankWolfe
 using Random
 using LinearAlgebra
+using StableRNGs
 
 import FrankWolfe: compute_gradient, compute_value, compute_value_gradient
 
-Random.seed!(123)
+Random.seed!(StableRNG(123), 123)
 
 @testset "Simple and stochastic function gradient interface" begin
     for n in (1, 5, 20)
@@ -72,7 +73,7 @@ Random.seed!(123)
                     f_stoch,
                     params_perfect,
                     batch_size=length(data_perfect),
-                    rng=Random.seed!(33),
+                    rng=Random.seed!(StableRNG(33), 33),
                 )
                 @test f_estimate ≈ 0 atol = 1e-10
                 @test g_estimate ≈ zeros(6) atol = 6e-10
@@ -80,19 +81,19 @@ Random.seed!(123)
                     f_stoch,
                     params,
                     batch_size=length(data_perfect),
-                    rng=Random.seed!(33),
+                    rng=Random.seed!(StableRNG(33), 33),
                 )
                 @test f_estimate ≈ compute_value(
                     f_stoch,
                     params,
                     batch_size=length(data_perfect),
-                    rng=Random.seed!(33),
+                    rng=Random.seed!(StableRNG(33), 33),
                 )
                 @test g_estimate ≈ compute_gradient(
                     f_stoch,
                     params,
                     batch_size=length(data_perfect),
-                    rng=Random.seed!(33),
+                    rng=Random.seed!(StableRNG(33), 33),
                 )
             end
             @testset "Noisy data" begin
@@ -116,19 +117,19 @@ Random.seed!(123)
                     f_stoch_noisy,
                     params,
                     batch_size=length(data_noisy),
-                    rng=Random.seed!(33),
+                    rng=Random.seed!(StableRNG(33), 33),
                 )
                 @test f_estimate ≈ compute_value(
                     f_stoch_noisy,
                     params,
                     batch_size=length(data_noisy),
-                    rng=Random.seed!(33),
+                    rng=Random.seed!(StableRNG(33), 33),
                 )
                 @test g_estimate ≈ compute_gradient(
                     f_stoch_noisy,
                     params,
                     batch_size=length(data_noisy),
-                    rng=Random.seed!(33),
+                    rng=Random.seed!(StableRNG(33), 33),
                 )
             end
         end
