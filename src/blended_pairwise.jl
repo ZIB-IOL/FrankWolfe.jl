@@ -156,6 +156,7 @@ function blended_pairwise_conditional_gradient(
     # if !lazy, phi is maintained as the global dual gap
     phi = max(0, fast_dot(x, gradient) - fast_dot(v, gradient))
     local_gap = zero(phi)
+    dual_gap = phi
     gamma = one(phi)
 
     if linesearch_workspace === nothing
