@@ -1,5 +1,5 @@
 ## Benchmark example
-using FrankWolfe 
+using FrankWolfe
 using Random
 using Distributions
 using LinearAlgebra
@@ -13,7 +13,7 @@ using StableRNGs
 
 # The Optimal Experiment Design Problem consists of choosing a subset of experiments
 # maximising the information gain.
-# The Limit version of this problem (see below) is a continous version where the 
+# The Limit version of this problem (see below) is a continous version where the
 # number of allowed experiments is infinity.
 # Thus, the solution can be interpreted as a probability distributions.
 #
@@ -22,8 +22,8 @@ using StableRNGs
 #          x ≥ 0
 #
 # A denotes the Experiment Matrix. We generate it randomly.
-# Φ is a function from the PD cone into R. 
-# In our case, Φ is 
+# Φ is a function from the PD cone into R.
+# In our case, Φ is
 #   Trace(X^{-1})       (A-Optimal)
 # and
 #   -logdet(X)          (D-Optimal).
@@ -335,7 +335,7 @@ end
     lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
     x0, active_set, _ = build_start_point(A)
 
-    _, _, primal, dual_gap, _, _ = FrankWolfe.away_frank_wolfe(f, grad!, lmo, active_set; verbose=true) 
+    _, _, primal, dual_gap, _, _ = FrankWolfe.away_frank_wolfe(f, grad!, lmo, active_set; verbose=true)
     @test isfinite(primal)
 end
 

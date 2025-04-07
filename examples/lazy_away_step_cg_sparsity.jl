@@ -1,11 +1,11 @@
 #=
 
-Example demonstrating sparsity control by means of the `sparsity_control`-factor passed to the lazy AFW variant
+Example demonstrating sparsity control by means of the `lazy_tolerance`-factor passed to the lazy AFW variant
 
-A larger sparsity_control >= 1 favors sparsity by favoring optimization over the current active set rather than
+A larger lazy_tolerance >= 1 favors sparsity by favoring optimization over the current active set rather than
 adding a new FW vertex.
 
-The default for AFW is sparsity_control = 2.0
+The default for AFW is lazy_tolerance = 2.0
 
 =#
 
@@ -113,7 +113,7 @@ x0 = deepcopy(x00)
     memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     lazy=true,
-    sparsity_control=1.5,
+    lazy_tolerance=1.5,
     trajectory=true,
     callback=callback,
 );
@@ -134,7 +134,7 @@ x0 = deepcopy(x00)
     memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     lazy=true,
-    sparsity_control=2.0,
+    lazy_tolerance=2.0,
     trajectory=true,
     callback=callback,
 );
@@ -154,7 +154,7 @@ x0 = deepcopy(x00)
     print_iter=k / 10,
     memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
-    sparsity_control=4.0,
+    lazy_tolerance=4.0,
     lazy=true,
     trajectory=true,
     callback=callback,
@@ -174,7 +174,7 @@ x0 = deepcopy(x00)
     print_iter=k / 10,
     memory_mode=FrankWolfe.InplaceEmphasis(),
     lazy=true,
-    sparsity_control=10.0,
+    lazy_tolerance=10.0,
     verbose=true,
     trajectory=true,
     callback=callback,
