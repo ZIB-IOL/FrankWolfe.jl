@@ -606,7 +606,7 @@ function block_coordinate_frank_wolfe(
         step_type,
     )
 
-    while t <= max_iteration && dual_gap >= max(epsilon, eps(float(typeof(dual_gap))))
+    @interruptable while t ≤ max_iteration && dual_gap ≥ max(epsilon, eps(float(typeof(dual_gap))))
 
         #####################
         # managing time and Ctrl-C
