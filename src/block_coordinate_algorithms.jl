@@ -476,7 +476,7 @@ function block_coordinate_frank_wolfe(
     lmo::ProductLMO{N},
     x0::BlockVector;
     update_order::BlockCoordinateUpdateOrder=CyclicUpdate(),
-    line_search::LS=Adaptive(),
+    line_search::LS=Secant(),
     update_step::US=FrankWolfeStep(),
     momentum=nothing,
     epsilon=1e-7,

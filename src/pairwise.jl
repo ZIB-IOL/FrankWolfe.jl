@@ -13,7 +13,7 @@ function pairwise_frank_wolfe(
     grad!,
     lmo,
     x0;
-    line_search::LineSearchMethod=Adaptive(),
+    line_search::LineSearchMethod=Secant(),
     lazy_tolerance=2.0,
     epsilon=1e-7,
     lazy=false,
