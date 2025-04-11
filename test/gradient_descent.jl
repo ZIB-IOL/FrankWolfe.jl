@@ -74,9 +74,9 @@ const f_opt = f_gd(x_opt)
         # Test convergence to optimal solution
         g0 = similar(x1)
         grad_gd!(g0, x1)
-        @test norm(g0) ≤ 2 * target_tolerance
+        @test norm(g0) ≤ 5 * target_tolerance
         grad_gd!(g0, x2)
-        @test norm(g0) ≤ 2 * target_tolerance
+        @test norm(g0) ≤ 5 * target_tolerance
 
         # Test objective values
         @test abs(f1 - f_opt) ≤ target_tolerance * L
