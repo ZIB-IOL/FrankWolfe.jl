@@ -8,10 +8,10 @@ import HiGHS
 import MathOptInterface as MOI
 
 
-n_runs = 5
-n = Int(1e2)
-k = 10000
-
+n_runs = 1
+n = Int(5e1)
+k = 1e6
+time_limit = Inf
 s = 10
 Random.seed!(s)
 
@@ -44,7 +44,11 @@ lmos = [
 
 function cg_solve(x, A_mat, b)
     A = (b, x) -> mul!(b, A_mat, x)
-    return ConjugateGradients.cg!(A, b, x; tol=1e-16, maxIter=1000)
+    precon = (x,y) -> begin
+        x .= y ./ diag(A_mat)
+    end
+    code, _ = ConjugateGradients.cg!(A, b, x; tol=1e-16, maxIter=10000, precon=precon)
+    return code > 0
 end
 
 function is_solve(x, A_mat, b)
@@ -58,14 +62,14 @@ for warmstart in [0, 1, 2]
     push!(solvers, FrankWolfe.TranslationSolverCG(cg_solve, zeros(n), warmstart))
 end
 
-# for warmstart in [0,1,2]
-#     push!(solvers, FrankWolfe.LagrangeSolverCG(
-#         cg_solve,
-#         zeros(n),
-#         zeros(n),
-#         warmstart
-#     ))
-# end
+for warmstart in [0,1]
+    push!(solvers, FrankWolfe.LagrangeSolverCG(
+        cg_solve,
+        zeros(n),
+        zeros(n),
+        warmstart
+    ))
+end
 
 """
     Run the experiment
@@ -80,8 +84,6 @@ for r in 1:n_runs
         A' * A
     end
 
-    # λ = eigvals(A)
-    # @assert all(λ .< 50) "$(maximum(λ))"
     @assert isposdef(A)
 
     y = Random.rand(Bool, n) * 0.6 .+ 0.3
@@ -97,6 +99,9 @@ for r in 1:n_runs
         mul!(storage, A, x)
         return mul!(storage, A, y, -2, 2)
     end
+
+    L = eigmax(A)
+    @info L
 
     result = Matrix{Float64}(undef, length(lmos), length(solvers))
     iteration_counts = Matrix{Int}(undef, length(lmos), length(solvers))
@@ -121,7 +126,10 @@ for r in 1:n_runs
                 lmo,
                 active_set,
                 max_iteration=k,
+                timeout=time_limit,
                 trajectory=true,
+                line_search=FrankWolfe.Shortstep(L),
+                verbose=true
             )
             result[i, j] = time() - time_start
             iteration_counts[i, j] = length(traj_data)
@@ -136,13 +144,13 @@ end
 average_results = sum(results) / n_runs
 average_iterations = sum(iterations) / n_runs
 
-# # Normalize results
-# for i in 1:length(lmos)
-#     max_result = maximum(average_results[i, :])
-#     average_results[i, :] = average_results[i, :] ./ max_result
-#     max_iterations = maximum(average_iterations[i, :])
-#     average_iterations[i, :] = average_iterations[i, :] ./ max_iterations
-# end
+# Normalize results
+for i in 1:length(lmos)
+    max_result = maximum(average_results[i, :])
+    average_results[i, :] = average_results[i, :] ./ max_result
+    max_iterations = maximum(average_iterations[i, :])
+    average_iterations[i, :] = average_iterations[i, :] ./ max_iterations
+end
 
 display(average_results)
 display(average_iterations)
@@ -150,7 +158,7 @@ display(average_iterations)
 using Plots
 gr()
 
-xtick_labels = ["LP", "sym LP", "CG warmstart 0", "CG warmstart 1", "CG warmstart 2"]
+xtick_labels = ["LP", "sym LP", "CG ws 0", "CG ws 1", "CG ws 2", "CG2 ws 0", "CG2 ws 1"]
 ytick_labels = [
     "KSparse(5, 500)",
     "KSparse(5, 1)",

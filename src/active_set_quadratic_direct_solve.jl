@@ -300,7 +300,7 @@ function compute_affine_min(s::TranslationSolverCG, as::ActiveSetQuadraticLinear
     n_reduced = nv - 1
 
     # Handle warm start
-    if s.warm_start == 1
+    if s.warm_start == 1 && length(s.last_sol) < nv
         μ = [s.last_sol[2:end]; zeros(eltype(as.weights[1]), nv - length(s.last_sol))]
     elseif s.warm_start == 2
         μ = copy(as.weights[2:end])
@@ -315,6 +315,7 @@ function compute_affine_min(s::TranslationSolverCG, as::ActiveSetQuadraticLinear
     temp1 = similar(as.atoms[1])
     temp2 = similar(as.atoms[1])
     temp3 = similar(as.atoms[1])
+    temp4 = similar(as.atoms[1])
     
     # Cache the first atom and its transformation
     atom1 = as.atoms[1]
@@ -334,9 +335,15 @@ function compute_affine_min(s::TranslationSolverCG, as::ActiveSetQuadraticLinear
         
         # Fill A_mat
         for j in 2:i
-            diff_j = mul!(temp2, I, as.atoms[j])
+            # Calculate (as.atoms[j] - atom1) separately
+            diff_j = mul!(temp3, I, as.atoms[j])
             @. diff_j -= atom1
-            A_mat[i-1, j-1] = dot(diff_i, mul!(temp2, as.A, diff_j))
+            
+            # Calculate A * (as.atoms[j] - atom1) separately
+            A_diff_j = mul!(temp4, as.A, diff_j)
+            
+            # Compute dot product
+            A_mat[i-1, j-1] = dot(diff_i, A_diff_j)
             if i != j
                 A_mat[j-1, i-1] = A_mat[i-1, j-1]  # Exploit symmetry
             end
@@ -344,16 +351,20 @@ function compute_affine_min(s::TranslationSolverCG, as::ActiveSetQuadraticLinear
     end
     
     # Solve system
-    s.solve!(μ, A_mat, r_vec)
-    s.last_sol = [1 - sum(μ); μ]
+    converged = s.solve!(μ, A_mat, r_vec)
 
+    # If linear solving failed, return the original weights
+    if !converged
+        return [], as.weights
+    end
+
+    s.last_sol = [1 - sum(μ); μ]
     indices_to_remove, new_weights = _compute_new_weights_wolfe_step(s.last_sol, as.weights)
 
     # Update last solution for next warm start
     if s.warm_start == 1
         deleteat!(s.last_sol, indices_to_remove)
     end
-    
     return indices_to_remove, new_weights
 end
 
@@ -362,8 +373,7 @@ function compute_affine_min(s::LagrangeSolverCG, as::ActiveSetQuadraticLinearSol
     nv = length(as)
 
     # Warmstarting with previous solution
-    if s.warm_start == 1
-        println(length(s.last_w), " ", length(s.last_u), " ", nv)
+    if s.warm_start == 1 && length(s.last_w) < nv
         w = [s.last_w; zeros(eltype(as.weights[1]), nv - length(s.last_w))]
         u = [s.last_u; zeros(eltype(as.weights[1]), nv - length(s.last_u))]
     else
@@ -373,12 +383,18 @@ function compute_affine_min(s::LagrangeSolverCG, as::ActiveSetQuadraticLinearSol
 
     # Solve systems
     M = [dot(as.atoms[i], as.A * as.atoms[j]) for i in 1:nv, j in 1:nv]
-    s.solve!(w, M, ones(nv))
-    s.solve!(u, M, [-dot(as.atoms[i], as.b) for i in 1:nv])
+    converged1 = s.solve!(w, M, ones(nv))
+    converged2 = s.solve!(u, M, [-dot(as.atoms[i], as.b) for i in 1:nv])
     s.last_w = w
     s.last_u = u
+
+    new_weights = u - (sum(u) - 1)/sum(w) * w
+
+    if !converged1 || !converged2 || any(isnan, new_weights)
+        return [], as.weights
+    end
     
-    indices_to_remove, new_weights = _compute_new_weights_wolfe_step(u - (sum(u) - 1)/sum(w) * w, as.weights)
+    indices_to_remove, new_weights = _compute_new_weights_wolfe_step(new_weights, as.weights)
 
     if s.warm_start == 1
         deleteat!(s.last_w, indices_to_remove)
