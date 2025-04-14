@@ -26,7 +26,6 @@ function corrective_frankwolfe(
     timeout=Inf,
     renorm_interval=1000,
     linesearch_workspace=nothing,
-    lazy_tolerance=2.0,
     weight_purge_threshold=weight_purge_threshold_default(R),
     extra_vertex_storage=nothing,
     add_dropped_vertices=false,
@@ -135,7 +134,7 @@ function corrective_frankwolfe(
             phi = dual_gap
         end
         # use the step defined by the corrective step type
-        x, v, phi, dual_gap, should_fw_step, should_continue = run_corrective_step(corrective_step, f, grad!, gradient, x, v, dual_gap, active_set, t, lmo, line_search, linesearch_workspace, primal, phi, tot_time, callback, renorm_interval, memory_mode, epsilon, lazy_tolerance, d)
+        x, v, phi, dual_gap, should_fw_step, should_continue = run_corrective_step(corrective_step, f, grad!, gradient, x, v, dual_gap, active_set, t, lmo, line_search, linesearch_workspace, primal, phi, tot_time, callback, renorm_interval, memory_mode, epsilon, d)
         # interrupt from callback
         if should_continue === false
             break
