@@ -36,7 +36,7 @@ using SparseArrays
     )
 
     for lazy in (true, false)
-        x_cfw, v_cfw, primal_cfw, dual_gap_cfw, traj_cfw = FrankWolfe.corrective_frankwolfe(
+        x_cfw, v_cfw, primal_cfw, dual_gap_cfw, traj_cfw = FrankWolfe.corrective_frank_wolfe(
             f,
             grad!,
             lmo,
@@ -48,7 +48,7 @@ using SparseArrays
         @test abs(primal_cfw - primal_afw) <= 1e-6
         @test isapprox(x_cfw, x_afw, rtol=1e-5)
 
-        x_bp, _, primal_bp, dual_gap_bp, _ = FrankWolfe.corrective_frankwolfe(
+        x_bp, _, primal_bp, dual_gap_bp, _ = FrankWolfe.corrective_frank_wolfe(
             f,
             grad!,
             lmo,
@@ -60,7 +60,7 @@ using SparseArrays
         # Check solutions match
         @test abs(primal_bp - primal_afw) <= 1e-6
         @test isapprox(x_bp, x_afw, rtol=1e-5)
-        x_pw, _, primal_pw, dualgap_pw, _ = FrankWolfe.corrective_frankwolfe(
+        x_pw, _, primal_pw, dualgap_pw, _ = FrankWolfe.corrective_frank_wolfe(
             f,
             grad!,
             lmo,
@@ -84,7 +84,7 @@ using SparseArrays
     end
 
     lazy = true
-    x_hyb, _, primal_hyb, _ = FrankWolfe.corrective_frankwolfe(
+    x_hyb, _, primal_hyb, _ = FrankWolfe.corrective_frank_wolfe(
         f,
         grad!,
         lmo,

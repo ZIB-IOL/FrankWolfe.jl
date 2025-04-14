@@ -53,7 +53,7 @@ include("callback.jl")
 include("gradient_descent.jl")
 
 include("corrective_step_interface.jl")
-include("corrective_frankwolfe.jl")
+include("corrective_frank_wolfe.jl")
 
 # collecting most common data types etc and precompile
 # min version req set to 1.5 to prevent stalling of julia 1

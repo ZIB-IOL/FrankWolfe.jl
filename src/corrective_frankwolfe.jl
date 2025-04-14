@@ -1,13 +1,13 @@
 
 """
-    corrective_frankwolfe(f, grad!, lmo, corrective_step, active_set::AS; kwargs...)
+    corrective_frank_wolfe(f, grad!, lmo, corrective_step, active_set::AS; kwargs...)
 
 A corrective Frank-Wolfe variant with corrective step defined by `corrective_step`.
 
 A corrective FW algorithm alternates between a standard FW step at which a vertex is added to the active set and a corrective step at which an update is performed in the convex hull of current vertices.
 Examples of corrective FW algorithms include blended (pairwise) conditional gradients, away-step Frank-Wolfe, and fully-corrective Frank-Wolfe.
 """
-function corrective_frankwolfe(
+function corrective_frank_wolfe(
     f,
     grad!,
     lmo,
