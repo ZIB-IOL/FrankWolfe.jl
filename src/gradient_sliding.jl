@@ -26,173 +26,110 @@ eprint = {
 
 """
 
+using FrankWolfe
+import FrankWolfe: ActiveSet
+
+
 
 """
-Supertype for condiditional gradient oracles.
-
-All CndGOs must implement `conditional_gradient_descent(cndgrado::CndGO; ...; state::CndGStatus )`
-and return a vector `ut` and update the value of `state::`.
+Supertype for stop conditions of Gradient Sliding method. 
+    All StopRules must implement `stop_condition(stop_rule::IterStop,...)`
+    and return a boolean value which is true when the stop condition is satisfied.
 """
+abstract type StopRule end
 
-abstract type CndGO end
+function stop_condition end
 
-function conditional_gradient_descent end
-
-@enum CndGStatus begin
-    CndGS_UNSOLVED = 1
-    CndGS_SOLVED = 2
-    CndGS_TIMELIMIT = 3
-    CndGS_ITERLIMIT = 4
+"""
+    IterStop<: StopRule
+    Stop condition based on a maximum number of iteration.
+"""
+struct IterStop <: StopRule
+    maxIter::Int
 end
 
-mutable struct CndGState 
-    status::CndGStatus
+function stop_condition(stop_rule::IterStop, state)
+    return state.t ≥ stop_rule.maxIter
 end
+
+"""
+        TimeStop
+        Stops the cutting plane when the time reaches its limit.
+"""
+struct TimeStop <: StopRule
+    timeout::Real
+end
+
+function stop_condition(stop_rule::TimeStop, state)
+    return state.tot_time ≥ stop_rule.timeout
+end
+
+"""
+        OrStop
+        Stops when one of the stop conditions is met.
+"""
+struct OrStop<: StopRule 
+    first_stoprule::StopRule
+    second_stoprule::StopRule
+end
+
+function stop_condition(stop_rule::OrStop, state)
+    return stop_condition(first_stoprule,state) || stop_condition(second_stoprule,state)
+end
+
 
 
 """
 Supertype for parameters of the condiditional gradient descent.
-    All MomentumStepsize must implement `compute_CnGD_parameters(parameters_rule::ConstantLZParameters,...)`
-    and return a tuple of parameters `param` for conditional_gradient_descent
+    All MomentumStepsize must implement `compute_CnGD_parameters(parameters_rule::ConstantCnGDParameters,...)`
+    and return a tuple of parameters `param` for conditional_gradient_descent!
     See Algorithm 1 in https://doi.org/10.1137/140992382.
 """
-
 abstract type CnGDParameters end
 
 function compute_CnGD_parameters end
 
 
 """
-Supertype for parameters for  `LanZhouProcedure`
-See Algorithm 1 in https://doi.org/10.1137/140992382.
-"""
-abstract type LZParameters <:CnGDParameters end
-
-"""
-    ConstantLZParameters <:CnGDParameters 
+    ConstantCnGDParameters <:CnGDParameters 
     Constant parameters eta and beta for condiditional gradient step.
 """
-
-struct ConstantLZParameters <:CnGDParameters 
+struct ConstantCnGDParameters <: CnGDParameters
     threshold::Real
     regularization::Real
 end
 
-function compute_CnGD_parameters(parameters_rule::ConstantLZParameters,
-                                t
-                                )
+function compute_CnGD_parameters(parameters_rule::ConstantCnGDParameters, state)
     return parameters_rule.threshold, parameters_rule.regularization
 end
 
 """
-    FixedLZParameters <:CnGDParameters  
+    OpenLoopCnGDParameters <:CnGDParameters  
     Fixed trajectory only depending on the iteration t of parameters eta and beta for condiditional gradient step.
 """
-struct FixedLZParameters <:CnGDParameters 
+struct OpenLoopCnGDParameters <: CnGDParameters
     threshold_trajectory
     regularization_trajectory
 end
 
-function compute_CnGD_parameters(parameters_rule::FixedLZParameters,
-                                t
-                                )                                
-    return parameters_rule.threshold_trajectory(t), parameters_rule.regularization_trajectory(t)
+"""
+    LZCnGDParameters <:CnGDParameters  
+    Fixed trajectory for the threshold η_t = threshold_multiplier/t and
+    the regularization β_t = regularization_multiplier/t
+"""
+struct LZCnGDParameters{T} <: CnGDParameters where T<:Real
+    threshold_multiplier::T
+    regularization_mutliplier::T
 end
 
-
-
-"""
-    LanZhouProcedure <: CndGO
-
-Procedure to compute a condiditional gradient step. A linear minimization oracle `lmo` is required.
-See Algorithm 1 in https://doi.org/10.1137/140992382.
-"""
-
-struct LanZhouProcedure <: CndGO 
-    timeout::Real
-    max_iteration::Int
-    lmo::LinearMinimizationOracle
-end
-    
-function conditional_gradient_descent(cndgrado::LanZhouProcedure, 
-                                    gradient,
-                                    x,
-                                    params; 
-                                    state::CndGState 
-                                )
-
-    function value_function(g,u,β,ut,vt)
-        return sum( (g + β * (ut - u)) .* (ut - vt) )
-    end
-
-    t = 0
-    time_start = time_ns()
-    tot_time = time_start
-    ut = copy(x)
-    vt = similar(x)
-    eta,beta = params
-
-    while t< cndgrado.max_iteration && tot_time < cndgrado.timeout
-        time_at_loop = time_ns()
-        tot_time = (time_at_loop - time_start) / 1e9
-        t +=1
-
-        if t == 1
-            vt = compute_extreme_point(cndgrado.lmo, gradient + beta * (ut - x)) 
-        else
-            vt = compute_extreme_point(cndgrado.lmo, gradient + beta * (ut - x), v=vt)
-        end
-        V = value_function(gradient,x,beta,ut,vt)
-        if V <= eta break end
-        alpha = V/(beta * sum((vt - ut).^2))
-        alpha = min(1,alpha)
-        ut .= (1-alpha)* ut + alpha * vt 
-    end
-
-
-    if tot_time >= cndgrado.timeout
-        state.status = CndGS_TIMELIMIT 
-        return ut
-    end
-    
-    if t >= cndgrado.max_iteration
-        state.status = CndGS_ITERLIMIT
-        return ut
-    end
-
-    state.status = CndGS_SOLVED 
-    return ut
-
-end
-
-
-"""
-Supertype for stop conditions of Gradient Sliding method. 
-    All GSStopCondition must implement `stop_condition(stop_rule::IterStop,...)`
-    and return a boolean value which is true when the stop condition is satisfied.
-"""
-abstract type GSStopCondition end
-
-function stop_condition end
-
-"""
-    IterStop<: GSStopCondition
-    Stop condition based on a maximum number of iteration.
-"""
-struct IterStop <:GSStopCondition 
-    maxIter::Int
-end
-
-function stop_condition(stop_rule::IterStop,
-                        t
-                    )
-        return t ≥ stop_rule.maxIter
+function compute_CnGD_parameters(parameters_rule::LZCnGDParameters{T}, state) where T
+    return T(parameters_rule.threshold_multiplier/state.t), T(parameters_rule.regularization_mutliplier/state.t)
 end
 
 
 """
 Supertype for stepsize gamma.
-    All MomentumStepsize must implement `compute_momentum_stepsize(stepsize_rule::ConstantMStepsize,...)`
+    All MomentumStepsize must implement `compute_momentum_stepsize(stepsize_rule::ConstantMomentumStepsize,...)`
     and return a stepsize.
     See Algorithm 1 in https://doi.org/10.1137/140992382.
 """
@@ -201,33 +138,132 @@ abstract type MomentumStepsize end
 function compute_momentum_stepsize end
 
 """
-    ConstantMStepsize <: MomentumStepsize 
+    ConstantMomentumStepsize <: MomentumStepsize 
     Constant stepsize gamma for momentum update.
 """
 
-struct ConstantMStepsize <: MomentumStepsize 
+struct ConstantMomentumStepsize <: MomentumStepsize
     stepsize::Real
 end
 
-function compute_momentum_stepsize(stepsize_rule::ConstantMStepsize,
-                                t
-                                )
+function compute_momentum_stepsize(stepsize_rule::ConstantMomentumStepsize, state)
     return stepsize_rule.stepsize
 end
 
 """
-    FixedMStepsize <: MomentumStepsize
+    OpenloopMomentStepsize <: MomentumStepsize
     Fixed trajectory only depending on the iteration t of stepsizes gamma for momentum update.
 """
-struct FixedMStepsize <: MomentumStepsize 
+struct OpenloopMomentStepsize <: MomentumStepsize
     stepsize_trajectory
 end
 
-function compute_momentum_stepsize(stepsize_rule::FixedMStepsize,
-                                t
-                                )                                
-    return stepsize_rule.stepsize_trajectory(t)
+function compute_momentum_stepsize(stepsize_rule::OpenloopMomentStepsize, state)
+    return stepsize_rule.stepsize_trajectory(state.t)
 end
+
+"""
+    LZMomentStepsize{T} <: MomentumStepsize
+    Fixed momentum trajectory of γ_t = mutliplier/(t+1).
+"""
+struct LZMomentStepsize{T} <: MomentumStepsize where T<:Real
+    multipier::T
+end
+
+LZMomentStepsize() = LZMomentStepsize{Float64}(2.0)
+
+function compute_momentum_stepsize(stepsize_rule::LZMomentStepsize{T}, state) where T
+    return stepsize_rule.multipier/T(state.t + 1)
+end
+
+
+"""
+Supertype for condiditional gradient oracles.
+
+All CndGOs must implement `conditional_gradient_descent!(x, cndgrado::CndGO, ...)`
+and return the status of the conditional gradient descent.
+"""
+abstract type CndGO end
+
+function conditional_gradient_descent! end
+
+@enum CndGStatus begin
+    CndGS_UNSOLVED = 1
+    CndGS_SOLVED = 2
+    CndGS_TIMELIMIT = 3
+    CndGS_ITERLIMIT = 4
+end
+
+mutable struct CndGState
+    status::CndGStatus
+end
+
+"""
+    LanZhouProcedure <: CndGO
+
+Procedure to compute a condiditional gradient step. A linear minimization oracle `lmo` is required.
+See Algorithm 1 in https://doi.org/10.1137/140992382.
+"""
+struct LanZhouProcedure <: CndGO
+    timeout::Real
+    max_iteration::Int
+    lmo::LinearMinimizationOracle
+end
+
+
+function _cgd_value_function(g::Vector{T}, u::Vector{T}, 
+                            β::T, ut::Vector{T}, vt
+                    )  where T<:Real
+    
+    return fast_dot(g,ut) - fast_dot(g,vt) + β *(fast_dot(ut,ut) + fast_dot(u,vt) - fast_dot(u,ut) - fast_dot(ut,vt))
+end
+
+function conditional_gradient_descent!(
+    x::Vector{T},
+    cndgrado::LanZhouProcedure,
+    gradient::Vector{T};
+    params::Tuple{T,T}
+) where T<:Real
+
+    t = 0
+    time_start = time_ns()
+    tot_time = time_start
+    ut = copy(x)
+    vt = collect(x)
+    eta, beta = params
+
+    while t < cndgrado.max_iteration && tot_time < cndgrado.timeout
+        time_at_loop = time_ns()
+        tot_time = (time_at_loop - time_start) / 1e9
+        t += 1
+
+        if t == 1
+            vt = compute_extreme_point(cndgrado.lmo, gradient + beta * (ut - x))
+        else
+            vt = compute_extreme_point(cndgrado.lmo, gradient + beta * (ut - x), v=vt)
+        end
+        V = _cgd_value_function(gradient, x, beta, ut, vt)
+        if V <= eta
+            break
+        end
+        alpha = V/(beta * (fast_dot(vt,vt) + fast_dot(ut,ut) -2*fast_dot(ut,vt)))
+        alpha = min(1, alpha)
+        @. ut = (1-alpha) * ut + alpha * vt
+    end
+
+    x .= ut
+    if tot_time >= cndgrado.timeout
+        return CndGS_TIMELIMIT
+    end
+
+    if t >= cndgrado.max_iteration
+        return CndGS_ITERLIMIT
+    end
+
+    return CndGS_SOLVED
+
+end
+
 
 
 """
@@ -242,14 +278,191 @@ Returns a tuple `(x, v, primal, dual_gap, traj_data)` with:
 - `tot_time` total time
 - `traj_data` vector of trajectory information.
 """
-
 function conditional_gradient_sliding(
     grad!,
     cndgrado,
-    momentum_stepsize::MomentumStepsize,
-    cndgrad_params::CnGDParameters ,
-    stop_rule::GSStopCondition,
     x0;
+    momentum_stepsize::MomentumStepsize,
+    cndgrad_params::CnGDParameters,
+    stop_rule::StopRule,
+    max_iteration=10000,
+    print_iter=1000,
+    trajectory=false,
+    verbose=false,
+    traj_data=[],
+    timeout=Inf,
+)
+
+    
+
+    x = copy(x0)
+    y = copy(x0)
+    z = collect(x0)
+    gradient = copy(x0)
+    gamma = zero(x0[1])
+
+    t = 1
+    cndG_state = CndGState(CndGS_UNSOLVED)   
+    state = (
+            t=t,
+            tot_time=0.,
+            x=x,
+            y=y,
+            z=z,
+            gamma=0.,
+            cnGDescent_params = (0., 0.),
+            gradient=gradient,
+            cndG_status=cndG_state.status,
+            
+        )
+
+    time_start = time_ns()
+    tot_time = time_start
+    while t ≤ max_iteration && (tot_time - time_start) ≤ timeout && !stop_condition(stop_rule, state)
+        time_at_loop = time_ns()
+        tot_time = (time_at_loop - time_start) / 1e9
+        cndG_state.status = CndGS_UNSOLVED
+
+        gamma = compute_momentum_stepsize(momentum_stepsize, state)
+        @. z = (1-gamma) * y + gamma * x
+        grad!(gradient, z)
+        cnGDescent_params  = compute_CnGD_parameters(cndgrad_params, state)
+        cndG_state.status = conditional_gradient_descent!(x,cndgrado, gradient; params = cnGDescent_params )
+        @. y = (1-gamma) * y + gamma * x
+
+        state = (
+            t=t,
+            tot_time=tot_time,
+            x=x,
+            y=y,
+            z=z,
+            gamma=gamma,
+            cnGDescent_params = cnGDescent_params,
+            gradient=gradient,
+            cndG_status=cndG_state.status,
+        )
+        if trajectory
+            push!(traj_data,state)
+        end
+
+        if verbose && mod(t, print_iter) == 0
+            print("It. ", t, " Tot.Time ", tot_time, " CndG status ", cndG_state.status)
+        end
+
+        t += 1
+    end
+
+    if verbose && timeout < Inf && tot_time ≥ timeout
+        @info "Time limit reached"
+    end
+
+    if verbose && t ≥ max_iteration
+        @info "Iteration limit reached"
+    end
+
+
+    return state
+end
+
+#################################################################################################################
+#################################################################################################################
+#SOCGS  Second-order conditional gradient sliding, Carderera, Alejandro and Pokutta, Sebastian, arXiv preprint arXiv:2002.08907
+#################################################################################################################
+#################################################################################################################
+
+@enum CGSStepsize begin
+    CGS_FW_STEP = 1
+    CGS_PVM_STEP = 2
+end
+
+"""TOTEST/TOWRITE
+"""
+struct AwayStep <: UpdateStep
+    lmo::LinearMinimizationOracle
+    epsilon::Real
+end
+function conditional_gradient_step!(active_set_fw::ActiveSet,
+                                    f,
+                                    grad!,
+                                    fw_step::AwayStep,
+                                    gradient
+                                    )
+
+                away_frank_wolfe(f,
+                    grad!,
+                    fw_step.lmo,
+                    active_set_fw;
+                    epsilon = fw_step.epsilon,
+                    gradient = gradient,
+                    max_iteration = 1
+                    )
+    return active_set_fw 
+end 
+
+""" TOWRITE
+"""
+abstract type ProjectedVariableMetric end
+function perform_H_projection! end
+
+""" TOWRITE
+"""
+struct AwayFrankWolfePVM <: ProjectedVariableMetric 
+    lmo::LinearMinimizationOracle
+end
+
+function perform_H_projection!(active_set_pvm::ActiveSet, 
+                                pvm::AwayFrankWolfePVM,
+                                f_quad_approx,
+                                grad_quad_approx!,
+                                epsilon::Real
+                            ) 
+    
+    away_frank_wolfe(f_quad_approx,
+                    grad_quad_approx!,
+                    pvm.lmo,
+                    active_set_pvm;
+                    epsilon = epsilon
+                    )
+    return active_set_pvm
+end 
+
+
+""" TOWRITE
+"""
+abstract type LowerBoundEstimator end
+function compute_pvm_threshold end
+
+""" TOTEST
+"""
+struct LowerBoundByFiniteAWSteps <: LowerBoundEstimator 
+    f
+    grad!
+    lmo::LinearMinimizationOracle
+    max_iter::Int
+end
+function compute_pvm_threshold(lb_estimator::LowerBoundByFiniteAWSteps,
+                                x,
+                                primal::Real,
+                                gradient)
+    _, _, primal_finite_steps, _, _, _ =  away_frank_wolfe(lb_estimator.f,
+                    lb_estimator.grad!,
+                    lb_estimator.lmo,
+                    x;
+                    max_iteration = lb_estimator.max_iter)
+    return (primal - primal_finite_steps)^4/(fast_dot(gradient,gradient)^2)
+end
+#function conditional_gradient_step! end
+
+function second_order_conditional_gradient_sliding(
+    f,
+    grad!,
+    hess_oracle,
+    build_quadratic_approximation!,
+    fw_step::UpdateStep,
+    pvm::ProjectedVariableMetric,
+    x0;
+    lb_estimator::LowerBoundEstimator,
+    stop_rule::StopRule,
     max_iteration=10000,
     print_iter=1000,
     trajectory=false,
@@ -258,78 +471,102 @@ function conditional_gradient_sliding(
     timeout=Inf
 )
 
+    active_set_fw = ActiveSet([(one(x0[1]),x0)])
+    active_set_pvm = ActiveSet([(one(x0[1]),x0)]) 
+    gradient = collect(x0)
+    Hx = collect(x0)
+    H = []
+    x_fw = get_active_set_iterate(active_set_fw)
+    x_pvm = get_active_set_iterate(active_set_pvm)
+    x = x_pvm
+    
+    t = 0
+    first_iter = true
+    dual_gap_fw = Inf
+    primal_fw = Inf
+    primal_pvm = Inf
+    step_type = CGS_FW_STEP
+
     time_start = time_ns()
     tot_time = time_start
-    
-    x = copy(x0)
-    y = copy(x0)
-    z = similar(x0)
-    gradient = copy(x0)
-    gamma = zero(x0[1])
-    eta = zero(x0[1])
-    beta = zero(x0[1])
 
-    t = 0
-    gamma = compute_momentum_stepsize(momentum_stepsize,t)
-    cndG_state = CndGState(CndGS_UNSOLVED)
-
-    while t ≤ max_iteration && (tot_time - time_start) ≤ timeout && !stop_condition(stop_rule,t)
-
+    primal = f(x0)
+    state = (
+            t= 0,
+            tot_time = tot_time,
+            primal = primal,
+            dual_fw = Inf,
+            dual_gap_fw = Inf,
+            x = x0,
+            step_type = CGS_FW_STEP,
+            )    
+    while t ≤ max_iteration && (tot_time - time_start) ≤ timeout && !stop_condition(stop_rule, state)
         time_at_loop = time_ns()
         tot_time = (time_at_loop - time_start) / 1e9
-        t += 1
-        cndG_state.status = CndGS_UNSOLVED 
-        
-        z .= (1-gamma) * y + gamma * x 
-        grad!(gradient,z)        
-        params =  compute_CnGD_parameters(cndgrad_params,t)        
-        x .= conditional_gradient_descent(cndgrado,
-                                            gradient,
-                                            x,
-                                            params; 
-                                            state = cndG_state)
-        y .= (1-gamma) * y + gamma * x  
-        gamma = compute_momentum_stepsize(momentum_stepsize,t)
 
+        #computing gradient, hessian and quadratic approximation (problem dependent)
+        grad!(gradient, x)
+        H = if first_iter
+            first_iter = false
+            hess_oracle(x,gradient)            
+        else   
+            hess_oracle(x,gradient,H=H)
+        end        
+        f_quad_approx, grad_quad_approx! = build_quadratic_approximation!(Hx,x,primal,gradient,H)
+
+        epsilon = compute_pvm_threshold(lb_estimator,x,primal,gradient)    
+        perform_H_projection!(active_set_pvm, pvm, f_quad_approx, grad_quad_approx!, epsilon)
+        conditional_gradient_step!(active_set_fw, f, grad!, fw_step, gradient)   
+        
+        x_fw = get_active_set_iterate(active_set_fw)
+        x_pvm = get_active_set_iterate(active_set_pvm)
+        primal_fw = f(x_fw)
+        primal_pvm = f(x_pvm)
+        if primal_pvm >= primal_fw 
+            copyto!(active_set_pvm,active_set_fw)
+            primal = primal_fw
+            x = x_fw
+            step_type = CGS_FW_STEP
+        else
+            primal = primal_pvm
+            x = x_pvm
+            step_type = CGS_PVM_STEP
+        end
+        
+        t += 1
+        state = (
+                t= t,
+                tot_time = tot_time,
+                primal = primal,
+                dual_fw = primal_fw - dual_gap_fw,
+                dual_gap_fw = dual_gap_fw,
+                x = x,
+                epsilon = epsilon,
+                step_type = step_type,
+            )
         if trajectory
-            push!(traj_data,
-                    (
-                        t=t,
-                        tot_time=tot_time,
-                        x=x,
-                        y=y,
-                        z=z,
-                        gamma=gamma,
-                        eta=eta,
-                        beta=beta,
-                        gradient=gradient,
-                        cndG_status=cndG_state.status
-                    )
+            push!(
+                traj_data,
+                state
             )
         end
-    
-        if verbose
-           if  mod(t, print_iter) == 0
-                print("It. ", t," Tot.Time ",tot_time, " CndG status ", cndG_state.status)
-           end
+
+        if verbose && mod(t, print_iter) == 0
+            println("It. ", t, " Tot.Time ", tot_time," ", step_type)
         end
+
+        
     end
 
-    if timeout < Inf
-        if tot_time ≥ timeout
-            if verbose
-                @info "Time limit reached"
-            end
-        end
+    if verbose && timeout < Inf && tot_time ≥ timeout
+        @info "Time limit reached"
     end
-    
-    if t ≥  max_iteration 
-        if verbose
-            @info "Iteration limit reached"
-        end
+
+    if verbose && t ≥ max_iteration
+        @info "Iteration limit reached"
     end
-    
 
 
-return (x=x, y=y,z=z, t=t, tot_time = tot_time, traj_data=traj_data)
+    return (x=x, primal=primal, dual_gap_fw = dual_gap_fw,
+             t = t, tot_time = tot_time,traj_data=traj_data)
 end
