@@ -536,10 +536,10 @@ function second_order_conditional_gradient_sliding(
         t += 1
         state = (
                 t= t,
-                tot_time = tot_time,
                 primal = primal,
                 dual_fw = primal_fw - dual_gap_fw,
                 dual_gap_fw = dual_gap_fw,
+                tot_time = tot_time,          
                 x = x,
                 epsilon = epsilon,
                 step_type = step_type,
