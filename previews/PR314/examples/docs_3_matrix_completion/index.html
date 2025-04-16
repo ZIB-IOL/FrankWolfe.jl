@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Matrix Completion · FrankWolfe.jl</title><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.039/juliamono-regular.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.11/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">FrankWolfe.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../basics/">How does it work?</a></li><li><a class="tocitem" href="../../advanced/">Advanced features</a></li><li><input class="collapse-toggle" id="menuitem-4" type="checkbox" checked/><label class="tocitem" for="menuitem-4"><span class="docs-label">Examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../docs_0_fw_visualized/">Visualization of Frank-Wolfe running on a 2-dimensional polytope</a></li><li><a class="tocitem" href="../docs_1_mathopt_lmo/">Comparison with MathOptInterface on a Probability Simplex</a></li><li><a class="tocitem" href="../docs_2_polynomial_regression/">Polynomial Regression</a></li><li class="is-active"><a class="tocitem" href>Matrix Completion</a></li><li><a class="tocitem" href="../docs_4_rational_opt/">Exact Optimization with Rational Arithmetic</a></li><li><a class="tocitem" href="../docs_5_blended_cg/">Blended Conditional Gradients</a></li><li><a class="tocitem" href="../docs_6_spectrahedron/">Spectrahedron</a></li><li><a class="tocitem" href="../docs_7_shifted_norm_polytopes/">FrankWolfe for scaled, shifted <span>$\ell^1$</span> and <span>$\ell^{\infty}$</span> norm balls</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-5" type="checkbox"/><label class="tocitem" for="menuitem-5"><span class="docs-label">API reference</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../reference/1_lmo/">Linear Minimization Oracles</a></li><li><a class="tocitem" href="../../reference/2_algorithms/">Algorithms</a></li><li><a class="tocitem" href="../../reference/3_backend/">Utilities and data structures</a></li></ul></li><li><a class="tocitem" href="../../contributing/">Contributing</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Matrix Completion</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Matrix Completion</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/ZIB-IOL/FrankWolfe.jl/blob/master/examples/docs_3_matrix_completion.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Matrix-Completion"><a class="docs-heading-anchor" href="#Matrix-Completion">Matrix Completion</a><a id="Matrix-Completion-1"></a><a class="docs-heading-anchor-permalink" href="#Matrix-Completion" title="Permalink"></a></h1><p>We present another example that is about matrix completion. The idea is, given a partially observed matrix <span>$Y\in\mathbb{R}^{m\times n}$</span>, to find <span>$X\in\mathbb{R}^{m\times n}$</span> to minimize the sum of squared errors from the observed entries while &#39;completing&#39; the matrix <span>$Y$</span>, i.e. filling the unobserved entries to match <span>$Y$</span> as good as possible. A detailed explanation can be found in section 4.2 of <a href="https://arxiv.org/pdf/2104.06675.pdf">the paper</a>. We will try to solve</p><p class="math-container">\[\min_{||X||_*\le \tau} \sum_{(i,j)\in\mathcal{I}} (X_{i,j}iY_{i,j})^2,\]</p><p>where <span>$\tau&gt;0$</span> and <span>$\mathcal{I}$</span> denote the indices of the observed entries. We will use <a href="../../reference/#FrankWolfe.NuclearNormLMO"><code>FrankWolfe.NuclearNormLMO</code></a> and compare our Frank-Wolfe implementation with a Projected Gradient Descent (PGD) algorithm which, after each gradient descent step, projects the iterates back onto the nuclear norm ball. We use a movielens dataset for comparison.</p><pre><code class="language-julia hljs">using FrankWolfe
+using ZipFile, DataFrames, CSV
+
+using Random
+using Plots
+
+using Profile
+
+import Arpack
+using SparseArrays, LinearAlgebra
+
+using LaTeXStrings
+
+temp_zipfile = download(&quot;http://files.grouplens.org/datasets/movielens/ml-latest-small.zip&quot;)
+
+zarchive = ZipFile.Reader(temp_zipfile)
+
+movies_file = zarchive.files[findfirst(f -&gt; occursin(&quot;movies&quot;, f.name), zarchive.files)]
+movies_frame = CSV.read(movies_file, DataFrame)
+
+ratings_file = zarchive.files[findfirst(f -&gt; occursin(&quot;ratings&quot;, f.name), zarchive.files)]
+ratings_frame = CSV.read(ratings_file, DataFrame)
+
+users = unique(ratings_frame[:, :userId])
+movies = unique(ratings_frame[:, :movieId])
+
+@assert users == eachindex(users)
+movies_revert = zeros(Int, maximum(movies))
+for (idx, m) in enumerate(movies)
+    movies_revert[m] = idx
+end
+movies_indices = [movies_revert[idx] for idx in ratings_frame[:, :movieId]]
+
+const rating_matrix = sparse(
+    ratings_frame[:, :userId],
+    movies_indices,
+    ratings_frame[:, :rating],
+    length(users),
+    length(movies),
+)
+
+missing_rate = 0.05
+
+Random.seed!(42)
+
+const missing_ratings = Tuple{Int,Int}[]
+const present_ratings = Tuple{Int,Int}[]
+let
+    (I, J, V) = SparseArrays.findnz(rating_matrix)
+    for idx in eachindex(I)
+        if V[idx] &gt; 0
+            if rand() &lt;= missing_rate
+                push!(missing_ratings, (I[idx], J[idx]))
+            else
+                push!(present_ratings, (I[idx], J[idx]))
+            end
+        end
+    end
+end
+
+function f(X)
+    r = 0.0
+    for (i, j) in present_ratings
+        r += 0.5 * (X[i, j] - rating_matrix[i, j])^2
+    end
+    return r
+end
+
+function grad!(storage, X)
+    storage .= 0
+    for (i, j) in present_ratings
+        storage[i, j] = X[i, j] - rating_matrix[i, j]
+    end
+    return nothing
+end
+
+function test_loss(X)
+    r = 0.0
+    for (i, j) in missing_ratings
+        r += 0.5 * (X[i, j] - rating_matrix[i, j])^2
+    end
+    return r
+end
+
+function project_nuclear_norm_ball(X; radius=1.0)
+    U, sing_val, Vt = svd(X)
+    if (sum(sing_val) &lt;= radius)
+        return X, -norm_estimation * U[:, 1] * Vt[:, 1]&#39;
+    end
+    sing_val = FrankWolfe.projection_simplex_sort(sing_val, s=radius)
+    return U * Diagonal(sing_val) * Vt&#39;, -norm_estimation * U[:, 1] * Vt[:, 1]&#39;
+end
+
+norm_estimation = 10 * Arpack.svds(rating_matrix, nsv=1, ritzvec=false)[1].S[1]
+
+const lmo = FrankWolfe.NuclearNormLMO(norm_estimation)
+const x0 = FrankWolfe.compute_extreme_point(lmo, ones(size(rating_matrix)))
+const k = 10
+
+gradient = spzeros(size(x0)...)
+gradient_aux = spzeros(size(x0)...)
+
+function build_callback(trajectory_arr)
+    return function callback(state)
+        return push!(trajectory_arr, (Tuple(state)[1:5]..., test_loss(state.x)))
+    end
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">build_callback (generic function with 1 method)</code></pre><p>The smoothness constant is estimated:</p><pre><code class="language-julia hljs">num_pairs = 100
+L_estimate = -Inf
+for i in 1:num_pairs
+    global L_estimate
+    u1 = rand(size(x0, 1))
+    u1 ./= sum(u1)
+    u1 .*= norm_estimation
+    v1 = rand(size(x0, 2))
+    v1 ./= sum(v1)
+    x = FrankWolfe.RankOneMatrix(u1, v1)
+    u2 = rand(size(x0, 1))
+    u2 ./= sum(u2)
+    u2 .*= norm_estimation
+    v2 = rand(size(x0, 2))
+    v2 ./= sum(v2)
+    y = FrankWolfe.RankOneMatrix(u2, v2)
+    grad!(gradient, x)
+    grad!(gradient_aux, y)
+    new_L = norm(gradient - gradient_aux) / norm(x - y)
+    if new_L &gt; L_estimate
+        L_estimate = new_L
+    end
+end</code></pre><p>We can now perform projected gradient descent:</p><pre><code class="language- hljs">xgd = Matrix(x0)
+function_values = Float64[]
+timing_values = Float64[]
+function_test_values = Float64[]
+
+ls = FrankWolfe.Backtracking()
+ls_storage = similar(xgd)
+time_start = time_ns()
+for _ in 1:k
+    f_val = f(xgd)
+    push!(function_values, f_val)
+    push!(function_test_values, test_loss(xgd))
+    push!(timing_values, (time_ns() - time_start) / 1e9)
+    @info f_val
+    grad!(gradient, xgd)
+    xgd_new, vertex = project_nuclear_norm_ball(xgd - gradient / L_estimate, radius=norm_estimation)
+    gamma = FrankWolfe.perform_line_search(ls, 1, f, grad!, gradient, xgd, xgd - xgd_new, 1.0, ls_storage, FrankWolfe.InplaceEmphasis())
+    @. xgd -= gamma * (xgd - xgd_new)
+end
+
+trajectory_arr_fw = Vector{Tuple{Int64,Float64,Float64,Float64,Float64,Float64}}()
+callback = build_callback(trajectory_arr_fw)
+xfin, _, _, _, traj_data = FrankWolfe.frank_wolfe(
+    f,
+    grad!,
+    lmo,
+    x0;
+    epsilon=1e-9,
+    max_iteration=10 * k,
+    print_iter=k / 10,
+    verbose=false,
+    line_search=FrankWolfe.Adaptive(),
+    memory_mode=FrankWolfe.InplaceEmphasis(),
+    gradient=gradient,
+    callback=callback,
+)
+
+trajectory_arr_lazy = Vector{Tuple{Int64,Float64,Float64,Float64,Float64,Float64}}()
+callback = build_callback(trajectory_arr_lazy)
+xlazy, _, _, _, _ = FrankWolfe.lazified_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    x0;
+    epsilon=1e-9,
+    max_iteration=10 * k,
+    print_iter=k / 10,
+    verbose=false,
+    line_search=FrankWolfe.Adaptive(),
+    memory_mode=FrankWolfe.InplaceEmphasis(),
+    gradient=gradient,
+    callback=callback,
+)
+
+
+trajectory_arr_lazy_ref = Vector{Tuple{Int64,Float64,Float64,Float64,Float64,Float64}}()
+callback = build_callback(trajectory_arr_lazy_ref)
+xlazy, _, _, _, _ = FrankWolfe.lazified_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    x0;
+    epsilon=1e-9,
+    max_iteration=50 * k,
+    print_iter=k / 10,
+    verbose=false,
+    line_search=FrankWolfe.Adaptive(),
+    memory_mode=FrankWolfe.InplaceEmphasis(),
+    gradient=gradient,
+    callback=callback,
+)
+
+fw_test_values = getindex.(trajectory_arr_fw, 6)
+lazy_test_values = getindex.(trajectory_arr_lazy, 6)
+
+results = Dict(&quot;svals_gd&quot;=&gt;svdvals(xgd),
+&quot;svals_fw&quot;=&gt;svdvals(xfin),
+&quot;svals_lcg&quot;=&gt;svdvals(xlazy),
+&quot;fw_test_values&quot;=&gt;fw_test_values,
+&quot;lazy_test_values&quot;=&gt;lazy_test_values,
+&quot;trajectory_arr_fw&quot;=&gt;trajectory_arr_fw,
+&quot;trajectory_arr_lazy&quot;=&gt;trajectory_arr_lazy,
+&quot;function_values_gd&quot;=&gt;function_values,
+&quot;function_values_test_gd&quot;=&gt;function_test_values,
+&quot;timing_values_gd&quot;=&gt;timing_values,
+&quot;trajectory_arr_lazy_ref&quot;=&gt;trajectory_arr_lazy_ref)
+
+ref_optimum = results[&quot;trajectory_arr_lazy_ref&quot;][end][2]
+
+iteration_list = [
+    [x[1] + 1 for x in results[&quot;trajectory_arr_fw&quot;]],
+    [x[1] + 1 for x in results[&quot;trajectory_arr_lazy&quot;]],
+    collect(1:1:length(results[&quot;function_values_gd&quot;])),
+]
+time_list = [
+    [x[5] for x in results[&quot;trajectory_arr_fw&quot;]],
+    [x[5] for x in results[&quot;trajectory_arr_lazy&quot;]],
+    results[&quot;timing_values_gd&quot;],
+]
+primal_gap_list = [
+    [x[2] - ref_optimum for x in results[&quot;trajectory_arr_fw&quot;]],
+    [x[2] - ref_optimum for x in results[&quot;trajectory_arr_lazy&quot;]],
+    [x - ref_optimum for x in results[&quot;function_values_gd&quot;]],
+]
+test_list =
+    [results[&quot;fw_test_values&quot;], results[&quot;lazy_test_values&quot;], results[&quot;function_values_test_gd&quot;]]
+
+label = [L&quot;\textrm{FW}&quot;, L&quot;\textrm{L-CG}&quot;, L&quot;\textrm{GD}&quot;]
+
+plot_results(
+    [primal_gap_list, primal_gap_list, test_list, test_list],
+    [iteration_list, time_list, iteration_list, time_list],
+    label,
+    [L&quot;\textrm{Iteration}&quot;, L&quot;\textrm{Time}&quot;, L&quot;\textrm{Iteration}&quot;, L&quot;\textrm{Time}&quot;],
+    [
+        L&quot;\textrm{Primal Gap}&quot;,
+        L&quot;\textrm{Primal Gap}&quot;,
+        L&quot;\textrm{Test Error}&quot;,
+        L&quot;\textrm{Test Error}&quot;,
+    ],
+    xscalelog=[:log, :identity, :log, :identity],
+    legend_position=[:bottomleft, nothing, nothing, nothing]
+)</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../docs_2_polynomial_regression/">« Polynomial Regression</a><a class="docs-footer-nextpage" href="../docs_4_rational_opt/">Exact Optimization with Rational Arithmetic »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.15 on <span class="colophon-date" title="Tuesday 5 April 2022 15:50">Tuesday 5 April 2022</span>. Using Julia version 1.6.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
