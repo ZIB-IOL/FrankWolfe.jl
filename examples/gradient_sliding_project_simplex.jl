@@ -25,7 +25,6 @@ cndgrad_params = FrankWolfe.LZCnGDParameters(2.0,T)
 cndgrado = FrankWolfe.LanZhouProcedure(Inf,10000,lmo)
 grad! = foo_euclideandistance(b)
 momentum_stepsize = FrankWolfe.LZMomentStepsize()
-stop_rule = FrankWolfe.IterStop(T)
 x0 = zeros(n)
 x0[1] = 1
 
@@ -36,8 +35,7 @@ res = FrankWolfe.conditional_gradient_sliding(
     x0;
     momentum_stepsize = momentum_stepsize,
     cndgrad_params = cndgrad_params,
-    stop_rule = stop_rule,
-    max_iteration=10000,
+    max_iteration=T,
     print_iter=1000,
     trajectory=true,
     verbose=true,

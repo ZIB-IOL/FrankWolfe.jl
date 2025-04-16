@@ -31,53 +31,6 @@ import FrankWolfe: ActiveSet
 
 
 
-"""
-Supertype for stop conditions of Gradient Sliding method. 
-    All StopRules must implement `stop_condition(stop_rule::IterStop,...)`
-    and return a boolean value which is true when the stop condition is satisfied.
-"""
-abstract type StopRule end
-
-function stop_condition end
-
-"""
-    IterStop<: StopRule
-    Stop condition based on a maximum number of iteration.
-"""
-struct IterStop <: StopRule
-    maxIter::Int
-end
-
-function stop_condition(stop_rule::IterStop, state)
-    return state.t ≥ stop_rule.maxIter
-end
-
-"""
-        TimeStop
-        Stops the cutting plane when the time reaches its limit.
-"""
-struct TimeStop <: StopRule
-    timeout::Real
-end
-
-function stop_condition(stop_rule::TimeStop, state)
-    return state.tot_time ≥ stop_rule.timeout
-end
-
-"""
-        OrStop
-        Stops when one of the stop conditions is met.
-"""
-struct OrStop<: StopRule 
-    first_stoprule::StopRule
-    second_stoprule::StopRule
-end
-
-function stop_condition(stop_rule::OrStop, state)
-    return stop_condition(first_stoprule,state) || stop_condition(second_stoprule,state)
-end
-
-
 
 """
 Supertype for parameters of the condiditional gradient descent.
@@ -284,7 +237,6 @@ function conditional_gradient_sliding(
     x0;
     momentum_stepsize::MomentumStepsize,
     cndgrad_params::CnGDParameters,
-    stop_rule::StopRule,
     max_iteration=10000,
     print_iter=1000,
     trajectory=false,
@@ -318,7 +270,7 @@ function conditional_gradient_sliding(
 
     time_start = time_ns()
     tot_time = time_start
-    while t ≤ max_iteration && (tot_time - time_start) ≤ timeout && !stop_condition(stop_rule, state)
+    while t ≤ max_iteration && (tot_time - time_start) ≤ timeout 
         time_at_loop = time_ns()
         tot_time = (time_at_loop - time_start) / 1e9
         cndG_state.status = CndGS_UNSOLVED
@@ -434,10 +386,10 @@ function compute_pvm_threshold end
 
 """ TOTEST
 """
-struct LowerBoundByFiniteAWSteps <: LowerBoundEstimator 
+struct LowerBoundByFiniteAWSteps{LMO<:LinearMinimizationOracle} <: LowerBoundEstimator 
     f
     grad!
-    lmo::LinearMinimizationOracle
+    lmo::LMO
     max_iter::Int
 end
 function compute_pvm_threshold(lb_estimator::LowerBoundByFiniteAWSteps,
@@ -456,19 +408,23 @@ end
 function second_order_conditional_gradient_sliding(
     f,
     grad!,
-    hess_oracle,
-    build_quadratic_approximation!,
-    fw_step::UpdateStep,
-    pvm::ProjectedVariableMetric,
+    hess_oracle, #remove
+    #hess_oracle!,#remove
+    build_quadratic_approximation!, #merge hess_oracle!  and build_quadratic_approximation!, only compute mult hess*it
+    fw_step::UpdateStep, #remove (is the outerproblem)
+    pvm::ProjectedVariableMetric, #remove
+    #lmo, #add
+    #corrective_step_quadratic_problem::CorrectiveStep,
+    #corrective_step_outerproblem,
     x0;
     lb_estimator::LowerBoundEstimator,
-    stop_rule::StopRule,
     max_iteration=10000,
     print_iter=1000,
     trajectory=false,
     verbose=false,
     traj_data=[],
-    timeout=Inf
+    timeout=Inf,
+    #hessian_matrix
 )
 
     active_set_fw = ActiveSet([(one(x0[1]),x0)])
@@ -500,7 +456,7 @@ function second_order_conditional_gradient_sliding(
             x = x0,
             step_type = CGS_FW_STEP,
             )    
-    while t ≤ max_iteration && (tot_time - time_start) ≤ timeout && !stop_condition(stop_rule, state)
+    while t ≤ max_iteration && (tot_time - time_start) ≤ timeout 
         time_at_loop = time_ns()
         tot_time = (time_at_loop - time_start) / 1e9
 
