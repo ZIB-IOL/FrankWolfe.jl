@@ -12,7 +12,7 @@ function away_frank_wolfe(
     grad!,
     lmo,
     x0;
-    line_search::LineSearchMethod=Adaptive(),
+    line_search::LineSearchMethod=Secant(),
     lazy_tolerance=2.0,
     epsilon=1e-7,
     away_steps=true,
@@ -116,16 +116,8 @@ function away_frank_wolfe(
         return rep
     end
 
-
-    if isempty(active_set)
-        throw(ArgumentError("Empty active set"))
-    end
-
-    t = 0
-    dual_gap = Inf
-    primal = Inf
-    x = get_active_set_iterate(active_set)
-    step_type = ST_REGULAR
+    isempty(active_set) && throw(ArgumentError("Empty active set"))
+    lazy_tolerance < 1 && throw(ArgumentError("lazy_tolerance cannot be smaller than one"))
 
     if trajectory
         callback = make_trajectory_callback(callback, traj_data)
@@ -134,6 +126,12 @@ function away_frank_wolfe(
     if verbose
         callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
     end
+
+    t = 0
+    dual_gap = Inf
+    primal = Inf
+    x = get_active_set_iterate(active_set)
+    step_type = ST_REGULAR
 
     time_start = time_ns()
 

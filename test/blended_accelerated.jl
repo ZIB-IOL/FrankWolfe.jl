@@ -47,7 +47,7 @@ const L = eigmax(hessian)
             accelerated=true,
             verbose=false,
             trajectory=false,
-            lazy_tolerance=1.0,
+            sparsity_control=1.0,
             weight_purge_threshold=1e-10,
         )
 
@@ -65,7 +65,7 @@ const L = eigmax(hessian)
             accelerated=false,
             verbose=false,
             trajectory=false,
-            lazy_tolerance=1.0,
+            sparsity_control=1.0,
             weight_purge_threshold=1e-10,
         )
 
@@ -81,7 +81,7 @@ const L = eigmax(hessian)
             memory_mode=FrankWolfe.InplaceEmphasis(),
             verbose=false,
             trajectory=false,
-            lazy_tolerance=1.0,
+            sparsity_control=1.0,
             weight_purge_threshold=1e-10,
         )
     end

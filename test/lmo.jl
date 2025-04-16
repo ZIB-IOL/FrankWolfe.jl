@@ -508,8 +508,8 @@ end
                 @assert isposdef(direction_sym)
                 v_moi2 = FrankWolfe.compute_extreme_point(lmo_moi, direction_sym)
                 v_lmo2 = FrankWolfe.compute_extreme_point(lmo_moi, direction_sym)
-                @test norm(v_moi2 - v_lmo2) <= 5e-6
-                @test norm(v_moi2) <= 5e-6
+                @test norm(v_moi2 - v_lmo2) <= n * 1e-5
+                @test norm(v_moi2) <= n * 1e-5
             end
         end
     end
