@@ -101,13 +101,13 @@ function active_set_update!(
     vertex_storage=nothing,
 ) where {AT,R}
     # rescale active set
-    active_set.weights .*= (1 - lambda)
+    active_set_mul_weights!(active_set, 1 - lambda)
     # add value for new atom
     if idx === nothing
         idx = find_atom(active_set, atom)
     end
     if idx > 0
-        @inbounds active_set.weights[idx] += lambda
+        active_set_add_weight!(active_set, lambda, idx)
     else
         push!(active_set, (lambda, atom))
     end
@@ -141,6 +141,56 @@ function active_set_update_scale!(x::IT, lambda, atom::SparseArrays.SparseVector
 end
 
 """
+    active_set_update_pairwise!(active_set, gamma, gamma_max, v_local_loc, a_loc, v_local, a, add_dropped_vertices, extra_vertex_storage)
+
+Updates the active set for a pairwise step with step size gamma.
+"""
+function active_set_update_pairwise!(
+    active_set::AbstractActiveSet{AT,R},
+    gamma::Real,
+    gamma_max::Real,
+    v_local_loc::Integer,
+    a_loc::Integer,
+    v_local::AT,
+    a::AT,
+    add_dropped_vertices::Bool,
+    extra_vertex_storage=nothing,
+) where {AT,R}
+    # reached maximum of lambda -> dropping away vertex
+    if gamma ≈ gamma_max
+        active_set.weights[v_local_loc] += gamma
+        deleteat!(active_set, a_loc)
+        if add_dropped_vertices
+            push!(extra_vertex_storage, a)
+        end
+    else # transfer weight from away to local FW
+        active_set_add_weight!(active_set, -gamma, a_loc)
+        active_set_add_weight!(active_set, gamma, v_local_loc)
+        @assert active_set_validate(active_set)
+    end
+    active_set_update_iterate_pairwise!(active_set.x, gamma, v_local, a)
+    return active_set
+end
+
+"""
+    active_set_mul_weights!(active_set, lambda)
+
+Multiplies all weights in `active_set` by `lambda`.
+"""
+function active_set_mul_weights!(active_set::AbstractActiveSet, lambda::Real)
+    @inbounds active_set.weights .*= lambda
+end
+
+"""
+    active_set_add_weight!(active_set, lambda, i)
+
+Adds `lambda` to the weight of the `i`th atom in `active_set`.
+"""
+function active_set_add_weight!(active_set::AbstractActiveSet, lambda::Real, i::Integer)
+    active_set.weights[i] += lambda
+end
+
+"""
     active_set_update_iterate_pairwise!(active_set, x, lambda, fw_atom, away_atom)
 
 Operates `x ← x + λ a_fw - λ a_aw`.
@@ -156,7 +206,7 @@ end
 
 function active_set_renormalize!(active_set::AbstractActiveSet)
     renorm = sum(active_set.weights)
-    active_set.weights ./= renorm
+    active_set_mul_weights!(active_set, inv(renorm))
     return active_set
 end
 

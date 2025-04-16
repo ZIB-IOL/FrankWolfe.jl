@@ -14,7 +14,7 @@ function pairwise_frank_wolfe(
     lmo,
     x0;
     line_search::LineSearchMethod=Secant(),
-    lazy_tolerance=2.0,
+    sparsity_control=2.0,
     epsilon=1e-7,
     lazy=false,
     momentum=nothing,
@@ -45,7 +45,7 @@ function pairwise_frank_wolfe(
         lmo,
         active_set,
         line_search=line_search,
-        lazy_tolerance=lazy_tolerance,
+        sparsity_control=sparsity_control,
         epsilon=epsilon,
         lazy=lazy,
         momentum=momentum,
@@ -76,7 +76,7 @@ function pairwise_frank_wolfe(
     lmo,
     active_set::AbstractActiveSet{AT,R};
     line_search::LineSearchMethod=Adaptive(),
-    lazy_tolerance=2.0,
+    sparsity_control=2.0,
     epsilon=1e-7,
     lazy=false,
     momentum=nothing,
@@ -114,16 +114,8 @@ function pairwise_frank_wolfe(
         return rep
     end
 
-
-    if isempty(active_set)
-        throw(ArgumentError("Empty active set"))
-    end
-
-    t = 0
-    dual_gap = Inf
-    primal = Inf
-    x = get_active_set_iterate(active_set)
-    step_type = ST_REGULAR
+    isempty(active_set) && throw(ArgumentError("Empty active set"))
+    sparsity_control < 1 && throw(ArgumentError("sparsity_control cannot be smaller than one"))
 
     if trajectory
         callback = make_trajectory_callback(callback, traj_data)
@@ -132,6 +124,12 @@ function pairwise_frank_wolfe(
     if verbose
         callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
     end
+
+    t = 0
+    dual_gap = Inf
+    primal = Inf
+    x = get_active_set_iterate(active_set)
+    step_type = ST_REGULAR
 
     time_start = time_ns()
 
@@ -154,7 +152,7 @@ function pairwise_frank_wolfe(
         )
         grad_type = typeof(gradient)
         println(
-            "GRADIENTTYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance MOMENTUM: $momentum",
+            "GRADIENTTYPE: $grad_type LAZY: $lazy sparsity_control: $sparsity_control MOMENTUM: $momentum",
         )
         println("LMO: $(typeof(lmo))")
         if (use_extra_vertex_storage || add_dropped_vertices) && extra_vertex_storage === nothing
@@ -202,7 +200,7 @@ function pairwise_frank_wolfe(
 
         # compute current iterate from active set
         x = get_active_set_iterate(active_set)
-        if isnothing(momentum)
+        if momentum === nothing
             grad!(gradient, x)
         else
             grad!(gtemp, x)
@@ -222,7 +220,7 @@ function pairwise_frank_wolfe(
                     d;
                     use_extra_vertex_storage=use_extra_vertex_storage,
                     extra_vertex_storage=extra_vertex_storage,
-                    lazy_tolerance=lazy_tolerance,
+                    sparsity_control=sparsity_control,
                     memory_mode=memory_mode,
                 )
         else
@@ -396,7 +394,7 @@ function lazy_pfw_step(
     d;
     use_extra_vertex_storage=false,
     extra_vertex_storage=nothing,
-    lazy_tolerance=2.0,
+    sparsity_control=2.0,
     memory_mode::MemoryEmphasis=InplaceEmphasis(),
 )
     _, v_local, v_local_loc, _, a_lambda, a_local, a_local_loc, _, _ =
@@ -411,7 +409,7 @@ function lazy_pfw_step(
     # Do lazy pairwise step
     grad_dot_lazy_fw_vertex = fast_dot(v_local, gradient)
 
-    if grad_dot_a_local - grad_dot_lazy_fw_vertex >= phi / lazy_tolerance &&
+    if grad_dot_a_local - grad_dot_lazy_fw_vertex >= phi / sparsity_control &&
        grad_dot_a_local - grad_dot_lazy_fw_vertex >= epsilon
         step_type = ST_LAZY
         v = v_local
@@ -420,7 +418,7 @@ function lazy_pfw_step(
     else
         # optionally: try vertex storage
         if use_extra_vertex_storage
-            lazy_threshold = fast_dot(gradient, a_local) - phi / lazy_tolerance
+            lazy_threshold = fast_dot(gradient, a_local) - phi / sparsity_control
             (found_better_vertex, new_forward_vertex) =
                 storage_find_argmin_vertex(extra_vertex_storage, gradient, lazy_threshold)
             if found_better_vertex
@@ -439,7 +437,7 @@ function lazy_pfw_step(
         # Real dual gap promises enough progress.
         grad_dot_fw_vertex = fast_dot(v, gradient)
         dual_gap = grad_dot_x - grad_dot_fw_vertex
-        if dual_gap >= phi / lazy_tolerance
+        if dual_gap >= phi / sparsity_control
             d = muladd_memory_mode(memory_mode, d, a_local, v)
             #Lower our expectation for progress.
         else

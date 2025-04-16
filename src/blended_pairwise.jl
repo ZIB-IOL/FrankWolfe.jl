@@ -24,7 +24,7 @@ function blended_pairwise_conditional_gradient(
     renorm_interval=1000,
     lazy=false,
     linesearch_workspace=nothing,
-    lazy_tolerance=2.0,
+    sparsity_control=2.0,
     weight_purge_threshold=weight_purge_threshold_default(eltype(x0)),
     extra_vertex_storage=nothing,
     add_dropped_vertices=false,
@@ -53,7 +53,7 @@ function blended_pairwise_conditional_gradient(
         renorm_interval=renorm_interval,
         lazy=lazy,
         linesearch_workspace=linesearch_workspace,
-        lazy_tolerance=lazy_tolerance,
+        sparsity_control=sparsity_control,
         weight_purge_threshold=weight_purge_threshold,
         extra_vertex_storage=extra_vertex_storage,
         add_dropped_vertices=add_dropped_vertices,
@@ -86,7 +86,7 @@ function blended_pairwise_conditional_gradient(
     renorm_interval=1000,
     lazy=false,
     linesearch_workspace=nothing,
-    lazy_tolerance=2.0,
+    sparsity_control=2.0,
     weight_purge_threshold=weight_purge_threshold_default(R),
     extra_vertex_storage=nothing,
     add_dropped_vertices=false,
@@ -110,6 +110,9 @@ function blended_pairwise_conditional_gradient(
         )
         return rep
     end
+
+    isempty(active_set) && throw(ArgumentError("Empty active set"))
+    sparsity_control < 1 && throw(ArgumentError("sparsity_control cannot be smaller than one"))
 
     if trajectory
         callback = make_trajectory_callback(callback, traj_data)
@@ -139,7 +142,7 @@ function blended_pairwise_conditional_gradient(
             "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
         )
         grad_type = typeof(gradient)
-        println("GRADIENTTYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance")
+        println("GRADIENTTYPE: $grad_type LAZY: $lazy sparsity_control: $sparsity_control")
         println("LMO: $(typeof(lmo))")
         if use_extra_vertex_storage && !lazy
             @info("vertex storage only used in lazy mode")
@@ -156,6 +159,7 @@ function blended_pairwise_conditional_gradient(
     # if !lazy, phi is maintained as the global dual gap
     phi = max(0, fast_dot(x, gradient) - fast_dot(v, gradient))
     local_gap = zero(phi)
+    dual_gap = phi
     gamma = one(phi)
 
     if linesearch_workspace === nothing
@@ -210,7 +214,7 @@ function blended_pairwise_conditional_gradient(
         end
         # minor modification from original paper for improved sparsity
         # (proof follows with minor modification when estimating the step)
-        if local_gap ≥ phi / lazy_tolerance && local_gap ≥ epsilon
+        if local_gap ≥ phi / sparsity_control && local_gap ≥ epsilon
             d = muladd_memory_mode(memory_mode, d, a, v_local)
             vertex_taken = v_local
             gamma_max = a_lambda
@@ -249,24 +253,12 @@ function blended_pairwise_conditional_gradient(
                     break
                 end
             end
-            # reached maximum of lambda -> dropping away vertex
-            if gamma ≈ gamma_max
-                active_set.weights[v_local_loc] += gamma
-                deleteat!(active_set, a_loc)
-                if add_dropped_vertices
-                    push!(extra_vertex_storage, a)
-                end
-            else # transfer weight from away to local FW
-                active_set.weights[a_loc] -= gamma
-                active_set.weights[v_local_loc] += gamma
-                @assert active_set_validate(active_set)
-            end
-            active_set_update_iterate_pairwise!(active_set.x, gamma, v_local, a)
+            active_set_update_pairwise!(active_set, gamma, gamma_max, v_local_loc, a_loc, v_local, a, add_dropped_vertices, extra_vertex_storage)
         else # add to active set
             if lazy # otherwise, v computed above already
                 # optionally try to use the storage
                 if use_extra_vertex_storage
-                    lazy_threshold = fast_dot(gradient, x) - max(epsilon, phi / lazy_tolerance)
+                    lazy_threshold = fast_dot(gradient, x) - max(epsilon, phi / sparsity_control)
                     (found_better_vertex, new_forward_vertex) =
                         storage_find_argmin_vertex(extra_vertex_storage, gradient, lazy_threshold)
                     if found_better_vertex
@@ -303,13 +295,13 @@ function blended_pairwise_conditional_gradient(
             # Note: In the following, we differentiate between lazy and non-lazy updates.
             # The reason is that the non-lazy version does not use phi but the lazy one heavily depends on it.
             # It is important that the phi is only updated after dropping
-            # below phi / lazy_tolerance, as otherwise we simply have a "lagging" dual_gap estimate that just slows down convergence.
+            # below phi / sparsity_control, as otherwise we simply have a "lagging" dual_gap estimate that just slows down convergence.
             # The logic is as follows:
             # - for non-lazy: we accept everything and there are no dual steps
-            # - for lazy: we also accept slightly weaker vertices, those satisfying phi / lazy_tolerance
+            # - for lazy: we also accept slightly weaker vertices, those satisfying phi / sparsity_control
             # this should simplify the criterion.
             # DO NOT CHANGE without good reason and talk to Sebastian first for the logic behind this.
-            if (dual_gap ≥ epsilon) && (!lazy || dual_gap ≥ phi / lazy_tolerance)
+            if (dual_gap ≥ epsilon) && (!lazy || dual_gap ≥ phi / sparsity_control)
                 d = muladd_memory_mode(memory_mode, d, x, v)
 
                 gamma = perform_line_search(

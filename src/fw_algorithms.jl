@@ -255,7 +255,7 @@ function lazified_conditional_gradient(
     lmo_base,
     x0;
     line_search::LineSearchMethod=Secant(),
-    lazy_tolerance=2.0,
+    sparsity_control=2.0,
     cache_size=Inf,
     greedy_lazy=false,
     epsilon=1e-7,
@@ -289,6 +289,16 @@ function lazified_conditional_gradient(
         return rep
     end
 
+    sparsity_control < 1 && throw(ArgumentError("sparsity_control cannot be smaller than one"))
+
+    if trajectory
+        callback = make_trajectory_callback(callback, traj_data)
+    end
+
+    if verbose
+        callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
+    end
+
     lmo = VectorCacheLMO{typeof(lmo_base),VType}(lmo_base)
     if isfinite(cache_size)
         Base.sizehint!(lmo.vertices, cache_size)
@@ -302,13 +312,6 @@ function lazified_conditional_gradient(
     phi = Inf
     step_type = ST_REGULAR
 
-    if trajectory
-        callback = make_trajectory_callback(callback, traj_data)
-    end
-
-    if verbose
-        callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
-    end
     time_start = time_ns()
 
     if line_search isa Agnostic || line_search isa Nonconvex
@@ -323,7 +326,7 @@ function lazified_conditional_gradient(
         println("\nLazified Conditional Gradient (Frank-Wolfe + Lazification).")
         NumType = eltype(x0)
         println(
-            "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration lazy_tolerance: $lazy_tolerance TYPE: $NumType",
+            "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration sparsity_control: $sparsity_control TYPE: $NumType",
         )
         grad_type = typeof(gradient)
         println("GRADIENTTYPE: $grad_type CACHESIZE $cache_size GREEDYCACHE: $greedy_lazy")
@@ -372,7 +375,7 @@ function lazified_conditional_gradient(
 
         grad!(gradient, x)
 
-        threshold = fast_dot(x, gradient) - phi / lazy_tolerance
+        threshold = fast_dot(x, gradient) - phi / sparsity_control
 
         # go easy on the memory - only compute if really needed
         if ((mod(t, print_iter) == 0 && verbose) || callback !== nothing)

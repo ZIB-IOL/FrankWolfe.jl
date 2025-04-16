@@ -4,13 +4,13 @@ using Random
 using Test
 import HiGHS
 import MathOptInterface as MOI
+using StableRNGs
 
 n = Int(1e4)
 k = 5000
 
 s = 10
-# @info "Seed $s"
-Random.seed!(s)
+Random.seed!(StableRNG(s), s)
 
 xpi = rand(n);
 total = sum(xpi);
