@@ -93,6 +93,10 @@ It is implemented in the [`FrankWolfe.blended_pairwise_conditional_gradient`](@r
 
 See [Tsuji, Tanaka, Pokutta (2021)](https://arxiv.org/abs/2110.12650)
 
+### Corrective Frank-Wolfe (CFW)
+
+It is implemented in the [`FrankWolfe.corrective_frank_wolfe`](@ref) function and generalizes multiple Frank-Wolfe algorithms which alternate between FW steps and steps based on the active set (e.g., away step, blended pairwise steps, ...).
+
 ### Comparison
 
 The following table compares the characteristics of the algorithms presented in the package:

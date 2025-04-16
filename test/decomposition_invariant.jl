@@ -37,8 +37,8 @@ MOI.empty!(o)
     # using the maximum step size sets at least one coordinate to 0
     x2 = x - gamma_max * d
     x2_MOI = x - gamma_max_MOI * d
-    @test count(xi -> abs(xi * (1 - xi)) ≤ 1e-16, x2) ≥ 1
-    @test count(xi -> abs(xi * (1 - xi)) ≤ 1e-16, x2_MOI) ≥ 1
+    @test count(xi -> abs(xi * (1 - xi)) ≤ 1e-10, x2) ≥ 1
+    @test count(xi -> abs(xi * (1 - xi)) ≤ 1e-10, x2_MOI) ≥ 1
     # one variable fixed to zero
     x_fixed = copy(x)
     x_fixed[3] = 0

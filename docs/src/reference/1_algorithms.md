@@ -51,6 +51,12 @@ Modules = [FrankWolfe]
 Pages = ["blended_pairwise.jl"]
 ```
 
+### Corrective Frank-Wolfe
+
+```@autodocs
+Modules = [FrankWolfe]
+Pages = ["corrective_frankwolfe.jl", "corrective_step_interface.jl"]
+```
 
 ## Alternating Methods
 
