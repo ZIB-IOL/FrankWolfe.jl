@@ -3096,7 +3096,7 @@ end
         memory_mode=FrankWolfe.InplaceEmphasis(),
         verbose=false,
         lazy=true,
-        sparsity_control=1.5,
+        lazy_tolerance=1.5,
         trajectory=true,
         callback=callback,
     )
@@ -4126,7 +4126,7 @@ end
         memory_mode=FrankWolfe.InplaceEmphasis(),
         verbose=false,
         lazy=true,
-        sparsity_control=2.0,
+        lazy_tolerance=2.0,
         trajectory=true,
         callback=callback,
     )
