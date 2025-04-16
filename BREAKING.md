@@ -1,3 +1,7 @@
+# Noteworthy changes from v0.4 to v0.5
+
+- change keyword argument `lazy_tolerance` to `sparsity_control` in all algorithms except `away_frank_wolfe` [PR556](https://github.com/ZIB-IOL/FrankWolfe.jl/pull/556)
+
 # Noteworthy changes from v0.3 to v0.4
 
 - Changed `tt` to `step_type` everywhere, including as a type in the `CallbackState` object.
@@ -17,4 +21,3 @@
 - add struct `CallbackStructure` for state of callbacks. Callbacks can now return `false` to terminate the FW algorithm.
 - add unified callback for verbose printcallback, user given stop criteria and trajectory tracking with counters [PR313](https://github.com/ZIB-IOL/FrankWolfe.jl/pull/313)
 - start with `t=1` and pass `t` instead of `t-1` in callbacks [PR333](https://github.com/ZIB-IOL/FrankWolfe.jl/pull/333)
-- change keyword argument `lazy_tolerance` to `sparsity_control` in all algorithms except `away_frank_wolfe` [PR556](https://github.com/ZIB-IOL/FrankWolfe.jl/pull/556)
