@@ -97,20 +97,20 @@ If necessary, resizing of the vectors in `dest.weights` and `dest.atoms` are per
 However, if `dest.x` and `src.x` do not have the same size, then a `DimensionMismatch` is thrown.
 """
 function Base.copyto!(dest::AbstractActiveSet{AT,R,IT},src::AbstractActiveSet{AT,R,IT}) where {AT,R,IT}
+    if size(dest.x) != size(src.x)
+        throw(DimensionMismatch("Different dimensions for x."))
+    end
     if size(dest) != size(src)
         s = size(src)[1]
         resize!(dest.weights,s)
         resize!(dest.atoms,s)
     end
-    dest.weights .= src.weights
-    dest.atoms .= src.atoms
-    
-    if size(dest.x) != size(src.x)
-        throw(DimensionMismatch)
-    end
-    dest.x .= src.x
+    copyto!(dest.weights,src.weights)
+    copyto!(dest.atoms,src.atoms) 
+    copyto!(dest.x,src.x)
     return dest
 end
+
 """
     active_set_update!(active_set::AbstractActiveSet, lambda, atom)
 

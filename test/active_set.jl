@@ -275,20 +275,8 @@ end
     @test active_set.x ≈ [1.8,-2.8,3.8] atol = 1e-12
     @test active_set.atoms == [[1,-2,3], [2, -3, 4]]
 
-    #09-Apr-2025, Seems to be an unresolved bug with @test_throws and throw, see https://github.com/JuliaLang/julia/issues/43289
-    @test (err =
-            try copyto!(active_set,active_set4)
-            catch e 
-                e
-            end;
-            err == DimensionMismatch
-         )
-    @test (err =
-         try copyto!(active_set,active_set5)
-         catch e 
-             e
-         end;
-         err == DimensionMismatch
-      )
+    @test_throws DimensionMismatch copyto!(active_set,active_set4) 
+    @test_throws DimensionMismatch copyto!(active_set,active_set5)
+    
 end
 end
