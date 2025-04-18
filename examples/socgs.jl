@@ -4,7 +4,7 @@ using ProfileView
 
 include("plot_utils.jl")
 
-
+#=
 #Projection simplex
 #Returns a method of half the squared euclidean distance from a fixed point b.
 function quadratic_objective(b)
@@ -145,7 +145,7 @@ data = [res_1.traj_data, res_2.traj_data, res_3.traj_data, res_10.traj_data]
 label = ["Est. 1 St." "Est. 2 St." "Est. 3 St." "Est. 10 St."]
 
 plot_trajectories(data, label, filename ="examples/figs/socgs_proj_simplex.pdf")
-
+=#
 
 #comparison of result with other projection on simplex algorithm
 #=
@@ -175,7 +175,7 @@ proj = project_simplex(b);
 #################################################################
 ###Sparse coding over the Birkhoff Polytope
 #################################################################
-#=
+
 function sqnorm_matrix(Y,Z)
     sqnorm_y = norm(Y)^2
     _,m = size(Y)
@@ -223,36 +223,35 @@ function hess_oracle(Z)
 end
 
 
-function build_quadratic_approximation!(HX,X,f_value_X,gradient,H)
-    dot_gradient_current_iterate = FrankWolfe.fast_dot(gradient,X)
-    n,_ = size(X)
-    for i in 1:n
-        x = @view X[i,:]
-        #FLAGNOW pb here
-        @. HX += H*x
-    end
-    hnorm_current_iterate = FrankWolfe.fast_dot(HX,X)
-    function f_quad_approx(P)
-        dot_HP_P = zero(P[1,1])
-        for i in 1:n
-            p = @view P[i,:]
-            dot_HP_P += FrankWolfe.dot(H * p ,p)
-        end
-        return f_value_X + FrankWolfe.fast_dot(gradient,P) - dot_gradient_current_iterate 
-        + 0.5 *hnorm_current_iterate + 0.5 * dot_HP_P - FrankWolfe.fast_dot(HX,P)
-    end
-    function grad_quad_approx!(storage,P)
-        storage .= gradient  - HX
-        for i in 1:n
-            p = @view P[i,:]
-            @info "DEBUG" size(P[i,:]) size(H) size(storage)
-            #FLAGNOW pb here
-            storage .=  storage + H * p 
-        end
-    end
-    return f_quad_approx, grad_quad_approx!
-end
+function quadratic_approximation_builder(Y,Z)
+    
+        n,m = size(Y)
+        function build_quadratic_approximation!(HX,X,gradient,fX)
+            HX .= zero(HX[1,1])
+            for i in 1:n
+                x = @view X[i,:]
+                for j in 1:m
+                    z = @view Z[:,j]
+                    @. HX[:,i] = HX[:,i] + FrankWolfe.fast_dot(z,x) * z
+                end             
+            end
 
+            function quadratic_term_function(P)
+                res = zero(P[1,1])
+                for i in 1:n
+                    p_row = @view P[i,:]
+                    p_col = @view P[:,i]
+                    for j in 1:m
+                        z = @view Z[:,j]
+                        res += FrankWolfe.fast_dot(z,p_row) * FrankWolfe.fast_dot(z,p_col)
+                    end
+                end
+                return res
+            end
+
+            return quadratic_term_function, HX
+    end
+end
 
 n = 20
 m = 400
@@ -291,4 +290,3 @@ res = FrankWolfe.second_order_conditional_gradient_sliding(
     traj_data=[],
     timeout=Inf
 );
-=#
