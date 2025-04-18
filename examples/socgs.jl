@@ -26,26 +26,16 @@ b = rand(n)
 
 f = quadratic_objective(b)
 grad! = foo_euclideandistance(b)
-function hess_oracle(x, gradient; H=nothing)
-    n = length(x)
-    if H === nothing
-        return diagm(ones(n))
-    else
-        H .= diagm(ones(n))
-        return H
-    end
-end
 
-function build_quadratic_approximation!(Hx,x,f_value_x,gradient,H)
-    dot_gradient_current_iterate = FrankWolfe.fast_dot(gradient,x)
-    Hx .= H * x
-    hnorm_current_iterate = FrankWolfe.fast_dot(Hx,x)
+
+function build_quadratic_approximation!(Hx,x,gradient,fx)
+    Hx .= x
+    constant_term = fx - FrankWolfe.fast_dot(gradient,x) + 0.5 * FrankWolfe.fast_dot(Hx,x)
     function f_quad_approx(p)
-        return f_value_x + FrankWolfe.fast_dot(gradient,p) - dot_gradient_current_iterate 
-        + 0.5 *hnorm_current_iterate + 0.5 * FrankWolfe.fast_dot(H*p,p) - FrankWolfe.fast_dot(Hx,p)
+        return 0.5*FrankWolfe.fast_dot(p,p) + FrankWolfe.fast_dot(gradient,p) - FrankWolfe.fast_dot(Hx,p) + constant_term
     end
     function grad_quad_approx!(storage,p)
-         storage .= gradient + H*p - Hx
+         storage .=  p + gradient  - Hx
     end
     return f_quad_approx, grad_quad_approx!
 end
@@ -53,20 +43,40 @@ end
 
 
 lmo = FrankWolfe.ProbabilitySimplexOracle(1.)
-pvm = FrankWolfe.AwayFrankWolfePVM(lmo)
-fw_step = FrankWolfe.AwayStep(lmo,1e-7)
+pvm_step = FrankWolfe.AwayStep(false)
+fw_step = FrankWolfe.AwayStep(false)
 x0 = zeros(n)
 N = 50
 x0[1] = 1
 
 lb_estimator = FrankWolfe.LowerBoundByFiniteAWSteps(f,grad!,lmo,1)
+res_0 = FrankWolfe.second_order_conditional_gradient_sliding(
+    f,
+    grad!,
+    build_quadratic_approximation!,
+    fw_step,
+    lmo,
+    pvm_step,
+    lmo,
+    x0;
+    lb_estimator = lb_estimator,
+    max_iteration=N,
+    print_iter=1,
+    trajectory=true,
+    verbose=true,
+    traj_data=[],
+    timeout=Inf
+);
+
+lb_estimator = FrankWolfe.LowerBoundByFiniteAWSteps(f,grad!,lmo,1)
 res_1 = FrankWolfe.second_order_conditional_gradient_sliding(
     f,
     grad!,
-    hess_oracle,
     build_quadratic_approximation!,
     fw_step,
-    pvm,
+    lmo,
+    pvm_step,
+    lmo,
     x0;
     lb_estimator = lb_estimator,
     max_iteration=N,
@@ -81,12 +91,13 @@ lb_estimator = FrankWolfe.LowerBoundByFiniteAWSteps(f,grad!,lmo,2)
 res_2 = FrankWolfe.second_order_conditional_gradient_sliding(
     f,
     grad!,
-    hess_oracle,
     build_quadratic_approximation!,
     fw_step,
-    pvm,
+    lmo,
+    pvm_step,
+    lmo,
     x0;
-    lb_estimator = lb_estimator,    
+    lb_estimator = lb_estimator,
     max_iteration=N,
     print_iter=1,
     trajectory=true,
@@ -100,12 +111,13 @@ lb_estimator = FrankWolfe.LowerBoundByFiniteAWSteps(f,grad!,lmo,2)
 res_3 = FrankWolfe.second_order_conditional_gradient_sliding(
     f,
     grad!,
-    hess_oracle,
     build_quadratic_approximation!,
     fw_step,
-    pvm,
+    lmo,
+    pvm_step,
+    lmo,
     x0;
-    lb_estimator = lb_estimator,    
+    lb_estimator = lb_estimator,
     max_iteration=N,
     print_iter=1,
     trajectory=true,
@@ -119,12 +131,13 @@ lb_estimator = FrankWolfe.LowerBoundByFiniteAWSteps(f,grad!,lmo,10)
 res_10 = FrankWolfe.second_order_conditional_gradient_sliding(
     f,
     grad!,
-    hess_oracle,
     build_quadratic_approximation!,
     fw_step,
-    pvm,
+    lmo,
+    pvm_step,
+    lmo,
     x0;
-    lb_estimator = lb_estimator,    
+    lb_estimator = lb_estimator,
     max_iteration=N,
     print_iter=1,
     trajectory=true,
@@ -261,7 +274,7 @@ grad! = foo_grad_sqnorm_matrix(Y,Z)
 
 lmo = FrankWolfe.BirkhoffPolytopeLMO()
 pvm = FrankWolfe.AwayFrankWolfePVM(lmo)
-fw_step = FrankWolfe.AwayStep(lmo,1e-7)
+fw_step = FrankWolfe.AwayStepBis(lmo,1e-7)
 lb_estimator = FrankWolfe.LowerBoundByFiniteAWSteps(f,grad!,lmo,2)
 
 x0 = diagm(ones(n))

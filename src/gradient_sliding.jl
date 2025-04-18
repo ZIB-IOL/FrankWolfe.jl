@@ -30,8 +30,6 @@ using FrankWolfe
 import FrankWolfe: ActiveSet
 
 
-
-
 """
 Supertype for parameters of the condiditional gradient descent.
     All MomentumStepsize must implement `compute_CnGD_parameters(parameters_rule::ConstantCnGDParameters,...)`
@@ -327,64 +325,12 @@ end
     CGS_PVM_STEP = 2
 end
 
-"""TOTEST/TOWRITE
-"""
-struct AwayStep <: UpdateStep
-    lmo::LinearMinimizationOracle
-    epsilon::Real
-end
-function conditional_gradient_step!(active_set_fw::ActiveSet,
-                                    f,
-                                    grad!,
-                                    fw_step::AwayStep,
-                                    gradient
-                                    )
-
-                away_frank_wolfe(f,
-                    grad!,
-                    fw_step.lmo,
-                    active_set_fw;
-                    epsilon = fw_step.epsilon,
-                    gradient = gradient,
-                    max_iteration = 1
-                    )
-    return active_set_fw 
-end 
-
-""" TOWRITE
-"""
-abstract type ProjectedVariableMetric end
-function perform_H_projection! end
-
-""" TOWRITE
-"""
-struct AwayFrankWolfePVM <: ProjectedVariableMetric 
-    lmo::LinearMinimizationOracle
-end
-
-function perform_H_projection!(active_set_pvm::ActiveSet, 
-                                pvm::AwayFrankWolfePVM,
-                                f_quad_approx,
-                                grad_quad_approx!,
-                                epsilon::Real
-                            ) 
-    
-    away_frank_wolfe(f_quad_approx,
-                    grad_quad_approx!,
-                    pvm.lmo,
-                    active_set_pvm;
-                    epsilon = epsilon
-                    )
-    return active_set_pvm
-end 
-
-
 """ TOWRITE
 """
 abstract type LowerBoundEstimator end
 function compute_pvm_threshold end
 
-""" TOTEST
+""" TOWRITE
 """
 struct LowerBoundByFiniteAWSteps{LMO<:LinearMinimizationOracle} <: LowerBoundEstimator 
     f
@@ -408,14 +354,11 @@ end
 function second_order_conditional_gradient_sliding(
     f,
     grad!,
-    hess_oracle, #remove
-    #hess_oracle!,#remove
-    build_quadratic_approximation!, #merge hess_oracle!  and build_quadratic_approximation!, only compute mult hess*it
-    fw_step::UpdateStep, #remove (is the outerproblem)
-    pvm::ProjectedVariableMetric, #remove
-    #lmo, #add
-    #corrective_step_quadratic_problem::CorrectiveStep,
-    #corrective_step_outerproblem,
+    build_quadratic_approximation!, 
+    fw_step::CorrectiveStep, 
+    lmo_fw::LinearMinimizationOracle,
+    pvm_step::CorrectiveStep, 
+    lmo_pvm::LinearMinimizationOracle,
     x0;
     lb_estimator::LowerBoundEstimator,
     max_iteration=10000,
@@ -424,20 +367,17 @@ function second_order_conditional_gradient_sliding(
     verbose=false,
     traj_data=[],
     timeout=Inf,
-    #hessian_matrix
 )
 
     active_set_fw = ActiveSet([(one(x0[1]),x0)])
     active_set_pvm = ActiveSet([(one(x0[1]),x0)]) 
-    gradient = collect(x0)
+    gradient= collect(x0)
     Hx = collect(x0)
-    H = []
     x_fw = get_active_set_iterate(active_set_fw)
     x_pvm = get_active_set_iterate(active_set_pvm)
     x = x_pvm
     
     t = 0
-    first_iter = true
     dual_gap_fw = Inf
     primal_fw = Inf
     primal_pvm = Inf
@@ -460,24 +400,34 @@ function second_order_conditional_gradient_sliding(
         time_at_loop = time_ns()
         tot_time = (time_at_loop - time_start) / 1e9
 
-        #computing gradient, hessian and quadratic approximation (problem dependent)
+        #computing gradient and quadratic approximation (problem dependent)
         grad!(gradient, x)
-        H = if first_iter
-            first_iter = false
-            hess_oracle(x,gradient)            
-        else   
-            hess_oracle(x,gradient,H=H)
-        end        
-        f_quad_approx, grad_quad_approx! = build_quadratic_approximation!(Hx,x,primal,gradient,H)
+        f_quad_approx, grad_quad_approx! = build_quadratic_approximation!(Hx,x,gradient,primal)
 
-        epsilon = compute_pvm_threshold(lb_estimator,x,primal,gradient)    
-        perform_H_projection!(active_set_pvm, pvm, f_quad_approx, grad_quad_approx!, epsilon)
-        conditional_gradient_step!(active_set_fw, f, grad!, fw_step, gradient)   
-        
-        x_fw = get_active_set_iterate(active_set_fw)
-        x_pvm = get_active_set_iterate(active_set_pvm)
-        primal_fw = f(x_fw)
+        epsilon = compute_pvm_threshold(lb_estimator,x,primal,gradient)   
+        #H-projection (pvm)
+        x_pvm, _ , _, _, _ = corrective_frank_wolfe(
+            f_quad_approx,
+            grad_quad_approx!,
+            lmo_pvm,
+            pvm_step,
+            active_set_pvm;
+            epsilon=epsilon,
+            gradient = gradient
+        )
         primal_pvm = f(x_pvm)
+        #Fw corrective step
+        x_fw, _ , primal_fw, _, _=corrective_frank_wolfe(
+                f,
+                grad!,
+                lmo_fw,
+                fw_step,
+                active_set_fw;
+                max_iteration=1,
+                gradient = gradient
+            )
+          
+        
         if primal_pvm >= primal_fw 
             copyto!(active_set_pvm,active_set_fw)
             primal = primal_fw
