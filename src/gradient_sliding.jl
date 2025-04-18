@@ -332,21 +332,26 @@ function compute_pvm_threshold end
 
 """ TOWRITE
 """
-struct LowerBoundByFiniteAWSteps{LMO<:LinearMinimizationOracle} <: LowerBoundEstimator 
+struct LowerBoundFiniteSteps{LMO<:LinearMinimizationOracle} <: LowerBoundEstimator 
     f
     grad!
     lmo::LMO
+    corrective_step::CorrectiveStep
     max_iter::Int
 end
-function compute_pvm_threshold(lb_estimator::LowerBoundByFiniteAWSteps,
+function compute_pvm_threshold(lb_estimator::LowerBoundFiniteSteps,
                                 x,
                                 primal::Real,
                                 gradient)
-    _, _, primal_finite_steps, _, _, _ =  away_frank_wolfe(lb_estimator.f,
-                    lb_estimator.grad!,
-                    lb_estimator.lmo,
-                    x;
-                    max_iteration = lb_estimator.max_iter)
+    _, _, primal_finite_steps, _, _, _ =  corrective_frank_wolfe(
+                            lb_estimator.f,
+                            lb_estimator.grad!,
+                            lb_estimator.lmo,
+                            lb_estimator.corrective_step,
+                            ActiveSet([(one(x[1]),x)]);
+                            max_iteration= lb_estimator.max_iter ,
+                            gradient = gradient
+    )
     return (primal - primal_finite_steps)^4/(fast_dot(gradient,gradient)^2)
 end
 #function conditional_gradient_step! end
@@ -375,18 +380,18 @@ function second_order_conditional_gradient_sliding(
     Hx = collect(x0)
     x_fw = get_active_set_iterate(active_set_fw)
     x_pvm = get_active_set_iterate(active_set_pvm)
-    x = x_pvm
+    x = x_pvm    
     
-    t = 0
     dual_gap_fw = Inf
     primal_fw = Inf
     primal_pvm = Inf
-    step_type = CGS_FW_STEP
+    primal = f(x0)
 
+    t = 0
+    step_type = CGS_FW_STEP
     time_start = time_ns()
     tot_time = time_start
 
-    primal = f(x0)
     state = (
             t= 0,
             tot_time = tot_time,
@@ -400,9 +405,17 @@ function second_order_conditional_gradient_sliding(
         time_at_loop = time_ns()
         tot_time = (time_at_loop - time_start) / 1e9
 
-        #computing gradient and quadratic approximation (problem dependent)
+        #computing gradient 
         grad!(gradient, x)
-        f_quad_approx, grad_quad_approx! = build_quadratic_approximation!(Hx,x,gradient,primal)
+        #building quadratic approximation (problem dependent)
+        quadratic_term_function, Hx = build_quadratic_approximation!(Hx,x,gradient,primal)
+        constant_term = primal - FrankWolfe.fast_dot(gradient,x) + 0.5 * FrankWolfe.fast_dot(Hx,x)
+        function f_quad_approx(p)
+            return 0.5*quadratic_term_function(p) + FrankWolfe.fast_dot(gradient,p) - FrankWolfe.fast_dot(Hx,p) + constant_term
+        end
+        function grad_quad_approx!(storage,p)
+            storage .=  p + gradient - Hx
+        end
 
         epsilon = compute_pvm_threshold(lb_estimator,x,primal,gradient)   
         #H-projection (pvm)

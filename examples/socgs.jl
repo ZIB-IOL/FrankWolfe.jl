@@ -4,6 +4,7 @@ using ProfileView
 
 include("plot_utils.jl")
 
+
 #Projection simplex
 #Returns a method of half the squared euclidean distance from a fixed point b.
 function quadratic_objective(b)
@@ -30,14 +31,7 @@ grad! = foo_euclideandistance(b)
 
 function build_quadratic_approximation!(Hx,x,gradient,fx)
     Hx .= x
-    constant_term = fx - FrankWolfe.fast_dot(gradient,x) + 0.5 * FrankWolfe.fast_dot(Hx,x)
-    function f_quad_approx(p)
-        return 0.5*FrankWolfe.fast_dot(p,p) + FrankWolfe.fast_dot(gradient,p) - FrankWolfe.fast_dot(Hx,p) + constant_term
-    end
-    function grad_quad_approx!(storage,p)
-         storage .=  p + gradient  - Hx
-    end
-    return f_quad_approx, grad_quad_approx!
+    return p-> FrankWolfe.fast_dot(p,p), Hx
 end
 
 
@@ -49,7 +43,7 @@ x0 = zeros(n)
 N = 50
 x0[1] = 1
 
-lb_estimator = FrankWolfe.LowerBoundByFiniteAWSteps(f,grad!,lmo,1)
+lb_estimator = FrankWolfe.LowerBoundFiniteSteps(f,grad!,lmo,fw_step,1)
 res_0 = FrankWolfe.second_order_conditional_gradient_sliding(
     f,
     grad!,
@@ -68,7 +62,7 @@ res_0 = FrankWolfe.second_order_conditional_gradient_sliding(
     timeout=Inf
 );
 
-lb_estimator = FrankWolfe.LowerBoundByFiniteAWSteps(f,grad!,lmo,1)
+lb_estimator = FrankWolfe.LowerBoundFiniteSteps(f,grad!,lmo,fw_step,1)
 res_1 = FrankWolfe.second_order_conditional_gradient_sliding(
     f,
     grad!,
@@ -87,7 +81,7 @@ res_1 = FrankWolfe.second_order_conditional_gradient_sliding(
     timeout=Inf
 );
 
-lb_estimator = FrankWolfe.LowerBoundByFiniteAWSteps(f,grad!,lmo,2)
+lb_estimator = FrankWolfe.LowerBoundFiniteSteps(f,grad!,lmo,fw_step,2)
 res_2 = FrankWolfe.second_order_conditional_gradient_sliding(
     f,
     grad!,
@@ -107,7 +101,7 @@ res_2 = FrankWolfe.second_order_conditional_gradient_sliding(
 );
 
 
-lb_estimator = FrankWolfe.LowerBoundByFiniteAWSteps(f,grad!,lmo,2)
+lb_estimator = FrankWolfe.LowerBoundFiniteSteps(f,grad!,lmo,fw_step,3)
 res_3 = FrankWolfe.second_order_conditional_gradient_sliding(
     f,
     grad!,
@@ -127,7 +121,7 @@ res_3 = FrankWolfe.second_order_conditional_gradient_sliding(
 );
 
 
-lb_estimator = FrankWolfe.LowerBoundByFiniteAWSteps(f,grad!,lmo,10)
+lb_estimator = FrankWolfe.LowerBoundFiniteSteps(f,grad!,lmo,fw_step,10)
 res_10 = FrankWolfe.second_order_conditional_gradient_sliding(
     f,
     grad!,
@@ -273,25 +267,26 @@ f = sqnorm_matrix(Y,Z)
 grad! = foo_grad_sqnorm_matrix(Y,Z)
 
 lmo = FrankWolfe.BirkhoffPolytopeLMO()
-pvm = FrankWolfe.AwayFrankWolfePVM(lmo)
-fw_step = FrankWolfe.AwayStepBis(lmo,1e-7)
-lb_estimator = FrankWolfe.LowerBoundByFiniteAWSteps(f,grad!,lmo,2)
+pvm_step = FrankWolfe.AwayStep(false)
+fw_step = FrankWolfe.AwayStep(false)
+lb_estimator = FrankWolfe.LowerBoundFiniteSteps(f,grad!,lmo,fw_step,1)
+N = 50
 
 x0 = diagm(ones(n))
 
 res = FrankWolfe.second_order_conditional_gradient_sliding(
     f,
     grad!,
-    hess_oracle(Z),
     build_quadratic_approximation!,
     fw_step,
-    pvm,
+    lmo,
+    pvm_step,
+    lmo,
     x0;
     lb_estimator = lb_estimator,
-    
-    max_iteration=4,
+    max_iteration=N,
     print_iter=1,
-    trajectory=false,
+    trajectory=true,
     verbose=true,
     traj_data=[],
     timeout=Inf
