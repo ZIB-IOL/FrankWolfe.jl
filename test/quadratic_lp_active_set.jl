@@ -101,13 +101,33 @@ x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     callback=build_callback(trajectoryBPCG_quadratic_noqas),
 );
 
+as_quad_direct_product_caching = FrankWolfe.ActiveSetQuadraticLinearSolve(
+    FrankWolfe.ActiveSetQuadraticProductCaching([(1.0, copy(x00))], 2*LinearAlgebra.I, -2xp),
+    2 * LinearAlgebra.I,
+    -2xp,
+    MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
+)
+
+trajectoryBPCG_quadratic_direct_product_caching = []
+x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    as_quad_direct_product_caching,
+    max_iteration=k,
+    line_search=FrankWolfe.Shortstep(2.0),
+    verbose=false,
+    callback=build_callback(trajectoryBPCG_quadratic_direct_product_caching),
+);
 
 dual_gaps_quadratic_specialized = getindex.(trajectoryBPCG_quadratic_direct_specialized, 4)
 dual_gaps_quadratic_generic = getindex.(trajectoryBPCG_quadratic_direct_generic, 4)
 dual_gaps_quadratic_noqas = getindex.(trajectoryBPCG_quadratic_noqas, 4)
 dual_gaps_bpcg = getindex.(trajectoryBPCG_standard, 4)
+dual_gaps_quadratic_direct_product_caching = getindex.(trajectoryBPCG_quadratic_direct_product_caching, 4)
 
 
 @test dual_gaps_quadratic_specialized[end] < dual_gaps_bpcg[end]
 @test dual_gaps_quadratic_noqas[end] < dual_gaps_bpcg[end]
+@test dual_gaps_quadratic_direct_product_caching[end] < dual_gaps_bpcg[end]
 @test norm(dual_gaps_quadratic_noqas - dual_gaps_quadratic_noqas) ≤ k * 1e-5
