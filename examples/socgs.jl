@@ -4,7 +4,7 @@ using ProfileView
 
 include("plot_utils.jl")
 
-#=
+
 #Projection simplex
 #Returns a method of half the squared euclidean distance from a fixed point b.
 function quadratic_objective(b)
@@ -31,7 +31,7 @@ grad! = foo_euclideandistance(b)
 
 function build_quadratic_approximation!(Hx,x,gradient,fx)
     Hx .= x
-    return p-> FrankWolfe.fast_dot(p,p), Hx
+    return (storage,p)-> FrankWolfe.fast_dot(p,p), Hx
 end
 
 
@@ -137,15 +137,18 @@ res_10 = FrankWolfe.second_order_conditional_gradient_sliding(
     trajectory=true,
     verbose=true,
     traj_data=[],
-    timeout=Inf
+    timeout=Inf,
+    line_search_fw=FrankWolfe.Adaptive(verbose=false),
+    line_search_pvm=FrankWolfe.Adaptive(verbose=false),
+    line_search_LB_estimator=FrankWolfe.Adaptive(verbose=false),
 );
 
 
-data = [res_1.traj_data, res_2.traj_data, res_3.traj_data, res_10.traj_data]
-label = ["Est. 1 St." "Est. 2 St." "Est. 3 St." "Est. 10 St."]
+#data = [res_1.traj_data, res_2.traj_data, res_3.traj_data, res_10.traj_data]
+#label = ["Est. 1 St." "Est. 2 St." "Est. 3 St." "Est. 10 St."]
 
-plot_trajectories(data, label, filename ="examples/figs/socgs_proj_simplex.pdf")
-=#
+#plot_trajectories(data, label, filename ="examples/figs/socgs_proj_simplex.pdf")
+
 
 #comparison of result with other projection on simplex algorithm
 #=
@@ -171,6 +174,7 @@ proj = project_simplex(b);
 
 #@info "rel dist1 proj VS GS" sum(abs.(res.x -proj))/sum(abs.(proj))
 =#
+
 
 #################################################################
 ###Sparse coding over the Birkhoff Polytope
@@ -207,50 +211,28 @@ function foo_grad_sqnorm_matrix(Y,Z)
     return grad!
 end
 
-function hess_oracle(Z)
-    n, m = size(Z)
-    function _hess_oracle(x, gradient; H=nothing)
-        if H === nothing
-            H = zeros(typeof(Z[1,1]),n,n)
-            for j in 1:m 
-                z = @view Z[:,j]
-                @. H = H + 2*z*z'
-            end
-        end
-        return H
-    end
-    return _hess_oracle
-end
-
 
 function quadratic_approximation_builder(Y,Z)
     
         n,m = size(Y)
         function build_quadratic_approximation!(HX,X,gradient,fX)
             HX .= zero(HX[1,1])
-            for i in 1:n
-                x = @view X[i,:]
+            for j in 1:m
+                z = @view Z[:,j]
+                @. HX = HX + X * z * z'           
+            end
+            function quadratic_term_function!(storage,P)
+                res = zero(P[1,1])
                 for j in 1:m
                     z = @view Z[:,j]
-                    @. HX[:,i] = HX[:,i] + FrankWolfe.fast_dot(z,x) * z
-                end             
-            end
-
-            function quadratic_term_function(P)
-                res = zero(P[1,1])
-                for i in 1:n
-                    p_row = @view P[i,:]
-                    p_col = @view P[:,i]
-                    for j in 1:m
-                        z = @view Z[:,j]
-                        res += FrankWolfe.fast_dot(z,p_row) * FrankWolfe.fast_dot(z,p_col)
-                    end
+                    storage .= P*z 
+                    res += FrankWolfe.fast_dot(storage,storage)
                 end
+            
                 return res
             end
-
-            return quadratic_term_function, HX
-    end
+            return quadratic_term_function!, HX
+        end
 end
 
 n = 20
@@ -276,7 +258,7 @@ x0 = diagm(ones(n))
 res = FrankWolfe.second_order_conditional_gradient_sliding(
     f,
     grad!,
-    build_quadratic_approximation!,
+    quadratic_approximation_builder(Y,Z),
     fw_step,
     lmo,
     pvm_step,
@@ -288,5 +270,109 @@ res = FrankWolfe.second_order_conditional_gradient_sliding(
     trajectory=true,
     verbose=true,
     traj_data=[],
-    timeout=Inf
+    timeout=Inf,
+    line_search_fw=FrankWolfe.Adaptive(verbose=false),
+    line_search_pvm=FrankWolfe.Adaptive(verbose=false),
+    line_search_LB_estimator=FrankWolfe.Adaptive(verbose=false)
 );
+
+#=
+
+#################################################################
+###Structured Logistic Regression over l1 unit ball
+#################################################################
+function build_logistic_loss(y,Z)
+    n,m = size(Z)
+    function logistic_loss(x)
+        res = 0.5 * FrankWolfe.fast_dot(x,x)
+        for j in 1:m 
+            z = @view Z[:,j]
+            res += log(1 + exp(-y[j] * FrankWolfe.fast_dot(x,z))  )
+        end
+        res /= m
+        return res
+    end
+    return logistic_loss   
+end
+
+function build_logistic_grad(y,Z)
+    n,m = size(Z)
+    function logistic_grad!(storage,x)
+        storage .= x
+        for j in 1:m 
+            z = @view Z[:,j]
+            @. storage = storage - y[j] *z / (1 + exp(y[j] * FrankWolfe.fast_dot(x,z)))
+        end
+        storage /= m
+    end   
+    return logistic_grad! 
+end
+
+
+function quadratic_approximation_builder(Z)    
+    n,m = size(Z)
+    function build_quadratic_approximation!(Hx,x,gradient,fx)
+        Hx .= x
+        for j in 1:m
+            z = @view Z[:,j]
+            dot_x_z = FrankWolfe.fast_dot(x,z)
+            denom = (1 + exp(FrankWolfe.fast_dot(x,z))) * (1 + exp(-FrankWolfe.fast_dot(x,z)))
+            @. Hx = Hx + dot_x_z/denom * z
+        end
+        Hx /= m
+        function quadratic_term_function!(storage,p)
+            res = FrankWolfe.fast_dot(p,p)
+            for j in 1:m
+                z = @view Z[:,j]
+                dot_p_z = FrankWolfe.fast_dot(x,z)                
+                denom = (1 + exp(FrankWolfe.fast_dot(p,z))) * (1 + exp(-FrankWolfe.fast_dot(p,z)))
+                res += dot_p_z^2/denom
+            end
+            res /= m
+            return res
+        end
+        return quadratic_term_function!, Hx
+    end
+end
+
+
+n = 100
+m = 120
+
+y = rand([-1,1],m)
+Z = rand(n,m)
+
+
+f = build_logistic_loss(y,Z)
+grad! = build_logistic_grad(y,Z)
+
+lmo = FrankWolfe.LpNormLMO{1}(1.0)
+pvm_step = FrankWolfe.AwayStep(false)
+fw_step = FrankWolfe.AwayStep(false)
+lb_estimator = FrankWolfe.LowerBoundFiniteSteps(f,grad!,lmo,fw_step,1)
+N = 50
+
+x0 = zeros(n)
+x0[1] = one(x0[1])
+
+res = FrankWolfe.second_order_conditional_gradient_sliding(
+    f,
+    grad!,
+    quadratic_approximation_builder(Z),
+    fw_step,
+    lmo,
+    pvm_step,
+    lmo,
+    x0;
+    lb_estimator = lb_estimator,
+    max_iteration=N,
+    print_iter=1,
+    trajectory=true,
+    verbose=true,
+    traj_data=[],
+    timeout=Inf,
+    line_search_fw=FrankWolfe.Adaptive(verbose=false),
+    line_search_pvm=FrankWolfe.Adaptive(verbose=false),
+    line_search_LB_estimator=FrankWolfe.Adaptive(verbose=false)
+);
+=#

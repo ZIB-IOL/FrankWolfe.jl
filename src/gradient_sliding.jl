@@ -342,13 +342,15 @@ end
 function compute_pvm_threshold(lb_estimator::LowerBoundFiniteSteps,
                                 x,
                                 primal::Real,
-                                gradient)
+                                gradient;
+                                line_search::LineSearchMethod)
     _, _, primal_finite_steps, _, _, _ =  corrective_frank_wolfe(
                             lb_estimator.f,
                             lb_estimator.grad!,
                             lb_estimator.lmo,
                             lb_estimator.corrective_step,
                             ActiveSet([(one(x[1]),x)]);
+                            line_search = line_search,
                             max_iteration= lb_estimator.max_iter ,
                             gradient = gradient
     )
@@ -366,6 +368,9 @@ function second_order_conditional_gradient_sliding(
     lmo_pvm::LinearMinimizationOracle,
     x0;
     lb_estimator::LowerBoundEstimator,
+    line_search_fw::LineSearchMethod=Adaptive(),
+    line_search_pvm::LineSearchMethod=Adaptive(),
+    line_search_LB_estimator::LineSearchMethod=Adaptive(),
     max_iteration=10000,
     print_iter=1000,
     trajectory=false,
@@ -378,6 +383,7 @@ function second_order_conditional_gradient_sliding(
     active_set_pvm = ActiveSet([(one(x0[1]),x0)]) 
     gradient= collect(x0)
     Hx = collect(x0)
+    quadratic_term_storage = collect(x0)
     x_fw = get_active_set_iterate(active_set_fw)
     x_pvm = get_active_set_iterate(active_set_pvm)
     x = x_pvm    
@@ -408,16 +414,16 @@ function second_order_conditional_gradient_sliding(
         #computing gradient 
         grad!(gradient, x)
         #building quadratic approximation (problem dependent)
-        quadratic_term_function, Hx = build_quadratic_approximation!(Hx,x,gradient,primal)
+        quadratic_term_function!, Hx = build_quadratic_approximation!(Hx,x,gradient,primal)
         constant_term = primal - FrankWolfe.fast_dot(gradient,x) + 0.5 * FrankWolfe.fast_dot(Hx,x)
         function f_quad_approx(p)
-            return 0.5*quadratic_term_function(p) + FrankWolfe.fast_dot(gradient,p) - FrankWolfe.fast_dot(Hx,p) + constant_term
+            return 0.5*quadratic_term_function!(quadratic_term_storage,p) + FrankWolfe.fast_dot(gradient,p) - FrankWolfe.fast_dot(Hx,p) + constant_term
         end
         function grad_quad_approx!(storage,p)
             storage .=  p + gradient - Hx
         end
 
-        epsilon = compute_pvm_threshold(lb_estimator,x,primal,gradient)   
+        epsilon = compute_pvm_threshold(lb_estimator,x,primal,gradient; line_search = line_search_LB_estimator)   
         #H-projection (pvm)
         x_pvm, _ , _, _, _ = corrective_frank_wolfe(
             f_quad_approx,
@@ -425,6 +431,7 @@ function second_order_conditional_gradient_sliding(
             lmo_pvm,
             pvm_step,
             active_set_pvm;
+            line_search=line_search_pvm,
             epsilon=epsilon,
             gradient = gradient
         )
@@ -436,6 +443,7 @@ function second_order_conditional_gradient_sliding(
                 lmo_fw,
                 fw_step,
                 active_set_fw;
+                line_search=line_search_fw,
                 max_iteration=1,
                 gradient = gradient
             )
