@@ -287,10 +287,10 @@ function solve_quadratic_activeset_lp!(
     # Wᵗ A V λ == -Wᵗ b
     # V has columns vi
     # W has columns vi - v1
-    if as.active_set isa ActiveSetQuadraticProductCaching
-        for i in 2:nv
-            lhs = MOI.ScalarAffineFunction{Float64}([], 0.0)
-            Base.sizehint!(lhs.terms, nv)
+    for i in 2:nv
+        lhs = MOI.ScalarAffineFunction{Float64}([], 0.0)
+        Base.sizehint!(lhs.terms, nv)
+        if as.active_set isa ActiveSetQuadraticProductCaching
             # dots_A is a lower triangular matrix
             for j in 1:i
                 push!(lhs.terms, MOI.ScalarAffineTerm(as.active_set.dots_A[i][j] - as.active_set.dots_A[j][1], λ[j]))
@@ -299,12 +299,7 @@ function solve_quadratic_activeset_lp!(
                 push!(lhs.terms, MOI.ScalarAffineTerm(as.active_set.dots_A[j][i] - as.active_set.dots_A[j][1], λ[j]))
             end
             rhs = as.active_set.dots_b[1] - as.active_set.dots_b[i]
-            MOI.add_constraint(o, lhs, MOI.EqualTo{Float64}(rhs))
-        end
-    else
-        for i in 2:nv
-            lhs = MOI.ScalarAffineFunction{Float64}([], 0.0)
-            Base.sizehint!(lhs.terms, nv)
+        else
             # replaces direct sum because of MOI and MutableArithmetic slow sums
             for j in 1:nv
                 push!(
@@ -313,8 +308,8 @@ function solve_quadratic_activeset_lp!(
                 )
             end
             rhs =  dot(as.atoms[1], as.b) - dot(as.atoms[i], as.b)
-            MOI.add_constraint(o, lhs, MOI.EqualTo{Float64}(rhs))
         end
+        MOI.add_constraint(o, lhs, MOI.EqualTo{Float64}(rhs))
     end
     MOI.set(o, MOI.ObjectiveFunction{typeof(sum_of_variables)}(), sum_of_variables)
     MOI.set(o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
