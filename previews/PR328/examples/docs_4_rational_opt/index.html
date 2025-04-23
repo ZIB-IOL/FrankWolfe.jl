@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Exact Optimization with Rational Arithmetic · FrankWolfe.jl</title><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.044/juliamono.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.11/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">FrankWolfe.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../basics/">How does it work?</a></li><li><a class="tocitem" href="../../advanced/">Advanced features</a></li><li><input class="collapse-toggle" id="menuitem-4" type="checkbox" checked/><label class="tocitem" for="menuitem-4"><span class="docs-label">Examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../docs_0_fw_visualized/">Visualization of Frank-Wolfe running on a 2-dimensional polytope</a></li><li><a class="tocitem" href="../docs_1_mathopt_lmo/">Comparison with MathOptInterface on a Probability Simplex</a></li><li><a class="tocitem" href="../docs_2_polynomial_regression/">Polynomial Regression</a></li><li><a class="tocitem" href="../docs_3_matrix_completion/">Matrix Completion</a></li><li class="is-active"><a class="tocitem" href>Exact Optimization with Rational Arithmetic</a></li><li><a class="tocitem" href="../docs_5_blended_cg/">Blended Conditional Gradients</a></li><li><a class="tocitem" href="../docs_6_spectrahedron/">Spectrahedron</a></li><li><a class="tocitem" href="../docs_7_shifted_norm_polytopes/">FrankWolfe for scaled, shifted <span>$\ell^1$</span> and <span>$\ell^{\infty}$</span> norm balls</a></li><li><a class="tocitem" href="../docs_8_callback_and_tracking/">Tracking, counters and custom callbacks for Frank Wolfe</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-5" type="checkbox"/><label class="tocitem" for="menuitem-5"><span class="docs-label">API reference</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../reference/1_lmo/">Linear Minimization Oracles</a></li><li><a class="tocitem" href="../../reference/2_algorithms/">Algorithms</a></li><li><a class="tocitem" href="../../reference/3_backend/">Utilities and data structures</a></li><li><a class="tocitem" href="../../reference/4_linesearch/">Line search and step size settings</a></li></ul></li><li><a class="tocitem" href="../../contributing/">Contributing</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Exact Optimization with Rational Arithmetic</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Exact Optimization with Rational Arithmetic</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/ZIB-IOL/FrankWolfe.jl/blob/master/examples/docs_4_rational_opt.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Exact-Optimization-with-Rational-Arithmetic"><a class="docs-heading-anchor" href="#Exact-Optimization-with-Rational-Arithmetic">Exact Optimization with Rational Arithmetic</a><a id="Exact-Optimization-with-Rational-Arithmetic-1"></a><a class="docs-heading-anchor-permalink" href="#Exact-Optimization-with-Rational-Arithmetic" title="Permalink"></a></h1><p>This example can be found in section 4.3 <a href="https://arxiv.org/pdf/2104.06675.pdf">in the paper</a>. The package allows for exact optimization with rational arithmetic. For this, it suffices to set up the LMO to be rational and choose an appropriate step-size rule as detailed below. For the LMOs included in the package, this simply means initializing the radius with a rational-compatible element type, e.g., <code>1</code>, rather than a floating-point number, e.g., <code>1.0</code>. Given that numerators and denominators can become quite large in rational arithmetic, it is strongly advised to base the used rationals on extended-precision integer types such as <code>BigInt</code>, i.e., we use <code>Rational{BigInt}</code>.</p><p>The second requirement ensuring that the computation runs in rational arithmetic is a rational-compatible step-size rule. The most basic step-size rule compatible with rational optimization is the agnostic step-size rule with <span>$\gamma_t = 2/(2 + t)$</span>. With this step-size rule, the gradient does not even need to be rational as long as the atom computed by the LMO is of a rational type. Assuming these requirements are met, all iterates and the computed solution will then be rational.</p><pre><code class="language-julia hljs">using FrankWolfe
+using LinearAlgebra
+
+n = 100
+k = n
+
+x = fill(big(1)//100, n)
+
+f(x) = dot(x, x)
+function grad!(storage, x)
+    @. storage = 2 * x
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">grad! (generic function with 1 method)</code></pre><p>pick feasible region radius needs to be integer or rational</p><pre><code class="language-julia hljs">lmo = FrankWolfe.ProbabilitySimplexOracle{Rational{BigInt}}(1)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">FrankWolfe.ProbabilitySimplexOracle{Rational{BigInt}}(1//1)</code></pre><p>compute some initial vertex</p><pre><code class="language-julia hljs">x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
+
+x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+    f,
+    grad!,
+    lmo,
+    x0,
+    max_iteration=k,
+    line_search=FrankWolfe.Agnostic(),
+    print_iter=k / 10,
+    verbose=true,
+    memory_mode=FrankWolfe.OutplaceEmphasis(),
+);
+
+println(&quot;\nOutput type of solution: &quot;, eltype(x))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">
+Vanilla Frank-Wolfe Algorithm.
+MEMORY_MODE: FrankWolfe.OutplaceEmphasis() STEPSIZE: Agnostic EPSILON: 1.0e-7 MAXITERATION: 100 TYPE: Rational{BigInt}
+MOMENTUM: nothing GRADIENTTYPE: Nothing
+
+-------------------------------------------------------------------------------------------------
+  Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec
+-------------------------------------------------------------------------------------------------
+     I             0   1.000000e+00  -1.000000e+00   2.000000e+00   0.000000e+00            NaN
+    FW            10   1.272727e-01  -1.272727e-01   2.545455e-01   5.205182e-01   1.921162e+01
+    FW            20   6.507937e-02  -6.507937e-02   1.301587e-01   5.218516e-01   3.832507e+01
+    FW            30   4.372760e-02  -4.372760e-02   8.745520e-02   5.233772e-01   5.732004e+01
+    FW            40   3.292683e-02  -3.292683e-02   6.585366e-02   5.251935e-01   7.616241e+01
+    FW            50   2.640523e-02  -2.640523e-02   5.281046e-02   5.272741e-01   9.482734e+01
+    FW            60   2.204007e-02  -2.204007e-02   4.408015e-02   5.297062e-01   1.132703e+02
+    FW            70   1.891348e-02  -1.891348e-02   3.782696e-02   5.324672e-01   1.314635e+02
+    FW            80   1.656379e-02  -1.656379e-02   3.312757e-02   5.354989e-01   1.493934e+02
+    FW            90   1.473341e-02  -1.473341e-02   2.946683e-02   5.387406e-01   1.670563e+02
+    FW           100   1.326733e-02  -1.287129e-02   2.613861e-02   5.422409e-01   1.844199e+02
+  Last           100   1.314422e-02  -1.236767e-02   2.551189e-02   5.431005e-01   1.841280e+02
+-------------------------------------------------------------------------------------------------
+
+
+Output type of solution: BigFloat</code></pre><p>Another possible step-size rule is <code>rationalshortstep</code> which computes the step size by minimizing the smoothness inequality as <span>$\gamma_t=\frac{\langle \nabla f(x_t),x_t-v_t\rangle}{2L||x_t-v_t||^2}$</span>. However, as this step size depends on an upper bound on the Lipschitz constant <span>$L$</span> as well as the inner product with the gradient <span>$\nabla f(x_t)$</span>, both have to be of a rational type.</p><pre><code class="language-julia hljs">@time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+    f,
+    grad!,
+    lmo,
+    x0,
+    max_iteration=k,
+    line_search=FrankWolfe.Shortstep(2//1),
+    print_iter=k / 10,
+    verbose=true,
+    memory_mode=FrankWolfe.OutplaceEmphasis(),
+);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">
+Vanilla Frank-Wolfe Algorithm.
+MEMORY_MODE: FrankWolfe.OutplaceEmphasis() STEPSIZE: Shortstep EPSILON: 1.0e-7 MAXITERATION: 100 TYPE: Rational{BigInt}
+MOMENTUM: nothing GRADIENTTYPE: Nothing
+
+-------------------------------------------------------------------------------------------------
+  Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec
+-------------------------------------------------------------------------------------------------
+     I             0   1.000000e+00  -1.000000e+00   2.000000e+00   0.000000e+00            NaN
+    FW            10   9.090909e-02  -9.090909e-02   1.818182e-01   2.659512e-01   3.760089e+01
+    FW            20   4.761905e-02  -4.761905e-02   9.523810e-02   2.673251e-01   7.481527e+01
+    FW            30   3.225806e-02  -3.225806e-02   6.451613e-02   2.688677e-01   1.115790e+02
+    FW            40   2.439024e-02  -2.439024e-02   4.878049e-02   2.707609e-01   1.477318e+02
+    FW            50   1.960784e-02  -1.960784e-02   3.921569e-02   2.729673e-01   1.831721e+02
+    FW            60   1.639344e-02  -1.639344e-02   3.278689e-02   2.755683e-01   2.177319e+02
+    FW            70   1.408451e-02  -1.408451e-02   2.816901e-02   2.784118e-01   2.514261e+02
+    FW            80   1.234568e-02  -1.234568e-02   2.469136e-02   2.816982e-01   2.839919e+02
+    FW            90   1.098901e-02  -1.098901e-02   2.197802e-02   2.852353e-01   3.155290e+02
+  Last            99   1.000000e-02   1.000000e-02   2.159042e-78   2.892642e-01   3.422477e+02
+-------------------------------------------------------------------------------------------------
+
+  0.725232 seconds (1.10 M allocations: 59.189 MiB, 10.79% gc time, 95.02% compilation time)</code></pre><p>Note: at the last step, we exactly close the gap, finding the solution 1//n * ones(n)</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../docs_3_matrix_completion/">« Matrix Completion</a><a class="docs-footer-nextpage" href="../docs_5_blended_cg/">Blended Conditional Gradients »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.16 on <span class="colophon-date" title="Tuesday 3 May 2022 12:42">Tuesday 3 May 2022</span>. Using Julia version 1.6.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
