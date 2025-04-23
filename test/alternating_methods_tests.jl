@@ -192,6 +192,23 @@ end
     end
 end
 
+@testset "Testing Splitting FW with variable lambda" begin
+
+    lambda_func(state) = 1 / (state.t^2 + 1)
+
+    x, _, _, _, _ = FrankWolfe.alternating_linear_minimization(
+        FrankWolfe.block_coordinate_frank_wolfe,
+        f,
+        grad!,
+        (lmo2, lmo3),
+        ones(n),
+        lambda=lambda_func,
+    )
+
+    @test all(x.blocks[1] .- ones(n) .< 1e-6)
+    @test all(x.blocks[2] .- ones(n) .< 1e-6)
+end
+
 @testset "Testing stepsize/linesearch in block-coordinate FW" begin
 
     x, _, _, _, _ = FrankWolfe.alternating_linear_minimization(
