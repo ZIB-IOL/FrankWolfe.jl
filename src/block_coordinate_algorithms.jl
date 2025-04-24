@@ -672,7 +672,7 @@ function block_coordinate_frank_wolfe(
                     line_search[i],
                     linesearch_workspace[i],
                     memory_mode,
-                    epsilon / N, # smaller tolerance s.t. the total gap is smaller thanepsilon
+                    epsilon / N, # smaller tolerance s.t. the total gap is smaller than epsilon
                 )
             end
 
