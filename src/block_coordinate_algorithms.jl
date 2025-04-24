@@ -401,7 +401,7 @@ function update_iterate(
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
         end
 
-        if (dual_gap ≥ epsilon) && (!s.lazy || dual_gap ≥ s.phi / s.sparsity_control)
+        if !s.lazy || dual_gap ≥ s.phi / s.sparsity_control
 
             d = muladd_memory_mode(memory_mode, d, x, v)
 
@@ -672,7 +672,7 @@ function block_coordinate_frank_wolfe(
                     line_search[i],
                     linesearch_workspace[i],
                     memory_mode,
-                    epsilon,
+                    epsilon / N, # smaller tolerance s.t. the total gap is smaller thanepsilon
                 )
             end
 
