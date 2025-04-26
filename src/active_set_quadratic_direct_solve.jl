@@ -243,12 +243,9 @@ function active_set_update!(
         add_dropped_vertices=add_dropped_vertices,
         vertex_storage=vertex_storage,
     )
-    # new atom introduced, we can solve the auxiliary LP
-    if idx < 0
-        as.counter[] += 1
-        if should_solve_lp(as, as.scheduler)
-            solve_quadratic_activeset_lp!(as)
-        end
+
+    if should_solve_lp(as, as.scheduler, idx)
+        solve_quadratic_activeset_lp!(as)
     end
     return as
 end
@@ -287,10 +284,11 @@ function solve_quadratic_activeset_lp!(
     # Wᵗ A V λ == -Wᵗ b
     # V has columns vi
     # W has columns vi - v1
-    for i in 2:nv
+    @info "start"
+    @time for i in 2:nv
         lhs = MOI.ScalarAffineFunction{Float64}([], 0.0)
         Base.sizehint!(lhs.terms, nv)
-        if as.active_set isa ActiveSetQuadraticProductCaching
+        if typeof(as.active_set) in [ActiveSetQuadraticProductCaching, ActiveSetPartialCaching]
             # dots_A is a lower triangular matrix
             for j in 1:i
                 push!(lhs.terms, MOI.ScalarAffineTerm(as.active_set.dots_A[i][j] - as.active_set.dots_A[j][1], λ[j]))
@@ -298,7 +296,11 @@ function solve_quadratic_activeset_lp!(
             for j in i+1:nv
                 push!(lhs.terms, MOI.ScalarAffineTerm(as.active_set.dots_A[j][i] - as.active_set.dots_A[j][1], λ[j]))
             end
-            rhs = as.active_set.dots_b[1] - as.active_set.dots_b[i]
+            if as.active_set isa ActiveSetQuadraticProductCaching
+                rhs = as.active_set.dots_b[1] - as.active_set.dots_b[i]
+            else
+                rhs = dot(as.atoms[1], as.b) - dot(as.atoms[i], as.b)
+            end
         else
             # replaces direct sum because of MOI and MutableArithmetic slow sums
             for j in 1:nv
@@ -313,7 +315,7 @@ function solve_quadratic_activeset_lp!(
     end
     MOI.set(o, MOI.ObjectiveFunction{typeof(sum_of_variables)}(), sum_of_variables)
     MOI.set(o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
-    MOI.optimize!(o)
+    @time MOI.optimize!(o)
     if MOI.get(o, MOI.TerminationStatus()) ∉ (MOI.OPTIMAL, MOI.FEASIBLE_POINT, MOI.ALMOST_OPTIMAL)
         return as
     end
@@ -405,13 +407,53 @@ end
 LogScheduler(; start_time=20, scaling_factor=1.5, max_interval=1000) =
     LogScheduler(start_time, scaling_factor, max_interval, Ref(start_time), Ref(0))
 
-function should_solve_lp(as::ActiveSetQuadraticLinearSolve, scheduler::LogScheduler)
-    if as.counter[] - scheduler.last_solve_counter[] >= scheduler.current_interval[]
-        scheduler.last_solve_counter[] = as.counter[]
-        scheduler.current_interval[] = min(
-            round(Int, scheduler.scaling_factor * scheduler.current_interval[]),
-            scheduler.max_interval,
-        )
+function should_solve_lp(as::ActiveSetQuadraticLinearSolve, scheduler::LogScheduler, idx)
+    # new atom introduced, we can solve the auxiliary LP
+    if idx < 0
+        as.counter[] += 1
+        if as.counter[] - scheduler.last_solve_counter[] >= scheduler.current_interval[]
+            scheduler.last_solve_counter[] = as.counter[]
+            scheduler.current_interval[] = min(
+                round(Int, scheduler.scaling_factor * scheduler.current_interval[]),
+                scheduler.max_interval,
+            )
+            return true
+        end
+    end
+    return false
+end
+
+struct ALMScheduler{T}
+    start_time::Int
+    scaling_factor::T
+    max_interval::Int
+    current_interval::Base.RefValue{Int}
+    last_solve_counter::Base.RefValue{Int}
+    counter::Base.RefValue{Int}
+    interval::Int
+end
+
+ALMScheduler(; start_time=20, scaling_factor=1.5, max_interval=1000, interval=100) =
+    ALMScheduler(start_time, scaling_factor, max_interval, Ref(start_time), Ref(0), Ref(0), interval)
+
+function should_solve_lp(as::ActiveSetQuadraticLinearSolve, scheduler::ALMScheduler, idx)
+    # new atom introduced, we can solve the auxiliary LP
+    if idx < 0
+        as.counter[] += 1
+        if as.counter[] - scheduler.last_solve_counter[] >= scheduler.current_interval[]
+            scheduler.last_solve_counter[] = as.counter[]
+            scheduler.current_interval[] = min(
+                round(Int, scheduler.scaling_factor * scheduler.current_interval[]),
+                scheduler.max_interval,
+            )
+            return true
+        end
+    end
+
+    # solve the auxiliary LP every `interval` iterations
+    scheduler.counter[] += 1
+    if scheduler.counter[] >= scheduler.interval
+        scheduler.counter[] = 0
         return true
     end
     return false
