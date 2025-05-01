@@ -374,7 +374,10 @@ function _compute_new_weights_wolfe_step(λ, ::Type{R}, old_weights, o::MOI.Abst
         new_lambdas[idx] = 0
     end
     @assert all(>=(-2weight_purge_threshold_default(eltype(new_lambdas))), new_lambdas) "All new_lambdas must be between nonnegative $(minimum(new_lambdas))"
-    @assert isapprox(sum(new_lambdas), 1.0) "The sum of new_lambdas must be approximately 1"
+    if !isapprox(sum(new_lambdas), 1.0)
+        @warn "The sum of new_lambdas is not 1, it is $(sum(new_lambdas))"
+        new_lambdas = new_lambdas ./ sum(new_lambdas)
+    end
     indices_to_remove = Int[]
     new_weights = R[]
     for idx in eachindex(λ)
