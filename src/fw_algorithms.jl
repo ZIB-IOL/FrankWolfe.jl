@@ -104,7 +104,7 @@ function frank_wolfe(
     d = similar(x)
     gtemp = momentum === nothing ? d : similar(x)
 
-    while t <= max_iteration && dual_gap >= max(epsilon, eps(float(typeof(dual_gap))))
+    @interruptable while t ≤ max_iteration && dual_gap ≥ max(epsilon, eps(float(typeof(dual_gap))))
 
         #####################
         # managing time and Ctrl-C
@@ -350,7 +350,7 @@ function lazified_conditional_gradient(
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
     end
 
-    while t <= max_iteration && dual_gap >= max(epsilon, eps(float(eltype(x))))
+    @interruptable while t ≤ max_iteration && dual_gap ≥ max(epsilon, eps(float(eltype(x))))
 
         #####################
         # managing time and Ctrl-C
@@ -589,7 +589,7 @@ function stochastic_frank_wolfe(
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
     end
 
-    while t <= max_iteration && dual_gap >= max(epsilon, eps(float(typeof(dual_gap))))
+    @interruptable while t ≤ max_iteration && dual_gap ≥ max(epsilon, eps(float(typeof(dual_gap))))
 
         #####################
         # managing time and Ctrl-C
