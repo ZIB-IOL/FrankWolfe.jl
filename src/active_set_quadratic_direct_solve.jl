@@ -284,7 +284,6 @@ function solve_quadratic_activeset_lp!(
     # Wᵗ A V λ == -Wᵗ b
     # V has columns vi
     # W has columns vi - v1
-    @info "start"
     @time for i in 2:nv
         lhs = MOI.ScalarAffineFunction{Float64}([], 0.0)
         Base.sizehint!(lhs.terms, nv)
@@ -323,6 +322,13 @@ function solve_quadratic_activeset_lp!(
         _compute_new_weights_wolfe_step(λ, R, as.weights, o)
     else
         _compute_new_weights_direct_solve(λ, R, o)
+    end
+    x_new = sum(w * a for (w, a) in zip(new_weights, [as.atoms[i] for i in eachindex(as.atoms) if i ∉ indices_to_remove]))
+    fold = 0.5 * dot(as.x, as.A, as.x) + dot(as.b, as.x)
+    fnew = 0.5 * dot(x_new, as.A, x_new) + dot(as.b, x_new)
+    if fnew > fold
+        @warn "fnew > fold $fnew $fold"
+        return as
     end
     deleteat!(as.active_set, indices_to_remove)
     @assert length(as) == length(new_weights)
