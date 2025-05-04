@@ -284,11 +284,10 @@ function solve_quadratic_activeset_lp!(
     # Wᵗ A V λ == -Wᵗ b
     # V has columns vi
     # W has columns vi - v1
-    println(typeof(as.active_set))
     @time for i in 2:nv
         lhs = MOI.ScalarAffineFunction{Float64}([], 0.0)
         Base.sizehint!(lhs.terms, nv)
-        if typeof(as.active_set) in [ActiveSetQuadraticProductCaching, ActiveSetPartialCaching]
+        if as.active_set isa ActiveSetQuadraticProductCaching || as.active_set isa ActiveSetPartialCaching
             # dots_A is a lower triangular matrix
             for j in 1:i
                 push!(lhs.terms, MOI.ScalarAffineTerm(as.active_set.dots_A[i][j] - as.active_set.dots_A[j][1], λ[j]))
