@@ -327,7 +327,7 @@ function solve_quadratic_activeset_lp!(
     fold = 0.5 * dot(as.x, as.A, as.x) + dot(as.b, as.x)
     fnew = 0.5 * dot(x_new, as.A, x_new) + dot(as.b, x_new)
     if fnew > fold
-        @warn "fnew > fold $fnew $fold"
+        println("fnew > fold $fnew $fold")
         return as
     end
     deleteat!(as.active_set, indices_to_remove)
@@ -381,7 +381,7 @@ function _compute_new_weights_wolfe_step(λ, ::Type{R}, old_weights, o::MOI.Abst
     end
     @assert all(>=(-2weight_purge_threshold_default(eltype(new_lambdas))), new_lambdas) "All new_lambdas must be between nonnegative $(minimum(new_lambdas))"
     if !isapprox(sum(new_lambdas), 1.0)
-        @warn "The sum of new_lambdas is not 1, it is $(sum(new_lambdas))"
+        println("The sum of new_lambdas is not 1, it is $(sum(new_lambdas))")
         new_lambdas = new_lambdas ./ sum(new_lambdas)
     end
     indices_to_remove = Int[]
