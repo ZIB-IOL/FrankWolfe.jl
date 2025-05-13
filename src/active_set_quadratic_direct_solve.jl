@@ -284,16 +284,21 @@ function solve_quadratic_activeset_lp!(
     # Wᵗ A V λ == -Wᵗ b
     # V has columns vi
     # W has columns vi - v1
+    if as.active_set isa ActiveSetPartialCaching
+        c = as.active_set.λ[]
+    else
+        c = 1.0
+    end
     @time for i in 2:nv
         lhs = MOI.ScalarAffineFunction{Float64}([], 0.0)
         Base.sizehint!(lhs.terms, nv)
         if as.active_set isa ActiveSetQuadraticProductCaching || as.active_set isa ActiveSetPartialCaching
             # dots_A is a lower triangular matrix
             for j in 1:i
-                push!(lhs.terms, MOI.ScalarAffineTerm(as.active_set.dots_A[i][j] - as.active_set.dots_A[j][1], λ[j]))
+                push!(lhs.terms, MOI.ScalarAffineTerm(c * (as.active_set.dots_A[i][j] - as.active_set.dots_A[j][1]), λ[j]))
             end
             for j in i+1:nv
-                push!(lhs.terms, MOI.ScalarAffineTerm(as.active_set.dots_A[j][i] - as.active_set.dots_A[j][1], λ[j]))
+                push!(lhs.terms, MOI.ScalarAffineTerm(c * (as.active_set.dots_A[j][i] - as.active_set.dots_A[j][1]), λ[j]))
             end
             if as.active_set isa ActiveSetQuadraticProductCaching
                 rhs = as.active_set.dots_b[1] - as.active_set.dots_b[i]
@@ -323,7 +328,7 @@ function solve_quadratic_activeset_lp!(
     else
         _compute_new_weights_direct_solve(λ, R, o)
     end
-    x_new = sum(w * a for (w, a) in zip(new_weights, [as.atoms[i] for i in eachindex(as.atoms) if i ∉ indices_to_remove]))
+    x_new = sum(w * a for (w, a) in zip(new_weights, [as.atoms[i] for i in 1:nv if i ∉ indices_to_remove]))
     fold = 0.5 * dot(as.x, as.A, as.x) + dot(as.b, as.x)
     fnew = 0.5 * dot(x_new, as.A, x_new) + dot(as.b, x_new)
     if fnew > fold

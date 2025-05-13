@@ -16,7 +16,7 @@ struct ActiveSetPartialCaching{AT, R <: Real, IT, H} <: AbstractActiveSet{AT,R,I
     A::H # Hessian matrix
     dots_x::Vector{R} # stores ⟨A * x, atoms[i]⟩
     dots_A::Vector{Vector{R}} # stores ⟨A * atoms[j], atoms[i]⟩
-    λ::R
+    λ::Ref{Float64}
     weights_prev::Vector{R}
     modified::BitVector
 end
