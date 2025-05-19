@@ -286,6 +286,7 @@ function plot_trajectories(
                     indices = Int.(round.(10.0 .^ (collect(xmin:(xmax-xmin)/1000:xmax))))
                 else
                     indices = Int.(round.(collect(offset:l/1000:l)))
+                    #indices = Int.(round.([collect(offset:l/1000:l)..., l]))
                 end
                 trajectory = trajectory[indices]
             else
