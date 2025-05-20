@@ -56,7 +56,7 @@ function alternating_linear_minimization(
     max_iteration=10000,
     print_iter=max_iteration / 10,
     memory_mode=InplaceEmphasis(),
-    line_search::LS=Secant(),
+    line_search::LS=Adaptive(),
     epsilon=1e-7,
     kwargs...,
 ) where {N,LS<:Union{LineSearchMethod,NTuple{N,LineSearchMethod}}}
@@ -327,7 +327,7 @@ function alternating_projections(
                 active_sets[i];
                 epsilon=inner_epsilon(t),
                 max_iteration=10000,
-                line_search=Secant(),
+                line_search=Adaptive(),
                 kwargs...,
             )
             active_sets[i] = results[:active_set]
@@ -339,7 +339,7 @@ function alternating_projections(
                 x.blocks[i];
                 epsilon=inner_epsilon(t),
                 max_iteration=10000,
-                line_search=Secant(),
+                line_search=Adaptive(),
                 kwargs...,
             )
         end
