@@ -260,8 +260,8 @@ function plot_trajectories(
     empty_marker=false,
     extra_x_plot=0,
     extra_x_plot_label="",
-    extra_y_plot=0,
-    extra_y_plot_label="",
+    extra_plot=0,
+    extra_plot_label="",
     plot_title="",
 )
     # theme(:dark)
@@ -341,23 +341,23 @@ function plot_trajectories(
         push!(plots, sub_plot(extra_x_plot, 2))
     end
 
-    push!(plots, sub_plot(1, 4; xlabel=(extra_y_plot == 0 ? "Iterations" : ""), ylabel="FW gap"))
-    push!(plots, sub_plot(5, 4; xlabel=(extra_y_plot == 0 ? "Time (s)" : "")))
+    push!(plots, sub_plot(1, 4; xlabel=(extra_plot == 0 ? "Iterations" : ""), ylabel="FW gap"))
+    push!(plots, sub_plot(5, 4; xlabel=(extra_plot == 0 ? "Time (s)" : "")))
 
     if extra_x_plot != 0
-        push!(plots, sub_plot(extra_x_plot, 4; xlabel=(extra_y_plot == 0 ? extra_x_plot_label : "")))
+        push!(plots, sub_plot(extra_x_plot, 4; xlabel=(extra_plot == 0 ? extra_x_plot_label : "")))
     end
 
-    if extra_y_plot != 0
-        push!(plots, sub_plot(1, extra_y_plot; ylabel=extra_y_plot_label, xlabel="Iterations"))
-        push!(plots, sub_plot(5, extra_y_plot; xlabel="Time (s)"))
+    if extra_plot != 0
+        push!(plots, sub_plot(1, extra_plot; ylabel=extra_plot_label, xlabel="Iterations"))
+        push!(plots, sub_plot(5, extra_plot; xlabel="Time (s)"))
         if extra_x_plot != 0
-            push!(plots, sub_plot(extra_x_plot, extra_y_plot; ylabel=extra_y_plot_label, xlabel=extra_x_plot_label))
+            push!(plots, sub_plot(extra_x_plot, extra_plot; ylabel=extra_plot_label, xlabel=extra_x_plot_label))
         end
     end
 
-    layout = (extra_y_plot == 0 ? 2 : 3, extra_x_plot == 0 ? 2 : 3)
-    size = (extra_x_plot == 0 ? 600 : 700, extra_y_plot == 0 ? 400 : 600)
+    layout = (extra_plot == 0 ? 2 : 3, extra_x_plot == 0 ? 2 : 3)
+    size = (extra_x_plot == 0 ? 600 : 700, extra_plot == 0 ? 400 : 600)
 
     fp = plot(plots..., layout=layout, size=size, plot_title=plot_title)
     plot!(size=size)
