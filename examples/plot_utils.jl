@@ -258,8 +258,10 @@ function plot_trajectories(
     primal_offset=1e-8,
     line_width=1.3,
     empty_marker=false,
-    extra_plot=false,
-    extra_plot_label="",
+    extra_y_plot=0,
+    extra_y_plot_label="",
+    extra_x_plot=0,
+    extra_x_plot_label="",
     plot_title="",
 )
     # theme(:dark)
@@ -322,20 +324,35 @@ function plot_trajectories(
         return fig
     end
 
-    pit = sub_plot(1, 2; legend=legend_position, ylabel="Primal", y_offset=primal_offset)
-    pti = sub_plot(5, 2; y_offset=primal_offset)
-    dit = sub_plot(1, 4; xlabel="Iterations", ylabel="FW gap")
-    dti = sub_plot(5, 4; xlabel="Time (s)")
+    plots = []
+    push!(plots, sub_plot(1, 2; legend=legend_position, ylabel="Primal", y_offset=primal_offset))
+    push!(plots, sub_plot(5, 2; y_offset=primal_offset))
 
-    if extra_plot
-        iit = sub_plot(1, 6; ylabel=extra_plot_label)
-        iti = sub_plot(5, 6)
-        fp = plot(pit, pti, iit, iti, dit, dti, layout=(3, 2), plot_title=plot_title) # layout = @layout([A{0.01h}; [B C; D E]]))
-        plot!(size=(600, 600))
-    else        
-        fp = plot(pit, pti, dit, dti, layout=(2, 2), plot_title=plot_title) # layout = @layout([A{0.01h}; [B C; D E]]))
-        plot!(size=(600, 400))
+    if extra_x_plot != 0
+        push!(plots, sub_plot(extra_x_plot, 2))
     end
+
+    push!(plots, sub_plot(1, 4; xlabel=(extra_y_plot == 0 ? "Iterations" : ""), ylabel="FW gap"))
+    push!(plots, sub_plot(5, 4; xlabel=(extra_y_plot == 0 ? "Time (s)" : "")))
+
+    if extra_x_plot != 0
+        push!(plots, sub_plot(extra_x_plot, 4; xlabel=(extra_y_plot == 0 ? extra_x_plot_label : "")))
+    end
+
+    if extra_y_plot != 0
+        push!(plots, sub_plot(1, extra_y_plot; ylabel=extra_y_plot_label, xlabel="Iterations"))
+        push!(plots, sub_plot(5, extra_y_plot; xlabel="Time (s)"))
+        if extra_x_plot != 0
+            push!(plots, sub_plot(extra_x_plot, extra_y_plot; ylabel=extra_y_plot_label, xlabel=extra_x_plot_label))
+        end
+    end
+
+    layout = (extra_y_plot == 0 ? 2 : 3, extra_x_plot == 0 ? 2 : 3)
+    size = (extra_x_plot == 0 ? 600 : 700, extra_y_plot == 0 ? 400 : 600)
+
+    fp = plot(plots..., layout=layout, size=size, plot_title=plot_title)
+    plot!(size=size)
+
     if filename !== nothing
         savefig(fp, filename)
     end
