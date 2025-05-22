@@ -26,7 +26,7 @@ The algorithm is based on the description:
 11.  end for
 12. end for
 
-Reference: Algorithm 1 Dc-Fw from the provided image.
+Reference: Algorithm 1 Dc-Fw
 
 Returns a tuple `(x, primal, traj_data)` with:
 - `x` final iterate `x_T`
@@ -59,13 +59,14 @@ function dcafw(
 )
 
     # Header and format string for output of the algorithm
-    headers = ["OuterIt", "InnerK", "PrimalVal", "DCAGap", "Time", "OuterIt/sec"]
-    format_string = "%9s %9s %14e %14e %14e %14e\n"
+    headers = ["Type", "OuterIt", "InnerK", "PrimalVal", "DCAGap", "Time", "OuterIt/sec"]
+    format_string = "%6s %9s %9s %14e %14e %14e %14e\n"
 
     function format_state(state)
         rep = (
+            steptype_string[Symbol(state.step_type)], # step type
             string(state.t), # outer iteration
-            string("N/A"), # number of inner iterations in last outer iter
+            string(inner_iter_count_last), # number of inner iterations in last outer iter
             Float64(state.primal), # f(xt) - g(xt)
             Float64(state.dual_gap), # dca_gap from inner loop
             state.time,
@@ -76,6 +77,7 @@ function dcafw(
 
     outer_t = 0
     total_time_start = time_ns()
+    step_type = ST_DCA_OUTER
     
     xt = x0
     if memory_mode isa FrankWolfe.InplaceEmphasis && !isa(xt, Union{Array,SparseArrays.AbstractSparseArray})
@@ -112,9 +114,9 @@ function dcafw(
         println("\nDC Algorithm with Frank-Wolfe (Dc-Fw).")
         NumType = eltype(xt)
         println(
-            "MEMORY_MODE: $memory_mode INNER_LINESEARCH: $line_search EPSILON: $epsilon MAX_OUTER_ITERATION: $max_iteration MAX_INNER_ITERATION: $max_inner_iteration TYPE: $NumType",
+            "MEMORY_MODE: $memory_mode INNER_LINESEARCH: $line_search EPSILON: $epsilon"
         )
-        println("LMO: $(typeof(lmo))")
+        println("MAX_OUTER_ITERATION: $max_iteration MAX_INNER_ITERATION: $max_inner_iteration TYPE: $NumType LMO: $(typeof(lmo))")
         if memory_mode isa FrankWolfe.InplaceEmphasis
             @info("In memory_mode memory iterates are written back into xt!")
         end
@@ -219,6 +221,7 @@ function dcafw(
                     xt = X_tk
                 end
                 inner_iter_count_last = inner_k
+                step_type = ST_DCA_OUTER  # Converged inner loop
                 break # break from inner k-loop
             end
 
@@ -246,7 +249,8 @@ function dcafw(
             end
 
             # Update X_t,k+1 = X_t,k + η_t,k * D_t,k
-            X_tk = muladd_memory_mode(memory_mode, X_tk, gamma_k, d_tk)
+            # Note: muladd_memory_mode performs x - gamma*d, so we use -gamma_k to get x + gamma*d
+            X_tk = muladd_memory_mode(memory_mode, X_tk, -gamma_k, d_tk)
             
             inner_iter_count_last = inner_k
             # If max_inner_iteration is reached, X_tk is the new xt
@@ -256,6 +260,9 @@ function dcafw(
                 elseif memory_mode isa FrankWolfe.OutplaceEmphasis
                     xt = X_tk
                 end
+                step_type = ST_DCA_OUTER  # Max inner iterations reached
+            else
+                step_type = ST_DCA_INNER  # Regular inner iteration
             end
 
         end # end inner k-loop
@@ -280,7 +287,7 @@ function dcafw(
                 grad_f!, # original grad_f!
                 lmo,
                 effective_grad_workspace, # last effective gradient
-                ST_REGULAR, # step type (can be refined)
+                step_type, # step type
                 # g=g, # Pass g and grad_g! if callback needs them
                 # grad_g=grad_g!,
                 # inner_iter_count=inner_iter_count_last,
@@ -292,15 +299,60 @@ function dcafw(
 
     end # end outer t-loop
 
+    # Final iteration for verification - similar to other Frank-Wolfe algorithms
+    # This is important as some variants do not recompute f(x) and the dual_gap regularly
+    # but only when reporting, hence the final computation.
+    if callback !== nothing
+        # Recompute gradients for final verification
+        grad_f!(grad_f_workspace, xt)
+        grad_g!(grad_g_workspace, xt)
+        effective_grad_workspace .= grad_f_workspace .- grad_g_workspace
+        
+        # Compute final extreme point
+        S_final = compute_extreme_point(lmo, effective_grad_workspace)
+        
+        # Final DCA gap computation
+        final_dca_gap = fast_dot(effective_grad_workspace, xt) - fast_dot(effective_grad_workspace, S_final)
+        
+        # Final primal value
+        final_primal = f(xt) - g(xt)
+        
+        # Final direction (though not used for step)
+        if memory_mode isa FrankWolfe.InplaceEmphasis
+            d_tk .= S_final .- xt
+        else
+            d_tk = S_final .- xt
+        end
+        
+        # Final callback with ST_LAST step type
+        state = CallbackState(
+            outer_t, # outer iteration count
+            final_primal, # f(x_final) - g(x_final)
+            final_primal - final_dca_gap, # "dual value" proxy
+            final_dca_gap, # final dca_gap
+            (time_ns() - total_time_start) / 1e9, # total time
+            xt, # final iterate
+            S_final, # final extreme point
+            d_tk, # final direction
+            NaN, # gamma (not applicable for final step)
+            f, # original f
+            grad_f!, # original grad_f!
+            lmo,
+            effective_grad_workspace, # final effective gradient
+            ST_LAST, # final step type
+        )
+        callback(state)
+    end
+
     # Final primal value
     final_primal = f(xt) - g(xt)
     
     if verbose
         println("\nFinished DCA-FW.")
-        println("Outer iterations: $outer_t")
+        # println("Outer iterations: $outer_t")
         println("Final primal f(x) - g(x): $final_primal")
         println("Last DCA Gap (inner loop): $dca_gap_last")
-        println("Total time: ", (time_ns() - total_time_start) / 1e9, "s")
+        println("Total time: ", (time_ns() - total_time_start) / 1e9, "s\n")
     end
 
     return (x=xt, primal=final_primal, traj_data=traj_data, dca_gap=dca_gap_last, iterations=outer_t)
