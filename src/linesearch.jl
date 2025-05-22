@@ -1,5 +1,7 @@
 
 """
+    LineSearchMethod
+
 Line search method to apply once the direction is computed.
 A `LineSearchMethod` must implement
 ```

@@ -4,6 +4,12 @@
 Implements the BPCG algorithm from [Tsuji, Tanaka, Pokutta (2021)](https://arxiv.org/abs/2110.12650).
 The method uses an active set of current vertices.
 Unlike away-step, it transfers weight from an away vertex to another vertex of the active set.
+
+$COMMON_ARGS
+
+$COMMON_KWARGS
+
+$RETURN_ACTIVESET
 """
 function blended_pairwise_conditional_gradient(
     f,

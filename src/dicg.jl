@@ -33,6 +33,12 @@ dicg_maximum_step(lmo, direction, x)
 Implements the Decomposition-Invariant Conditional Gradient from:
 Garber, Ofer (2016), Linear-memory and decomposition-invariant linearly convergent conditional gradient algorithm for structured polytopes.
 The algorithm performs pairwise steps with the away direction computed by calls to a modified linear oracle, see [`FrankWolfe.is_decomposition_invariant_oracle`](@ref) for the extended linear minimization oracle interface required.
+
+$COMMON_ARGS
+
+$COMMON_KWARGS
+
+$RETURN
 """
 function decomposition_invariant_conditional_gradient(
     f,
@@ -277,6 +283,12 @@ end
 
 Implements the Blended variant of the Decomposition-Invariant Conditional Gradient.
 The algorithm performs pairwise steps with the away direction computed by calls to a modified linear oracle, see [`FrankWolfe.is_decomposition_invariant_oracle`](@ref) for the extended linear minimization oracle interface required.
+
+$COMMON_ARGS
+
+$COMMON_KWARGS
+
+$RETURN
 """
 function blended_decomposition_invariant_conditional_gradient(
     f,
