@@ -1,14 +1,14 @@
 
 """
-    frank_wolfe(f, grad!, lmo, x0; ...)
+    frank_wolfe(f, grad!, lmo, x0; kwargs...)
 
 Simplest form of the Frank-Wolfe algorithm.
-Returns a tuple `(x, v, primal, dual_gap, traj_data)` with:
-- `x` final iterate
-- `v` last vertex from the LMO
-- `primal` primal value `f(x)`
-- `dual_gap` final Frank-Wolfe gap
-- `traj_data` vector of trajectory information.
+
+$COMMON_ARGS
+
+$COMMON_KWARGS
+
+$RETURN
 """
 function frank_wolfe(
     f,
@@ -242,12 +242,18 @@ end
 
 
 """
-    lazified_conditional_gradient(f, grad!, lmo_base, x0; ...)
+    lazified_conditional_gradient(f, grad!, lmo_base, x0; kwargs...)
 
 Similar to [`FrankWolfe.frank_wolfe`](@ref) but lazyfying the LMO:
 each call is stored in a cache, which is looked up first for a good-enough direction.
 The cache used is a [`FrankWolfe.MultiCacheLMO`](@ref) or a [`FrankWolfe.VectorCacheLMO`](@ref)
 depending on whether the provided `cache_size` option is finite.
+
+$COMMON_ARGS
+
+$COMMON_KWARGS
+
+$RETURN
 """
 function lazified_conditional_gradient(
     f,
@@ -475,10 +481,16 @@ function lazified_conditional_gradient(
 end
 
 """
-    stochastic_frank_wolfe(f::StochasticObjective, lmo, x0; ...)
+    stochastic_frank_wolfe(f::StochasticObjective, lmo, x0; kwargs...)
 
 Stochastic version of Frank-Wolfe, evaluates the objective and gradient stochastically,
 implemented through the [`FrankWolfe.StochasticObjective`](@ref) interface.
+
+$COMMON_ARGS
+
+$COMMON_KWARGS
+
+# Specific keyword arguments
 
 Keyword arguments include `batch_size` to pass a fixed `batch_size`
 or a `batch_iterator` implementing
@@ -487,6 +499,8 @@ Variance-reduced and projection-free stochastic optimization, E Hazan, H Luo, 20
 
 Similarly, a constant `momentum` can be passed or replaced by a `momentum_iterator`
 implementing `momentum = FrankWolfe.momentum_iterate(momentum_iterator)`.
+
+$RETURN
 """
 function stochastic_frank_wolfe(
     f::StochasticObjective,
