@@ -373,7 +373,7 @@ function Base.push!(as::ActiveSetPartialCaching{AT,R}, (λ, a)) where {AT,R}
     return as
 end
 
-# TODO multi-indices version
+# TODO multi-indices version that deletes multiple indices at once
 function Base.deleteat!(as::ActiveSetPartialCaching, idx::Int)
     @inbounds for i in 1:idx-1
         as.dots_x[i] -= as.weights_prev[idx] * as.dots_A[idx][i]
