@@ -61,7 +61,7 @@ using LinearAlgebra
     end
 
     @testset "DcAFW on Unit L2 Ball" begin
-        lmo_l2 = FrankWolfe.L2BallOracle(1.0) # radius 1
+        lmo_l2 = FrankWolfe.LpNormLMO{2}(1.0) # radius 1
         x0_l2 = FrankWolfe.compute_extreme_point(lmo_l2, randn(n))
         if n == 0 # L2BallOracle might have issues with n=0 if not handled, though n=5 here.
            x0_l2 = zeros(n) # ensure x0 is valid if n=0 for some reason, though test uses n=5

@@ -13,7 +13,7 @@ using Plots
 # phi(x) = (b-a)'x + 0.5 * (a'a - b'b)
 # This is a linear function. Minimizing it over a compact set will pick a vertex.
 
-const n = 10
+const n = 1000
 const a = randn(n)
 const b = randn(n)
 
@@ -87,7 +87,7 @@ function main()
         memory_mode=FrankWolfe.InplaceEmphasis()
     )
 
-    println("\\nDcAFW finished.")
+    println("\nDcAFW finished.")
     println("Outer iterations: $iterations")
     println("Final solution x: $x_final")
     println("Final objective value f(x) - g(x): $primal_final") 
