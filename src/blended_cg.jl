@@ -83,8 +83,8 @@ function blended_conditional_gradient(
     grad!,
     lmo,
     active_set::AbstractActiveSet{AT,R};
-    line_search::LineSearchMethod=Adaptive(),
-    line_search_inner::LineSearchMethod=Adaptive(),
+    line_search::LineSearchMethod=Secant(),
+    line_search_inner::LineSearchMethod=Secant(),
     hessian=nothing,
     epsilon=1e-7,
     max_iteration=10000,
@@ -446,7 +446,7 @@ function minimize_over_convex_hull!(
     t,
     time_start,
     non_simplex_iter;
-    line_search_inner=Adaptive(),
+    line_search_inner=Secant(),
     verbose=true,
     print_iter=1000,
     hessian=nothing,
@@ -908,7 +908,7 @@ function simplex_gradient_descent_over_convex_hull(
     time_start,
     non_simplex_iter,
     memory_mode::MemoryEmphasis=InplaceEmphasis();
-    line_search_inner=Adaptive(),
+    line_search_inner=Secant(),
     verbose=true,
     print_iter=1000,
     hessian=nothing,
