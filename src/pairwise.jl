@@ -1,12 +1,18 @@
 
 """
-    pairwise_frank_wolfe(f, grad!, lmo, x0; ...)
+    pairwise_frank_wolfe(f, grad!, lmo, x0; kwargs...)
 
 Frank-Wolfe with pairwise steps.
 The algorithm maintains the current iterate as a convex combination of vertices in the
 [`FrankWolfe.ActiveSet`](@ref) data structure.
 See [M. Besançon, A. Carderera and S. Pokutta 2021](https://arxiv.org/abs/2104.06675) for illustrations of away steps. 
 Unlike away-step, it transfers weight from an away vertex to another vertex.
+
+$COMMON_ARGS
+
+$COMMON_KWARGS
+
+$RETURN_ACTIVESET
 """
 function pairwise_frank_wolfe(
     f,
