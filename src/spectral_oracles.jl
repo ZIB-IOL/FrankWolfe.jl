@@ -223,7 +223,7 @@ function convert_mathopt(lmo::FantopeLMO, optimizer::OT; side_dimension::Integer
     MOI.add_constraint(optimizer, sum_diag_terms, MOI.EqualTo(1.0 * lmo.k))
     MOI.add_constraint(
         optimizer,
-        vec(Matrix(1.0I, side_dimension, side_dimension) - 1.0 * reshape(X, side_dimension, side_dimension)),
+        MOI.VectorAffineFunction(vec(Matrix(1.0I, side_dimension, side_dimension) - 1.0 * reshape(X, side_dimension, side_dimension))),
         MOI.PositiveSemidefiniteConeSquare(side_dimension),
     )
     return MathOptLMO(optimizer, use_modify)
