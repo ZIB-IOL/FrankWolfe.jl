@@ -220,7 +220,7 @@ function convert_mathopt(lmo::FantopeLMO, optimizer::OT; side_dimension::Integer
         push!(sum_diag_terms.terms, MOI.ScalarAffineTerm(1.0, X[i+side_dimension*(i-1)]))
     end
     # trace constraint
-    MOI.add_constraint(optimizer, sum_diag_terms, MOI.EqualTo(lmo.k))
+    MOI.add_constraint(optimizer, sum_diag_terms, MOI.EqualTo(1.0 * lmo.k))
     MOI.add_constraint(
         optimizer,
         Matrix(1.0I, side_dimension, side_dimension) - 1.0 * reshape(X, side_dimension, side_dimension),
