@@ -1097,7 +1097,7 @@ end
                 )
                 lmo_moi = FrankWolfe.convert_mathopt(lmo, optimizer; side_dimension=n)
                 v_moi = FrankWolfe.compute_extreme_point(lmo_moi, direction)
-                @test norm(v_moi - v) ≤ 1e-5 * n^2
+                @test norm(vec(v_moi) - v) ≤ 1e-5 * n^2
             end
         end
     end
