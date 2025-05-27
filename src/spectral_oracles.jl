@@ -196,8 +196,35 @@ end
 
 function compute_extreme_point(lmo::FantopeLMO, direction::AbstractMatrix{T}; kwargs...) where {T}
     @assert issymmetric(direction)
-    n = isqrt(length(direction))
+    n = size(direction, 1)
     eigen_info = eigen(direction)
-    eigen_info.values .= min.(eigen_info.values, 0)
+    if 1 <= lmo.k < n
+        eigen_info.values[lmo.k+1:end] .= 0
+    end
     return eigen_info.vectors * Diagonal(eigen_info.values) * eigen_info.vectors'
+end
+
+function compute_extreme_point(lmo::FantopeLMO, direction::AbstractVector; kwargs...)
+    n = isqrt(length(direction))
+    V = compute_extreme_point(lmo, reshape(direction, n, n))
+    return vec(V)
+end
+
+function convert_mathopt(lmo::FantopeLMO, optimizer::OT; side_dimension::Integer, use_modify::Bool=true) where {OT <: MOI.AbstractOptimizer}
+    MOI.empty!(optimizer)
+    X = MOI.add_variables(optimizer, side_dimension * side_dimension)
+    MOI.add_constraint(optimizer, X, MOI.PositiveSemidefiniteConeSquare(side_dimension))
+    sum_diag_terms = MOI.ScalarAffineFunction{Float64}([], 0.0)
+    # collect diagonal terms of the matrix
+    for i in 1:side_dimension
+        push!(sum_diag_terms.terms, MOI.ScalarAffineTerm(1.0, X[i+side_dimension*(i-1)]))
+    end
+    # trace constraint
+    MOI.add_constraint(optimizer, sum_diag_terms, MOI.EqualTo(lmo.k))
+    MOI.add_constraint(
+        optimizer,
+        Matrix(1.0I, side_dimension, side_dimension) - 1.0 * reshape(X, side_dimension, side_dimension),
+        MOI.PositiveSemidefiniteConeSquare(side_dimension),
+    )
+    return MathOptLMO(optimizer, use_modify)
 end

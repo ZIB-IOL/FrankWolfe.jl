@@ -1072,3 +1072,33 @@ end
         @test v == -1*v_opp
     end
 end
+
+@testset "Fantope" begin
+    Random.seed!(StableRNG(42), 42)
+    for n in (3, 5)
+        for k in (n-2, n-1)
+            for _ in 1:5
+                k = 2
+                n = 4
+                lmo = FrankWolfe.FantopeLMO(k)
+                direction = randn(n, n)
+                direction += direction'
+                V = FrankWolfe.compute_extreme_point(lmo, direction)
+                v = FrankWolfe.compute_extreme_point(lmo, vec(direction))
+                @test vec(V) ≈ v
+                o = Hypatia.Optimizer()
+                MOI.set(o, MOI.Silent(), true)
+                optimizer = MOI.Bridges.full_bridge_optimizer(
+                    MOI.Utilities.CachingOptimizer(
+                        MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
+                        o,
+                    ),
+                    Float64,
+                )
+                lmo_moi = FrankWolfe.convert_mathopt(lmo, optimizer)
+                v_moi = FrankWolfe.compute_extreme_point(lmo_moi, direction)
+                @test norm(v_moi - v) ≤ 1e-5 * n^2
+            end
+        end
+    end
+end
