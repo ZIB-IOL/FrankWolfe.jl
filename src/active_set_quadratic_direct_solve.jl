@@ -284,20 +284,18 @@ function solve_quadratic_activeset_lp!(
     end
     sum_of_variables = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, λ), 0.0)
     MOI.add_constraint(o, sum_of_variables, MOI.EqualTo(1.0))
-    # Wᵗ A V λ == -Wᵗ b
-    # V has columns vi
-    # W has columns vi - v1
-    for i in 2:nv
+    # Vᵗ A V λ == -Vᵗ b
+    for atom in as.atoms
         lhs = MOI.ScalarAffineFunction{Float64}([], 0.0)
         Base.sizehint!(lhs.terms, nv)
         # replaces direct sum because of MOI and MutableArithmetic slow sums
         for j in 1:nv
             push!(
                 lhs.terms,
-                _compute_quadratic_constraint_term(as.atoms[i], as.atoms[1], as.A, as.atoms[j], λ[j]),
+                _compute_quadratic_constraint_term(atom, as.A, as.atoms[j], λ[j]),
             )
         end
-        rhs =  dot(as.atoms[1], as.b) - dot(as.atoms[i], as.b)
+        rhs = -dot(atom, as.b)
         MOI.add_constraint(o, lhs, MOI.EqualTo{Float64}(rhs))
     end
     MOI.set(o, MOI.ObjectiveFunction{typeof(sum_of_variables)}(), sum_of_variables)
@@ -375,12 +373,12 @@ function _compute_new_weights_wolfe_step(λ, ::Type{R}, old_weights, o::MOI.Abst
     return indices_to_remove, new_weights
 end
 
-function _compute_quadratic_constraint_term(atom1, atom0, A::AbstractMatrix, atom2, λ)
-    return MOI.ScalarAffineTerm(fast_dot(atom1, A, atom2) - fast_dot(atom0, A, atom2), λ)
+function _compute_quadratic_constraint_term(atom1, A::AbstractMatrix, atom2, λ)
+    return MOI.ScalarAffineTerm(fast_dot(atom1, A, atom2), λ)
 end
 
-function _compute_quadratic_constraint_term(atom1, atom0, A::Union{Identity,LinearAlgebra.UniformScaling}, atom2, λ)
-    return MOI.ScalarAffineTerm(A.λ * (fast_dot(atom1, atom2) - fast_dot(atom0, atom2)), λ)
+function _compute_quadratic_constraint_term(atom1, A::Union{Identity,LinearAlgebra.UniformScaling}, atom2, λ)
+    return MOI.ScalarAffineTerm(A.λ * fast_dot(atom1, atom2), λ)
 end
 
 struct LogScheduler{T}

@@ -1,0 +1,7 @@
+TimeSlots,NumInstances,LS_ONLY_SECANT_Time,LS_ONLY_SECANT_DualGapNotSolved,LS_ONLY_SECANT_IterationsSolved,LS_ONLY_SECANT_IterTimeRatio,LS_ADAPTIVE_Time,LS_ADAPTIVE_DualGapNotSolved,LS_ADAPTIVE_IterationsSolved,LS_ADAPTIVE_IterTimeRatio,LS_AGNOSTIC_Time,LS_AGNOSTIC_DualGapNotSolved,LS_AGNOSTIC_IterationsSolved,LS_AGNOSTIC_IterTimeRatio,LS_BACKTRACKING_Time,LS_BACKTRACKING_DualGapNotSolved,LS_BACKTRACKING_IterationsSolved,LS_BACKTRACKING_IterTimeRatio
+0,13,0.5,<1e-7,28,56.0,4.6,1.44e-07,66,15265.9,2083.7,2.09e-06,1263,716.9,166.8,3.63e-07,40,929.6
+10,0,Inf,<1e-7,--,NaN,Inf,<1e-7,--,NaN,Inf,<1e-7,--,NaN,Inf,<1e-7,--,NaN
+300,0,Inf,<1e-7,--,NaN,Inf,<1e-7,--,NaN,Inf,<1e-7,--,NaN,Inf,<1e-7,--,NaN
+900,0,Inf,<1e-7,--,NaN,Inf,<1e-7,--,NaN,Inf,<1e-7,--,NaN,Inf,<1e-7,--,NaN
+1800,0,Inf,<1e-7,--,NaN,Inf,<1e-7,--,NaN,Inf,<1e-7,--,NaN,Inf,<1e-7,--,NaN
+2700,0,Inf,<1e-7,--,NaN,Inf,<1e-7,--,NaN,Inf,<1e-7,--,NaN,Inf,<1e-7,--,NaN

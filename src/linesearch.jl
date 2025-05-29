@@ -204,11 +204,14 @@ Simple golden-ratio based line search
 based on [Combettes, Pokutta (2020)](http://proceedings.mlr.press/v119/combettes20a/combettes20a.pdf)
 code and adapted.
 """
-struct Goldenratio{T} <: LineSearchMethod
+struct Goldenratio{T,F} <: LineSearchMethod
     tol::T
+    domain_oracle::F
 end
 
-Goldenratio() = Goldenratio(1e-7)
+Goldenratio() = Goldenratio(1e-7, x->true)
+
+Goldenratio(domain_oracle) = Goldenratio(1e-7, domain_oracle)
 
 struct GoldenratioWorkspace{XT,GT}
     y::XT
@@ -242,6 +245,18 @@ function perform_line_search(
     workspace::GoldenratioWorkspace,
     memory_mode,
 )
+
+    # Deal with not trivial domain
+    x_storage = similar(x)
+    gamma = gamma_max
+    x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
+    while !line_search.domain_oracle(x_storage)
+        gamma_max /= 2
+        gamma = min(gamma, gamma_max)
+        x_storage = muladd_memory_mode(memory_mode, x_storage, x, gamma, d)
+    end
+    gamma_max = gamma
+
     # restrict segment of search to [x, y]
     @. workspace.y = x - gamma_max * d
     @. workspace.left = x
@@ -297,16 +312,17 @@ Base.print(io::IO, ::Goldenratio) = print(io, "Goldenratio")
 Backtracking line search strategy, see
 [Pedregosa, Negiar, Askari, Jaggi (2018)](https://arxiv.org/pdf/1806.05123).
 """
-struct Backtracking{T} <: LineSearchMethod
+struct Backtracking{T,F} <: LineSearchMethod
     limit_num_steps::Int
     tol::T
     tau::T
+    domain_oracle::F
 end
 
 build_linesearch_workspace(::Backtracking, x, gradient) = similar(x)
 
-function Backtracking(; limit_num_steps=20, tol=1e-10, tau=0.5)
-    return Backtracking(limit_num_steps, tol, tau)
+function Backtracking(; limit_num_steps=20, tol=1e-10, tau=0.5, domain_oracle = x->true)
+    return Backtracking(limit_num_steps, tol, tau, domain_oracle)
 end
 
 function perform_line_search(
@@ -321,6 +337,18 @@ function perform_line_search(
     storage,
     memory_mode,
 )
+    dot_gdir = dot(gradient, d)
+    gamma = gamma_max  # Start from last gamma, but don't exceed gamma_max
+    stor = similar(x)
+    stor = muladd_memory_mode(memory_mode, stor, x, gamma, d)
+    while !line_search.domain_oracle(stor)
+        gamma_max /= 2
+        gamma = min(gamma, gamma_max)
+        stor = muladd_memory_mode(memory_mode, stor, x, gamma, d)
+    end
+    gamma_max = gamma
+
+
     gamma = gamma_max * one(line_search.tau)
     i = 0
 
@@ -371,20 +399,26 @@ Convergence is not guaranteed in general.
 # References
 - [Secant Method](https://en.wikipedia.org/wiki/Secant_method)
 """
-struct Secant{F,LSM<:LineSearchMethod} <: LineSearchMethod
+mutable struct Secant{F,LSM<:LineSearchMethod} <: LineSearchMethod
     inner_ls::LSM
     safe::Bool
     limit_num_steps::Int
     tol::Float64
     domain_oracle::F
+    number_not_converging::Int
+    fallback_help::Int
+    inner_iter::Vector{Int}
+    gaps::Vector{Float64}
+    step_sizes::Vector{Float64}
+    norm_d::Vector{Float64}
 end
 
 function Secant(limit_num_steps, tol)
-    return Secant(Backtracking(), false, limit_num_steps, tol, x -> true)
+    return Secant(Backtracking(), true, limit_num_steps, tol, x -> true, 0, 0, Vector{Int}(), Vector{Float64}(), Vector{Float64}(), Vector{Float64}())
 end
 
-function Secant(;inner_ls=Backtracking(), safe=false, limit_num_steps=40, tol=1e-8, domain_oracle=(x -> true))
-    return Secant(inner_ls, safe, limit_num_steps, tol, domain_oracle)
+function Secant(;inner_ls=Backtracking(), safe=true, limit_num_steps=40, tol=1e-8, domain_oracle=(x -> true))
+    return Secant(inner_ls, safe, limit_num_steps, tol, domain_oracle, 0, 0, Vector{Int}(), Vector{Float64}(), Vector{Float64}(), Vector{Float64}())
 end
 
 mutable struct SecantWorkspace{XT,GT, IWS}
@@ -456,8 +490,17 @@ function perform_line_search(
         dot_gdir = dot_gdir_new
         i += 1
     end
-
+    push!(line_search.inner_iter, i)
+    push!(line_search.norm_d, norm(d))
     if line_search.safe && !clamping && abs(dot_gdir) > line_search.tol
+        line_search.number_not_converging += 1
+        push!(line_search.gaps, abs(dot_gdir))
+        # Choose gamma_max to be domain feasible
+        storage = muladd_memory_mode(memory_mode, storage, x, gamma_max, d)
+        while !line_search.domain_oracle(storage)
+            gamma_max /= 2
+            storage = muladd_memory_mode(memory_mode, storage, x, gamma_max, d)
+        end
         gamma = perform_line_search(
             line_search.inner_ls,
             0,
@@ -475,14 +518,98 @@ function perform_line_search(
         new_val = f(storage)
 
         if new_val <= best_val
+            line_search.fallback_help += 1
             best_gamma = gamma
         end
     end
     workspace.last_gamma = best_gamma  # Update last_gamma before returning
+    push!(line_search.step_sizes, best_gamma)
     return best_gamma
 end
 
 Base.print(io::IO, ::Secant) = print(io, "Secant")
+
+
+"""
+For testing purposes/verifying the theory: 
+Do a couple of Backtracking/Adaptive/Adaptive Zeroth steps and then use that gamma as gamma_max for Secant.
+"""
+mutable struct ImprovedGammaSecant{F,LSM<:LineSearchMethod, LSMS<:LineSearchMethod} <: LineSearchMethod
+    first_ls::LSM
+    secant_ls::LSMS
+    safe::Bool
+    tol::Float64
+    domain_oracle::F
+    number_not_converging::Int
+end
+
+function ImprovedGammaSecant(;first_ls=Backtracking(), safe=false, tol=1e-8, domain_oracle=x->true) 
+    return ImprovedGammaSecant(first_ls, Secant(safe=false), safe, tol, domain_oracle, 0)
+end
+
+mutable struct ImprovedGammaSecantWorkspace{BWS, SWS}
+    first_ws::BWS
+    secant_ws::SWS
+end
+
+function build_linesearch_workspace(ls::ImprovedGammaSecant, x, gradient)
+    secant_ws = build_linesearch_workspace(ls.secant_ls, x, gradient)
+    first_ws = build_linesearch_workspace(ls.first_ls, x, gradient)
+    return ImprovedGammaSecantWorkspace(first_ws, secant_ws)  # Initialize last_gamma to 1.0
+end
+
+function perform_line_search(
+    line_search::ImprovedGammaSecant,
+    t,
+    f,
+    grad!,
+    gradient,
+    x,
+    d,
+    gamma_max,
+    workspace::ImprovedGammaSecantWorkspace,
+    memory_mode,
+)
+    # Check for domain feasibility
+    storage = similar(x)
+    gamma = gamma_max
+    storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
+    while !line_search.domain_oracle(storage)
+        gamma_max /= 2
+        gamma = min(gamma, gamma_max)
+        storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
+    end
+    gamma_max = gamma
+
+    gamma_max_new = perform_line_search(
+        line_search.first_ls, 
+        t, 
+        f, 
+        grad!, 
+        gradient, 
+        x, 
+        d, 
+        gamma_max, 
+        workspace.first_ws, 
+        memory_mode
+    )
+
+    gamma = perform_line_search(
+        line_search.secant_ls,
+        t,
+        f,
+        grad!,
+        gradient,
+        x, 
+        d, 
+        gamma_max_new,
+        workspace.secant_ws,
+        memory_mode
+    )
+    return gamma
+end
+
+Base.print(io::IO, ::ImprovedGammaSecant) = print(io, "Improved Gamma Secant")
 
 
 """
@@ -515,8 +642,8 @@ mutable struct AdaptiveZerothOrder{T,TT,F} <: LineSearchMethod
     domain_oracle::F
 end
 
-AdaptiveZerothOrder(eta::T, tau::TT; domain_oracle=x->true) where {T,TT} =
-    AdaptiveZerothOrder{T,TT, typeof(domain_oracle)}(eta, tau, T(Inf), T(1e10), T(0.5), true, false, domain_oracle)
+AdaptiveZerothOrder(eta::T, tau::TT) where {T,TT} =
+    AdaptiveZerothOrder{T,TT}(eta, tau, T(Inf), T(1e10), T(0.5), true, false, x->true)
 
 AdaptiveZerothOrder(;
     eta=0.9,
@@ -673,13 +800,15 @@ mutable struct Adaptive{T,TT,F} <: LineSearchMethod
     verbose::Bool
     relaxed_smoothness::Bool
     domain_oracle::F
+    number_itertions::Vector{Int}
+    step_sizes::Vector{Float64}
 end
 
-Adaptive(eta::T, tau::TT; domain_oracle=x->true) where {T,TT} =
-    Adaptive{T,TT, typeof(domain_oracle)}(eta, tau, T(Inf), T(1e10), true, false, domain_oracle)
+Adaptive(eta::T, tau::TT) where {T,TT} =
+    Adaptive{T,TT}(eta, tau, T(Inf), T(1e10), true, false, x->true, Vector{Int}(), Vector{Float64}())
 
 Adaptive(; eta=0.9, tau=2, L_est=Inf, max_estimate=1e10, verbose=true, relaxed_smoothness=false, domain_oracle=x->true) =
-    Adaptive(eta, tau, L_est, max_estimate, verbose, relaxed_smoothness, domain_oracle)
+    Adaptive(eta, tau, L_est, max_estimate, verbose, relaxed_smoothness, domain_oracle, Vector{Int}(), Vector{Float64}())
 
 struct AdaptiveWorkspace{XT,BT}
     x::XT
@@ -705,8 +834,10 @@ function perform_line_search(
 )
     if norm(d) ≤ length(d) * eps(float(real(eltype(d))))
         if should_upgrade isa Val{true}
+            push!(line_search.step_sizes, big(zero(promote_type(eltype(d), eltype(gradient)))))
             return big(zero(promote_type(eltype(d), eltype(gradient))))
         else
+            push!(line_search.step_sizes, zero(promote_type(eltype(d), eltype(gradient))))
             return zero(promote_type(eltype(d), eltype(gradient)))
         end
     end
@@ -752,6 +883,7 @@ function perform_line_search(
             # if we were not using the relaxed smoothness, we try it first as a stable fallback
             # note that the smoothness estimate is not updated at this iteration.
             if !line_search.relaxed_smoothness
+                push!(line_search.number_itertions, niter)
                 linesearch_fallback = deepcopy(line_search)
                 linesearch_fallback.relaxed_smoothness = true
                 γ = perform_line_search(
@@ -767,8 +899,10 @@ function perform_line_search(
                     memory_mode;
                     should_upgrade=should_upgrade,
                 )
+                push!(line_search.step_sizes, γ)
                 return γ
             end
+            push!(line_search.number_itertions, niter)
             # if we are already in relaxed smoothness, produce a warning:
             # one might see negative progess, cycling, or stalling.
             # Potentially upgrade accuracy or use an alternative line search strategy
@@ -782,11 +916,11 @@ function perform_line_search(
     if !clipping
         line_search.L_est = M
     end
+    push!(line_search.number_itertions, niter)
     γ = min(max(dot_dir / (line_search.L_est * ndir2), 0), gamma_max)
+    push!(line_search.step_sizes, γ)
     return γ
 end
-
-Base.print(io::IO, ::Adaptive) = print(io, "Adaptive")
 
 """
     MonotonicStepSize{F}

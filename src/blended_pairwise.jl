@@ -30,6 +30,7 @@ function blended_pairwise_conditional_gradient(
     add_dropped_vertices=false,
     use_extra_vertex_storage=false,
     recompute_last_vertex=true,
+    store_step_sizes=false,
 )
     # add the first vertex to active set from initialization
     active_set = ActiveSet([(1.0, x0)])
@@ -59,6 +60,7 @@ function blended_pairwise_conditional_gradient(
         add_dropped_vertices=add_dropped_vertices,
         use_extra_vertex_storage=use_extra_vertex_storage,
         recompute_last_vertex=recompute_last_vertex,
+        store_step_sizes=store_step_sizes,
     )
 end
 
@@ -92,6 +94,7 @@ function blended_pairwise_conditional_gradient(
     add_dropped_vertices=false,
     use_extra_vertex_storage=false,
     recompute_last_vertex=true,
+    store_step_sizes=false,
 ) where {AT,R}
 
     # format string for output of the algorithm
@@ -266,7 +269,7 @@ function blended_pairwise_conditional_gradient(
             if lazy # otherwise, v computed above already
                 # optionally try to use the storage
                 if use_extra_vertex_storage
-                    lazy_threshold = fast_dot(gradient, x) - max(epsilon, phi / lazy_tolerance)
+                    lazy_threshold = fast_dot(gradient, x) - phi / lazy_tolerance
                     (found_better_vertex, new_forward_vertex) =
                         storage_find_argmin_vertex(extra_vertex_storage, gradient, lazy_threshold)
                     if found_better_vertex
@@ -361,6 +364,9 @@ function blended_pairwise_conditional_gradient(
                     active_set_update!(active_set, gamma, v, renorm, nothing)
                 end
             else # dual step
+                if store_step_sizes
+                    push!(line_search.step_sizes, 0.0)
+                end
                 # set to computed dual_gap for consistency between the lazy and non-lazy run.
                 # that is ok as we scale with the K = 2.0 default anyways
                 # we only update the dual gap if the step was regular (not lazy from discarded set)

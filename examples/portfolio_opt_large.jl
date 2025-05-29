@@ -14,7 +14,7 @@ eps = 1e-5
 # for large problem instances from https://zenodo.org/records/4836009
 # see paper: https://arxiv.org/abs/2105.13913 
 
-problem_instance = joinpath(@__DIR__, "data/syn_1000_800_10_50_1.mat")
+problem_instance = joinpath(@__DIR__, "../experiments/problems/portfolio_data/syn_1000_800_10_50_1.mat")
 W = MAT.matread(problem_instance)["W"]
 
 

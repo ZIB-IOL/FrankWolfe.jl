@@ -260,7 +260,6 @@ function plot_trajectories(
     empty_marker=false,
     extra_plot=false,
     extra_plot_label="",
-    plot_title="",
 )
     # theme(:dark)
     # theme(:vibrant)
@@ -330,10 +329,10 @@ function plot_trajectories(
     if extra_plot
         iit = sub_plot(1, 6; ylabel=extra_plot_label)
         iti = sub_plot(5, 6)
-        fp = plot(pit, pti, iit, iti, dit, dti, layout=(3, 2), plot_title=plot_title) # layout = @layout([A{0.01h}; [B C; D E]]))
+        fp = plot(pit, pti, iit, iti, dit, dti, layout=(3, 2)) # layout = @layout([A{0.01h}; [B C; D E]]))
         plot!(size=(600, 600))
     else        
-        fp = plot(pit, pti, dit, dti, layout=(2, 2), plot_title=plot_title) # layout = @layout([A{0.01h}; [B C; D E]]))
+        fp = plot(pit, pti, dit, dti, layout=(2, 2)) # layout = @layout([A{0.01h}; [B C; D E]]))
         plot!(size=(600, 400))
     end
     if filename !== nothing

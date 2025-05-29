@@ -1,0 +1,2 @@
+seed,dimension,time,fw_time,primal,dual_gap,smallest_dual_gap,iterations
+1,2500,1.220484795,1.219027063,6.007138833258292e-13,5.653585674564073e-8,5.658434455366625e-8,13973
