@@ -13,6 +13,7 @@ import MathOptInterface as MOI
 import GLPK
 import HiGHS
 import Hypatia
+import SCS
 using JuMP
 
 @testset "Simplex LMOs" begin
