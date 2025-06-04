@@ -200,7 +200,7 @@ function compute_extreme_point(lmo::FantopeLMO, direction::AbstractMatrix{T}; kw
     eigen_info = eigen(direction)
     eigen_info.values .= 1
     if 1 <= lmo.k < n
-        eigen_info.values[lmo.k+1:end] .= 0
+        eigen_info.values[(lmo.k+1):end] .= 0
     end
     return eigen_info.vectors * Diagonal(eigen_info.values) * eigen_info.vectors'
 end
@@ -211,7 +211,12 @@ function compute_extreme_point(lmo::FantopeLMO, direction::AbstractVector; kwarg
     return vec(V)
 end
 
-function convert_mathopt(lmo::FantopeLMO, optimizer::OT; side_dimension::Integer, use_modify::Bool=true) where {OT <: MOI.AbstractOptimizer}
+function convert_mathopt(
+    lmo::FantopeLMO,
+    optimizer::OT;
+    side_dimension::Integer,
+    use_modify::Bool=true,
+) where {OT<:MOI.AbstractOptimizer}
     MOI.empty!(optimizer)
     X = MOI.add_variables(optimizer, side_dimension * side_dimension)
     MOI.add_constraint(optimizer, X, MOI.PositiveSemidefiniteConeSquare(side_dimension))
@@ -224,7 +229,12 @@ function convert_mathopt(lmo::FantopeLMO, optimizer::OT; side_dimension::Integer
     MOI.add_constraint(optimizer, sum_diag_terms, MOI.EqualTo(1.0 * lmo.k))
     MOI.add_constraint(
         optimizer,
-        MOI.VectorAffineFunction(vec(Matrix(1.0I, side_dimension, side_dimension) - 1.0 * reshape(X, side_dimension, side_dimension))),
+        MOI.VectorAffineFunction(
+            vec(
+                Matrix(1.0I, side_dimension, side_dimension) -
+                1.0 * reshape(X, side_dimension, side_dimension),
+            ),
+        ),
         MOI.PositiveSemidefiniteConeSquare(side_dimension),
     )
     return MathOptLMO(optimizer, use_modify)
