@@ -49,6 +49,13 @@ Modules = [FrankWolfe]
 Pages = ["polytope_oracles.jl"]
 ```
 
+## Spectral sets
+
+```@autodocs
+Modules = [FrankWolfe]
+Pages = ["spectral_oracles.jl"]
+```
+
 ## MathOptInterface
 
 ```@autodocs
