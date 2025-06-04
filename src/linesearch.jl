@@ -1,13 +1,14 @@
 
 """
+    LineSearchMethod
+
 Line search method to apply once the direction is computed.
 A `LineSearchMethod` must implement
 ```
 perform_line_search(ls::LineSearchMethod, t, f, grad!, gradient, x, d, gamma_max, workspace)
 ```
 with `d = x - v`.
-It may also implement `build_linesearch_workspace(x, gradient)` which creates a
-workspace structure that is passed as last argument to `perform_line_search`.
+It may also implement [`FrankWolfe.build_linesearch_workspace`](@ref).
 """
 abstract type LineSearchMethod end
 
@@ -21,6 +22,14 @@ Returns the step size `gamma` for step size strategy `ls`.
 """
 function perform_line_search end
 
+"""
+    build_linesearch_workspace(ls::LS, x, gradient)
+
+Optional method to implement for new line-search methods.
+Builds a workspace for the line search `ls` which will be used throughout an algorithm.
+A workspace may be any variable that will be passed along to `perform_line_search`,
+typically to avoid allocating intermediate structures (e.g., gradient evaluated at new points).
+"""
 build_linesearch_workspace(::LineSearchMethod, x, gradient) = nothing
 
 """
