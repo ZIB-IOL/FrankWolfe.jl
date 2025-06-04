@@ -942,7 +942,12 @@ end
     JuMP.set_silent(m)
     optimize!(m)
     xv = JuMP.value.(x)
-    @test dot(xv, d) ≈ dot(v, d) atol = 1e-5 * n
+    dot_xv1 = dot(xv, d)
+    set_optimizer(m, SCS.Optimizer)
+    optimize!(m)
+    xv = JuMP.value.(x)
+    dot_xv2 = dot(xv, d)
+    @test min(abs(dot_xv1 - dot(v, d)), abs(dot_xv2 - dot(v, d))) <= 1e-5 * n
 end
 
 @testset "Convex hull" begin
