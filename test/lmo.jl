@@ -1078,8 +1078,6 @@ end
     for n in (3, 5)
         for k in (n-2, n-1)
             for _ in 1:5
-                k = 2
-                n = 4
                 lmo = FrankWolfe.FantopeLMO(k)
                 direction = randn(n, n)
                 direction += direction'

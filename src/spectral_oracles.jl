@@ -198,6 +198,7 @@ function compute_extreme_point(lmo::FantopeLMO, direction::AbstractMatrix{T}; kw
     @assert issymmetric(direction)
     n = size(direction, 1)
     eigen_info = eigen(direction)
+    eigen_info.values .= 1
     if 1 <= lmo.k < n
         eigen_info.values[lmo.k+1:end] .= 0
     end
