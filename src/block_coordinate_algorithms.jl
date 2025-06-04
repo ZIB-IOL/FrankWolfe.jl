@@ -447,7 +447,7 @@ function update_iterate(
         active_set_renormalize!(s.active_set)
     end
 
-    x = muladd_memory_mode(memory_mode, x, gamma, d)
+    x .= get_active_set_iterate(s.active_set)
 
     return (dual_gap, vertex_taken, d, gamma, step_type)
 end

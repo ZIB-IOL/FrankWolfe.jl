@@ -276,6 +276,8 @@ function plot_trajectories(
 
         for (i, trajectory) in enumerate(data)
 
+            l = length(trajectory)
+
             if reduce_size && l > 1000
                 if xscalelog
                     xmin = log10(offset)

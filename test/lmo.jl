@@ -13,6 +13,7 @@ import MathOptInterface as MOI
 import GLPK
 import HiGHS
 import Hypatia
+import SCS
 using JuMP
 
 @testset "Simplex LMOs" begin
@@ -942,7 +943,12 @@ end
     JuMP.set_silent(m)
     optimize!(m)
     xv = JuMP.value.(x)
-    @test dot(xv, d) ≈ dot(v, d) atol = 1e-5 * n
+    dot_xv1 = dot(xv, d)
+    set_optimizer(m, SCS.Optimizer)
+    optimize!(m)
+    xv = JuMP.value.(x)
+    dot_xv2 = dot(xv, d)
+    @test min(abs(dot_xv1 - dot(v, d)), abs(dot_xv2 - dot(v, d))) <= 1e-5 * n
 end
 
 @testset "Convex hull" begin
@@ -1070,5 +1076,33 @@ end
         v = FrankWolfe.compute_extreme_point(lmo_opp,direction)
         v_opp = FrankWolfe.compute_extreme_point(lmo_opp,direction_opp)
         @test v == -1*v_opp
+    end
+end
+
+@testset "Fantope" begin
+    Random.seed!(StableRNG(42), 42)
+    for n in (3, 5)
+        for k in (n-2, n-1)
+            for _ in 1:5
+                lmo = FrankWolfe.FantopeLMO(k)
+                direction = randn(n, n)
+                direction += direction'
+                V = FrankWolfe.compute_extreme_point(lmo, direction)
+                v = FrankWolfe.compute_extreme_point(lmo, vec(direction))
+                @test vec(V) ≈ v
+                o = Hypatia.Optimizer()
+                MOI.set(o, MOI.Silent(), true)
+                optimizer = MOI.Bridges.full_bridge_optimizer(
+                    MOI.Utilities.CachingOptimizer(
+                        MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
+                        o,
+                    ),
+                    Float64,
+                )
+                lmo_moi = FrankWolfe.convert_mathopt(lmo, optimizer; side_dimension=n)
+                v_moi = FrankWolfe.compute_extreme_point(lmo_moi, direction)
+                @test norm(vec(v_moi) - v) ≤ 1e-5 * n^2
+            end
+        end
     end
 end
