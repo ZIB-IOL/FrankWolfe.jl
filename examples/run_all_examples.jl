@@ -1,4 +1,5 @@
 using Random
+using Test
 
 # for bug with display
 ENV["GKSwstype"] = "100"

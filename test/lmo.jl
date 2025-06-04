@@ -11,7 +11,7 @@ import MathOptInterface as MOI
 
 # solvers
 import GLPK
-import Clp
+import HiGHS
 import Hypatia
 using JuMP
 
@@ -588,7 +588,7 @@ end
         n = 5
         o = MOI.Utilities.CachingOptimizer(
             MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
-            Clp.Optimizer(),
+            HiGHS.Optimizer(),
         )
         MOI.set(o, MOI.Silent(), true)
         x = MOI.add_variables(o, 5)
@@ -849,11 +849,11 @@ end
 end
 
 @testset "Copy MathOpt LMO" begin
-    o_clp = MOI.Utilities.CachingOptimizer(
+    o_HiGHS = MOI.Utilities.CachingOptimizer(
         MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
-        Clp.Optimizer(),
+        HiGHS.Optimizer(),
     )
-    for o in (GLPK.Optimizer(), o_clp)
+    for o in (GLPK.Optimizer(), o_HiGHS)
         MOI.set(o, MOI.Silent(), true)
         n = 100
         x = MOI.add_variables(o, n)

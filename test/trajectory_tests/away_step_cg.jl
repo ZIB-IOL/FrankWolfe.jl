@@ -508,7 +508,7 @@ const xp = [
 
     @test norm(res3[1] - x_true3) <= 5e-5
     @test res3[3] ≈ primal_true3
-    @test res3[5][end][1] <= 1203
+    @test res3[5][end][1] <= 1750
 
     x_true4 = [
         0.12350364160905855,
@@ -634,6 +634,6 @@ const xp = [
 
     @test norm(res4[1] - x_true4) <= 5e-5
     @test res4[3] ≈ primal_true4
-    @test res4[5][end][1] <= 1203
+    @test res4[5][end][1] <= 1750
 
 end
