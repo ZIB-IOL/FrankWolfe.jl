@@ -81,7 +81,7 @@ function pairwise_frank_wolfe(
     grad!,
     lmo,
     active_set::AbstractActiveSet{AT,R};
-    line_search::LineSearchMethod=Adaptive(),
+    line_search::LineSearchMethod=Secant(),
     sparsity_control=2.0,
     epsilon=1e-7,
     lazy=false,
