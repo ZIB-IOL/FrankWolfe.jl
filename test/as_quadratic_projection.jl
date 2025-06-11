@@ -130,14 +130,34 @@ x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     callback=build_callback(trajectoryBPCG_quadratic_manual),
 );
 trajectoryBPCG_quadratic_manual_wolfe = []
-x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+x, v, primal_manual_wolfe, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
     active_set_quadratic_manual_wolfe,
     max_iteration=k,
-    callback=build_callback(trajectoryBPCG_quadratic_manual),
+    callback=build_callback(trajectoryBPCG_quadratic_manual_wolfe),
 );
 
 @test length(trajectoryBPCG_quadratic_manual) < 450
 @test length(trajectoryBPCG_quadratic_manual_wolfe) < 450
+
+active_set_quadratic_partial_caching = FrankWolfe.ActiveSetQuadraticLinearSolve(
+    FrankWolfe.ActiveSetPartialCaching([(1.0, copy(x00))], I, 2.0),
+    2.0 * I, -2xp,
+    MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
+    scheduler=FrankWolfe.LogScheduler(start_time=10, scaling_factor=1),
+    wolfe_step=true,
+)
+trajectoryBPCG_quadratic_partial_caching = []
+x, v, primal_partial_caching, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    active_set_quadratic_partial_caching,
+    max_iteration=k,
+    callback=build_callback(trajectoryBPCG_quadratic_partial_caching),
+);
+
+@test length(trajectoryBPCG_quadratic_manual_wolfe) == length(trajectoryBPCG_quadratic_partial_caching)
+@test abs(primal_partial_caching - primal_manual_wolfe) < 1e-10
