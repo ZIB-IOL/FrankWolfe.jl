@@ -5,6 +5,7 @@
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://zib-iol.github.io/FrankWolfe.jl/stable/)
 [![Coverage](https://codecov.io/gh/ZIB-IOL/FrankWolfe.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/ZIB-IOL/FrankWolfe.jl)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.12720673.svg)](https://doi.org/10.5281/zenodo.12720673)
+[![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
 This package is a toolbox for Frank-Wolfe and conditional gradients algorithms.
 
