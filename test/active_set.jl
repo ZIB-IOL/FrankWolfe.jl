@@ -173,6 +173,33 @@ end
         )
         @test number_of_steps == 0
     end
+
+    @testset "Base.copyto! for ActiveSets" begin
+    active_set = ActiveSet([(0.1, [1, 2, 3]), (0.9, [2, 3, 4]), (0.0, [5, 6, 7])])
+    active_set1 = ActiveSet([(0.1, [1, 2, 3]), (0.9, [2, 3, 4]), (0.0, [5, 6, 7])])
+    active_set2 = ActiveSet([(0.3, [-1, -2, -3]), (0.5, [-2, -3, -4]), (0.1, [-5, -6, -7]), (0.1, [-8, -9, -10])])
+    active_set3 = ActiveSet([(0.2, [1, -2, 3]), (0.8, [2, -3, 4])])
+    active_set4 = ActiveSet([(0.4, [10,9,8,7]), (0.6, [9,8,7,6])])
+    active_set5 = ActiveSet([(0.3, [10,9]), (0.7, [9,8])])
+
+    copyto!(active_set,active_set1)
+    @test active_set.weights == [0.1,0.9,0.0]
+    @test active_set.x ≈ [1.9,2.9,3.9] atol = 1e-12
+    @test active_set.atoms == [[1,2,3], [2,3,4], [5,6,7]]
+
+    copyto!(active_set,active_set2)
+    @test active_set.weights == [0.3, 0.5, 0.1, 0.1]
+    @test active_set.x ≈ [-2.6,-3.6,-4.6] atol = 1e-12
+    @test active_set.atoms == [ [-1, -2, -3], [-2, -3, -4], [-5, -6, -7],  [-8, -9, -10]]
+
+    copyto!(active_set,active_set3)
+    @test active_set.weights == [0.2, 0.8]
+    @test active_set.x ≈ [1.8,-2.8,3.8] atol = 1e-12
+    @test active_set.atoms == [[1,-2,3], [2, -3, 4]]
+
+    @test_throws DimensionMismatch copyto!(active_set,active_set4) 
+    @test_throws DimensionMismatch copyto!(active_set,active_set5)
+    end
 end
 
 @testset "LP separation oracle" begin
