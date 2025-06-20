@@ -89,6 +89,28 @@ function Base.copy(as::AbstractActiveSet{AT,R,IT}) where {AT,R,IT}
 end
 
 """
+`Base.copyto!(dest::AbstractActiveSet{AT,R,IT},src::AbstractActiveSet{AT,R,IT})`
+Overwrite the weight and atom vectors and the iterate of `dest`
+by those of `src`. 
+If necessary, resizing of the vectors in `dest.weights` and `dest.atoms` are performed.
+However, if `dest.x` and `src.x` do not have the same size, then a `DimensionMismatch` is thrown.
+"""
+function Base.copyto!(dest::AbstractActiveSet{AT,R,IT},src::AbstractActiveSet{AT,R,IT}) where {AT,R,IT}
+    if size(dest.x) != size(src.x)
+        throw(DimensionMismatch("Different dimensions for x."))
+    end
+    if size(dest) != size(src)
+        s = size(src)[1]
+        resize!(dest.weights,s)
+        resize!(dest.atoms,s)
+    end
+    copyto!(dest.weights,src.weights)
+    copyto!(dest.atoms,src.atoms) 
+    copyto!(dest.x,src.x)
+    return dest
+end
+
+"""
     active_set_update!(active_set::AbstractActiveSet, lambda, atom)
 
 Adds the atom to the active set with weight lambda or adds lambda to existing atom.
