@@ -57,6 +57,8 @@ include("gradient_descent.jl")
 include("corrective_step_interface.jl")
 include("corrective_frankwolfe.jl")
 
+include("second_order_conditional_gradient_sliding_algorithm.jl")
+
 # collecting most common data types etc and precompile
 # min version req set to 1.5 to prevent stalling of julia 1
 @static if VERSION >= v"1.5"
