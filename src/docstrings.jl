@@ -23,7 +23,7 @@ These positional arguments are common to most Frank-Wolfe variants:
 - `f`: a function `f(x)` computing the value of the objective to minimize at point `x`
 - `grad!`: a function `grad!(g, x)` overwriting `g` with the gradient of `f` at point `x`
 - `lmo`: a linear minimization oracle, subtyping [`LinearMinimizationOracle`](@ref)
-- `x0`: a starting point for the optimization
+- `x0`: a starting point for the optimization (will be modified in-place for `frank_wolfe` with `InplaceEmphasis`)
 """
 
 const COMMON_KWARGS = """
