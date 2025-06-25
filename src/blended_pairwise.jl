@@ -78,7 +78,7 @@ function blended_pairwise_conditional_gradient(
     grad!,
     lmo,
     active_set::AbstractActiveSet{AT,R};
-    line_search::LineSearchMethod=Adaptive(),
+    line_search::LineSearchMethod=Secant(),
     epsilon=1e-7,
     max_iteration=10000,
     print_iter=1000,
