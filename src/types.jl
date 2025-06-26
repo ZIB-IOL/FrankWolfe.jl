@@ -140,9 +140,12 @@ function Base.:*(R::RankOneMatrix, v::AbstractVector)
 end
 
 function Base.:*(R::RankOneMatrix, M::AbstractMatrix)
-    temp = R.v' * M
-    return RankOneMatrix(R.u, temp')
+    temp = M' * R.v
+    return RankOneMatrix(R.u, temp)
 end
+
+Base.:*(R::RankOneMatrix, D::LinearAlgebra.Diagonal) = RankOneMatrix(R.u, R.v .* D.diag)
+Base.:*(R::RankOneMatrix, T::LinearAlgebra.AbstractTriangular) = RankOneMatrix(R.u, T' * R.v)
 
 function Base.:*(R1::RankOneMatrix, R2::RankOneMatrix)
     # middle product
