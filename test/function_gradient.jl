@@ -38,14 +38,14 @@ Random.seed!(StableRNG(123), 123)
         @testset "Stochastic function linear regression" begin
             function simple_reg_loss(θ, data_point)
                 (xi, yi) = data_point
-                (a, b) = (θ[1:end-1], θ[end])
+                (a, b) = (θ[1:(end-1)], θ[end])
                 pred = a ⋅ xi + b
                 return (pred - yi)^2 / 2
             end
             function ∇simple_reg_loss(storage, θ, data_point)
                 (xi, yi) = data_point
-                (a, b) = (θ[1:end-1], θ[end])
-                storage[1:end-1] .+= xi * (a ⋅ xi + b - yi)
+                (a, b) = (θ[1:(end-1)], θ[end])
+                storage[1:(end-1)] .+= xi * (a ⋅ xi + b - yi)
                 storage[end] += a ⋅ xi + b - yi
                 return storage
             end

@@ -94,7 +94,7 @@ end
 
     function reset_state()
         gradient .= 0
-        grad!(gradient, a)
+        return grad!(gradient, a)
     end
 
     ls = FrankWolfe.Backtracking()
@@ -128,7 +128,7 @@ end
         FrankWolfe.InplaceEmphasis(),
     )
     @test gamma_secant ≈ 0.5
-    
+
     ls_gr = FrankWolfe.Goldenratio()
     reset_state()
     gamma_gr = @inferred FrankWolfe.perform_line_search(

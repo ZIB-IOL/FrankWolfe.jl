@@ -83,7 +83,8 @@ x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
 
 active_set_quadratic_manual = FrankWolfe.ActiveSetQuadraticLinearSolve(
     FrankWolfe.ActiveSet([(1.0, copy(x000))]),
-    2.0 * I, -2xp,
+    2.0 * I,
+    -2xp,
     MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
     scheduler=FrankWolfe.LogScheduler(start_time=10, scaling_factor=1),
 )
@@ -114,7 +115,8 @@ lmo = FrankWolfe.LpNormLMO{Float64,5}(100.0)
 
 active_set_quadratic_manual_wolfe = FrankWolfe.ActiveSetQuadraticLinearSolve(
     FrankWolfe.ActiveSet([(1.0, copy(x000))]),
-    2.0 * I, -2xp,
+    2.0 * I,
+    -2xp,
     MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
     scheduler=FrankWolfe.LogScheduler(start_time=10, scaling_factor=1),
     wolfe_step=true,

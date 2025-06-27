@@ -248,11 +248,11 @@ end
             @test sum(abs.(v)) ≈ K * τ
             xsort = sort!(10 * rand(n))
             v = compute_extreme_point(lmo, xsort)
-            @test all(iszero, v[1:n-K])
+            @test all(iszero, v[1:(n-K)])
             @test all(abs(vi) ≈ abs(τ * sign(vi)) for vi in v[K:end])
             reverse!(xsort)
             v = compute_extreme_point(lmo, xsort)
-            @test all(iszero, v[K+1:end])
+            @test all(iszero, v[(K+1):end])
             @test all(abs(vi) ≈ abs(τ * sign(vi)) for vi in v[1:K])
         end
     end
@@ -411,7 +411,7 @@ end
     )
     @test 1 - (f(x0) - f(xfin)) / f(x0) < 1e-3
     svals_fin = svdvals(xfin)
-    @test sum(svals_fin[r+1:end]) / sum(svals_fin) ≤ 2e-2
+    @test sum(svals_fin[(r+1):end]) / sum(svals_fin) ≤ 2e-2
     xfin, vmin, _ = FrankWolfe.lazified_conditional_gradient(
         f,
         grad!,
@@ -454,7 +454,7 @@ end
             @testset "Vertex properties" begin
                 eigen_v = eigen(Matrix(v))
                 @test eigmax(Matrix(v)) ≈ radius
-                @test norm(eigen_v.values[1:end-1]) ≈ 0 atol = 1e-7
+                @test norm(eigen_v.values[1:(end-1)]) ≈ 0 atol = 1e-7
                 # u can be sqrt(r) * vec or -sqrt(r) * vec
                 case_pos =
                     ≈(norm(eigen_v.vectors[:, n] * sqrt(eigen_v.values[n]) - v.u), 0, atol=1e-9)
@@ -486,7 +486,7 @@ end
                 else
                     eigen_v = eigen(Matrix(v))
                     @test eigmax(Matrix(v)) ≈ radius
-                    @test norm(eigen_v.values[1:end-1]) ≈ 0 atol = 1e-5
+                    @test norm(eigen_v.values[1:(end-1)]) ≈ 0 atol = 1e-5
                     # u can be sqrt(r) * vec or -sqrt(r) * vec
                     case_pos =
                         ≈(norm(eigen_v.vectors[:, n] * sqrt(eigen_v.values[n]) - v.u), 0, atol=1e-9)
@@ -644,7 +644,7 @@ end
                 continue
             end
             nsuccess += 1
-            v_moi_mat = reshape(v_moi[1:end-1], nrows, ncols)
+            v_moi_mat = reshape(v_moi[1:(end-1)], nrows, ncols)
             @test v_r ≈ v_moi_mat rtol = 1e-2
         end
         @test nsuccess > 1
@@ -982,10 +982,10 @@ end
         scm = typemax(T)
         L = 2^lmo.m
         intax = zeros(Int, lmo.m)
-        for λa3 in 0:(L÷2)-1
+        for λa3 in 0:((L÷2)-1)
             digits!(intax, λa3, base=2)
             ax[3][1:lmo.m] .= 2intax .- 1
-            for λa2 in 0:L-1
+            for λa2 in 0:(L-1)
                 digits!(intax, λa2, base=2)
                 ax[2][1:lmo.m] .= 2intax .- 1
                 for x1 in 1:lmo.m
@@ -1048,33 +1048,33 @@ end
 @testset "Ordered Weighted Norm LMO" begin
     Random.seed!(StableRNG(42), 42)
     N = Int(1e3)
-    for _ in 1:10 
+    for _ in 1:10
         radius = abs(randn())+1
         direction = randn(N)
 
         #norm l1
         weights = ones(N)
-        lmo = FrankWolfe.OrderWeightNormLMO(weights,radius)
+        lmo = FrankWolfe.OrderWeightNormLMO(weights, radius)
         lmo_l1 = FrankWolfe.LpNormLMO{1}(radius)
-        v1 = FrankWolfe.compute_extreme_point(lmo,direction)
-        v2 = FrankWolfe.compute_extreme_point(lmo_l1,direction)
+        v1 = FrankWolfe.compute_extreme_point(lmo, direction)
+        v2 = FrankWolfe.compute_extreme_point(lmo_l1, direction)
         @test v1 == v2
 
         #norm L_∞
         weights = zeros(N)
         weights[1] = 1
-        lmo = FrankWolfe.OrderWeightNormLMO(weights,radius)
+        lmo = FrankWolfe.OrderWeightNormLMO(weights, radius)
         lmo_l_inf = FrankWolfe.LpNormLMO{Inf}(radius)
-        v1 = FrankWolfe.compute_extreme_point(lmo,direction)
-        v2 = FrankWolfe.compute_extreme_point(lmo_l_inf,direction)
+        v1 = FrankWolfe.compute_extreme_point(lmo, direction)
+        v2 = FrankWolfe.compute_extreme_point(lmo_l_inf, direction)
         @test v1 == v2
 
         #symmetry
         direction_opp = -1*direction
         weights = rand(N)
-        lmo_opp = FrankWolfe.OrderWeightNormLMO(weights,radius)
-        v = FrankWolfe.compute_extreme_point(lmo_opp,direction)
-        v_opp = FrankWolfe.compute_extreme_point(lmo_opp,direction_opp)
+        lmo_opp = FrankWolfe.OrderWeightNormLMO(weights, radius)
+        v = FrankWolfe.compute_extreme_point(lmo_opp, direction)
+        v_opp = FrankWolfe.compute_extreme_point(lmo_opp, direction_opp)
         @test v == -1*v_opp
     end
 end

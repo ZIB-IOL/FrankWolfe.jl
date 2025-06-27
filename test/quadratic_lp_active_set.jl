@@ -124,7 +124,8 @@ dual_gaps_quadratic_specialized = getindex.(trajectoryBPCG_quadratic_direct_spec
 dual_gaps_quadratic_generic = getindex.(trajectoryBPCG_quadratic_direct_generic, 4)
 dual_gaps_quadratic_noqas = getindex.(trajectoryBPCG_quadratic_noqas, 4)
 dual_gaps_bpcg = getindex.(trajectoryBPCG_standard, 4)
-dual_gaps_quadratic_direct_product_caching = getindex.(trajectoryBPCG_quadratic_direct_product_caching, 4)
+dual_gaps_quadratic_direct_product_caching =
+    getindex.(trajectoryBPCG_quadratic_direct_product_caching, 4)
 
 
 @test dual_gaps_quadratic_specialized[end] < dual_gaps_bpcg[end]
