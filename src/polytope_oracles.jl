@@ -86,8 +86,7 @@ function compute_extreme_point(
     kwargs...,
 ) where {T}
     n = size(direction, 1)
-    n == size(direction, 2) ||
-        DimensionMismatch("direction should be square")
+    n == size(direction, 2) || DimensionMismatch("direction should be square")
     m = spzeros(Bool, n, n)
     res_mat = Hungarian.munkres(direction)
     (rows, cols, vals) = SparseArrays.findnz(res_mat)
@@ -132,13 +131,18 @@ function is_inface_feasible(::BirkhoffPolytopeLMO, a, x)
     return true
 end
 
-function compute_inface_extreme_point(::BirkhoffPolytopeLMO, direction::AbstractMatrix{T}, x::AbstractMatrix; kwargs...) where {T}
+function compute_inface_extreme_point(
+    ::BirkhoffPolytopeLMO,
+    direction::AbstractMatrix{T},
+    x::AbstractMatrix;
+    kwargs...,
+) where {T}
     n = size(direction, 1)
     fixed_to_one_rows = Int[]
     fixed_to_one_cols = Int[]
     for j in 1:size(direction, 2)
         for i in 1:size(direction, 1)
-            if x[i,j] >= 1 - eps(T)
+            if x[i, j] >= 1 - eps(T)
                 push!(fixed_to_one_rows, i)
                 push!(fixed_to_one_cols, j)
             end
@@ -161,14 +165,14 @@ function compute_inface_extreme_point(::BirkhoffPolytopeLMO, direction::Abstract
             idx_in_map_col += 1
         end
     end
-    d2 = ones(Union{T, Missing}, nreduced, nreduced)
+    d2 = ones(Union{T,Missing}, nreduced, nreduced)
     for j in 1:nreduced
         for i in 1:nreduced
             # interdict arc when fixed to zero
-            if x[i,j] <= eps(T)
-                d2[i,j] = missing
+            if x[i, j] <= eps(T)
+                d2[i, j] = missing
             else
-                d2[i,j] = direction[index_map_rows[i], index_map_cols[j]]
+                d2[i, j] = direction[index_map_rows[i], index_map_cols[j]]
             end
         end
     end
@@ -319,11 +323,16 @@ end
 
 Convex hull of a finite number of vertices of type `AT`, stored in a vector of type `VT`.
 """
-struct ConvexHullOracle{AT, VT <: AbstractVector{AT}} <: LinearMinimizationOracle
+struct ConvexHullOracle{AT,VT<:AbstractVector{AT}} <: LinearMinimizationOracle
     vertices::VT
 end
 
-function compute_extreme_point(lmo::ConvexHullOracle{AT}, direction; v=nothing, kwargs...) where {AT}
+function compute_extreme_point(
+    lmo::ConvexHullOracle{AT},
+    direction;
+    v=nothing,
+    kwargs...,
+) where {AT}
     T = promote_type(eltype(direction), eltype(AT))
     best_val = T(Inf)
     best_vertex = first(lmo.vertices)
@@ -342,20 +351,19 @@ end
 
 {0,1} hypercube polytope.
 """
-struct ZeroOneHypercube
-end
+struct ZeroOneHypercube end
 
 function convert_mathopt(
-	lmo::ZeroOneHypercube,
-	optimizer::OT;
-	dimension::Integer,
-	use_modify = true::Bool,
-	kwargs...,
+    lmo::ZeroOneHypercube,
+    optimizer::OT;
+    dimension::Integer,
+    use_modify=true::Bool,
+    kwargs...,
 ) where {OT}
-	MOI.empty!(optimizer)
-	n = dimension
-	(x, _) = MOI.add_constrained_variables(optimizer, [MOI.Interval(0.0, 1.0) for _ in 1:n])
-	return MathOptLMO(optimizer, use_modify)
+    MOI.empty!(optimizer)
+    n = dimension
+    (x, _) = MOI.add_constrained_variables(optimizer, [MOI.Interval(0.0, 1.0) for _ in 1:n])
+    return MathOptLMO(optimizer, use_modify)
 end
 
 is_decomposition_invariant_oracle(::ZeroOneHypercube) = true

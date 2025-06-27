@@ -152,14 +152,15 @@ function plot_results(
                 end
             end
             if xscale == :log
-                indices = round.(
-                    Int,
-                    10 .^ (range(
-                        log10(1),
-                        log10(length(list_data_x[i][j])),
-                        length=number_markers_per_line,
-                    )),
-                )
+                indices =
+                    round.(
+                        Int,
+                        10 .^ (range(
+                            log10(1),
+                            log10(length(list_data_x[i][j])),
+                            length=number_markers_per_line,
+                        )),
+                    )
                 scatter!(
                     list_data_x[i][j][indices],
                     list_data_y[i][j][indices],
@@ -214,7 +215,7 @@ end
         thresholds = collect(xmin:((xmax-xmin)/(n_markers-1)):xmax)
         indices = [argmin(i -> abs(t - log10(x[i])), eachindex(x)) for t in thresholds]
     else
-        indices = 1:Int(ceil(length(x)/n_markers)):n
+        indices = 1:Int(ceil(length(x) / n_markers)):n
     end
     sx, sy = x[indices], y[indices]
 

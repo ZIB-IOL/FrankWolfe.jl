@@ -234,24 +234,34 @@ Base.@propagate_inbounds function Base.isequal(a::RankOneMatrix, b::RankOneMatri
     return true
 end
 
-Base.@propagate_inbounds function muladd_memory_mode(::InplaceEmphasis, d::Matrix, x::Union{RankOneMatrix, Matrix}, v::RankOneMatrix)
+Base.@propagate_inbounds function muladd_memory_mode(
+    ::InplaceEmphasis,
+    d::Matrix,
+    x::Union{RankOneMatrix,Matrix},
+    v::RankOneMatrix,
+)
     @boundscheck size(d) == size(x) || throw(DimensionMismatch())
     @boundscheck size(d) == size(v) || throw(DimensionMismatch())
     m, n = size(d)
     @inbounds for j in 1:n
         for i in 1:m
-            d[i,j] = x[i,j] - v[i,j]
+            d[i, j] = x[i, j] - v[i, j]
         end
     end
     return d
 end
 
-Base.@propagate_inbounds function muladd_memory_mode(::InplaceEmphasis, x::Matrix, gamma::Real, d::RankOneMatrix)
+Base.@propagate_inbounds function muladd_memory_mode(
+    ::InplaceEmphasis,
+    x::Matrix,
+    gamma::Real,
+    d::RankOneMatrix,
+)
     @boundscheck size(d) == size(x) || throw(DimensionMismatch())
     m, n = size(x)
     @inbounds for j in 1:n
         for i in 1:m
-            x[i,j] -= gamma * d[i,j]
+            x[i, j] -= gamma * d[i, j]
         end
     end
     return x
@@ -294,8 +304,10 @@ Base.size(A::SubspaceVector) = size(A.vec)
 Base.eltype(A::SubspaceVector) = eltype(A.vec)
 Base.similar(A::SubspaceVector{true}) = SubspaceVector(similar(A.data), similar(A.vec), A.mul)
 Base.similar(A::SubspaceVector{false}) = SubspaceVector(similar(A.data), similar(A.vec))
-Base.similar(A::SubspaceVector{true}, ::Type{T}) where {T} = SubspaceVector(similar(A.data, T), similar(A.vec, T), convert(Vector{T}, A.mul))
-Base.similar(A::SubspaceVector{false}, ::Type{T}) where {T} = SubspaceVector(similar(A.data, T), similar(A.vec, T))
+Base.similar(A::SubspaceVector{true}, ::Type{T}) where {T} =
+    SubspaceVector(similar(A.data, T), similar(A.vec, T), convert(Vector{T}, A.mul))
+Base.similar(A::SubspaceVector{false}, ::Type{T}) where {T} =
+    SubspaceVector(similar(A.data, T), similar(A.vec, T))
 Base.collect(A::SubspaceVector{true}) = SubspaceVector(collect(A.data), collect(A.vec), A.mul)
 Base.collect(A::SubspaceVector{false}) = SubspaceVector(collect(A.data), collect(A.vec))
 Base.copyto!(dest::SubspaceVector, src::SubspaceVector) = copyto!(dest.vec, src.vec)
@@ -303,15 +315,21 @@ Base.:*(scalar::Real, A::SubspaceVector{true}) = SubspaceVector(A.data, scalar *
 Base.:*(scalar::Real, A::SubspaceVector{false}) = SubspaceVector(A.data, scalar * A.vec)
 Base.:*(A::SubspaceVector, scalar::Real) = scalar * A
 Base.:/(A::SubspaceVector, scalar::Real) = inv(scalar) * A
-Base.:+(A1::SubspaceVector{true,T}, A2::SubspaceVector{true,T}) where {T} = SubspaceVector(A1.data, A1.vec + A2.vec, A1.mul)
-Base.:+(A1::SubspaceVector{false,T}, A2::SubspaceVector{false,T}) where {T} = SubspaceVector(A1.data, A1.vec + A2.vec)
-Base.:-(A1::SubspaceVector{true,T}, A2::SubspaceVector{true,T}) where {T} = SubspaceVector(A1.data, A1.vec - A2.vec, A1.mul)
-Base.:-(A1::SubspaceVector{false,T}, A2::SubspaceVector{false,T}) where {T} = SubspaceVector(A1.data, A1.vec - A2.vec)
+Base.:+(A1::SubspaceVector{true,T}, A2::SubspaceVector{true,T}) where {T} =
+    SubspaceVector(A1.data, A1.vec + A2.vec, A1.mul)
+Base.:+(A1::SubspaceVector{false,T}, A2::SubspaceVector{false,T}) where {T} =
+    SubspaceVector(A1.data, A1.vec + A2.vec)
+Base.:-(A1::SubspaceVector{true,T}, A2::SubspaceVector{true,T}) where {T} =
+    SubspaceVector(A1.data, A1.vec - A2.vec, A1.mul)
+Base.:-(A1::SubspaceVector{false,T}, A2::SubspaceVector{false,T}) where {T} =
+    SubspaceVector(A1.data, A1.vec - A2.vec)
 Base.:-(A::SubspaceVector{true,T}) where {T} = SubspaceVector(A.data, -A.vec, A.mul)
 Base.:-(A::SubspaceVector{false,T}) where {T} = SubspaceVector(A.data, -A.vec)
 
-LinearAlgebra.dot(A1::SubspaceVector{true}, A2::SubspaceVector{true}) = dot(A1.vec, Diagonal(A1.mul), A2.vec)
+LinearAlgebra.dot(A1::SubspaceVector{true}, A2::SubspaceVector{true}) =
+    dot(A1.vec, Diagonal(A1.mul), A2.vec)
 LinearAlgebra.dot(A1::SubspaceVector{false}, A2::SubspaceVector{false}) = dot(A1.vec, A2.vec)
 LinearAlgebra.norm(A::SubspaceVector) = sqrt(dot(A, A))
 
-Base.@propagate_inbounds Base.isequal(A1::SubspaceVector, A2::SubspaceVector) = isequal(A1.vec, A2.vec)
+Base.@propagate_inbounds Base.isequal(A1::SubspaceVector, A2::SubspaceVector) =
+    isequal(A1.vec, A2.vec)

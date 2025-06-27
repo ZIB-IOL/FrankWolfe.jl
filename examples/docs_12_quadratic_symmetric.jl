@@ -76,8 +76,8 @@ function FrankWolfe.compute_extreme_point(
         end
     end
     return [
-        axm[1][x1]*axm[2][x2]*axm[3][x3]*axm[4][x4]*axm[5][x5] for
-        x1 in 1:lmo.m, x2 in 1:lmo.m, x3 in 1:lmo.m, x4 in 1:lmo.m, x5 in 1:lmo.m
+        axm[1][x1] * axm[2][x2] * axm[3][x3] * axm[4][x4] * axm[5][x5] for x1 in 1:lmo.m,
+        x2 in 1:lmo.m, x3 in 1:lmo.m, x4 in 1:lmo.m, x5 in 1:lmo.m
     ]
 end
 
@@ -85,9 +85,9 @@ end
 # See [this article](https://arxiv.org/abs/2310.20677) for definitions and references.
 
 function correlation_tensor_GHZ_polygon(::Type{T}, N::Int, m::Int) where {T<:Number}
-    res = zeros(T, m*ones(Int, N)...)
-    tab_cos = [cos(x*T(pi)/m) for x in 0:(N*m)]
-    tab_cos[abs.(tab_cos) .< Base.rtoldefault(T)] .= zero(T)
+    res = zeros(T, m * ones(Int, N)...)
+    tab_cos = [cos(x * T(pi) / m) for x in 0:(N*m)]
+    tab_cos[abs.(tab_cos).<Base.rtoldefault(T)] .= zero(T)
     for ci in CartesianIndices(res)
         res[ci] = tab_cos[sum(ci.I)-N+1]
     end
@@ -247,7 +247,7 @@ println() #hide
 
 function build_reynolds_unique(p::Array{T,N}) where {T<:Number,N}
     ptol = round.(p; digits=8)
-    ptol[ptol .== zero(T)] .= zero(T) # transform -0.0 into 0.0 as isequal(0.0, -0.0) is false
+    ptol[ptol.==zero(T)] .= zero(T) # transform -0.0 into 0.0 as isequal(0.0, -0.0) is false
     uniquetol = unique(ptol[:])
     indices = [ptol .== u for u in uniquetol]
     return function (A::Array{T,N}, lmo)
@@ -296,7 +296,7 @@ println() #hide
 
 function build_deflate_inflate(p::Array{T,N}) where {T<:Number,N}
     ptol = round.(p; digits=8)
-    ptol[ptol .== zero(T)] .= zero(T) # transform -0.0 into 0.0 as isequal(0.0, -0.0) is false
+    ptol[ptol.==zero(T)] .= zero(T) # transform -0.0 into 0.0 as isequal(0.0, -0.0) is false
     uniquetol = unique(ptol[:])
     dim = length(uniquetol) # reduced dimension
     indices = [ptol .== u for u in uniquetol]

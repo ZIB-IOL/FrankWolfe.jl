@@ -83,13 +83,13 @@ Note: This methodology is currently only proven to work
 with 'FrankWolfe.Shortstep' linesearches and a (not-yet
 implemented) adaptive method; see the article for details.
 """
-struct LazyUpdate <: BlockCoordinateUpdateOrder 
+struct LazyUpdate <: BlockCoordinateUpdateOrder
     lazy_block::Int
     refresh_rate::Int
     block_size::Int
 end
 
-function LazyUpdate(lazy_block::Int,refresh_rate::Int)
+function LazyUpdate(lazy_block::Int, refresh_rate::Int)
     return LazyUpdate(lazy_block, refresh_rate, 1)
 end
 
@@ -106,11 +106,11 @@ function select_update_indices(u::CyclicUpdate, s::CallbackState, _)
 
     if u.limit in [-1, l]
         return [[i] for i in 1:l]
-    end 
+    end
 
-    start = (s.t*u.limit % l) + 1
+    start = (s.t * u.limit % l) + 1
     if start + u.limit - 1 ≤ l
-        return [[i] for i in start:start + u.limit - 1]
+        return [[i] for i in start:start+u.limit-1]
     else
         a = [[i] for i in start:l]
         append!(a, [[i] for i in 1:u.limit-length(a)])
@@ -124,7 +124,7 @@ function select_update_indices(u::StochasticUpdate, s::CallbackState, _)
 
     @assert u.limit <= l
     @assert u.limit > 0 || u.limit == -1
-    
+
     if u.limit == -1
         return [[rand(1:l)] for i in 1:l]
     end
@@ -154,7 +154,7 @@ function select_update_indices(u::DualProgressOrder, s::CallbackState, dual_gaps
     # In the first two iterations update every block so we get finite dual progress
     if s.t < 2
         u.dual_progress = ones(l)
-        indices = [[i for i=1:l]]
+        indices = [[i for i in 1:l]]
     else
         # Update dual progress only on updated blocks
         for i in u.last_indices
@@ -169,7 +169,7 @@ function select_update_indices(u::DualProgressOrder, s::CallbackState, dual_gaps
 
         # If less than n blocks have non-zero dual progress, update all of them
         if sum(u.dual_progress .!= 0) < n
-            indices = [[i for i=1:l]]
+            indices = [[i for i in 1:l]]
         else
             indices = [sample_without_replacement(n, u.dual_progress)]
         end
@@ -188,7 +188,7 @@ function select_update_indices(u::DualGapOrder, s::CallbackState, dual_gaps)
 
     # In the first iteration update every block so we get finite dual gaps
     if s.t < 1
-        return [[i for i=1:l]]
+        return [[i for i in 1:l]]
     end
 
     n = u.limit == -1 ? l : u.limit
@@ -201,7 +201,13 @@ function select_update_indices(update::LazyUpdate, s::CallbackState, dual_gaps)
     #occur, then adds an update of everything while mainting
     #randomized order.
     l = length(s.lmo.lmos)
-    return push!([[rand(range(1,l)[1:l .!= update.lazy_block]) for _ in range(1,update.block_size)] for _ in 1:(update.refresh_rate -1)], range(1,l))
+    return push!(
+        [
+            [rand(range(1, l)[1:l.!=update.lazy_block]) for _ in range(1, update.block_size)] for
+            _ in 1:(update.refresh_rate-1)
+        ],
+        range(1, l),
+    )
 end
 
 """
@@ -275,7 +281,13 @@ function Base.copy(obj::BPCGStep)
     if obj.active_set === nothing
         return BPCGStep(obj.lazy, nothing, obj.renorm_interval, obj.sparsity_control, obj.phi)
     else
-        return BPCGStep(obj.lazy, copy(obj.active_set), obj.renorm_interval, obj.sparsity_control, obj.phi)
+        return BPCGStep(
+            obj.lazy,
+            copy(obj.active_set),
+            obj.renorm_interval,
+            obj.sparsity_control,
+            obj.phi,
+        )
     end
 end
 

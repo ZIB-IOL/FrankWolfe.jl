@@ -39,9 +39,9 @@ function build_data(m; seed=nothing)
     if seed != nothing
         rng = StableRNG(seed)
     end
-    n = Int(floor(m/10))
+    n = Int(floor(m / 10))
     B = rand(m, n)
-    B = B'*B
+    B = B' * B
     @assert isposdef(B)
     D = MvNormal(randn(n), B)
 
@@ -81,7 +81,7 @@ positive definite.
 function build_domain_oracle(A)
     m, n = size(A)
     return function domain_oracle(x)
-        S = findall(x->!iszero(x), x)
+        S = findall(x -> !iszero(x), x)
         #@show rank(A[S,:]) == n
         return rank(A[S, :]) == n #&& sum(x .< 0) == 0 
     end
@@ -95,8 +95,8 @@ function linearly_independent_rows(A)
     m, n = size(A)
     for i in 1:m
         S_i = vcat(S, i)
-        if rank(A[S_i, :])==length(S_i)
-            S=S_i
+        if rank(A[S_i, :]) == length(S_i)
+            S = S_i
         end
         if length(S) == n # we only n linearly independent points
             return S
@@ -122,8 +122,8 @@ function build_start_point(A)
         push!(V, v)
     end
 
-    x = SparseArrays.SparseVector(sum(V .* 1/n))
-    active_set = FrankWolfe.ActiveSet(fill(1/n, n), V, x)
+    x = SparseArrays.SparseVector(sum(V .* 1 / n))
+    active_set = FrankWolfe.ActiveSet(fill(1 / n, n), V, x)
 
     return x, active_set, S
 end
@@ -134,23 +134,23 @@ Build function for the A-criterion.
 """
 function build_a_criterion(A; μ=0.0, build_safe=true)
     m, n = size(A)
-    a=m
+    a = m
     domain_oracle = build_domain_oracle(A)
 
     function f_a(x)
-        X = transpose(A)*diagm(x)*A + Matrix(μ * I, n, n)
+        X = transpose(A) * diagm(x) * A + Matrix(μ * I, n, n)
         X = Symmetric(X)
         U = cholesky(X)
         X_inv = U \ I
-        return LinearAlgebra.tr(X_inv)/a
+        return LinearAlgebra.tr(X_inv) / a
     end
 
     function grad_a!(storage, x)
-        X = transpose(A)*diagm(x)*A + Matrix(μ * I, n, n)
-        X = Symmetric(X*X)
+        X = transpose(A) * diagm(x) * A + Matrix(μ * I, n, n)
+        X = Symmetric(X * X)
         F = cholesky(X)
         for i in 1:length(x)
-            storage[i] = LinearAlgebra.tr(- (F \ A[i, :]) * transpose(A[i, :]))/a
+            storage[i] = LinearAlgebra.tr(-(F \ A[i, :]) * transpose(A[i, :])) / a
         end
         return storage #float.(storage) # in case of x .= BigFloat(x)
     end
@@ -159,10 +159,10 @@ function build_a_criterion(A; μ=0.0, build_safe=true)
         if !domain_oracle(x)
             return Inf
         end
-        X = transpose(A)*diagm(x)*A + Matrix(μ * I, n, n)
+        X = transpose(A) * diagm(x) * A + Matrix(μ * I, n, n)
         X = Symmetric(X)
         X_inv = LinearAlgebra.inv(X)
-        return LinearAlgebra.tr(X_inv)/a
+        return LinearAlgebra.tr(X_inv) / a
     end
 
     function grad_a_safe!(storage, x)
@@ -170,11 +170,11 @@ function build_a_criterion(A; μ=0.0, build_safe=true)
             return fill(Inf, length(x))
         end
         #x = BigFloat.(x) # Setting can be useful for numerical tricky problems
-        X = transpose(A)*diagm(x)*A + Matrix(μ * I, n, n)
-        X = Symmetric(X*X)
+        X = transpose(A) * diagm(x) * A + Matrix(μ * I, n, n)
+        X = Symmetric(X * X)
         F = cholesky(X)
         for i in 1:length(x)
-            storage[i] = LinearAlgebra.tr(- (F \ A[i, :]) * transpose(A[i, :]))/a
+            storage[i] = LinearAlgebra.tr(-(F \ A[i, :]) * transpose(A[i, :])) / a
         end
         return storage #float.(storage) # in case of x .= BigFloat(x)
     end
@@ -192,21 +192,21 @@ Build function for the D-criterion.
 """
 function build_d_criterion(A; μ=0.0, build_safe=true)
     m, n = size(A)
-    a=m
+    a = m
     domain_oracle = build_domain_oracle(A)
 
     function f_d(x)
-        X = transpose(A)*diagm(x)*A + Matrix(μ * I, n, n)
+        X = transpose(A) * diagm(x) * A + Matrix(μ * I, n, n)
         X = Symmetric(X)
-        return -log(det(X))/a
+        return -log(det(X)) / a
     end
 
     function grad_d!(storage, x)
-        X = transpose(A)*diagm(x)*A + Matrix(μ * I, n, n)
+        X = transpose(A) * diagm(x) * A + Matrix(μ * I, n, n)
         X = Symmetric(X)
         F = cholesky(X)
         for i in 1:length(x)
-            storage[i] = 1/a * LinearAlgebra.tr(-(F \ A[i, :])*transpose(A[i, :]))
+            storage[i] = 1 / a * LinearAlgebra.tr(-(F \ A[i, :]) * transpose(A[i, :]))
         end
         # https://stackoverflow.com/questions/46417005/exclude-elements-of-array-based-on-index-julia
         return storage
@@ -216,20 +216,20 @@ function build_d_criterion(A; μ=0.0, build_safe=true)
         if !domain_oracle(x)
             return Inf
         end
-        X = transpose(A)*diagm(x)*A + Matrix(μ * I, n, n)
+        X = transpose(A) * diagm(x) * A + Matrix(μ * I, n, n)
         X = Symmetric(X)
-        return -log(det(X))/a
+        return -log(det(X)) / a
     end
 
     function grad_d_safe!(storage, x)
         if !domain_oracle(x)
             return fill(Inf, length(x))
         end
-        X = transpose(A)*diagm(x)*A + Matrix(μ * I, n, n)
+        X = transpose(A) * diagm(x) * A + Matrix(μ * I, n, n)
         X = Symmetric(X)
         F = cholesky(X)
         for i in 1:length(x)
-            storage[i] = 1/a * LinearAlgebra.tr(-(F \ A[i, :])*transpose(A[i, :]))
+            storage[i] = 1 / a * LinearAlgebra.tr(-(F \ A[i, :]) * transpose(A[i, :]))
         end
         # https://stackoverflow.com/questions/46417005/exclude-elements-of-array-based-on-index-julia
         return storage

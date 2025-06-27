@@ -405,7 +405,7 @@ using LinearAlgebra
     @test res4[3] ≈ primal_true
     @test res4[5][end][1] == 101
 
-    @test res4_adaptive[3] ≈ 0.01 atol=1e-8
+    @test res4_adaptive[3] ≈ 0.01 atol = 1e-8
     @test res4_adaptive[5][end][1] == 122
 
 end

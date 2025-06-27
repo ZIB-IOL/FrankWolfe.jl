@@ -41,7 +41,7 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
         grad!,
         (lmo_nb, lmo_prob),
         ones(n),
-        lambda=1/6,
+        lambda=1 / 6,
         line_search=FrankWolfe.Adaptive(relaxed_smoothness=true),
     )
 
@@ -54,7 +54,7 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
         grad!,
         (lmo_nb, lmo_prob),
         ones(n),
-        lambda=1/18,
+        lambda=1 / 18,
         line_search=FrankWolfe.Adaptive(relaxed_smoothness=true),
     )
 

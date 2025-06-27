@@ -1049,7 +1049,7 @@ end
     Random.seed!(StableRNG(42), 42)
     N = Int(1e3)
     for _ in 1:10
-        radius = abs(randn())+1
+        radius = abs(randn()) + 1
         direction = randn(N)
 
         #norm l1
@@ -1070,19 +1070,19 @@ end
         @test v1 == v2
 
         #symmetry
-        direction_opp = -1*direction
+        direction_opp = -1 * direction
         weights = rand(N)
         lmo_opp = FrankWolfe.OrderWeightNormLMO(weights, radius)
         v = FrankWolfe.compute_extreme_point(lmo_opp, direction)
         v_opp = FrankWolfe.compute_extreme_point(lmo_opp, direction_opp)
-        @test v == -1*v_opp
+        @test v == -1 * v_opp
     end
 end
 
 @testset "Fantope" begin
     Random.seed!(StableRNG(42), 42)
     for n in (3, 5)
-        for k in (n-2, n-1)
+        for k in (n - 2, n - 1)
             for _ in 1:5
                 lmo = FrankWolfe.FantopeLMO(k)
                 direction = randn(n, n)

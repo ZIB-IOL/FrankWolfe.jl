@@ -6,7 +6,7 @@ Abstract type for an active set of atoms of type `AT` with weights of type `R` a
 An active set is typically expected to have a field `weights`, a field `atoms`, and a field `x`.
 Otherwise, all active set methods from `src/active_set.jl` can be overwritten.
 """
-abstract type AbstractActiveSet{AT, R <: Real, IT} <: AbstractVector{Tuple{R,AT}} end
+abstract type AbstractActiveSet{AT,R<:Real,IT} <: AbstractVector{Tuple{R,AT}} end
 
 """
     ActiveSet{AT, R, IT}
@@ -16,7 +16,7 @@ along with their coefficients `(λ_i, a_i)`.
 `R` is the type of the `λ_i`, `AT` is the type of the atoms `a_i`.
 The iterate `x = ∑λ_i a_i` is stored in x with type `IT`.
 """
-struct ActiveSet{AT, R <: Real, IT} <: AbstractActiveSet{AT,R,IT}
+struct ActiveSet{AT,R<:Real,IT} <: AbstractActiveSet{AT,R,IT}
     weights::Vector{R}
     atoms::Vector{AT}
     x::IT
@@ -58,7 +58,7 @@ end
 function Base.deleteat!(as::AbstractActiveSet, idx)
     # WARNING assumes that idx is sorted
     for (i, j) in enumerate(idx)
-        deleteat!(as, j-i+1)
+        deleteat!(as, j - i + 1)
     end
     return as
 end
@@ -95,7 +95,10 @@ Adds the atom to the active set with weight lambda or adds lambda to existing at
 """
 function active_set_update!(
     active_set::AbstractActiveSet{AT,R},
-    lambda, atom, renorm=true, idx=nothing;
+    lambda,
+    atom,
+    renorm=true,
+    idx=nothing;
     weight_purge_threshold=weight_purge_threshold_default(R),
     add_dropped_vertices=false,
     vertex_storage=nothing,
@@ -112,8 +115,15 @@ function active_set_update!(
         push!(active_set, (lambda, atom))
     end
     if renorm
-        add_dropped_vertices = add_dropped_vertices ? vertex_storage !== nothing : add_dropped_vertices
-        active_set_cleanup!(active_set; weight_purge_threshold=weight_purge_threshold, update=false, add_dropped_vertices=add_dropped_vertices, vertex_storage=vertex_storage)
+        add_dropped_vertices =
+            add_dropped_vertices ? vertex_storage !== nothing : add_dropped_vertices
+        active_set_cleanup!(
+            active_set;
+            weight_purge_threshold=weight_purge_threshold,
+            update=false,
+            add_dropped_vertices=add_dropped_vertices,
+            vertex_storage=vertex_storage,
+        )
         active_set_renormalize!(active_set)
     end
     active_set_update_scale!(active_set.x, lambda, atom)
@@ -187,7 +197,7 @@ end
 Adds `lambda` to the weight of the `i`th atom in `active_set`.
 """
 function active_set_add_weight!(active_set::AbstractActiveSet, lambda::Real, i::Integer)
-    active_set.weights[i] += lambda
+    return active_set.weights[i] += lambda
 end
 
 """
@@ -195,7 +205,12 @@ end
 
 Operates `x ← x + λ a_fw - λ a_aw`.
 """
-function active_set_update_iterate_pairwise!(x::IT, lambda::Real, fw_atom::A, away_atom::A) where {IT, A}
+function active_set_update_iterate_pairwise!(
+    x::IT,
+    lambda::Real,
+    fw_atom::A,
+    away_atom::A,
+) where {IT,A}
     @. x += lambda * fw_atom - lambda * away_atom
     return x
 end
@@ -255,7 +270,9 @@ function compute_active_set_iterate!(active_set::AbstractActiveSet{<:SparseArray
     return active_set.x
 end
 
-function compute_active_set_iterate!(active_set::FrankWolfe.ActiveSet{<:SparseArrays.AbstractSparseMatrix})
+function compute_active_set_iterate!(
+    active_set::FrankWolfe.ActiveSet{<:SparseArrays.AbstractSparseMatrix},
+)
     active_set.x .= 0
     for (λi, ai) in active_set
         (I, J, V) = SparseArrays.findnz(ai)
@@ -281,7 +298,10 @@ function active_set_cleanup!(
         end
     end
     # one cannot use a generator as deleteat! modifies active_set in place
-    deleteat!(active_set, [idx for idx in eachindex(active_set) if active_set.weights[idx] ≤ weight_purge_threshold])
+    deleteat!(
+        active_set,
+        [idx for idx in eachindex(active_set) if active_set.weights[idx] ≤ weight_purge_threshold],
+    )
     if update
         compute_active_set_iterate!(active_set)
     end
@@ -314,7 +334,9 @@ function active_set_argmin(active_set::AbstractActiveSet, direction)
         end
     end
     if idxm == -1
-        error("Infinite minimum $valm in the active set. Does the gradient contain invalid (NaN / Inf) entries?")
+        error(
+            "Infinite minimum $valm in the active set. Does the gradient contain invalid (NaN / Inf) entries?",
+        )
     end
     return (active_set[idxm]..., idxm)
 end
@@ -342,7 +364,9 @@ function active_set_argminmax(active_set::AbstractActiveSet, direction; Φ=0.5)
         end
     end
     if idxm == -1 || idxM == -1
-        error("Infinite minimum $valm or maximum $valM in the active set. Does the gradient contain invalid (NaN / Inf) entries?")
+        error(
+            "Infinite minimum $valm or maximum $valM in the active set. Does the gradient contain invalid (NaN / Inf) entries?",
+        )
     end
     return (active_set[idxm]..., idxm, valm, active_set[idxM]..., idxM, valM, valM - valm ≥ Φ)
 end
@@ -359,7 +383,9 @@ function active_set_initialize!(as::AbstractActiveSet{AT,R}, v) where {AT,R}
     return as
 end
 
-function compute_active_set_iterate!(active_set::AbstractActiveSet{<:ScaledHotVector, <:Real, <:AbstractVector})
+function compute_active_set_iterate!(
+    active_set::AbstractActiveSet{<:ScaledHotVector,<:Real,<:AbstractVector},
+)
     active_set.x .= 0
     @inbounds for (λi, ai) in active_set
         active_set.x[ai.val_idx] += λi * ai.active_val
@@ -368,5 +394,5 @@ function compute_active_set_iterate!(active_set::AbstractActiveSet{<:ScaledHotVe
 end
 
 function update_weights!(as::AbstractActiveSet, new_weights)
-    as.weights .= new_weights
+    return as.weights .= new_weights
 end

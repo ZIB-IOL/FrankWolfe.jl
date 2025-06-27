@@ -279,8 +279,12 @@ struct SubspaceLMO{LMO<:LinearMinimizationOracle,TD,TI} <: LinearMinimizationOra
     lmo::LMO
     deflate::TD
     inflate::TI
-    function SubspaceLMO(lmo::LMO, deflate, inflate=(x, lmo) -> x) where {LMO<:LinearMinimizationOracle}
-        return new{typeof(lmo),typeof(deflate),typeof(inflate)}( lmo, deflate, inflate)
+    function SubspaceLMO(
+        lmo::LMO,
+        deflate,
+        inflate=(x, lmo) -> x,
+    ) where {LMO<:LinearMinimizationOracle}
+        return new{typeof(lmo),typeof(deflate),typeof(inflate)}(lmo, deflate, inflate)
     end
 end
 

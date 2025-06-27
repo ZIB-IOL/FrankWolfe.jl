@@ -66,11 +66,11 @@ is_decomposition_invariant_oracle(::UnitSimplexOracle) = true
 
 function is_inface_feasible(lmo::UnitSimplexOracle{T}, a, x) where {T}
     for idx in eachindex(x)
-        if x[idx] ≈ lmo.right_side && a[idx] ≉  lmo.right_side
+        if x[idx] ≈ lmo.right_side && a[idx] ≉ lmo.right_side
             return false
-        elseif x[idx] ≈ 0.0 && a[idx] ≉  0.0
+        elseif x[idx] ≈ 0.0 && a[idx] ≉ 0.0
             return false
-        elseif sum(x) ≈ lmo.right_side && sum(a) ≉  lmo.right_side
+        elseif sum(x) ≈ lmo.right_side && sum(a) ≉ lmo.right_side
             return false
         end
     end
@@ -178,7 +178,7 @@ is_decomposition_invariant_oracle(::ProbabilitySimplexOracle) = true
 
 function is_inface_feasible(lmo::ProbabilitySimplexOracle, a, x)
     for idx in eachindex(x)
-        if (x[idx] ≈ lmo.right_side && a[idx] ≉  lmo.right_side) || (x[idx] ≈ 0.0 && a[idx] ≉  0.0)
+        if (x[idx] ≈ lmo.right_side && a[idx] ≉ lmo.right_side) || (x[idx] ≈ 0.0 && a[idx] ≉ 0.0)
             return false
         end
     end

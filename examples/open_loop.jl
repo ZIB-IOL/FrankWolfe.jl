@@ -10,7 +10,7 @@ s = 97
 @info "Seed $s"
 Random.seed!(s)
 
-epsilon=1e-10
+epsilon = 1e-10
 
 # strongly convex set
 xp2 = 10 * ones(n)

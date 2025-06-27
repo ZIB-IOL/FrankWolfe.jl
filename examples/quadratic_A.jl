@@ -42,7 +42,7 @@ end
 
 lmo = FrankWolfe.LpNormLMO{T,2}(1.05 * norm(params_perfect))
 
-x0 = FrankWolfe.compute_extreme_point(lmo, zeros(T, n+1))
+x0 = FrankWolfe.compute_extreme_point(lmo, zeros(T, n + 1))
 
 # standard active set
 # active_set = FrankWolfe.ActiveSet([(1.0, x0)])

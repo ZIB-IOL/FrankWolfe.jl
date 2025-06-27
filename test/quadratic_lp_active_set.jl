@@ -102,7 +102,7 @@ x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
 );
 
 as_quad_direct_product_caching = FrankWolfe.ActiveSetQuadraticLinearSolve(
-    FrankWolfe.ActiveSetQuadraticProductCaching([(1.0, copy(x00))], 2*LinearAlgebra.I, -2xp),
+    FrankWolfe.ActiveSetQuadraticProductCaching([(1.0, copy(x00))], 2 * LinearAlgebra.I, -2xp),
     2 * LinearAlgebra.I,
     -2xp,
     MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),

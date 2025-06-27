@@ -44,13 +44,13 @@ function FrankWolfe.compute_extreme_point(
         end
     end
     # returning a full tensor is naturally naive, but this is only a toy example
-    return [axm[1][x1]*axm[2][x2] for x1 in 1:lmo.m, x2 in 1:lmo.m]
+    return [axm[1][x1] * axm[2][x2] for x1 in 1:lmo.m, x2 in 1:lmo.m]
 end
 
 function correlation_tensor_GHZ_polygon(N::Int, m::Int; type=Float64)
-    res = zeros(type, m*ones(Int, N)...)
-    tab_cos = [cos(x*type(pi)/m) for x in 0:(N*m)]
-    tab_cos[abs.(tab_cos) .< Base.rtoldefault(type)] .= zero(type)
+    res = zeros(type, m * ones(Int, N)...)
+    tab_cos = [cos(x * type(pi) / m) for x in 0:(N*m)]
+    tab_cos[abs.(tab_cos).<Base.rtoldefault(type)] .= zero(type)
     for ci in CartesianIndices(res)
         res[ci] = tab_cos[sum(ci.I)-N+1]
     end

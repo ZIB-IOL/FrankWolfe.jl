@@ -59,7 +59,13 @@ is_decomposition_invariant_oracle(::MathOptLMO) = true
 """
 Copy and modify the constriants if necesssary for computing in-face vertex.
 """
-function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x; solve_data=Dict(), kwargs...) where {OT}
+function compute_inface_extreme_point(
+    lmo::MathOptLMO{OT},
+    direction,
+    x;
+    solve_data=Dict(),
+    kwargs...,
+) where {OT}
     dims = size(direction)
     lmo2 = copy(lmo)
     MOI.set(lmo2.o, MOI.Silent(), true)
@@ -93,27 +99,33 @@ function compute_inface_extreme_point(lmo::MathOptLMO{OT}, direction, x; solve_d
 end
 
 function compute_inface_extreme_point(
-	lmo::MathOptLMO{OT},
-	direction::AbstractMatrix{T},
-	x::AbstractMatrix{T};
-	kwargs...,
-) where {OT, T <: Real}
-	n = size(direction, 1)
-	a = compute_inface_extreme_point(lmo, vec(direction), vec(x))
-	return reshape(a, n, n)
+    lmo::MathOptLMO{OT},
+    direction::AbstractMatrix{T},
+    x::AbstractMatrix{T};
+    kwargs...,
+) where {OT,T<:Real}
+    n = size(direction, 1)
+    a = compute_inface_extreme_point(lmo, vec(direction), vec(x))
+    return reshape(a, n, n)
 end
 
 """
 function barrier for performance
 """
-function compute_inface_extreme_point_subroutine(lmo::MathOptLMO{OT}, ::Type{F}, ::Type{S}, valvar;atol=1e-6) where {OT,F,S}
+function compute_inface_extreme_point_subroutine(
+    lmo::MathOptLMO{OT},
+    ::Type{F},
+    ::Type{S},
+    valvar;
+    atol=1e-6,
+) where {OT,F,S}
     const_list = MOI.get(lmo.o, MOI.ListOfConstraintIndices{F,S}())
     for c_idx in const_list
         func = MOI.get(lmo.o, MOI.ConstraintFunction(), c_idx)
         val = MOIU.eval_variables(valvar, func)
         set = MOI.get(lmo.o, MOI.ConstraintSet(), c_idx)
         if S <: MOI.GreaterThan
-            if isapprox(set.lower, val; atol = atol)
+            if isapprox(set.lower, val; atol=atol)
                 MOI.delete(lmo.o, c_idx)
                 if F <: MOI.VariableIndex
                     check_cidx = MOI.ConstraintIndex{F,MOI.LessThan{Float64}}(c_idx.value)
@@ -121,16 +133,21 @@ function compute_inface_extreme_point_subroutine(lmo::MathOptLMO{OT}, ::Type{F},
                         MOI.delete(lmo.o, check_cidx)
                     end
                 else
-                    func_dict = Dict(field => getfield(func, field) for field in fieldnames(typeof(func)))
+                    func_dict =
+                        Dict(field => getfield(func, field) for field in fieldnames(typeof(func)))
 
                     # Get the list of constraints with same ConstraintFunction but LessThan ConstraintSet.
-                    const_list_less = MOI.get(lmo.o, MOI.ListOfConstraintIndices{F,MOI.LessThan{Float64}}())
+                    const_list_less =
+                        MOI.get(lmo.o, MOI.ListOfConstraintIndices{F,MOI.LessThan{Float64}}())
 
                     # Check if the ConstraintFunction has other ConstraintSet.
                     # If exists, delete the constraint to avoid conflict.
                     for c_idx_less in const_list_less
                         func_less = MOI.get(lmo.o, MOI.ConstraintFunction(), c_idx_less)
-                        func_less_dict = Dict(field => getfield(func_less, field) for field in fieldnames(typeof(func_less)))
+                        func_less_dict = Dict(
+                            field => getfield(func_less, field) for
+                            field in fieldnames(typeof(func_less))
+                        )
                         if func_less_dict == func_dict
                             MOI.delete(lmo.o, c_idx_less)
                             break
@@ -140,7 +157,7 @@ function compute_inface_extreme_point_subroutine(lmo::MathOptLMO{OT}, ::Type{F},
                 MOI.add_constraint(lmo.o, func, MOI.EqualTo(set.lower))
             end
         elseif S <: MOI.LessThan
-            if isapprox(set.upper, val; atol = atol)
+            if isapprox(set.upper, val; atol=atol)
                 MOI.delete(lmo.o, c_idx)
                 if F <: MOI.VariableIndex
                     check_cidx = MOI.ConstraintIndex{F,MOI.GreaterThan{Float64}}(c_idx.value)
@@ -148,11 +165,16 @@ function compute_inface_extreme_point_subroutine(lmo::MathOptLMO{OT}, ::Type{F},
                         MOI.delete(lmo.o, check_cidx)
                     end
                 else
-                    func_dict = Dict(field => getfield(func, field) for field in fieldnames(typeof(func)))
-                    const_list_greater = MOI.get(lmo.o, MOI.ListOfConstraintIndices{F,MOI.GreaterThan{Float64}}())
+                    func_dict =
+                        Dict(field => getfield(func, field) for field in fieldnames(typeof(func)))
+                    const_list_greater =
+                        MOI.get(lmo.o, MOI.ListOfConstraintIndices{F,MOI.GreaterThan{Float64}}())
                     for c_idx_greater in const_list_greater
                         func_greater = MOI.get(lmo.o, MOI.ConstraintFunction(), c_idx_greater)
-                        func_greater_dict = Dict(field => getfield(func_greater, field) for field in fieldnames(typeof(func_greater)))
+                        func_greater_dict = Dict(
+                            field => getfield(func_greater, field) for
+                            field in fieldnames(typeof(func_greater))
+                        )
                         if func_greater_dict == func_dict
                             MOI.delete(lmo.o, c_idx_greater)
                             break
@@ -162,10 +184,10 @@ function compute_inface_extreme_point_subroutine(lmo::MathOptLMO{OT}, ::Type{F},
                 MOI.add_constraint(lmo.o, func, MOI.EqualTo(set.upper))
             end
         elseif S <: MOI.Interval
-            if isapprox(set.upper, val; atol = atol)
+            if isapprox(set.upper, val; atol=atol)
                 MOI.delete(lmo.o, c_idx)
                 MOI.add_constraint(lmo.o, func, MOI.EqualTo(set.upper))
-            elseif isapprox(set.lower, val; atol = atol)
+            elseif isapprox(set.lower, val; atol=atol)
                 MOI.delete(lmo.o, c_idx)
                 MOI.add_constraint(lmo.o, func, MOI.EqualTo(set.lower))
             end
@@ -178,13 +200,13 @@ end
 Fast way to compute gamma_max.
 Check every constraint and compute the corresponding gamma_upper_bound. 
 """
-function dicg_maximum_step(lmo::MathOptLMO{OT}, direction, x;tol=1e-6) where {OT}
+function dicg_maximum_step(lmo::MathOptLMO{OT}, direction, x; tol=1e-6) where {OT}
     gamma_less_than = Float64[]
     for (F, S) in MOI.get(lmo.o, MOI.ListOfConstraintTypesPresent())
         valvar(f) = x[f.value]
         valvar_d(f) = direction[f.value]
         const_list = MOI.get(lmo.o, MOI.ListOfConstraintIndices{F,S}())
-        
+
         # Constraints need to satisfy g(x+γ*d) ∈ ConstraintSet.
         # Since constraints function is linear, g(x) +γ * g(d) ∈ ConstraintSet.
         for c_idx in const_list
@@ -237,22 +259,22 @@ function is_inface_feasible(lmo::MathOptLMO{OT}, a, x;) where {OT}
     valvar(f) = x[f.value]
     valvar_away(f) = a[f.value]
     for (F, S) in MOI.get(lmo.o, MOI.ListOfConstraintTypesPresent())
-        const_list = MOI.get(lmo.o, MOI.ListOfConstraintIndices{F, S}())
+        const_list = MOI.get(lmo.o, MOI.ListOfConstraintIndices{F,S}())
         for c_idx in const_list
             func = MOI.get(lmo.o, MOI.ConstraintFunction(), c_idx)
             val = MOIU.eval_variables(valvar, func)
             val_away = MOIU.eval_variables(valvar_away, func)
             set = MOI.get(lmo.o, MOI.ConstraintSet(), c_idx)
             if S <: MOI.GreaterThan || S <: MOI.Interval
-                if isapprox(set.lower, val; atol = 1e-15, rtol = 1e-5)
-                    if !isapprox(set.lower, val_away; atol = 1e-15, rtol = 1e-5)
+                if isapprox(set.lower, val; atol=1e-15, rtol=1e-5)
+                    if !isapprox(set.lower, val_away; atol=1e-15, rtol=1e-5)
                         return false
                     end
                 end
             end
             if S <: MOI.LessThan || S <: MOI.Interval
-                if isapprox(set.upper, val; atol = 1e-15, rtol = sqrt(eps()))
-                    if !isapprox(set.upper, val_; atol = 1e-15, rtol = 1e-5)
+                if isapprox(set.upper, val; atol=1e-15, rtol=sqrt(eps()))
+                    if !isapprox(set.upper, val_; atol=1e-15, rtol=1e-5)
                         return false
                     end
                 end

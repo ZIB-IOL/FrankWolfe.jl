@@ -76,7 +76,9 @@ function corrective_frank_wolfe(
     end
 
     if verbose
-        println("\nCorrective Frank-Wolfe Algorithm with $(nameof(typeof(corrective_step))) correction.")
+        println(
+            "\nCorrective Frank-Wolfe Algorithm with $(nameof(typeof(corrective_step))) correction.",
+        )
         NumType = eltype(x)
         println(
             "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
@@ -130,7 +132,17 @@ function corrective_frank_wolfe(
             grad!(gradient, x)
         end
 
-        should_compute_vertex = prepare_corrective_step(corrective_step, f, grad!, gradient, active_set, t, lmo, primal, phi)
+        should_compute_vertex = prepare_corrective_step(
+            corrective_step,
+            f,
+            grad!,
+            gradient,
+            active_set,
+            t,
+            lmo,
+            primal,
+            phi,
+        )
 
         if should_compute_vertex && t > 1
             v = compute_extreme_point(lmo, gradient)
@@ -138,7 +150,28 @@ function corrective_frank_wolfe(
             phi = dual_gap
         end
         # use the step defined by the corrective step type
-        x, v, phi, dual_gap, should_fw_step, should_continue = run_corrective_step(corrective_step, f, grad!, gradient, x, v, dual_gap, active_set, t, lmo, line_search, linesearch_workspace, primal, phi, tot_time, callback, renorm_interval, memory_mode, epsilon, d)
+        x, v, phi, dual_gap, should_fw_step, should_continue = run_corrective_step(
+            corrective_step,
+            f,
+            grad!,
+            gradient,
+            x,
+            v,
+            dual_gap,
+            active_set,
+            t,
+            lmo,
+            line_search,
+            linesearch_workspace,
+            primal,
+            phi,
+            tot_time,
+            callback,
+            renorm_interval,
+            memory_mode,
+            epsilon,
+            d,
+        )
         # interrupt from callback
         if should_continue === false
             break

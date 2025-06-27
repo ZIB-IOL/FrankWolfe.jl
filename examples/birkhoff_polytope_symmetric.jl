@@ -36,9 +36,9 @@ x0 = FrankWolfe.compute_extreme_point(lmo_nat, randn(n, n))
     x -> cf(x, xp, normxp2),
     (str, x) -> cgrad!(str, x, xp),
     lmo_nat,
-    FrankWolfe.ActiveSetQuadraticProductCaching([(1.0, x0)], 2I/n^2, -2xp/n^2);
+    FrankWolfe.ActiveSetQuadraticProductCaching([(1.0, x0)], 2I / n^2, -2xp / n^2);
     max_iteration=k,
-    line_search=FrankWolfe.Shortstep(2/n^2),
+    line_search=FrankWolfe.Shortstep(2 / n^2),
     lazy=true,
     print_iter=k / 10,
     verbose=true,
@@ -55,20 +55,20 @@ x0 = FrankWolfe.compute_extreme_point(lmo_nat, randn(n, n))
 function build_deflate_inflate(p::Matrix{T}) where {T<:Number}
     n = size(p, 1)
     @assert n == size(p, 2) # square matrix
-    dimension = floor(Int, (n+1)^2 / 4) # deflated dimension
+    dimension = floor(Int, (n + 1)^2 / 4) # deflated dimension
     function deflate(A::AbstractMatrix{T}, lmo)
         vec = Vector{T}(undef, dimension)
         cnt = 0
         @inbounds for i in 1:((n+1)÷2), j in i:(n+1-i)
             cnt += 1
             if i == j
-                if i + j == n+1
+                if i + j == n + 1
                     vec[cnt] = A[i, i]
                 else
                     vec[cnt] = (A[i, i] + A[n+1-i, n+1-i]) / sqrt(T(2))
                 end
             else
-                if i + j == n+1
+                if i + j == n + 1
                     vec[cnt] = (A[i, j] + A[j, i]) / sqrt(T(2))
                 else
                     vec[cnt] = (A[i, j] + A[j, i] + A[n+1-i, n+1-j] + A[n+1-j, n+1-i]) / T(2)
@@ -82,14 +82,14 @@ function build_deflate_inflate(p::Matrix{T}) where {T<:Number}
         @inbounds for i in 1:((n+1)÷2), j in i:(n+1-i)
             cnt += 1
             if i == j
-                if i + j == n+1
+                if i + j == n + 1
                     x.data[i, i] = x.vec[cnt]
                 else
                     x.data[i, i] = x.vec[cnt] / sqrt(T(2))
                     x.data[n+1-i, n+1-i] = x.data[i, j]
                 end
             else
-                if i + j == n+1
+                if i + j == n + 1
                     x.data[i, j] = x.vec[cnt] / sqrt(T(2))
                     x.data[j, i] = x.data[i, j]
                 else
@@ -117,9 +117,9 @@ rx0 = FrankWolfe.compute_extreme_point(lmo_sym, deflate(sparse(randn(n, n)), not
     x -> cf(x, rxp, normxp2),
     (str, x) -> cgrad!(str, x, rxp),
     lmo_sym,
-    FrankWolfe.ActiveSetQuadraticProductCaching([(1.0, rx0)], 2I/n^2, -2rxp/n^2);
+    FrankWolfe.ActiveSetQuadraticProductCaching([(1.0, rx0)], 2I / n^2, -2rxp / n^2);
     max_iteration=k,
-    line_search=FrankWolfe.Shortstep(2/n^2),
+    line_search=FrankWolfe.Shortstep(2 / n^2),
     lazy=true,
     print_iter=k / 10,
     verbose=true,

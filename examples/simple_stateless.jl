@@ -25,7 +25,7 @@ x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 const b = n * randn(n)
 
 function f(x)
-    return 1/2 * dot(x, A, x) + dot(b, x) - 0.5 * log(sum(x)) + 278603
+    return 1 / 2 * dot(x, A, x) + dot(b, x) - 0.5 * log(sum(x)) + 278603
 end
 
 function grad!(storage, x)
@@ -35,7 +35,7 @@ function grad!(storage, x)
     return storage .-= 0.5 * inv(s)
 end
 
-gradient=collect(x0)
+gradient = collect(x0)
 
 k = 40_000
 
