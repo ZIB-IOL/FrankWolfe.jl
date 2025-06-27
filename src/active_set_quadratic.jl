@@ -125,7 +125,7 @@ end
 struct Identity{R<:Real}
     λ::R
 end
-function Base.:*(a::Identity, b)
+function Base.:*(a::Identity, b::AbstractArray)
     if a.λ == 1
         return b
     else

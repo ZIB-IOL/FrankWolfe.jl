@@ -60,6 +60,15 @@ end
                 @test norm(R) ≈ norm(collect(R))
                 @test R * M' ≈ R * transpose(M) ≈ M * M'
             end
+            @testset "Special matrices" begin
+                d = randn(n)
+                v2 = randn(n)
+                R2 = FrankWolfe.RankOneMatrix(u, v2)
+                D = LinearAlgebra.Diagonal(d)
+                @test R2 * D ≈ u * v2' * D
+                T = LinearAlgebra.LowerTriangular(randn(n,n))
+                @test R2 * T ≈ u * v2' * T
+            end
         end
     end
 end

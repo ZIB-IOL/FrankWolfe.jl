@@ -2,6 +2,7 @@ using FrankWolfe
 using Test
 using LinearAlgebra
 using DoubleFloats
+using Aqua
 
 @testset verbose = true failfast = true "FrankWolfe.jl test suite" begin
     include("decomposition_invariant.jl")
@@ -67,4 +68,6 @@ using DoubleFloats
             end
         end
     end
+
+    include("aqua.jl")
 end
