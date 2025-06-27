@@ -27,7 +27,13 @@ x0 = (zeros(dim, dim), Matrix(I(dim) ./ dim))
 
 trajectories = []
 
-for order in [FrankWolfe.FullUpdate(), FrankWolfe.CyclicUpdate(), FrankWolfe.StochasticUpdate(), FrankWolfe.DualGapOrder(), FrankWolfe.DualProgressOrder()]
+for order in [
+    FrankWolfe.FullUpdate(),
+    FrankWolfe.CyclicUpdate(),
+    FrankWolfe.StochasticUpdate(),
+    FrankWolfe.DualGapOrder(),
+    FrankWolfe.DualProgressOrder(),
+]
     _, _, _, _, _, traj_data = FrankWolfe.alternating_linear_minimization(
         FrankWolfe.block_coordinate_frank_wolfe,
         f,

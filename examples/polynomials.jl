@@ -135,7 +135,7 @@ function projnorm1(x, τ)
     s_indices = sortperm(u, rev=true)
     tsum = zero(τ)
 
-    @inbounds for i in 1:n-1
+    @inbounds for i in 1:(n-1)
         tsum += u[s_indices[i]]
         tmax = (tsum - τ) / i
         if tmax ≥ u[s_indices[i+1]]

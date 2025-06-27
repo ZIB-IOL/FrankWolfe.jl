@@ -14,9 +14,9 @@ end
 
 function FrankWolfe.compute_extreme_point(
     lmo::BellCorrelationsLMOHeuristic{T},
-    A::Array{T, 2};
+    A::Array{T,2};
     kwargs...,
-    ) where {T <: Number}
+) where {T<:Number}
     ax = [ones(T, lmo.m) for n in 1:2]
     axm = [zeros(Int, lmo.m) for n in 1:2]
     scm = typemax(T)
@@ -49,7 +49,7 @@ end
 
 function correlation_tensor_GHZ_polygon(N::Int, m::Int; type=Float64)
     res = zeros(type, m*ones(Int, N)...)
-    tab_cos = [cos(x*type(pi)/m) for x in 0:N*m]
+    tab_cos = [cos(x*type(pi)/m) for x in 0:(N*m)]
     tab_cos[abs.(tab_cos) .< Base.rtoldefault(type)] .= zero(type)
     for ci in CartesianIndices(res)
         res[ci] = tab_cos[sum(ci.I)-N+1]
@@ -57,7 +57,12 @@ function correlation_tensor_GHZ_polygon(N::Int, m::Int; type=Float64)
     return res
 end
 
-function benchmark_Bell(p::Array{T, 2}, quadratic::Bool; fw_method=FrankWolfe.blended_pairwise_conditional_gradient, kwargs...) where {T <: Number}
+function benchmark_Bell(
+    p::Array{T,2},
+    quadratic::Bool;
+    fw_method=FrankWolfe.blended_pairwise_conditional_gradient,
+    kwargs...,
+) where {T<:Number}
     Random.seed!(0)
     normp2 = dot(p, p) / 2
     # weird syntax to enable the compiler to correctly understand the type
@@ -85,12 +90,68 @@ p = correlation_tensor_GHZ_polygon(2, 100)
 max_iteration = 10^3 # speedups are way more important for more iterations
 verbose = false
 # the following kwarg passing might break for old julia versions
-@time benchmark_Bell(p, false; verbose, max_iteration, lazy=false, fw_method=FrankWolfe.blended_pairwise_conditional_gradient) # 2.4s
-@time benchmark_Bell(p, true; verbose, max_iteration, lazy=false, fw_method=FrankWolfe.blended_pairwise_conditional_gradient) # 0.8s
-@time benchmark_Bell(p, false; verbose, max_iteration, lazy=true, fw_method=FrankWolfe.blended_pairwise_conditional_gradient) # 2.1s
-@time benchmark_Bell(p, true; verbose, max_iteration, lazy=true, fw_method=FrankWolfe.blended_pairwise_conditional_gradient) # 0.4s
-@time benchmark_Bell(p, false; verbose, max_iteration, lazy=false, fw_method=FrankWolfe.away_frank_wolfe) # 5.7s
-@time benchmark_Bell(p, true; verbose, max_iteration, lazy=false, fw_method=FrankWolfe.away_frank_wolfe) # 2.3s
-@time benchmark_Bell(p, false; verbose, max_iteration, lazy=true, fw_method=FrankWolfe.away_frank_wolfe) # 3s
-@time benchmark_Bell(p, true; verbose, max_iteration, lazy=true, fw_method=FrankWolfe.away_frank_wolfe) # 0.7s
+@time benchmark_Bell(
+    p,
+    false;
+    verbose,
+    max_iteration,
+    lazy=false,
+    fw_method=FrankWolfe.blended_pairwise_conditional_gradient,
+) # 2.4s
+@time benchmark_Bell(
+    p,
+    true;
+    verbose,
+    max_iteration,
+    lazy=false,
+    fw_method=FrankWolfe.blended_pairwise_conditional_gradient,
+) # 0.8s
+@time benchmark_Bell(
+    p,
+    false;
+    verbose,
+    max_iteration,
+    lazy=true,
+    fw_method=FrankWolfe.blended_pairwise_conditional_gradient,
+) # 2.1s
+@time benchmark_Bell(
+    p,
+    true;
+    verbose,
+    max_iteration,
+    lazy=true,
+    fw_method=FrankWolfe.blended_pairwise_conditional_gradient,
+) # 0.4s
+@time benchmark_Bell(
+    p,
+    false;
+    verbose,
+    max_iteration,
+    lazy=false,
+    fw_method=FrankWolfe.away_frank_wolfe,
+) # 5.7s
+@time benchmark_Bell(
+    p,
+    true;
+    verbose,
+    max_iteration,
+    lazy=false,
+    fw_method=FrankWolfe.away_frank_wolfe,
+) # 2.3s
+@time benchmark_Bell(
+    p,
+    false;
+    verbose,
+    max_iteration,
+    lazy=true,
+    fw_method=FrankWolfe.away_frank_wolfe,
+) # 3s
+@time benchmark_Bell(
+    p,
+    true;
+    verbose,
+    max_iteration,
+    lazy=true,
+    fw_method=FrankWolfe.away_frank_wolfe,
+) # 0.7s
 println()

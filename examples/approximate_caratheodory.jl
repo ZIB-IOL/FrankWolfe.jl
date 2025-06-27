@@ -56,9 +56,7 @@ println("\nOutput type of solution: ", eltype(x))
 
 println("\nNote: the last step where we exactly close the gap. This is not an error. ")
 fract = 1 // n
-println(
-    "We have *exactly* computed the optimal solution with the $fract * (1, ..., 1) vector.\n",
-)
+println("We have *exactly* computed the optimal solution with the $fract * (1, ..., 1) vector.\n")
 println("x = $x")
 
 

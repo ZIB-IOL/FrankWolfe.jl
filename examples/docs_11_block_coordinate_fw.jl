@@ -74,7 +74,12 @@ plot_trajectories(trajectories, labels, xscalelog=true)
 
 trajectories = []
 
-for us in [(FrankWolfe.BPCGStep(), FrankWolfe.FrankWolfeStep()), (FrankWolfe.FrankWolfeStep(), FrankWolfe.BPCGStep()), FrankWolfe.BPCGStep(), FrankWolfe.FrankWolfeStep()]
+for us in [
+    (FrankWolfe.BPCGStep(), FrankWolfe.FrankWolfeStep()),
+    (FrankWolfe.FrankWolfeStep(), FrankWolfe.BPCGStep()),
+    FrankWolfe.BPCGStep(),
+    FrankWolfe.FrankWolfeStep(),
+]
 
     _, _, _, _, traj_data = FrankWolfe.block_coordinate_frank_wolfe(
         f,
