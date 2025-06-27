@@ -380,6 +380,7 @@ m = 300
     end
 end
 
+
 @testset "Failing Optimal Design Instance with AFW" begin
     seed = 8775360557774874450
     m = 100
@@ -388,8 +389,9 @@ end
 
     lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
     x0, active_set, _ = build_start_point(A)
+    domain_oracle = build_domain_oracle(A)
 
     _, _, primal, dual_gap, _, _ =
-        FrankWolfe.away_frank_wolfe(f, grad!, lmo, active_set; verbose=true)
+        FrankWolfe.away_frank_wolfe(f, grad!, lmo, active_set; verbose=true, line_search=FrankWolfe.Secant(domain_oracle=domain_oracle))
     @test isfinite(primal)
 end
