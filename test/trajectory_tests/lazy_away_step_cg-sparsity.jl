@@ -1,14 +1,14 @@
 using FrankWolfe
 using LinearAlgebra
 using Random
-
+using StableRNGs
 using Test
 
 n = Int(1e3)
 k = 1000
 
 s = 67
-Random.seed!(s)
+Random.seed!(StableRNG(s), s)
 
 const xp = [
     0.0014225829730746685,

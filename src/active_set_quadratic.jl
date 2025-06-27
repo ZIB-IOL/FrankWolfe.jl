@@ -170,43 +170,15 @@ function Base.empty!(as::ActiveSetQuadraticProductCaching)
     return as
 end
 
-function active_set_update!(
-    active_set::ActiveSetQuadraticProductCaching{AT,R},
-    lambda, atom, renorm=true, idx=nothing;
-    weight_purge_threshold=weight_purge_threshold_default(R),
-    add_dropped_vertices=false,
-    vertex_storage=nothing,
-) where {AT,R}
-    # rescale active set
-    active_set.weights .*= (1 - lambda)
-    active_set.weights_prev .*= (1 - lambda)
-    active_set.dots_x .*= (1 - lambda)
-    # add value for new atom
-    if idx === nothing
-        idx = find_atom(active_set, atom)
-    end
-    if idx > 0
-        @inbounds active_set.weights[idx] += lambda
-        @inbounds active_set.modified[idx] = true
-    else
-        push!(active_set, (lambda, atom))
-    end
-    if renorm
-        add_dropped_vertices = add_dropped_vertices ? vertex_storage !== nothing : add_dropped_vertices
-        active_set_cleanup!(active_set; weight_purge_threshold=weight_purge_threshold, update=false, add_dropped_vertices=add_dropped_vertices, vertex_storage=vertex_storage)
-        active_set_renormalize!(active_set)
-    end
-    active_set_update_scale!(active_set.x, lambda, atom)
-    return active_set
+function active_set_mul_weights!(active_set::ActiveSetQuadraticProductCaching, lambda::Real)
+    active_set.weights .*= lambda
+    active_set.weights_prev .*= lambda
+    active_set.dots_x .*= lambda
 end
 
-function active_set_renormalize!(active_set::ActiveSetQuadraticProductCaching)
-    renorm = sum(active_set.weights)
-    active_set.weights ./= renorm
-    active_set.weights_prev ./= renorm
-    # WARNING: it might sometimes be necessary to recompute dots_x to prevent discrepancy due to numerical errors
-    active_set.dots_x ./= renorm
-    return active_set
+function active_set_add_weight!(active_set::ActiveSetQuadraticProductCaching, lambda::Real, i::Integer)
+    @inbounds active_set.weights[i] += lambda
+    @inbounds active_set.modified[i] = true
 end
 
 function active_set_argmin(active_set::ActiveSetQuadraticProductCaching, direction)

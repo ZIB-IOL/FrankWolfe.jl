@@ -1,21 +1,21 @@
 
 """
-    frank_wolfe(f, grad!, lmo, x0; ...)
+    frank_wolfe(f, grad!, lmo, x0; kwargs...)
 
 Simplest form of the Frank-Wolfe algorithm.
-Returns a tuple `(x, v, primal, dual_gap, traj_data)` with:
-- `x` final iterate
-- `v` last vertex from the LMO
-- `primal` primal value `f(x)`
-- `dual_gap` final Frank-Wolfe gap
-- `traj_data` vector of trajectory information.
+
+$COMMON_ARGS
+
+$COMMON_KWARGS
+
+$RETURN
 """
 function frank_wolfe(
     f,
     grad!,
     lmo,
     x0;
-    line_search::LineSearchMethod=Adaptive(),
+    line_search::LineSearchMethod=Secant(),
     momentum=nothing,
     epsilon=1e-7,
     max_iteration=10000,
@@ -242,20 +242,26 @@ end
 
 
 """
-    lazified_conditional_gradient(f, grad!, lmo_base, x0; ...)
+    lazified_conditional_gradient(f, grad!, lmo_base, x0; kwargs...)
 
 Similar to [`FrankWolfe.frank_wolfe`](@ref) but lazyfying the LMO:
 each call is stored in a cache, which is looked up first for a good-enough direction.
 The cache used is a [`FrankWolfe.MultiCacheLMO`](@ref) or a [`FrankWolfe.VectorCacheLMO`](@ref)
 depending on whether the provided `cache_size` option is finite.
+
+$COMMON_ARGS
+
+$COMMON_KWARGS
+
+$RETURN
 """
 function lazified_conditional_gradient(
     f,
     grad!,
     lmo_base,
     x0;
-    line_search::LineSearchMethod=Adaptive(),
-    lazy_tolerance=2.0,
+    line_search::LineSearchMethod=Secant(),
+    sparsity_control=2.0,
     cache_size=Inf,
     greedy_lazy=false,
     epsilon=1e-7,
@@ -289,6 +295,16 @@ function lazified_conditional_gradient(
         return rep
     end
 
+    sparsity_control < 1 && throw(ArgumentError("sparsity_control cannot be smaller than one"))
+
+    if trajectory
+        callback = make_trajectory_callback(callback, traj_data)
+    end
+
+    if verbose
+        callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
+    end
+
     lmo = VectorCacheLMO{typeof(lmo_base),VType}(lmo_base)
     if isfinite(cache_size)
         Base.sizehint!(lmo.vertices, cache_size)
@@ -302,13 +318,6 @@ function lazified_conditional_gradient(
     phi = Inf
     step_type = ST_REGULAR
 
-    if trajectory
-        callback = make_trajectory_callback(callback, traj_data)
-    end
-
-    if verbose
-        callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
-    end
     time_start = time_ns()
 
     if line_search isa Agnostic || line_search isa Nonconvex
@@ -323,7 +332,7 @@ function lazified_conditional_gradient(
         println("\nLazified Conditional Gradient (Frank-Wolfe + Lazification).")
         NumType = eltype(x0)
         println(
-            "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration lazy_tolerance: $lazy_tolerance TYPE: $NumType",
+            "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration sparsity_control: $sparsity_control TYPE: $NumType",
         )
         grad_type = typeof(gradient)
         println("GRADIENTTYPE: $grad_type CACHESIZE $cache_size GREEDYCACHE: $greedy_lazy")
@@ -372,7 +381,7 @@ function lazified_conditional_gradient(
 
         grad!(gradient, x)
 
-        threshold = fast_dot(x, gradient) - phi / lazy_tolerance
+        threshold = fast_dot(x, gradient) - phi / sparsity_control
 
         # go easy on the memory - only compute if really needed
         if ((mod(t, print_iter) == 0 && verbose) || callback !== nothing)
@@ -472,10 +481,16 @@ function lazified_conditional_gradient(
 end
 
 """
-    stochastic_frank_wolfe(f::StochasticObjective, lmo, x0; ...)
+    stochastic_frank_wolfe(f::StochasticObjective, lmo, x0; kwargs...)
 
 Stochastic version of Frank-Wolfe, evaluates the objective and gradient stochastically,
 implemented through the [`FrankWolfe.StochasticObjective`](@ref) interface.
+
+$COMMON_ARGS
+
+$COMMON_KWARGS
+
+# Specific keyword arguments
 
 Keyword arguments include `batch_size` to pass a fixed `batch_size`
 or a `batch_iterator` implementing
@@ -484,6 +499,8 @@ Variance-reduced and projection-free stochastic optimization, E Hazan, H Luo, 20
 
 Similarly, a constant `momentum` can be passed or replaced by a `momentum_iterator`
 implementing `momentum = FrankWolfe.momentum_iterate(momentum_iterator)`.
+
+$RETURN
 """
 function stochastic_frank_wolfe(
     f::StochasticObjective,

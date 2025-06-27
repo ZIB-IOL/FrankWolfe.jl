@@ -111,6 +111,27 @@ end
 
 is_decomposition_invariant_oracle(::BirkhoffPolytopeLMO) = true
 
+function is_inface_feasible(::BirkhoffPolytopeLMO, a, x)
+    fixed_cols = []
+    for j in 1:size(a, 2)
+        if j ∉ fixed_cols
+            for i in 1:size(a, 1)
+                if x[i, j] <= eps(Float64) && a[i, j] > eps(Float64)
+                    return false
+                elseif x[i, j] >= 1 - eps(Float64)
+                    if a[i, j] < 1 - eps(Float64)
+                        return false
+                    else
+                        push!(fixed_cols, j)
+                        break
+                    end
+                end
+            end
+        end
+    end
+    return true
+end
+
 function compute_inface_extreme_point(::BirkhoffPolytopeLMO, direction::AbstractMatrix{T}, x::AbstractMatrix; kwargs...) where {T}
     n = size(direction, 1)
     fixed_to_one_rows = Int[]
@@ -338,6 +359,15 @@ function convert_mathopt(
 end
 
 is_decomposition_invariant_oracle(::ZeroOneHypercube) = true
+
+function is_inface_feasible(ZeroOneHypercube, a, x)
+    for idx in eachindex(a)
+        if (x[idx] == 0 && a[idx] != 0) || (x[idx] == 1 && a[idx] != 1)
+            return false
+        end
+    end
+    return true
+end
 
 function compute_extreme_point(::ZeroOneHypercube, direction; lazy=false, kwargs...)
     v = BitVector(signbit(di) for di in direction)

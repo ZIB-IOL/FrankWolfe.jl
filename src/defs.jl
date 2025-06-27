@@ -1,13 +1,29 @@
 
 
 """
+    MemoryEmphasis
+
 Emphasis given to the algorithm for memory-saving or not.
-The default memory-saving mode may be slower than
-OutplaceEmphasis mode for small dimensions.
+
+Concrete subtypes:
+
+- [`InplaceMemoryEmphasis`](@ref) (the default, meant to save memory)
+- [`OutplaceMemoryEmphasis`](@ref) (may be faster for small dimensions)
 """
 abstract type MemoryEmphasis end
 
+"""
+    InplaceEmphasis
+
+In-place version of [`MemoryEmphasis`](@ref).
+"""
 struct InplaceEmphasis <: MemoryEmphasis end
+
+"""
+    OutplaceEmphasis
+
+Out-of-place version of [`MemoryEmphasis`](@ref).
+"""
 struct OutplaceEmphasis <: MemoryEmphasis end
 
 @enum StepType begin
@@ -39,7 +55,26 @@ const steptype_string = (
 )
 
 """
+    CallbackState
+
 Main structure created before and passed to the callback in first position.
+
+# Fields
+
+- `t`
+- `primal`
+- `dual`
+- `dual_gap`
+- `time`
+- `x`
+- `v`
+- `d`
+- `gamma`
+- `f`
+- `grad!`
+- `lmo`
+- `gradient`
+- `step_type`
 """
 struct CallbackState{TP,TDV,TDG,XT,VT,DT,TG,FT,GFT,LMO,GT}
     t::Int
@@ -58,6 +93,11 @@ struct CallbackState{TP,TDV,TDG,XT,VT,DT,TG,FT,GFT,LMO,GT}
     step_type::StepType
 end
 
+"""
+    callback_state(state::CallbackState)
+
+Select a subset of fields from [`CallbackState`](@ref) to include in the trajectory: `(t, primal, dual, dual_gap, time)`.
+"""
 function callback_state(state::CallbackState)
     return (state.t, state.primal, state.dual, state.dual_gap, state.time)
 end

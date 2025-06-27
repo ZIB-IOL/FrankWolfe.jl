@@ -260,6 +260,7 @@ function plot_trajectories(
     empty_marker=false,
     extra_plot=false,
     extra_plot_label="",
+    plot_title="",
 )
     # theme(:dark)
     # theme(:vibrant)
@@ -276,13 +277,22 @@ function plot_trajectories(
         for (i, trajectory) in enumerate(data)
 
             l = length(trajectory)
+
             if reduce_size && l > 1000
-                indices = Int.(round.(collect(1:l/1000:l)))
+                if xscalelog
+                    xmin = log10(offset)
+                    xmax = log10(l)
+                    indices = Int.(round.(10.0 .^ (collect(xmin:(xmax-xmin)/1000:xmax))))
+                else
+                    indices = Int.(round.(collect(offset:l/1000:l)))
+                end
                 trajectory = trajectory[indices]
+            else
+                trajectory = trajectory[offset:end]
             end
 
-            x = [trajectory[j][idx_x] for j in offset:length(trajectory)]
-            y = [trajectory[j][idx_y] + y_offset for j in offset:length(trajectory)]
+            x = [trajectory[j][idx_x] for j in eachindex(trajectory)]
+            y = [trajectory[j][idx_y] + y_offset for j in eachindex(trajectory)]
 
             if marker_shapes !== nothing && n_markers >= 2
                 marker_args = Dict(
@@ -329,10 +339,10 @@ function plot_trajectories(
     if extra_plot
         iit = sub_plot(1, 6; ylabel=extra_plot_label)
         iti = sub_plot(5, 6)
-        fp = plot(pit, pti, iit, iti, dit, dti, layout=(3, 2)) # layout = @layout([A{0.01h}; [B C; D E]]))
+        fp = plot(pit, pti, iit, iti, dit, dti, layout=(3, 2), plot_title=plot_title) # layout = @layout([A{0.01h}; [B C; D E]]))
         plot!(size=(600, 600))
     else        
-        fp = plot(pit, pti, dit, dti, layout=(2, 2)) # layout = @layout([A{0.01h}; [B C; D E]]))
+        fp = plot(pit, pti, dit, dti, layout=(2, 2), plot_title=plot_title) # layout = @layout([A{0.01h}; [B C; D E]]))
         plot!(size=(600, 400))
     end
     if filename !== nothing

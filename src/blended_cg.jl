@@ -1,6 +1,6 @@
 
 """
-    blended_conditional_gradient(f, grad!, lmo, x0)
+    blended_conditional_gradient(f, grad!, lmo, x0; kwargs...)
 
 Entry point for the Blended Conditional Gradient algorithm.
 See Braun, Gábor, et al. "Blended conditonal gradients" ICML 2019.
@@ -8,14 +8,20 @@ The method works on an active set like [`FrankWolfe.away_frank_wolfe`](@ref),
 performing gradient descent over the convex hull of active vertices,
 removing vertices when their weight drops to 0 and adding new vertices
 by calling the linear oracle in a lazy fashion.
+
+$COMMON_ARGS
+
+$COMMON_KWARGS
+
+$RETURN_ACTIVESET
 """
 function blended_conditional_gradient(
     f,
     grad!,
     lmo,
     x0;
-    line_search::LineSearchMethod=Adaptive(),
-    line_search_inner::LineSearchMethod=Adaptive(),
+    line_search::LineSearchMethod=Secant(),
+    line_search_inner::LineSearchMethod=Secant(),
     hessian=nothing,
     epsilon=1e-7,
     max_iteration=10000,
@@ -24,7 +30,7 @@ function blended_conditional_gradient(
     verbose=false,
     memory_mode::MemoryEmphasis=InplaceEmphasis(),
     accelerated=false,
-    lazy_tolerance=2.0,
+    sparsity_control=2.0,
     gradient=nothing,
     callback=nothing,
     traj_data=[],
@@ -56,7 +62,7 @@ function blended_conditional_gradient(
         verbose=verbose,
         memory_mode=memory_mode,
         accelerated=accelerated,
-        lazy_tolerance=lazy_tolerance,
+        sparsity_control=sparsity_control,
         gradient=gradient,
         callback=callback,
         traj_data=traj_data,
@@ -87,7 +93,7 @@ function blended_conditional_gradient(
     verbose=false,
     memory_mode::MemoryEmphasis=InplaceEmphasis(),
     accelerated=false,
-    lazy_tolerance=2.0,
+    sparsity_control=2.0,
     gradient=nothing,
     callback=nothing,
     traj_data=[],
@@ -131,6 +137,17 @@ function blended_conditional_gradient(
         return rep
     end
 
+    isempty(active_set) && throw(ArgumentError("Empty active set"))
+    sparsity_control < 1 && throw(ArgumentError("sparsity_control cannot be smaller than one"))
+
+    if trajectory
+        callback = make_trajectory_callback(callback, traj_data)
+    end
+
+    if verbose
+        callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
+    end
+
     t = 0
     primal = Inf
     dual_gap = Inf
@@ -145,14 +162,6 @@ function blended_conditional_gradient(
     vmax = compute_extreme_point(lmo, gradient)
     phi = (fast_dot(gradient, x) - fast_dot(gradient, vmax)) / 2
     dual_gap = phi
-
-    if trajectory
-        callback = make_trajectory_callback(callback, traj_data)
-    end
-
-    if verbose
-        callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
-    end
 
     step_type = ST_REGULAR
     time_start = time_ns()
@@ -169,7 +178,7 @@ function blended_conditional_gradient(
             "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
         )
         grad_type = typeof(gradient)
-        println("GRADIENTTYPE: $grad_type lazy_tolerance: $lazy_tolerance")
+        println("GRADIENTTYPE: $grad_type sparsity_control: $sparsity_control")
         println("LMO: $(typeof(lmo))")
 
         if (use_extra_vertex_storage || add_dropped_vertices) && extra_vertex_storage === nothing
@@ -177,10 +186,6 @@ function blended_conditional_gradient(
                 "use_extra_vertex_storage and add_dropped_vertices options are only usable with a extra_vertex_storage storage"
             )
         end
-    end
-    # ensure x is a mutable type
-    if !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
-        x = copyto!(similar(x), x)
     end
     non_simplex_iter = 0
     force_fw_step = false
@@ -260,7 +265,7 @@ function blended_conditional_gradient(
             active_set,
             gradient,
             phi,
-            lazy_tolerance;
+            sparsity_control;
             inplace_loop=(memory_mode isa InplaceEmphasis),
             force_fw_step=force_fw_step,
             use_extra_vertex_storage=use_extra_vertex_storage,
@@ -270,7 +275,7 @@ function blended_conditional_gradient(
         )
         force_fw_step = false
         xval = fast_dot(x, gradient)
-        if value > xval - phi / lazy_tolerance
+        if value > xval - phi / sparsity_control
             step_type = ST_DUALSTEP
             # setting gap estimate as ∇f(x) (x - v_FW) / 2
             phi = (xval - value) / 2
@@ -493,7 +498,7 @@ function minimize_over_convex_hull!(
             tolerance,
         )
         #Early exit if we have detected that the strong-Wolfe gap is below the desired tolerance while building the reduced problem.
-        if isnothing(M)
+        if M === nothing
             return 0
         end
         T = eltype(M)
@@ -976,7 +981,7 @@ function simplex_gradient_descent_over_convex_hull(
         end
         # TODO at some point avoid materializing both x and y
         x = copy(active_set.x)
-        η = max(0, η)
+        η = isfinite(η) ? max(0, η) : 0
         @. active_set.weights -= η * d
         y = copy(compute_active_set_iterate!(active_set))
         number_of_steps += 1
@@ -1089,7 +1094,7 @@ function lp_separation_oracle(
     active_set::AbstractActiveSet,
     direction,
     min_gap,
-    lazy_tolerance;
+    sparsity_control;
     inplace_loop=false,
     force_fw_step::Bool=false,
     use_extra_vertex_storage=false,
@@ -1125,13 +1130,13 @@ function lp_separation_oracle(
             end
         end
         xval = fast_dot(direction, x)
-        if xval - val_best ≥ min_gap / lazy_tolerance
+        if xval - val_best ≥ min_gap / sparsity_control
             return (ybest, val_best)
         end
     end
      # optionally: try vertex storage
     if use_extra_vertex_storage && extra_vertex_storage !== nothing
-        lazy_threshold = fast_dot(direction, x) - phi / lazy_tolerance
+        lazy_threshold = fast_dot(direction, x) - phi / sparsity_control
         (found_better_vertex, new_forward_vertex) =
             storage_find_argmin_vertex(extra_vertex_storage, direction, lazy_threshold)
         if found_better_vertex

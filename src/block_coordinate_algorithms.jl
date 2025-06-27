@@ -265,7 +265,7 @@ mutable struct BPCGStep <: UpdateStep
     lazy::Bool
     active_set::Union{FrankWolfe.AbstractActiveSet,Nothing}
     renorm_interval::Int
-    lazy_tolerance::Float64
+    sparsity_control::Float64
     phi::Float64
 end
 
@@ -273,14 +273,14 @@ Base.copy(::FrankWolfeStep) = FrankWolfeStep()
 
 function Base.copy(obj::BPCGStep)
     if obj.active_set === nothing
-        return BPCGStep(obj.lazy, nothing, obj.renorm_interval, obj.lazy_tolerance, obj.phi)
+        return BPCGStep(obj.lazy, nothing, obj.renorm_interval, obj.sparsity_control, obj.phi)
     else
-        return BPCGStep(obj.lazy, copy(obj.active_set), obj.renorm_interval, obj.lazy_tolerance, obj.phi)
+        return BPCGStep(obj.lazy, copy(obj.active_set), obj.renorm_interval, obj.sparsity_control, obj.phi)
     end
 end
 
-BPCGStep() = BPCGStep(false, nothing, 1000, 2.0, Inf)
 BPCGStep(lazy::Bool) = BPCGStep(lazy, nothing, 1000, 2.0, Inf)
+BPCGStep() = BPCGStep(false)
 
 function update_iterate(
     ::FrankWolfeStep,
@@ -355,7 +355,7 @@ function update_iterate(
 
     # minor modification from original paper for improved sparsity
     # (proof follows with minor modification when estimating the step)
-    if local_gap > max(s.phi / s.lazy_tolerance, 0) # Robust condition to not drop the zero-vector if the dual_gap is negative by inaccuracy
+    if local_gap > s.phi / s.sparsity_control && local_gap ≥ epsilon
         d = muladd_memory_mode(memory_mode, d, a, v_local)
         vertex_taken = v_local
         gamma_max = a_lambda
@@ -401,7 +401,7 @@ function update_iterate(
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
         end
 
-        if !s.lazy || dual_gap ≥ s.phi / s.lazy_tolerance
+        if !s.lazy || dual_gap ≥ s.phi / s.sparsity_control
 
             d = muladd_memory_mode(memory_mode, d, x, v)
 
@@ -447,18 +447,27 @@ function update_iterate(
         active_set_renormalize!(s.active_set)
     end
 
-    x = muladd_memory_mode(memory_mode, x, gamma, d)
+    x .= get_active_set_iterate(s.active_set)
 
     return (dual_gap, vertex_taken, d, gamma, step_type)
 end
 
 """
-    block_coordinate_frank_wolfe(f, grad!, lmo::ProductLMO{N}, x0; ...) where {N}
+    block_coordinate_frank_wolfe(f, grad!, lmo::ProductLMO{N}, x0; kwargs...) where {N}
 
 Block-coordinate version of the Frank-Wolfe algorithm.
 Minimizes objective `f` over the product of feasible domains specified by the `lmo`.
 The optional argument the `update_order` is of type [`FrankWolfe.BlockCoordinateUpdateOrder`](@ref) and controls the order in which the blocks are updated.
 The argument `update_step` is a single instance or tuple of [`FrankWolfe.UpdateStep`](@ref) and defines which FW-algorithms to use to update the iterates in the different blocks.
+
+See [S. Lacoste-Julien, M. Jaggi, M. Schmidt, and P. Pletscher 2013](https://arxiv.org/abs/1207.4747)
+and [A. Beck, E. Pauwels and S. Sabach 2015](https://arxiv.org/abs/1502.03716) for more details about Block-Coordinate Frank-Wolfe.
+
+$COMMON_ARGS
+
+$COMMON_KWARGS
+
+# Return
 
 The method returns a tuple `(x, v, primal, dual_gap, traj_data)` with:
 - `x` cartesian product of final iterates
@@ -466,9 +475,6 @@ The method returns a tuple `(x, v, primal, dual_gap, traj_data)` with:
 - `primal` primal value `f(x)`
 - `dual_gap` final Frank-Wolfe gap
 - `traj_data` vector of trajectory information.
-
-See [S. Lacoste-Julien, M. Jaggi, M. Schmidt, and P. Pletscher 2013](https://arxiv.org/abs/1207.4747)
-and [A. Beck, E. Pauwels and S. Sabach 2015](https://arxiv.org/abs/1502.03716) for more details about Block-Coordinate Frank-Wolfe.
 """
 function block_coordinate_frank_wolfe(
     f,
@@ -476,7 +482,7 @@ function block_coordinate_frank_wolfe(
     lmo::ProductLMO{N},
     x0::BlockVector;
     update_order::BlockCoordinateUpdateOrder=CyclicUpdate(),
-    line_search::LS=Adaptive(),
+    line_search::LS=Secant(),
     update_step::US=FrankWolfeStep(),
     momentum=nothing,
     epsilon=1e-7,
@@ -672,7 +678,7 @@ function block_coordinate_frank_wolfe(
                     line_search[i],
                     linesearch_workspace[i],
                     memory_mode,
-                    epsilon,
+                    epsilon / N, # smaller tolerance s.t. the total gap is smaller than epsilon
                 )
             end
 

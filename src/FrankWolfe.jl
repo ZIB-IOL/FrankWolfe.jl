@@ -9,6 +9,7 @@ using SparseArrays: spzeros, SparseVector
 import SparseArrays
 import Random
 using Setfield: @set
+import ProximalCore
 
 import MathOptInterface
 const MOI = MathOptInterface
@@ -22,6 +23,7 @@ import Arpack
 export frank_wolfe, lazified_conditional_gradient, away_frank_wolfe
 export blended_conditional_gradient, compute_extreme_point
 
+include("docstrings.jl")
 include("abstract_oracles.jl")
 include("defs.jl")
 include("utils.jl")
@@ -30,6 +32,7 @@ include("types.jl")
 include("simplex_oracles.jl")
 include("norm_oracles.jl")
 include("polytope_oracles.jl")
+include("spectral_oracles.jl")
 include("moi_oracle.jl")
 include("function_gradient.jl")
 include("active_set.jl")
@@ -48,6 +51,11 @@ include("pairwise.jl")
 include("dicg.jl")
 include("tracking.jl")
 include("callback.jl")
+
+include("gradient_descent.jl")
+
+include("corrective_step_interface.jl")
+include("corrective_frankwolfe.jl")
 
 # collecting most common data types etc and precompile
 # min version req set to 1.5 to prevent stalling of julia 1

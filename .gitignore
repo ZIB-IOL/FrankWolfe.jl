@@ -28,3 +28,5 @@ cc/*
 docs/src/contributing.md
 docs/src/index.md
 .DS_Store
+examples/heavy_ball_tests/data/*
+src/heavyball_dirty.jl

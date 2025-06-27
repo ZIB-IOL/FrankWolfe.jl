@@ -1,3 +1,7 @@
+# Noteworthy changes from v0.4 to v0.5
+
+- change keyword argument `lazy_tolerance` to `sparsity_control` in all algorithms except `away_frank_wolfe` [PR556](https://github.com/ZIB-IOL/FrankWolfe.jl/pull/556)
+
 # Noteworthy changes from v0.3 to v0.4
 
 - Changed `tt` to `step_type` everywhere, including as a type in the `CallbackState` object.

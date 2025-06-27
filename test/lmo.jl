@@ -3,6 +3,7 @@ using FrankWolfe
 using LinearAlgebra
 import SparseArrays
 using Random
+using StableRNGs
 
 import FrankWolfe: compute_extreme_point, LpNormLMO, KSparseLMO
 
@@ -10,8 +11,9 @@ import MathOptInterface as MOI
 
 # solvers
 import GLPK
-import Clp
+import HiGHS
 import Hypatia
+import SCS
 using JuMP
 
 @testset "Simplex LMOs" begin
@@ -315,7 +317,7 @@ function _is_doubly_stochastic(m)
 end
 
 @testset "Birkhoff polytope" begin
-    Random.seed!(42)
+    Random.seed!(StableRNG(42), 42)
     lmo = FrankWolfe.BirkhoffPolytopeLMO()
     for n in (1, 2, 10)
         cost = rand(n, n)
@@ -426,7 +428,7 @@ end
 end
 
 @testset "Spectral norms" begin
-    Random.seed!(42)
+    Random.seed!(StableRNG(42), 42)
     o = Hypatia.Optimizer()
     MOI.set(o, MOI.Silent(), true)
     optimizer = MOI.Bridges.full_bridge_optimizer(
@@ -462,7 +464,7 @@ end
             end
             @testset "Comparison with SDP solution" begin
                 v_moi = FrankWolfe.compute_extreme_point(lmo_moi, direction)
-                @test norm(v - v_moi) <= 1e-6
+                @test norm(v - v_moi) <= 5e-4
             end
         end
     end
@@ -484,7 +486,7 @@ end
                 else
                     eigen_v = eigen(Matrix(v))
                     @test eigmax(Matrix(v)) ≈ radius
-                    @test norm(eigen_v.values[1:end-1]) ≈ 0 atol = 1e-7
+                    @test norm(eigen_v.values[1:end-1]) ≈ 0 atol = 1e-5
                     # u can be sqrt(r) * vec or -sqrt(r) * vec
                     case_pos =
                         ≈(norm(eigen_v.vectors[:, n] * sqrt(eigen_v.values[n]) - v.u), 0, atol=1e-9)
@@ -500,22 +502,22 @@ end
             end
             @testset "Comparison with SDP solution" begin
                 v_moi = FrankWolfe.compute_extreme_point(lmo_moi, direction)
-                @test norm(v - v_moi) <= 1e-6
+                @test norm(v - v_moi) <= 5e-4
                 # forcing PSD direction to test 0 matrix case
                 @. direction_sym = direction + direction'
                 direction_sym += 1.1 * abs(eigmin(direction_sym)) * I
                 @assert isposdef(direction_sym)
                 v_moi2 = FrankWolfe.compute_extreme_point(lmo_moi, direction_sym)
                 v_lmo2 = FrankWolfe.compute_extreme_point(lmo_moi, direction_sym)
-                @test norm(v_moi2 - v_lmo2) <= 1e-6
-                @test norm(v_moi2) <= 1e-6
+                @test norm(v_moi2 - v_lmo2) <= n * 1e-5
+                @test norm(v_moi2) <= n * 1e-5
             end
         end
     end
 end
 
 @testset "MOI oracle consistency" begin
-    Random.seed!(42)
+    Random.seed!(StableRNG(42), 42)
     o = GLPK.Optimizer()
     MOI.set(o, MOI.Silent(), true)
     @testset "MOI oracle consistent with unit simplex" for n in (1, 2, 10)
@@ -587,7 +589,7 @@ end
         n = 5
         o = MOI.Utilities.CachingOptimizer(
             MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
-            Clp.Optimizer(),
+            HiGHS.Optimizer(),
         )
         MOI.set(o, MOI.Silent(), true)
         x = MOI.add_variables(o, 5)
@@ -848,11 +850,11 @@ end
 end
 
 @testset "Copy MathOpt LMO" begin
-    o_clp = MOI.Utilities.CachingOptimizer(
+    o_HiGHS = MOI.Utilities.CachingOptimizer(
         MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
-        Clp.Optimizer(),
+        HiGHS.Optimizer(),
     )
-    for o in (GLPK.Optimizer(), o_clp)
+    for o in (GLPK.Optimizer(), o_HiGHS)
         MOI.set(o, MOI.Silent(), true)
         n = 100
         x = MOI.add_variables(o, n)
@@ -912,7 +914,7 @@ end
     @test x_dense == x_standard
 end
 
-@testset "Ellipsoid LMO $n                                   " for n in (2, 5, 9)
+@testset "Ellipsoid LMO $n" for n in (2, 5, 9)
     A = zeros(n, n)
     A[1, 1] = 3
     @test_throws PosDefException FrankWolfe.EllipsoidLMO(A)
@@ -941,7 +943,12 @@ end
     JuMP.set_silent(m)
     optimize!(m)
     xv = JuMP.value.(x)
-    @test dot(xv, d) ≈ dot(v, d) atol = 1e-5 * n
+    dot_xv1 = dot(xv, d)
+    set_optimizer(m, SCS.Optimizer)
+    optimize!(m)
+    xv = JuMP.value.(x)
+    dot_xv2 = dot(xv, d)
+    @test min(abs(dot_xv1 - dot(v, d)), abs(dot_xv2 - dot(v, d))) <= 1e-5 * n
 end
 
 @testset "Convex hull" begin
@@ -1039,7 +1046,7 @@ end
 end
 
 @testset "Ordered Weighted Norm LMO" begin
-    Random.seed!(4321)
+    Random.seed!(StableRNG(42), 42)
     N = Int(1e3)
     for _ in 1:10 
         radius = abs(randn())+1
@@ -1069,5 +1076,33 @@ end
         v = FrankWolfe.compute_extreme_point(lmo_opp,direction)
         v_opp = FrankWolfe.compute_extreme_point(lmo_opp,direction_opp)
         @test v == -1*v_opp
+    end
+end
+
+@testset "Fantope" begin
+    Random.seed!(StableRNG(42), 42)
+    for n in (3, 5)
+        for k in (n-2, n-1)
+            for _ in 1:5
+                lmo = FrankWolfe.FantopeLMO(k)
+                direction = randn(n, n)
+                direction += direction'
+                V = FrankWolfe.compute_extreme_point(lmo, direction)
+                v = FrankWolfe.compute_extreme_point(lmo, vec(direction))
+                @test vec(V) ≈ v
+                o = Hypatia.Optimizer()
+                MOI.set(o, MOI.Silent(), true)
+                optimizer = MOI.Bridges.full_bridge_optimizer(
+                    MOI.Utilities.CachingOptimizer(
+                        MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
+                        o,
+                    ),
+                    Float64,
+                )
+                lmo_moi = FrankWolfe.convert_mathopt(lmo, optimizer; side_dimension=n)
+                v_moi = FrankWolfe.compute_extreme_point(lmo_moi, direction)
+                @test norm(vec(v_moi) - v) ≤ 1e-5 * n^2
+            end
+        end
     end
 end

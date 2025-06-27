@@ -13,16 +13,16 @@ It also demonstrates how to set up custom callbacks for tracking algorithm progr
 using LinearAlgebra
 using Test
 using Random
+using StableRNGs
+
 using FrankWolfe
 import HiGHS
 
 n = Int(1e4)
 k = 10000
 
-# s = rand(1:100)
 s = 10
-# @info "Seed $s"
-Random.seed!(s)
+Random.seed!(StableRNG(s), s)
 
 xpi = rand(n);
 total = sum(xpi);
@@ -39,7 +39,7 @@ end
 
 lmo = FrankWolfe.LpNormLMO{Float64,5}(1.0)
 
-const x00 = FrankWolfe.compute_extreme_point(lmo, rand(n))
+x000 = FrankWolfe.compute_extreme_point(lmo, rand(n))
 
 function build_callback(trajectory_arr)
     return function callback(state, active_set, args...)
@@ -52,7 +52,7 @@ x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
-    copy(x00),
+    copy(x000),
     max_iteration=k,
     line_search=FrankWolfe.Shortstep(2.0),
     verbose=false,
@@ -61,7 +61,7 @@ x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
 );
 
 active_set_sparse = FrankWolfe.ActiveSetSparsifier(
-    FrankWolfe.ActiveSet([1.0], [x00], similar(x00)),
+    FrankWolfe.ActiveSet([1.0], [x000], similar(x000)),
     HiGHS.Optimizer(),
 )
 trajectoryBPCG_as_sparse = []
@@ -69,7 +69,7 @@ x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
-    copy(x00),
+    copy(x000),
     max_iteration=k,
     line_search=FrankWolfe.Shortstep(2.0),
     verbose=false,
