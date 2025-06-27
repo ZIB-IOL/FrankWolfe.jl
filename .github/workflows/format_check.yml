@@ -24,7 +24,6 @@ jobs:
           format("src", verbose=true)
           format("test", verbose=true)
           format("docs", verbose=true)
-          format("examples", verbose=true)
           out = String(read(Cmd(`git diff`)))
           if isempty(out)
               exit(0)
