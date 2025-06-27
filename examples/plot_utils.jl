@@ -241,7 +241,7 @@ end
     markershape --> :auto
     x := sx
     y := sy
-    return z_order := 1
+    z_order := 1
 end
 
 function plot_trajectories(
