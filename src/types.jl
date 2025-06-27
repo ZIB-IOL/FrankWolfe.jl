@@ -28,7 +28,10 @@ function LinearAlgebra.dot(v1::ScaledHotVector{<:Number}, v2::AbstractVector{<:N
     return conj(v1.active_val) * v2[v1.val_idx]
 end
 
-function LinearAlgebra.dot(v1::ScaledHotVector{<:Number}, v2::SparseArrays.SparseVectorUnion{<:Number})
+function LinearAlgebra.dot(
+    v1::ScaledHotVector{<:Number},
+    v2::SparseArrays.SparseVectorUnion{<:Number},
+)
     return conj(v1.active_val) * v2[v1.val_idx]
 end
 
@@ -334,33 +337,39 @@ LinearAlgebra.dot(A1::SubspaceVector{true}, A2::SubspaceVector{true}) =
 LinearAlgebra.dot(A1::SubspaceVector{false}, A2::SubspaceVector{false}) = dot(A1.vec, A2.vec)
 LinearAlgebra.norm(A::SubspaceVector) = sqrt(dot(A, A))
 
-Base.@propagate_inbounds Base.isequal(A1::SubspaceVector, A2::SubspaceVector) = isequal(A1.vec, A2.vec)
+Base.@propagate_inbounds Base.isequal(A1::SubspaceVector, A2::SubspaceVector) =
+    isequal(A1.vec, A2.vec)
 
 """
 Given an array `array`, `NegatingArray` represents `-1 * array` lazily.
 """
-struct NegatingArray{T, N, AT <: AbstractArray{T,N}} <: AbstractArray{T, N}
+struct NegatingArray{T,N,AT<:AbstractArray{T,N}} <: AbstractArray{T,N}
     array::AT
-    function NegatingArray(array::AT) where {T, N, AT <: AbstractArray{T,N}}
-        return new{T, N, AT}(array)
+    function NegatingArray(array::AT) where {T,N,AT<:AbstractArray{T,N}}
+        return new{T,N,AT}(array)
     end
 end
 
 Base.size(a::NegatingArray) = Base.size(a.array)
 Base.getindex(a::NegatingArray, idxs...) = -Base.getindex(a.array, idxs...)
 
-LinearAlgebra.dot(a1::NegatingArray{<:Number}, a2::NegatingArray{<:Number}) = dot(a1.array, a2.array)
-LinearAlgebra.dot(a1::NegatingArray{<:Number, N}, a2::AbstractArray{<:Number, N}) where {N} = -dot(a1.array, a2)
-LinearAlgebra.dot(a1::AbstractArray{<:Number, N}, a2::NegatingArray{<:Number, N}) where {N} = -dot(a1, a2.array)
+LinearAlgebra.dot(a1::NegatingArray{<:Number}, a2::NegatingArray{<:Number}) =
+    dot(a1.array, a2.array)
+LinearAlgebra.dot(a1::NegatingArray{<:Number,N}, a2::AbstractArray{<:Number,N}) where {N} =
+    -dot(a1.array, a2)
+LinearAlgebra.dot(a1::AbstractArray{<:Number,N}, a2::NegatingArray{<:Number,N}) where {N} =
+    -dot(a1, a2.array)
 
 # removing method ambiguities
 LinearAlgebra.dot(a1::LinearAlgebra.Diagonal, a2::NegatingArray{<:Number}) = -dot(a1, a2.array)
-LinearAlgebra.dot(a1::NegatingArray{<:Number}, a2::SparseArrays.SparseVectorUnion) = -dot(a1.array, a2)
-LinearAlgebra.dot(a1::SparseArrays.SparseVectorUnion, a2::NegatingArray{<:Number}) = -dot(a1, a2.array)
+LinearAlgebra.dot(a1::NegatingArray{<:Number}, a2::SparseArrays.SparseVectorUnion) =
+    -dot(a1.array, a2)
+LinearAlgebra.dot(a1::SparseArrays.SparseVectorUnion, a2::NegatingArray{<:Number}) =
+    -dot(a1, a2.array)
 
 Base.sum(a::NegatingArray) = -sum(a.array)
-LinearAlgebra.dot(v1::NegatingArray{<:Number, 1}, v2::ScaledHotVector{<:Number}) = -dot(v1.array, v2)
-LinearAlgebra.dot(v1::ScaledHotVector{<:Number}, v2::NegatingArray{<:Number, 1}) = -dot(v1, v2.array)
+LinearAlgebra.dot(v1::NegatingArray{<:Number,1}, v2::ScaledHotVector{<:Number}) = -dot(v1.array, v2)
+LinearAlgebra.dot(v1::ScaledHotVector{<:Number}, v2::NegatingArray{<:Number,1}) = -dot(v1, v2.array)
 
-LinearAlgebra.dot(a::NegatingArray{<:Number, 2}, d::LinearAlgebra.Diagonal) = -dot(a.array, d)
-LinearAlgebra.dot(d::LinearAlgebra.Diagonal, a::NegatingArray{<:Number, 2}) = -dot(d, a.array)
+LinearAlgebra.dot(a::NegatingArray{<:Number,2}, d::LinearAlgebra.Diagonal) = -dot(a.array, d)
+LinearAlgebra.dot(d::LinearAlgebra.Diagonal, a::NegatingArray{<:Number,2}) = -dot(d, a.array)
