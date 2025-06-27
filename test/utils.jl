@@ -66,7 +66,7 @@ end
                 R2 = FrankWolfe.RankOneMatrix(u, v2)
                 D = LinearAlgebra.Diagonal(d)
                 @test R2 * D ≈ u * v2' * D
-                T = LinearAlgebra.LowerTriangular(randn(n,n))
+                T = LinearAlgebra.LowerTriangular(randn(n, n))
                 @test R2 * T ≈ u * v2' * T
             end
         end
