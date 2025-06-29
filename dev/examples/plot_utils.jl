@@ -175,13 +175,13 @@ function plot_results(
                 scatter!(
                     view(
                         list_data_x[i][j],
-                        1:length(list_data_x[i][j])÷number_markers_per_line:length(
+                        1:(length(list_data_x[i][j])÷number_markers_per_line):length(
                             list_data_x[i][j],
                         ),
                     ),
                     view(
                         list_data_y[i][j],
-                        1:length(list_data_y[i][j])÷number_markers_per_line:length(
+                        1:(length(list_data_y[i][j])÷number_markers_per_line):length(
                             list_data_y[i][j],
                         ),
                     ),
@@ -212,7 +212,7 @@ end
     if log
         xmin = log10(x[1])
         xmax = log10(x[end])
-        thresholds = collect(xmin:(xmax-xmin)/(n_markers-1):xmax)
+        thresholds = collect(xmin:((xmax-xmin)/(n_markers-1)):xmax)
         indices = [argmin(i -> abs(t - log10(x[i])), eachindex(x)) for t in thresholds]
     else
         indices = 1:Int(ceil(length(x) / n_markers)):n
@@ -282,9 +282,9 @@ function plot_trajectories(
                 if xscalelog
                     xmin = log10(offset)
                     xmax = log10(l)
-                    indices = Int.(round.(10.0 .^ (collect(xmin:(xmax-xmin)/1000:xmax))))
+                    indices = Int.(round.(10.0 .^ (collect(xmin:((xmax-xmin)/1000):xmax))))
                 else
-                    indices = Int.(round.(collect(offset:l/1000:l)))
+                    indices = Int.(round.(collect(offset:(l/1000):l)))
                 end
                 trajectory = trajectory[indices]
             else
@@ -341,7 +341,7 @@ function plot_trajectories(
         iti = sub_plot(5, 6)
         fp = plot(pit, pti, iit, iti, dit, dti, layout=(3, 2), plot_title=plot_title) # layout = @layout([A{0.01h}; [B C; D E]]))
         plot!(size=(600, 600))
-    else        
+    else
         fp = plot(pit, pti, dit, dti, layout=(2, 2), plot_title=plot_title) # layout = @layout([A{0.01h}; [B C; D E]]))
         plot!(size=(600, 400))
     end
@@ -377,7 +377,7 @@ function plot_sparsity(
 
             l = length(trajectory)
             if reduce_size && l > 1000
-                indices = Int.(round.(collect(1:l/1000:l)))
+                indices = Int.(round.(collect(1:(l/1000):l)))
                 trajectory = trajectory[indices]
             end
 
