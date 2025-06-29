@@ -43,7 +43,6 @@ LaTeXStrings = "1"
 LinearAlgebra = "1"
 MathOptInterface = "1"
 MultivariatePolynomials = "0.5"
-PlotThemes = "3"
 Plots = "1.10"
 Polyhedra = "0.8"
 Printf = "1"
@@ -78,7 +77,6 @@ JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
 LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 MultivariatePolynomials = "102ac46a-7ee4-5c85-9060-abc95bfdeaa3"
-PlotThemes = "ccf2f8ad-2431-5c83-bf29-c5338b663b6a"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 Polyhedra = "67491407-f73d-577b-9b50-8179a7c68029"
 ProximalOperators = "a725b495-10eb-56fe-b38b-717eba820537"
@@ -91,4 +89,4 @@ ZipFile = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 
 [targets]
-test = ["CSV", "Combinatorics", "DataFrames", "Distributions", "DoubleFloats", "DynamicPolynomials", "FiniteDifferences", "GLPK", "HiGHS", "JSON", "JuMP", "LaTeXStrings", "MultivariatePolynomials", "Plots", "PlotThemes", "Polyhedra", "ProximalOperators", "ReverseDiff", "SCS", "StableRNGs", "ZipFile", "Test", "Tullio", "Hypatia", "Aqua"]
+test = ["CSV", "Combinatorics", "DataFrames", "Distributions", "DoubleFloats", "DynamicPolynomials", "FiniteDifferences", "GLPK", "HiGHS", "JSON", "JuMP", "LaTeXStrings", "MultivariatePolynomials", "Plots", "Polyhedra", "ProximalOperators", "ReverseDiff", "SCS", "StableRNGs", "ZipFile", "Test", "Tullio", "Hypatia", "Aqua"]

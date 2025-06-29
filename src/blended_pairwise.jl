@@ -259,7 +259,17 @@ function blended_pairwise_conditional_gradient(
                     break
                 end
             end
-            active_set_update_pairwise!(active_set, gamma, gamma_max, v_local_loc, a_loc, v_local, a, add_dropped_vertices, extra_vertex_storage)
+            active_set_update_pairwise!(
+                active_set,
+                gamma,
+                gamma_max,
+                v_local_loc,
+                a_loc,
+                v_local,
+                a,
+                add_dropped_vertices,
+                extra_vertex_storage,
+            )
         else # add to active set
             if lazy # otherwise, v computed above already
                 # optionally try to use the storage

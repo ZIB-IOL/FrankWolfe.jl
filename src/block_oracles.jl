@@ -4,19 +4,19 @@
 Represents a vector consisting of blocks. `T` is the element type of the vector, `MT` is the type of the underlying data array, and `ST` is the type of the tuple representing the sizes of each block.
 Each block can be accessed with the `blocks` field, and the sizes of the blocks are stored in the `block_sizes` field.
 """
-mutable struct BlockVector{T, MT <: AbstractArray{T}, ST <: Tuple} <: AbstractVector{T}
+mutable struct BlockVector{T,MT<:AbstractArray{T},ST<:Tuple} <: AbstractVector{T}
     blocks::Vector{MT}
     block_sizes::Vector{ST}
     tot_size::Int
 end
 
-function BlockVector(arrays::AbstractVector{MT}) where {T, MT <: AbstractArray{T}}
+function BlockVector(arrays::AbstractVector{MT}) where {T,MT<:AbstractArray{T}}
     block_sizes = size.(arrays)
     tot_size = sum(prod, block_sizes)
     return BlockVector(arrays, block_sizes, tot_size)
 end
 
-Base.size(arr::BlockVector) = (arr.tot_size, )
+Base.size(arr::BlockVector) = (arr.tot_size,)
 
 # returns the corresponding (block_index, index_in_block) for a given flattened index (for the whole block variable)
 function _matching_index_index(arr::BlockVector, idx::Integer)
@@ -35,7 +35,7 @@ function _matching_index_index(arr::BlockVector, idx::Integer)
             return (block_idx, index_in_block)
         end
     end
-    error("unreachable $idx")
+    return error("unreachable $idx")
 end
 
 function Base.getindex(arr::BlockVector, idx::Integer)
@@ -59,44 +59,28 @@ function Base.copyto!(dest::BlockVector, src::BlockVector)
     return dest
 end
 
-function Base.similar(src::BlockVector{T1, MT}, ::Type{T}) where {T1, MT, T}
+function Base.similar(src::BlockVector{T1,MT}, ::Type{T}) where {T1,MT,T}
     blocks = [similar(src.blocks[i], T) for i in eachindex(src.blocks)]
-    return BlockVector(
-        blocks,
-        src.block_sizes,
-        src.tot_size,
-    )
+    return BlockVector(blocks, src.block_sizes, src.tot_size)
 end
 
-Base.similar(src::BlockVector{T, MT}) where {T, MT} = similar(src, T)
+Base.similar(src::BlockVector{T,MT}) where {T,MT} = similar(src, T)
 
-function Base.collect(::Type{T}, src::BlockVector{T1, MT}) where {T1, MT, T}
+function Base.collect(::Type{T}, src::BlockVector{T1,MT}) where {T1,MT,T}
     blocks = [collect(T, src.blocks[i]) for i in eachindex(src.blocks)]
-    return BlockVector(
-        blocks,
-        src.block_sizes,
-        src.tot_size,
-    )
+    return BlockVector(blocks, src.block_sizes, src.tot_size)
 end
 
-Base.collect(src::BlockVector{T, MT}) where {T, MT} = collect(T, src)
+Base.collect(src::BlockVector{T,MT}) where {T,MT} = collect(T, src)
 
 function Base.zero(src::BlockVector)
     blocks = [zero(b) for b in src.blocks]
-    return BlockVector(
-        blocks,
-        src.block_sizes,
-        src.tot_size,
-    )
+    return BlockVector(blocks, src.block_sizes, src.tot_size)
 end
 
-function Base.convert(::Type{BlockVector{T, MT}}, bmv::BlockVector) where {T, MT}
+function Base.convert(::Type{BlockVector{T,MT}}, bmv::BlockVector) where {T,MT}
     cblocks = convert.(MT, bmv.blocks)
-    return BlockVector(
-        cblocks,
-        copy(bmv.block_sizes),
-        bmv.tot_size,
-    )
+    return BlockVector(cblocks, copy(bmv.block_sizes), bmv.tot_size)
 end
 
 function Base.:+(v1::BlockVector, v2::BlockVector)
@@ -108,42 +92,26 @@ function Base.:+(v1::BlockVector, v2::BlockVector)
             throw(DimensionMismatch("$i-th block: $(v1.block_sizes[i]) != $(v2.block_sizes[i])"))
         end
     end
-    return BlockVector(
-        v1.blocks .+ v2.blocks,
-        copy(v1.block_sizes),
-        v1.tot_size,
-    )
+    return BlockVector(v1.blocks .+ v2.blocks, copy(v1.block_sizes), v1.tot_size)
 end
 
-Base.:-(v::BlockVector) = BlockVector(
-    [-b for b in v.blocks],
-    v.block_sizes,
-    v.tot_size,
-)
+Base.:-(v::BlockVector) = BlockVector([-b for b in v.blocks], v.block_sizes, v.tot_size)
 
 function Base.:-(v1::BlockVector, v2::BlockVector)
     return v1 + (-v2)
 end
 
 function Base.:*(s::Number, v::BlockVector)
-    return BlockVector(
-        s .* v.blocks,
-        copy(v.block_sizes),
-        v.tot_size,
-    )
+    return BlockVector(s .* v.blocks, copy(v.block_sizes), v.tot_size)
 end
 
 Base.:*(v::BlockVector, s::Number) = s * v
 
 function Base.:/(v::BlockVector, s::Number)
-    return BlockVector(
-        v.blocks ./ s,
-        copy(v.block_sizes),
-        v.tot_size,
-    )
+    return BlockVector(v.blocks ./ s, copy(v.block_sizes), v.tot_size)
 end
 
-function LinearAlgebra.dot(v1::BlockVector{T1}, v2::BlockVector{T2}) where {T1, T2}
+function LinearAlgebra.dot(v1::BlockVector{T1}, v2::BlockVector{T2}) where {T1,T2}
     if size(v1) != size(v2) || length(v1.block_sizes) != length(v2.block_sizes)
         throw(DimensionMismatch("$(length(v1)) != $(length(v2))"))
     end
@@ -180,16 +148,22 @@ end
 
 Linear minimization oracle over the Cartesian product of multiple LMOs.
 """
-struct ProductLMO{N, LT <: Union{NTuple{N, FrankWolfe.LinearMinimizationOracle}, AbstractVector{<: FrankWolfe.LinearMinimizationOracle}}} <: FrankWolfe.LinearMinimizationOracle
+struct ProductLMO{
+    N,
+    LT<:Union{
+        NTuple{N,FrankWolfe.LinearMinimizationOracle},
+        AbstractVector{<:FrankWolfe.LinearMinimizationOracle},
+    },
+} <: FrankWolfe.LinearMinimizationOracle
     lmos::LT
 end
 
-function ProductLMO(lmos::Vector{LMO}) where {LMO <: FrankWolfe.LinearMinimizationOracle}
-    return ProductLMO{1, Vector{LMO}}(lmos)
+function ProductLMO(lmos::Vector{LMO}) where {LMO<:FrankWolfe.LinearMinimizationOracle}
+    return ProductLMO{1,Vector{LMO}}(lmos)
 end
 
-function ProductLMO(lmos::NT) where {N, LMO <: FrankWolfe.LinearMinimizationOracle, NT <: NTuple{N, LMO}}
-    return ProductLMO{N, NT}(lmos)
+function ProductLMO(lmos::NT) where {N,LMO<:FrankWolfe.LinearMinimizationOracle,NT<:NTuple{N,LMO}}
+    return ProductLMO{N,NT}(lmos)
 end
 
 function ProductLMO{N}(lmos::TL) where {N,TL<:NTuple{N,LinearMinimizationOracle}}
@@ -200,9 +174,17 @@ function ProductLMO(lmos::Vararg{LinearMinimizationOracle,N}) where {N}
     return ProductLMO{N}(lmos)
 end
 
-function FrankWolfe.compute_extreme_point(lmo::ProductLMO, direction::BlockVector; v=nothing, kwargs...)
+function FrankWolfe.compute_extreme_point(
+    lmo::ProductLMO,
+    direction::BlockVector;
+    v=nothing,
+    kwargs...,
+)
     @assert length(direction.blocks) == length(lmo.lmos)
-    blocks = [FrankWolfe.compute_extreme_point(lmo.lmos[idx], direction.blocks[idx]; kwargs...) for idx in eachindex(lmo.lmos)]
+    blocks = [
+        FrankWolfe.compute_extreme_point(lmo.lmos[idx], direction.blocks[idx]; kwargs...) for
+        idx in eachindex(lmo.lmos)
+    ]
     v = BlockVector(blocks, direction.block_sizes, direction.tot_size)
     return v
 end
@@ -260,21 +242,37 @@ function FrankWolfe.compute_extreme_point(lmo::FrankWolfe.MathOptLMO, direction:
     return v
 end
 
-function FrankWolfe.muladd_memory_mode(mem::FrankWolfe.InplaceEmphasis, storage::BlockVector, x::BlockVector, gamma::Real, d::BlockVector)
+function FrankWolfe.muladd_memory_mode(
+    mem::FrankWolfe.InplaceEmphasis,
+    storage::BlockVector,
+    x::BlockVector,
+    gamma::Real,
+    d::BlockVector,
+)
     @inbounds for i in eachindex(x.blocks)
         FrankWolfe.muladd_memory_mode(mem, storage.blocks[i], x.blocks[i], gamma, d.blocks[i])
     end
     return storage
 end
 
-function FrankWolfe.muladd_memory_mode(mem::FrankWolfe.InplaceEmphasis, x::BlockVector, gamma::Real, d::BlockVector)
+function FrankWolfe.muladd_memory_mode(
+    mem::FrankWolfe.InplaceEmphasis,
+    x::BlockVector,
+    gamma::Real,
+    d::BlockVector,
+)
     @inbounds for i in eachindex(x.blocks)
         FrankWolfe.muladd_memory_mode(mem, x.blocks[i], gamma, d.blocks[i])
     end
     return x
 end
 
-function FrankWolfe.muladd_memory_mode(mem::FrankWolfe.InplaceEmphasis, d::BlockVector, x::BlockVector, v::BlockVector)
+function FrankWolfe.muladd_memory_mode(
+    mem::FrankWolfe.InplaceEmphasis,
+    d::BlockVector,
+    x::BlockVector,
+    v::BlockVector,
+)
     @inbounds for i in eachindex(d.blocks)
         FrankWolfe.muladd_memory_mode(mem, d.blocks[i], x.blocks[i], v.blocks[i])
     end
@@ -287,7 +285,12 @@ function FrankWolfe.compute_active_set_iterate!(active_set::FrankWolfe.ActiveSet
     end
     for (λi, ai) in active_set
         for i in eachindex(active_set.x.blocks)
-            FrankWolfe.muladd_memory_mode(FrankWolfe.InplaceEmphasis(), active_set.x.blocks[i], -λi, ai.blocks[i])
+            FrankWolfe.muladd_memory_mode(
+                FrankWolfe.InplaceEmphasis(),
+                active_set.x.blocks[i],
+                -λi,
+                ai.blocks[i],
+            )
         end
     end
     return active_set.x

@@ -348,7 +348,8 @@ end
         function grad!(storage, x)
             @. storage = x - xref
         end
-        res_fw = FrankWolfe.frank_wolfe(f, grad!, lmo, FrankWolfe.compute_extreme_point(lmo, randn(n)))
+        res_fw =
+            FrankWolfe.frank_wolfe(f, grad!, lmo, FrankWolfe.compute_extreme_point(lmo, randn(n)))
         res_dicg = FrankWolfe.decomposition_invariant_conditional_gradient(
             f,
             grad!,

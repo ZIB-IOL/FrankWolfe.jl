@@ -165,7 +165,11 @@ end
 
 fast_dot(a, Q, b) = dot(a, Q, b)
 
-function fast_dot(a::SparseArrays.AbstractSparseVector{<:Real}, Q::Diagonal{<:Real}, b::AbstractVector{<:Real})
+function fast_dot(
+    a::SparseArrays.AbstractSparseVector{<:Real},
+    Q::Diagonal{<:Real},
+    b::AbstractVector{<:Real},
+)
     if a === b
         return _fast_quadratic_form_symmetric(a, Q)
     end
@@ -173,19 +177,21 @@ function fast_dot(a::SparseArrays.AbstractSparseVector{<:Real}, Q::Diagonal{<:Re
     nzvals = SparseArrays.nonzeros(a)
     nzinds = SparseArrays.nonzeroinds(a)
     return sum(eachindex(nzvals); init=zero(eltype(a))) do nzidx
-        nzvals[nzidx] * d[nzinds[nzidx]] * b[nzinds[nzidx]]
+        return nzvals[nzidx] * d[nzinds[nzidx]] * b[nzinds[nzidx]]
     end
 end
 
-function fast_dot(a::SparseArrays.AbstractSparseVector{<:Real}, Q::Diagonal{<:Real}, b::SparseArrays.AbstractSparseVector{<:Real})
+function fast_dot(
+    a::SparseArrays.AbstractSparseVector{<:Real},
+    Q::Diagonal{<:Real},
+    b::SparseArrays.AbstractSparseVector{<:Real},
+)
     if a === b
         return _fast_quadratic_form_symmetric(a, Q)
     end
     n = length(a)
     if length(b) != n
-        throw(
-            DimensionMismatch("Vector a has a length $n but b has a length $(length(b))")
-        )
+        throw(DimensionMismatch("Vector a has a length $n but b has a length $(length(b))"))
     end
     anzind = SparseArrays.nonzeroinds(a)
     bnzind = SparseArrays.nonzeroinds(b)
@@ -382,7 +388,7 @@ Base.length(storage::DeletedVertexStorage) = length(storage.storage)
 Computes the linear minimizer in the direction on the precomputed_set.
 Precomputed_set stores the vertices computed as extreme points v in each iteration.
 """
-function pre_computed_set_argminmax(lmo, pre_computed_set, direction, x; strong_lazification = false)
+function pre_computed_set_argminmax(lmo, pre_computed_set, direction, x; strong_lazification=false)
     val = convert(eltype(direction), Inf)
     valM = convert(eltype(direction), -Inf)
     idx = -1
@@ -401,7 +407,9 @@ function pre_computed_set_argminmax(lmo, pre_computed_set, direction, x; strong_
         end
     end
     if idx == -1
-        error("Infinite minimum $val in the precomputed set. Does the gradient contain invalid (NaN / Inf) entries?")
+        error(
+            "Infinite minimum $val in the precomputed set. Does the gradient contain invalid (NaN / Inf) entries?",
+        )
     end
     v_local = pre_computed_set[idx]
     a_local = idxM != -1 ? pre_computed_set[idxM] : nothing
@@ -459,11 +467,10 @@ function argmin_(v::SparseArrays.SparseVector{T}) where {T}
             return idx
         end
     end
-    error("unreachable")
+    return error("unreachable")
 end
 
 function weight_purge_threshold_default(::Type{T}) where {T<:AbstractFloat}
     return sqrt(eps(T) * Base.rtoldefault(T)) # around 1e-12 for Float64
 end
 weight_purge_threshold_default(::Type{T}) where {T<:Number} = Base.rtoldefault(T)
-

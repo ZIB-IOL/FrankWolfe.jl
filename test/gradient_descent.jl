@@ -167,8 +167,13 @@ const f_opt = f_gd(x_opt)
         )
 
         # Identity proximal operator should give same result as regular variant
-        x_reg, f_reg, _ =
-            FrankWolfe.adaptive_gradient_descent(f_gd, grad_gd!, x0; epsilon=target_tolerance, verbose=false)
+        x_reg, f_reg, _ = FrankWolfe.adaptive_gradient_descent(
+            f_gd,
+            grad_gd!,
+            x0;
+            epsilon=target_tolerance,
+            verbose=false,
+        )
 
         @testset "Comparison with FW variants" begin
             @testset "L1-ball comparison" begin

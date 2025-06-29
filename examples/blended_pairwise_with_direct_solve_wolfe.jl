@@ -105,7 +105,8 @@ x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
 
 active_set_quadratic_wolfe = FrankWolfe.ActiveSetQuadraticLinearSolve(
     FrankWolfe.ActiveSet([(1.0, copy(x00))]),
-    2I, -2xp,
+    2I,
+    -2xp,
     MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
     scheduler=FrankWolfe.LogScheduler(start_time=10, scaling_factor=1),
     wolfe_step=true,
@@ -126,11 +127,7 @@ dataSparsity = [
     trajectoryBPCG_quadratic_automatic_standard,
     trajectoryBPCG_quadratic_wolfe,
 ]
-labelSparsity = [
-    "BPCG (Standard)",
-    "AS_Standard", 
-    "AS_Wolfe",
-]
+labelSparsity = ["BPCG (Standard)", "AS_Standard", "AS_Wolfe"]
 
 # Plot trajectories
 plot_trajectories(dataSparsity, labelSparsity, xscalelog=false)

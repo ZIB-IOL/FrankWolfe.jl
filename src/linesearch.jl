@@ -392,11 +392,17 @@ function Secant(limit_num_steps, tol)
     return Secant(Adaptive(), false, limit_num_steps, tol, x -> true)
 end
 
-function Secant(;inner_ls=Adaptive(), safe=false, limit_num_steps=40, tol=1e-8, domain_oracle=(x -> true))
+function Secant(;
+    inner_ls=Adaptive(),
+    safe=false,
+    limit_num_steps=40,
+    tol=1e-8,
+    domain_oracle=(x -> true),
+)
     return Secant(inner_ls, safe, limit_num_steps, tol, domain_oracle)
 end
 
-mutable struct SecantWorkspace{XT,GT, IWS}
+mutable struct SecantWorkspace{XT,GT,IWS}
     inner_ws::IWS
     x::XT
     gradient::GT
@@ -524,8 +530,17 @@ mutable struct AdaptiveZerothOrder{T,TT,F} <: LineSearchMethod
     domain_oracle::F
 end
 
-AdaptiveZerothOrder(eta::T, tau::TT; domain_oracle=x->true) where {T,TT} =
-    AdaptiveZerothOrder{T,TT, typeof(domain_oracle)}(eta, tau, T(Inf), T(1e10), T(0.5), true, false, domain_oracle)
+AdaptiveZerothOrder(eta::T, tau::TT; domain_oracle=x -> true) where {T,TT} =
+    AdaptiveZerothOrder{T,TT,typeof(domain_oracle)}(
+        eta,
+        tau,
+        T(Inf),
+        T(1e10),
+        T(0.5),
+        true,
+        false,
+        domain_oracle,
+    )
 
 AdaptiveZerothOrder(;
     eta=0.9,
@@ -535,8 +550,17 @@ AdaptiveZerothOrder(;
     alpha=0.5,
     verbose=true,
     relaxed_smoothness=false,
-    domain_oracle=x->true,
-) = AdaptiveZerothOrder(eta, tau, L_est, max_estimate, alpha, verbose, relaxed_smoothness, domain_oracle)
+    domain_oracle=x -> true,
+) = AdaptiveZerothOrder(
+    eta,
+    tau,
+    L_est,
+    max_estimate,
+    alpha,
+    verbose,
+    relaxed_smoothness,
+    domain_oracle,
+)
 
 struct AdaptiveZerothOrderWorkspace{XT,BT}
     x::XT
@@ -578,7 +602,7 @@ function perform_line_search(
     end
     gamma_max = gamma
 
-    
+
     x_storage = storage.x
     if !isfinite(line_search.L_est)
         epsilon_step = min(1e-3, gamma_max)
@@ -684,11 +708,18 @@ mutable struct Adaptive{T,TT,F} <: LineSearchMethod
     domain_oracle::F
 end
 
-Adaptive(eta::T, tau::TT; domain_oracle=x->true) where {T,TT} =
-    Adaptive{T,TT, typeof(domain_oracle)}(eta, tau, T(Inf), T(1e10), true, false, domain_oracle)
+Adaptive(eta::T, tau::TT; domain_oracle=x -> true) where {T,TT} =
+    Adaptive{T,TT,typeof(domain_oracle)}(eta, tau, T(Inf), T(1e10), true, false, domain_oracle)
 
-Adaptive(; eta=0.9, tau=2, L_est=Inf, max_estimate=1e10, verbose=true, relaxed_smoothness=false, domain_oracle=x->true) =
-    Adaptive(eta, tau, L_est, max_estimate, verbose, relaxed_smoothness, domain_oracle)
+Adaptive(;
+    eta=0.9,
+    tau=2,
+    L_est=Inf,
+    max_estimate=1e10,
+    verbose=true,
+    relaxed_smoothness=false,
+    domain_oracle=x -> true,
+) = Adaptive(eta, tau, L_est, max_estimate, verbose, relaxed_smoothness, domain_oracle)
 
 struct AdaptiveWorkspace{XT,BT}
     x::XT
@@ -719,7 +750,7 @@ function perform_line_search(
             return zero(promote_type(eltype(d), eltype(gradient)))
         end
     end
-    
+
     # Deal with not trivial domain
     x_storage = similar(x)
     gamma = gamma_max

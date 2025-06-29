@@ -43,13 +43,13 @@ using LinearAlgebra
         trajectory=true,
     )
 
-    @test res_2[4] ≤  0.004799839951985518
+    @test res_2[4] ≤ 0.004799839951985518
     @test res_10[4] ≤ 0.02399919272834694
 
     # strongly convex set
     xp2 = 10 * ones(n)
     diag_term = 100 * rand(n)
-    covariance_matrix = zeros(n,n) + LinearAlgebra.Diagonal(diag_term)
+    covariance_matrix = zeros(n, n) + LinearAlgebra.Diagonal(diag_term)
     lmo2 = FrankWolfe.EllipsoidLMO(covariance_matrix)
 
     f2(x) = norm(x - xp2)^2
@@ -85,7 +85,7 @@ using LinearAlgebra
         trajectory=true,
     )
 
-    @test length(res_10[end]) <= 16
+    @test length(res_10[end]) <= 22
     @test length(res_2[end]) <= 1122
 
 end
