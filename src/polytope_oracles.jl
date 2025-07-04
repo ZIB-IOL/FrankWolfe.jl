@@ -351,7 +351,7 @@ end
 
 {0,1} hypercube polytope.
 """
-struct ZeroOneHypercube end
+struct ZeroOneHypercube <: LinearMinimizationOracle end
 
 function convert_mathopt(
     lmo::ZeroOneHypercube,
