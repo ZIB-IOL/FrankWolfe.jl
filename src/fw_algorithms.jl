@@ -53,7 +53,7 @@ function frank_wolfe(
     v = []
     x = x0
     step_type = ST_REGULAR
-    status_code = STATUS_OPTIMAL # status starts set to optimal 
+    status_code = STATUS_RUNNING
 
     if trajectory
         callback = make_trajectory_callback(callback, traj_data)
@@ -243,6 +243,10 @@ function frank_wolfe(
 
     if t >= max_iteration
         status_code = STATUS_MAXITER
+    elseif dual_gap <= max(epsilon, eps(float(typeof(dual_gap))))
+        status_code = STATUS_OPTIMAL
+    elseif status_code === STATUS_RUNNING
+        status_code = STATUS_SUBOPTIMAL
     end
 
     return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data, status=status_string[Symbol(status_code)])

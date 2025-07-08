@@ -103,15 +103,17 @@ function callback_state(state::CallbackState)
 end
 
 @enum Status begin
+    STATUS_RUNNING = 0
     STATUS_OPTIMAL = 1
     STATUS_MAXITER = 2
     STATUS_TIMEOUT = 3
     STATUS_INTERRUPTED = 4
-    STATUS_SUBOPTIMAL = 50 # not yet implemented
+    STATUS_SUBOPTIMAL = 5
     STATUS_OTHER = 99 # not yet implemented
 end
 
 const status_string = (
+    STATUS_RUNNING = "RUNNING",
     STATUS_OPTIMAL = "OPTIMAL",
     STATUS_MAXITER = "MAXITER",
     STATUS_TIMEOUT = "TIMEOUT",
