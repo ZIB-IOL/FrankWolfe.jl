@@ -101,3 +101,21 @@ Select a subset of fields from [`CallbackState`](@ref) to include in the traject
 function callback_state(state::CallbackState)
     return (state.t, state.primal, state.dual, state.dual_gap, state.time)
 end
+
+@enum AlgorithmStatus begin
+    STATUS_OPTIMAL = 1
+    STATUS_MAXITER = 2
+    STATUS_INFEASIBLE = 3
+    STATUS_UNBOUNDED = 4
+    STATUS_ERROR = 5
+    STATUS_OTHER = 99
+end
+
+const algorithmstatus_string = (
+    STATUS_OPTIMAL = "OPTIMAL",
+    STATUS_MAXITER = "MAXITER",
+    STATUS_INFEASIBLE = "INFEASIBLE",
+    STATUS_UNBOUNDED = "UNBOUNDED",
+    STATUS_ERROR = "ERROR",
+    STATUS_OTHER = "UNKNOWN",
+)
