@@ -243,8 +243,9 @@ function frank_wolfe(
 
     if t >= max_iteration
         status_code = STATUS_MAXITER
+    end
 
-    return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data, status=status_string[status_code])
+    return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data, status=status_string[Symbol(status_code)])
 end
 
 
