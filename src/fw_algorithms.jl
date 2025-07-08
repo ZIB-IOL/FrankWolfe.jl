@@ -53,6 +53,7 @@ function frank_wolfe(
     v = []
     x = x0
     step_type = ST_REGULAR
+    status_code = STATUS_OPTIMAL # status starts set to optimal 
 
     if trajectory
         callback = make_trajectory_callback(callback, traj_data)
@@ -120,6 +121,7 @@ function frank_wolfe(
             if tot_time ≥ timeout
                 if verbose
                     @info "Time limit reached"
+                    status_code = STATUS_TIMEOUT
                 end
                 break
             end
@@ -190,6 +192,8 @@ function frank_wolfe(
                 step_type,
             )
             if callback(state) === false
+                # user can terminate algorithm based on callback values, so this needs its own status (user terminated... callback termination...)
+                status_code = STATUS_INTERRUPTED
                 break
             end
         end
@@ -237,7 +241,10 @@ function frank_wolfe(
         callback(state)
     end
 
-    return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data)
+    if t >= max_iteration
+        status_code = STATUS_MAXITER
+
+    return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data, status=status_string[status_code])
 end
 
 

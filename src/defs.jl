@@ -102,20 +102,20 @@ function callback_state(state::CallbackState)
     return (state.t, state.primal, state.dual, state.dual_gap, state.time)
 end
 
-@enum AlgorithmStatus begin
+@enum Status begin
     STATUS_OPTIMAL = 1
     STATUS_MAXITER = 2
-    STATUS_INFEASIBLE = 3
-    STATUS_UNBOUNDED = 4
-    STATUS_ERROR = 5
-    STATUS_OTHER = 99
+    STATUS_TIMEOUT = 3
+    STATUS_INTERRUPTED = 4
+    STATUS_SUBOPTIMAL = 50 # not yet implemented
+    STATUS_OTHER = 99 # not yet implemented
 end
 
-const algorithmstatus_string = (
+const status_string = (
     STATUS_OPTIMAL = "OPTIMAL",
     STATUS_MAXITER = "MAXITER",
-    STATUS_INFEASIBLE = "INFEASIBLE",
-    STATUS_UNBOUNDED = "UNBOUNDED",
-    STATUS_ERROR = "ERROR",
+    STATUS_TIMEOUT = "TIMEOUT",
+    STATUS_INTERRUPTED = "INTERRUPTED",
+    STATUS_SUBOPTIMAL = "SUBOPTIMAL",
     STATUS_OTHER = "UNKNOWN",
 )
