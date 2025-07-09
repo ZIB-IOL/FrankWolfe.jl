@@ -345,7 +345,7 @@ In contrast to `ActiveSetQuadraticProductCaching`, this active set assumes that 
 Therefore, we cache only the dot products `⟨A * x, a_i⟩` and `⟨A * a_i, a_j⟩`.
 This active set might be used for experiments with Alternating Linear Minimization (ALM) or Split FW where we usually have chaning linear terms and Hessian matrices which only change in scale.
 """
-struct ActiveSetPartialCaching{AT, R <: Real, IT, H} <: AbstractActiveSet{AT,R,IT}
+struct ActiveSetPartialCaching{AT,R<:Real,IT,H} <: AbstractActiveSet{AT,R,IT}
     weights::Vector{R}
     atoms::Vector{AT}
     x::IT
@@ -363,7 +363,11 @@ function ActiveSetPartialCaching(tuple_values::AbstractVector{Tuple{R,AT}}, A::H
     return ActiveSetPartialCaching{AT,R}(tuple_values, A, λ)
 end
 
-function ActiveSetPartialCaching{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}, A::H, λ) where {AT,R,H}
+function ActiveSetPartialCaching{AT,R}(
+    tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}},
+    A::H,
+    λ,
+) where {AT,R,H}
     n = length(tuple_values)
     weights = Vector{R}(undef, n)
     atoms = Vector{AT}(undef, n)
@@ -376,7 +380,17 @@ function ActiveSetPartialCaching{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Nu
         atoms[idx] = tuple_values[idx][2]
     end
     x = similar(atoms[1])
-    as = ActiveSetPartialCaching{AT,R,typeof(x),H}(weights, atoms, x, A, dots_x, dots_A, λ, weights_prev, modified)
+    as = ActiveSetPartialCaching{AT,R,typeof(x),H}(
+        weights,
+        atoms,
+        x,
+        A,
+        dots_x,
+        dots_A,
+        λ,
+        weights_prev,
+        modified,
+    )
     reset_quadratic_dots!(as)
     compute_active_set_iterate!(as)
     return as
@@ -394,10 +408,18 @@ function reset_quadratic_dots!(as::ActiveSetPartialCaching{AT,R}) where {AT,R}
     return as
 end
 
-function ActiveSetPartialCaching(tuple_values::AbstractVector{Tuple{R,AT}}, A::UniformScaling, λ) where {AT,R}
+function ActiveSetPartialCaching(
+    tuple_values::AbstractVector{Tuple{R,AT}},
+    A::UniformScaling,
+    λ,
+) where {AT,R}
     return ActiveSetPartialCaching(tuple_values, Identity(A.λ), λ)
 end
-function ActiveSetPartialCaching{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}, A::UniformScaling, λ) where {AT,R}
+function ActiveSetPartialCaching{AT,R}(
+    tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}},
+    A::UniformScaling,
+    λ,
+) where {AT,R}
     return ActiveSetPartialCaching{AT,R}(tuple_values, Identity(A.λ), λ)
 end
 
