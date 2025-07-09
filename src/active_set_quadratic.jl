@@ -293,8 +293,9 @@ The iterate `x = ∑λ_i a_i` is stored in x with type `IT`.
 The objective function is assumed to be of the form `f(x)=½⟨x,Ax⟩+⟨b,x⟩+c`
 so that the gradient is simply `∇f(x)=Ax+b`.
 
-In contrast to `ActiveSetQuadraticProductCaching`, this active set works also for variable changing linear term `b`.
-Furthermore, the active set allows for a variable scaling factor `λ` of the quadratic term.
+In contrast to `ActiveSetQuadraticProductCaching`, this active set assumes that the Hessian matrix `A` is fixed up to a scaling factor `λ` and that the linear term `b` can change during the iterations.
+Therefore, we cache only the dot products `⟨A * x, a_i⟩` and `⟨A * a_i, a_j⟩`.
+This active set might be used for experiments with Alternating Linear Minimization (ALM) or Split FW where we usually have chaning linear terms and Hessian matrices which only change in scale.
 """
 struct ActiveSetPartialCaching{AT, R <: Real, IT, H} <: AbstractActiveSet{AT,R,IT}
     weights::Vector{R}
@@ -307,6 +308,7 @@ struct ActiveSetPartialCaching{AT, R <: Real, IT, H} <: AbstractActiveSet{AT,R,I
     weights_prev::Vector{R}
     modified::BitVector
 end
+
 
 
 function ActiveSetPartialCaching(tuple_values::AbstractVector{Tuple{R,AT}}, A::H, λ) where {AT,R,H}
