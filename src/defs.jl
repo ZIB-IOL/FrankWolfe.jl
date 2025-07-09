@@ -108,8 +108,8 @@ end
     STATUS_MAXITER = 2
     STATUS_TIMEOUT = 3
     STATUS_INTERRUPTED = 4
-    STATUS_SUBOPTIMAL = 5
-    STATUS_OTHER = 99 # not yet implemented
+    STATUS_SUBOPTIMAL = 50
+    STATUS_OTHER = 99
 end
 
 const status_string = (
