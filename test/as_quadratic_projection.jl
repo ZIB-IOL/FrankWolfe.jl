@@ -31,7 +31,7 @@ end
 # lmo = FrankWolfe.ProbabilitySimplexOracle(100.0);
 lmo = FrankWolfe.UnitSimplexOracle(10000.0);
 
-x00 = FrankWolfe.compute_extreme_point(lmo, rand(n))
+x000 = FrankWolfe.compute_extreme_point(lmo, rand(n))
 
 function build_callback(trajectory_arr)
     return function callback(state, active_set, args...)
@@ -44,13 +44,13 @@ x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
-    copy(x00),
+    copy(x000),
     max_iteration=k,
     callback=build_callback(trajectoryBPCG_standard),
 );
 
 active_set_quadratic_automatic_standard = FrankWolfe.ActiveSetQuadraticLinearSolve(
-    FrankWolfe.ActiveSet([(1.0, copy(x00))]),
+    FrankWolfe.ActiveSet([(1.0, copy(x000))]),
     grad!,
     MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
     scheduler=FrankWolfe.LogScheduler(start_time=10, scaling_factor=1),
@@ -66,7 +66,7 @@ x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
 );
 
 active_set_quadratic_automatic = FrankWolfe.ActiveSetQuadraticLinearSolve(
-    [(1.0, copy(x00))],
+    [(1.0, copy(x000))],
     grad!,
     MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
     scheduler=FrankWolfe.LogScheduler(start_time=10, scaling_factor=1),
@@ -82,8 +82,9 @@ x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
 );
 
 active_set_quadratic_manual = FrankWolfe.ActiveSetQuadraticLinearSolve(
-    FrankWolfe.ActiveSet([(1.0, copy(x00))]),
-    2.0 * I, -2xp,
+    FrankWolfe.ActiveSet([(1.0, copy(x000))]),
+    2.0 * I,
+    -2xp,
     MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
     scheduler=FrankWolfe.LogScheduler(start_time=10, scaling_factor=1),
 )
@@ -113,8 +114,9 @@ end
 lmo = FrankWolfe.LpNormLMO{Float64,5}(100.0)
 
 active_set_quadratic_manual_wolfe = FrankWolfe.ActiveSetQuadraticLinearSolve(
-    FrankWolfe.ActiveSet([(1.0, copy(x00))]),
-    2.0 * I, -2xp,
+    FrankWolfe.ActiveSet([(1.0, copy(x000))]),
+    2.0 * I,
+    -2xp,
     MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
     scheduler=FrankWolfe.LogScheduler(start_time=10, scaling_factor=1),
     wolfe_step=true,
@@ -144,7 +146,8 @@ x, v, primal_manual_wolfe, dual_gap, _ = FrankWolfe.blended_pairwise_conditional
 
 active_set_quadratic_partial_caching = FrankWolfe.ActiveSetQuadraticLinearSolve(
     FrankWolfe.ActiveSetPartialCaching([(1.0, copy(x00))], I, 2.0),
-    2.0 * I, -2xp,
+    2.0 * I,
+    -2xp,
     MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
     scheduler=FrankWolfe.LogScheduler(start_time=10, scaling_factor=1),
     wolfe_step=true,
@@ -159,5 +162,6 @@ x, v, primal_partial_caching, dual_gap, _ = FrankWolfe.blended_pairwise_conditio
     callback=build_callback(trajectoryBPCG_quadratic_partial_caching),
 );
 
-@test length(trajectoryBPCG_quadratic_manual_wolfe) == length(trajectoryBPCG_quadratic_partial_caching)
+@test length(trajectoryBPCG_quadratic_manual_wolfe) ==
+      length(trajectoryBPCG_quadratic_partial_caching)
 @test abs(primal_partial_caching - primal_manual_wolfe) < 1e-10

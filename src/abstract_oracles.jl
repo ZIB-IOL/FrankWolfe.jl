@@ -1,9 +1,13 @@
 
 """
+    LinearMinimizationOracle
+
 Supertype for linear minimization oracles.
 
 All LMOs must implement `compute_extreme_point(lmo::LMO, direction)`
 and return a vector `v` of the appropriate type.
+
+See also: [`compute_extreme_point`](@ref).
 """
 abstract type LinearMinimizationOracle end
 
@@ -275,8 +279,12 @@ struct SubspaceLMO{LMO<:LinearMinimizationOracle,TD,TI} <: LinearMinimizationOra
     lmo::LMO
     deflate::TD
     inflate::TI
-    function SubspaceLMO(lmo::LMO, deflate, inflate=(x, lmo) -> x) where {LMO<:LinearMinimizationOracle}
-        return new{typeof(lmo),typeof(deflate),typeof(inflate)}( lmo, deflate, inflate)
+    function SubspaceLMO(
+        lmo::LMO,
+        deflate,
+        inflate=(x, lmo) -> x,
+    ) where {LMO<:LinearMinimizationOracle}
+        return new{typeof(lmo),typeof(deflate),typeof(inflate)}(lmo, deflate, inflate)
     end
 end
 

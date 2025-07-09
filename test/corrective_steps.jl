@@ -32,7 +32,7 @@ using SparseArrays
         max_iteration=k,
         verbose=true,
         print_iter=1,
-        lazy=true
+        lazy=true,
     )
 
     for lazy in (true, false)
@@ -94,5 +94,5 @@ using SparseArrays
         verbose=false,
     )
     @test abs(primal_hyb - primal_afw) <= 1e-6
-    @test isapprox(x_hyb, x_afw, rtol=1e-5)    
+    @test isapprox(x_hyb, x_afw, rtol=1e-5)
 end

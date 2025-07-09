@@ -41,7 +41,7 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
         grad!,
         (lmo_nb, lmo_prob),
         ones(n),
-        lambda=1/6,
+        lambda=1 / 6,
         line_search=FrankWolfe.Adaptive(relaxed_smoothness=true),
     )
 
@@ -54,7 +54,7 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
         grad!,
         (lmo_nb, lmo_prob),
         ones(n),
-        lambda=1/18,
+        lambda=1 / 18,
         line_search=FrankWolfe.Adaptive(relaxed_smoothness=true),
     )
 
@@ -135,7 +135,7 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
         ones(n),
         line_search=FrankWolfe.Agnostic(),
         momentum=0.9,
-        lambda=0.5
+        lambda=0.5,
     )
 
     @test abs(x.blocks[1][1] - 0.5 / n) < 1e-3
@@ -184,12 +184,29 @@ end
             grad!,
             (lmo2, lmo_prob),
             ones(n),
-            lambda=0.5
+            lambda=0.5,
         )
 
         @test abs(x.blocks[1][1] - 0.5 / n) < 1e-6
         @test abs(x.blocks[2][1] - 1 / n) < 1e-6
     end
+end
+
+@testset "Testing Splitting FW with variable lambda" begin
+
+    lambda_func(state) = 1 / (state.t^2 + 1)
+
+    x, _, _, _, _ = FrankWolfe.alternating_linear_minimization(
+        FrankWolfe.block_coordinate_frank_wolfe,
+        f,
+        grad!,
+        (lmo2, lmo3),
+        ones(n),
+        lambda=lambda_func,
+    )
+
+    @test all(x.blocks[1] .- ones(n) .< 1e-6)
+    @test all(x.blocks[2] .- ones(n) .< 1e-6)
 end
 
 @testset "Testing stepsize/linesearch in block-coordinate FW" begin

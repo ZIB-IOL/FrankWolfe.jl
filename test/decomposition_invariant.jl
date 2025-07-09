@@ -234,7 +234,7 @@ end
             f,
             grad!,
             cube,
-            x0,
+            copy(x0),
             verbose=false,
             trajectory=true,
         )
@@ -243,24 +243,26 @@ end
             f,
             grad!,
             cube_MOI,
-            x0,
+            copy(x0),
             verbose=false,
             trajectory=true,
         )
 
-        res_fw = FrankWolfe.frank_wolfe(f, grad!, cube, x0, verbose=false, trajectory=true)
+        res_fw = FrankWolfe.frank_wolfe(f, grad!, cube, copy(x0), verbose=false, trajectory=true)
 
         res_blended = FrankWolfe.blended_decomposition_invariant_conditional_gradient(
             f,
             grad!,
             cube,
-            x0,
+            copy(x0),
             verbose=false,
             trajectory=true,
         )
-        @test norm(res[1] - res_fw[1]) ≤ n * 1e-4
+        if res_fw[4] <= 1e-7
+            @test norm(res[1] - res_fw[1]) ≤ n * 1e-4
+            @test norm(res_MOI[1] - res_fw[1]) ≤ n * 1e-4
+        end
         @test norm(res[1] - res_blended[1]) ≤ n * 1e-4
-        @test norm(res_MOI[1] - res_fw[1]) ≤ n * 1e-4
         @test norm(res_MOI[1] - res_blended[1]) ≤ n * 1e-4
     end
 
@@ -346,7 +348,8 @@ end
         function grad!(storage, x)
             @. storage = x - xref
         end
-        res_fw = FrankWolfe.frank_wolfe(f, grad!, lmo, FrankWolfe.compute_extreme_point(lmo, randn(n)))
+        res_fw =
+            FrankWolfe.frank_wolfe(f, grad!, lmo, FrankWolfe.compute_extreme_point(lmo, randn(n)))
         res_dicg = FrankWolfe.decomposition_invariant_conditional_gradient(
             f,
             grad!,

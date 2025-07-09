@@ -83,13 +83,13 @@ Note: This methodology is currently only proven to work
 with 'FrankWolfe.Shortstep' linesearches and a (not-yet
 implemented) adaptive method; see the article for details.
 """
-struct LazyUpdate <: BlockCoordinateUpdateOrder 
+struct LazyUpdate <: BlockCoordinateUpdateOrder
     lazy_block::Int
     refresh_rate::Int
     block_size::Int
 end
 
-function LazyUpdate(lazy_block::Int,refresh_rate::Int)
+function LazyUpdate(lazy_block::Int, refresh_rate::Int)
     return LazyUpdate(lazy_block, refresh_rate, 1)
 end
 
@@ -106,11 +106,11 @@ function select_update_indices(u::CyclicUpdate, s::CallbackState, _)
 
     if u.limit in [-1, l]
         return [[i] for i in 1:l]
-    end 
+    end
 
-    start = (s.t*u.limit % l) + 1
+    start = (s.t * u.limit % l) + 1
     if start + u.limit - 1 ≤ l
-        return [[i] for i in start:start + u.limit - 1]
+        return [[i] for i in start:start+u.limit-1]
     else
         a = [[i] for i in start:l]
         append!(a, [[i] for i in 1:u.limit-length(a)])
@@ -124,7 +124,7 @@ function select_update_indices(u::StochasticUpdate, s::CallbackState, _)
 
     @assert u.limit <= l
     @assert u.limit > 0 || u.limit == -1
-    
+
     if u.limit == -1
         return [[rand(1:l)] for i in 1:l]
     end
@@ -154,7 +154,7 @@ function select_update_indices(u::DualProgressOrder, s::CallbackState, dual_gaps
     # In the first two iterations update every block so we get finite dual progress
     if s.t < 2
         u.dual_progress = ones(l)
-        indices = [[i for i=1:l]]
+        indices = [[i for i in 1:l]]
     else
         # Update dual progress only on updated blocks
         for i in u.last_indices
@@ -169,7 +169,7 @@ function select_update_indices(u::DualProgressOrder, s::CallbackState, dual_gaps
 
         # If less than n blocks have non-zero dual progress, update all of them
         if sum(u.dual_progress .!= 0) < n
-            indices = [[i for i=1:l]]
+            indices = [[i for i in 1:l]]
         else
             indices = [sample_without_replacement(n, u.dual_progress)]
         end
@@ -188,7 +188,7 @@ function select_update_indices(u::DualGapOrder, s::CallbackState, dual_gaps)
 
     # In the first iteration update every block so we get finite dual gaps
     if s.t < 1
-        return [[i for i=1:l]]
+        return [[i for i in 1:l]]
     end
 
     n = u.limit == -1 ? l : u.limit
@@ -201,7 +201,13 @@ function select_update_indices(update::LazyUpdate, s::CallbackState, dual_gaps)
     #occur, then adds an update of everything while mainting
     #randomized order.
     l = length(s.lmo.lmos)
-    return push!([[rand(range(1,l)[1:l .!= update.lazy_block]) for _ in range(1,update.block_size)] for _ in 1:(update.refresh_rate -1)], range(1,l))
+    return push!(
+        [
+            [rand(range(1, l)[1:l.!=update.lazy_block]) for _ in range(1, update.block_size)] for
+            _ in 1:(update.refresh_rate-1)
+        ],
+        range(1, l),
+    )
 end
 
 """
@@ -275,7 +281,13 @@ function Base.copy(obj::BPCGStep)
     if obj.active_set === nothing
         return BPCGStep(obj.lazy, nothing, obj.renorm_interval, obj.sparsity_control, obj.phi)
     else
-        return BPCGStep(obj.lazy, copy(obj.active_set), obj.renorm_interval, obj.sparsity_control, obj.phi)
+        return BPCGStep(
+            obj.lazy,
+            copy(obj.active_set),
+            obj.renorm_interval,
+            obj.sparsity_control,
+            obj.phi,
+        )
     end
 end
 
@@ -401,7 +413,7 @@ function update_iterate(
             dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
         end
 
-        if (dual_gap ≥ epsilon) && (!s.lazy || dual_gap ≥ s.phi / s.sparsity_control)
+        if !s.lazy || dual_gap ≥ s.phi / s.sparsity_control
 
             d = muladd_memory_mode(memory_mode, d, x, v)
 
@@ -447,18 +459,27 @@ function update_iterate(
         active_set_renormalize!(s.active_set)
     end
 
-    x = muladd_memory_mode(memory_mode, x, gamma, d)
+    x .= get_active_set_iterate(s.active_set)
 
     return (dual_gap, vertex_taken, d, gamma, step_type)
 end
 
 """
-    block_coordinate_frank_wolfe(f, grad!, lmo::ProductLMO{N}, x0; ...) where {N}
+    block_coordinate_frank_wolfe(f, grad!, lmo::ProductLMO{N}, x0; kwargs...) where {N}
 
 Block-coordinate version of the Frank-Wolfe algorithm.
 Minimizes objective `f` over the product of feasible domains specified by the `lmo`.
 The optional argument the `update_order` is of type [`FrankWolfe.BlockCoordinateUpdateOrder`](@ref) and controls the order in which the blocks are updated.
 The argument `update_step` is a single instance or tuple of [`FrankWolfe.UpdateStep`](@ref) and defines which FW-algorithms to use to update the iterates in the different blocks.
+
+See [S. Lacoste-Julien, M. Jaggi, M. Schmidt, and P. Pletscher 2013](https://arxiv.org/abs/1207.4747)
+and [A. Beck, E. Pauwels and S. Sabach 2015](https://arxiv.org/abs/1502.03716) for more details about Block-Coordinate Frank-Wolfe.
+
+$COMMON_ARGS
+
+$COMMON_KWARGS
+
+# Return
 
 The method returns a tuple `(x, v, primal, dual_gap, traj_data)` with:
 - `x` cartesian product of final iterates
@@ -466,9 +487,6 @@ The method returns a tuple `(x, v, primal, dual_gap, traj_data)` with:
 - `primal` primal value `f(x)`
 - `dual_gap` final Frank-Wolfe gap
 - `traj_data` vector of trajectory information.
-
-See [S. Lacoste-Julien, M. Jaggi, M. Schmidt, and P. Pletscher 2013](https://arxiv.org/abs/1207.4747)
-and [A. Beck, E. Pauwels and S. Sabach 2015](https://arxiv.org/abs/1502.03716) for more details about Block-Coordinate Frank-Wolfe.
 """
 function block_coordinate_frank_wolfe(
     f,
@@ -672,7 +690,7 @@ function block_coordinate_frank_wolfe(
                     line_search[i],
                     linesearch_workspace[i],
                     memory_mode,
-                    epsilon,
+                    epsilon / N, # smaller tolerance s.t. the total gap is smaller than epsilon
                 )
             end
 

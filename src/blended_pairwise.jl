@@ -4,6 +4,12 @@
 Implements the BPCG algorithm from [Tsuji, Tanaka, Pokutta (2021)](https://arxiv.org/abs/2110.12650).
 The method uses an active set of current vertices.
 Unlike away-step, it transfers weight from an away vertex to another vertex of the active set.
+
+$COMMON_ARGS
+
+$COMMON_KWARGS
+
+$RETURN_ACTIVESET
 """
 function blended_pairwise_conditional_gradient(
     f,
@@ -72,7 +78,7 @@ function blended_pairwise_conditional_gradient(
     grad!,
     lmo,
     active_set::AbstractActiveSet{AT,R};
-    line_search::LineSearchMethod=Adaptive(),
+    line_search::LineSearchMethod=Secant(),
     epsilon=1e-7,
     max_iteration=10000,
     print_iter=1000,
@@ -253,7 +259,17 @@ function blended_pairwise_conditional_gradient(
                     break
                 end
             end
-            active_set_update_pairwise!(active_set, gamma, gamma_max, v_local_loc, a_loc, v_local, a, add_dropped_vertices, extra_vertex_storage)
+            active_set_update_pairwise!(
+                active_set,
+                gamma,
+                gamma_max,
+                v_local_loc,
+                a_loc,
+                v_local,
+                a,
+                add_dropped_vertices,
+                extra_vertex_storage,
+            )
         else # add to active set
             if lazy # otherwise, v computed above already
                 # optionally try to use the storage

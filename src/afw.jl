@@ -1,11 +1,17 @@
 
 """
-    away_frank_wolfe(f, grad!, lmo, x0; ...)
+    away_frank_wolfe(f, grad!, lmo, x0; kwargs...)
 
 Frank-Wolfe with away steps.
 The algorithm maintains the current iterate as a convex combination of vertices in the
 [`FrankWolfe.ActiveSet`](@ref) data structure.
 See [M. Besançon, A. Carderera and S. Pokutta 2021](https://arxiv.org/abs/2104.06675) for illustrations of away steps.
+
+$COMMON_ARGS
+
+$COMMON_KWARGS
+
+$RETURN_ACTIVESET
 """
 function away_frank_wolfe(
     f,
@@ -76,7 +82,7 @@ function away_frank_wolfe(
     grad!,
     lmo,
     active_set::AbstractActiveSet{AT,R};
-    line_search::LineSearchMethod=Adaptive(),
+    line_search::LineSearchMethod=Secant(),
     lazy_tolerance=2.0,
     epsilon=1e-7,
     away_steps=true,
@@ -254,7 +260,15 @@ function away_frank_wolfe(
             # cleanup and renormalize every x iterations. Only for the fw steps.
             renorm = mod(t, renorm_interval) == 0
             if away_step_taken
-                active_set_update!(active_set, -gamma, vertex, true, index, add_dropped_vertices=use_extra_vertex_storage, vertex_storage=extra_vertex_storage)
+                active_set_update!(
+                    active_set,
+                    -gamma,
+                    vertex,
+                    true,
+                    index,
+                    add_dropped_vertices=use_extra_vertex_storage,
+                    vertex_storage=extra_vertex_storage,
+                )
             else
                 if add_dropped_vertices && gamma == gamma_max
                     for vtx in active_set.atoms
@@ -337,7 +351,12 @@ function away_frank_wolfe(
     end
 
     active_set_renormalize!(active_set)
-    active_set_cleanup!(active_set; weight_purge_threshold=weight_purge_threshold, add_dropped_vertices=use_extra_vertex_storage, vertex_storage=extra_vertex_storage)
+    active_set_cleanup!(
+        active_set;
+        weight_purge_threshold=weight_purge_threshold,
+        add_dropped_vertices=use_extra_vertex_storage,
+        vertex_storage=extra_vertex_storage,
+    )
     x = get_active_set_iterate(active_set)
     grad!(gradient, x)
     if recompute_last_vertex
@@ -387,7 +406,19 @@ end
 #
 # a more complete derivation can be found in https://hackmd.io/@spokutta/B14MTMsLF
 
-function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon, d; use_extra_vertex_storage=false, extra_vertex_storage=nothing, lazy_tolerance=2.0, memory_mode::MemoryEmphasis=InplaceEmphasis())
+function lazy_afw_step(
+    x,
+    gradient,
+    lmo,
+    active_set,
+    phi,
+    epsilon,
+    d;
+    use_extra_vertex_storage=false,
+    extra_vertex_storage=nothing,
+    lazy_tolerance=2.0,
+    memory_mode::MemoryEmphasis=InplaceEmphasis(),
+)
     _, v, v_loc, _, a_lambda, a, a_loc, _, _ = active_set_argminmax(active_set, gradient)
     #Do lazy FW step
     grad_dot_lazy_fw_vertex = fast_dot(v, gradient)
@@ -443,8 +474,7 @@ function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon, d; use_extra_
                 away_step_taken = false
                 fw_step_taken = true
                 index = -1
-                #Lower our expectation for progress.
-            else
+            else # Lower our expectation for progress.
                 step_type = ST_DUALSTEP
                 phi = min(dual_gap, phi / 2.0)
                 gamma_max = zero(a_lambda)
@@ -458,7 +488,15 @@ function lazy_afw_step(x, gradient, lmo, active_set, phi, epsilon, d; use_extra_
     return d, vertex, index, gamma_max, phi, away_step_taken, fw_step_taken, step_type
 end
 
-function afw_step(x, gradient, lmo, active_set, epsilon, d; memory_mode::MemoryEmphasis=InplaceEmphasis())
+function afw_step(
+    x,
+    gradient,
+    lmo,
+    active_set,
+    epsilon,
+    d;
+    memory_mode::MemoryEmphasis=InplaceEmphasis(),
+)
     _, _, _, _, a_lambda, a, a_loc = active_set_argminmax(active_set, gradient)
     v = compute_extreme_point(lmo, gradient)
     grad_dot_x = fast_dot(x, gradient)
@@ -491,7 +529,7 @@ function afw_step(x, gradient, lmo, active_set, epsilon, d; memory_mode::MemoryE
     return d, vertex, index, gamma_max, dual_gap, away_step_taken, fw_step_taken, step_type
 end
 
-function fw_step(x, gradient, lmo, d; memory_mode::MemoryEmphasis = InplaceEmphasis())
+function fw_step(x, gradient, lmo, d; memory_mode::MemoryEmphasis=InplaceEmphasis())
     v = compute_extreme_point(lmo, gradient)
     d = muladd_memory_mode(memory_mode, d, x, v)
     return (

@@ -15,16 +15,16 @@ include("../examples/plot_utils.jl")
 
 function simple_reg_loss(θ, data_point)
     (xi, yi) = data_point
-    (a, b) = (θ[1:end-1], θ[end])
+    (a, b) = (θ[1:(end-1)], θ[end])
     pred = a ⋅ xi + b
     return (pred - yi)^2 / 2
 end
 
 function ∇simple_reg_loss(storage, θ, data_point)
     (xi, yi) = data_point
-    (a, b) = (θ[1:end-1], θ[end])
+    (a, b) = (θ[1:(end-1)], θ[end])
     pred = a ⋅ xi + b
-    @. storage[1:end-1] += xi * (pred - yi)
+    @. storage[1:(end-1)] += xi * (pred - yi)
     storage[end] += pred - yi
     return storage
 end

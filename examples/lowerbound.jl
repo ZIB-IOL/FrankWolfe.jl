@@ -102,7 +102,7 @@ FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo; k=100)
 # define lower bound
 
 trajLowerbound = []
-for i in 1:n-1
+for i in 1:(n-1)
     push!(trajLowerbound, (i, 1 / i - 1 / n, NaN, 1 / i - 1 / n, NaN))
 end
 

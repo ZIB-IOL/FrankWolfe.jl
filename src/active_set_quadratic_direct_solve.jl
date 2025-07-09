@@ -52,7 +52,14 @@ function ActiveSetQuadraticLinearSolve(
     wolfe_step=false,
 ) where {AT,R}
     A, b = detect_quadratic_function(grad!, tuple_values[1][2])
-    return ActiveSetQuadraticLinearSolve(tuple_values, A, b, lp_optimizer, scheduler=scheduler, wolfe_step=wolfe_step)
+    return ActiveSetQuadraticLinearSolve(
+        tuple_values,
+        A,
+        b,
+        lp_optimizer,
+        scheduler=scheduler,
+        wolfe_step=wolfe_step,
+    )
 end
 
 """
@@ -139,7 +146,14 @@ function ActiveSetQuadraticLinearSolve(
     wolfe_step=false,
 )
     A, b = detect_quadratic_function(grad!, inner_as.atoms[1])
-    return ActiveSetQuadraticLinearSolve(inner_as, A, b, lp_optimizer; scheduler=scheduler, wolfe_step=wolfe_step)
+    return ActiveSetQuadraticLinearSolve(
+        inner_as,
+        A,
+        b,
+        lp_optimizer;
+        scheduler=scheduler,
+        wolfe_step=wolfe_step,
+    )
 end
 
 function ActiveSetQuadraticLinearSolve{AT,R}(
@@ -298,13 +312,26 @@ function solve_quadratic_activeset_lp!(
     for i in 2:nv
         lhs = MOI.ScalarAffineFunction{Float64}([], 0.0)
         Base.sizehint!(lhs.terms, nv)
-        if as.active_set isa ActiveSetQuadraticProductCaching || as.active_set isa ActiveSetPartialCaching
+        if as.active_set isa ActiveSetQuadraticProductCaching ||
+           as.active_set isa ActiveSetPartialCaching
             # dots_A is a lower triangular matrix
             for j in 1:i
-                push!(lhs.terms, MOI.ScalarAffineTerm(c * (as.active_set.dots_A[i][j] - as.active_set.dots_A[j][1]), λ[j]))
+                push!(
+                    lhs.terms,
+                    MOI.ScalarAffineTerm(
+                        c * (as.active_set.dots_A[i][j] - as.active_set.dots_A[j][1]),
+                        λ[j],
+                    ),
+                )
             end
             for j in i+1:nv
-                push!(lhs.terms, MOI.ScalarAffineTerm(c * (as.active_set.dots_A[j][i] - as.active_set.dots_A[j][1]), λ[j]))
+                push!(
+                    lhs.terms,
+                    MOI.ScalarAffineTerm(
+                        c * (as.active_set.dots_A[j][i] - as.active_set.dots_A[j][1]),
+                        λ[j],
+                    ),
+                )
             end
             if as.active_set isa ActiveSetQuadraticProductCaching
                 rhs = as.active_set.dots_b[1] - as.active_set.dots_b[i]
@@ -316,10 +343,16 @@ function solve_quadratic_activeset_lp!(
             for j in 1:nv
                 push!(
                     lhs.terms,
-                    _compute_quadratic_constraint_term(as.atoms[i], as.atoms[1], as.A, as.atoms[j], λ[j]),
+                    _compute_quadratic_constraint_term(
+                        as.atoms[i],
+                        as.atoms[1],
+                        as.A,
+                        as.atoms[j],
+                        λ[j],
+                    ),
                 )
             end
-            rhs =  dot(as.atoms[1], as.b) - dot(as.atoms[i], as.b)
+            rhs = dot(as.atoms[1], as.b) - dot(as.atoms[i], as.b)
         end
         MOI.add_constraint(o, lhs, MOI.EqualTo{Float64}(rhs))
     end
@@ -357,7 +390,12 @@ function _compute_new_weights_direct_solve(λ, ::Type{R}, o::MOI.AbstractOptimiz
     return indices_to_remove, new_weights
 end
 
-function _compute_new_weights_wolfe_step(λ, ::Type{R}, old_weights, o::MOI.AbstractOptimizer) where {R}
+function _compute_new_weights_wolfe_step(
+    λ,
+    ::Type{R},
+    old_weights,
+    o::MOI.AbstractOptimizer,
+) where {R}
     wolfe_weights = MOI.get.(o, MOI.VariablePrimal(), λ)
     # all nonnegative -> use non-wolfe procedure
     if all(>=(-10eps()), wolfe_weights)
@@ -379,7 +417,8 @@ function _compute_new_weights_wolfe_step(λ, ::Type{R}, old_weights, o::MOI.Abst
         end
     end
     @assert length(set_indices_zero) >= 1
-    new_lambdas = [(1 - tau_min) * old_weights[idx] + tau_min * wolfe_weights[idx] for idx in eachindex(λ)]
+    new_lambdas =
+        [(1 - tau_min) * old_weights[idx] + tau_min * wolfe_weights[idx] for idx in eachindex(λ)]
     for idx in set_indices_zero
         new_lambdas[idx] = 0
     end
@@ -388,7 +427,7 @@ function _compute_new_weights_wolfe_step(λ, ::Type{R}, old_weights, o::MOI.Abst
     indices_to_remove = Int[]
     new_weights = R[]
     for idx in eachindex(λ)
-        weight_value =  new_lambdas[idx] # using new lambdas
+        weight_value = new_lambdas[idx] # using new lambdas
         if weight_value <= eps()
             push!(indices_to_remove, idx)
         else
@@ -402,7 +441,13 @@ function _compute_quadratic_constraint_term(atom1, atom0, A::AbstractMatrix, ato
     return MOI.ScalarAffineTerm(fast_dot(atom1, A, atom2) - fast_dot(atom0, A, atom2), λ)
 end
 
-function _compute_quadratic_constraint_term(atom1, atom0, A::Union{Identity,LinearAlgebra.UniformScaling}, atom2, λ)
+function _compute_quadratic_constraint_term(
+    atom1,
+    atom0,
+    A::Union{Identity,LinearAlgebra.UniformScaling},
+    atom2,
+    λ,
+)
     return MOI.ScalarAffineTerm(A.λ * (fast_dot(atom1, atom2) - fast_dot(atom0, atom2)), λ)
 end
 

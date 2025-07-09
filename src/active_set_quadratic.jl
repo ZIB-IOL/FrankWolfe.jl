@@ -9,7 +9,7 @@ The iterate `x = ∑λ_i a_i` is stored in x with type `IT`.
 The objective function is assumed to be of the form `f(x)=½⟨x,Ax⟩+⟨b,x⟩+c`
 so that the gradient is simply `∇f(x)=Ax+b`.
 """
-struct ActiveSetQuadraticProductCaching{AT, R <: Real, IT, H} <: AbstractActiveSet{AT,R,IT}
+struct ActiveSetQuadraticProductCaching{AT,R<:Real,IT,H} <: AbstractActiveSet{AT,R,IT}
     weights::Vector{R}
     atoms::Vector{AT}
     x::IT
@@ -48,21 +48,35 @@ function detect_quadratic_function(grad!, x0; test=true)
     return A, b
 end
 
-function ActiveSetQuadraticProductCaching(tuple_values::AbstractVector{Tuple{R,AT}}, grad!::Function) where {AT,R}
+function ActiveSetQuadraticProductCaching(
+    tuple_values::AbstractVector{Tuple{R,AT}},
+    grad!::Function,
+) where {AT,R}
     A, b = detect_quadratic_function(grad!, tuple_values[1][2])
     return ActiveSetQuadraticProductCaching(tuple_values, A, b)
 end
 
-function ActiveSetQuadraticProductCaching(tuple_values::AbstractVector{Tuple{R,AT}}, A::H, b) where {AT,R,H}
+function ActiveSetQuadraticProductCaching(
+    tuple_values::AbstractVector{Tuple{R,AT}},
+    A::H,
+    b,
+) where {AT,R,H}
     return ActiveSetQuadraticProductCaching{AT,R}(tuple_values, A, b)
 end
 
-function ActiveSetQuadraticProductCaching{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}, grad!::Function) where {AT,R}
+function ActiveSetQuadraticProductCaching{AT,R}(
+    tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}},
+    grad!::Function,
+) where {AT,R}
     A, b = detect_quadratic_function(grad!, tuple_values[1][2])
     return ActiveSetQuadraticProductCaching{AT,R}(tuple_values, A, b)
 end
 
-function ActiveSetQuadraticProductCaching{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}, A::H, b) where {AT,R,H}
+function ActiveSetQuadraticProductCaching{AT,R}(
+    tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}},
+    A::H,
+    b,
+) where {AT,R,H}
     n = length(tuple_values)
     weights = Vector{R}(undef, n)
     atoms = Vector{AT}(undef, n)
@@ -76,7 +90,18 @@ function ActiveSetQuadraticProductCaching{AT,R}(tuple_values::AbstractVector{<:T
         atoms[idx] = tuple_values[idx][2]
     end
     x = similar(b)
-    as = ActiveSetQuadraticProductCaching{AT,R,typeof(x),H}(weights, atoms, x, A, b, dots_x, dots_A, dots_b, weights_prev, modified)
+    as = ActiveSetQuadraticProductCaching{AT,R,typeof(x),H}(
+        weights,
+        atoms,
+        x,
+        A,
+        b,
+        dots_x,
+        dots_A,
+        dots_b,
+        weights_prev,
+        modified,
+    )
     reset_quadratic_dots!(as)
     compute_active_set_iterate!(as)
     return as
@@ -97,10 +122,10 @@ end
 
 # custom dummy structure to handle identity hessian matrix
 # required as LinearAlgebra.I does not work for general tensors
-struct Identity{R <: Real}
+struct Identity{R<:Real}
     λ::R
 end
-function Base.:*(a::Identity, b)
+function Base.:*(a::Identity, b::AbstractArray)
     if a.λ == 1
         return b
     else
@@ -108,10 +133,18 @@ function Base.:*(a::Identity, b)
     end
 end
 
-function ActiveSetQuadraticProductCaching(tuple_values::AbstractVector{Tuple{R,AT}}, A::UniformScaling, b) where {AT,R}
+function ActiveSetQuadraticProductCaching(
+    tuple_values::AbstractVector{Tuple{R,AT}},
+    A::UniformScaling,
+    b,
+) where {AT,R}
     return ActiveSetQuadraticProductCaching(tuple_values, Identity(A.λ), b)
 end
-function ActiveSetQuadraticProductCaching{AT,R}(tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}}, A::UniformScaling, b) where {AT,R}
+function ActiveSetQuadraticProductCaching{AT,R}(
+    tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}},
+    A::UniformScaling,
+    b,
+) where {AT,R}
     return ActiveSetQuadraticProductCaching{AT,R}(tuple_values, Identity(A.λ), b)
 end
 
@@ -173,10 +206,14 @@ end
 function active_set_mul_weights!(active_set::ActiveSetQuadraticProductCaching, lambda::Real)
     active_set.weights .*= lambda
     active_set.weights_prev .*= lambda
-    active_set.dots_x .*= lambda
+    return active_set.dots_x .*= lambda
 end
 
-function active_set_add_weight!(active_set::ActiveSetQuadraticProductCaching, lambda::Real, i::Integer)
+function active_set_add_weight!(
+    active_set::ActiveSetQuadraticProductCaching,
+    lambda::Real,
+    i::Integer,
+)
     @inbounds active_set.weights[i] += lambda
     @inbounds active_set.modified[i] = true
 end
@@ -206,7 +243,9 @@ function active_set_argmin(active_set::ActiveSetQuadraticProductCaching, directi
         active_set.modified[idx] = false
     end
     if idxm == -1
-        error("Infinite minimum $valm in the active set. Does the gradient contain invalid (NaN / Inf) entries?")
+        error(
+            "Infinite minimum $valm in the active set. Does the gradient contain invalid (NaN / Inf) entries?",
+        )
     end
     active_set.modified[idxm] = true
     return (active_set[idxm]..., idxm)
@@ -245,7 +284,9 @@ function active_set_argminmax(active_set::ActiveSetQuadraticProductCaching, dire
         active_set.modified[idx] = false
     end
     if idxm == -1 || idxM == -1
-        error("Infinite minimum $valm or maximum $valM in the active set. Does the gradient contain invalid (NaN / Inf) entries?")
+        error(
+            "Infinite minimum $valm or maximum $valM in the active set. Does the gradient contain invalid (NaN / Inf) entries?",
+        )
     end
     active_set.modified[idxm] = true
     active_set.modified[idxM] = true
@@ -253,7 +294,11 @@ function active_set_argminmax(active_set::ActiveSetQuadraticProductCaching, dire
 end
 
 # in-place warm-start of a quadratic active set for A and b
-function update_active_set_quadratic!(warm_as::ActiveSetQuadraticProductCaching{AT,R}, A::H, b) where {AT,R,H}
+function update_active_set_quadratic!(
+    warm_as::ActiveSetQuadraticProductCaching{AT,R},
+    A::H,
+    b,
+) where {AT,R,H}
     @inbounds for idx in eachindex(warm_as)
         for idy in 1:idx
             warm_as.dots_A[idx][idy] = fast_dot(A * warm_as.atoms[idx], warm_as.atoms[idy])
@@ -264,7 +309,10 @@ function update_active_set_quadratic!(warm_as::ActiveSetQuadraticProductCaching{
 end
 
 # in-place warm-start of a quadratic active set for b
-function update_active_set_quadratic!(warm_as::ActiveSetQuadraticProductCaching{AT,R,IT,H}, b) where {AT,R,IT,H}
+function update_active_set_quadratic!(
+    warm_as::ActiveSetQuadraticProductCaching{AT,R,IT,H},
+    b,
+) where {AT,R,IT,H}
     warm_as.dots_x .= 0
     warm_as.weights_prev .= 0
     warm_as.modified .= true
@@ -279,7 +327,7 @@ end
 function update_weights!(as::ActiveSetQuadraticProductCaching, new_weights)
     as.weights_prev .= as.weights
     as.weights .= new_weights
-    as.modified .= true
+    return as.modified .= true
 end
 
 

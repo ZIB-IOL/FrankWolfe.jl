@@ -106,7 +106,7 @@ lmo = FrankWolfe.KSparseLMO(100, 100.0)
 x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
 
 x0 = deepcopy(x00)
-x, v, primal, dual_gap, trajectoryBCG_accel_simplex,_ = FrankWolfe.blended_conditional_gradient(
+x, v, primal, dual_gap, trajectoryBCG_accel_simplex, _ = FrankWolfe.blended_conditional_gradient(
     f,
     grad!,
     lmo,

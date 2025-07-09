@@ -10,16 +10,16 @@ T = Float64
 
 function simple_reg_loss(θ, data_point)
     (xi, yi) = data_point
-    (a, b) = (θ[1:end-1], θ[end])
+    (a, b) = (θ[1:(end-1)], θ[end])
     pred = a ⋅ xi + b
     return (pred - yi)^2 / 2
 end
 
 function ∇simple_reg_loss(storage, θ, data_point)
     (xi, yi) = data_point
-    (a, b) = (θ[1:end-1], θ[end])
+    (a, b) = (θ[1:(end-1)], θ[end])
     pred = a ⋅ xi + b
-    @. storage[1:end-1] += xi * (pred - yi)
+    @. storage[1:(end-1)] += xi * (pred - yi)
     storage[end] += pred - yi
     return storage
 end
@@ -40,9 +40,9 @@ function gradf(storage, x)
     end
 end
 
-lmo = FrankWolfe.LpNormLMO{T, 2}(1.05 * norm(params_perfect))
+lmo = FrankWolfe.LpNormLMO{T,2}(1.05 * norm(params_perfect))
 
-x0 = FrankWolfe.compute_extreme_point(lmo, zeros(T, n+1))
+x0 = FrankWolfe.compute_extreme_point(lmo, zeros(T, n + 1))
 
 # standard active set
 # active_set = FrankWolfe.ActiveSet([(1.0, x0)])
@@ -51,7 +51,7 @@ x0 = FrankWolfe.compute_extreme_point(lmo, zeros(T, n+1))
 active_set = FrankWolfe.ActiveSetQuadraticProductCaching([(one(T), x0)], gradf)
 
 @time res = FrankWolfe.blended_pairwise_conditional_gradient(
-#  @time res = FrankWolfe.away_frank_wolfe(
+    #  @time res = FrankWolfe.away_frank_wolfe(
     f,
     gradf,
     lmo,

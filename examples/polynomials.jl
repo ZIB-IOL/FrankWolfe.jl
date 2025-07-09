@@ -44,7 +44,8 @@ const training_data = map(1:500) do _
 end
 
 const extended_training_data = map(training_data) do (x, y)
-    x_ext = MultivariatePolynomials.coefficient.(MultivariatePolynomials.subs.(var_monomials, X => x))
+    x_ext =
+        MultivariatePolynomials.coefficient.(MultivariatePolynomials.subs.(var_monomials, X => x))
     return (x_ext, y)
 end
 
@@ -55,7 +56,8 @@ const test_data = map(1:1000) do _
 end
 
 const extended_test_data = map(test_data) do (x, y)
-    x_ext = MultivariatePolynomials.coefficient.(MultivariatePolynomials.subs.(var_monomials, X => x))
+    x_ext =
+        MultivariatePolynomials.coefficient.(MultivariatePolynomials.subs.(var_monomials, X => x))
     return (x_ext, y)
 end
 
@@ -135,7 +137,7 @@ function projnorm1(x, τ)
     s_indices = sortperm(u, rev=true)
     tsum = zero(τ)
 
-    @inbounds for i in 1:n-1
+    @inbounds for i in 1:(n-1)
         tsum += u[s_indices[i]]
         tmax = (tsum - τ) / i
         if tmax ≥ u[s_indices[i+1]]

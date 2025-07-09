@@ -172,16 +172,23 @@ function alternating_linear_minimization(
         callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
     end
 
-    if lambda isa Function
-        callback = function (state, args...)
-            state.f.λ[] = lambda(state)
-            state.grad!.λ[] = state.f.λ[]
 
-            if callback === nothing
-                return true
+
+    if lambda isa Function
+
+        function make_lambda_callback(callback, lambda)
+            return function (state, args...)
+                state.f.λ[] = lambda(state)
+                state.grad!.λ[] = state.f.λ[]
+
+                if callback === nothing
+                    return true
+                end
+                return callback(state, args...)
             end
-            return callback(state, args...)
         end
+
+        callback = make_lambda_callback(callback, lambda)
     end
 
     x, v, primal, dual_gap, traj_data = bc_method(
