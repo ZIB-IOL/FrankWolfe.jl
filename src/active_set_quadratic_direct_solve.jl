@@ -1,3 +1,7 @@
+abstract type AffineMinSolver end
+
+function compute_affine_min end
+
 """
     ActiveSetQuadraticLinearSolve{AT, R, IT}
 
@@ -34,7 +38,7 @@ struct ActiveSetQuadraticLinearSolve{
     b::BT # linear term
     active_set::AS
     lp_optimizer::OT
-    wolfe_step::Bool
+    wolfe_step::Union{Bool,AffineMinSolver} # If bool use QC-MNP or QC-LP with Highs, if AffineMinSolver use QC-MNP with custom linear solver.
     scheduler::SF
     counter::Base.RefValue{Int}
 end
@@ -277,6 +281,141 @@ function active_set_argminmax(as::ActiveSetQuadraticLinearSolve, direction; Φ=0
     return active_set_argminmax(as.active_set, direction; Φ=Φ)
 end
 
+struct SymmetricAffineMinSolver{R,AT} <: AffineMinSolver
+    solve::Function
+end
+
+struct UnsymmetricAffineMinSolver{R,AT} <: AffineMinSolver
+    solve::Function
+end
+
+function compute_affine_min(as::ActiveSetQuadraticLinearSolve{AT,R,IT,H}, solver::SymmetricAffineMinSolver) where {AT,R,IT,H}
+
+    nv = length(as)
+    n_reduced = nv - 1
+
+    # Pre-allocate arrays
+    A_mat = Matrix{Float64}(undef, n_reduced, n_reduced)
+    r_vec = Vector{Float64}(undef, n_reduced)
+    μ = zeros(eltype(as.weights[1]), n_reduced)
+
+    if as.active_set isa ActiveSetQuadraticProductCaching
+
+        for i in 2:nv
+            for j in 2:i
+                val = as.active_set.dots_A[i][j] - as.active_set.dots_A[j][1] - as.active_set.dots_A[i][1] + as.active_set.dots_A[1][1]
+                A_mat[i-1, j-1] = val
+                if i != j
+                    A_mat[j-1, i-1] = val
+                end
+            end
+        end
+        for i in 2:nv
+            r_vec[i-1] = - as.active_set.dots_A[i][1] + as.active_set.dots_A[1][1] - as.active_set.dots_b[i] + as.active_set.dots_b[1]
+        end
+    else
+
+        temp1 = similar(as.atoms[1])
+        temp2 = similar(as.atoms[1])
+        temp3 = similar(as.atoms[1])
+        temp4 = similar(as.atoms[1])
+        
+        # Cache the first atom and its transformation
+        atom1 = as.atoms[1]
+        A_atom1 = mul!(temp3, as.A, atom1)
+        
+        # Construct A_mat and rhs more efficiently
+        for i in 2:nv
+            # This is fast because it computes (as.atoms[i] - atom1) only once and reuses the result.
+            diff_i = copyto!(temp1, as.atoms[i])
+            @. diff_i -= atom1
+            
+            # Calculate A * (as.atoms[i] - atom1) once for reuse
+            A_diff_i = mul!(temp2, as.A, diff_i)
+            
+            # Fill rhs
+            r_vec[i-1] = -dot(diff_i, A_atom1 + as.b)
+            
+            # Fill A_mat
+            for j in 2:i
+                # Calculate (as.atoms[j] - atom1) separately
+                diff_j = mul!(temp3, I, as.atoms[j])
+                @. diff_j -= atom1
+                
+                # Calculate A * (as.atoms[j] - atom1) separately
+                A_diff_j = mul!(temp4, as.A, diff_j)
+                
+                # Compute dot product
+                A_mat[i-1, j-1] = dot(diff_i, A_diff_j)
+                if i != j
+                    A_mat[j-1, i-1] = A_mat[i-1, j-1]  # Exploit symmetry
+                end
+            end
+        end
+    end    
+    
+    # Solve system
+    converged = solver.solve!(μ, A_mat, r_vec)
+
+    # If linear solving failed, return the original weights
+    if !converged
+        return as.weights
+    end
+
+    return [1 - sum(μ); μ]
+end
+
+function compute_affine_min(as::ActiveSetQuadraticLinearSolve{AT,R,IT,H}, solver::UnsymmetricAffineMinSolver) where {AT,R,IT,H}
+
+    nv = length(as)
+
+    # Pre-allocate arrays
+    A_mat = Matrix{Float64}(undef, nv, nv)
+    r_vec = Vector{Float64}(undef, nv)
+    μ = Vector{Float64}(undef, nv)
+
+    A_mat[1,:] .= 1.0
+    r_vec[1] = 1.0
+    if as.active_set isa ActiveSetQuadraticProductCaching
+        # dots_A is a lower triangular matrix
+        for i in 2:nv
+            di = as.active_set.dots_A[i]
+            d1 = as.active_set.dots_A[1]
+            for j in 1:i
+                val = di[j] - d1[j]
+                A_mat[i, j] = val
+                if i != j
+                    A_mat[j, i] = val
+                end
+            end
+            r_vec[i] =as.active_set.dots_b[1] - as.active_set.dots_b[i]
+        end
+    else
+        temp1 = similar(as.atoms[1])
+        d1 = as.A * as.atoms[1]
+        for i in 2:nv
+            di = mul!(temp1, as.A, as.atoms[i])
+            for j in 1:i
+                val = dot(di, as.atoms[j]) - dot(d1, as.atoms[j])
+                A_mat[i, j] = val
+                if i != j
+                    A_mat[j, i] = val
+                end
+            end
+            r_vec[i] = dot(as.b, as.atoms[1]) - dot(as.b, as.atoms[i])
+        end
+    end
+
+    # Solve system
+    converged = solver.solve!(μ, A_mat, r_vec)
+    if !converged
+        return as.weights
+    end
+    return μ
+end
+
+
+
 # generic quadratic with quadratic information provided
 
 """
@@ -289,70 +428,76 @@ function solve_quadratic_activeset_lp!(
     as::ActiveSetQuadraticLinearSolve{AT,R,IT,H},
 ) where {AT,R,IT,H}
     nv = length(as)
-    o = as.lp_optimizer
-    MOI.empty!(o)
-    λ = MOI.add_variables(o, nv)
-    # λ ≥ 0, ∑ λ == 1
-    if !as.wolfe_step
-        MOI.add_constraint.(o, λ, MOI.GreaterThan(0.0))
-    end
-    sum_of_variables = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, λ), 0.0)
-    MOI.add_constraint(o, sum_of_variables, MOI.EqualTo(1.0))
-    # Wᵗ A V λ == -Wᵗ b
-    # V has columns vi
-    # W has columns vi - v1
-    for i in 2:nv
-        lhs = MOI.ScalarAffineFunction{Float64}([], 0.0)
-        Base.sizehint!(lhs.terms, nv)
-        if as.active_set isa ActiveSetQuadraticProductCaching
-            # dots_A is a lower triangular matrix
-            for j in 1:i
-                push!(
-                    lhs.terms,
-                    MOI.ScalarAffineTerm(
-                        as.active_set.dots_A[i][j] - as.active_set.dots_A[j][1],
-                        λ[j],
-                    ),
-                )
-            end
-            for j in i+1:nv
-                push!(
-                    lhs.terms,
-                    MOI.ScalarAffineTerm(
-                        as.active_set.dots_A[j][i] - as.active_set.dots_A[j][1],
-                        λ[j],
-                    ),
-                )
-            end
-            rhs = as.active_set.dots_b[1] - as.active_set.dots_b[i]
-        else
-            # replaces direct sum because of MOI and MutableArithmetic slow sums
-            for j in 1:nv
-                push!(
-                    lhs.terms,
-                    _compute_quadratic_constraint_term(
-                        as.atoms[i],
-                        as.atoms[1],
-                        as.A,
-                        as.atoms[j],
-                        λ[j],
-                    ),
-                )
-            end
-            rhs = dot(as.atoms[1], as.b) - dot(as.atoms[i], as.b)
+
+    if as.wolfe_step isa AffineMinSolver
+        affine_min_weights = compute_affine_min(as.wolfe_step, as.active_set)
+        indices_to_remove, new_weights = _compute_new_weights_wolfe_step(affine_min_weights, R, as.weights)
+    elseif as.wolfe_step isa Bool
+        o = as.lp_optimizer
+        MOI.empty!(o)
+        λ = MOI.add_variables(o, nv)
+        # λ ≥ 0, ∑ λ == 1
+        if !as.wolfe_step
+            MOI.add_constraint.(o, λ, MOI.GreaterThan(0.0))
         end
-        MOI.add_constraint(o, lhs, MOI.EqualTo{Float64}(rhs))
-    end
-    MOI.set(o, MOI.ObjectiveFunction{typeof(sum_of_variables)}(), sum_of_variables)
-    MOI.set(o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
-    MOI.optimize!(o)
-    if MOI.get(o, MOI.TerminationStatus()) ∉ (MOI.OPTIMAL, MOI.FEASIBLE_POINT, MOI.ALMOST_OPTIMAL)
-        return as
-    end
-    indices_to_remove, new_weights = if as.wolfe_step
-        _compute_new_weights_wolfe_step(λ, R, as.weights, o)
-    else
-        _compute_new_weights_direct_solve(λ, R, o)
+        sum_of_variables = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, λ), 0.0)
+        MOI.add_constraint(o, sum_of_variables, MOI.EqualTo(1.0))
+        # Wᵗ A V λ == -Wᵗ b
+        # V has columns vi
+        # W has columns vi - v1
+        for i in 2:nv
+            lhs = MOI.ScalarAffineFunction{Float64}([], 0.0)
+            Base.sizehint!(lhs.terms, nv)
+            if as.active_set isa ActiveSetQuadraticProductCaching
+                # dots_A is a lower triangular matrix
+                for j in 1:i
+                    push!(
+                        lhs.terms,
+                        MOI.ScalarAffineTerm(
+                            as.active_set.dots_A[i][j] - as.active_set.dots_A[j][1],
+                            λ[j],
+                        ),
+                    )
+                end
+                for j in i+1:nv
+                    push!(
+                        lhs.terms,
+                        MOI.ScalarAffineTerm(
+                            as.active_set.dots_A[j][i] - as.active_set.dots_A[j][1],
+                            λ[j],
+                        ),
+                    )
+                end
+                rhs = as.active_set.dots_b[1] - as.active_set.dots_b[i]
+            else
+                # replaces direct sum because of MOI and MutableArithmetic slow sums
+                for j in 1:nv
+                    push!(
+                        lhs.terms,
+                        _compute_quadratic_constraint_term(
+                            as.atoms[i],
+                            as.atoms[1],
+                            as.A,
+                            as.atoms[j],
+                            λ[j],
+                        ),
+                    )
+                end
+                rhs = dot(as.atoms[1], as.b) - dot(as.atoms[i], as.b)
+            end
+            MOI.add_constraint(o, lhs, MOI.EqualTo{Float64}(rhs))
+        end
+        MOI.set(o, MOI.ObjectiveFunction{typeof(sum_of_variables)}(), sum_of_variables)
+        MOI.set(o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+        MOI.optimize!(o)
+        if MOI.get(o, MOI.TerminationStatus()) ∉ (MOI.OPTIMAL, MOI.FEASIBLE_POINT, MOI.ALMOST_OPTIMAL)
+            return as
+        end
+        indices_to_remove, new_weights = if as.wolfe_step isa AffineMinSolver
+            _compute_new_weights_wolfe_step(MOI.get.(o, MOI.VariablePrimal(), λ), R, as.weights)
+        else
+            _compute_new_weights_direct_solve(MOI.get.(o, MOI.VariablePrimal(), λ), R)
+        end
     end
     deleteat!(as.active_set, indices_to_remove)
     @assert length(as) == length(new_weights)
@@ -363,11 +508,10 @@ function solve_quadratic_activeset_lp!(
     return as
 end
 
-function _compute_new_weights_direct_solve(λ, ::Type{R}, o::MOI.AbstractOptimizer) where {R}
+function _compute_new_weights_direct_solve(wolfe_weights, ::Type{R}) where {R}
     indices_to_remove = BitSet()
     new_weights = R[]
-    for idx in eachindex(λ)
-        weight_value = MOI.get(o, MOI.VariablePrimal(), λ[idx])
+    for (idx, weight_value) in enumerate(wolfe_weights)
         if weight_value <= 2 * weight_purge_threshold_default(typeof(weight_value))
             push!(indices_to_remove, idx)
         else
@@ -378,20 +522,18 @@ function _compute_new_weights_direct_solve(λ, ::Type{R}, o::MOI.AbstractOptimiz
 end
 
 function _compute_new_weights_wolfe_step(
-    λ,
+    wolfe_weights,
     ::Type{R},
     old_weights,
-    o::MOI.AbstractOptimizer,
 ) where {R}
-    wolfe_weights = MOI.get.(o, MOI.VariablePrimal(), λ)
     # all nonnegative -> use non-wolfe procedure
     if all(>=(-10eps()), wolfe_weights)
-        return _compute_new_weights_direct_solve(λ, R, o)
+        return _compute_new_weights_direct_solve(wolfe_weights, R)
     end
     # ratio test to know which coordinate would hit zero first
     tau_min = 1.0
     set_indices_zero = BitSet()
-    for idx in eachindex(λ)
+    for idx in eachindex(wolfe_weights)
         if wolfe_weights[idx] < old_weights[idx]
             tau = old_weights[idx] / (old_weights[idx] - wolfe_weights[idx])
             if abs(tau - tau_min) ≤ 2weight_purge_threshold_default(typeof(tau))
@@ -405,7 +547,7 @@ function _compute_new_weights_wolfe_step(
     end
     @assert length(set_indices_zero) >= 1
     new_lambdas =
-        [(1 - tau_min) * old_weights[idx] + tau_min * wolfe_weights[idx] for idx in eachindex(λ)]
+        [(1 - tau_min) * old_weights[idx] + tau_min * wolfe_weights[idx] for idx in eachindex(wolfe_weights)]
     for idx in set_indices_zero
         new_lambdas[idx] = 0
     end
@@ -413,7 +555,7 @@ function _compute_new_weights_wolfe_step(
     @assert isapprox(sum(new_lambdas), 1.0) "The sum of new_lambdas must be approximately 1"
     indices_to_remove = Int[]
     new_weights = R[]
-    for idx in eachindex(λ)
+    for idx in eachindex(wolfe_weights)
         weight_value = new_lambdas[idx] # using new lambdas
         if weight_value <= eps()
             push!(indices_to_remove, idx)
