@@ -503,7 +503,7 @@ implementing `momentum = FrankWolfe.momentum_iterate(momentum_iterator)`.
 $RETURN
 """
 function stochastic_frank_wolfe(
-    f::StochasticObjective,
+    f::AbstractStochasticObjective,
     lmo,
     x0;
     line_search::LineSearchMethod=Nonconvex(),
