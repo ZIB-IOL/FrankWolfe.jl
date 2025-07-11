@@ -247,6 +247,8 @@ function frank_wolfe(
         callback(state)
     end
 
+    @assert status_code != STATUS_RUNNING
+
     return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data, status=status_string[Symbol(status_code)])
 end
 
