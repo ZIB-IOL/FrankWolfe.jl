@@ -630,21 +630,9 @@ function stochastic_frank_wolfe(
         batch_size = batchsize_iterate(batch_iterator)
 
         if momentum_iterator === nothing
-            gradient = compute_gradient(
-                f,
-                x,
-                rng=rng,
-                batch_size=batch_size,
-            )
+            gradient = compute_gradient(f, x, rng=rng, batch_size=batch_size)
         elseif first_iter
-            gradient = copy(
-                compute_gradient(
-                    f,
-                    x,
-                    rng=rng,
-                    batch_size=batch_size,
-                ),
-            )
+            gradient = copy(compute_gradient(f, x, rng=rng, batch_size=batch_size))
         else
             momentum = momentum_iterate(momentum_iterator)
             compute_gradient(f, x, rng=rng, batch_size=batch_size, full_evaluation=false)
@@ -656,9 +644,10 @@ function stochastic_frank_wolfe(
         v = compute_extreme_point(lmo, gradient)
 
         # go easy on the memory - only compute if really needed
-        compute_iter = (mod(t, print_iter) == 0 && verbose) ||
+        compute_iter =
+            (mod(t, print_iter) == 0 && verbose) ||
             callback !== nothing ||
-           !(line_search isa Agnostic || line_search isa Nonconvex || line_search isa FixedStep)
+            !(line_search isa Agnostic || line_search isa Nonconvex || line_search isa FixedStep)
         if compute_iter
             primal = compute_value(f, x, full_evaluation=use_full_evaluation)
             dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
