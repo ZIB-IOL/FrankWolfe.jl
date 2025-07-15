@@ -584,7 +584,7 @@ function stochastic_frank_wolfe(
             "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration TYPE: $NumType",
         )
         println(
-            "GRADIENTTYPE: $(typeof(f.storage)) MOMENTUM: $(momentum_iterator !== nothing) batch policy: $(typeof(batch_iterator)) ",
+            "GRADIENTTYPE: $(typeof(f.storage)) MOMENTUM: $(momentum_iterator !== nothing) BATCH_POLICY: $(typeof(batch_iterator)) ",
         )
         println("LMO: $(typeof(lmo))")
         if memory_mode isa InplaceEmphasis
