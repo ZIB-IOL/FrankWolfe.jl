@@ -500,6 +500,8 @@ Variance-reduced and projection-free stochastic optimization, E Hazan, H Luo, 20
 Similarly, a constant `momentum` can be passed or replaced by a `momentum_iterator`
 implementing `momentum = FrankWolfe.momentum_iterate(momentum_iterator)`.
 
+The keyword `use_full_evaluation` set to true allows the algorithm to compute the deterministic primal value and FW gap.
+
 $RETURN
 """
 function stochastic_frank_wolfe(
@@ -518,7 +520,7 @@ function stochastic_frank_wolfe(
     rng=Random.GLOBAL_RNG,
     batch_size=length(f.xs) ÷ 10 + 1,
     batch_iterator=nothing,
-    full_evaluation=false,
+    use_full_evaluation=false,
     callback=nothing,
     traj_data=[],
     timeout=Inf,
@@ -598,12 +600,12 @@ function stochastic_frank_wolfe(
         end
     end
     first_iter = true
-    gradient = 0
+    gradient = f.storage
     if linesearch_workspace === nothing
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
     end
 
-    while t <= max_iteration && dual_gap >= max(epsilon, eps(float(typeof(dual_gap))))
+    while t <= max_iteration
 
         #####################
         # managing time and Ctrl-C
@@ -633,7 +635,6 @@ function stochastic_frank_wolfe(
                 x,
                 rng=rng,
                 batch_size=batch_size,
-                full_evaluation=full_evaluation,
             )
         elseif first_iter
             gradient = copy(
@@ -642,12 +643,11 @@ function stochastic_frank_wolfe(
                     x,
                     rng=rng,
                     batch_size=batch_size,
-                    full_evaluation=full_evaluation,
                 ),
             )
         else
             momentum = momentum_iterate(momentum_iterator)
-            compute_gradient(f, x, rng=rng, batch_size=batch_size, full_evaluation=full_evaluation)
+            compute_gradient(f, x, rng=rng, batch_size=batch_size, full_evaluation=false)
             # gradient = momentum * gradient + (1 - momentum) * f.storage
             LinearAlgebra.mul!(gradient, LinearAlgebra.I, f.storage, 1 - momentum, momentum)
         end
@@ -656,10 +656,11 @@ function stochastic_frank_wolfe(
         v = compute_extreme_point(lmo, gradient)
 
         # go easy on the memory - only compute if really needed
-        if (mod(t, print_iter) == 0 && verbose) ||
-           callback !== nothing ||
+        compute_iter = (mod(t, print_iter) == 0 && verbose) ||
+            callback !== nothing ||
            !(line_search isa Agnostic || line_search isa Nonconvex || line_search isa FixedStep)
-            primal = compute_value(f, x, full_evaluation=true)
+        if compute_iter
+            primal = compute_value(f, x, full_evaluation=use_full_evaluation)
             dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
         end
 
@@ -707,11 +708,10 @@ function stochastic_frank_wolfe(
     # recompute everything once for final verfication / no additional callback call
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
     # hence the final computation.
-    # last computation done with full evaluation for exact gradient
+    # last computation done with full evaluation if possible for exact gradient
 
-    (primal, gradient) = compute_value_gradient(f, x, full_evaluation=true)
+    (primal, gradient) = compute_value_gradient(f, x, full_evaluation=use_full_evaluation)
     v = compute_extreme_point(lmo, gradient)
-    # @show (gradient, primal)
     dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
     step_type = ST_LAST
     d = muladd_memory_mode(memory_mode, d, x, v)
