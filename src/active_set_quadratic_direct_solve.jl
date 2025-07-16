@@ -281,11 +281,11 @@ function active_set_argminmax(as::ActiveSetQuadraticLinearSolve, direction; Φ=0
     return active_set_argminmax(as.active_set, direction; Φ=Φ)
 end
 
-struct SymmetricAffineMinSolver{R,AT} <: AffineMinSolver
+struct SymmetricAffineMinSolver <: AffineMinSolver
     solve::Function
 end
 
-struct UnsymmetricAffineMinSolver{R,AT} <: AffineMinSolver
+struct NonSymmetricAffineMinSolver <: AffineMinSolver
     solve::Function
 end
 
@@ -355,17 +355,18 @@ function compute_affine_min(as::ActiveSetQuadraticLinearSolve{AT,R,IT,H}, solver
     end    
     
     # Solve system
-    converged = solver.solve!(μ, A_mat, r_vec)
+    converged = solver.solve(μ, A_mat, r_vec)
+    s = sum(μ)
 
     # If linear solving failed, return the original weights
-    if !converged
+    if converged && abs(s) < 1e7
+       return [1 - s; μ]
+    else
         return as.weights
     end
-
-    return [1 - sum(μ); μ]
 end
 
-function compute_affine_min(as::ActiveSetQuadraticLinearSolve{AT,R,IT,H}, solver::UnsymmetricAffineMinSolver) where {AT,R,IT,H}
+function compute_affine_min(as::ActiveSetQuadraticLinearSolve{AT,R,IT,H}, solver::NonSymmetricAffineMinSolver) where {AT,R,IT,H}
 
     nv = length(as)
 
@@ -378,17 +379,18 @@ function compute_affine_min(as::ActiveSetQuadraticLinearSolve{AT,R,IT,H}, solver
     r_vec[1] = 1.0
     if as.active_set isa ActiveSetQuadraticProductCaching
         # dots_A is a lower triangular matrix
+
+        d1 = as.active_set.dots_A[1]
         for i in 2:nv
             di = as.active_set.dots_A[i]
-            d1 = as.active_set.dots_A[1]
             for j in 1:i
                 val = di[j] - d1[j]
                 A_mat[i, j] = val
-                if i != j
+                if i != j && j != 1
                     A_mat[j, i] = val
                 end
             end
-            r_vec[i] =as.active_set.dots_b[1] - as.active_set.dots_b[i]
+            r_vec[i] = as.active_set.dots_b[1] - as.active_set.dots_b[i]
         end
     else
         temp1 = similar(as.atoms[1])
@@ -398,7 +400,7 @@ function compute_affine_min(as::ActiveSetQuadraticLinearSolve{AT,R,IT,H}, solver
             for j in 1:i
                 val = dot(di, as.atoms[j]) - dot(d1, as.atoms[j])
                 A_mat[i, j] = val
-                if i != j
+                if i != j && j != 1
                     A_mat[j, i] = val
                 end
             end
@@ -407,11 +409,13 @@ function compute_affine_min(as::ActiveSetQuadraticLinearSolve{AT,R,IT,H}, solver
     end
 
     # Solve system
-    converged = solver.solve!(μ, A_mat, r_vec)
-    if !converged
+    converged = solver.solve(μ, A_mat, r_vec)
+    @info "sum(μ) = $(sum(μ))"
+    if converged && abs(sum(μ)) < 1e7
+        return μ
+    else
         return as.weights
     end
-    return μ
 end
 
 
@@ -430,7 +434,7 @@ function solve_quadratic_activeset_lp!(
     nv = length(as)
 
     if as.wolfe_step isa AffineMinSolver
-        affine_min_weights = compute_affine_min(as.wolfe_step, as.active_set)
+        affine_min_weights = compute_affine_min(as, as.wolfe_step)
         indices_to_remove, new_weights = _compute_new_weights_wolfe_step(affine_min_weights, R, as.weights)
     elseif as.wolfe_step isa Bool
         o = as.lp_optimizer
@@ -552,7 +556,7 @@ function _compute_new_weights_wolfe_step(
         new_lambdas[idx] = 0
     end
     @assert all(>=(-2weight_purge_threshold_default(eltype(new_lambdas))), new_lambdas) "All new_lambdas must be between nonnegative $(minimum(new_lambdas))"
-    @assert isapprox(sum(new_lambdas), 1.0) "The sum of new_lambdas must be approximately 1"
+    @assert isapprox(sum(new_lambdas), 1.0) "The sum of new_lambdas must be approximately 1, but is $(sum(new_lambdas))"
     indices_to_remove = Int[]
     new_weights = R[]
     for idx in eachindex(wolfe_weights)
