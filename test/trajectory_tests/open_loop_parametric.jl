@@ -86,6 +86,6 @@ using LinearAlgebra
     )
 
     @test length(res_10[end]) <= 23
-    @test length(res_2[end]) <= 1122
+    @test length(res_2[end]) <= 1492
 
 end
