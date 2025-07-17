@@ -70,7 +70,7 @@ function adaptive_gradient_descent(
             "Grad Norm",
             "Time (s)",
             "L_k",
-            "Step"
+            "Step",
         )
         println("-"^88)
     end
@@ -113,7 +113,7 @@ function adaptive_gradient_descent(
                     norm(grad_curr),
                     elapsed,
                     L_k,
-                    step_new
+                    step_new,
                 )
             end
             break
@@ -135,7 +135,7 @@ function adaptive_gradient_descent(
                 norm(grad_curr),
                 elapsed,
                 L_k,
-                step_new
+                step_new,
             )
         end
     end
@@ -150,7 +150,7 @@ function adaptive_gradient_descent(
             norm(grad_curr),
             elapsed,
             L_k,
-            step
+            step,
         )
     end
 
@@ -210,7 +210,7 @@ function adaptive_gradient_descent2(
             "Grad Norm",
             "Time (s)",
             "L_k",
-            "Step"
+            "Step",
         )
         println("-"^88)
     end
@@ -218,7 +218,6 @@ function adaptive_gradient_descent2(
     start_time = time()
 
     for k in 1:max_iteration
-        iter_start = time()
         # Compute current gradient
         grad!(grad_curr, x_curr)
 
@@ -254,7 +253,7 @@ function adaptive_gradient_descent2(
                     norm(grad_curr),
                     elapsed,
                     L_k,
-                    step_new
+                    step_new,
                 )
             end
             break
@@ -276,7 +275,7 @@ function adaptive_gradient_descent2(
                 norm(grad_curr),
                 elapsed,
                 L_k,
-                step_new
+                step_new,
             )
         end
     end
@@ -291,7 +290,7 @@ function adaptive_gradient_descent2(
             norm(grad_curr),
             elapsed,
             L_k,
-            step
+            step,
         )
     end
 
@@ -389,7 +388,7 @@ function proximal_adaptive_gradient_descent(
             "GM Norm",
             "Time (s)",
             "L_k",
-            "Step"
+            "Step",
         )
         println("-"^88)
     end
@@ -397,7 +396,6 @@ function proximal_adaptive_gradient_descent(
     start_time = time()
 
     for k in 1:max_iteration
-        iter_start = time()
         # Compute current gradient
         grad!(grad_curr, x_curr)
 
@@ -441,7 +439,7 @@ function proximal_adaptive_gradient_descent(
                     error,
                     elapsed,
                     L_k,
-                    step_new
+                    step_new,
                 )
             end
             break
@@ -463,7 +461,7 @@ function proximal_adaptive_gradient_descent(
                 error,
                 elapsed,
                 L_k,
-                step_new
+                step_new,
             )
         end
     end
@@ -478,7 +476,7 @@ function proximal_adaptive_gradient_descent(
             error,
             elapsed,
             L_k,
-            step
+            step,
         )
     end
 
