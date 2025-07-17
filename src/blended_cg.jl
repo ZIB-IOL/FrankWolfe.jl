@@ -516,10 +516,7 @@ function minimize_over_convex_hull!(
         S = schur(M)
         L_reduced = maximum(S.values)::T
         reduced_f(y) =
-            f(x) - dot(gradient, x) +
-            0.5 * dot(x, hessian, x) +
-            dot(b, y) +
-            0.5 * dot(y, M, y)
+            f(x) - dot(gradient, x) + 0.5 * dot(x, hessian, x) + dot(b, y) + 0.5 * dot(y, M, y)
         function reduced_grad!(storage, x)
             return storage .= b + M * x
         end

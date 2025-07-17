@@ -627,8 +627,7 @@ function perform_line_search(
         # Additional smoothness condition
         if line_search.relaxed_smoothness
             grad!(gradient_storage, x_storage)
-            if dot(gradient, d) - dot(gradient_storage, d) <=
-               γ * M * ndir2 + eps(float(γ))
+            if dot(gradient, d) - dot(gradient_storage, d) <= γ * M * ndir2 + eps(float(γ))
                 break
             end
         end

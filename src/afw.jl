@@ -532,14 +532,5 @@ end
 function fw_step(x, gradient, lmo, d; memory_mode::MemoryEmphasis=InplaceEmphasis())
     v = compute_extreme_point(lmo, gradient)
     d = muladd_memory_mode(memory_mode, d, x, v)
-    return (
-        d,
-        v,
-        nothing,
-        1,
-        dot(x, gradient) - dot(v, gradient),
-        false,
-        true,
-        ST_REGULAR,
-    )
+    return (d, v, nothing, 1, dot(x, gradient) - dot(v, gradient), false, true, ST_REGULAR)
 end
