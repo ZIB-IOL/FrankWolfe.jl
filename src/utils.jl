@@ -125,8 +125,3 @@ function trajectory_callback(storage)
         return push!(storage, callback_state(data))
     end
 end
-
-function weight_purge_threshold_default(::Type{T}) where {T<:AbstractFloat}
-    return sqrt(eps(T) * Base.rtoldefault(T)) # around 1e-12 for Float64
-end
-weight_purge_threshold_default(::Type{T}) where {T<:Number} = Base.rtoldefault(T)

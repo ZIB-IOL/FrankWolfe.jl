@@ -508,3 +508,8 @@ _unsafe_equal(a, b) = isequal(a, b)
 function _unsafe_equal(a::SparseArrays.AbstractSparseArray, b::SparseArrays.AbstractSparseArray)
     return a == b
 end
+
+function weight_purge_threshold_default(::Type{T}) where {T<:AbstractFloat}
+    return sqrt(eps(T) * Base.rtoldefault(T)) # around 1e-12 for Float64
+end
+weight_purge_threshold_default(::Type{T}) where {T<:Number} = Base.rtoldefault(T)
