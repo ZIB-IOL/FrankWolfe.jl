@@ -435,7 +435,7 @@ function _compute_quadratic_constraint_term(
     atom2,
     λ,
 )
-    return MOI.ScalarAffineTerm(A.λ * (fast_dot(atom1, atom2) - fast_dot(atom0, atom2)), λ)
+    return MOI.ScalarAffineTerm(A.λ * (dot(atom1, atom2) - dot(atom0, atom2)), λ)
 end
 
 struct LogScheduler{T}

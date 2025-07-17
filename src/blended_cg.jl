@@ -160,7 +160,7 @@ function blended_conditional_gradient(
     grad!(gradient, x)
     # initial gap estimate computation
     vmax = compute_extreme_point(lmo, gradient)
-    phi = (fast_dot(gradient, x) - fast_dot(gradient, vmax)) / 2
+    phi = (dot(gradient, x) - dot(gradient, vmax)) / 2
     dual_gap = phi
 
     step_type = ST_REGULAR
@@ -274,7 +274,7 @@ function blended_conditional_gradient(
             lmo_kwargs...,
         )
         force_fw_step = false
-        xval = fast_dot(x, gradient)
+        xval = dot(gradient, x)
         if value > xval - phi / sparsity_control
             step_type = ST_DUALSTEP
             # setting gap estimate as ∇f(x) (x - v_FW) / 2
@@ -371,7 +371,7 @@ function blended_conditional_gradient(
         grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
-        dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
+        dual_gap = dot(gradient, x) - dot(gradient, v)
         tot_time = (time_ns() - time_start) / 1e9
         step_type = ST_LAST
         state = CallbackState(
@@ -406,7 +406,7 @@ function blended_conditional_gradient(
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
     #dual_gap = 2phi
-    dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
+    dual_gap = dot(gradient, x) - dot(gradient, v)
 
     # report post-processed iteration
     if callback !== nothing
@@ -516,9 +516,9 @@ function minimize_over_convex_hull!(
         S = schur(M)
         L_reduced = maximum(S.values)::T
         reduced_f(y) =
-            f(x) - fast_dot(gradient, x) +
+            f(x) - dot(gradient, x) +
             0.5 * dot(x, hessian, x) +
-            fast_dot(b, y) +
+            dot(b, y) +
             0.5 * dot(y, M, y)
         function reduced_grad!(storage, x)
             return storage .= b + M * x
@@ -610,7 +610,7 @@ function build_reduced_problem(
 )
     n = length(atoms[1])
     k = length(atoms)
-    reduced_linear = [fast_dot(gradient, a) for a in atoms]
+    reduced_linear = [dot(gradient, a) for a in atoms]
     if strong_frankwolfe_gap(reduced_linear) <= tolerance
         return nothing, nothing
     end
@@ -639,7 +639,7 @@ function build_reduced_problem(
     n = length(atoms[1])
     k = length(atoms)
 
-    reduced_linear = [fast_dot(gradient, a) for a in atoms]
+    reduced_linear = [dot(gradient, a) for a in atoms]
     if strong_frankwolfe_gap(reduced_linear) <= tolerance
         return nothing, nothing
     end
@@ -665,7 +665,7 @@ function build_reduced_problem(
     n = length(atoms[1])
     k = length(atoms)
 
-    reduced_linear = [fast_dot(gradient, a) for a in atoms]
+    reduced_linear = [dot(gradient, a) for a in atoms]
     if strong_frankwolfe_gap(reduced_linear) <= tolerance
         return nothing, nothing
     end
@@ -949,7 +949,7 @@ function simplex_gradient_descent_over_convex_hull(
     while t + number_of_steps ≤ max_iteration
         grad!(gradient, x)
         #Check if strong Wolfe gap over the convex hull is small enough.
-        c = [fast_dot(gradient, a) for a in active_set.atoms]
+        c = [dot(gradient, a) for a in active_set.atoms]
         if maximum(c) - minimum(c) <= tolerance || t + number_of_steps ≥ max_iteration
             return number_of_steps
         end
@@ -964,7 +964,7 @@ function simplex_gradient_descent_over_convex_hull(
         # in that case, inverting the sense of d
         # Computing the quantity below is the same as computing the <-\nabla f(x), direction>.
         # If <-\nabla f(x), direction>  >= 0 the direction is a descent direction.
-        descent_direction_product = fast_dot(d, d) + (csum / k) * sum(d)
+        descent_direction_product = dot(d, d) + (csum / k) * sum(d)
         @inbounds if descent_direction_product < eps(float(eltype(d))) * length(d)
             current_iteration = t + number_of_steps
             @warn "Non-improving d ($descent_direction_product) due to numerical instability in iteration $current_iteration. Temporarily upgrading precision to BigFloat for the current iteration."
@@ -972,11 +972,11 @@ function simplex_gradient_descent_over_convex_hull(
             # If higher accuracy is required, consider using DoubleFloats.Double64 (still quite fast) and if that does not help BigFloat (slower) as type for the numbers.
             # Alternatively, consider using AFW (with lazy = true) instead."
             bdir = big.(gradient)
-            c = [fast_dot(bdir, a) for a in active_set.atoms]
+            c = [dot(bdir, a) for a in active_set.atoms]
             csum = sum(c)
             c .-= csum / k
             d = c
-            descent_direction_product_inner = fast_dot(d, d) + (csum / k) * sum(d)
+            descent_direction_product_inner = dot(d, d) + (csum / k) * sum(d)
             if descent_direction_product_inner < 0
                 @warn "d non-improving in large precision, forcing FW"
                 @warn "dot value: $descent_direction_product_inner"
@@ -1141,7 +1141,7 @@ function lp_separation_oracle(
                 end
             end
         end
-        val_best = fast_dot(direction, ybest)
+        val_best = dot(direction, ybest)
         for idx in 2:length(active_set)
             y = active_set.atoms[idx]
             if inplace_loop
@@ -1149,20 +1149,20 @@ function lp_separation_oracle(
             else
                 x += active_set.weights[idx] * y
             end
-            val = fast_dot(direction, y)
+            val = dot(direction, y)
             if val < val_best
                 val_best = val
                 ybest = y
             end
         end
-        xval = fast_dot(direction, x)
+        xval = dot(direction, x)
         if xval - val_best ≥ min_gap / sparsity_control
             return (ybest, val_best)
         end
     end
     # optionally: try vertex storage
     if use_extra_vertex_storage && extra_vertex_storage !== nothing
-        lazy_threshold = fast_dot(direction, x) - phi / sparsity_control
+        lazy_threshold = dot(direction, x) - phi / sparsity_control
         (found_better_vertex, new_forward_vertex) =
             storage_find_argmin_vertex(extra_vertex_storage, direction, lazy_threshold)
         if found_better_vertex
@@ -1175,6 +1175,6 @@ function lp_separation_oracle(
     else
         y = compute_extreme_point(lmo, direction; kwargs...)
     end
-    # don't return nothing but y, fast_dot(direction, y) / use y for step outside / and update phi as in LCG (lines 402 - 406)
-    return (y, fast_dot(direction, y))
+    # don't return nothing but y, dot(direction, y) / use y for step outside / and update phi as in LCG (lines 402 - 406)
+    return (y, dot(direction, y))
 end

@@ -327,7 +327,7 @@ function active_set_argmin(active_set::AbstractActiveSet, direction)
     valm = typemax(eltype(direction))
     idxm = -1
     @inbounds for i in eachindex(active_set)
-        val = fast_dot(active_set.atoms[i], direction)
+        val = dot(active_set.atoms[i], direction)
         if val < valm
             valm = val
             idxm = i
@@ -353,7 +353,7 @@ function active_set_argminmax(active_set::AbstractActiveSet, direction; Φ=0.5)
     idxm = -1
     idxM = -1
     @inbounds for i in eachindex(active_set)
-        val = fast_dot(active_set.atoms[i], direction)
+        val = dot(active_set.atoms[i], direction)
         if val < valm
             valm = val
             idxm = i
@@ -395,4 +395,116 @@ end
 
 function update_weights!(as::AbstractActiveSet, new_weights)
     return as.weights .= new_weights
+end
+
+"""
+Vertex storage to store dropped vertices or find a suitable direction in lazy settings.
+The algorithm will look for at most `return_kth` suitable atoms before returning the best.
+See [Extra-lazification with a vertex storage](@ref) for usage.
+
+A vertex storage can be any type that implements two operations:
+1. `Base.push!(storage, atom)` to add an atom to the storage.
+Note that it is the storage type responsibility to ensure uniqueness of the atoms present.
+2. `storage_find_argmin_vertex(storage, direction, lazy_threshold) -> (found, vertex)`
+returning whether a vertex with sufficient progress was found and the vertex.
+It is up to the storage to remove vertices (or not) when they have been picked up.
+"""
+struct DeletedVertexStorage{AT}
+    storage::Vector{AT}
+    return_kth::Int
+end
+
+DeletedVertexStorage(storage::Vector) = DeletedVertexStorage(storage, 1)
+DeletedVertexStorage{AT}() where {AT} = DeletedVertexStorage(AT[])
+
+function Base.push!(vertex_storage::DeletedVertexStorage{AT}, atom::AT) where {AT}
+    # do not push duplicates
+    if !any(v -> _unsafe_equal(atom, v), vertex_storage.storage)
+        push!(vertex_storage.storage, atom)
+    end
+    return vertex_storage
+end
+
+Base.length(storage::DeletedVertexStorage) = length(storage.storage)
+
+"""
+Computes the linear minimizer in the direction on the precomputed_set.
+Precomputed_set stores the vertices computed as extreme points v in each iteration.
+"""
+function pre_computed_set_argminmax(lmo, pre_computed_set, direction, x; strong_lazification=false)
+    val = convert(eltype(direction), Inf)
+    valM = convert(eltype(direction), -Inf)
+    idx = -1
+    idxM = -1
+    for i in eachindex(pre_computed_set)
+        temp_val = dot(pre_computed_set[i], direction)
+        if temp_val < val
+            val = temp_val
+            idx = i
+        end
+        if strong_lazification
+            if is_inface_feasible(lmo, pre_computed_set[i], x) && temp_val > valM
+                valM = temp_val
+                idxM = i
+            end
+        end
+    end
+    if idx == -1
+        error(
+            "Infinite minimum $val in the precomputed set. Does the gradient contain invalid (NaN / Inf) entries?",
+        )
+    end
+    v_local = pre_computed_set[idx]
+    a_local = idxM != -1 ? pre_computed_set[idxM] : nothing
+    return (v_local, idx, val, a_local, idxM, valM)
+end
+
+"""
+Give the vertex `v` in the storage that minimizes `s = direction ⋅ v` and whether `s` achieves
+`s ≤ lazy_threshold`.
+"""
+function storage_find_argmin_vertex(vertex_storage::DeletedVertexStorage, direction, lazy_threshold)
+    if isempty(vertex_storage.storage)
+        return (false, nothing)
+    end
+    best_idx = 1
+    best_val = lazy_threshold
+    found_good = false
+    counter = 0
+    for (idx, atom) in enumerate(vertex_storage.storage)
+        s = dot(direction, atom)
+        if s < best_val
+            counter += 1
+            best_val = s
+            found_good = true
+            best_idx = idx
+            if counter ≥ vertex_storage.return_kth
+                return (found_good, vertex_storage.storage[best_idx])
+            end
+        end
+    end
+    return (found_good, vertex_storage.storage[best_idx])
+end
+
+"""
+    _unsafe_equal(a, b)
+
+Like `isequal` on arrays but without the checks. Assumes a and b have the same axes.
+"""
+function _unsafe_equal(a::Array, b::Array)
+    if a === b
+        return true
+    end
+    @inbounds for idx in eachindex(a)
+        if a[idx] != b[idx]
+            return false
+        end
+    end
+    return true
+end
+
+_unsafe_equal(a, b) = isequal(a, b)
+
+function _unsafe_equal(a::SparseArrays.AbstractSparseArray, b::SparseArrays.AbstractSparseArray)
+    return a == b
 end

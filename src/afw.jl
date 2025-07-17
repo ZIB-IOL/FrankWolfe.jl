@@ -327,7 +327,7 @@ function away_frank_wolfe(
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
-    dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
+    dual_gap = dot(x, gradient) - dot(v, gradient)
     step_type = ST_LAST
     tot_time = (time_ns() - time_start) / 1e9
     if callback !== nothing
@@ -362,7 +362,7 @@ function away_frank_wolfe(
     if recompute_last_vertex
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
-        dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
+        dual_gap = dot(x, gradient) - dot(v, gradient)
     end
     step_type = ST_POSTPROCESS
     tot_time = (time_ns() - time_start) / 1e9
@@ -421,9 +421,9 @@ function lazy_afw_step(
 )
     _, v, v_loc, _, a_lambda, a, a_loc, _, _ = active_set_argminmax(active_set, gradient)
     #Do lazy FW step
-    grad_dot_lazy_fw_vertex = fast_dot(v, gradient)
-    grad_dot_x = fast_dot(x, gradient)
-    grad_dot_a = fast_dot(a, gradient)
+    grad_dot_lazy_fw_vertex = dot(v, gradient)
+    grad_dot_x = dot(x, gradient)
+    grad_dot_a = dot(a, gradient)
     if grad_dot_x - grad_dot_lazy_fw_vertex >= grad_dot_a - grad_dot_x &&
        grad_dot_x - grad_dot_lazy_fw_vertex >= phi / lazy_tolerance &&
        grad_dot_x - grad_dot_lazy_fw_vertex >= epsilon
@@ -449,7 +449,7 @@ function lazy_afw_step(
         else
             # optionally: try vertex storage
             if use_extra_vertex_storage
-                lazy_threshold = fast_dot(gradient, x) - phi / lazy_tolerance
+                lazy_threshold = dot(gradient, x) - phi / lazy_tolerance
                 (found_better_vertex, new_forward_vertex) =
                     storage_find_argmin_vertex(extra_vertex_storage, gradient, lazy_threshold)
                 if found_better_vertex
@@ -465,7 +465,7 @@ function lazy_afw_step(
                 step_type = ST_REGULAR
             end
             # Real dual gap promises enough progress.
-            grad_dot_fw_vertex = fast_dot(v, gradient)
+            grad_dot_fw_vertex = dot(v, gradient)
             dual_gap = grad_dot_x - grad_dot_fw_vertex
             if dual_gap >= phi / lazy_tolerance
                 gamma_max = one(a_lambda)
@@ -499,9 +499,9 @@ function afw_step(
 )
     _, _, _, _, a_lambda, a, a_loc = active_set_argminmax(active_set, gradient)
     v = compute_extreme_point(lmo, gradient)
-    grad_dot_x = fast_dot(x, gradient)
-    away_gap = fast_dot(a, gradient) - grad_dot_x
-    dual_gap = grad_dot_x - fast_dot(v, gradient)
+    grad_dot_x = dot(x, gradient)
+    away_gap = dot(a, gradient) - grad_dot_x
+    dual_gap = grad_dot_x - dot(v, gradient)
     if dual_gap >= away_gap && dual_gap >= epsilon
         step_type = ST_REGULAR
         gamma_max = one(a_lambda)
@@ -537,7 +537,7 @@ function fw_step(x, gradient, lmo, d; memory_mode::MemoryEmphasis=InplaceEmphasi
         v,
         nothing,
         1,
-        fast_dot(x, gradient) - fast_dot(v, gradient),
+        dot(x, gradient) - dot(v, gradient),
         false,
         true,
         ST_REGULAR,
