@@ -80,8 +80,8 @@ function alternating_linear_minimization(
     end
 
     dist2(x::BlockVector) =
-        0.5 * (N - 1) * sum(fast_dot(x.blocks[i], x.blocks[i]) for i in 1:N) -
-        sum(fast_dot(x.blocks[i], x.blocks[j]) for i in 1:N for j in 1:i-1)
+        0.5 * (N - 1) * sum(dot(x.blocks[i], x.blocks[i]) for i in 1:N) -
+        sum(dot(x.blocks[i], x.blocks[j]) for i in 1:N for j in 1:i-1)
 
     function build_objective()
         λ = Ref(λ0)
@@ -311,8 +311,8 @@ function alternating_projections(
     end
 
     dist2(x::BlockVector) =
-        0.5 * (N - 1) * sum(fast_dot(x.blocks[i], x.blocks[i]) for i in 1:N) -
-        sum(fast_dot(x.blocks[i], x.blocks[j]) for i in 1:N for j in 1:i-1)
+        0.5 * (N - 1) * sum(dot(x.blocks[i], x.blocks[i]) for i in 1:N) -
+        sum(dot(x.blocks[i], x.blocks[j]) for i in 1:N for j in 1:i-1)
 
     function grad!(storage, x)
         return storage.blocks = [2.0 * (N * b - sum(x.blocks)) for b in x.blocks]
@@ -452,7 +452,7 @@ function alternating_projections(
     primal = dist2(x)
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
-    dual_gap = fast_dot(x - v, gradient)
+    dual_gap = dot(x, gradient) - dot(v, gradient)
 
     tot_time = (time_ns() - time_start) / 1.0e9
 

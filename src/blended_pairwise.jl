@@ -163,7 +163,7 @@ function blended_pairwise_conditional_gradient(
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     # if !lazy, phi is maintained as the global dual gap
-    phi = max(0, fast_dot(x, gradient) - fast_dot(v, gradient))
+    phi = max(0, dot(gradient, x) - dot(gradient, v))
     local_gap = zero(phi)
     dual_gap = phi
     gamma = one(phi)
@@ -208,13 +208,13 @@ function blended_pairwise_conditional_gradient(
         _, v_local, v_local_loc, _, a_lambda, a, a_loc, _, _ =
             active_set_argminmax(active_set, gradient)
 
-        dot_forward_vertex = fast_dot(gradient, v_local)
-        dot_away_vertex = fast_dot(gradient, a)
+        dot_forward_vertex = dot(gradient, v_local)
+        dot_away_vertex = dot(gradient, a)
         local_gap = dot_away_vertex - dot_forward_vertex
         if !lazy
             if t > 1
                 v = compute_extreme_point(lmo, gradient)
-                dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
+                dual_gap = dot(gradient, x) - dot(gradient, v)
                 phi = dual_gap
             end
         end
@@ -274,7 +274,7 @@ function blended_pairwise_conditional_gradient(
             if lazy # otherwise, v computed above already
                 # optionally try to use the storage
                 if use_extra_vertex_storage
-                    lazy_threshold = fast_dot(gradient, x) - max(epsilon, phi / sparsity_control)
+                    lazy_threshold = dot(gradient, x) - max(epsilon, phi / sparsity_control)
                     (found_better_vertex, new_forward_vertex) =
                         storage_find_argmin_vertex(extra_vertex_storage, gradient, lazy_threshold)
                     if found_better_vertex
@@ -298,7 +298,7 @@ function blended_pairwise_conditional_gradient(
                 step_type = ST_REGULAR
             end
             vertex_taken = v
-            dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
+            dual_gap = dot(gradient, x) - dot(gradient, v)
             # if we are about to exit, compute dual_gap with the cleaned-up x
             if dual_gap ≤ epsilon
                 active_set_renormalize!(active_set)
@@ -306,7 +306,7 @@ function blended_pairwise_conditional_gradient(
                 compute_active_set_iterate!(active_set)
                 x = get_active_set_iterate(active_set)
                 grad!(gradient, x)
-                dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
+                dual_gap = dot(gradient, x) - dot(gradient, v)
             end
             # Note: In the following, we differentiate between lazy and non-lazy updates.
             # The reason is that the non-lazy version does not use phi but the lazy one heavily depends on it.
@@ -433,7 +433,7 @@ function blended_pairwise_conditional_gradient(
         grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
-        phi_new = fast_dot(x, gradient) - fast_dot(v, gradient)
+        phi_new = dot(gradient, x) - dot(gradient, v)
         phi = phi_new < phi ? phi_new : phi
         step_type = ST_LAST
         tot_time = (time_ns() - time_start) / 1e9
@@ -466,7 +466,7 @@ function blended_pairwise_conditional_gradient(
     if recompute_last_vertex
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
-        dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
+        dual_gap = dot(gradient, x) - dot(gradient, v)
     end
     step_type = ST_POSTPROCESS
     tot_time = (time_ns() - time_start) / 1e9

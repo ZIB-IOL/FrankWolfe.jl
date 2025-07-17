@@ -62,7 +62,7 @@ function compute_extreme_point(
     kwargs...,
 )
     if lmo.last_vertex !== nothing && isfinite(threshold)
-        if fast_dot(lmo.last_vertex, direction) ≤ threshold # cache is a sufficiently-decreasing direction
+        if dot(lmo.last_vertex, direction) ≤ threshold # cache is a sufficiently-decreasing direction
             return lmo.last_vertex
         end
     end
@@ -148,11 +148,10 @@ function compute_extreme_point(
         for idx in iter_order
             if lmo.vertices[idx] !== nothing
                 v = lmo.vertices[idx]
-                new_val = fast_dot(v, direction)
+                new_val = dot(v, direction)
                 if new_val ≤ threshold # cache is a sufficiently-decreasing direction
                     # if greedy, stop and return point
                     if greedy
-                        # println("greedy cache sol")
                         return v
                     end
                     # otherwise, keep the index only if better than incumbent
@@ -164,13 +163,11 @@ function compute_extreme_point(
                 end
             end
         end
-        if best_idx > 0 # && fast_dot(best_v, direction) ≤ threshold
-            # println("cache sol")
+        if best_idx > 0
             return best_v
         end
     end
     # no interesting point found, computing new
-    # println("LP sol")
     v = compute_extreme_point(lmo.inner, direction, kwargs...)
     if store_cache
         tup = Base.setindex(lmo.vertices, v, lmo.oldest_idx)
@@ -230,7 +227,7 @@ function compute_extreme_point(
     best_v = nothing
     for idx in reverse(eachindex(lmo.vertices))
         @inbounds v = lmo.vertices[idx]
-        new_val = fast_dot(v, direction)
+        new_val = dot(v, direction)
         if new_val ≤ threshold
             # stop, store and return
             if greedy

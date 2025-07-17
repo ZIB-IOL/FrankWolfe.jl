@@ -65,8 +65,8 @@ function run_corrective_step(
     d,
 )
     _, v_lazy, v_loc, _, a_lambda, a, a_loc, _, _ = active_set_argminmax(active_set, gradient)
-    grad_dot_x = fast_dot(x, gradient)
-    grad_dot_a = fast_dot(a, gradient)
+    grad_dot_x = dot(gradient, x)
+    grad_dot_a = dot(gradient, a)
     away_gap = grad_dot_a - grad_dot_x
     # flag for whether callback interrupts the solving process
     should_continue = true
@@ -116,7 +116,7 @@ function run_corrective_step(
         # compute the local FW gap over the active set 
         away_step_taken = false
         lazy_fw_step_taken = false
-        grad_dot_lazy_fw_vertex = fast_dot(v_lazy, gradient)
+        grad_dot_lazy_fw_vertex = dot(gradient, v_lazy)
         lazy_gap = grad_dot_x - grad_dot_lazy_fw_vertex
         if lazy_gap >= max(away_gap, phi / corrective_step.lazy_tolerance, epsilon)
             step_type = ST_LAZY
@@ -137,7 +137,7 @@ function run_corrective_step(
         else
             # call the true LMO since `v` was not updated
             v = vertex = compute_extreme_point(lmo, gradient)
-            grad_dot_fw_vertex = fast_dot(v, gradient)
+            grad_dot_fw_vertex = dot(gradient, v)
             dual_gap = grad_dot_x - grad_dot_fw_vertex
             # if enough progress, perform regular FW step
             if dual_gap >= phi / corrective_step.lazy_tolerance
@@ -262,9 +262,9 @@ function run_corrective_step(
     d,
 )
     _, v_local, v_loc, _, a_lambda, a, a_loc, _, _ = active_set_argminmax(active_set, gradient)
-    grad_dot_x = fast_dot(x, gradient)
-    grad_dot_a = fast_dot(a, gradient)
-    grad_dot_local_fw_vertex = fast_dot(v_local, gradient)
+    grad_dot_x = dot(gradient, x)
+    grad_dot_a = dot(gradient, a)
+    grad_dot_local_fw_vertex = dot(gradient, v_local)
     local_gap = grad_dot_a - grad_dot_local_fw_vertex
     # flag for whether callback interrupts the solving process
     should_continue = true
@@ -325,7 +325,7 @@ function run_corrective_step(
             should_fw_step = true
         else # lazy case, v needs to be computed here
             v = compute_extreme_point(lmo, gradient)
-            dual_gap = grad_dot_x - fast_dot(gradient, v)
+            dual_gap = grad_dot_x - dot(gradient, v)
             # FW vertex promises progress
             if dual_gap ≥ max(epsilon, phi / corrective_step.lazy_tolerance)
                 should_fw_step = true
@@ -409,9 +409,9 @@ function run_corrective_step(
     d,
 )
     _, v_local, v_loc, _, a_lambda, a, a_loc, _, _ = active_set_argminmax(active_set, gradient)
-    grad_dot_x = fast_dot(x, gradient)
-    grad_dot_a = fast_dot(a, gradient)
-    grad_dot_local_fw_vertex = fast_dot(v_local, gradient)
+    grad_dot_x = dot(gradient, x)
+    grad_dot_a = dot(gradient, a)
+    grad_dot_local_fw_vertex = dot(gradient, v_local)
     pairwise_gap = grad_dot_a - grad_dot_local_fw_vertex
     lazy_gap = grad_dot_x - grad_dot_local_fw_vertex
     # flag for whether callback interrupts the solving process
@@ -423,7 +423,7 @@ function run_corrective_step(
             should_fw_step = true
         else # lazy case, v needs to be computed here
             v = compute_extreme_point(lmo, gradient)
-            dual_gap = grad_dot_x - fast_dot(gradient, v)
+            dual_gap = grad_dot_x - dot(gradient, v)
             # FW vertex promises progress
             if dual_gap ≥ max(epsilon, phi / corrective_step.lazy_tolerance)
                 should_fw_step = true
@@ -671,9 +671,9 @@ function run_corrective_step(
     d,
 )
     _, v_local, v_loc, _, a_lambda, a, a_loc, _, _ = active_set_argminmax(active_set, gradient)
-    grad_dot_x = fast_dot(x, gradient)
-    grad_dot_a = fast_dot(a, gradient)
-    grad_dot_local_fw_vertex = fast_dot(v_local, gradient)
+    grad_dot_x = dot(gradient, x)
+    grad_dot_a = dot(gradient, a)
+    grad_dot_local_fw_vertex = dot(gradient, v_local)
     local_pairwise_gap = grad_dot_a - grad_dot_local_fw_vertex
     # flag for whether callback interrupts the solving process
     should_continue = true
@@ -689,7 +689,7 @@ function run_corrective_step(
         # if not lazy, v is already computed
         if corrective_step.lazy
             v = compute_extreme_point(lmo, gradient)
-            dual_gap = grad_dot_x - fast_dot(gradient, v)
+            dual_gap = grad_dot_x - dot(gradient, v)
             phi = min(phi, dual_gap)
         end
         d = muladd_memory_mode(memory_mode, d, a, v)

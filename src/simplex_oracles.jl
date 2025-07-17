@@ -29,6 +29,33 @@ function compute_extreme_point(lmo::UnitSimplexOracle{T}, direction; v=nothing, 
     return ScaledHotVector(zero(T), idx, length(direction))
 end
 
+# temporary fix because argmin is broken on julia 1.8
+argmin_(v) = argmin(v)
+function argmin_(v::SparseArrays.SparseVector{T}) where {T}
+    if isempty(v.nzind)
+        return 1
+    end
+    idx = -1
+    val = T(Inf)
+    for s_idx in eachindex(v.nzind)
+        if v.nzval[s_idx] < val
+            val = v.nzval[s_idx]
+            idx = s_idx
+        end
+    end
+    # if min value is already negative or the indices were all checked
+    if val < 0 || length(v.nzind) == length(v)
+        return v.nzind[idx]
+    end
+    # otherwise, find the first zero
+    for idx in eachindex(v)
+        if idx ∉ v.nzind
+            return idx
+        end
+    end
+    return error("unreachable")
+end
+
 function convert_mathopt(
     lmo::UnitSimplexOracle{T},
     optimizer::OT;

@@ -1,4 +1,5 @@
 using FrankWolfe
+using LinearAlgebra
 
 n = Int(1e1)
 
@@ -6,7 +7,7 @@ xpi = rand(1:100, n)
 total = sum(xpi)
 xp = xpi .// total
 
-f(x) = FrankWolfe.fast_dot(x - xp, x - xp)
+f(x) = dot(x - xp, x - xp)
 
 function grad!(storage, x)
     @. storage = 2 * (x - xp)

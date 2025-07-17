@@ -171,12 +171,12 @@ function perform_line_search(
     workspace,
     memory_mode,
 )
-    dd = fast_dot(d, d)
+    dd = dot(d, d)
     if dd <= eps(float(dd))
         return dd
     end
 
-    return min(max(fast_dot(gradient, d) * inv(line_search.L * dd), 0), gamma_max)
+    return min(max(dot(gradient, d) * inv(line_search.L * dd), 0), gamma_max)
 end
 
 Base.print(io::IO, ::Shortstep) = print(io, "Shortstep")
@@ -255,9 +255,9 @@ function perform_line_search(
     @. workspace.y = x - gamma_max * d
     @. workspace.left = x
     @. workspace.right = workspace.y
-    dgx = fast_dot(d, gradient)
+    dgx = dot(d, gradient)
     grad!(workspace.gradient, workspace.y)
-    dgy = fast_dot(d, workspace.gradient)
+    dgy = dot(d, workspace.gradient)
 
     # if the minimum is at an endpoint
     if dgx * dgy >= 0
@@ -333,7 +333,7 @@ function perform_line_search(
     gamma = gamma_max * one(line_search.tau)
     i = 0
 
-    dot_gdir = fast_dot(gradient, d)
+    dot_gdir = dot(gradient, d)
     if dot_gdir ≤ 0
         @warn "Non-improving"
         return zero(gamma)
@@ -448,7 +448,7 @@ function perform_line_search(
         end
 
         grad!(grad_storage, storage)
-        dot_gdir_new = fast_dot(grad_storage, d)
+        dot_gdir_new = dot(grad_storage, d)
 
         if dot_gdir_new ≈ dot_gdir
             clamping = true
@@ -627,8 +627,7 @@ function perform_line_search(
         # Additional smoothness condition
         if line_search.relaxed_smoothness
             grad!(gradient_storage, x_storage)
-            if fast_dot(gradient, d) - fast_dot(gradient_storage, d) <=
-               γ * M * ndir2 + eps(float(γ))
+            if dot(gradient, d) - dot(gradient_storage, d) <= γ * M * ndir2 + eps(float(γ))
                 break
             end
         end
@@ -680,13 +679,13 @@ Base.print(io::IO, ::AdaptiveZerothOrder) = print(io, "AdaptiveZerothOrder")
 
 function _upgrade_accuracy_adaptive(gradient, direction, storage, ::Val{true})
     direction_big = big.(direction)
-    dot_dir = fast_dot(big.(gradient), direction_big)
+    dot_dir = dot(big.(gradient), direction_big)
     ndir2 = norm(direction_big)^2
     return (dot_dir, ndir2, storage.xbig)
 end
 
 function _upgrade_accuracy_adaptive(gradient, direction, storage, ::Val{false})
-    dot_dir = fast_dot(gradient, direction)
+    dot_dir = dot(gradient, direction)
     ndir2 = norm(direction)^2
     return (dot_dir, ndir2, storage.x)
 end
@@ -780,7 +779,7 @@ function perform_line_search(
     f_x = f(x)
 
     grad!(gradient_storage, x_storage)
-    while f(x_storage) > f_x || 0 > fast_dot(gradient_storage, d) && γ ≥ 100 * eps(float(γ))
+    while f(x_storage) > f_x || 0 > dot(gradient_storage, d) && γ ≥ 100 * eps(float(γ))
         M *= line_search.tau
         γ = min(max(dot_dir / (M * ndir2), 0), gamma_max)
         x_storage = muladd_memory_mode(memory_mode, x_storage, x, γ, d)

@@ -113,9 +113,9 @@ function reset_quadratic_dots!(as::ActiveSetQuadraticProductCaching{AT,R}) where
     @inbounds for idx in 1:length(as)
         as.dots_A[idx] = Vector{R}(undef, idx)
         for idy in 1:idx
-            as.dots_A[idx][idy] = fast_dot(as.A * as.atoms[idx], as.atoms[idy])
+            as.dots_A[idx][idy] = dot(as.A * as.atoms[idx], as.atoms[idy])
         end
-        as.dots_b[idx] = fast_dot(as.b, as.atoms[idx])
+        as.dots_b[idx] = dot(as.b, as.atoms[idx])
     end
     return as
 end
@@ -153,14 +153,14 @@ end
 function Base.push!(as::ActiveSetQuadraticProductCaching{AT,R}, (λ, a)) where {AT,R}
     dot_x = zero(R)
     dot_A = Vector{R}(undef, length(as))
-    dot_b = fast_dot(as.b, a)
+    dot_b = dot(as.b, a)
     Aa = as.A * a
     @inbounds for i in 1:length(as)
-        dot_A[i] = fast_dot(Aa, as.atoms[i])
+        dot_A[i] = dot(Aa, as.atoms[i])
         as.dots_x[i] += λ * dot_A[i]
         dot_x += as.weights[i] * dot_A[i]
     end
-    push!(dot_A, fast_dot(Aa, a))
+    push!(dot_A, dot(Aa, a))
     dot_x += λ * dot_A[end]
     push!(as.weights, λ)
     push!(as.atoms, a)
@@ -269,7 +269,6 @@ function active_set_argminmax(active_set::ActiveSetQuadraticProductCaching, dire
     @inbounds for i in eachindex(active_set)
         # direction is not used and assumed to be Ax+b
         val = active_set.dots_x[i] + active_set.dots_b[i]
-        # @assert abs(fast_dot(active_set.atoms[i], direction) - val) < Base.rtoldefault(eltype(direction))
         if val < valm
             valm = val
             idxm = i
@@ -301,7 +300,7 @@ function update_active_set_quadratic!(
 ) where {AT,R,H}
     @inbounds for idx in eachindex(warm_as)
         for idy in 1:idx
-            warm_as.dots_A[idx][idy] = fast_dot(A * warm_as.atoms[idx], warm_as.atoms[idy])
+            warm_as.dots_A[idx][idy] = dot(A * warm_as.atoms[idx], warm_as.atoms[idy])
         end
     end
     warm_as.A .= A
@@ -317,7 +316,7 @@ function update_active_set_quadratic!(
     warm_as.weights_prev .= 0
     warm_as.modified .= true
     @inbounds for idx in eachindex(warm_as)
-        warm_as.dots_b[idx] = fast_dot(b, warm_as.atoms[idx])
+        warm_as.dots_b[idx] = dot(b, warm_as.atoms[idx])
     end
     warm_as.b .= b
     compute_active_set_iterate!(warm_as)
