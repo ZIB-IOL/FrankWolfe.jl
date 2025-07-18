@@ -206,8 +206,9 @@ function stochastic_frank_wolfe(
 
     if verbose
         println(
-            "\n" * (use_one_sample_variant ? "One-sample " : "") *
-            "Stochastic Frank-Wolfe Algorithm."
+            "\n" *
+            (use_one_sample_variant ? "One-sample " : "") *
+            "Stochastic Frank-Wolfe Algorithm.",
         )
         NumType = eltype(x0)
         println(
@@ -277,7 +278,13 @@ function stochastic_frank_wolfe(
                 copyto!(previous_gradient, f.storage)
                 compute_gradient(f, x, rng=rng, batch_size=batch_size, full_evaluation=false)
                 # gradient = momentum * (gradient - prev_gradient) + f.storage
-                LinearAlgebra.mul!(gradient, LinearAlgebra.I, previous_gradient, -momentum, momentum)
+                LinearAlgebra.mul!(
+                    gradient,
+                    LinearAlgebra.I,
+                    previous_gradient,
+                    -momentum,
+                    momentum,
+                )
                 LinearAlgebra.mul!(gradient, LinearAlgebra.I, f.storage, 1, 1)
             end
         end
