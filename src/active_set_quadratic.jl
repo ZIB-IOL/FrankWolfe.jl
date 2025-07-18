@@ -359,7 +359,11 @@ end
 
 
 
-function ActiveSetQuadraticPartialCaching(tuple_values::AbstractVector{Tuple{R,AT}}, A::H, λ) where {AT,R,H}
+function ActiveSetQuadraticPartialCaching(
+    tuple_values::AbstractVector{Tuple{R,AT}},
+    A::H,
+    λ,
+) where {AT,R,H}
     return ActiveSetQuadraticPartialCaching{AT,R}(tuple_values, A, λ)
 end
 
