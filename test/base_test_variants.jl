@@ -311,11 +311,13 @@ end
         momentum=0.95,
         verbose=false,
         line_search=FrankWolfe.Nonconvex(),
-        max_iteration=5000,
+        max_iteration=10000,
         batch_iterator=batch_iterator,
         trajectory=false,
     )
     @test batch_iterator.maxreached
+    @test norm(θ - params_perfect) ≤ 0.05 * length(θ)
+
     # SFW damped momentum
     momentum_iterator = FrankWolfe.ExpMomentumIterator()
     θ, _, _, _, _ = FrankWolfe.stochastic_frank_wolfe(

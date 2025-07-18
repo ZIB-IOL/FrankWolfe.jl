@@ -206,7 +206,7 @@ function stochastic_frank_wolfe(
 
     if verbose
         println(
-            "\n" * use_one_sample_variant ? "One-sample " : "" *
+            "\n" * (use_one_sample_variant ? "One-sample " : "") *
             "Stochastic Frank-Wolfe Algorithm."
         )
         NumType = eltype(x0)
