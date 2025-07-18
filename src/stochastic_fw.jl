@@ -134,7 +134,10 @@ implementing `momentum = FrankWolfe.momentum_iterate(momentum_iterator)`.
 
 The keyword `use_full_evaluation` set to true allows the algorithm to compute the deterministic primal value and FW gap.
 
+<<<<<<< HEAD
 The One-Sample Stochastic Frank-Wolfe (1SFW) can be activated with `use_one_sample_variant`.
+=======
+>>>>>>> c0c734e51849a4d22041a692a363de31845152c2
 $RETURN
 """
 function stochastic_frank_wolfe(
