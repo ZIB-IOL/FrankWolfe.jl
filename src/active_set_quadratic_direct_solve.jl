@@ -312,8 +312,7 @@ function solve_quadratic_activeset_lp!(
     for i in 2:nv
         lhs = MOI.ScalarAffineFunction{Float64}([], 0.0)
         Base.sizehint!(lhs.terms, nv)
-        if as.active_set isa ActiveSetQuadraticProductCaching ||
-           as.active_set isa ActiveSetPartialCaching
+        if as.active_set isa Union{ActiveSetQuadraticProductCaching, ActiveSetPartialCaching}
             # dots_A is a lower triangular matrix
             for j in 1:i
                 push!(
