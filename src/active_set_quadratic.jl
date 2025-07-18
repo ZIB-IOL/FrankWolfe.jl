@@ -332,7 +332,7 @@ end
 
 
 """
-    ActiveSetPartialCaching{AT, R, IT}
+    ActiveSetQuadraticPartialCaching{AT, R, IT}
 
 Represents an active set of extreme vertices collected in a FW algorithm,
 along with their coefficients `(λ_i, a_i)`.
@@ -345,7 +345,7 @@ In contrast to `ActiveSetQuadraticProductCaching`, this active set assumes that 
 Therefore, we cache only the dot products `⟨A * x, a_i⟩` and `⟨A * a_i, a_j⟩`.
 This active set might be used for experiments with Alternating Linear Minimization (ALM) or Split FW where we usually have chaning linear terms and Hessian matrices which only change in scale.
 """
-struct ActiveSetPartialCaching{AT,R<:Real,IT,H} <: AbstractActiveSet{AT,R,IT}
+struct ActiveSetQuadraticPartialCaching{AT,R<:Real,IT,H} <: AbstractActiveSet{AT,R,IT}
     weights::Vector{R}
     atoms::Vector{AT}
     x::IT
@@ -359,11 +359,11 @@ end
 
 
 
-function ActiveSetPartialCaching(tuple_values::AbstractVector{Tuple{R,AT}}, A::H, λ) where {AT,R,H}
-    return ActiveSetPartialCaching{AT,R}(tuple_values, A, λ)
+function ActiveSetQuadraticPartialCaching(tuple_values::AbstractVector{Tuple{R,AT}}, A::H, λ) where {AT,R,H}
+    return ActiveSetQuadraticPartialCaching{AT,R}(tuple_values, A, λ)
 end
 
-function ActiveSetPartialCaching{AT,R}(
+function ActiveSetQuadraticPartialCaching{AT,R}(
     tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}},
     A::H,
     λ,
@@ -380,7 +380,7 @@ function ActiveSetPartialCaching{AT,R}(
         atoms[idx] = tuple_values[idx][2]
     end
     x = similar(atoms[1])
-    as = ActiveSetPartialCaching{AT,R,typeof(x),H}(
+    as = ActiveSetQuadraticPartialCaching{AT,R,typeof(x),H}(
         weights,
         atoms,
         x,
@@ -398,7 +398,7 @@ end
 
 # should only be called upon construction
 # for active sets with a large number of atoms, this function becomes very costly
-function reset_quadratic_dots!(as::ActiveSetPartialCaching{AT,R}) where {AT,R}
+function reset_quadratic_dots!(as::ActiveSetQuadraticPartialCaching{AT,R}) where {AT,R}
     @inbounds for idx in 1:length(as)
         as.dots_A[idx] = Vector{R}(undef, idx)
         for idy in 1:idx
@@ -408,24 +408,24 @@ function reset_quadratic_dots!(as::ActiveSetPartialCaching{AT,R}) where {AT,R}
     return as
 end
 
-function ActiveSetPartialCaching(
+function ActiveSetQuadraticPartialCaching(
     tuple_values::AbstractVector{Tuple{R,AT}},
     A::UniformScaling,
     λ,
 ) where {AT,R}
-    return ActiveSetPartialCaching(tuple_values, Identity(A.λ), λ)
+    return ActiveSetQuadraticPartialCaching(tuple_values, Identity(A.λ), λ)
 end
-function ActiveSetPartialCaching{AT,R}(
+function ActiveSetQuadraticPartialCaching{AT,R}(
     tuple_values::AbstractVector{<:Tuple{<:Number,<:Any}},
     A::UniformScaling,
     λ,
 ) where {AT,R}
-    return ActiveSetPartialCaching{AT,R}(tuple_values, Identity(A.λ), λ)
+    return ActiveSetQuadraticPartialCaching{AT,R}(tuple_values, Identity(A.λ), λ)
 end
 
 # these three functions do not update the active set iterate
 
-function Base.push!(as::ActiveSetPartialCaching{AT,R}, (λ, a)) where {AT,R}
+function Base.push!(as::ActiveSetQuadraticPartialCaching{AT,R}, (λ, a)) where {AT,R}
     dot_x = zero(R)
     dot_A = Vector{R}(undef, length(as))
     Aa = as.A * a
@@ -446,7 +446,7 @@ function Base.push!(as::ActiveSetPartialCaching{AT,R}, (λ, a)) where {AT,R}
 end
 
 # TODO multi-indices version that deletes multiple indices at once
-function Base.deleteat!(as::ActiveSetPartialCaching, idx::Int)
+function Base.deleteat!(as::ActiveSetQuadraticPartialCaching, idx::Int)
     @inbounds for i in 1:idx-1
         as.dots_x[i] -= as.weights_prev[idx] * as.dots_A[idx][i]
     end
@@ -463,7 +463,7 @@ function Base.deleteat!(as::ActiveSetPartialCaching, idx::Int)
     return as
 end
 
-function Base.empty!(as::ActiveSetPartialCaching)
+function Base.empty!(as::ActiveSetQuadraticPartialCaching)
     empty!(as.atoms)
     empty!(as.weights)
     as.x .= 0

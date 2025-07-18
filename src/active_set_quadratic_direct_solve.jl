@@ -300,7 +300,7 @@ function solve_quadratic_activeset_lp!(
     MOI.add_constraint(o, sum_of_variables, MOI.EqualTo(1.0))
 
     # Get scaling factor for active set partial caching
-    if as.active_set isa ActiveSetPartialCaching
+    if as.active_set isa ActiveSetQuadraticPartialCaching
         c = as.active_set.λ[]
     else
         c = 1.0
@@ -313,7 +313,7 @@ function solve_quadratic_activeset_lp!(
         lhs = MOI.ScalarAffineFunction{Float64}([], 0.0)
         Base.sizehint!(lhs.terms, nv)
         if as.active_set isa ActiveSetQuadraticProductCaching ||
-           as.active_set isa ActiveSetPartialCaching
+           as.active_set isa ActiveSetQuadraticPartialCaching
             # dots_A is a lower triangular matrix
             for j in 1:i
                 push!(
