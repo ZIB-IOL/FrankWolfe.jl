@@ -34,6 +34,18 @@ function momentum_iterate(em::ExpMomentumIterator)
     return 1 - em.num / (em.offset + em.iter)^(em.exp)
 end
 
+mutable struct InverseIterateMomentum{T}
+    iter::Int
+    factor::T
+end
+
+InverseIterateMomentum() = InverseIterateMomentum(0, true)
+
+function momentum_iterate(it::InverseIterateMomentum)
+    it.iter += 1
+    return 1 - inv(it.iter^it.factor)
+end
+
 """
     ConstantMomentumIterator{T}
 
@@ -122,6 +134,7 @@ implementing `momentum = FrankWolfe.momentum_iterate(momentum_iterator)`.
 
 The keyword `use_full_evaluation` set to true allows the algorithm to compute the deterministic primal value and FW gap.
 
+The One-Sample Stochastic Frank-Wolfe (1SFW) can be activated with `use_one_sample_variant`.
 $RETURN
 """
 function stochastic_frank_wolfe(
@@ -145,6 +158,7 @@ function stochastic_frank_wolfe(
     traj_data=[],
     timeout=Inf,
     linesearch_workspace=nothing,
+    use_one_sample_variant=false,
 )
 
     # format string for output of the algorithm
@@ -183,13 +197,6 @@ function stochastic_frank_wolfe(
 
     time_start = time_ns()
 
-    if line_search == Shortstep && L == Inf
-        println("FATAL: Lipschitz constant not set. Prepare to blow up spectacularly.")
-    end
-
-    if line_search == FixedStep && gamma0 == 0
-        println("FATAL: gamma0 not set. We are not going to move a single bit.")
-    end
     if momentum_iterator === nothing && momentum !== nothing
         momentum_iterator = ConstantMomentumIterator(momentum)
     end
@@ -198,7 +205,10 @@ function stochastic_frank_wolfe(
     end
 
     if verbose
-        println("\nStochastic Frank-Wolfe Algorithm.")
+        println(
+            "\n" * use_one_sample_variant ? "One-sample " : "" *
+            "Stochastic Frank-Wolfe Algorithm."
+        )
         NumType = eltype(x0)
         println(
             "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration TYPE: $NumType",
@@ -220,7 +230,10 @@ function stochastic_frank_wolfe(
         end
     end
     first_iter = true
-    gradient = f.storage
+    gradient = f.storage .* 0
+    if use_one_sample_variant
+        previous_gradient = 0 .* gradient
+    end
     if linesearch_workspace === nothing
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
     end
@@ -252,12 +265,21 @@ function stochastic_frank_wolfe(
         if momentum_iterator === nothing
             gradient = compute_gradient(f, x, rng=rng, batch_size=batch_size)
         elseif first_iter
-            gradient = copy(compute_gradient(f, x, rng=rng, batch_size=batch_size))
+            compute_gradient(f, x, rng=rng, batch_size=batch_size)
+            gradient .= f.storage
         else
             momentum = momentum_iterate(momentum_iterator)
-            compute_gradient(f, x, rng=rng, batch_size=batch_size, full_evaluation=false)
-            # gradient = momentum * gradient + (1 - momentum) * f.storage
-            LinearAlgebra.mul!(gradient, LinearAlgebra.I, f.storage, 1 - momentum, momentum)
+            if !use_one_sample_variant
+                compute_gradient(f, x, rng=rng, batch_size=batch_size, full_evaluation=false)
+                # gradient = momentum * gradient + (1 - momentum) * f.storage
+                LinearAlgebra.mul!(gradient, LinearAlgebra.I, f.storage, 1 - momentum, momentum)
+            else
+                copyto!(previous_gradient, f.storage)
+                compute_gradient(f, x, rng=rng, batch_size=batch_size, full_evaluation=false)
+                # gradient = momentum * (gradient - prev_gradient) + f.storage
+                LinearAlgebra.mul!(gradient, LinearAlgebra.I, previous_gradient, -momentum, momentum)
+                LinearAlgebra.mul!(gradient, LinearAlgebra.I, f.storage, 1, 1)
+            end
         end
         first_iter = false
 
@@ -275,8 +297,8 @@ function stochastic_frank_wolfe(
 
         d = muladd_memory_mode(memory_mode, d, x, v)
 
-        # note: only linesearch methods that do not require full evaluations are supported
-        # so nothing is passed as function
+        # note: only agnostic line-search methods are supported
+        # so nothing is passed as function and gradient
         gamma = perform_line_search(
             line_search,
             t,

@@ -340,6 +340,18 @@ end
         trajectory=false,
         momentum_iterator=nothing,
     )
+    θ_onesfw, _, _, _, _ = FrankWolfe.stochastic_frank_wolfe(
+        f_stoch,
+        lmo,
+        copy(params),
+        verbose=false,
+        line_search=FrankWolfe.Agnostic(),
+        max_iteration=5000,
+        batch_size=1,
+        momentum_iterator=FrankWolfe.InverseIterateMomentum(),
+        use_one_sample_variant=true,
+    )
+    @test norm(θ_onesfw - params_perfect) ≤ 0.05 * length(θ)
 end
 
 @testset "Away-step FW" begin
