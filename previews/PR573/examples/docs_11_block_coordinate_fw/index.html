@@ -34,7 +34,7 @@ for order in [
     push!(trajectories, traj_data)
 end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">
 Block coordinate Frank-Wolfe (BCFW).
-MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: DataType[FrankWolfe.Secant{FrankWolfe.var&quot;#29#31&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#50#52&quot;}}, FrankWolfe.Secant{FrankWolfe.var&quot;#29#31&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#50#52&quot;}}] EPSILON: 1.0e-7 MAXITERATION: 10000 TYPE: Float64
+MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: DataType[FrankWolfe.Secant{FrankWolfe.var&quot;#24#26&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#45#47&quot;}}, FrankWolfe.Secant{FrankWolfe.var&quot;#24#26&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#45#47&quot;}}] EPSILON: 1.0e-7 MAXITERATION: 10000 TYPE: Float64
 MOMENTUM: nothing GRADIENTTYPE: FrankWolfe.BlockVector{Float64, Vector{Float64}, Tuple{Int64}} UPDATE_ORDER: FrankWolfe.FullUpdate() UPDATE_STEP: DataType[FrankWolfe.FrankWolfeStep, FrankWolfe.FrankWolfeStep]
 [ Info: In memory_mode memory iterates are written back into x0!
 
@@ -42,21 +42,21 @@ MOMENTUM: nothing GRADIENTTYPE: FrankWolfe.BlockVector{Float64, Vector{Float64},
   Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec
 -------------------------------------------------------------------------------------------------
      I             1   5.000000e-01  -1.015000e+02   1.020000e+02   0.000000e+00            Inf
-    FW          1000   1.000782e-02   9.869152e-03   1.386629e-04   4.094719e-01   2.442170e+03
-    FW          2000   1.000140e-02   9.960232e-03   4.116608e-05   4.399495e-01   4.545977e+03
-    FW          3000   1.000050e-02   9.980401e-03   2.009456e-05   4.710431e-01   6.368844e+03
-    FW          4000   1.000023e-02   9.987591e-03   1.263991e-05   4.963612e-01   8.058647e+03
-    FW          5000   1.000012e-02   9.992033e-03   8.091135e-06   5.207324e-01   9.601860e+03
-    FW          6000   1.000008e-02   9.994282e-03   5.796002e-06   5.446798e-01   1.101565e+04
-    FW          7000   1.000005e-02   9.995402e-03   4.649123e-06   5.684428e-01   1.231434e+04
-    FW          8000   1.000003e-02   9.996293e-03   3.740660e-06   5.923670e-01   1.350514e+04
-    FW          9000   1.000002e-02   9.997005e-03   3.016939e-06   6.161947e-01   1.460577e+04
-    FW         10000   1.000001e-02   9.997577e-03   2.437782e-06   6.400768e-01   1.562313e+04
-  Last         10001   1.000001e-02   9.997577e-03   2.437246e-06   7.437656e-01   1.344644e+04
+    FW          1000   1.000782e-02   9.869152e-03   1.386629e-04   4.278185e-01   2.337440e+03
+    FW          2000   1.000140e-02   9.960232e-03   4.116608e-05   4.591741e-01   4.355647e+03
+    FW          3000   1.000050e-02   9.980401e-03   2.009456e-05   4.913700e-01   6.105378e+03
+    FW          4000   1.000023e-02   9.987591e-03   1.263991e-05   5.166632e-01   7.741988e+03
+    FW          5000   1.000012e-02   9.992033e-03   8.091135e-06   5.412430e-01   9.237994e+03
+    FW          6000   1.000008e-02   9.994282e-03   5.796002e-06   5.659487e-01   1.060167e+04
+    FW          7000   1.000005e-02   9.995402e-03   4.649123e-06   5.909355e-01   1.184562e+04
+    FW          8000   1.000003e-02   9.996293e-03   3.740660e-06   7.246068e-01   1.104047e+04
+    FW          9000   1.000002e-02   9.997005e-03   3.016939e-06   7.507401e-01   1.198817e+04
+    FW         10000   1.000001e-02   9.997577e-03   2.437782e-06   7.752068e-01   1.289978e+04
+  Last         10001   1.000001e-02   9.997577e-03   2.437246e-06   8.808668e-01   1.135359e+04
 -------------------------------------------------------------------------------------------------
 
 Block coordinate Frank-Wolfe (BCFW).
-MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: DataType[FrankWolfe.Secant{FrankWolfe.var&quot;#29#31&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#50#52&quot;}}, FrankWolfe.Secant{FrankWolfe.var&quot;#29#31&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#50#52&quot;}}] EPSILON: 1.0e-7 MAXITERATION: 10000 TYPE: Float64
+MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: DataType[FrankWolfe.Secant{FrankWolfe.var&quot;#24#26&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#45#47&quot;}}, FrankWolfe.Secant{FrankWolfe.var&quot;#24#26&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#45#47&quot;}}] EPSILON: 1.0e-7 MAXITERATION: 10000 TYPE: Float64
 MOMENTUM: nothing GRADIENTTYPE: FrankWolfe.BlockVector{Float64, Vector{Float64}, Tuple{Int64}} UPDATE_ORDER: FrankWolfe.CyclicUpdate(-1) UPDATE_STEP: DataType[FrankWolfe.FrankWolfeStep, FrankWolfe.FrankWolfeStep]
 [ Info: In memory_mode memory iterates are written back into x0!
 
@@ -64,11 +64,11 @@ MOMENTUM: nothing GRADIENTTYPE: FrankWolfe.BlockVector{Float64, Vector{Float64},
   Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec
 -------------------------------------------------------------------------------------------------
      I             1   5.000000e-01  -1.015000e+02   1.020000e+02   0.000000e+00            Inf
-  Last             2   9.862500e+01   2.500000e-01   9.837500e+01   9.421149e-02   2.122883e+01
+  Last             2   9.862500e+01   2.500000e-01   9.837500e+01   9.772624e-02   2.046533e+01
 -------------------------------------------------------------------------------------------------
 
 Block coordinate Frank-Wolfe (BCFW).
-MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: DataType[FrankWolfe.Secant{FrankWolfe.var&quot;#29#31&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#50#52&quot;}}, FrankWolfe.Secant{FrankWolfe.var&quot;#29#31&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#50#52&quot;}}] EPSILON: 1.0e-7 MAXITERATION: 10000 TYPE: Float64
+MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: DataType[FrankWolfe.Secant{FrankWolfe.var&quot;#24#26&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#45#47&quot;}}, FrankWolfe.Secant{FrankWolfe.var&quot;#24#26&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#45#47&quot;}}] EPSILON: 1.0e-7 MAXITERATION: 10000 TYPE: Float64
 MOMENTUM: nothing GRADIENTTYPE: FrankWolfe.BlockVector{Float64, Vector{Float64}, Tuple{Int64}} UPDATE_ORDER: FrankWolfe.StochasticUpdate(-1) UPDATE_STEP: DataType[FrankWolfe.FrankWolfeStep, FrankWolfe.FrankWolfeStep]
 [ Info: In memory_mode memory iterates are written back into x0!
 
@@ -76,21 +76,21 @@ MOMENTUM: nothing GRADIENTTYPE: FrankWolfe.BlockVector{Float64, Vector{Float64},
   Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec
 -------------------------------------------------------------------------------------------------
      I             1   5.000000e-01  -1.015000e+02   1.020000e+02   0.000000e+00            Inf
-    FW          1000   1.000460e-02   9.952106e-03   5.249662e-05   6.914455e-02   1.446246e+04
-    FW          2000   1.000263e-02   9.964669e-03   3.796080e-05   1.052645e-01   1.899976e+04
-    FW          3000   1.000153e-02   9.973500e-03   2.803350e-05   1.384304e-01   2.167155e+04
-    FW          4000   1.000093e-02   9.979607e-03   2.132550e-05   1.692670e-01   2.363131e+04
-    FW          5000   1.000057e-02   9.984152e-03   1.642206e-05   1.996950e-01   2.503819e+04
-    FW          6000   1.000036e-02   9.987524e-03   1.283768e-05   2.300095e-01   2.608588e+04
-    FW          7000   1.000023e-02   9.990050e-03   1.018254e-05   2.600456e-01   2.691836e+04
-    FW          8000   1.000015e-02   9.992067e-03   8.082664e-06   2.910557e-01   2.748615e+04
-    FW          9000   1.000010e-02   9.993684e-03   6.411158e-06   3.218884e-01   2.796000e+04
-    FW         10000   1.000006e-02   9.994940e-03   5.121754e-06   3.519830e-01   2.841046e+04
-  Last         10001   1.000006e-02   9.994943e-03   5.118358e-06   3.523158e-01   2.838646e+04
+    FW          1000   1.000460e-02   9.952106e-03   5.249662e-05   7.091764e-02   1.410086e+04
+    FW          2000   1.000263e-02   9.964669e-03   3.796080e-05   1.078672e-01   1.854132e+04
+    FW          3000   1.000153e-02   9.973500e-03   2.803350e-05   1.413315e-01   2.122669e+04
+    FW          4000   1.000093e-02   9.979607e-03   2.132550e-05   1.719364e-01   2.326442e+04
+    FW          5000   1.000057e-02   9.984152e-03   1.642206e-05   2.040200e-01   2.450740e+04
+    FW          6000   1.000036e-02   9.987524e-03   1.283768e-05   2.347772e-01   2.555614e+04
+    FW          7000   1.000023e-02   9.990050e-03   1.018254e-05   2.511269e-01   2.787435e+04
+    FW          8000   1.000015e-02   9.992067e-03   8.082664e-06   2.678404e-01   2.986853e+04
+    FW          9000   1.000010e-02   9.993684e-03   6.411158e-06   4.157411e-01   2.164809e+04
+    FW         10000   1.000006e-02   9.994940e-03   5.121754e-06   4.462532e-01   2.240880e+04
+  Last         10001   1.000006e-02   9.994943e-03   5.118358e-06   4.466317e-01   2.239205e+04
 -------------------------------------------------------------------------------------------------
 
 Block coordinate Frank-Wolfe (BCFW).
-MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: DataType[FrankWolfe.Secant{FrankWolfe.var&quot;#29#31&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#50#52&quot;}}, FrankWolfe.Secant{FrankWolfe.var&quot;#29#31&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#50#52&quot;}}] EPSILON: 1.0e-7 MAXITERATION: 10000 TYPE: Float64
+MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: DataType[FrankWolfe.Secant{FrankWolfe.var&quot;#24#26&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#45#47&quot;}}, FrankWolfe.Secant{FrankWolfe.var&quot;#24#26&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#45#47&quot;}}] EPSILON: 1.0e-7 MAXITERATION: 10000 TYPE: Float64
 MOMENTUM: nothing GRADIENTTYPE: FrankWolfe.BlockVector{Float64, Vector{Float64}, Tuple{Int64}} UPDATE_ORDER: Main.CustomOrder() UPDATE_STEP: DataType[FrankWolfe.FrankWolfeStep, FrankWolfe.FrankWolfeStep]
 [ Info: In memory_mode memory iterates are written back into x0!
 
@@ -98,19 +98,19 @@ MOMENTUM: nothing GRADIENTTYPE: FrankWolfe.BlockVector{Float64, Vector{Float64},
   Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec
 -------------------------------------------------------------------------------------------------
      I             1   1.023333e+02           -Inf            Inf   0.000000e+00            Inf
-    FW          1000   1.001389e-02   9.910742e-03   1.031477e-04   8.476474e-02   1.179736e+04
-    FW          2000   1.000373e-02   9.957280e-03   4.645442e-05   1.338868e-01   1.493799e+04
-    FW          3000   1.000128e-02   9.975909e-03   2.537155e-05   1.772910e-01   1.692133e+04
-    FW          4000   1.000049e-02   9.985415e-03   1.507473e-05   2.138617e-01   1.870367e+04
-    FW          5000   1.000020e-02   9.990845e-03   9.352769e-06   2.497626e-01   2.001901e+04
-    FW          6000   1.000008e-02   9.994130e-03   5.952695e-06   2.858275e-01   2.099168e+04
-    FW          7000   1.000004e-02   9.996183e-03   3.852190e-06   3.216202e-01   2.176480e+04
-    FW          8000   1.000002e-02   9.997491e-03   2.524061e-06   3.575731e-01   2.237305e+04
-    FW          9000   1.000001e-02   9.998344e-03   1.662945e-06   3.936679e-01   2.286191e+04
-    FW         10000   1.000000e-02   9.998905e-03   1.097518e-06   4.298049e-01   2.326637e+04
-  Last         10001   1.000000e-02   9.998905e-03   1.097770e-06   4.301741e-01   2.324873e+04
+    FW          1000   1.001389e-02   9.910742e-03   1.031477e-04   8.610287e-02   1.161401e+04
+    FW          2000   1.000373e-02   9.957280e-03   4.645442e-05   1.214313e-01   1.647022e+04
+    FW          3000   1.000128e-02   9.975909e-03   2.537155e-05   1.626354e-01   1.844617e+04
+    FW          4000   1.000049e-02   9.985415e-03   1.507473e-05   1.993272e-01   2.006750e+04
+    FW          5000   1.000020e-02   9.990845e-03   9.352769e-06   2.361765e-01   2.117061e+04
+    FW          6000   1.000008e-02   9.994130e-03   5.952695e-06   2.726287e-01   2.200796e+04
+    FW          7000   1.000004e-02   9.996183e-03   3.852190e-06   3.092081e-01   2.263848e+04
+    FW          8000   1.000002e-02   9.997491e-03   2.524061e-06   3.318464e-01   2.410754e+04
+    FW          9000   1.000001e-02   9.998344e-03   1.662945e-06   4.723169e-01   1.905500e+04
+    FW         10000   1.000000e-02   9.998905e-03   1.097518e-06   5.016998e-01   1.993224e+04
+  Last         10001   1.000000e-02   9.998905e-03   1.097770e-06   5.020984e-01   1.991840e+04
 -------------------------------------------------------------------------------------------------</code></pre><h3 id="Plotting-the-results"><a class="docs-heading-anchor" href="#Plotting-the-results">Plotting the results</a><a id="Plotting-the-results-1"></a><a class="docs-heading-anchor-permalink" href="#Plotting-the-results" title="Permalink"></a></h3><pre><code class="language-julia hljs">labels = [&quot;Full update&quot;, &quot;Cyclic order&quot;, &quot;Stochstic order&quot;, &quot;Custom order&quot;]
-plot_trajectories(trajectories, labels, xscalelog=true)</code></pre><img src="af15fc84.svg" alt="Example block output"/><h2 id="Running-BCFW-with-different-update-methods"><a class="docs-heading-anchor" href="#Running-BCFW-with-different-update-methods">Running BCFW with different update methods</a><a id="Running-BCFW-with-different-update-methods-1"></a><a class="docs-heading-anchor-permalink" href="#Running-BCFW-with-different-update-methods" title="Permalink"></a></h2><p>As a second step, we compare different update steps. We consider the <a href="../../reference/3_backend/#FrankWolfe.BPCGStep"><code>FrankWolfe.BPCGStep</code></a> and the <a href="../../reference/3_backend/#FrankWolfe.FrankWolfeStep"><code>FrankWolfe.FrankWolfeStep</code></a>. One can either pass a tuple of <a href="../../reference/3_backend/#FrankWolfe.UpdateStep"><code>FrankWolfe.UpdateStep</code></a> to define for each block the update procedure or pass a single update step so that each block uses the same procedure.</p><pre><code class="language-julia hljs">trajectories = []
+plot_trajectories(trajectories, labels, xscalelog=true)</code></pre><img src="882f7593.svg" alt="Example block output"/><h2 id="Running-BCFW-with-different-update-methods"><a class="docs-heading-anchor" href="#Running-BCFW-with-different-update-methods">Running BCFW with different update methods</a><a id="Running-BCFW-with-different-update-methods-1"></a><a class="docs-heading-anchor-permalink" href="#Running-BCFW-with-different-update-methods" title="Permalink"></a></h2><p>As a second step, we compare different update steps. We consider the <a href="../../reference/3_backend/#FrankWolfe.BPCGStep"><code>FrankWolfe.BPCGStep</code></a> and the <a href="../../reference/3_backend/#FrankWolfe.FrankWolfeStep"><code>FrankWolfe.FrankWolfeStep</code></a>. One can either pass a tuple of <a href="../../reference/3_backend/#FrankWolfe.UpdateStep"><code>FrankWolfe.UpdateStep</code></a> to define for each block the update procedure or pass a single update step so that each block uses the same procedure.</p><pre><code class="language-julia hljs">trajectories = []
 
 for us in [
     (FrankWolfe.BPCGStep(), FrankWolfe.FrankWolfeStep()),
@@ -131,7 +131,7 @@ for us in [
     push!(trajectories, traj_data)
 end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">
 Block coordinate Frank-Wolfe (BCFW).
-MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: DataType[FrankWolfe.Secant{FrankWolfe.var&quot;#29#31&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#50#52&quot;}}, FrankWolfe.Secant{FrankWolfe.var&quot;#29#31&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#50#52&quot;}}] EPSILON: 1.0e-7 MAXITERATION: 10000 TYPE: Float64
+MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: DataType[FrankWolfe.Secant{FrankWolfe.var&quot;#24#26&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#45#47&quot;}}, FrankWolfe.Secant{FrankWolfe.var&quot;#24#26&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#45#47&quot;}}] EPSILON: 1.0e-7 MAXITERATION: 10000 TYPE: Float64
 MOMENTUM: nothing GRADIENTTYPE: FrankWolfe.BlockVector{Float64, Vector{Float64}, Tuple{Int64}} UPDATE_ORDER: FrankWolfe.CyclicUpdate(-1) UPDATE_STEP: DataType[FrankWolfe.BPCGStep, FrankWolfe.FrankWolfeStep]
 [ Info: In memory_mode memory iterates are written back into x0!
 
@@ -139,21 +139,21 @@ MOMENTUM: nothing GRADIENTTYPE: FrankWolfe.BlockVector{Float64, Vector{Float64},
   Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec
 -------------------------------------------------------------------------------------------------
      I             1   5.000000e-01  -1.015000e+02   1.020000e+02   0.000000e+00            Inf
-    FW          1000   1.003272e-02   9.851166e-03   1.815523e-04   4.112879e-01   2.431387e+03
-    FW          2000   1.001363e-02   9.911695e-03   1.019398e-04   4.579926e-01   4.366882e+03
-    FW          3000   1.000674e-02   9.940823e-03   6.592101e-05   5.048120e-01   5.942807e+03
-    FW          4000   1.000365e-02   9.957792e-03   4.586099e-05   5.515687e-01   7.252043e+03
-    FW          5000   1.000209e-02   9.968748e-03   3.334375e-05   5.983761e-01   8.355949e+03
-    FW          6000   1.000124e-02   9.976286e-03   2.495726e-05   6.394260e-01   9.383416e+03
-    FW          7000   1.000076e-02   9.981696e-03   1.906167e-05   6.802731e-01   1.028999e+04
-    FW          8000   1.000047e-02   9.985698e-03   1.477332e-05   7.213257e-01   1.109069e+04
-    FW          9000   1.000030e-02   9.988722e-03   1.157493e-05   8.758993e-01   1.027515e+04
-    FW         10000   1.000019e-02   9.991045e-03   9.144119e-06   9.165655e-01   1.091029e+04
-  Last         10001   1.000019e-02   9.991049e-03   9.139872e-06   9.169667e-01   1.090661e+04
+    FW          1000   1.003272e-02   9.851166e-03   1.815523e-04   4.276035e-01   2.338615e+03
+    FW          2000   1.001363e-02   9.911695e-03   1.019398e-04   4.753283e-01   4.207618e+03
+    FW          3000   1.000674e-02   9.940823e-03   6.592101e-05   5.231861e-01   5.734097e+03
+    FW          4000   1.000365e-02   9.957792e-03   4.586099e-05   5.710821e-01   7.004247e+03
+    FW          5000   1.000209e-02   9.968748e-03   3.334375e-05   6.187209e-01   8.081189e+03
+    FW          6000   1.000124e-02   9.976286e-03   2.495726e-05   7.454389e-01   8.048950e+03
+    FW          7000   1.000076e-02   9.981696e-03   1.906167e-05   7.851687e-01   8.915282e+03
+    FW          8000   1.000047e-02   9.985698e-03   1.477332e-05   8.253801e-01   9.692504e+03
+    FW          9000   1.000030e-02   9.988722e-03   1.157493e-05   8.675589e-01   1.037394e+04
+    FW         10000   1.000019e-02   9.991045e-03   9.144119e-06   9.076388e-01   1.101760e+04
+  Last         10001   1.000019e-02   9.991049e-03   9.139872e-06   9.080439e-01   1.101378e+04
 -------------------------------------------------------------------------------------------------
 
 Block coordinate Frank-Wolfe (BCFW).
-MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: DataType[FrankWolfe.Secant{FrankWolfe.var&quot;#29#31&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#50#52&quot;}}, FrankWolfe.Secant{FrankWolfe.var&quot;#29#31&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#50#52&quot;}}] EPSILON: 1.0e-7 MAXITERATION: 10000 TYPE: Float64
+MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: DataType[FrankWolfe.Secant{FrankWolfe.var&quot;#24#26&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#45#47&quot;}}, FrankWolfe.Secant{FrankWolfe.var&quot;#24#26&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#45#47&quot;}}] EPSILON: 1.0e-7 MAXITERATION: 10000 TYPE: Float64
 MOMENTUM: nothing GRADIENTTYPE: FrankWolfe.BlockVector{Float64, Vector{Float64}, Tuple{Int64}} UPDATE_ORDER: FrankWolfe.CyclicUpdate(-1) UPDATE_STEP: DataType[FrankWolfe.FrankWolfeStep, FrankWolfe.BPCGStep]
 [ Info: In memory_mode memory iterates are written back into x0!
 
@@ -161,11 +161,11 @@ MOMENTUM: nothing GRADIENTTYPE: FrankWolfe.BlockVector{Float64, Vector{Float64},
   Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec
 -------------------------------------------------------------------------------------------------
      I             1   5.000000e-01  -1.015000e+02   1.020000e+02   0.000000e+00            Inf
-  Last             2   9.850000e+01   5.000000e-01   9.800000e+01   2.487343e-01   8.040709e+00
+  Last             2   9.850000e+01   5.000000e-01   9.800000e+01   2.434411e-01   8.215540e+00
 -------------------------------------------------------------------------------------------------
 
 Block coordinate Frank-Wolfe (BCFW).
-MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: DataType[FrankWolfe.Secant{FrankWolfe.var&quot;#29#31&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#50#52&quot;}}, FrankWolfe.Secant{FrankWolfe.var&quot;#29#31&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#50#52&quot;}}] EPSILON: 1.0e-7 MAXITERATION: 10000 TYPE: Float64
+MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: DataType[FrankWolfe.Secant{FrankWolfe.var&quot;#24#26&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#45#47&quot;}}, FrankWolfe.Secant{FrankWolfe.var&quot;#24#26&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#45#47&quot;}}] EPSILON: 1.0e-7 MAXITERATION: 10000 TYPE: Float64
 MOMENTUM: nothing GRADIENTTYPE: FrankWolfe.BlockVector{Float64, Vector{Float64}, Tuple{Int64}} UPDATE_ORDER: FrankWolfe.CyclicUpdate(-1) UPDATE_STEP: DataType[FrankWolfe.BPCGStep, FrankWolfe.BPCGStep]
 [ Info: In memory_mode memory iterates are written back into x0!
 
@@ -173,11 +173,11 @@ MOMENTUM: nothing GRADIENTTYPE: FrankWolfe.BlockVector{Float64, Vector{Float64},
   Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec
 -------------------------------------------------------------------------------------------------
      I             1   5.000000e-01  -1.015000e+02   1.020000e+02   0.000000e+00            Inf
-  Last           101   1.000000e-02   1.000000e-02   1.040834e-17   1.055041e-02   9.573085e+03
+  Last           101   1.000000e-02   1.000000e-02   1.040834e-17   1.033020e-02   9.777155e+03
 -------------------------------------------------------------------------------------------------
 
 Block coordinate Frank-Wolfe (BCFW).
-MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: DataType[FrankWolfe.Secant{FrankWolfe.var&quot;#29#31&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#50#52&quot;}}, FrankWolfe.Secant{FrankWolfe.var&quot;#29#31&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#50#52&quot;}}] EPSILON: 1.0e-7 MAXITERATION: 10000 TYPE: Float64
+MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: DataType[FrankWolfe.Secant{FrankWolfe.var&quot;#24#26&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#45#47&quot;}}, FrankWolfe.Secant{FrankWolfe.var&quot;#24#26&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#45#47&quot;}}] EPSILON: 1.0e-7 MAXITERATION: 10000 TYPE: Float64
 MOMENTUM: nothing GRADIENTTYPE: FrankWolfe.BlockVector{Float64, Vector{Float64}, Tuple{Int64}} UPDATE_ORDER: FrankWolfe.CyclicUpdate(-1) UPDATE_STEP: DataType[FrankWolfe.FrankWolfeStep, FrankWolfe.FrankWolfeStep]
 [ Info: In memory_mode memory iterates are written back into x0!
 
@@ -185,6 +185,6 @@ MOMENTUM: nothing GRADIENTTYPE: FrankWolfe.BlockVector{Float64, Vector{Float64},
   Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec
 -------------------------------------------------------------------------------------------------
      I             1   5.000000e-01  -1.015000e+02   1.020000e+02   0.000000e+00            Inf
-  Last             2   9.862500e+01   2.500000e-01   9.837500e+01   4.979370e-04   4.016572e+03
+  Last             2   9.862500e+01   2.500000e-01   9.837500e+01   5.086520e-04   3.931961e+03
 -------------------------------------------------------------------------------------------------</code></pre><h3 id="Plotting-the-results-2"><a class="docs-heading-anchor" href="#Plotting-the-results-2">Plotting the results</a><a class="docs-heading-anchor-permalink" href="#Plotting-the-results-2" title="Permalink"></a></h3><pre><code class="language-julia hljs">labels = [&quot;BPCG FW&quot;, &quot;FW BPCG&quot;, &quot;BPCG&quot;, &quot;FW&quot;]
-plot_trajectories(trajectories, labels, xscalelog=true)</code></pre><img src="638254bf.svg" alt="Example block output"/><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../docs_10_alternating_methods/">« Alternating methods</a><a class="docs-footer-nextpage" href="../docs_12_quadratic_symmetric/">Accelerations for quadratic functions and symmetric problems »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.14.0 on <span class="colophon-date" title="Wednesday 9 July 2025 14:37">Wednesday 9 July 2025</span>. Using Julia version 1.6.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+plot_trajectories(trajectories, labels, xscalelog=true)</code></pre><img src="4748e432.svg" alt="Example block output"/><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../docs_10_alternating_methods/">« Alternating methods</a><a class="docs-footer-nextpage" href="../docs_12_quadratic_symmetric/">Accelerations for quadratic functions and symmetric problems »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.14.1 on <span class="colophon-date" title="Friday 18 July 2025 10:37">Friday 18 July 2025</span>. Using Julia version 1.6.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
