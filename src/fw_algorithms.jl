@@ -53,7 +53,7 @@ function frank_wolfe(
     v = []
     x = x0
     step_type = ST_REGULAR
-    status_code = STATUS_RUNNING
+    execution_status_code = STATUS_RUNNING
 
     if trajectory
         callback = make_trajectory_callback(callback, traj_data)
@@ -121,7 +121,7 @@ function frank_wolfe(
             if tot_time ≥ timeout
                 if verbose
                     @info "Time limit reached"
-                    status_code = STATUS_TIMEOUT
+                    execution_status_code = STATUS_TIMEOUT
                 end
                 break
             end
@@ -192,7 +192,7 @@ function frank_wolfe(
                 step_type,
             )
             if callback(state) === false
-                status_code = STATUS_INTERRUPTED
+                execution_status_code = STATUS_INTERRUPTED
                 break
             end
         end
@@ -201,9 +201,9 @@ function frank_wolfe(
     end
 
     if t >= max_iteration
-        status_code = STATUS_MAXITER
-    elseif status_code === STATUS_RUNNING
-        status_code = STATUS_OPTIMAL
+        execution_status_code = STATUS_MAXITER
+    elseif execution_status_code === STATUS_RUNNING
+        execution_status_code = STATUS_OPTIMAL
     end
 
     # recompute everything once for final verfication / do not record to trajectory though for now!
@@ -247,9 +247,9 @@ function frank_wolfe(
         callback(state)
     end
 
-    @assert status_code != STATUS_RUNNING
+    @assert execution_status_code != STATUS_RUNNING
 
-    return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data, status=status_string[Symbol(status_code)])
+    return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data, status=execution_status_string[Symbol(execution_status_code)])
 end
 
 

@@ -102,7 +102,7 @@ function callback_state(state::CallbackState)
     return (state.t, state.primal, state.dual, state.dual_gap, state.time)
 end
 
-@enum Status begin
+@enum ExecutionStatus begin
     STATUS_RUNNING = 0
     STATUS_OPTIMAL = 1
     STATUS_MAXITER = 2
@@ -112,7 +112,7 @@ end
     STATUS_OTHER = 99
 end
 
-const status_string = (
+const execution_status_string = (
     STATUS_RUNNING = "RUNNING",
     STATUS_OPTIMAL = "OPTIMAL",
     STATUS_MAXITER = "MAXITER",
