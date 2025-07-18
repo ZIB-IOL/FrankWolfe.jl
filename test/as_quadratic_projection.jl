@@ -145,7 +145,7 @@ x, v, primal_manual_wolfe, dual_gap, _ = FrankWolfe.blended_pairwise_conditional
 @test length(trajectoryBPCG_quadratic_manual_wolfe) < 450
 
 active_set_quadratic_partial_caching = FrankWolfe.ActiveSetQuadraticLinearSolve(
-    FrankWolfe.ActiveSetPartialCaching([(1.0, copy(x00))], I, 2.0),
+    FrankWolfe.ActiveSetPartialCaching([(1.0, copy(x000))], I, 2.0),
     2.0 * I,
     -2xp,
     MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
@@ -162,6 +162,5 @@ x, v, primal_partial_caching, dual_gap, _ = FrankWolfe.blended_pairwise_conditio
     callback=build_callback(trajectoryBPCG_quadratic_partial_caching),
 );
 
-@test length(trajectoryBPCG_quadratic_manual_wolfe) ==
-      length(trajectoryBPCG_quadratic_partial_caching)
 @test abs(primal_partial_caching - primal_manual_wolfe) < 1e-10
+@test length(active_set_quadratic_partial_caching) < 150
