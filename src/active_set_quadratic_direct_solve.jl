@@ -379,16 +379,14 @@ function compute_affine_min(as::ActiveSetQuadraticLinearSolve{AT,R,IT,H}, solver
     r_vec[1] = 1.0
     if as.active_set isa ActiveSetQuadraticProductCaching
         # dots_A is a lower triangular matrix
-
         d1 = as.active_set.dots_A[1]
         for i in 2:nv
             di = as.active_set.dots_A[i]
             for j in 1:i
-                val = di[j] - d1[j]
-                A_mat[i, j] = val
-                if i != j && j != 1
-                    A_mat[j, i] = val
-                end
+                A_mat[i,j] = as.active_set.dots_A[i][j] - as.active_set.dots_A[j][1]
+            end
+            for j in i+1:nv
+                A_mat[i, j] = as.active_set.dots_A[j][i] - as.active_set.dots_A[j][1]
             end
             r_vec[i] = as.active_set.dots_b[1] - as.active_set.dots_b[i]
         end
@@ -397,12 +395,8 @@ function compute_affine_min(as::ActiveSetQuadraticLinearSolve{AT,R,IT,H}, solver
         d1 = as.A * as.atoms[1]
         for i in 2:nv
             di = mul!(temp1, as.A, as.atoms[i])
-            for j in 1:i
-                val = dot(di, as.atoms[j]) - dot(d1, as.atoms[j])
-                A_mat[i, j] = val
-                if i != j && j != 1
-                    A_mat[j, i] = val
-                end
+            for j in 1:nv
+                A_mat[i,j] = dot(di, as.atoms[j]) - dot(d1, as.atoms[j])
             end
             r_vec[i] = dot(as.b, as.atoms[1]) - dot(as.b, as.atoms[i])
         end
@@ -410,14 +404,12 @@ function compute_affine_min(as::ActiveSetQuadraticLinearSolve{AT,R,IT,H}, solver
 
     # Solve system
     converged = solver.solve(μ, A_mat, r_vec)
-    @info "sum(μ) = $(sum(μ))"
     if converged && abs(sum(μ)) < 1e7
         return μ
     else
         return as.weights
     end
 end
-
 
 
 # generic quadratic with quadratic information provided
@@ -497,7 +489,7 @@ function solve_quadratic_activeset_lp!(
         if MOI.get(o, MOI.TerminationStatus()) ∉ (MOI.OPTIMAL, MOI.FEASIBLE_POINT, MOI.ALMOST_OPTIMAL)
             return as
         end
-        indices_to_remove, new_weights = if as.wolfe_step isa AffineMinSolver
+        indices_to_remove, new_weights = if as.wolfe_step isa AffineMinSolver || as.wolfe_step
             _compute_new_weights_wolfe_step(MOI.get.(o, MOI.VariablePrimal(), λ), R, as.weights)
         else
             _compute_new_weights_direct_solve(MOI.get.(o, MOI.VariablePrimal(), λ), R)
@@ -565,6 +557,27 @@ function _compute_new_weights_wolfe_step(
             push!(indices_to_remove, idx)
         else
             push!(new_weights, weight_value)
+        end
+    end
+    return indices_to_remove, new_weights
+end
+
+function _compute_new_weights_projection_step(x, ::Type{R}) where {R}
+    n = length(x)
+    if sum(x) == 1.0 && all(>=(0.0), x)
+        return x
+    end
+    v = x .- maximum(x)
+    u = sort(v, rev=true)
+    cssv = cumsum(u)
+    rho = sum(u .* collect(1:1:n) .> (cssv .- 1.0)) - 1
+    theta = (cssv[rho+1] - 1.0) / (rho + 1)
+
+    for idx in eachindex(v)
+        if v[idx] > theta
+            push!(indices_to_remove, idx)
+        else
+            push!(new_weights, v[idx] - theta)
         end
     end
     return indices_to_remove, new_weights
