@@ -283,10 +283,16 @@ end
 
 struct SymmetricAffineMinSolver <: AffineMinSolver
     solve::Function
+    project::Bool
 end
 
 struct NonSymmetricAffineMinSolver <: AffineMinSolver
     solve::Function
+    project::Bool
+end
+
+struct DefaultSolver <: AffineMinSolver
+    project::Bool
 end
 
 function compute_affine_min(as::ActiveSetQuadraticLinearSolve{AT,R,IT,H}, solver::SymmetricAffineMinSolver) where {AT,R,IT,H}
@@ -425,15 +431,15 @@ function solve_quadratic_activeset_lp!(
 ) where {AT,R,IT,H}
     nv = length(as)
 
-    if as.wolfe_step isa AffineMinSolver
+    if as.wolfe_step isa AffineMinSolver && !(as.wolfe_step isa DefaultSolver)
         affine_min_weights = compute_affine_min(as, as.wolfe_step)
         indices_to_remove, new_weights = _compute_new_weights_wolfe_step(affine_min_weights, R, as.weights)
-    elseif as.wolfe_step isa Bool
+    elseif as.wolfe_step isa Bool || as.wolfe_step isa DefaultSolver
         o = as.lp_optimizer
         MOI.empty!(o)
         λ = MOI.add_variables(o, nv)
         # λ ≥ 0, ∑ λ == 1
-        if !as.wolfe_step
+        if as.wolfe_step isa Bool && !as.wolfe_step
             MOI.add_constraint.(o, λ, MOI.GreaterThan(0.0))
         end
         sum_of_variables = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, λ), 0.0)
@@ -489,10 +495,17 @@ function solve_quadratic_activeset_lp!(
         if MOI.get(o, MOI.TerminationStatus()) ∉ (MOI.OPTIMAL, MOI.FEASIBLE_POINT, MOI.ALMOST_OPTIMAL)
             return as
         end
-        indices_to_remove, new_weights = if as.wolfe_step isa AffineMinSolver || as.wolfe_step
-            _compute_new_weights_wolfe_step(MOI.get.(o, MOI.VariablePrimal(), λ), R, as.weights)
+
+        if as.wolfe_step isa AffineMinSolver
+            if as.wolfe_step.project
+                indices_to_remove, new_weights = _compute_new_weights_projection_step(MOI.get.(o, MOI.VariablePrimal(), λ), R)
+            else
+                indices_to_remove, new_weights = _compute_new_weights_wolfe_step(MOI.get.(o, MOI.VariablePrimal(), λ), R, as.weights)
+            end
+        elseif as.wolfe_step isa Bool && as.wolfe_step
+            indices_to_remove, new_weights = _compute_new_weights_wolfe_step(MOI.get.(o, MOI.VariablePrimal(), λ), R, as.weights)
         else
-            _compute_new_weights_direct_solve(MOI.get.(o, MOI.VariablePrimal(), λ), R)
+            indices_to_remove, new_weights = _compute_new_weights_direct_solve(MOI.get.(o, MOI.VariablePrimal(), λ), R)
         end
     end
     deleteat!(as.active_set, indices_to_remove)
@@ -565,16 +578,17 @@ end
 function _compute_new_weights_projection_step(x, ::Type{R}) where {R}
     n = length(x)
     if sum(x) == 1.0 && all(>=(0.0), x)
-        return x
+        return BitSet(), x
     end
     v = x .- maximum(x)
     u = sort(v, rev=true)
     cssv = cumsum(u)
     rho = sum(u .* collect(1:1:n) .> (cssv .- 1.0)) - 1
     theta = (cssv[rho+1] - 1.0) / (rho + 1)
-
+    indices_to_remove = Int[]
+    new_weights = R[]
     for idx in eachindex(v)
-        if v[idx] > theta
+        if v[idx] <= theta
             push!(indices_to_remove, idx)
         else
             push!(new_weights, v[idx] - theta)
