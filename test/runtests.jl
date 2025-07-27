@@ -69,5 +69,7 @@ using Aqua
         end
     end
 
+    include("dca_tests.jl")
+
     include("aqua.jl")
 end

@@ -12,7 +12,7 @@ using Plots
 # 
 # This creates a more interesting non-convex optimization problem than simple squared distances.
 
-const n = 100  # Reduced dimension for clearer demonstration
+const n = 500  # Reduced dimension
 
 # Generate random positive definite matrices to ensure convexity
 function generate_problem_data()
@@ -102,12 +102,13 @@ function main()
         grad_g!,
         lmo,
         x0,
-        max_iteration=100, # Outer iterations
+        max_iteration=500, # Outer iterations
         max_inner_iteration=10000, # Inner iterations
         epsilon=1e-5, # Tolerance for DCA gap
+        line_search=FrankWolfe.Secant(),
         verbose=true,
         trajectory=true,
-        print_iter=5,
+        print_iter=10,
         memory_mode=FrankWolfe.InplaceEmphasis(),
         bpcg_subsolver=true,
         warm_start=true,
