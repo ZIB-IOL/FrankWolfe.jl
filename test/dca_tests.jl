@@ -95,7 +95,7 @@ using StableRNGs
         x0 = FrankWolfe.compute_extreme_point(lmo, randn(rng, n))
         
         # Run DCA algorithm
-        result = FrankWolfe.dcafw(
+        result = FrankWolfe.dca_fw(
             f, grad_f!, g, grad_g!, lmo, x0,
             max_iteration=50,
             max_inner_iteration=1000,
@@ -138,7 +138,7 @@ using StableRNGs
         for (i, lmo) in enumerate(lmos)
             x0 = FrankWolfe.compute_extreme_point(lmo, randn(rng, n))
             
-            result = FrankWolfe.dcafw(
+            result = FrankWolfe.dca_fw(
                 f, grad_f!, g, grad_g!, lmo, x0,
                 max_iteration=30,
                 max_inner_iteration=500,
@@ -166,7 +166,7 @@ using StableRNGs
         x0 = FrankWolfe.compute_extreme_point(lmo, randn(rng, n))
         
         # Test vanilla Frank-Wolfe subsolver
-        result_fw = FrankWolfe.dcafw(
+        result_fw = FrankWolfe.dca_fw(
             f, grad_f!, g, grad_g!, lmo, copy(x0),
             max_iteration=20,
             bpcg_subsolver=false,
@@ -175,7 +175,7 @@ using StableRNGs
         )
         
         # Test BPCG subsolver
-        result_bpcg = FrankWolfe.dcafw(
+        result_bpcg = FrankWolfe.dca_fw(
             f, grad_f!, g, grad_g!, lmo, copy(x0),
             max_iteration=20,
             bpcg_subsolver=true,
@@ -184,7 +184,7 @@ using StableRNGs
         )
         
         # Test with warm start
-        result_warm = FrankWolfe.dcafw(
+        result_warm = FrankWolfe.dca_fw(
             f, grad_f!, g, grad_g!, lmo, copy(x0),
             max_iteration=20,
             bpcg_subsolver=true,
@@ -194,7 +194,7 @@ using StableRNGs
         )
         
         # Test with early stopping
-        result_early = FrankWolfe.dcafw(
+        result_early = FrankWolfe.dca_fw(
             f, grad_f!, g, grad_g!, lmo, copy(x0),
             max_iteration=20,
             use_dca_early_stopping=true,
@@ -203,7 +203,7 @@ using StableRNGs
         )
         
         # Test boosted variant
-        result_boosted = FrankWolfe.dcafw(
+        result_boosted = FrankWolfe.dca_fw(
             f, grad_f!, g, grad_g!, lmo, copy(x0),
             max_iteration=20,
             boosted=true,
@@ -242,7 +242,7 @@ using StableRNGs
         ]
         
         for ls in line_searches
-            result = FrankWolfe.dcafw(
+            result = FrankWolfe.dca_fw(
                 f, grad_f!, g, grad_g!, lmo, copy(x0),
                 max_iteration=25,
                 line_search=ls,
@@ -268,7 +268,7 @@ using StableRNGs
         lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
         x0 = FrankWolfe.compute_extreme_point(lmo, randn(rng, n))
         
-        result = FrankWolfe.dcafw(
+        result = FrankWolfe.dca_fw(
             f, grad_f!, g, grad_g!, lmo, x0,
             max_iteration=100,
             trajectory=true,
@@ -304,7 +304,7 @@ using StableRNGs
         
         # Run DCA
         x0 = FrankWolfe.compute_extreme_point(lmo, randn(rng, n))
-        result = FrankWolfe.dcafw(
+        result = FrankWolfe.dca_fw(
             f, grad_f!, g, grad_g!, lmo, x0,
             max_iteration=50,
             epsilon=1e-8,
@@ -330,7 +330,7 @@ using StableRNGs
         x0 = FrankWolfe.compute_extreme_point(lmo, randn(rng, n))
         
         # Test with max_iteration = 1
-        result = FrankWolfe.dcafw(
+        result = FrankWolfe.dca_fw(
             f, grad_f!, g, grad_g!, lmo, copy(x0),
             max_iteration=1,
             verbose=false
@@ -338,7 +338,7 @@ using StableRNGs
         @test result.iterations <= 1
         
         # Test with very loose tolerance
-        result = FrankWolfe.dcafw(
+        result = FrankWolfe.dca_fw(
             f, grad_f!, g, grad_g!, lmo, copy(x0),
             max_iteration=100,
             epsilon=1e-1,
@@ -347,7 +347,7 @@ using StableRNGs
         @test result.dca_gap < 1e-1
         
         # Test with timeout
-        result = FrankWolfe.dcafw(
+        result = FrankWolfe.dca_fw(
             f, grad_f!, g, grad_g!, lmo, copy(x0),
             max_iteration=1000,
             timeout=0.01,  # Very short timeout
@@ -367,7 +367,7 @@ using StableRNGs
         x0 = FrankWolfe.compute_extreme_point(lmo, randn(rng, n))
         
         # Test InplaceEmphasis
-        result_inplace = FrankWolfe.dcafw(
+        result_inplace = FrankWolfe.dca_fw(
             f, grad_f!, g, grad_g!, lmo, copy(x0),
             max_iteration=20,
             memory_mode=FrankWolfe.InplaceEmphasis(),
@@ -376,7 +376,7 @@ using StableRNGs
         )
         
         # Test OutplaceEmphasis  
-        result_outplace = FrankWolfe.dcafw(
+        result_outplace = FrankWolfe.dca_fw(
             f, grad_f!, g, grad_g!, lmo, copy(x0),
             max_iteration=20,
             memory_mode=FrankWolfe.OutplaceEmphasis(),
@@ -405,7 +405,7 @@ using StableRNGs
         x0 = FrankWolfe.compute_extreme_point(lmo, randn(rng, n))
         
         # Test trajectory collection
-        result = FrankWolfe.dcafw(
+        result = FrankWolfe.dca_fw(
             f, grad_f!, g, grad_g!, lmo, x0,
             max_iteration=10,
             trajectory=true,
@@ -434,7 +434,7 @@ using StableRNGs
             return true  # Continue optimization
         end
         
-        result = FrankWolfe.dcafw(
+        result = FrankWolfe.dca_fw(
             f, grad_f!, g, grad_g!, lmo, copy(x0),
             max_iteration=5,
             callback=custom_callback,
@@ -460,7 +460,7 @@ using StableRNGs
             x0 = FrankWolfe.compute_extreme_point(lmo, randn(rng, n))
             
             # Run algorithm
-            result = FrankWolfe.dcafw(
+            result = FrankWolfe.dca_fw(
                 f, grad_f!, g, grad_g!, lmo, x0,
                 max_iteration=15,
                 epsilon=1e-4,

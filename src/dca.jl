@@ -216,7 +216,7 @@ end
 # ==============================================================================
 
 """
-    dcafw(f, grad_f!, g, grad_g!, lmo, x0; kwargs...)
+    dca_fw(f, grad_f!, g, grad_g!, lmo, x0; kwargs...)
 
 Difference of Convex Algorithm with Frank-Wolfe (DCA-FW) for minimizing φ(x) = f(x) - g(x).
 
@@ -288,23 +288,8 @@ This gap measures progress toward DCA stationarity and converges to 0.
 # References
 - Pham Dinh, T., & Le Thi, H. A. (1997). Convex analysis approach to DC programming
 - Beck, A., & Guttmann-Beck, N. (2019). FW-DCA for non-convex regularized problems
-
-# Example
-```julia
-# Minimize f(x) - g(x) over probability simplex
-f(x) = 0.5 * norm(x)^2        # Convex  
-g(x) = 0.5 * norm(x - a)^2    # Convex
-grad_f!(storage, x) = storage .= x
-grad_g!(storage, x) = storage .= x .- a
-
-lmo = ProbabilitySimplexOracle(1.0)
-x0 = compute_extreme_point(lmo, randn(n))
-
-result = dcafw(f, grad_f!, g, grad_g!, lmo, x0, 
-               max_iteration=100, verbose=true)
-```
 """
-function dcafw(
+function dca_fw(
     f,
     grad_f!,
     g,

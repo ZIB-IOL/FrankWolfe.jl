@@ -95,7 +95,7 @@ function main()
 
 
 
-    @time x_final, primal_final, traj_data, dca_gap_final, iterations = FrankWolfe.dcafw(
+    @time x_final, primal_final, traj_data, dca_gap_final, iterations = FrankWolfe.dca_fw(
         f,
         grad_f!,
         g,
