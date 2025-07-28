@@ -316,7 +316,7 @@ function dca_fw(
     grad_f_workspace=nothing,
     grad_g_workspace=nothing,
     effective_grad_workspace=nothing,
-    _=nothing,  # linesearch_workspace (unused)
+    linesearch_workspace=nothing,
 
     # Algorithm variants  
     bpcg_subsolver::Bool=true,
@@ -469,6 +469,7 @@ function dca_fw(
                 trajectory=true,
                 verbose=verbose_inner,
                 memory_mode=memory_mode,
+                linesearch_workspace=linesearch_workspace,
                 timeout=timeout - elapsed_time,
                 callback=inner_callback,
             )
@@ -489,6 +490,7 @@ function dca_fw(
                     trajectory=true,
                     verbose=verbose_inner,
                     memory_mode=memory_mode,
+                    linesearch_workspace=linesearch_workspace,
                     timeout=timeout - elapsed_time,
                     callback=inner_callback,
                 )
@@ -506,6 +508,7 @@ function dca_fw(
                     trajectory=true,
                     verbose=verbose_inner,
                     memory_mode=memory_mode,
+                    linesearch_workspace=linesearch_workspace,
                     timeout=timeout - elapsed_time,
                     callback=inner_callback,
                 )
