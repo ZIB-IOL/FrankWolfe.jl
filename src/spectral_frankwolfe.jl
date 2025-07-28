@@ -19,12 +19,6 @@ function spectral_frankwolfe(
     callback=nothing,
     traj_data=[],
     timeout=Inf,
-    renorm_interval=1000,
-    weight_purge_threshold=weight_purge_threshold_default(eltype(X0)),
-    extra_vertex_storage=nothing,
-    add_dropped_vertices=false,
-    use_extra_vertex_storage=false,
-    recompute_last_vertex=true,
     )
     format_string = "%6s %13s %14e %14e %14e %14e %14e \n"
     headers = ("Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec")
