@@ -103,16 +103,16 @@ This is a simple implementation suitable for non-convex objectives.
 More sophisticated line search methods could be substituted.
 """
 function _boost_line_search_basic(
-    objective_function, 
-    x_old, 
-    x_new; 
+    objective_function,
+    x_old,
+    x_new;
     max_iter=DEFAULT_BOOST_REFINEMENT_STEPS,
-    shrink_factor=0.5, 
-    min_step=1e-6
+    shrink_factor=0.5,
+    min_step=1e-6,
 )
     best_alpha = 0.0
     best_value = objective_function(x_old)
-    
+
     # Coarse grid search over [0,1]
     coarse_grid = range(0.0, 1.0, length=DEFAULT_BOOST_GRID_SIZE)
     for alpha in coarse_grid
@@ -123,12 +123,12 @@ function _boost_line_search_basic(
             best_alpha = alpha
         end
     end
-    
+
     # Local refinement around best point
     step_size = 0.05
     for iter in 1:max_iter
         improved = false
-        
+
         # Try steps in both directions
         for delta in [-step_size, step_size]
             alpha_candidate = best_alpha + delta
@@ -142,7 +142,7 @@ function _boost_line_search_basic(
                 end
             end
         end
-        
+
         # Reduce step size if no improvement
         if !improved
             step_size *= shrink_factor
@@ -151,7 +151,7 @@ function _boost_line_search_basic(
             end
         end
     end
-    
+
     return best_alpha
 end
 
@@ -191,22 +191,22 @@ function make_dca_early_stopping_callback(wrapped_callback, linearized_obj, _, p
         # Extract Frank-Wolfe subproblem state
         x_current = state.x      # Current iterate in Frank-Wolfe
         vertex = state.v         # Current Frank-Wolfe extreme point
-        
+
         # Compute early stopping criterion: m(x) + ⟨∇m(x), x - v⟩ ≤ φ(x_t)
         m_value = linearized_obj(x_current)
         gradient_dot_difference = dot(state.gradient, x_current - vertex)
         criterion_lhs = m_value + gradient_dot_difference
-        
+
         # Check DCA optimality condition
         if criterion_lhs ≤ phi_value_at_xt
             return false  # Stop Frank-Wolfe early - DCA condition satisfied
         end
-        
+
         # Call wrapped callback if it exists
         if wrapped_callback !== nothing
             return wrapped_callback(state, args...)
         end
-        
+
         return true  # Continue Frank-Wolfe iterations
     end
 end
@@ -298,10 +298,10 @@ function dca_fw(
     x0;
     # Core algorithm parameters
     line_search::LineSearchMethod=Secant(),
-    epsilon::Float64=1e-7, 
+    epsilon::Float64=1e-7,
     max_iteration::Int=10000,
     max_inner_iteration::Int=1000,
-    
+
     # Output and monitoring
     print_iter::Int=10,
     trajectory::Bool=false,
@@ -310,14 +310,14 @@ function dca_fw(
     callback=nothing,
     traj_data=[],
     timeout::Float64=Inf,
-    
+
     # Memory management
     memory_mode::MemoryEmphasis=InplaceEmphasis(),
     grad_f_workspace=nothing,
     grad_g_workspace=nothing,
     effective_grad_workspace=nothing,
     _=nothing,  # linesearch_workspace (unused)
-    
+
     # Algorithm variants  
     bpcg_subsolver::Bool=true,
     warm_start::Bool=true,
@@ -328,15 +328,16 @@ function dca_fw(
     # Setup output formatting
     headers = ["Type", "Iteration", "Inner", "Primal", "DCA Gap", "Time", "It/sec"]
     format_string = "%6s %9s %9s %14e %14e %14e %14e\n"
-    
+
     # Initialize algorithm state
     outer_t = 0
     total_time_start = time_ns()
     inner_iter_count_last = 0
-    
+
     # Initialize current point with proper memory handling
     x_current = x0
-    if memory_mode isa FrankWolfe.InplaceEmphasis && !isa(x_current, Union{Array,SparseArrays.AbstractSparseArray})
+    if memory_mode isa FrankWolfe.InplaceEmphasis &&
+       !isa(x_current, Union{Array,SparseArrays.AbstractSparseArray})
         if eltype(x_current) <: Integer
             x_current = convert(AbstractArray{float(eltype(x_current))}, x_current)
         else
@@ -377,32 +378,37 @@ function dca_fw(
         callback = make_print_callback(callback, print_iter, headers, format_string, format_state)
         println("\nDifference of Convex Algorithm with Frank-Wolfe (DCA-FW)")
         println("MEMORY_MODE: $memory_mode INNER_LINESEARCH: $line_search EPSILON: $epsilon")
-        println("MAX_OUTER_ITERATION: $max_iteration MAX_INNER_ITERATION: $max_inner_iteration TYPE: $(eltype(x_current))")
-        println("BPCG_SUBSOLVER: $bpcg_subsolver WARM_START: $warm_start DCA_EARLY_STOPPING: $use_dca_early_stopping BOOSTED: $boosted")
-        
+        println(
+            "MAX_OUTER_ITERATION: $max_iteration MAX_INNER_ITERATION: $max_inner_iteration TYPE: $(eltype(x_current))",
+        )
+        println(
+            "BPCG_SUBSOLVER: $bpcg_subsolver WARM_START: $warm_start DCA_EARLY_STOPPING: $use_dca_early_stopping BOOSTED: $boosted",
+        )
+
         if memory_mode isa FrankWolfe.InplaceEmphasis
             @info("In memory_mode: iterates are written back into x_current!")
         end
     end
-    
+
     # Initialize algorithm variables
     dca_gap_current = Inf
     extreme_point_current = similar(x_current)
     active_set = nothing
-    
+
     # Setup boost line search if needed
     if boosted && boost_line_search === nothing
         original_objective = x -> f(x) - g(x)
-        boost_line_search = (x_old, x_new) -> _boost_line_search_basic(original_objective, x_old, x_new)
+        boost_line_search =
+            (x_old, x_new) -> _boost_line_search_basic(original_objective, x_old, x_new)
     end
 
     # ==============================================================================
     # Main DCA Iteration Loop
     # ==============================================================================
-    
+
     while outer_t < max_iteration
         outer_t += 1
-        
+
         # Check timeout
         elapsed_time = (time_ns() - total_time_start) / 1e9
         if elapsed_time >= timeout
@@ -421,21 +427,34 @@ function dca_fw(
         #      = f(x) - g(x_t) - ⟨∇g(x_t), x⟩ + ⟨∇g(x_t), x_t⟩
         g_value_at_current = g(x_current)
         grad_g_dot_current = dot(grad_g_workspace, x_current)
-        
+
         # Create closures for the linearized subproblem
-        linearized_objective = x -> _dca_linearized_objective(x, f, g_value_at_current, grad_g_workspace, grad_g_dot_current)
-        linearized_gradient! = (storage, x) -> _dca_linearized_gradient!(storage, x, grad_f!, grad_g_workspace)
+        linearized_objective =
+            x -> _dca_linearized_objective(
+                x,
+                f,
+                g_value_at_current,
+                grad_g_workspace,
+                grad_g_dot_current,
+            )
+        linearized_gradient! =
+            (storage, x) -> _dca_linearized_gradient!(storage, x, grad_f!, grad_g_workspace)
 
         # Step 3: Setup early stopping callback if enabled
         inner_callback = nothing
         if use_dca_early_stopping
             phi_value_at_current = f(x_current) - g(x_current)
-            inner_callback = make_dca_early_stopping_callback(nothing, linearized_objective, linearized_gradient!, phi_value_at_current)
+            inner_callback = make_dca_early_stopping_callback(
+                nothing,
+                linearized_objective,
+                linearized_gradient!,
+                phi_value_at_current,
+            )
         end
 
         # Step 4: Solve the convex subproblem min_x m(x) using Frank-Wolfe variants
         x_inner_start = copy(x_current)  # Starting point for inner solver
-        
+
         if !bpcg_subsolver
             # Use vanilla Frank-Wolfe
             fw_result = frank_wolfe(
@@ -491,7 +510,7 @@ function dca_fw(
                     callback=inner_callback,
                 )
             end
-            
+
             # Store active set for warm starting next iteration
             if warm_start
                 active_set = fw_result.active_set
@@ -503,20 +522,20 @@ function dca_fw(
         #
         # This measures progress toward DCA stationarity. The gap approaches 0
         # as the algorithm converges to a stationary point.
-        
+
         # Recompute values cleanly (independent of inner solver implementation)
         subproblem_primal = linearized_objective(fw_result.x)
         linearized_gradient!(effective_grad_workspace, fw_result.x)
         extreme_point_current = compute_extreme_point(lmo, effective_grad_workspace)
         fw_gap = dot(effective_grad_workspace, fw_result.x - extreme_point_current)
-        
+
         current_objective_value = f(x_current) - g(x_current)
         dca_gap_current = current_objective_value - subproblem_primal + fw_gap
         inner_iter_count_last = length(fw_result.traj_data)
 
         # Step 6: Update current point (standard or boosted variant)
         x_new = fw_result.x
-        
+
         if boosted
             # Boosted variant: find optimal convex combination
             # x_{t+1} = α* x_new + (1-α*) x_t where α* minimizes φ(α x_new + (1-α) x_t)
@@ -531,11 +550,11 @@ function dca_fw(
         grad_f!(grad_f_workspace, x_current)
         grad_g!(grad_g_workspace, x_current)  # Recompute for new point
         effective_grad_workspace .= grad_f_workspace .- grad_g_workspace
-        
+
         # Step 8: Execute callback and check convergence
         if callback !== nothing
             current_objective_value = f(x_current) - g(x_current)
-            
+
             state = CallbackState(
                 outer_t,                                        # iteration
                 current_objective_value,                        # primal value φ(x_t)
@@ -552,7 +571,7 @@ function dca_fw(
                 effective_grad_workspace,                     # effective gradient
                 ST_DCA_OUTER,                                 # step type
             )
-            
+
             # Check for early termination
             if callback(state) === false || dca_gap_current < epsilon
                 break
@@ -563,11 +582,11 @@ function dca_fw(
     # ==============================================================================
     # Final Iteration and Cleanup
     # ==============================================================================
-    
+
     # Execute final callback with ST_LAST step type
     if callback !== nothing
         final_objective_value = f(x_current) - g(x_current)
-        
+
         final_state = CallbackState(
             outer_t,
             final_objective_value,
@@ -586,14 +605,14 @@ function dca_fw(
         )
         callback(final_state)
     end
-    
+
     # Return algorithm results
     final_primal = f(x_current) - g(x_current)
     return (
-        x=x_current, 
-        primal=final_primal, 
-        traj_data=traj_data, 
-        dca_gap=dca_gap_current, 
-        iterations=outer_t
+        x=x_current,
+        primal=final_primal,
+        traj_data=traj_data,
+        dca_gap=dca_gap_current,
+        iterations=outer_t,
     )
 end

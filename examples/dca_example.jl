@@ -19,18 +19,18 @@ function generate_problem_data()
     # Create positive definite matrices
     A_raw = randn(n, n)
     A = A_raw' * A_raw + 0.1 * I  # Ensure positive definiteness
-    
-    B_raw = randn(n, n) 
+
+    B_raw = randn(n, n)
     B = B_raw' * B_raw + 0.1 * I  # Ensure positive definitiveness
-    
+
     # Generate random linear terms
     a = randn(n)
     b = randn(n)
-    
+
     # Generate random constants
     c = randn()
     d = randn()
-    
+
     return A, B, a, b, c, d
 end
 
@@ -79,7 +79,7 @@ function main()
     println("Dimension: n = $n")
     println("Feasible region: K-sparse Polytope")
     println("="^60)
-    
+
     # Display problem characteristics
     println("Problem characteristics:")
     println("  Matrix A condition number: $(round(cond(A), digits=2))")
@@ -87,7 +87,7 @@ function main()
     println("  Initial objective φ(x₀): $(round(phi(x0), digits=6))")
     println("  Initial sparsity (non-zeros): $(sum(abs.(x0) .> 1e-6))")
     println()
-    
+
     # For quadratic functions, finding theoretical optimum is more complex
     println("Note: Unlike linear objectives, quadratic difference-of-convex problems")
     println("      may have multiple local minima. DCA finds a stationary point.")
@@ -119,7 +119,7 @@ function main()
     println("DcAFW Algorithm Results")
     println("="^60)
     println("Convergence:")
-    println("  Outer iterations completed: $iterations") 
+    println("  Outer iterations completed: $iterations")
     println("  Final objective value φ(x): $(round(primal_final, digits=8))")
     println("  Verification φ(x) = f(x) - g(x): $(round(phi(x_final), digits=8))")
     println("  Final DCA gap: $(round(dca_gap_final, digits=8))")
@@ -127,8 +127,8 @@ function main()
     println("Solution properties:")
     println("  Final solution sparsity: $(sum(abs.(x_final) .> 1e-6))")
     println("  Solution feasibility check: sum(x) = $(round(sum(x_final), digits=8))")
-    println("  All components ≥ 0: $(all(x_final .>= -1e-10))")
+    return println("  All components ≥ 0: $(all(x_final .>= -1e-10))")
 
 end
 
-main() 
+main()
