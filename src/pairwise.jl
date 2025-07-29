@@ -271,8 +271,6 @@ function pairwise_frank_wolfe(
                 extra_vertex_storage,
             )
         end
-        # println(active_set.weights)
-        # println([atom[1] for atom in active_set.atoms])
 
         if callback !== nothing
             state = CallbackState(
