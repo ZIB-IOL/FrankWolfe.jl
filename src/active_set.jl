@@ -168,7 +168,7 @@ function active_set_update_pairwise!(
 ) where {AT,R}
     # reached maximum of lambda -> dropping away vertex
     if gamma ≈ gamma_max
-        active_set.weights[v_local_loc] += gamma
+        active_set_add_weight!(active_set, gamma, v_local_loc)
         deleteat!(active_set, a_loc)
         if add_dropped_vertices
             push!(extra_vertex_storage, a)
