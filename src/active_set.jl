@@ -166,9 +166,14 @@ function active_set_update_pairwise!(
     add_dropped_vertices::Bool,
     extra_vertex_storage=nothing,
 ) where {AT,R}
+    # add new atom to active set and update location
+    if v_local_loc == -1
+        push!(active_set, (0, v_local))
+        v_local_loc = length(active_set)
+    end
     # reached maximum of lambda -> dropping away vertex
     if gamma ≈ gamma_max
-        active_set_add_weight!(active_set, gamma, v_local_loc)
+        active_set_add_weight!(active_set, gamma_max, v_local_loc)
         deleteat!(active_set, a_loc)
         if add_dropped_vertices
             push!(extra_vertex_storage, a)
