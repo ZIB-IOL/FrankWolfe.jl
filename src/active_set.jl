@@ -215,7 +215,7 @@ function active_set_update_iterate_pairwise!(
     lambda::Real,
     fw_atom,
     away_atom,
-) where {IT,A}
+) where {IT}
     @. x += lambda * fw_atom - lambda * away_atom
     return x
 end
