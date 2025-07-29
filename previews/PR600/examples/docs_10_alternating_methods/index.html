@@ -43,9 +43,9 @@ LAMBDA: 1.0
   Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec          Dist2
 ----------------------------------------------------------------------------------------------------------------
      I             1   1.889232e+00  -2.011077e+01   2.200000e+01   0.000000e+00            Inf   1.889232e+00
-    FW          1000   2.500023e-02   2.494268e-02   5.755263e-05   1.926396e+00   5.191041e+02   2.500023e-02
-    FW          2000   2.500000e-02   2.499779e-02   2.211653e-06   1.941704e+00   1.030023e+03   2.500000e-02
-  Last          2236   2.500000e-02   2.499900e-02   1.003006e-06   2.120166e+00   1.054635e+03   2.500000e-02
+    FW          1000   2.500023e-02   2.494268e-02   5.755263e-05   1.860973e+00   5.373532e+02   2.500023e-02
+    FW          2000   2.500000e-02   2.499779e-02   2.211653e-06   1.876093e+00   1.066045e+03   2.500000e-02
+  Last          2236   2.500000e-02   2.499900e-02   1.003006e-06   2.034505e+00   1.099039e+03   2.500000e-02
 ----------------------------------------------------------------------------------------------------------------
 
 Alternating Linear Minimization (ALM).
@@ -59,9 +59,9 @@ LAMBDA: 1.0
   Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec          Dist2
 ----------------------------------------------------------------------------------------------------------------
      I             1   1.889232e+00  -2.011077e+01   2.200000e+01   0.000000e+00            Inf   1.889232e+00
-    FW          1000   2.500023e-02   2.494416e-02   5.606946e-05   2.268651e-01   4.407907e+03   2.500023e-02
-    FW          2000   2.500000e-02   2.499785e-02   2.154004e-06   2.502729e-01   7.991278e+03   2.500000e-02
-  Last          2237   2.500000e-02   2.499900e-02   9.981445e-07   2.560838e-01   8.735421e+03   2.500000e-02
+    FW          1000   2.500023e-02   2.494416e-02   5.606946e-05   1.899988e-01   5.263192e+03   2.500023e-02
+    FW          2000   2.500000e-02   2.499785e-02   2.154004e-06   2.118105e-01   9.442401e+03   2.500000e-02
+  Last          2237   2.500000e-02   2.499900e-02   9.981445e-07   2.172198e-01   1.029832e+04   2.500000e-02
 ----------------------------------------------------------------------------------------------------------------
 
 Alternating Linear Minimization (ALM).
@@ -75,9 +75,9 @@ LAMBDA: 1.0
   Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec          Dist2
 ----------------------------------------------------------------------------------------------------------------
      I             1   2.866179e-01  -2.171338e+01   2.200000e+01   0.000000e+00            Inf   2.866179e-01
-    FW          1000   2.500018e-02   2.495033e-02   4.985431e-05   1.035979e-01   9.652707e+03   2.500018e-02
-    FW          2000   2.500000e-02   2.499809e-02   1.906507e-06   1.253364e-01   1.595706e+04   2.500000e-02
-  Last          2194   2.500000e-02   2.499900e-02   9.989094e-07   1.298383e-01   1.689794e+04   2.500000e-02
+    FW          1000   2.500018e-02   2.495033e-02   4.985431e-05   9.107304e-02   1.098020e+04   2.500018e-02
+    FW          2000   2.500000e-02   2.499809e-02   1.906507e-06   1.133651e-01   1.764212e+04   2.500000e-02
+  Last          2194   2.500000e-02   2.499900e-02   9.989094e-07   1.179311e-01   1.860408e+04   2.500000e-02
 ----------------------------------------------------------------------------------------------------------------</code></pre><p>As an alternative to Block-Coordiante Frank-Wolfe (BCFW), one can also run alternating linear minimization with standard Frank-Wolfe algorithm. These methods perform then the full (simulatenous) update at each iteration. In this example we also use <a href="../../reference/1_algorithms/#FrankWolfe.away_frank_wolfe-NTuple{4, Any}"><code>FrankWolfe.away_frank_wolfe</code></a>.</p><pre><code class="language-julia hljs">_, _, _, _, _, afw_trajectory = FrankWolfe.alternating_linear_minimization(
     FrankWolfe.away_frank_wolfe,
     f,
@@ -100,9 +100,9 @@ LAMBDA: 1.0
   Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec          Dist2     #ActiveSet
 -------------------------------------------------------------------------------------------------------------------------------
      I             1   1.150000e+01           -Inf            Inf   0.000000e+00            Inf   1.005291e+00              2
-  Last           161   2.500000e-02   2.499904e-02   9.621137e-07   5.891702e-01   2.732657e+02   2.500000e-02             78
+  Last           161   2.500000e-02   2.499904e-02   9.621137e-07   4.178407e-01   3.853143e+02   2.500000e-02             78
 -------------------------------------------------------------------------------------------------------------------------------
-    PP           161   2.500000e-02   2.499904e-02   9.621137e-07   6.826787e-01   2.358357e+02   2.500000e-02             78
+    PP           161   2.500000e-02   2.499904e-02   9.621137e-07   5.026004e-01   3.203340e+02   2.500000e-02             78
 -------------------------------------------------------------------------------------------------------------------------------</code></pre><h2 id="Running-Alternating-Projections"><a class="docs-heading-anchor" href="#Running-Alternating-Projections">Running Alternating Projections</a><a id="Running-Alternating-Projections-1"></a><a class="docs-heading-anchor-permalink" href="#Running-Alternating-Projections" title="Permalink"></a></h2><p>Unlike ALM, Alternating Projections (AP) is only suitable for feasibility problems. One omits the objective and gradient as parameters.</p><pre><code class="language-julia hljs">_, _, _, _, ap_trajectory = FrankWolfe.alternating_projections(
     lmos,
     x0,
@@ -121,16 +121,16 @@ GRADIENTTYPE: FrankWolfe.BlockVector{Float64, Vector{Float64}, Tuple{Int64}}
   Type     Iteration       Dual Gap          dist2           Time         It/sec
 ----------------------------------------------------------------------------------
      I             1   6.021733e-01   1.505433e-01   0.000000e+00            Inf
-    FW           100   9.968329e-05   2.500020e-02   1.681295e+00   5.947797e+01
-    FW           200   2.316528e-05   2.500001e-02   1.686702e+00   1.185746e+02
-    FW           300   1.122389e-05   2.500000e-02   1.691339e+00   1.773743e+02
-    FW           400   6.105757e-06   2.500000e-02   1.695288e+00   2.359482e+02
-    FW           500   3.822934e-06   2.500000e-02   1.699183e+00   2.942591e+02
-    FW           600   2.624313e-06   2.500000e-02   1.702906e+00   3.523388e+02
-    FW           700   1.881535e-06   2.500000e-02   1.706577e+00   4.101779e+02
-    FW           800   1.505897e-06   2.500000e-02   1.710042e+00   4.678248e+02
-    FW           900   1.216129e-06   2.500000e-02   1.713584e+00   5.252149e+02
-  Last           992   9.990101e-07   2.500000e-02   1.730034e+00   5.733990e+02
+    FW           100   9.968329e-05   2.500020e-02   1.560230e+00   6.409311e+01
+    FW           200   2.316528e-05   2.500001e-02   1.565043e+00   1.277920e+02
+    FW           300   1.122389e-05   2.500000e-02   1.569109e+00   1.911913e+02
+    FW           400   6.105757e-06   2.500000e-02   1.572577e+00   2.543596e+02
+    FW           500   3.822934e-06   2.500000e-02   1.575977e+00   3.172635e+02
+    FW           600   2.624313e-06   2.500000e-02   1.579210e+00   3.799368e+02
+    FW           700   1.881535e-06   2.500000e-02   1.582523e+00   4.423316e+02
+    FW           800   1.505897e-06   2.500000e-02   1.585582e+00   5.045466e+02
+    FW           900   1.216129e-06   2.500000e-02   1.588616e+00   5.665309e+02
+  Last           992   9.990101e-07   2.500000e-02   1.602552e+00   6.190129e+02
 ----------------------------------------------------------------------------------</code></pre><h2 id="Plotting-the-resulting-trajectories"><a class="docs-heading-anchor" href="#Plotting-the-resulting-trajectories">Plotting the resulting trajectories</a><a id="Plotting-the-resulting-trajectories-1"></a><a class="docs-heading-anchor-permalink" href="#Plotting-the-resulting-trajectories" title="Permalink"></a></h2><pre><code class="language-julia hljs">labels = [&quot;BCFW - Full&quot;, &quot;BCFW - Cyclic&quot;, &quot;BCFW - Stochastic&quot;, &quot;AFW&quot;, &quot;AP&quot;]
 
-plot_trajectories(trajectories, labels, xscalelog=true)</code></pre><img src="3181a019.svg" alt="Example block output"/><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../docs_09_extra_vertex_storage/">« Extra-lazification</a><a class="docs-footer-nextpage" href="../docs_11_block_coordinate_fw/">Block-Coordinate Frank-Wolfe and Block-Vectors »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.14.1 on <span class="colophon-date" title="Tuesday 29 July 2025 17:58">Tuesday 29 July 2025</span>. Using Julia version 1.6.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+plot_trajectories(trajectories, labels, xscalelog=true)</code></pre><img src="811ae066.svg" alt="Example block output"/><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../docs_09_extra_vertex_storage/">« Extra-lazification</a><a class="docs-footer-nextpage" href="../docs_11_block_coordinate_fw/">Block-Coordinate Frank-Wolfe and Block-Vectors »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.14.1 on <span class="colophon-date" title="Tuesday 29 July 2025 18:45">Tuesday 29 July 2025</span>. Using Julia version 1.6.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
