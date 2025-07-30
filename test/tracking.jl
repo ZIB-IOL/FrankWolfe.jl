@@ -2,6 +2,11 @@ using Test
 using LinearAlgebra
 using SparseArrays
 using FrankWolfe
+using Random
+using StableRNGs
+
+rng = StableRNG(42)
+Random.seed!(rng, 42)
 
 @testset "Tracking Testset" begin
     f(x) = norm(x)^2
@@ -11,7 +16,7 @@ using FrankWolfe
 
     x = zeros(6)
     gradient = similar(x)
-    rhs = 10 * rand()
+    rhs = 10 * rand(rng)
     lmo = FrankWolfe.ProbabilitySimplexOracle(rhs)
     direction = zeros(6)
     direction[1] = -1

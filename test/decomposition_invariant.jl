@@ -10,6 +10,7 @@ using StableRNGs
 const MOI = MathOptInterface
 const MOIU = MOI.Utilities
 
+rng = StableRNG(42)
 Random.seed!(StableRNG(42), 42)
 
 o = GLPK.Optimizer()
@@ -22,7 +23,7 @@ MOI.empty!(o)
     n = 5
     cube_MOI = FrankWolfe.convert_mathopt(cube, o; dimension=n)
     x = fill(0.4, n)
-    d = 10 * randn(n)
+    d = 10 * randn(rng, n)
     gamma_max = FrankWolfe.dicg_maximum_step(cube, d, x)
     gamma_max_MOI = FrankWolfe.dicg_maximum_step(cube_MOI, d, x)
     @test gamma_max > 0
@@ -43,7 +44,7 @@ MOI.empty!(o)
     x_fixed = copy(x)
     x_fixed[3] = 0
     # positive entry in the direction, gamma_max = 0
-    d2 = randn(n)
+    d2 = randn(rng, n)
     d2[3] = 1
     gamma_max2 = FrankWolfe.dicg_maximum_step(cube, d2, x_fixed)
     gamma_max2_MOI = FrankWolfe.dicg_maximum_step(cube_MOI, d2, x_fixed)
@@ -69,7 +70,7 @@ end
         lmo_MOI = FrankWolfe.convert_mathopt(lmo, o; dimension=n)
         # x interior
         x = fill(0.4, n)
-        d = 10 * randn(n)
+        d = 10 * randn(rng, n)
         gamma_max = FrankWolfe.dicg_maximum_step(lmo, d, x)
         gamma_max_MOI = FrankWolfe.dicg_maximum_step(lmo_MOI, d, x)
         @test gamma_max > 0
@@ -83,7 +84,7 @@ end
         x_fixed = copy(x)
         x_fixed[3] = 0
         # positive entry in the direction, gamma_max = 0
-        d2 = randn(n)
+        d2 = randn(rng, n)
         d2[3] = 1
         gamma_max2 = FrankWolfe.dicg_maximum_step(lmo, d2, x_fixed)
         gamma_max2_MOI = FrankWolfe.dicg_maximum_step(lmo_MOI, d2, x_fixed)
@@ -101,8 +102,8 @@ end
               zeros(n)
 
         # the single in-face point if iterate is zero is zero
-        @test FrankWolfe.compute_inface_extreme_point(lmo, randn(n), zeros(n)) == zeros(n)
-        @test FrankWolfe.compute_inface_extreme_point(lmo_MOI, randn(n), zeros(n)) == zeros(n)
+        @test FrankWolfe.compute_inface_extreme_point(lmo, randn(rng, n), zeros(n)) == zeros(n)
+        @test FrankWolfe.compute_inface_extreme_point(lmo_MOI, randn(rng, n), zeros(n)) == zeros(n)
 
         # fix iterate on the simplex face
         x_fixed[4] += lmo.right_side - sum(x_fixed)
@@ -145,7 +146,7 @@ end
         # x in relative interior
         x = fill(1.0, n)
         # creating realistic directions as pairwise
-        v1 = FrankWolfe.compute_extreme_point(lmo, randn(n))
+        v1 = FrankWolfe.compute_extreme_point(lmo, randn(rng, n))
         # making sure the two are different
         v2 = FrankWolfe.compute_extreme_point(lmo, v1)
         d = v1 - v2
@@ -175,7 +176,7 @@ end
 
 @testset "Birkhoff polytope" begin
     n = 4
-    d = randn(n, n)
+    d = randn(rng, n, n)
     lmo = FrankWolfe.BirkhoffPolytopeLMO()
     lmo_MOI = FrankWolfe.convert_mathopt(lmo, o; dimension=n)
     x = ones(n, n) ./ n
@@ -228,7 +229,7 @@ end
     @testset "Zero-one cube" begin
         cube = FrankWolfe.ZeroOneHypercube()
         cube_MOI = FrankWolfe.convert_mathopt(cube, o; dimension=n)
-        x0 = FrankWolfe.compute_extreme_point(cube, randn(n))
+        x0 = FrankWolfe.compute_extreme_point(cube, randn(rng, n))
 
         res = FrankWolfe.decomposition_invariant_conditional_gradient(
             f,
@@ -274,7 +275,7 @@ end
     )
         lmo = FrankWolfe.UnitSimplexOracle(1.0)
 
-        x0_simplex = FrankWolfe.compute_extreme_point(lmo, randn(n))
+        x0_simplex = FrankWolfe.compute_extreme_point(lmo, randn(rng, n))
         res_di = FrankWolfe.decomposition_invariant_conditional_gradient(
             f,
             grad!,
@@ -284,7 +285,7 @@ end
             trajectory=true,
             epsilon=1e-10,
         )
-        x0_simplex = FrankWolfe.compute_extreme_point(lmo, randn(n))
+        x0_simplex = FrankWolfe.compute_extreme_point(lmo, randn(rng, n))
         res_fw = FrankWolfe.frank_wolfe(
             f,
             grad!,
@@ -301,7 +302,7 @@ end
         n = 10
         lmo = FrankWolfe.BirkhoffPolytopeLMO()
         lmo_MOI = FrankWolfe.convert_mathopt(lmo, o; dimension=n)
-        x0_bk = FrankWolfe.compute_extreme_point(lmo, randn(n, n))
+        x0_bk = FrankWolfe.compute_extreme_point(lmo, randn(rng, n, n))
         f0(X) = 1 / 2 * sum(abs2, X)
         grad0!(storage, X) = storage .= X
         res_di = FrankWolfe.decomposition_invariant_conditional_gradient(
@@ -349,12 +350,12 @@ end
             @. storage = x - xref
         end
         res_fw =
-            FrankWolfe.frank_wolfe(f, grad!, lmo, FrankWolfe.compute_extreme_point(lmo, randn(n)))
+            FrankWolfe.frank_wolfe(f, grad!, lmo, FrankWolfe.compute_extreme_point(lmo, randn(rng, n)))
         res_dicg = FrankWolfe.decomposition_invariant_conditional_gradient(
             f,
             grad!,
             lmo,
-            FrankWolfe.compute_extreme_point(lmo, randn(n)),
+            FrankWolfe.compute_extreme_point(lmo, randn(rng, n)),
         )
         @test norm(res_fw.x - res_dicg.x) ≤ 1e-4
         lmo_tracking = FrankWolfe.TrackingLMO(lmo)
@@ -362,7 +363,7 @@ end
             f,
             grad!,
             lmo_tracking,
-            FrankWolfe.compute_extreme_point(lmo, randn(n)),
+            FrankWolfe.compute_extreme_point(lmo, randn(rng, n)),
         )
         @test norm(res_dicg_tracking.x - res_dicg.x) ≤ 1e-4
     end

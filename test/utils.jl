@@ -2,11 +2,16 @@ import FrankWolfe
 using LinearAlgebra
 using Test
 using SparseArrays
+using Random
+using StableRNGs
+
+rng = StableRNG(42)
+Random.seed!(rng, 42)
 
 @testset "Simple benchmark_oracles function" begin
     n = Int(1e3)
 
-    xpi = rand(n)
+    xpi = rand(rng, n)
     total = sum(xpi)
     xp = xpi ./ total
 
@@ -18,14 +23,14 @@ using SparseArrays
     lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
     x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n))
 
-    FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo_prob; k=100)
+    FrankWolfe.benchmark_oracles(f, grad!, () -> rand(rng, n), lmo_prob; k=100)
 end
 
 @testset "RankOneMatrix" begin
     for n in (1, 2, 5)
         for _ in 1:5
-            v = rand(n)
-            u = randn(2n)
+            v = rand(rng, n)
+            u = randn(rng, 2n)
             M = u * v'
             R = FrankWolfe.RankOneMatrix(u, v)
             for i in 1:2n
@@ -34,7 +39,7 @@ end
                 end
             end
             @testset "Right- left-mul" for _ in 1:5
-                x = rand(n)
+                x = rand(rng, n)
                 r1 = R * x
                 r2 = M * x
                 @test r1 ≈ r2
@@ -61,12 +66,12 @@ end
                 @test R * M' ≈ R * transpose(M) ≈ M * M'
             end
             @testset "Special matrices" begin
-                d = randn(n)
-                v2 = randn(n)
+                d = randn(rng, n)
+                v2 = randn(rng, n)
                 R2 = FrankWolfe.RankOneMatrix(u, v2)
                 D = LinearAlgebra.Diagonal(d)
                 @test R2 * D ≈ u * v2' * D
-                T = LinearAlgebra.LowerTriangular(randn(n, n))
+                T = LinearAlgebra.LowerTriangular(randn(rng, n, n))
                 @test R2 * T ≈ u * v2' * T
             end
         end
@@ -76,8 +81,8 @@ end
 @testset "RankOne muladd_memory_mode $n" for n in (1, 2, 5)
     for _ in 1:5
         n = 5
-        v = rand(n)
-        u = randn(2n)
+        v = rand(rng, n)
+        u = randn(rng, 2n)
         M = u * v'
         R = FrankWolfe.RankOneMatrix(u, v)
         X = similar(M)
@@ -237,9 +242,9 @@ end
 
 @testset "Fast dot complex & norm" begin
     s = sparse(I, 3, 3)
-    m = randn(Complex{Float64}, 3, 3)
+    m = randn(rng, Complex{Float64}, 3, 3)
     a = FrankWolfe.ScaledHotVector(3.5 + 2im, 2, 4)
-    b = rand(ComplexF64, 4)
+    b = rand(rng, ComplexF64, 4)
     @test dot(a, b) ≈ dot(collect(a), b)
     @test dot(b, a) ≈ dot(b, collect(a))
     c = sparse(b)
@@ -249,10 +254,10 @@ end
 end
 
 @testset "NegatingArray" begin
-    d = randn(4)
+    d = randn(rng, 4)
     nd = FrankWolfe.NegatingArray(d)
     @test norm(nd + d) ≤ eps()
-    d2 = randn(4, 3)
+    d2 = randn(rng, 4, 3)
     nd2 = FrankWolfe.NegatingArray(d2)
     @test norm(nd2 + d2) ≤ eps()
 

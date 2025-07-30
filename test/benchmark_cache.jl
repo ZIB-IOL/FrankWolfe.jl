@@ -2,11 +2,16 @@
 
 using BenchmarkTools
 using FrankWolfe
+using Random
+using StableRNGs
+
+rng = StableRNG(42)
+Random.seed!(rng, 42)
 
 for n in (10, 100, 1000)
     @info "n = $n"
     direction = zeros(n)
-    rhs = 10 * rand()
+    rhs = 10 * rand(rng)
     lmo_unit = FrankWolfe.UnitSimplexOracle(rhs)
     lmo_veccached = FrankWolfe.VectorCacheLMO(lmo_unit)
     res_vec = @benchmark begin
