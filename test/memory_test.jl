@@ -1,11 +1,16 @@
 using Test
 using FrankWolfe
 using LinearAlgebra
+using Random
+using StableRNGs
+
+rng = StableRNG(42)
+Random.seed!(rng, 42)
 
 @testset "Testing memory_mode blas vs memory" begin
     n = Int(1e5)
     k = 100
-    xpi = rand(n)
+    xpi = rand(rng, n)
     total = sum(xpi)
     xp = xpi ./ total
     f(x) = norm(x - xp)^2

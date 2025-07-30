@@ -16,10 +16,13 @@ import Hypatia
 import SCS
 using JuMP
 
+rng = StableRNG(42)
+Random.seed!(rng, 42)
+
 @testset "Simplex LMOs" begin
     n = 6
     direction = zeros(6)
-    rhs = 10 * rand()
+    rhs = 10 * rand(rng)
     lmo_prob = FrankWolfe.ProbabilitySimplexOracle(rhs)
     lmo_unit = FrankWolfe.UnitSimplexOracle(rhs)
     @testset "Choosing improving direction" for idx in 1:n
@@ -66,7 +69,7 @@ end
     @testset "Hypersimplex $n $K" for n in (2, 5, 10), K in (1, min(n, 4))
         K = 1
         n = 5
-        direction = randn(n)
+        direction = randn(rng, n)
         hypersimplex = FrankWolfe.HyperSimplexOracle(K, 3.0)
         unit_hypersimplex = FrankWolfe.UnitHyperSimplexOracle(K, 3.0)
         v = FrankWolfe.compute_extreme_point(hypersimplex, direction)
@@ -90,7 +93,7 @@ end
             # in-face for a point in the relint is the same as extreme point
             x_int = fill(hypersimplex.K * hypersimplex.radius / n, n)
             for _ in 1:5
-                rand_direction = randn(n)
+                rand_direction = randn(rng, n)
                 v_fw = FrankWolfe.compute_extreme_point(hypersimplex, rand_direction)
                 v_face =
                     FrankWolfe.compute_inface_extreme_point(hypersimplex, rand_direction, x_int)
@@ -131,7 +134,7 @@ end
             # relative interior of the simplex face
             x_on_simplex_face = fill(unit_hypersimplex.K * unit_hypersimplex.radius / n, n)
             for _ in 1:5
-                rand_direction = randn(n)
+                rand_direction = randn(rng, n)
                 v_fw = FrankWolfe.compute_extreme_point(unit_hypersimplex, rand_direction)
                 v_face = FrankWolfe.compute_inface_extreme_point(
                     hypersimplex,
@@ -195,12 +198,12 @@ end
 
 @testset "Lp-norm epigraph LMO" begin
     for n in (1, 2, 5, 10)
-        τ = 5 + 3 * rand()
+        τ = 5 + 3 * rand(rng)
         # tests that the "special" p behaves like the "any" p, i.e. 2.0 and 2
         @testset "$p-norm" for p in (1, 1.0, 1.5, 2, 2.0, Inf, Inf32)
             lmo = LpNormLMO{Float64,p}(τ)
             for _ in 1:100
-                c = 5 * randn(n)
+                c = 5 * randn(rng, n)
                 v = FrankWolfe.compute_extreme_point(lmo, c)
                 @test norm(v, p) ≈ τ
             end
@@ -211,7 +214,7 @@ end
         @testset "K-Norm ball $K" for K in 1:n
             lmo_ball = FrankWolfe.KNormBallLMO(K, τ)
             for _ in 1:20
-                c = 5 * randn(n)
+                c = 5 * randn(rng, n)
                 v = FrankWolfe.compute_extreme_point(lmo_ball, c)
                 v1 = FrankWolfe.compute_extreme_point(FrankWolfe.LpNormLMO{1}(τ), c)
                 v_inf = FrankWolfe.compute_extreme_point(FrankWolfe.LpNormLMO{Inf}(τ / K), c)
@@ -238,15 +241,15 @@ end
 
 @testset "K-sparse polytope LMO" begin
     @testset "$n-dimension" for n in (1, 2, 10)
-        τ = 5 + 3 * rand()
+        τ = 5 + 3 * rand(rng)
         for K in 1:n
             lmo = KSparseLMO(K, τ)
-            x = 10 * randn(n) # dense vector
+            x = 10 * randn(rng, n) # dense vector
             v = compute_extreme_point(lmo, x)
             # K-sparsity
             @test count(!iszero, v) == K
             @test sum(abs.(v)) ≈ K * τ
-            xsort = sort!(10 * rand(n))
+            xsort = sort!(10 * rand(rng, n))
             v = compute_extreme_point(lmo, xsort)
             @test all(iszero, v[1:(n-K)])
             @test all(abs(vi) ≈ abs(τ * sign(vi)) for vi in v[K:end])
@@ -258,7 +261,7 @@ end
     end
     # type stability of K-sparse polytope LMO
     lmo = KSparseLMO(3, 2.0)
-    x = 10 * randn(10) # dense vector
+    x = 10 * randn(rng, 10) # dense vector
     @inferred compute_extreme_point(lmo, x)
 
     v = FrankWolfe.compute_extreme_point(lmo, zeros(3))
@@ -269,7 +272,7 @@ end
 @testset "Caching on simplex LMOs" begin
     n = 6
     direction = zeros(6)
-    rhs = 10 * rand()
+    rhs = 10 * rand(rng)
     lmo_unit = FrankWolfe.UnitSimplexOracle(rhs)
     lmo_never_cached = FrankWolfe.SingleLastCachedLMO(lmo_unit)
     lmo_cached = FrankWolfe.SingleLastCachedLMO(lmo_unit)
@@ -317,10 +320,10 @@ function _is_doubly_stochastic(m)
 end
 
 @testset "Birkhoff polytope" begin
-    Random.seed!(StableRNG(42), 42)
+    Random.seed!(rng, 42)
     lmo = FrankWolfe.BirkhoffPolytopeLMO()
     for n in (1, 2, 10)
-        cost = rand(n, n)
+        cost = rand(rng, n, n)
         res = FrankWolfe.compute_extreme_point(lmo, cost)
         _is_doubly_stochastic(res)
         res2 = FrankWolfe.compute_extreme_point(lmo, vec(cost))
@@ -365,16 +368,16 @@ end
     nobs = 100
     r = 5
     Xreal = Matrix{Float64}(undef, nobs, nfeat)
-    X_gen_cols = randn(nfeat, r)
-    X_gen_rows = randn(r, nobs)
-    svals = 100 * rand(r)
+    X_gen_cols = randn(rng, nfeat, r)
+    X_gen_rows = randn(rng, r, nobs)
+    svals = 100 * rand(rng, r)
     for i in 1:nobs
         for j in 1:nfeat
             Xreal[i, j] = sum(X_gen_cols[j, k] * X_gen_rows[k, i] * svals[k] for k in 1:r)
         end
     end
     @test rank(Xreal) == r
-    missing_entries = unique!([(rand(1:nobs), rand(1:nfeat)) for _ in 1:1000])
+    missing_entries = unique!([(rand(rng, 1:nobs), rand(rng, 1:nfeat)) for _ in 1:1000])
     f(X) =
         0.5 *
         sum((X[i, j] - Xreal[i, j])^2 for i in 1:nobs, j in 1:nfeat if (i, j) ∉ missing_entries)
@@ -428,7 +431,7 @@ end
 end
 
 @testset "Spectral norms" begin
-    Random.seed!(StableRNG(42), 42)
+    Random.seed!(rng, 42)
     o = Hypatia.Optimizer()
     MOI.set(o, MOI.Silent(), true)
     optimizer = MOI.Bridges.full_bridge_optimizer(
@@ -444,7 +447,7 @@ end
         direction = Matrix{Float64}(undef, n, n)
         lmo_moi = FrankWolfe.convert_mathopt(lmo, optimizer; side_dimension=n, use_modify=false)
         for _ in 1:10
-            Random.randn!(direction)
+            Random.randn!(rng, direction)
             v = @inferred FrankWolfe.compute_extreme_point(lmo, direction)
             vsym = @inferred FrankWolfe.compute_extreme_point(lmo, direction + direction')
             vsym2 =
@@ -474,7 +477,7 @@ end
         lmo_moi = FrankWolfe.convert_mathopt(lmo, optimizer; side_dimension=n, use_modify=false)
         direction_sym = similar(direction)
         for _ in 1:10
-            Random.randn!(direction)
+            Random.randn!(rng, direction)
             @. direction_sym = direction + direction'
             v = @inferred FrankWolfe.compute_extreme_point(lmo, direction)
             vsym = @inferred FrankWolfe.compute_extreme_point(lmo, direction_sym)
@@ -517,7 +520,7 @@ end
 end
 
 @testset "MOI oracle consistency" begin
-    Random.seed!(StableRNG(42), 42)
+    Random.seed!(rng, 42)
     o = GLPK.Optimizer()
     MOI.set(o, MOI.Silent(), true)
     @testset "MOI oracle consistent with unit simplex" for n in (1, 2, 10)
@@ -536,7 +539,7 @@ end
         lmo_moi_ref = FrankWolfe.convert_mathopt(lmo_ref, GLPK.Optimizer(), dimension=n)
         direction = Vector{Float64}(undef, n)
         for _ in 1:5
-            Random.randn!(direction)
+            Random.randn!(rng, direction)
             vref = compute_extreme_point(lmo_ref, direction)
             v = compute_extreme_point(lmo, direction)
             v_moi = compute_extreme_point(lmo_moi_ref, direction)
@@ -560,7 +563,7 @@ end
         lmo_moi_ref = FrankWolfe.convert_mathopt(lmo_ref, GLPK.Optimizer(), dimension=n)
         direction = Vector{Float64}(undef, n)
         for _ in 1:5
-            Random.randn!(direction)
+            Random.randn!(rng, direction)
             vref = compute_extreme_point(lmo_ref, direction)
             v = compute_extreme_point(lmo, direction)
             v_moi = compute_extreme_point(lmo_moi_ref, direction)
@@ -605,7 +608,7 @@ end
         lmo_ref = FrankWolfe.ProbabilitySimplexOracle(1.0)
         direction = Vector{Float64}(undef, n)
         for _ in 1:5
-            Random.randn!(direction)
+            Random.randn!(rng, direction)
             vref = compute_extreme_point(lmo_ref, direction)
             v = compute_extreme_point(lmo, direction)
             @test vref ≈ v
@@ -634,7 +637,7 @@ end
         )
         nsuccess = 0
         for _ in 1:10
-            randn!(direction)
+            randn!(rng, direction)
             v_r = FrankWolfe.compute_extreme_point(lmo, direction)
             flattened = collect(vec(direction))
             push!(flattened, 0)
@@ -677,7 +680,7 @@ end
         lmo_moi = FrankWolfe.MathOptLMO(o)
         lmo_moi_ref = FrankWolfe.convert_mathopt(lmo_bkf, o_ref, dimension=n)
         for _ in 1:10
-            randn!(direction_vec)
+            randn!(rng, direction_vec)
             direction_mat = reshape(direction_vec, n, n)
             v_moi = FrankWolfe.compute_extreme_point(lmo_moi, direction_vec)
             v_moi_mat = reshape(v_moi, n, n)
@@ -705,7 +708,7 @@ end
     )
     for n in (1, 2, 5, 10)
         for K in 1:3:n
-            τ = 10 * rand()
+            τ = 10 * rand(rng)
             MOI.empty!(o)
             x = MOI.add_variables(o, n)
             tinf = MOI.add_variable(o)
@@ -720,7 +723,7 @@ end
             lmo_moi_convert =
                 FrankWolfe.convert_mathopt(lmo_ksp, o_ref, dimension=n, use_modify=false)
             for _ in 1:20
-                randn!(direction)
+                randn!(rng, direction)
                 v_moi =
                     FrankWolfe.compute_extreme_point(lmo_moi, MOI.ScalarAffineTerm.(direction, x))
                 v_ksp = FrankWolfe.compute_extreme_point(lmo_ksp, direction)
@@ -755,8 +758,8 @@ end
 
 @testset "Product LMO" begin
     lmo = FrankWolfe.ProductLMO(FrankWolfe.LpNormLMO{Inf}(3.0), FrankWolfe.LpNormLMO{1}(2.0))
-    dinf = randn(10)
-    d1 = randn(5)
+    dinf = randn(rng, 10)
+    d1 = randn(rng, 5)
     vtup = FrankWolfe.compute_extreme_point(lmo, (dinf, d1))
     @test length(vtup) == 2
     (vinf, v1) = vtup
@@ -780,7 +783,7 @@ end
     lmo_shifted = FrankWolfe.ScaledBoundL1NormBall(zeros(10), 2 * ones(10))
     lmo_scaled = FrankWolfe.ScaledBoundL1NormBall(-2 * ones(10), 2 * ones(10))
     for _ in 1:100
-        d = randn(10)
+        d = randn(rng, 10)
         v = FrankWolfe.compute_extreme_point(lmo, d)
         vref = FrankWolfe.compute_extreme_point(lmo_ref, d)
         @test v ≈ vref
@@ -820,7 +823,7 @@ end
     MOI.add_constraint.(o, x, MOI.LessThan.(bounds))
     scaled_unequally_opt = FrankWolfe.MathOptLMO(o)
     for _ in 1:100
-        d = randn(10)
+        d = randn(rng, 10)
         v = FrankWolfe.compute_extreme_point(lmo, d)
         vref = FrankWolfe.compute_extreme_point(lmo_ref, d)
         @test v ≈ vref
@@ -841,7 +844,7 @@ end
     lmo = FrankWolfe.ScaledBoundLInfNormBall(-ones(3, 3), ones(3, 3))
     lmo_flat = FrankWolfe.ScaledBoundLInfNormBall(-ones(9), ones(9))
     for _ in 1:10
-        d = randn(3, 3)
+        d = randn(rng, 3, 3)
         v = FrankWolfe.compute_extreme_point(lmo, d)
         vflat = FrankWolfe.compute_extreme_point(lmo_flat, vec(d))
         @test vec(v) == vflat
@@ -921,19 +924,19 @@ end
     for i in 1:n
         A[i, i] = 3
     end
-    radius = 4 * rand()
-    center = randn(n)
+    radius = 4 * rand(rng)
+    center = randn(rng, n)
     lmo = FrankWolfe.EllipsoidLMO(A, center, radius)
-    d = randn(n)
+    d = randn(rng, n)
     v = FrankWolfe.compute_extreme_point(lmo, d)
     @test dot(v - center, A, v - center) ≈ radius atol = 1e-10
-    A = randn(n, n)
+    A = randn(rng, n, n)
     A += A'
     while !isposdef(A)
         A += I
     end
     lmo = FrankWolfe.EllipsoidLMO(A, center, radius)
-    d = randn(n)
+    d = randn(rng, n)
     v = FrankWolfe.compute_extreme_point(lmo, d)
     @test dot(v - center, A, v - center) ≈ radius atol = 1e-10
     m = Model(Hypatia.Optimizer)
@@ -954,7 +957,7 @@ end
 @testset "Convex hull" begin
     lmo = FrankWolfe.ConvexHullOracle([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
     for _ in 1:100
-        d = randn(3)
+        d = randn(rng, 3)
         v = FrankWolfe.compute_extreme_point(lmo, d)
         v_simplex = FrankWolfe.compute_extreme_point(FrankWolfe.ProbabilitySimplexOracle(1), d)
         @test v == v_simplex
@@ -1046,11 +1049,11 @@ end
 end
 
 @testset "Ordered Weighted Norm LMO" begin
-    Random.seed!(StableRNG(42), 42)
+    Random.seed!(rng, 42)
     N = Int(1e3)
     for _ in 1:10
-        radius = abs(randn()) + 1
-        direction = randn(N)
+        radius = abs(randn(rng)) + 1
+        direction = randn(rng, N)
 
         #norm l1
         weights = ones(N)
@@ -1071,7 +1074,7 @@ end
 
         #symmetry
         direction_opp = -1 * direction
-        weights = rand(N)
+        weights = rand(rng, N)
         lmo_opp = FrankWolfe.OrderWeightNormLMO(weights, radius)
         v = FrankWolfe.compute_extreme_point(lmo_opp, direction)
         v_opp = FrankWolfe.compute_extreme_point(lmo_opp, direction_opp)
@@ -1080,12 +1083,12 @@ end
 end
 
 @testset "Fantope" begin
-    Random.seed!(StableRNG(42), 42)
+    Random.seed!(rng, 42)
     for n in (3, 5)
         for k in (n - 2, n - 1)
             for _ in 1:5
                 lmo = FrankWolfe.FantopeLMO(k)
-                direction = randn(n, n)
+                direction = randn(rng, n, n)
                 direction += direction'
                 V = FrankWolfe.compute_extreme_point(lmo, direction)
                 v = FrankWolfe.compute_extreme_point(lmo, vec(direction))

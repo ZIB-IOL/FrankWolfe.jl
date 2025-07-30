@@ -1,9 +1,14 @@
 import FrankWolfe
 import LinearAlgebra
+using Random
+using StableRNGs
+
+rng = StableRNG(42)
+Random.seed!(rng, 42)
 
 n = Int(1e6);
 
-xpi = rand(n);
+xpi = rand(rng, n);
 total = sum(xpi);
 const xp = xpi ./ total;
 
