@@ -161,8 +161,8 @@ function active_set_update_pairwise!(
     gamma_max::Real,
     v_local_loc::Integer,
     a_loc::Integer,
-    v_local,
-    a,
+    v_local::AT,
+    a::AT,
     add_dropped_vertices::Bool,
     extra_vertex_storage=nothing,
 ) where {AT,R}
@@ -213,9 +213,9 @@ Operates `x ← x + λ a_fw - λ a_aw`.
 function active_set_update_iterate_pairwise!(
     x::IT,
     lambda::Real,
-    fw_atom,
-    away_atom,
-) where {IT}
+    fw_atom::A,
+    away_atom::A,
+) where {IT,A}
     @. x += lambda * fw_atom - lambda * away_atom
     return x
 end
