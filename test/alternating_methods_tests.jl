@@ -277,7 +277,8 @@ end
 
 @testset "Testing alternating projections" begin
 
-    x, _, _, _, _ = FrankWolfe.alternating_projections((lmo1, lmo_prob), rand(rng, n), verbose=false)
+    x, _, _, _, _ =
+        FrankWolfe.alternating_projections((lmo1, lmo_prob), rand(rng, n), verbose=false)
 
     @test abs(x.blocks[1][1]) < 1e-6
     @test abs(x.blocks[2][1] - 1 / n) < 1e-6

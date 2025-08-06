@@ -86,19 +86,11 @@ Random.seed!(rng, 123)
                     rng=rng,
                 )
                 Random.seed!(rng, 33)
-                @test f_estimate ≈ compute_value(
-                    f_stoch,
-                    params,
-                    batch_size=length(data_perfect),
-                    rng=rng,
-                )
+                @test f_estimate ≈
+                      compute_value(f_stoch, params, batch_size=length(data_perfect), rng=rng)
                 Random.seed!(rng, 33)
-                @test g_estimate ≈ compute_gradient(
-                    f_stoch,
-                    params,
-                    batch_size=length(data_perfect),
-                    rng=rng,
-                )
+                @test g_estimate ≈
+                      compute_gradient(f_stoch, params, batch_size=length(data_perfect), rng=rng)
             end
             @testset "Noisy data" begin
                 data_noisy = [(x, x ⋅ (1:5) + bias + 0.5 * randn(rng)) for x in xs]
@@ -125,12 +117,8 @@ Random.seed!(rng, 123)
                     rng=rng,
                 )
                 Random.seed!(rng, 33)
-                @test f_estimate ≈ compute_value(
-                    f_stoch_noisy,
-                    params,
-                    batch_size=length(data_noisy),
-                    rng=rng,
-                )
+                @test f_estimate ≈
+                      compute_value(f_stoch_noisy, params, batch_size=length(data_noisy), rng=rng)
                 Random.seed!(rng, 33)
                 @test g_estimate ≈ compute_gradient(
                     f_stoch_noisy,
