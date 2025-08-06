@@ -3,6 +3,11 @@ using Test
 using FrankWolfe
 import FrankWolfe: ActiveSet
 using LinearAlgebra: norm
+using Random
+using StableRNGs
+
+rng = StableRNG(42)
+Random.seed!(rng, 42)
 
 @testset "Active sets" begin
 
@@ -242,7 +247,7 @@ end
 
 @testset "ActiveSet for BigFloat" begin
     n = Int(1e2)
-    lmo = FrankWolfe.LpNormLMO{BigFloat,1}(rand())
+    lmo = FrankWolfe.LpNormLMO{BigFloat,1}(rand(rng))
     x0 = Vector(FrankWolfe.compute_extreme_point(lmo, zeros(n)))
 
     # add the first vertex to active set from initialization

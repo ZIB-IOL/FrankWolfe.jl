@@ -22,9 +22,10 @@ n = Int(1e4)
 k = 10000
 
 s = 10
-Random.seed!(StableRNG(s), s)
+rng = StableRNG(s)
+Random.seed!(rng, s)
 
-xpi = rand(n);
+xpi = rand(rng, n);
 total = sum(xpi);
 
 # here the optimal solution lies in the interior if you want an optimal solution on a face and not the interior use:
@@ -39,7 +40,7 @@ end
 
 lmo = FrankWolfe.LpNormLMO{Float64,5}(1.0)
 
-x000 = FrankWolfe.compute_extreme_point(lmo, rand(n))
+x000 = FrankWolfe.compute_extreme_point(lmo, rand(rng, n))
 
 function build_callback(trajectory_arr)
     return function callback(state, active_set, args...)

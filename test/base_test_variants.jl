@@ -1,6 +1,11 @@
 using FrankWolfe
 using Test
 using LinearAlgebra
+using Random
+using StableRNGs
+
+rng = StableRNG(42)
+Random.seed!(rng, 42)
 
 @testset "Testing vanilla Frank-Wolfe" begin
     f(x) = norm(x)^2
@@ -272,12 +277,12 @@ end
         return storage
     end
 
-    xs = [10 * randn(5) for i in 1:20000]
-    params = rand(6) .- 1 # start params in (-1,0)
+    xs = [10 * randn(rng, 5) for i in 1:20000]
+    params = rand(rng, 6) .- 1 # start params in (-1,0)
     bias = 2π
     params_perfect = [1:5; bias]
 
-    params = rand(6) .- 1 # start params in (-1,0)
+    params = rand(rng, 6) .- 1 # start params in (-1,0)
 
     data_perfect = [(x, x ⋅ (1:5) + bias) for x in xs]
     f_stoch = FrankWolfe.StochasticObjective(
@@ -345,7 +350,7 @@ end
 @testset "Away-step FW" begin
     n = 50
     lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1.0)
-    x0 = FrankWolfe.compute_extreme_point(lmo_prob, rand(n))
+    x0 = FrankWolfe.compute_extreme_point(lmo_prob, rand(rng, n))
     f(x) = norm(x)^2
     function grad!(storage, x)
         @. storage = 2x
@@ -489,7 +494,7 @@ end
 @testset "Testing Blended Conditional Gradient" begin
     n = 50
     lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1.0)
-    x0 = FrankWolfe.compute_extreme_point(lmo_prob, randn(n))
+    x0 = FrankWolfe.compute_extreme_point(lmo_prob, randn(rng, n))
     f(x) = norm(x)^2
     function grad!(storage, x)
         @. storage = 2x

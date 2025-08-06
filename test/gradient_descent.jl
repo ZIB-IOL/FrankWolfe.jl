@@ -11,13 +11,14 @@ k = Int(1e4)
 print_iter = k // 10
 
 s = 42
-Random.seed!(StableRNG(s), s)
+rng = StableRNG(s)
+Random.seed!(rng, s)
 
 # Create test problem with controlled condition number
 const condition_number = 1000.0  # Much better than random conditioning
 const matrix = let
     # Create orthogonal matrix
-    Q = qr(randn(n, n)).Q
+    Q = qr(randn(rng, n, n)).Q
     # Create diagonal matrix with controlled condition number
     λ_max = 1.0
     λ_min = λ_max / condition_number
@@ -26,7 +27,7 @@ const matrix = let
     Q * sqrt(Λ)
 end
 const hessian = transpose(matrix) * matrix
-const linear = rand(n)
+const linear = rand(rng, n)
 
 f_gd(x) = dot(linear, x) + 0.5 * dot(x, hessian, x)
 
@@ -42,7 +43,7 @@ const f_opt = f_gd(x_opt)
 
 @testset "Adaptive Gradient Descent" begin
     @testset "Type $T" for T in (Float64, Double64)
-        x0 = 10 * rand(T, n)
+        x0 = 10 * rand(rng, T, n)
         target_tolerance = convert(T, 1e-8)
 
         # Test first variant
@@ -88,7 +89,7 @@ const f_opt = f_gd(x_opt)
     end
 
     @testset "Memory modes" begin
-        x0 = rand(n)
+        x0 = rand(rng, n)
         target_tolerance = 1e-8
 
         # Test with InplaceEmphasis
@@ -119,7 +120,7 @@ const f_opt = f_gd(x_opt)
     end
 
     @testset "Callback functionality" begin
-        x0 = rand(n)
+        x0 = rand(rng, n)
         history = []
 
         callback(state) = push!(history, state)
@@ -143,7 +144,7 @@ const f_opt = f_gd(x_opt)
     end
 
     @testset "Proximal variant" begin
-        x0 = rand(n)
+        x0 = rand(rng, n)
         target_tolerance = 1e-8
 
         # Test with identity proximal operator (should match regular variant)
@@ -265,7 +266,7 @@ const f_opt = f_gd(x_opt)
         # Create test problem with optimal solution in positive orthant
         matrix_pos = begin
             # Create orthogonal matrix 
-            Q = qr(randn(n, n)).Q
+            Q = qr(randn(rng, n, n)).Q
             # Create diagonal matrix with controlled condition number
             λ_max = 1.0
             λ_min = λ_max / condition_number
@@ -291,7 +292,7 @@ const f_opt = f_gd(x_opt)
 
         # Testing proximal gradient descent with positive orthant solution
 
-        x0 = rand(n)
+        x0 = rand(rng, n)
         target_tolerance = 1e-8
 
         # Test with identity proximal operator (should match regular variant)
