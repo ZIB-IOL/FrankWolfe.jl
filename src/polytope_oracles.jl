@@ -110,7 +110,12 @@ end
 
 is_decomposition_invariant_oracle(::BirkhoffPolytopeLMO) = true
 
-function is_inface_feasible(::BirkhoffPolytopeLMO, a, x)
+function is_inface_feasible(
+    ::BirkhoffPolytopeLMO,
+    a::AbstractMatrix{T},
+    x::AbstractMatrix{T};
+    kwargs...,
+) where {T}
     fixed_cols = []
     for j in 1:size(a, 2)
         if j ∉ fixed_cols
@@ -129,6 +134,17 @@ function is_inface_feasible(::BirkhoffPolytopeLMO, a, x)
         end
     end
     return true
+end
+
+function is_inface_feasible(
+    lmo::BirkhoffPolytopeLMO,
+    a::AbstractVector{T},
+    x::AbstractVector{T};
+    kwargs...,
+) where {T}
+    nsq = length(a)
+    n = isqrt(nsq)
+    return is_inface_feasible(lmo, reshape(a, n, n), reshape(x, n, n); kwargs...)
 end
 
 function compute_inface_extreme_point(
@@ -188,6 +204,17 @@ function compute_inface_extreme_point(
     return m
 end
 
+function compute_inface_extreme_point(
+    lmo::BirkhoffPolytopeLMO,
+    direction::AbstractVector{T},
+    x::AbstractVector;
+    kwargs...,
+) where {T}
+    nsq = length(direction)
+    n = isqrt(nsq)
+    return compute_inface_extreme_point(lmo, reshape(direction, n, n), reshape(x, n, n); kwargs...)[:]
+end
+
 # Find the maximum step size γ such that `x - γ d` remains in the feasible set.
 function dicg_maximum_step(::BirkhoffPolytopeLMO, direction::AbstractMatrix, x)
     T = promote_type(eltype(x), eltype(direction))
@@ -208,6 +235,17 @@ function dicg_maximum_step(::BirkhoffPolytopeLMO, direction::AbstractMatrix, x)
         end
     end
     return gamma_max
+end
+
+function dicg_maximum_step(
+    lmo::BirkhoffPolytopeLMO,
+    direction::AbstractVector{T},
+    x::AbstractVector;
+    kwargs...,
+) where {T}
+    nsq = length(direction)
+    n = isqrt(nsq)
+    return dicg_maximum_step(lmo, reshape(direction, n, n), reshape(x, n, n); kwargs...)
 end
 
 function convert_mathopt(
