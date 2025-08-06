@@ -97,6 +97,10 @@ function Base.isequal(a::ScaledHotVector, b::ScaledHotVector)
     return a.len == b.len && a.val_idx == b.val_idx && isequal(a.active_val, b.active_val)
 end
 
+function Base.copy(v::ScaledHotVector)
+    return ScaledHotVector(copy(v.active_val), copy(v.val_idx), copy(v.len))
+end
+
 function Base.copyto!(dst::SparseArrays.SparseVector, src::ScaledHotVector)
     for idx in eachindex(src)
         dst[idx] = 0
