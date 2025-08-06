@@ -75,10 +75,6 @@ function _dca_linearized_gradient!(storage, x, grad_f!, grad_g_at_xt)
     return nothing
 end
 
-# ==============================================================================
-# Boosted Line Search Implementation  
-# ==============================================================================
-
 """
     _boost_line_search_basic(objective_function, x_old, x_new; kwargs...)
 
@@ -126,11 +122,11 @@ function _boost_line_search_basic(
 
     # Local refinement around best point
     step_size = 0.05
-    for iter in 1:max_iter
+    for _ in 1:max_iter
         improved = false
 
         # Try steps in both directions
-        for delta in [-step_size, step_size]
+        for delta in (-step_size, step_size)
             alpha_candidate = best_alpha + delta
             if 0.0 ≤ alpha_candidate ≤ 1.0
                 x_test = alpha_candidate .* x_new .+ (1.0 - alpha_candidate) .* x_old
@@ -154,10 +150,6 @@ function _boost_line_search_basic(
 
     return best_alpha
 end
-
-# ==============================================================================
-# DCA Early Stopping Callback
-# ==============================================================================
 
 """
     make_dca_early_stopping_callback(wrapped_callback, linearized_obj, grad_linearized_obj!, phi_value_at_xt)
@@ -318,8 +310,9 @@ function dca_fw(
     effective_grad_workspace=nothing,
     linesearch_workspace=nothing,
 
-    # Algorithm variants  
-    bpcg_subsolver::Bool=true,
+    # Algorithm variants
+    use_corrective_fw=true,
+    corrective_subsolver=BPCGStep(),
     warm_start::Bool=true,
     use_dca_early_stopping::Bool=true,
     boosted::Bool=false,
@@ -381,8 +374,9 @@ function dca_fw(
         println(
             "MAX_OUTER_ITERATION: $max_iteration MAX_INNER_ITERATION: $max_inner_iteration TYPE: $(eltype(x_current))",
         )
+        subsolver_print = use_corrective_fw ? "CORRECTIVE SUBSOLVER STEP: $corrective_subsolver" : "STANDARD FW"
         println(
-            "BPCG_SUBSOLVER: $bpcg_subsolver WARM_START: $warm_start DCA_EARLY_STOPPING: $use_dca_early_stopping BOOSTED: $boosted",
+            "$subsolver_print WARM_START: $warm_start DCA_EARLY_STOPPING: $use_dca_early_stopping BOOSTED: $boosted",
         )
 
         if memory_mode isa FrankWolfe.InplaceEmphasis
@@ -453,10 +447,10 @@ function dca_fw(
         end
 
         # Step 4: Solve the convex subproblem min_x m(x) using Frank-Wolfe variants
-        x_inner_start = copy(x_current)  # Starting point for inner solver
+        x_inner_start = copy(x_current)
 
-        if !bpcg_subsolver
-            # Use vanilla Frank-Wolfe
+        if !use_corrective_fw
+            # Use standard Frank-Wolfe
             fw_result = frank_wolfe(
                 linearized_objective,
                 linearized_gradient!,
@@ -465,7 +459,6 @@ function dca_fw(
                 line_search=line_search,
                 epsilon=epsilon * DEFAULT_DCA_EPSILON_FACTOR,
                 max_iteration=max_inner_iteration,
-                print_iter=max_inner_iteration + 1,  # Suppress inner printing
                 trajectory=true,
                 verbose=verbose_inner,
                 memory_mode=memory_mode,
@@ -473,51 +466,29 @@ function dca_fw(
                 timeout=timeout - elapsed_time,
                 callback=inner_callback,
             )
-        else
-            # Use Blended Pairwise Conditional Gradients (BPCG)
-            if active_set !== nothing && warm_start
-                # Warm start with previous active set
-                active_set_copy = copy(active_set)
-                fw_result = blended_pairwise_conditional_gradient(
-                    linearized_objective,
-                    linearized_gradient!,
-                    lmo,
-                    active_set_copy,
-                    line_search=line_search,
-                    epsilon=epsilon * DEFAULT_DCA_EPSILON_FACTOR,
-                    max_iteration=max_inner_iteration,
-                    print_iter=max_inner_iteration + 1,
-                    trajectory=true,
-                    verbose=verbose_inner,
-                    memory_mode=memory_mode,
-                    linesearch_workspace=linesearch_workspace,
-                    timeout=timeout - elapsed_time,
-                    callback=inner_callback,
-                )
-            else
-                # Cold start BPCG
-                fw_result = blended_pairwise_conditional_gradient(
-                    linearized_objective,
-                    linearized_gradient!,
-                    lmo,
-                    x_inner_start,
-                    line_search=line_search,
-                    epsilon=epsilon * DEFAULT_DCA_EPSILON_FACTOR,
-                    max_iteration=max_inner_iteration,
-                    print_iter=max_inner_iteration + 1,
-                    trajectory=true,
-                    verbose=verbose_inner,
-                    memory_mode=memory_mode,
-                    linesearch_workspace=linesearch_workspace,
-                    timeout=timeout - elapsed_time,
-                    callback=inner_callback,
-                )
+        else # Use an active-set based FW variant
+            # if active set not created already, or if we don't warm-start
+            # create an active set from scratch
+            if active_set === nothing || !warm_start
+                active_set = ActiveSet([1.0], [x0], x0)
             end
-
-            # Store active set for warm starting next iteration
-            if warm_start
-                active_set = fw_result.active_set
-            end
+            fw_result = corrective_frank_wolfe(
+                linearized_objective,
+                linearized_gradient!,
+                lmo,
+                corrective_subsolver,
+                active_set,
+                line_search=line_search,
+                epsilon=epsilon * DEFAULT_DCA_EPSILON_FACTOR,
+                max_iteration=max_inner_iteration,
+                trajectory=true,
+                verbose=verbose_inner,
+                memory_mode=memory_mode,
+                linesearch_workspace=linesearch_workspace,
+                timeout=timeout - elapsed_time,
+                callback=inner_callback,
+            )
+            active_set = fw_result.active_set
         end
 
         # Step 5: Compute DCA gap for convergence monitoring
@@ -543,7 +514,7 @@ function dca_fw(
             # Boosted variant: find optimal convex combination
             # x_{t+1} = α* x_new + (1-α*) x_t where α* minimizes φ(α x_new + (1-α) x_t)
             alpha_optimal = boost_line_search(x_current, x_new)
-            x_current = alpha_optimal .* x_new .+ (1.0 - alpha_optimal) .* x_current
+            x_current = alpha_optimal .* x_new .+ (1 - alpha_optimal) .* x_current
         else
             # Standard DCA update: directly use subproblem solution
             x_current = x_new
