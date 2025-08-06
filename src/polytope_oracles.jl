@@ -137,8 +137,8 @@ function is_inface_feasible(
 end
 
 function is_inface_feasible(
-    lmo::BirkhoffPolytopeLMO, 
-    a::AbstractVector{T}, 
+    lmo::BirkhoffPolytopeLMO,
+    a::AbstractVector{T},
     x::AbstractVector{T};
     kwargs...,
 ) where {T}
