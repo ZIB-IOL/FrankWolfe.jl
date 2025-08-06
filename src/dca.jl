@@ -374,7 +374,8 @@ function dca_fw(
         println(
             "MAX_OUTER_ITERATION: $max_iteration MAX_INNER_ITERATION: $max_inner_iteration TYPE: $(eltype(x_current))",
         )
-        subsolver_print = use_corrective_fw ? "CORRECTIVE SUBSOLVER STEP: $corrective_subsolver" : "STANDARD FW"
+        subsolver_print =
+            use_corrective_fw ? "CORRECTIVE SUBSOLVER STEP: $corrective_subsolver" : "STANDARD FW"
         println(
             "$subsolver_print WARM_START: $warm_start DCA_EARLY_STOPPING: $use_dca_early_stopping BOOSTED: $boosted",
         )
