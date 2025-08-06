@@ -312,7 +312,7 @@ function dca_fw(
 
     # Algorithm variants
     use_corrective_fw=true,
-    corrective_subsolver=BPCGStep(),
+    corrective_subsolver=BlendedPairwiseStep(),
     warm_start::Bool=true,
     use_dca_early_stopping::Bool=true,
     boosted::Bool=false,

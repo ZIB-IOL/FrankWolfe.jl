@@ -110,7 +110,7 @@ function main()
         trajectory=true,
         print_iter=10,
         memory_mode=FrankWolfe.InplaceEmphasis(),
-        bpcg_subsolver=true,
+        use_corrective_fw=true,
         warm_start=true,
         use_dca_early_stopping=true,
     )
