@@ -442,8 +442,8 @@ function perform_line_search(
     gamma_prev = zero(best_gamma)
     clamping = false
     if isapprox(norm(gradient), 0.0; rtol=line_search.tol)
-		return 0.0
-	end
+	return 0.0
+    end
     while abs(dot_gdir) > line_search.tol
         if i > line_search.limit_num_steps
             workspace.last_gamma = best_gamma  # Update last_gamma before returning
