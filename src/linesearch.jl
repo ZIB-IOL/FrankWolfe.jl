@@ -441,7 +441,7 @@ function perform_line_search(
     i = 1
     gamma_prev = zero(best_gamma)
     clamping = false
-    if isapprox(norm(gradient), 0.0; rtol = line_search.tol)
+    if isapprox(norm(gradient), 0.0; rtol=line_search.tol)
 		return 0.0
 	end
     while abs(dot_gdir) > line_search.tol
