@@ -111,8 +111,8 @@ end
 is_decomposition_invariant_oracle(::BirkhoffPolytopeLMO) = true
 
 function is_inface_feasible(
-    ::BirkhoffPolytopeLMO, 
-    a::AbstractMatrix{T}, 
+    ::BirkhoffPolytopeLMO,
+    a::AbstractMatrix{T},
     x::AbstractMatrix{T};
     kwargs...,
 ) where {T}
