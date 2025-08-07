@@ -234,7 +234,7 @@ written as the difference of two convex functions. At each iteration, it:
 - `line_search`: Line search method for inner Frank-Wolfe (default: Agnostic())
 
 # Algorithm Variants
-- `bpcg_subsolver`: Use BPCG instead of vanilla Frank-Wolfe (default: true)
+- `use_corrective_fw`: Use corrective FW based on an active set instead of standard Frank-Wolfe (default: true)
 - `use_dca_early_stopping`: Enable early stopping based on DCA optimality (default: true)
 - `boosted`: Use boosted variant with convex combinations (default: false)
 

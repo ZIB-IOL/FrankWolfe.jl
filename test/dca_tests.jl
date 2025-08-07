@@ -175,7 +175,7 @@ using StableRNGs
         lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
         x0 = FrankWolfe.compute_extreme_point(lmo, randn(rng, n))
 
-        # Test vanilla Frank-Wolfe subsolver
+        # Test standard Frank-Wolfe subsolver
         result_fw = FrankWolfe.dca_fw(
             f,
             grad_f!,
@@ -184,7 +184,7 @@ using StableRNGs
             lmo,
             copy(x0),
             max_iteration=20,
-            bpcg_subsolver=false,
+            use_corrective_fw=false,
             epsilon=1e-5,
             verbose=false,
         )
@@ -198,22 +198,7 @@ using StableRNGs
             lmo,
             copy(x0),
             max_iteration=20,
-            bpcg_subsolver=true,
-            epsilon=1e-5,
-            verbose=false,
-        )
-
-        # Test with warm start
-        result_warm = FrankWolfe.dca_fw(
-            f,
-            grad_f!,
-            g,
-            grad_g!,
-            lmo,
-            copy(x0),
-            max_iteration=20,
-            bpcg_subsolver=true,
-            warm_start=true,
+            use_corrective_fw=true,
             epsilon=1e-5,
             verbose=false,
         )
