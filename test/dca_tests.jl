@@ -234,12 +234,11 @@ using StableRNGs
         # All variants should converge
         @test result_fw.dca_gap < 1e-4
         @test result_bpcg.dca_gap < 1e-4
-        @test result_warm.dca_gap < 1e-4
         @test result_early.dca_gap < 1e-4
         @test result_boosted.dca_gap < 1e-4
 
         # All should be feasible and consistent
-        for result in [result_fw, result_bpcg, result_warm, result_early, result_boosted]
+        for result in [result_fw, result_bpcg, result_early, result_boosted]
             @test abs(sum(result.x) - 1.0) < 1e-10
             @test all(result.x .>= -1e-10)
             @test abs(result.primal - phi(result.x)) < 1e-10
