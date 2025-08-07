@@ -235,7 +235,6 @@ written as the difference of two convex functions. At each iteration, it:
 
 # Algorithm Variants
 - `bpcg_subsolver`: Use BPCG instead of vanilla Frank-Wolfe (default: true)
-- `warm_start`: Warm start inner solver with previous active set (default: true) 
 - `use_dca_early_stopping`: Enable early stopping based on DCA optimality (default: true)
 - `boosted`: Use boosted variant with convex combinations (default: false)
 
@@ -314,7 +313,6 @@ function dca_fw(
     # Algorithm variants
     use_corrective_fw=true,
     corrective_subsolver=BlendedPairwiseStep(),
-    warm_start::Bool=true,
     use_dca_early_stopping::Bool=true,
     boosted::Bool=false,
     boost_line_search=nothing,
@@ -329,7 +327,8 @@ function dca_fw(
     inner_iter_count_last = 0
 
     # Initialize current point with proper memory handling
-    x_current = x0
+    # We always create a copy since x0 is used as a vertex
+    x_current = copy(x0)
     if memory_mode isa FrankWolfe.InplaceEmphasis &&
        !isa(x_current, Union{Array,SparseArrays.AbstractSparseArray})
         if eltype(x_current) <: Integer
@@ -376,9 +375,9 @@ function dca_fw(
             "MAX_OUTER_ITERATION: $max_iteration MAX_INNER_ITERATION: $max_inner_iteration TYPE: $(eltype(x_current))",
         )
         subsolver_print =
-            use_corrective_fw ? "CORRECTIVE SUBSOLVER STEP: $corrective_subsolver" : "STANDARD FW"
+            use_corrective_fw ? "Corrective FW with step: $corrective_subsolver" : "Standard FW"
         println(
-            "$subsolver_print WARM_START: $warm_start DCA_EARLY_STOPPING: $use_dca_early_stopping BOOSTED: $boosted",
+            "FW_METHOD: $subsolver_print DCA_EARLY_STOPPING: $use_dca_early_stopping BOOSTED: $boosted",
         )
 
         if memory_mode isa FrankWolfe.InplaceEmphasis
@@ -472,8 +471,8 @@ function dca_fw(
         else # Use an active-set based FW variant
             # if active set not created already, or if we don't warm-start
             # create an active set from scratch
-            if active_set === nothing || !warm_start
-                active_set = ActiveSet([1.0], [x0], similar(x0))
+            if active_set === nothing
+                active_set = ActiveSet([1.0], [x0], copy(x0))
             end
             fw_result = corrective_frank_wolfe(
                 linearized_objective,
@@ -518,10 +517,10 @@ function dca_fw(
             # Boosted variant: find optimal convex combination
             # x_{t+1} = α* x_new + (1-α*) x_t where α* minimizes φ(α x_new + (1-α) x_t)
             alpha_optimal = boost_line_search(x_current, x_new)
-            x_current = alpha_optimal .* x_new .+ (1 - alpha_optimal) .* x_current
+            @. x_current = alpha_optimal .* x_new .+ (1 - alpha_optimal) .* x_current
         else
             # Standard DCA update: directly use subproblem solution
-            x_current = x_new
+            x_current .= x_new
         end
 
         # Step 7: Update effective gradient for callback (∇φ(x_{t+1}) = ∇f(x_{t+1}) - ∇g(x_{t+1}))

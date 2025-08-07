@@ -25,26 +25,27 @@ using Random
 const n = 500  # Reduced dimension
 
 # Generate random positive definite matrices to ensure convexity
-function generate_problem_data()
-    A_raw = randn(n, n)
+function generate_problem_data(rng)
+    A_raw = randn(rng, n, n)
+    A_raw ./= opnorm(A_raw)
     A = A_raw' * A_raw + 0.1 * I
-    A ./= norm(A)
 
-    B_raw = randn(n, n)
+    B_raw = randn(rng, n, n)
+    B_raw ./= opnorm(B_raw)
     B = B_raw' * B_raw + 0.1 * I
-    B ./= norm(B)
 
-    a = randn(n)
-    b = randn(n)
+    a = randn(rng, n)
+    b = randn(rng, n)
 
-    c = randn()
-    d = randn()
+    c = randn(rng)
+    # heuristic shift to make f - g nonnegative
+    d = -359434.0
 
     return A, B, a, b, c, d
 end
 
-Random.seed!(StableRNGs.StableRNG(1), 1)
-const A, B, a, b, c, d = generate_problem_data()
+const rng = StableRNGs.StableRNG(1)
+const A, B, a, b, c, d = generate_problem_data(rng)
 
 function f(x)
     return 0.5 * FrankWolfe.fast_dot(x, A, x) + dot(a, x) + c
@@ -81,24 +82,48 @@ x_final, primal_final, traj_data, dca_gap_final, iterations = FrankWolfe.dca_fw(
     g,
     grad_g!,
     lmo,
-    x0,
-    max_iteration=500, # Outer iterations
+    copy(x0),
+    max_iteration=200, # Outer iterations
     max_inner_iteration=10000, # Inner iterations
     epsilon=1e-5, # Tolerance for DCA gap
     line_search=FrankWolfe.Secant(),
     verbose=true,
     trajectory=true,
-    verbose_inner=true,
+    verbose_inner=false,
     print_iter=10,
     use_corrective_fw=true,
-    warm_start=true,
     use_dca_early_stopping=true,
     grad_f_workspace=collect(x0),
     grad_g_workspace=collect(x0),
 )
 
+_, _, traj_data_boosted, _, _ = FrankWolfe.dca_fw(
+    f,
+    grad_f!,
+    g,
+    grad_g!,
+    lmo,
+    copy(x0),
+    boosted=true,
+    max_iteration=200, # Outer iterations
+    max_inner_iteration=10000, # Inner iterations
+    epsilon=1e-5, # Tolerance for DCA gap
+    line_search=FrankWolfe.Secant(),
+    verbose=true,
+    trajectory=true,
+    verbose_inner=false,
+    print_iter=10,
+    use_corrective_fw=true,
+    use_dca_early_stopping=true,
+    grad_f_workspace=collect(x0),
+    grad_g_workspace=collect(x0),
+)
+
+
 # ## Plotting the resulting trajectory
 
-data = [traj_data]
-label = ["DCA-FW"]
-plot_trajectories(data, label)
+data = [traj_data, traj_data_boosted]
+label = ["DCA-FW", "DCA-FW-B"]
+p_res = plot_trajectories(data, label, marker_shapes=[:o, :x])
+ylabel!(p_res.subplots[3], "DCA gap")
+
