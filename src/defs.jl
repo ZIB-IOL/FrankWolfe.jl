@@ -36,7 +36,6 @@ struct OutplaceEmphasis <: MemoryEmphasis end
     ST_PAIRWISE = 7
     ST_DROP = 8
     ST_SIMPLEXDESCENT = 101
-    ST_DCA_INNER = 200
     ST_DCA_OUTER = 201
     ST_LAST = 1000
     ST_POSTPROCESS = 1001
@@ -52,7 +51,6 @@ const steptype_string = (
     ST_PAIRWISE="P",
     ST_DROP="D",
     ST_SIMPLEXDESCENT="SD",
-    ST_DCA_INNER="DCA-I",
     ST_DCA_OUTER="DCA",
     ST_LAST="Last",
     ST_POSTPROCESS="PP",
