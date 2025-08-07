@@ -38,7 +38,6 @@ function generate_problem_data(rng)
     b = randn(rng, n)
 
     c = randn(rng)
-    # heuristic shift to make f - g nonnegative
     d = -359434.0
 
     return A, B, a, b, c, d
