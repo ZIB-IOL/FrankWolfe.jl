@@ -41,7 +41,7 @@ using SparseArrays
             grad!,
             lmo,
             FrankWolfe.AwayStep(lazy),
-            FrankWolfe.ActiveSet([(1.0, copy(x0))]),
+            FrankWolfe.ActiveSet([(1.0, x0)]),
             max_iteration=k,
             verbose=false,
         )
@@ -53,7 +53,7 @@ using SparseArrays
             grad!,
             lmo,
             FrankWolfe.BlendedPairwiseStep(lazy),
-            FrankWolfe.ActiveSet([(1.0, copy(x0))]),
+            FrankWolfe.ActiveSet([(1.0, x0)]),
             max_iteration=k,
             verbose=false,
         )
@@ -65,7 +65,7 @@ using SparseArrays
             grad!,
             lmo,
             FrankWolfe.PairwiseStep(lazy),
-            FrankWolfe.ActiveSet([(1.0, copy(x0))]),
+            FrankWolfe.ActiveSet([(1.0, x0)]),
             max_iteration=k,
             verbose=false,
         )
@@ -73,7 +73,7 @@ using SparseArrays
             f,
             grad!,
             lmo,
-            FrankWolfe.ActiveSet([(1.0, copy(x0))]),
+            FrankWolfe.ActiveSet([(1.0, x0)]),
             max_iteration=k,
             verbose=false,
             lazy=lazy,
@@ -89,7 +89,7 @@ using SparseArrays
         grad!,
         lmo,
         FrankWolfe.HybridPairAwayStep(lazy, copy(x0)),
-        FrankWolfe.ActiveSet([(1.0, copy(x0))]),
+        FrankWolfe.ActiveSet([(1.0, x0)]),
         max_iteration=k,
         verbose=false,
     )
