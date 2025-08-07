@@ -451,3 +451,31 @@ function _fast_quadratic_form_symmetric(a, Q)
     end
     return s
 end
+
+function fast_dot(
+    a::SparseArrays.AbstractSparseVector{<:Real},
+    Q::AbstractMatrix{<:Real},
+    b::SparseArrays.AbstractSparseVector{<:Real},
+)
+    n = length(a)
+    m = length(b)
+    if size(Q) != (n, m)
+        throw(DimensionMismatch("Matrix has a size $(size(Q)) but vectors have length $n, $m"))
+    end
+    anzind = SparseArrays.nonzeroinds(a)
+    bnzind = SparseArrays.nonzeroinds(b)
+    anzval = SparseArrays.nonzeros(a)
+    bnzval = SparseArrays.nonzeros(b)
+    s = zero(Base.promote_eltype(a, Q, b))
+    if isempty(anzind) || isempty(bnzind)
+        return s
+    end
+    for a_idx in eachindex(anzind)
+        for b_idx in eachindex(bnzind)
+            ia = anzind[a_idx]
+            ib = bnzind[b_idx]
+            s += dot(anzval[a_idx], Q[ia, ib], bnzval[b_idx])
+        end
+    end
+    return s
+end
