@@ -75,6 +75,27 @@ lmo = FrankWolfe.KSparseLMO(5, 1000.0)
 
 x0 = FrankWolfe.compute_extreme_point(lmo, randn(n))
 
+FrankWolfe.dca_fw(
+    f,
+    grad_f!,
+    g,
+    grad_g!,
+    lmo,
+    copy(x0),
+    max_iteration=20,
+    max_inner_iteration=100,
+    epsilon=1e-5,
+    line_search=FrankWolfe.Secant(),
+    verbose=false,
+    trajectory=true,
+    verbose_inner=false,
+    print_iter=10,
+    use_corrective_fw=true,
+    use_dca_early_stopping=true,
+    grad_f_workspace=collect(x0),
+    grad_g_workspace=collect(x0),
+) # hide
+
 x_final, primal_final, traj_data, dca_gap_final, iterations = FrankWolfe.dca_fw(
     f,
     grad_f!,
@@ -95,6 +116,28 @@ x_final, primal_final, traj_data, dca_gap_final, iterations = FrankWolfe.dca_fw(
     grad_f_workspace=collect(x0),
     grad_g_workspace=collect(x0),
 )
+
+_, _, traj_data_boosted, _, _ = FrankWolfe.dca_fw(
+    f,
+    grad_f!,
+    g,
+    grad_g!,
+    lmo,
+    copy(x0),
+    boosted=true,
+    max_iteration=10,
+    max_inner_iteration=100,
+    epsilon=1e-5,
+    line_search=FrankWolfe.Secant(),
+    verbose=false,
+    trajectory=true,
+    verbose_inner=false,
+    print_iter=10,
+    use_corrective_fw=true,
+    use_dca_early_stopping=true,
+    grad_f_workspace=collect(x0),
+    grad_g_workspace=collect(x0),
+) # hide
 
 _, _, traj_data_boosted, _, _ = FrankWolfe.dca_fw(
     f,

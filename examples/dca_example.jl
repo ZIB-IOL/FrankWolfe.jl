@@ -1,6 +1,8 @@
 using FrankWolfe
 using LinearAlgebra
 using Plots
+using Random
+using StableRNGs
 
 # DCA (Difference of Convex Algorithm) example with quadratic functions
 # We want to minimize φ(x) = f(x) - g(x) over the probability simplex
@@ -13,6 +15,8 @@ using Plots
 # This creates a more interesting non-convex optimization problem than simple squared distances.
 
 const n = 500  # Reduced dimension
+
+Random.seed!(StableRNG(1), 1)
 
 # Generate random positive definite matrices to ensure convexity
 function generate_problem_data()
@@ -111,7 +115,6 @@ function main()
         print_iter=10,
         memory_mode=FrankWolfe.InplaceEmphasis(),
         use_corrective_fw=true,
-        warm_start=true,
         use_dca_early_stopping=true,
     )
 
