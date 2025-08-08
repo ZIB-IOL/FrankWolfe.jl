@@ -42,7 +42,7 @@ MOMENTUM: nothing GRADIENTTYPE: FrankWolfe.BlockVector{Float64, Vector{Float64},
   Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec
 -------------------------------------------------------------------------------------------------
      I             1   5.000000e-01  -1.015000e+02   1.020000e+02   0.000000e+00            Inf
-  Last           100   1.000000e-02   1.000000e-02   1.734723e-17   4.992062e-01   2.003180e+02
+  Last           100   1.000000e-02   1.000000e-02   1.734723e-17   5.006379e-01   1.997452e+02
 -------------------------------------------------------------------------------------------------
 
 Block coordinate Frank-Wolfe (BCFW).
@@ -54,7 +54,7 @@ MOMENTUM: nothing GRADIENTTYPE: FrankWolfe.BlockVector{Float64, Vector{Float64},
   Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec
 -------------------------------------------------------------------------------------------------
      I             1   5.000000e-01  -1.015000e+02   1.020000e+02   0.000000e+00            Inf
-  Last           100   1.000000e-02   1.000000e-02   1.734723e-17   1.055878e-01   9.470788e+02
+  Last           100   1.000000e-02   1.000000e-02   1.734723e-17   9.912850e-02   1.008792e+03
 -------------------------------------------------------------------------------------------------
 
 Block coordinate Frank-Wolfe (BCFW).
@@ -66,7 +66,7 @@ MOMENTUM: nothing GRADIENTTYPE: FrankWolfe.BlockVector{Float64, Vector{Float64},
   Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec
 -------------------------------------------------------------------------------------------------
      I             1   5.000000e-01  -1.015000e+02   1.020000e+02   0.000000e+00            Inf
-  Last            92   1.000000e-02   1.000000e-02   1.734723e-17   4.009500e-02   2.294551e+03
+  Last            92   1.000000e-02   1.000000e-02   1.734723e-17   3.731765e-02   2.465321e+03
 -------------------------------------------------------------------------------------------------
 
 Block coordinate Frank-Wolfe (BCFW).
@@ -78,9 +78,9 @@ MOMENTUM: nothing GRADIENTTYPE: FrankWolfe.BlockVector{Float64, Vector{Float64},
   Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec
 -------------------------------------------------------------------------------------------------
      I             1   1.023333e+02           -Inf            Inf   0.000000e+00            Inf
-  Last            93   1.000000e-02   1.000000e-02   1.474515e-16   4.151557e-02   2.240123e+03
+  Last            93   1.000000e-02   1.000000e-02   1.474515e-16   4.142277e-02   2.245142e+03
 -------------------------------------------------------------------------------------------------</code></pre><h3 id="Plotting-the-results"><a class="docs-heading-anchor" href="#Plotting-the-results">Plotting the results</a><a id="Plotting-the-results-1"></a><a class="docs-heading-anchor-permalink" href="#Plotting-the-results" title="Permalink"></a></h3><pre><code class="language-julia hljs">labels = [&quot;Full update&quot;, &quot;Cyclic order&quot;, &quot;Stochstic order&quot;, &quot;Custom order&quot;]
-plot_trajectories(trajectories, labels, xscalelog=true)</code></pre><img src="1399df8d.svg" alt="Example block output"/><h2 id="Running-BCFW-with-different-update-methods"><a class="docs-heading-anchor" href="#Running-BCFW-with-different-update-methods">Running BCFW with different update methods</a><a id="Running-BCFW-with-different-update-methods-1"></a><a class="docs-heading-anchor-permalink" href="#Running-BCFW-with-different-update-methods" title="Permalink"></a></h2><p>As a second step, we compare different update steps. We consider the <a href="../../reference/3_backend/#FrankWolfe.BPCGStep"><code>FrankWolfe.BPCGStep</code></a> and the <a href="../../reference/3_backend/#FrankWolfe.FrankWolfeStep"><code>FrankWolfe.FrankWolfeStep</code></a>. One can either pass a tuple of <a href="../../reference/3_backend/#FrankWolfe.UpdateStep"><code>FrankWolfe.UpdateStep</code></a> to define for each block the update procedure or pass a single update step so that each block uses the same procedure.</p><pre><code class="language-julia hljs">trajectories = []
+plot_trajectories(trajectories, labels, xscalelog=true)</code></pre><img src="9322edc5.svg" alt="Example block output"/><h2 id="Running-BCFW-with-different-update-methods"><a class="docs-heading-anchor" href="#Running-BCFW-with-different-update-methods">Running BCFW with different update methods</a><a id="Running-BCFW-with-different-update-methods-1"></a><a class="docs-heading-anchor-permalink" href="#Running-BCFW-with-different-update-methods" title="Permalink"></a></h2><p>As a second step, we compare different update steps. We consider the <a href="../../reference/3_backend/#FrankWolfe.BPCGStep"><code>FrankWolfe.BPCGStep</code></a> and the <a href="../../reference/3_backend/#FrankWolfe.FrankWolfeStep"><code>FrankWolfe.FrankWolfeStep</code></a>. One can either pass a tuple of <a href="../../reference/3_backend/#FrankWolfe.UpdateStep"><code>FrankWolfe.UpdateStep</code></a> to define for each block the update procedure or pass a single update step so that each block uses the same procedure.</p><pre><code class="language-julia hljs">trajectories = []
 
 for us in [
     (FrankWolfe.BPCGStep(), FrankWolfe.FrankWolfeStep()),
@@ -109,7 +109,7 @@ MOMENTUM: nothing GRADIENTTYPE: FrankWolfe.BlockVector{Float64, Vector{Float64},
   Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec
 -------------------------------------------------------------------------------------------------
      I             1   5.000000e-01  -1.015000e+02   1.020000e+02   0.000000e+00            Inf
-  Last           100   1.000000e-02   1.000000e-02   1.734723e-17   5.754244e-01   1.737848e+02
+  Last           100   1.000000e-02   1.000000e-02   1.734723e-17   5.799747e-01   1.724213e+02
 -------------------------------------------------------------------------------------------------
 
 Block coordinate Frank-Wolfe (BCFW).
@@ -121,7 +121,7 @@ MOMENTUM: nothing GRADIENTTYPE: FrankWolfe.BlockVector{Float64, Vector{Float64},
   Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec
 -------------------------------------------------------------------------------------------------
      I             1   5.000000e-01  -1.015000e+02   1.020000e+02   0.000000e+00            Inf
-  Last           100   1.000000e-02   1.000000e-02   1.040834e-17   2.518222e-01   3.971056e+02
+  Last           100   1.000000e-02   1.000000e-02   1.040834e-17   2.471765e-01   4.045692e+02
 -------------------------------------------------------------------------------------------------
 
 Block coordinate Frank-Wolfe (BCFW).
@@ -133,7 +133,7 @@ MOMENTUM: nothing GRADIENTTYPE: FrankWolfe.BlockVector{Float64, Vector{Float64},
   Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec
 -------------------------------------------------------------------------------------------------
      I             1   5.000000e-01  -1.015000e+02   1.020000e+02   0.000000e+00            Inf
-  Last           100   1.000000e-02   1.000000e-02   1.040834e-17   9.617499e-03   1.039771e+04
+  Last           100   1.000000e-02   1.000000e-02   1.040834e-17   9.601691e-03   1.041483e+04
 -------------------------------------------------------------------------------------------------
 
 Block coordinate Frank-Wolfe (BCFW).
@@ -145,6 +145,6 @@ MOMENTUM: nothing GRADIENTTYPE: FrankWolfe.BlockVector{Float64, Vector{Float64},
   Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec
 -------------------------------------------------------------------------------------------------
      I             1   5.000000e-01  -1.015000e+02   1.020000e+02   0.000000e+00            Inf
-  Last           100   1.000000e-02   1.000000e-02   1.734723e-17   4.185190e-03   2.389378e+04
+  Last           100   1.000000e-02   1.000000e-02   1.734723e-17   4.126956e-03   2.423093e+04
 -------------------------------------------------------------------------------------------------</code></pre><h3 id="Plotting-the-results-2"><a class="docs-heading-anchor" href="#Plotting-the-results-2">Plotting the results</a><a class="docs-heading-anchor-permalink" href="#Plotting-the-results-2" title="Permalink"></a></h3><pre><code class="language-julia hljs">labels = [&quot;BPCG FW&quot;, &quot;FW BPCG&quot;, &quot;BPCG&quot;, &quot;FW&quot;]
-plot_trajectories(trajectories, labels, xscalelog=true)</code></pre><img src="76410e66.svg" alt="Example block output"/><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../docs_10_alternating_methods/">« Alternating methods</a><a class="docs-footer-nextpage" href="../docs_12_quadratic_symmetric/">Accelerations for quadratic functions and symmetric problems »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.14.1 on <span class="colophon-date" title="Thursday 7 August 2025 14:46">Thursday 7 August 2025</span>. Using Julia version 1.6.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+plot_trajectories(trajectories, labels, xscalelog=true)</code></pre><img src="92f71cf9.svg" alt="Example block output"/><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../docs_10_alternating_methods/">« Alternating methods</a><a class="docs-footer-nextpage" href="../docs_12_quadratic_symmetric/">Accelerations for quadratic functions and symmetric problems »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.14.1 on <span class="colophon-date" title="Friday 8 August 2025 09:13">Friday 8 August 2025</span>. Using Julia version 1.6.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
