@@ -32,3 +32,4 @@ examples/heavy_ball_tests/data/*
 src/heavyball_dirty.jl
 CLAUDE.md
 quicktest.jl
+.crush/*
