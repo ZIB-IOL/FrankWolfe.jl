@@ -298,7 +298,7 @@ function dca_fw(
     trajectory::Bool=false,
     verbose::Bool=false,
     verbose_inner::Bool=false,
-    print_iter_inner::Int = max_inner_iteration ÷ 10,
+    print_iter_inner::Int=max_inner_iteration ÷ 10,
     callback=nothing,
     traj_data=[],
     timeout::Float64=Inf,
