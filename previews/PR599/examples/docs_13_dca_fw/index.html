@@ -51,6 +51,27 @@ lmo = FrankWolfe.KSparseLMO(5, 1000.0)
 
 x0 = FrankWolfe.compute_extreme_point(lmo, randn(n))
 
+FrankWolfe.dca_fw(
+    f,
+    grad_f!,
+    g,
+    grad_g!,
+    lmo,
+    copy(x0),
+    max_iteration=20,
+    max_inner_iteration=100,
+    epsilon=1e-5,
+    line_search=FrankWolfe.Secant(),
+    verbose=false,
+    trajectory=true,
+    verbose_inner=false,
+    print_iter=10,
+    use_corrective_fw=true,
+    use_dca_early_stopping=true,
+    grad_f_workspace=collect(x0),
+    grad_g_workspace=collect(x0),
+) # hide
+
 x_final, primal_final, traj_data, dca_gap_final, iterations = FrankWolfe.dca_fw(
     f,
     grad_f!,
@@ -80,6 +101,28 @@ _, _, traj_data_boosted, _, _ = FrankWolfe.dca_fw(
     lmo,
     copy(x0),
     boosted=true,
+    max_iteration=10,
+    max_inner_iteration=100,
+    epsilon=1e-5,
+    line_search=FrankWolfe.Secant(),
+    verbose=false,
+    trajectory=true,
+    verbose_inner=false,
+    print_iter=10,
+    use_corrective_fw=true,
+    use_dca_early_stopping=true,
+    grad_f_workspace=collect(x0),
+    grad_g_workspace=collect(x0),
+) # hide
+
+_, _, traj_data_boosted, _, _ = FrankWolfe.dca_fw(
+    f,
+    grad_f!,
+    g,
+    grad_g!,
+    lmo,
+    copy(x0),
+    boosted=true,
     max_iteration=200, # Outer iterations
     max_inner_iteration=10000, # Inner iterations
     epsilon=1e-5, # Tolerance for DCA gap
@@ -95,4 +138,4 @@ _, _, traj_data_boosted, _, _ = FrankWolfe.dca_fw(
 )</code></pre><h2 id="Plotting-the-resulting-trajectory"><a class="docs-heading-anchor" href="#Plotting-the-resulting-trajectory">Plotting the resulting trajectory</a><a id="Plotting-the-resulting-trajectory-1"></a><a class="docs-heading-anchor-permalink" href="#Plotting-the-resulting-trajectory" title="Permalink"></a></h2><pre><code class="language- hljs">data = [traj_data, traj_data_boosted]
 label = [&quot;DCA-FW&quot;, &quot;DCA-FW-B&quot;]
 p_res = plot_trajectories(data, label, marker_shapes=[:o, :x])
-ylabel!(p_res.subplots[3], &quot;DCA gap&quot;)</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../docs_12_quadratic_symmetric/">« Accelerations for quadratic functions and symmetric problems</a><a class="docs-footer-nextpage" href="../../reference/0_reference/">API Reference »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.14.1 on <span class="colophon-date" title="Thursday 7 August 2025 21:15">Thursday 7 August 2025</span>. Using Julia version 1.6.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+ylabel!(p_res.subplots[3], &quot;DCA gap&quot;)</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../docs_12_quadratic_symmetric/">« Accelerations for quadratic functions and symmetric problems</a><a class="docs-footer-nextpage" href="../../reference/0_reference/">API Reference »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.14.1 on <span class="colophon-date" title="Friday 8 August 2025 07:28">Friday 8 August 2025</span>. Using Julia version 1.6.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
