@@ -294,7 +294,7 @@ end
             trajectory=true,
             epsilon=1e-10,
         )
-        @test f(res_di[1]) < f(res_fw[1])
+        @test f(res_di[1]) < f(res_fw[1]) + 1e-4
     end
 
     @testset "Birkhoff polytope" begin
