@@ -176,4 +176,7 @@ data = [traj_data, traj_data_boosted]
 label = ["DCA-FW", "DCA-FW-B"]
 p_res = plot_trajectories(data, label, marker_shapes=[:o, :x])
 ylabel!(p_res.subplots[3], "DCA gap")
-p_res
+
+#
+
+pres
