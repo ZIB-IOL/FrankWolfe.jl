@@ -179,4 +179,4 @@ ylabel!(p_res.subplots[3], "DCA gap")
 
 #
 
-pres
+display(pres)
