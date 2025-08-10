@@ -9,6 +9,8 @@
 # Algorithm Reference:
 # - Pokutta, S. (2025). Scalable DC Optimization via Adaptive Frank-Wolfe Algorithms. https://arxiv.org/abs/2507.17545
 # - Maskan, H., Hou, Y., Sra, S., and Yurtsever, A. (2025). Revisiting Frank-Wolfe for Structured Nonconvex Optimization. https://arxiv.org/abs/2503.08921
+# - Pham Dinh, T., & Le Thi, H. A. (1997). Convex analysis approach to DC programming
+# - Beck, A., & Guttmann-Beck, N. (2019). FW-DCA for non-convex regularized problems
 #
 # The DCA algorithm alternates between:
 # 1. Linearizing the concave part g(x) around the current point x_t  
@@ -277,6 +279,8 @@ where:
 This gap measures progress toward DCA stationarity and converges to 0.
 
 # References
+- Pokutta, S. (2025). Scalable DC Optimization via Adaptive Frank-Wolfe Algorithms. https://arxiv.org/abs/2507.17545
+- Maskan, H., Hou, Y., Sra, S., and Yurtsever, A. (2025). Revisiting Frank-Wolfe for Structured Nonconvex Optimization. https://arxiv.org/abs/2503.08921
 - Pham Dinh, T., & Le Thi, H. A. (1997). Convex analysis approach to DC programming
 - Beck, A., & Guttmann-Beck, N. (2019). FW-DCA for non-convex regularized problems
 """
