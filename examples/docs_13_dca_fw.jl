@@ -19,7 +19,7 @@ using Random
 # The convex functions $f$, $g$ will be generated as random convex quadratics:
 # ```math
 # \begin{align}
-# f(x) & = \frac12  x^\top A x + a^\top x + c
+# f(x) & = \frac12  x^\top A x + a^\top x + c \\
 # g(x) & = \frac12  x^\top B x + b^\top x + d
 # \end{align}
 # ```
