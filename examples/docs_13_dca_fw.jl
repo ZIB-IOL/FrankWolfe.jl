@@ -2,11 +2,12 @@
 #
 # This example shows the optimization of a difference-of-convex problem of the form:
 # ```math
-# min_{x \in \mathcal{X}} \phi(x) = f(x) - g(x)
+# min\limits_{x \in \mathcal{X}} \phi(x) = f(x) - g(x)
 # ```
 # with $f$, $g$ convex functions with access to subgradients and $f$ smooth.
 #
 # The DCA-FW algorithm constructs local convex models of $\phi$ by linearizing $g$ and approximately optimizes them with FW.
+# It is a local method that converges to a stationary point
 
 using FrankWolfe
 using LinearAlgebra
@@ -15,16 +16,19 @@ using SparseArrays
 using StableRNGs
 using Random
 
-# The convex functions will be generated as random convex quadratics.
-# minimize φ(x) = f(x) - g(x) where:
-# f(x) = 0.5 * x^T A x + a^T x + c  (convex quadratic)
-# g(x) = 0.5 * x^T B x + b^T x + d  (convex quadratic)
+# The convex functions $f$, $g$ will be generated as random convex quadratics:
+# ```math
+# \begin{align}
+# f(x) & = \frac12  x^\top A x + a^\top x + c
+# g(x) & = \frac12  x^\top B x + b^\top x + d
+# \end{align}
+# ```
 
 # ## Setting up the problem functions and data
 
 const n = 500  # Reduced dimension
 
-# Generate random positive definite matrices to ensure convexity
+## Generate random positive definite matrices to ensure convexity
 function generate_problem_data(rng)
     A_raw = randn(rng, n, n)
     A_raw ./= opnorm(A_raw)
@@ -46,6 +50,8 @@ end
 const rng = StableRNGs.StableRNG(1)
 const A, B, a, b, c, d = generate_problem_data(rng)
 
+# We can now define the two functions
+
 function f(x)
     return 0.5 * FrankWolfe.fast_dot(x, A, x) + dot(a, x) + c
 end
@@ -66,7 +72,8 @@ function grad_g!(storage, x)
     return nothing
 end
 
-# True objective function for verification
+## True objective function for verification
+## It is not needed by the solver
 function phi(x)
     return f(x) - g(x)
 end
@@ -163,7 +170,8 @@ _, _, traj_data_boosted, _, _ = FrankWolfe.dca_fw(
 
 
 # ## Plotting the resulting trajectory
-
+# 
+# We modify the y axis to highlight that we are plotting the DCA gap, not the FW gap
 data = [traj_data, traj_data_boosted]
 label = ["DCA-FW", "DCA-FW-B"]
 p_res = plot_trajectories(data, label, marker_shapes=[:o, :x])
