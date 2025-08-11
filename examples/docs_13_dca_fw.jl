@@ -82,25 +82,24 @@ lmo = FrankWolfe.KSparseLMO(5, 1000.0)
 
 x0 = FrankWolfe.compute_extreme_point(lmo, randn(n))
 
-FrankWolfe.dca_fw(
-    f,
-    grad_f!,
-    g,
-    grad_g!,
-    lmo,
-    copy(x0),
-    max_iteration=20,
-    max_inner_iteration=100,
-    epsilon=1e-5,
-    line_search=FrankWolfe.Secant(),
-    verbose=false,
-    trajectory=true,
-    verbose_inner=false,
-    print_iter=10,
-    use_corrective_fw=true,
-    use_dca_early_stopping=true,
-    grad_f_workspace=collect(x0),
-    grad_g_workspace=collect(x0),
+FrankWolfe.dca_fw( # hide
+    f, # hide
+    grad_f!, # hide
+    g, # hide
+    grad_g!, # hide
+    lmo, # hide
+    copy(x0), # hide
+    max_iteration=20, # hide
+    max_inner_iteration=100, # hide
+    epsilon=1e-5, # hide
+    line_search=FrankWolfe.Secant(), # hide
+    verbose=false, # hide
+    trajectory=true, # hide
+    verbose_inner=false, # hide
+    use_corrective_fw=true, # hide
+    use_dca_early_stopping=true, # hide
+    grad_f_workspace=collect(x0), # hide
+    grad_g_workspace=collect(x0), # hide
 ) # hide
 
 x_final, primal_final, traj_data, dca_gap_final, iterations = FrankWolfe.dca_fw(
@@ -124,26 +123,26 @@ x_final, primal_final, traj_data, dca_gap_final, iterations = FrankWolfe.dca_fw(
     grad_g_workspace=collect(x0),
 )
 
-_, _, traj_data_boosted, _, _ = FrankWolfe.dca_fw(
-    f,
-    grad_f!,
-    g,
-    grad_g!,
-    lmo,
-    copy(x0),
-    boosted=true,
-    max_iteration=10,
-    max_inner_iteration=100,
-    epsilon=1e-5,
-    line_search=FrankWolfe.Secant(),
-    verbose=false,
-    trajectory=true,
-    verbose_inner=false,
-    print_iter=10,
-    use_corrective_fw=true,
-    use_dca_early_stopping=true,
-    grad_f_workspace=collect(x0),
-    grad_g_workspace=collect(x0),
+FrankWolfe.dca_fw( # hide
+    f, # hide
+    grad_f!, # hide
+    g, # hide
+    grad_g!, # hide
+    lmo, # hide
+    copy(x0), # hide
+    boosted=true, # hide
+    max_iteration=10, # hide
+    max_inner_iteration=100, # hide
+    epsilon=1e-5, # hide
+    line_search=FrankWolfe.Secant(), # hide
+    verbose=false, # hide
+    trajectory=true, # hide
+    verbose_inner=false, # hide
+    print_iter=10, # hide
+    use_corrective_fw=true, # hide
+    use_dca_early_stopping=true, # hide
+    grad_f_workspace=collect(x0), # hide
+    grad_g_workspace=collect(x0), # hide
 ) # hide
 
 _, _, traj_data_boosted, _, _ = FrankWolfe.dca_fw(
