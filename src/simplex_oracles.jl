@@ -422,7 +422,7 @@ function convert_mathopt(
 end
 
 """
-    HyperSimplexOracle(radius)
+    HyperSimplexOracle(K, radius)
 
 Represents the scaled hypersimplex of radius τ, the convex hull of vectors `v` such that:
 - v_i ∈ {0, τ}
@@ -437,19 +437,20 @@ end
 
 HyperSimplexOracle{T}(K::Integer) where {T} = HyperSimplexOracle{T}(K, one(T))
 
-HyperSimplexOracle(K::Int, radius::Integer) = HyperSimplexOracle{Rational{BigInt}}(K, radius)
-
 function compute_extreme_point(
-    lmo::HyperSimplexOracle{TL},
+    lmo::HyperSimplexOracle{T},
     direction;
     v=nothing,
     kwargs...,
-) where {TL}
-    T = promote_type(TL, eltype(direction))
+) where {T}
     n = length(direction)
     K = min(lmo.K, n)
     K_indices = sortperm(direction)[1:K]
-    v = spzeros(T, n)
+    if v === nothing
+        v = spzeros(T, n)
+    else
+        v .= 0
+    end
     for idx in 1:K
         v[K_indices[idx]] = lmo.radius
     end
