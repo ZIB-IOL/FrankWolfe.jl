@@ -80,7 +80,7 @@ xfin, vmin, _, _, traj_data = FrankWolfe.frank_wolfe(
     gradient=spzeros(size(x0)...),
 )
 
-xfinlcg, vmin, _, _, traj_data = FrankWolfe.lazified_conditional_gradient(
+xfinlcg, vmin, _, _, traj_data, _ = FrankWolfe.lazified_conditional_gradient(
     f,
     grad!,
     lmo,

@@ -181,7 +181,7 @@ end
 
 trajectory_arr_fw = Vector{Tuple{Int64,Float64,Float64,Float64,Float64,Float64}}()
 callback = build_callback(trajectory_arr_fw)
-xfin, _, _, _, traj_data = FrankWolfe.frank_wolfe(
+xfin, _, _, _, traj_data, status = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -196,9 +196,14 @@ xfin, _, _, _, traj_data = FrankWolfe.frank_wolfe(
     callback=callback,
 )
 
+# We can check the final execution status
+status
+
+#
+
 trajectory_arr_lazy = Vector{Tuple{Int64,Float64,Float64,Float64,Float64,Float64}}()
 callback = build_callback(trajectory_arr_lazy)
-xlazy, _, _, _, _ = FrankWolfe.lazified_conditional_gradient(
+xlazy, _, _, _, _, _ = FrankWolfe.lazified_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -216,7 +221,7 @@ xlazy, _, _, _, _ = FrankWolfe.lazified_conditional_gradient(
 
 trajectory_arr_lazy_ref = Vector{Tuple{Int64,Float64,Float64,Float64,Float64,Float64}}()
 callback = build_callback(trajectory_arr_lazy_ref)
-xlazy, _, _, _, _ = FrankWolfe.lazified_conditional_gradient(
+xlazy, _, _, _, _, _ = FrankWolfe.lazified_conditional_gradient(
     f,
     grad!,
     lmo,

@@ -188,7 +188,7 @@ end
 
 trajectory_arr_fw = Vector{Tuple{Int64,Float64,Float64,Float64,Float64,Float64}}()
 callback = build_callback(trajectory_arr_fw)
-xfin, _, _, _, traj_data = FrankWolfe.frank_wolfe(
+xfin, _, _, _, traj_data, _ = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,

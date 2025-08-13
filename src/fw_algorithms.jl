@@ -259,7 +259,7 @@ function frank_wolfe(
         primal=primal,
         dual_gap=dual_gap,
         traj_data=traj_data,
-        status=execution_status_string[Symbol(execution_status)],
+        status=execution_status,
     )
 end
 
@@ -336,10 +336,11 @@ function lazified_conditional_gradient(
     t = 0
     dual_gap = Inf
     primal = Inf
-    v = []
+    v = x0
     x = x0
     phi = Inf
     step_type = ST_REGULAR
+    execution_status = STATUS_RUNNING
 
     time_start = time_ns()
 
@@ -379,7 +380,7 @@ function lazified_conditional_gradient(
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
     end
 
-    while t <= max_iteration && dual_gap >= max(epsilon, eps(float(eltype(x))))
+    while t <= max_iteration && dual_gap >= max(epsilon, eps(float(dual_gap)))
 
         #####################
         # managing time and Ctrl-C
@@ -396,6 +397,7 @@ function lazified_conditional_gradient(
                 if verbose
                     @info "Time limit reached"
                 end
+                execution_status = STATUS_TIMEOUT
                 break
             end
         end
@@ -453,11 +455,24 @@ function lazified_conditional_gradient(
                 step_type,
             )
             if callback(state) === false
+                execution_status = STATUS_INTERRUPTED
                 break
             end
         end
 
+        if dual_gap < min(epsilon, eps(float(dual_gap)))
+            execution_status = STATUS_OPTIMAL
+        end
+
         x = muladd_memory_mode(memory_mode, x, gamma, d)
+    end
+
+    if t >= max_iteration
+        execution_status = STATUS_MAXITER
+    end
+    if execution_status === STATUS_RUNNING
+        @warn "Status not set"
+        execution_status = STATUS_OPTIMAL
     end
 
     # recompute everything once for final verfication / do not record to trajectory though for now!
@@ -500,5 +515,12 @@ function lazified_conditional_gradient(
         )
         callback(state)
     end
-    return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data)
+    return (
+        x=x,
+        v=v,
+        primal=primal,
+        dual_gap=dual_gap,
+        traj_data=traj_data,
+        status=execution_status,
+    )
 end
