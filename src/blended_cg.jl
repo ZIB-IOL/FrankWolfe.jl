@@ -962,7 +962,7 @@ function simplex_gradient_descent_over_convex_hull(
         # Computing the quantity below is the same as computing the <-\nabla f(x), direction>.
         # If <-\nabla f(x), direction>  >= 0 the direction is a descent direction.
         descent_direction_product = dot(d, d) + (csum / k) * sum(d)
-        @inbounds if descent_direction_product < eps(float(eltype(d))) * length(d)
+        @inbounds if descent_direction_product < line_search_inner.tol
             current_iteration = t + number_of_steps
             @warn "Non-improving d ($descent_direction_product) due to numerical instability in iteration $current_iteration. Temporarily upgrading precision to BigFloat for the current iteration."
             # extended warning - we can discuss what to integrate
@@ -974,7 +974,7 @@ function simplex_gradient_descent_over_convex_hull(
             c .-= csum / k
             d = c
             descent_direction_product_inner = dot(d, d) + (csum / k) * sum(d)
-            if descent_direction_product_inner < 0
+            if descent_direction_product_inner < line_search_inner.tol
                 @warn "d non-improving in large precision, forcing FW"
                 @warn "dot value: $descent_direction_product_inner"
                 return number_of_steps
@@ -1039,6 +1039,9 @@ function simplex_gradient_descent_over_convex_hull(
                     )
                 end
             else
+                if dot(gradient, x - y) < line_search_inner.tol
+                    return number_of_steps
+                end
                 gamma = perform_line_search(
                     line_search_inner,
                     t,

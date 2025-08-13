@@ -441,6 +441,9 @@ function perform_line_search(
     i = 1
     gamma_prev = zero(best_gamma)
     clamping = false
+    if dot_gdir <= line_search.tol
+        return zero(gamma)
+    end
     while abs(dot_gdir) > line_search.tol
         if i > line_search.limit_num_steps
             workspace.last_gamma = best_gamma  # Update last_gamma before returning

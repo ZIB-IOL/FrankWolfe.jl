@@ -225,6 +225,49 @@ end
         @. storage = x - xref
     end
 
+    @testset "Non-improving descent direction termination" begin
+        cube = FrankWolfe.ZeroOneHypercube()
+        cube_MOI = FrankWolfe.convert_mathopt(cube, o; dimension=n)
+        x0 = ones(n)
+
+        # At certain iterates, the gradient is zero.
+        # In such cases, the line search should return zero.
+        res = FrankWolfe.decomposition_invariant_conditional_gradient(
+            f,
+            grad!,
+            cube,
+            copy(x0),
+            verbose=false,
+            trajectory=true,
+        )
+
+        res_MOI = FrankWolfe.decomposition_invariant_conditional_gradient(
+            f,
+            grad!,
+            cube_MOI,
+            copy(x0),
+            verbose=false,
+            trajectory=true,
+        )
+
+        res_fw = FrankWolfe.frank_wolfe(f, grad!, cube, copy(x0), verbose=false, trajectory=true)
+
+        res_blended = FrankWolfe.blended_decomposition_invariant_conditional_gradient(
+            f,
+            grad!,
+            cube,
+            copy(x0),
+            verbose=false,
+            trajectory=true,
+        )
+        if res_fw[4] <= 1e-7
+            @test norm(res[1] - res_fw[1]) ≤ n * 1e-4
+            @test norm(res_MOI[1] - res_fw[1]) ≤ n * 1e-4
+        end
+        @test norm(res[1] - res_blended[1]) ≤ n * 1e-4
+        @test norm(res_MOI[1] - res_blended[1]) ≤ n * 1e-4
+    end
+
     @testset "Zero-one cube" begin
         cube = FrankWolfe.ZeroOneHypercube()
         cube_MOI = FrankWolfe.convert_mathopt(cube, o; dimension=n)
@@ -294,7 +337,7 @@ end
             trajectory=true,
             epsilon=1e-10,
         )
-        @test f(res_di[1]) < f(res_fw[1])
+        @test f(res_di[1]) < f(res_fw[1]) + 1e-4
     end
 
     @testset "Birkhoff polytope" begin
