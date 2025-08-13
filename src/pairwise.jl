@@ -258,28 +258,19 @@ function pairwise_frank_wolfe(
 
             gamma = min(gamma_max, gamma)
 
-            # away update
-            active_set_update!(
+            # pairwise update
+            active_set_update_pairwise!(
                 active_set,
-                -gamma,
-                away_vertex,
-                false,
+                gamma,
+                gamma_max,
+                fw_index,
                 away_index,
-                add_dropped_vertices=use_extra_vertex_storage,
-                vertex_storage=extra_vertex_storage,
+                fw_vertex,
+                away_vertex,
+                use_extra_vertex_storage,
+                extra_vertex_storage,
             )
-            if add_dropped_vertices && gamma ≈ gamma_max
-                for vtx in active_set.atoms
-                    if vtx != v
-                        push!(extra_vertex_storage, vtx)
-                    end
-                end
-            end
-            # fw update
-            active_set_update!(active_set, gamma, fw_vertex, true, fw_index)
         end
-        # println(active_set.weights)
-        # println([atom[1] for atom in active_set.atoms])
 
         if callback !== nothing
             state = CallbackState(
