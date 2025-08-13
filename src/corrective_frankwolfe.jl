@@ -20,7 +20,7 @@ function corrective_frank_wolfe(
     line_search::LineSearchMethod=Secant(),
     epsilon=1e-7,
     max_iteration=10000,
-    print_iter=1000,
+    print_iter=max_iteration ÷ 100,
     trajectory=false,
     verbose=false,
     memory_mode::MemoryEmphasis=InplaceEmphasis(),
@@ -91,7 +91,7 @@ function corrective_frank_wolfe(
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     # if not a lazy corrector, phi is maintained as the global dual gap
-    phi = max(0, fast_dot(x, gradient) - fast_dot(v, gradient))
+    phi = max(0, dot(gradient, x) - dot(gradient, v))
     dual_gap = phi
     gamma = one(phi)
 
@@ -146,7 +146,7 @@ function corrective_frank_wolfe(
 
         if should_compute_vertex && t > 1
             v = compute_extreme_point(lmo, gradient)
-            dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
+            dual_gap = dot(gradient, x) - dot(gradient, v)
             phi = dual_gap
         end
         # use the step defined by the corrective step type
@@ -185,7 +185,7 @@ function corrective_frank_wolfe(
                 compute_active_set_iterate!(active_set)
                 x = get_active_set_iterate(active_set)
                 grad!(gradient, x)
-                dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
+                dual_gap = dot(gradient, x) - dot(gradient, v)
             end
             if dual_gap ≥ epsilon
                 d = muladd_memory_mode(memory_mode, d, x, v)
@@ -253,7 +253,7 @@ function corrective_frank_wolfe(
         grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
-        phi_new = fast_dot(x, gradient) - fast_dot(v, gradient)
+        phi_new = dot(gradient, x) - dot(gradient, v)
         phi = phi_new < phi ? phi_new : phi
         step_type = ST_LAST
         tot_time = (time_ns() - time_start) / 1e9
@@ -286,7 +286,7 @@ function corrective_frank_wolfe(
     if recompute_last_vertex
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
-        dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
+        dual_gap = dot(gradient, x) - dot(gradient, v)
     end
     step_type = ST_POSTPROCESS
     tot_time = (time_ns() - time_start) / 1e9

@@ -29,6 +29,33 @@ function compute_extreme_point(lmo::UnitSimplexOracle{T}, direction; v=nothing, 
     return ScaledHotVector(zero(T), idx, length(direction))
 end
 
+# temporary fix because argmin is broken on julia 1.8
+argmin_(v) = argmin(v)
+function argmin_(v::SparseArrays.SparseVector{T}) where {T}
+    if isempty(v.nzind)
+        return 1
+    end
+    idx = -1
+    val = T(Inf)
+    for s_idx in eachindex(v.nzind)
+        if v.nzval[s_idx] < val
+            val = v.nzval[s_idx]
+            idx = s_idx
+        end
+    end
+    # if min value is already negative or the indices were all checked
+    if val < 0 || length(v.nzind) == length(v)
+        return v.nzind[idx]
+    end
+    # otherwise, find the first zero
+    for idx in eachindex(v)
+        if idx ∉ v.nzind
+            return idx
+        end
+    end
+    return error("unreachable")
+end
+
 function convert_mathopt(
     lmo::UnitSimplexOracle{T},
     optimizer::OT;
@@ -395,7 +422,7 @@ function convert_mathopt(
 end
 
 """
-    HyperSimplexOracle(radius)
+    HyperSimplexOracle(K, radius)
 
 Represents the scaled hypersimplex of radius τ, the convex hull of vectors `v` such that:
 - v_i ∈ {0, τ}
@@ -410,19 +437,20 @@ end
 
 HyperSimplexOracle{T}(K::Integer) where {T} = HyperSimplexOracle{T}(K, one(T))
 
-HyperSimplexOracle(K::Int, radius::Integer) = HyperSimplexOracle{Rational{BigInt}}(K, radius)
-
 function compute_extreme_point(
-    lmo::HyperSimplexOracle{TL},
+    lmo::HyperSimplexOracle{T},
     direction;
     v=nothing,
     kwargs...,
-) where {TL}
-    T = promote_type(TL, eltype(direction))
+) where {T}
     n = length(direction)
     K = min(lmo.K, n)
     K_indices = sortperm(direction)[1:K]
-    v = spzeros(T, n)
+    if v === nothing
+        v = spzeros(T, n)
+    else
+        v .= 0
+    end
     for idx in 1:K
         v[K_indices[idx]] = lmo.radius
     end

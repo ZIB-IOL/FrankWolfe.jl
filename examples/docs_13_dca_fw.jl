@@ -1,0 +1,180 @@
+# # Difference-of-Convex Algorithm with Frank-Wolfe
+#
+# This example shows the optimization of a difference-of-convex problem of the form:
+# ```math
+# min\limits_{x \in \mathcal{X}} \phi(x) = f(x) - g(x)
+# ```
+# with $f$, $g$ convex functions with access to subgradients and $f$ smooth.
+#
+# The DCA-FW algorithm constructs local convex models of $\phi$ by linearizing $g$ and approximately optimizes them with FW.
+# It is a local method that converges to a stationary point
+
+using FrankWolfe
+using LinearAlgebra
+using Random
+using SparseArrays
+using StableRNGs
+using Random
+
+# The convex functions $f$, $g$ will be generated as random convex quadratics:
+# ```math
+# \begin{align}
+# f(x) & = \frac12  x^\top A x + a^\top x + c \\
+# g(x) & = \frac12  x^\top B x + b^\top x + d
+# \end{align}
+# ```
+
+# ## Setting up the problem functions and data
+
+const n = 500  # Reduced dimension
+
+## Generate random positive definite matrices to ensure convexity
+function generate_problem_data(rng)
+    A_raw = randn(rng, n, n)
+    A_raw ./= opnorm(A_raw)
+    A = A_raw' * A_raw + 0.1 * I
+
+    B_raw = randn(rng, n, n)
+    B_raw ./= opnorm(B_raw)
+    B = B_raw' * B_raw + 0.1 * I
+
+    a = randn(rng, n)
+    b = randn(rng, n)
+
+    c = randn(rng)
+    d = -359434.0
+
+    return A, B, a, b, c, d
+end
+
+const rng = StableRNGs.StableRNG(1)
+const A, B, a, b, c, d = generate_problem_data(rng)
+
+# We can now define the two functions
+
+function f(x)
+    return 0.5 * FrankWolfe.fast_dot(x, A, x) + dot(a, x) + c
+end
+
+function grad_f!(storage, x)
+    mul!(storage, A, x)
+    storage .+= a
+    return nothing
+end
+
+function g(x)
+    return 0.5 * FrankWolfe.fast_dot(x, B, x) + dot(b, x) + d
+end
+
+function grad_g!(storage, x)
+    mul!(storage, B, x)
+    storage .+= b
+    return nothing
+end
+
+## True objective function for verification
+## It is not needed by the solver
+function phi(x)
+    return f(x) - g(x)
+end
+
+lmo = FrankWolfe.KSparseLMO(5, 1000.0)
+
+x0 = FrankWolfe.compute_extreme_point(lmo, randn(n))
+
+FrankWolfe.dca_fw( # hide
+    f, # hide
+    grad_f!, # hide
+    g, # hide
+    grad_g!, # hide
+    lmo, # hide
+    copy(x0), # hide
+    max_iteration=100, # hide
+    max_inner_iteration=100, # hide
+    epsilon=1e-5, # hide
+    line_search=FrankWolfe.Secant(), # hide
+    verbose=false, # hide
+    trajectory=true, # hide
+    verbose_inner=false, # hide
+    use_corrective_fw=true, # hide
+    use_dca_early_stopping=true, # hide
+    grad_f_workspace=collect(x0), # hide
+    grad_g_workspace=collect(x0), # hide
+) # hide
+
+x_final, primal_final, traj_data, dca_gap_final, iterations = FrankWolfe.dca_fw(
+    f,
+    grad_f!,
+    g,
+    grad_g!,
+    lmo,
+    copy(x0),
+    max_iteration=200, # Outer iterations
+    max_inner_iteration=10000, # Inner iterations
+    epsilon=1e-5, # Tolerance for DCA gap
+    line_search=FrankWolfe.Secant(),
+    verbose=true,
+    trajectory=true,
+    verbose_inner=false,
+    print_iter=10,
+    use_corrective_fw=true,
+    use_dca_early_stopping=true,
+    grad_f_workspace=collect(x0),
+    grad_g_workspace=collect(x0),
+)
+
+FrankWolfe.dca_fw( # hide
+    f, # hide
+    grad_f!, # hide
+    g, # hide
+    grad_g!, # hide
+    lmo, # hide
+    copy(x0), # hide
+    boosted=true, # hide
+    max_iteration=10, # hide
+    max_inner_iteration=100, # hide
+    epsilon=1e-5, # hide
+    line_search=FrankWolfe.Secant(), # hide
+    verbose=false, # hide
+    trajectory=true, # hide
+    verbose_inner=false, # hide
+    print_iter=10, # hide
+    use_corrective_fw=true, # hide
+    use_dca_early_stopping=true, # hide
+    grad_f_workspace=collect(x0), # hide
+    grad_g_workspace=collect(x0), # hide
+) # hide
+
+_, _, traj_data_boosted, _, _ = FrankWolfe.dca_fw(
+    f,
+    grad_f!,
+    g,
+    grad_g!,
+    lmo,
+    copy(x0),
+    boosted=true,
+    max_iteration=200, # Outer iterations
+    max_inner_iteration=10000, # Inner iterations
+    epsilon=1e-5, # Tolerance for DCA gap
+    line_search=FrankWolfe.Secant(),
+    verbose=true,
+    trajectory=true,
+    verbose_inner=false,
+    print_iter=10,
+    use_corrective_fw=true,
+    use_dca_early_stopping=true,
+    grad_f_workspace=collect(x0),
+    grad_g_workspace=collect(x0),
+)
+
+
+# ## Plotting the resulting trajectory
+# 
+# We modify the y axis to highlight that we are plotting the DCA gap, not the FW gap
+data = [traj_data, traj_data_boosted]
+label = ["DCA-FW", "DCA-FW-B"]
+p_res = plot_trajectories(data, label, marker_shapes=[:o, :x])
+ylabel!(p_res.subplots[3], "DCA gap")
+
+#
+display(p_res)

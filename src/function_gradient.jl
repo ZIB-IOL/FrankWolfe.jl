@@ -55,9 +55,20 @@ function compute_gradient(f::SimpleFunctionObjective, x)
 end
 
 """
+    AbstractStochasticObjective
+
+Represents an objective function accessed through a zeroth and first-order oracle.
+It must implement the following functions:
+- `compute_value(f::AbstractStochasticObjective, θ; batch_size, rng)`
+- `grad!(storage, θ, x)`
+- `compute_gradient(f::AbstractStochasticObjective, θ; batch_size, rng)`
+"""
+abstract type AbstractStochasticObjective end
+
+"""
     StochasticObjective{F, G, XT, S}(f::F, grad!::G, xs::XT, storage::S)
 
-Represents a composite function evaluated with stochastic gradient.
+Represents a finite sum function `F(θ) = ∑_i f(θ, x_i)` evaluated with stochastic gradient.
 `f(θ, x)` evaluates the loss for a single data point `x` and parameter `θ`.
 `grad!(storage, θ, x)` adds to storage the partial gradient with respect to data point `x` at parameter `θ`.
 `xs` must be an indexable iterable (`Vector{Vector{Float64}}` for instance).
@@ -66,7 +77,7 @@ and `full_evaluation` controlling whether the function should be evaluated over 
 
 Note: `grad!` must **not** reset the storage to 0 before adding to it.
 """
-struct StochasticObjective{F,G,XT,S} <: ObjectiveFunction
+struct StochasticObjective{F,G,XT,S} <: AbstractStochasticObjective
     f::F
     grad!::G
     xs::XT

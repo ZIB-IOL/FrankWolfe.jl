@@ -327,7 +327,7 @@ function pairwise_frank_wolfe(
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
-    dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
+    dual_gap = dot(gradient, x) - dot(gradient, v)
     dual_gap = min(phi_value, dual_gap)
     step_type = ST_LAST
     tot_time = (time_ns() - time_start) / 1e9
@@ -363,7 +363,7 @@ function pairwise_frank_wolfe(
     if recompute_last_vertex
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
-        dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
+        dual_gap = dot(gradient, x) - dot(gradient, v)
     end
     step_type = ST_POSTPROCESS
     tot_time = (time_ns() - time_start) / 1e9
@@ -409,11 +409,11 @@ function lazy_pfw_step(
     gamma_max = a_lambda
     away_index = a_local_loc
     fw_index = nothing
-    grad_dot_x = fast_dot(x, gradient)
-    grad_dot_a_local = fast_dot(a_local, gradient)
+    grad_dot_x = dot(gradient, x)
+    grad_dot_a_local = dot(gradient, a_local)
 
     # Do lazy pairwise step
-    grad_dot_lazy_fw_vertex = fast_dot(v_local, gradient)
+    grad_dot_lazy_fw_vertex = dot(gradient, v_local)
 
     if grad_dot_a_local - grad_dot_lazy_fw_vertex >= phi / sparsity_control &&
        grad_dot_a_local - grad_dot_lazy_fw_vertex >= epsilon
@@ -424,7 +424,7 @@ function lazy_pfw_step(
     else
         # optionally: try vertex storage
         if use_extra_vertex_storage
-            lazy_threshold = fast_dot(gradient, a_local) - phi / sparsity_control
+            lazy_threshold = dot(gradient, a_local) - phi / sparsity_control
             (found_better_vertex, new_forward_vertex) =
                 storage_find_argmin_vertex(extra_vertex_storage, gradient, lazy_threshold)
             if found_better_vertex
@@ -441,7 +441,7 @@ function lazy_pfw_step(
         end
 
         # Real dual gap promises enough progress.
-        grad_dot_fw_vertex = fast_dot(v, gradient)
+        grad_dot_fw_vertex = dot(gradient, v)
         dual_gap = grad_dot_x - grad_dot_fw_vertex
         if dual_gap >= phi / sparsity_control
             d = muladd_memory_mode(memory_mode, d, a_local, v)
@@ -474,8 +474,8 @@ function pfw_step(
     v = compute_extreme_point(lmo, gradient)
     fw_vertex = v
     fw_index = nothing
-    grad_dot_x = fast_dot(x, gradient)
-    dual_gap = grad_dot_x - fast_dot(v, gradient)
+    grad_dot_x = dot(gradient, x)
+    dual_gap = grad_dot_x - dot(gradient, v)
     d = muladd_memory_mode(memory_mode, d, a_local, v)
     return d, fw_vertex, fw_index, away_vertex, away_index, gamma_max, dual_gap, step_type
 end

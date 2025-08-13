@@ -310,7 +310,7 @@ function update_iterate(
 )
     d = similar(x)
     v = compute_extreme_point(lmo, gradient)
-    dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
+    dual_gap = dot(gradient, x) - dot(gradient, v)
 
     d = muladd_memory_mode(memory_mode, d, x, v)
 
@@ -355,13 +355,13 @@ function update_iterate(
     _, v_local, v_local_loc, _, a_lambda, a, a_loc, _, _ =
         active_set_argminmax(s.active_set, gradient)
 
-    dot_forward_vertex = fast_dot(gradient, v_local)
-    dot_away_vertex = fast_dot(gradient, a)
+    dot_forward_vertex = dot(gradient, v_local)
+    dot_away_vertex = dot(gradient, a)
     local_gap = dot_away_vertex - dot_forward_vertex
 
     if !s.lazy
         v = compute_extreme_point(lmo, gradient)
-        dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
+        dual_gap = dot(gradient, x) - dot(gradient, v)
         s.phi = dual_gap
     end
 
@@ -402,7 +402,7 @@ function update_iterate(
             step_type = ST_REGULAR
         end
         vertex_taken = v
-        dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
+        dual_gap = dot(gradient, x) - dot(gradient, v)
         # if we are about to exit, compute dual_gap with the cleaned-up x
         if dual_gap ≤ epsilon
             active_set_renormalize!(s.active_set)
@@ -410,7 +410,7 @@ function update_iterate(
             compute_active_set_iterate!(s.active_set)
             x = get_active_set_iterate(s.active_set)
             grad!(gradient, x)
-            dual_gap = fast_dot(gradient, x) - fast_dot(gradient, v)
+            dual_gap = dot(gradient, x) - dot(gradient, v)
         end
 
         if !s.lazy || dual_gap ≥ s.phi / s.sparsity_control
@@ -743,7 +743,7 @@ function block_coordinate_frank_wolfe(
     v = compute_extreme_point(lmo, gradient)
 
     primal = f(x)
-    dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
+    dual_gap = dot(gradient, x) - dot(gradient, v)
 
     tot_time = (time_ns() - time_start) / 1.0e9
 
