@@ -97,4 +97,8 @@ makedocs(;
     warnonly=true,
 )
 
-deploydocs(; repo="github.com/ZIB-IOL/FrankWolfe.jl.git", push_preview=true)
+deploydocs(;
+    repo="github.com/ZIB-IOL/FrankWolfe.jl.git",
+    push_preview=true,
+    forcepush=true,
+)
