@@ -258,8 +258,8 @@ function frank_wolfe(
         v=v,
         primal=primal,
         dual_gap=dual_gap,
-        traj_data=traj_data,
         status=execution_status,
+        traj_data=traj_data,
     )
 end
 
@@ -520,7 +520,7 @@ function lazified_conditional_gradient(
         v=v,
         primal=primal,
         dual_gap=dual_gap,
-        traj_data=traj_data,
         status=execution_status,
+        traj_data=traj_data,
     )
 end

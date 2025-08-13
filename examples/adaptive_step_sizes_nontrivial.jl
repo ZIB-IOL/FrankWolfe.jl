@@ -52,7 +52,7 @@ println("\n==> Adaptive (1-order) if you do not know L.\n")
 
 x0 = deepcopy(x00)
 
-@time x, v, primal, dual_gap, trajectory_adaptive_fo = FrankWolfe.frank_wolfe(
+@time x, v, primal, dual_gap, trajectory_adaptive_fo, status = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -69,7 +69,7 @@ println("\n==> Adaptive (0-order) if you do not know L.\n")
 
 x0 = deepcopy(x00)
 
-@time x, v, primal, dual_gap, trajectory_adaptive_zo = FrankWolfe.frank_wolfe(
+@time x, v, primal, dual_gap, trajectory_adaptive_zo, status = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,

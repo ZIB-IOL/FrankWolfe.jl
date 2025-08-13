@@ -110,7 +110,7 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
     @test norm(x.blocks[1] - zeros(n)) < 1e-6
     @test norm(x.blocks[2] - ones(n)) < 1e-6
 
-    x, _, _, _, _, traj_data = FrankWolfe.alternating_linear_minimization(
+    x, _, _, _, _, _, traj_data = FrankWolfe.alternating_linear_minimization(
         FrankWolfe.block_coordinate_frank_wolfe,
         f,
         grad!,
@@ -177,7 +177,7 @@ end
         FrankWolfe.lazified_conditional_gradient,
     ]
 
-    for fw_method in methods
+    @testset "Testing with $fw_method" for fw_method in methods
         x, _, _, _, _ = FrankWolfe.alternating_linear_minimization(
             fw_method,
             f,

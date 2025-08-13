@@ -767,5 +767,5 @@ function block_coordinate_frank_wolfe(
         callback(state, dual_gaps)
     end
 
-    return x, v, primal, dual_gap, traj_data
+    return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data)
 end

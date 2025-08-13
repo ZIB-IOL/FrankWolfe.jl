@@ -24,7 +24,7 @@ using DoubleFloats
         direction = rand(n)
         x0 = FrankWolfe.compute_extreme_point(lmo, direction)
 
-        x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+        x, v, primal, dual_gap, status, trajectory = FrankWolfe.frank_wolfe(
             f,
             grad!,
             lmo,
@@ -39,7 +39,7 @@ using DoubleFloats
         @test eltype(x0) == T
         @test primal - 1 / n <= bound
 
-        x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+        x, v, primal, dual_gap, status, trajectory = FrankWolfe.frank_wolfe(
             f,
             grad!,
             lmo,
@@ -54,7 +54,7 @@ using DoubleFloats
         @test eltype(x0) == T
         @test primal - 1 // n <= bound
 
-        x, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
+        x, v, primal, dual_gap, status, trajectory = FrankWolfe.away_frank_wolfe(
             f,
             grad!,
             lmo,

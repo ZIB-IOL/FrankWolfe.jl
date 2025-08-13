@@ -57,7 +57,7 @@ x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 # simple benchmarking of oracles to get an idea how expensive each component is
 FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo; k=100)
 
-@time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+@time x, v, primal, dual_gap, status, trajectory = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -71,7 +71,7 @@ FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo; k=100)
     trajectory=true,
 );
 
-@time x, v, primal, dual_gap, trajectoryAFW = FrankWolfe.away_frank_wolfe(
+@time x, v, primal, dual_gap, status, trajectoryAFW = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,

@@ -21,7 +21,7 @@ end
 
     x0 = GenericArray(collect(FrankWolfe.compute_extreme_point(lmo, zeros(n))))
 
-    x, v, primal, dual_gap0, trajectory = FrankWolfe.frank_wolfe(
+    x, v, primal, dual_gap0, status, trajectory = FrankWolfe.frank_wolfe(
         f_generic,
         grad_generic!,
         lmo,
@@ -36,7 +36,7 @@ end
     @test f_generic(x) < f_generic(x0)
     @test x isa GenericArray
 
-    x, v, primal, dual_gap0, trajectory = FrankWolfe.lazified_conditional_gradient(
+    x, v, primal, dual_gap0, status, trajectory = FrankWolfe.lazified_conditional_gradient(
         f_generic,
         grad_generic!,
         lmo,
@@ -52,7 +52,7 @@ end
     @test f_generic(x) < f_generic(x0)
     @test x isa GenericArray
 
-    @test_broken x, v, primal, dual_gap0, trajectory = FrankWolfe.away_frank_wolfe(
+    @test_broken x, v, primal, dual_gap0, status, trajectory = FrankWolfe.away_frank_wolfe(
         f_generic,
         grad_generic!,
         lmo,

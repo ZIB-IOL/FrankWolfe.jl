@@ -17,7 +17,7 @@ using LinearAlgebra
         lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1.0)
         x0 = FrankWolfe.compute_extreme_point(lmo_prob, spzeros(n))
 
-        x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+        x, v, primal, dual_gap, status, trajectory = FrankWolfe.frank_wolfe(
             f,
             grad!,
             lmo_prob,
@@ -31,7 +31,7 @@ using LinearAlgebra
 
         @test primal < f(x0)
 
-        x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+        x, v, primal, dual_gap, status, trajectory = FrankWolfe.frank_wolfe(
             f,
             grad!,
             lmo_prob,
@@ -43,7 +43,7 @@ using LinearAlgebra
             memory_mode=FrankWolfe.InplaceEmphasis(),
         )
         @test primal < f(x0)
-        x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+        x, v, primal, dual_gap, status, trajectory = FrankWolfe.frank_wolfe(
             f,
             grad!,
             lmo_prob,
@@ -55,7 +55,7 @@ using LinearAlgebra
             memory_mode=FrankWolfe.InplaceEmphasis(),
         )
         @test primal < f(x0)
-        x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+        x, v, primal, dual_gap, status, trajectory = FrankWolfe.frank_wolfe(
             f,
             grad!,
             lmo_prob,

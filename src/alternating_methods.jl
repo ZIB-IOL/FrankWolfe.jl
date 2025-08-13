@@ -191,7 +191,7 @@ function alternating_linear_minimization(
         callback = make_lambda_callback(callback, lambda)
     end
 
-    x, v, primal, dual_gap, traj_data = bc_method(
+    fw_res = bc_method(
         f_bc,
         grad_bc!,
         prod_lmo,
@@ -206,11 +206,18 @@ function alternating_linear_minimization(
         line_search=line_search,
         kwargs...,
     )
+    x = fw_res.x
+    v = fw_res.v
+    primal = fw_res.primal
+    dual_gap = fw_res.dual_gap
+    traj_data = fw_res.traj_data
 
     if trajectory
         traj_data = [(t..., dist2_data[i]) for (i, t) in enumerate(traj_data)]
     end
-    return x, v, primal, dual_gap, dist2(x), traj_data
+    # TODO fix status
+    execution_status = STATUS_RUNNING
+    return x, v, primal, dual_gap, dist2(x), execution_status, traj_data
 end
 
 
