@@ -106,7 +106,7 @@ lmo = FrankWolfe.KSparseLMO(100, 100.0)
 x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
 
 x0 = deepcopy(x00)
-x, v, primal, dual_gap, trajectoryBCG_accel_simplex, _ = FrankWolfe.blended_conditional_gradient(
+x, v, primal, dual_gap, status, trajectoryBCG_accel_simplex, _ = FrankWolfe.blended_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -125,7 +125,7 @@ x, v, primal, dual_gap, trajectoryBCG_accel_simplex, _ = FrankWolfe.blended_cond
 )
 
 x0 = deepcopy(x00)
-x, v, primal, dual_gap, trajectoryBCG_simplex, _ = FrankWolfe.blended_conditional_gradient(
+x, v, primal, dual_gap, status, trajectoryBCG_simplex, _ = FrankWolfe.blended_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -144,7 +144,7 @@ x, v, primal, dual_gap, trajectoryBCG_simplex, _ = FrankWolfe.blended_conditiona
 )
 
 x0 = deepcopy(x00)
-x, v, primal, dual_gap, trajectoryBCG_convex, _ = FrankWolfe.blended_conditional_gradient(
+x, v, primal, dual_gap, status, trajectoryBCG_convex, _ = FrankWolfe.blended_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -161,7 +161,7 @@ x, v, primal, dual_gap, trajectoryBCG_convex, _ = FrankWolfe.blended_conditional
 )
 
 x0 = deepcopy(x00)
-x, v, primal, dual_gap, trajectoryBPCG, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+x, v, primal, dual_gap, status, trajectoryBPCG, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,

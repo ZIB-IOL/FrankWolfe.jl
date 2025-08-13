@@ -137,7 +137,7 @@ trajectoryLBPCG = []
 callback = build_callback(trajectoryLBPCG)
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+@time x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,

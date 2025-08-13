@@ -50,7 +50,7 @@ FrankWolfe.benchmark_oracles(
 )
 
 # BPCG run
-@time x, v, primal, dual_gap, trajectoryBPCG, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+@time x, v, primal, dual_gap, status, trajectoryBPCG, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     x -> cf(x, xp, normxp2),
     (str, x) -> cgrad!(str, x, xp),
     lmo,

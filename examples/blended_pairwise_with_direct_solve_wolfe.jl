@@ -75,7 +75,7 @@ end
 
 
 trajectoryBPCG_standard = []
-x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -92,7 +92,7 @@ active_set_quadratic_automatic_standard = FrankWolfe.ActiveSetQuadraticLinearSol
     MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
 )
 trajectoryBPCG_quadratic_automatic_standard = []
-x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -112,7 +112,7 @@ active_set_quadratic_wolfe = FrankWolfe.ActiveSetQuadraticLinearSolve(
     wolfe_step=true,
 )
 trajectoryBPCG_quadratic_wolfe = []
-x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,

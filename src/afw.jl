@@ -323,7 +323,7 @@ function away_frank_wolfe(
 
     if t >= max_iteration
         execution_status = STATUS_MAXITER
-    elseif phi_value < max(eps(float(typeof(phi_value))), epsilon)
+    elseif phi_value < min(eps(float(typeof(phi_value))), epsilon)
         execution_status = STATUS_OPTIMAL
     end
     if execution_status === STATUS_RUNNING

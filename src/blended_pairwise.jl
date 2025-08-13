@@ -134,6 +134,7 @@ function blended_pairwise_conditional_gradient(
     primal = convert(eltype(x), Inf)
     step_type = ST_REGULAR
     time_start = time_ns()
+    execution_status = STATUS_RUNNING
 
     d = similar(x)
 
@@ -191,6 +192,7 @@ function blended_pairwise_conditional_gradient(
                 if verbose
                     @info "Time limit reached"
                 end
+                execution_status = STATUS_TIMEOUT
                 break
             end
         end
@@ -256,6 +258,7 @@ function blended_pairwise_conditional_gradient(
                     step_type,
                 )
                 if callback(state, active_set, a) === false
+                    execution_status = STATUS_INTERRUPTED
                     break
                 end
             end
@@ -350,6 +353,7 @@ function blended_pairwise_conditional_gradient(
                         step_type,
                     )
                     if callback(state, active_set) === false
+                        execution_status = STATUS_INTERRUPTED
                         break
                     end
                 end
@@ -422,6 +426,16 @@ function blended_pairwise_conditional_gradient(
         end
     end
 
+    if t >= max_iteration
+        execution_status = STATUS_MAXITER
+    elseif phi_value < min(eps(float(typeof(phi_value))), epsilon)
+        execution_status = STATUS_OPTIMAL
+    end
+    if execution_status === STATUS_RUNNING
+        @warn "Status not set"
+        execution_status = STATUS_OPTIMAL
+    end
+
     # recompute everything once more for final verfication / do not record to trajectory though for now!
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
     # hence the final computation.
@@ -490,5 +504,5 @@ function blended_pairwise_conditional_gradient(
         callback(state, active_set)
     end
 
-    return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data, active_set=active_set)
+    return (x=x, v=v, primal=primal, dual_gap=dual_gap, status=execution_status, traj_data=traj_data, active_set=active_set)
 end
