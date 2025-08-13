@@ -249,7 +249,14 @@ function frank_wolfe(
 
     @assert execution_status_code != STATUS_RUNNING
 
-    return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data, status=execution_status_string[Symbol(execution_status_code)])
+    return (
+        x=x,
+        v=v,
+        primal=primal,
+        dual_gap=dual_gap,
+        traj_data=traj_data,
+        status=execution_status_string[Symbol(execution_status_code)],
+    )
 end
 
 
