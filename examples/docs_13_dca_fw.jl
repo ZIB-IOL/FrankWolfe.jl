@@ -89,7 +89,7 @@ FrankWolfe.dca_fw( # hide
     grad_g!, # hide
     lmo, # hide
     copy(x0), # hide
-    max_iteration=20, # hide
+    max_iteration=100, # hide
     max_inner_iteration=100, # hide
     epsilon=1e-5, # hide
     line_search=FrankWolfe.Secant(), # hide
