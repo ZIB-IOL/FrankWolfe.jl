@@ -32,7 +32,7 @@ x, v, primal, dual_gap, _, _ = FrankWolfe.blended_conditional_gradient(
     x0,
     max_iteration=k,
     line_search=FrankWolfe.AdaptiveZerothOrder(L_est=2.0),
-    line_search_inner = FrankWolfe.Secant(tol = 1e-10),
+    line_search_inner=FrankWolfe.Secant(tol=1e-10),
     print_iter=100,
     memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=false,
