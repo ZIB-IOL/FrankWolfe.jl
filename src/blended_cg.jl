@@ -370,7 +370,7 @@ function blended_conditional_gradient(
     ## post-processing and cleanup after loop
     if t >= max_iteration
         execution_status = STATUS_MAXITER
-    elseif phi_value < max(eps(float(typeof(phi_value))), epsilon)
+    elseif phi < max(eps(float(typeof(phi))), epsilon)
         execution_status = STATUS_OPTIMAL
     end
     if execution_status === STATUS_RUNNING
