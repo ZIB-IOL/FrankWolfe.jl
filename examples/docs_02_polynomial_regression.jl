@@ -181,7 +181,7 @@ x0 = deepcopy(x00) # hide
 
 trajectory_lafw = [] # hide
 callback = build_callback(trajectory_lafw) # hide
-x_lafw, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe( # hide
+x_lafw, v, primal, dual_gap, status, _ = FrankWolfe.away_frank_wolfe( # hide
     f, # hide
     grad!, # hide
     lmo, # hide
@@ -215,7 +215,7 @@ x_bcg, v, primal, dual_gap, _, _ = FrankWolfe.blended_conditional_gradient( # hi
 x0 = deepcopy(x00) # hide
 trajectory_lafw_ref = [] # hide
 callback = build_callback(trajectory_lafw_ref) # hide
-_, _, primal_ref, _, _ = FrankWolfe.away_frank_wolfe( # hide
+_, _, primal_ref, _, status, _ = FrankWolfe.away_frank_wolfe( # hide
     f, # hide
     grad!, # hide
     lmo, # hide
@@ -266,7 +266,7 @@ x0 = deepcopy(x00)
 
 trajectory_lafw = []
 callback = build_callback(trajectory_lafw)
-x_lafw, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
+x_lafw, v, primal, dual_gap, status, _ = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
@@ -303,7 +303,7 @@ x0 = deepcopy(x00)
 
 trajectory_lafw_ref = []
 callback = build_callback(trajectory_lafw_ref)
-_, _, primal_ref, _, _ = FrankWolfe.away_frank_wolfe(
+_, _, primal_ref, _, status, _ = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,

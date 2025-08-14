@@ -23,7 +23,7 @@ x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
 FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo; k=100)
 
-x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+x, v, primal, dual_gap, status, trajectory = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -37,7 +37,7 @@ x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
     trajectory=true,
 );
 
-x, v, primal, dual_gap, trajectory_away, active_set = FrankWolfe.away_frank_wolfe(
+x, v, primal, dual_gap, status, trajectory_away, active_set = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
@@ -52,7 +52,7 @@ x, v, primal, dual_gap, trajectory_away, active_set = FrankWolfe.away_frank_wolf
     trajectory=true,
 );
 
-x, v, primal, dual_gap, trajectory_away_outplace, active_set = FrankWolfe.away_frank_wolfe(
+x, v, primal, dual_gap, status, trajectory_away_outplace, active_set = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,

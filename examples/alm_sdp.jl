@@ -34,7 +34,7 @@ for order in [
     FrankWolfe.DualGapOrder(),
     FrankWolfe.DualProgressOrder(),
 ]
-    _, _, _, _, _, traj_data = FrankWolfe.alternating_linear_minimization(
+    alm_res = FrankWolfe.alternating_linear_minimization(
         FrankWolfe.block_coordinate_frank_wolfe,
         f,
         grad!,
@@ -45,7 +45,7 @@ for order in [
         trajectory=true,
         update_step=FrankWolfe.BPCGStep(),
     )
-    push!(trajectories, traj_data)
+    push!(trajectories, alm_res.traj_data)
 end
 
 labels = ["Full", "Cyclic", "Stochastic", "DualGapOrder", "DualProgressOrder"]

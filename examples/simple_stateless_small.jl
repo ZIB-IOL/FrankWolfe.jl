@@ -38,7 +38,7 @@ gradient = collect(x0)
 k = 10_000
 
 line_search = FrankWolfe.MonotonicStepSize(x -> sum(x) > 0)
-x, v, primal, dual_gap, trajectory_simple = FrankWolfe.frank_wolfe(
+x, v, primal, dual_gap, status, trajectory_simple = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -52,7 +52,7 @@ x, v, primal, dual_gap, trajectory_simple = FrankWolfe.frank_wolfe(
 );
 
 line_search2 = FrankWolfe.MonotonicGenericStepsize(FrankWolfe.Agnostic(), x -> sum(x) > 0)
-x, v, primal, dual_gap, trajectory_restart = FrankWolfe.frank_wolfe(
+x, v, primal, dual_gap, status, trajectory_restart = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -75,7 +75,7 @@ plot_trajectories(
 
 @test line_search.factor == 8
 
-x, v, primal, dual_gap, trajectory_restart_highpres = FrankWolfe.frank_wolfe(
+x, v, primal, dual_gap, status, trajectory_restart_highpres = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,

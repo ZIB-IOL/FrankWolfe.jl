@@ -38,7 +38,7 @@ FrankWolfe.benchmark_oracles(f, grad!, () -> randn(n), lmo; k=100)
 println("\n==> Short Step rule - if you know L.\n")
 
 x0 = copy(x00)
-@time x, v, primal, dual_gap, trajectory_shortstep = FrankWolfe.frank_wolfe(
+@time x, v, primal, dual_gap, trajectory_shortstep, status = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -55,7 +55,7 @@ println("\n==> Short Step rule with momentum - if you know L.\n")
 
 x0 = copy(x00)
 
-@time x, v, primal, dual_gap, trajectoryM = FrankWolfe.frank_wolfe(
+@time x, v, primal, dual_gap, trajectoryM, status = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -73,7 +73,7 @@ println("\n==> Adaptive if you do not know L.\n")
 
 x0 = copy(x00)
 
-@time x, v, primal, dual_gap, trajectory_adaptive = FrankWolfe.frank_wolfe(
+@time x, v, primal, dual_gap, trajectory_adaptive, status = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -90,7 +90,7 @@ println("\n==> Agnostic if function is too expensive for adaptive.\n")
 
 x0 = copy(x00)
 
-@time x, v, primal, dual_gap, trajectory_agnostic = FrankWolfe.frank_wolfe(
+@time x, v, primal, dual_gap, trajectory_agnostic, status = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,

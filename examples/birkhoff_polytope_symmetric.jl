@@ -32,7 +32,7 @@ lmo_nat = FrankWolfe.BirkhoffPolytopeLMO()
 
 x0 = FrankWolfe.compute_extreme_point(lmo_nat, randn(n, n))
 
-@time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+@time x, v, primal, dual_gap, _, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     x -> cf(x, xp, normxp2),
     (str, x) -> cgrad!(str, x, xp),
     lmo_nat,
@@ -113,7 +113,7 @@ lmo_sym = FrankWolfe.SubspaceLMO(lmo_nat, deflate, inflate)
 
 rx0 = FrankWolfe.compute_extreme_point(lmo_sym, deflate(sparse(randn(n, n)), nothing))
 
-@time rx, rv, rprimal, rdual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+@time rx, rv, rprimal, rdual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     x -> cf(x, rxp, normxp2),
     (str, x) -> cgrad!(str, x, rxp),
     lmo_sym,

@@ -185,7 +185,7 @@ x0 = deepcopy(x00)
 # lazy AFW
 trajectory_lafw = []
 callback = build_callback(trajectory_lafw)
-@time x_lafw, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
+@time x_lafw, v, primal, dual_gap, status, _ = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
@@ -232,7 +232,7 @@ x0 = deepcopy(x00)
 #  compute reference solution using lazy AFW
 trajectory_lafw_ref = []
 callback = build_callback(trajectory_lafw_ref)
-@time _, _, primal_ref, _, _ = FrankWolfe.away_frank_wolfe(
+@time _, _, primal_ref, _, status, _ = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,

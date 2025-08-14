@@ -20,7 +20,7 @@ x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
 x0 = deepcopy(x00)
 
-@time x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
+@time x, v, primal, dual_gap, status, trajectory = FrankWolfe.lazified_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -36,7 +36,7 @@ x0 = deepcopy(x00)
 
 x0 = deepcopy(x00)
 
-@time x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
+@time x, v, primal, dual_gap, status, trajectory = FrankWolfe.lazified_conditional_gradient(
     f,
     grad!,
     lmo,

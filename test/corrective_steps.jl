@@ -24,7 +24,7 @@ using SparseArrays
     lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
     x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
 
-    x_afw, v_afw, primal_afw, dual_gap_afw, traj_afw = FrankWolfe.away_frank_wolfe(
+    x_afw, v_afw, primal_afw, dual_gap_afw, status, traj_afw = FrankWolfe.away_frank_wolfe(
         f,
         grad!,
         lmo,

@@ -22,7 +22,7 @@ lmo = FrankWolfe.ProbabilitySimplexOracle{Rational{BigInt}}(1); # radius needs t
 # compute some initial vertex
 x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
-x, v, primal, dual_gap0, trajectory = FrankWolfe.frank_wolfe(
+x, v, primal, dual_gap0, status, trajectory = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -34,7 +34,7 @@ x, v, primal, dual_gap0, trajectory = FrankWolfe.frank_wolfe(
     memory_mode=FrankWolfe.OutplaceEmphasis(),
 )
 
-xmem, vmem, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+xmem, vmem, primal, dual_gap, status, trajectory = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -85,7 +85,7 @@ end
     x0 = FrankWolfe.compute_extreme_point(lmo, direction)
     @test eltype(x0) == Rational{BigInt}
 
-    x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+    x, v, primal, dual_gap, status, trajectory = FrankWolfe.frank_wolfe(
         f,
         grad!,
         lmo,
@@ -99,7 +99,7 @@ end
 
     @test eltype(x0) == Rational{BigInt}
 
-    x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+    x, v, primal, dual_gap, status, trajectory = FrankWolfe.frank_wolfe(
         f,
         grad!,
         lmo,
@@ -115,7 +115,7 @@ end
 
     # very slow computation, explodes quickly
     x0 = collect(FrankWolfe.compute_extreme_point(lmo, direction))
-    x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+    x, v, primal, dual_gap, status, trajectory = FrankWolfe.frank_wolfe(
         f,
         grad!,
         lmo,
@@ -128,7 +128,7 @@ end
     )
 
     x0 = FrankWolfe.compute_extreme_point(lmo, direction)
-    x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+    x, v, primal, dual_gap, status, trajectory = FrankWolfe.frank_wolfe(
         f,
         grad!,
         lmo,

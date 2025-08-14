@@ -126,9 +126,9 @@ using LinearAlgebra
         0.01941370607649000218250087532506190641350721586961201686937898271255334512602753,
     ]
     primal_true = 0.01314422099649411305714214236596045839642713180124049726321024688069930261252318
-    @test norm(res1[1] - x_true) ≈ 0 atol = 1e-6
-    @test res1[3] ≈ primal_true
-    @test res1[5][end][1] == 101
+    @test norm(res1.x - x_true) ≈ 0 atol = 1e-6
+    @test res1.primal ≈ primal_true
+    @test res1.traj_data[end][1] == 101
 
     res2 = FrankWolfe.frank_wolfe(
         f,
@@ -144,9 +144,9 @@ using LinearAlgebra
     )
     x_true = fill(0.01, n)
     primal_true = 0.01
-    @test norm(res2[1] - x_true) ≈ 0 atol = 1e-6
-    @test res2[3] ≈ primal_true
-    @test res2[5][end][1] == 100
+    @test norm(res2.x - x_true) ≈ 0 atol = 1e-6
+    @test res2.primal ≈ primal_true
+    @test res2.traj_data[end][1] == 100
 
     res3 = FrankWolfe.away_frank_wolfe(
         f,
@@ -266,9 +266,9 @@ using LinearAlgebra
 
     primal_true = 0.01303054586957625556729890004358024648004703487744009407127266414409524716045483
 
-    @test norm(res3[1] - x_true) ≈ 0 atol = 1e-6
-    @test res3[3] ≈ primal_true
-    @test res3[5][end][1] == 101
+    @test norm(res3.x - x_true) ≈ 0 atol = 1e-6
+    @test res3.primal ≈ primal_true
+    @test res3.traj_data[end][1] == 101
 
     res4 = FrankWolfe.blended_conditional_gradient(
         f,
@@ -403,10 +403,10 @@ using LinearAlgebra
 
     @test norm(res4[1] - x_true) ≈ 0 atol = 1e-6
     @test res4[3] ≈ primal_true
-    @test res4[5][end][1] == 101
+    @test res4.traj_data[end][1] == 101
 
     @test res4_adaptive[3] ≈ 0.01 atol = 1e-8
-    @test res4_adaptive[5][end][1] == 122
+    @test res4_adaptive.traj_data[end][1] == 122
 
 end
 
@@ -604,5 +604,5 @@ end
     )
     @test norm(res5[1] - x_true) ≈ 0 atol = 1e-6
     @test res5[3] ≈ primal_true
-    @test res5[5][end][1] == 100001
+    @test res5.traj_data[end][1] == 100001
 end

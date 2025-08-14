@@ -46,7 +46,7 @@ FrankWolfe.benchmark_oracles(
     k=100,
 )
 
-@time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+@time x, v, primal, dual_gap, status, trajectory = FrankWolfe.frank_wolfe(
     x -> cf(x, xp),
     (str, x) -> cgrad!(str, x, xp),
     lmo,
