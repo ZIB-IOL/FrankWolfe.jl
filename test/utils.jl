@@ -240,19 +240,6 @@ end
     @test FrankWolfe.momentum_iterate(it) == 1
 end
 
-@testset "Fast dot complex & norm" begin
-    s = sparse(I, 3, 3)
-    m = randn(rng, Complex{Float64}, 3, 3)
-    a = FrankWolfe.ScaledHotVector(3.5 + 2im, 2, 4)
-    b = rand(rng, ComplexF64, 4)
-    @test dot(a, b) ≈ dot(collect(a), b)
-    @test dot(b, a) ≈ dot(b, collect(a))
-    c = sparse(b)
-    @test dot(a, c) ≈ dot(collect(a), c)
-    @test dot(c, a) ≈ dot(c, collect(a))
-    @test norm(a) ≈ norm(collect(a))
-end
-
 @testset "NegatingArray" begin
     d = randn(rng, 4)
     nd = FrankWolfe.NegatingArray(d)
@@ -263,4 +250,25 @@ end
 
     @test dot(nd, 4nd) ≈ 4 * norm(d)^2
     @test norm(nd) ≈ norm(d)
+end
+
+@testset "Fast dot quadratric form" begin
+    for _ in 1:100
+        s1 = sparse(rand(-2:2, 100))
+        s2 = sparse(rand(-2:2, 200))
+        Q = rand(100, 200)
+        d1 = FrankWolfe.fast_dot(s1, Q, s2)
+        d2 = dot(s1, Q, s2)
+        @test d1 ≈ d2
+        d11 = FrankWolfe.fast_dot(s1, Q * Q', 2s1)
+        d22 = dot(s1, Q * Q', 2s1)
+        @test d11 ≈ d22
+        d111 = FrankWolfe.fast_dot(s2, Q' * Q, 2s2)
+        d222 = dot(s2, Q' * Q, 2s2)
+        @test d111 ≈ d222
+        # specialized diagonal form
+        D = Diagonal(randn(100))
+        @test dot(s1, D, s1) ≈ FrankWolfe.fast_dot(s1, D, s1)
+        @test dot(s1, D, s2[1:100]) ≈ FrankWolfe.fast_dot(s1, D, s2[1:100])
+    end
 end

@@ -125,3 +125,7 @@ and [Beck, Pauwels, Sabach (2015)](https://arxiv.org/abs/1502.03716) for more de
 ### Alternating Linear Minimization (ALM)
 
 It is implemented in the [`FrankWolfe.alternating_linear_minimization`](@ref) function.
+
+### Difference of Convex Algorithm with Frank-Wolfe (DCA-FW)
+
+It is implemented in the [`FrankWolfe.dca_fw`](@ref) function.
