@@ -153,14 +153,15 @@ active_set_quadratic_partial_caching = FrankWolfe.ActiveSetQuadraticLinearSolve(
     wolfe_step=true,
 )
 trajectoryBPCG_quadratic_partial_caching = []
-x, v, primal_partial_caching, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
-    f,
-    grad!,
-    lmo,
-    active_set_quadratic_partial_caching,
-    max_iteration=k,
-    callback=build_callback(trajectoryBPCG_quadratic_partial_caching),
-);
+x, v, primal_partial_caching, dual_gap, status, _ =
+    FrankWolfe.blended_pairwise_conditional_gradient(
+        f,
+        grad!,
+        lmo,
+        active_set_quadratic_partial_caching,
+        max_iteration=k,
+        callback=build_callback(trajectoryBPCG_quadratic_partial_caching),
+    );
 
 @test abs(primal_partial_caching - primal_manual_wolfe) < 1e-10
 @test length(active_set_quadratic_partial_caching) < 150

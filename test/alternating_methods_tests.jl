@@ -144,12 +144,12 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
 end
 
 @testset "Testing update order $order for block-coordinate ALM-FW" for order in [
-        FrankWolfe.FullUpdate(),
-        [FrankWolfe.CyclicUpdate(i) for i in [-1, 1, 2]]...,
-        [FrankWolfe.StochasticUpdate(i) for i in [-1, 1, 2]]...,
-        [FrankWolfe.DualGapOrder(i) for i in [-1, 1, 2]]...,
-        [FrankWolfe.DualProgressOrder(i) for i in [-1, 1, 2]]...,
-    ]
+    FrankWolfe.FullUpdate(),
+    [FrankWolfe.CyclicUpdate(i) for i in [-1, 1, 2]]...,
+    [FrankWolfe.StochasticUpdate(i) for i in [-1, 1, 2]]...,
+    [FrankWolfe.DualGapOrder(i) for i in [-1, 1, 2]]...,
+    [FrankWolfe.DualProgressOrder(i) for i in [-1, 1, 2]]...,
+]
 
     for order in orders
         x, _, _, _, _, _ = FrankWolfe.alternating_linear_minimization(
