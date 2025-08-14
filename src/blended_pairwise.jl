@@ -504,5 +504,13 @@ function blended_pairwise_conditional_gradient(
         callback(state, active_set)
     end
 
-    return (x=x, v=v, primal=primal, dual_gap=dual_gap, status=execution_status, traj_data=traj_data, active_set=active_set)
+    return (
+        x=x,
+        v=v,
+        primal=primal,
+        dual_gap=dual_gap,
+        status=execution_status,
+        traj_data=traj_data,
+        active_set=active_set,
+    )
 end

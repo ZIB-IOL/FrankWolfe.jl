@@ -199,7 +199,7 @@ function frank_wolfe(
 
         x = muladd_memory_mode(memory_mode, x, gamma, d)
     end
-    
+
     if dual_gap < max(epsilon, eps(float(typeof(dual_gap))))
         execution_status = STATUS_OPTIMAL
     elseif t >= max_iteration

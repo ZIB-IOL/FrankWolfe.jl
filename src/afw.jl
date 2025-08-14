@@ -399,7 +399,15 @@ function away_frank_wolfe(
         callback(state, active_set)
     end
 
-    return (x=x, v=v, primal=primal, dual_gap=dual_gap, status=execution_status, traj_data=traj_data, active_set=active_set)
+    return (
+        x=x,
+        v=v,
+        primal=primal,
+        dual_gap=dual_gap,
+        status=execution_status,
+        traj_data=traj_data,
+        active_set=active_set,
+    )
 end
 
 # JUSTIFICATION for using the standard FW-gap in the dual update `phi = min(dual_gap, phi / 2.0)` below.
