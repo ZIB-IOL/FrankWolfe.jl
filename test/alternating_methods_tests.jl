@@ -4,7 +4,8 @@ using Test
 using Random
 using StableRNGs
 
-Random.seed!(StableRNG(100), 100)
+rng = StableRNG(100)
+Random.seed!(rng, 100)
 
 f(x) = dot(x, x)
 
@@ -271,30 +272,31 @@ end
 
 @testset "Testing alternating projections" begin
 
-    x, _, _, _, _ = FrankWolfe.alternating_projections((lmo1, lmo_prob), rand(n), verbose=false)
+    x, _, _, _, _ =
+        FrankWolfe.alternating_projections((lmo1, lmo_prob), rand(rng, n), verbose=false)
 
     @test abs(x.blocks[1][1]) < 1e-6
     @test abs(x.blocks[2][1] - 1 / n) < 1e-6
 
-    x, _, _, _, _ = FrankWolfe.alternating_projections((lmo3, lmo_prob), rand(n))
+    x, _, _, _, _ = FrankWolfe.alternating_projections((lmo3, lmo_prob), rand(rng, n))
 
     @test abs(x.blocks[1][1] - 1) < 1e-6
     @test abs(x.blocks[2][1] - 1 / n) < 1e-6
 
-    x, _, _, infeas, _ = FrankWolfe.alternating_projections((lmo1, lmo2), rand(n))
+    x, _, _, infeas, _ = FrankWolfe.alternating_projections((lmo1, lmo2), rand(rng, n))
 
     @test abs(x.blocks[1][1]) < 1e-6
     @test abs(x.blocks[2][1]) < 1e-6
     @test infeas < 1e-6
 
-    x, _, _, infeas, _ = FrankWolfe.alternating_projections((lmo2, lmo3), rand(n))
+    x, _, _, infeas, _ = FrankWolfe.alternating_projections((lmo2, lmo3), rand(rng, n))
 
     @test abs(x.blocks[1][1] - 1) < 1e-4
     @test abs(x.blocks[2][1] - 1) < 1e-4
     @test infeas < 1e-6
 
     x, _, _, infeas, traj_data =
-        FrankWolfe.alternating_projections((lmo1, lmo3), rand(n), trajectory=true)
+        FrankWolfe.alternating_projections((lmo1, lmo3), rand(rng, n), trajectory=true)
 
     @test abs(x.blocks[1][1]) < 1e-6
     @test abs(x.blocks[2][1] - 1) < 1e-6

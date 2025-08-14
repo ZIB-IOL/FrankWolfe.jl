@@ -8,7 +8,8 @@ n = Int(1e3)
 k = 1000
 
 s = 67
-Random.seed!(StableRNG(s), s)
+rng = StableRNG(s)
+Random.seed!(rng, s)
 
 const xp = [
     0.0014225829730746685,
@@ -1020,7 +1021,7 @@ end
 
 const lmo = FrankWolfe.KSparseLMO(100, 1.0)
 
-const x00 = FrankWolfe.compute_extreme_point(lmo, rand(n))
+const x00 = FrankWolfe.compute_extreme_point(lmo, rand(rng, n))
 
 
 function build_callback(trajectory_arr)

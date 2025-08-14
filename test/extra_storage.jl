@@ -6,10 +6,11 @@ using LinearAlgebra
 using StableRNGs
 using Random
 
-Random.seed!(StableRNG(1), 1)
+rng = StableRNG(1)
+Random.seed!(rng, 1)
 
 const dim = 100
-const center0 = 5.0 .+ 3 * rand(dim)
+const center0 = 5.0 .+ 3 * rand(rng, dim)
 f(x) = 0.5 * norm(x .- center0)^2
 function grad!(storage, x)
     return storage .= x .- center0
@@ -19,7 +20,7 @@ end
     lmo = FrankWolfe.UnitSimplexOracle(4.3)
     tlmo = FrankWolfe.TrackingLMO(lmo)
 
-    x0 = FrankWolfe.compute_extreme_point(lmo, randn(dim))
+    x0 = FrankWolfe.compute_extreme_point(lmo, randn(rng, dim))
 
     # Adding a vertex storage
     vertex_storage = FrankWolfe.DeletedVertexStorage(typeof(x0)[], 5)
@@ -41,7 +42,7 @@ end
     lmo_calls0 = tlmo.counter
 
     for iter in 1:10
-        center = 5.0 .+ 3 * rand(dim)
+        center = 5.0 .+ 3 * rand(rng, dim)
         f_i(x) = 0.5 * norm(x .- center)^2
         function grad_i!(storage, x)
             return storage .= x .- center
@@ -67,7 +68,7 @@ end
     lmo = FrankWolfe.UnitSimplexOracle(4.3)
     tlmo = FrankWolfe.TrackingLMO(lmo)
 
-    x0 = FrankWolfe.compute_extreme_point(lmo, randn(dim))
+    x0 = FrankWolfe.compute_extreme_point(lmo, randn(rng, dim))
 
     # Adding a vertex storage
     vertex_storage = FrankWolfe.DeletedVertexStorage(typeof(x0)[], 5)
@@ -89,7 +90,7 @@ end
     lmo_calls0 = tlmo.counter
 
     for iter in 1:10
-        center = 5.0 .+ 3 * rand(dim)
+        center = 5.0 .+ 3 * rand(rng, dim)
         f_i(x) = 0.5 * norm(x .- center)^2
         function grad_i!(storage, x)
             return storage .= x .- center
@@ -115,7 +116,7 @@ end
     lmo = FrankWolfe.UnitSimplexOracle(4.3)
     tlmo = FrankWolfe.TrackingLMO(lmo)
 
-    x0 = FrankWolfe.compute_extreme_point(lmo, randn(dim))
+    x0 = FrankWolfe.compute_extreme_point(lmo, randn(rng, dim))
 
     # Adding a vertex storage
     vertex_storage = FrankWolfe.DeletedVertexStorage(typeof(x0)[], 5)
@@ -137,7 +138,7 @@ end
     lmo_calls0 = tlmo.counter
 
     for iter in 1:10
-        center = 5.0 .+ 3 * rand(dim)
+        center = 5.0 .+ 3 * rand(rng, dim)
         f_i(x) = 0.5 * norm(x .- center)^2
         function grad_i!(storage, x)
             return storage .= x .- center

@@ -2,6 +2,11 @@ using Test
 using FrankWolfe
 using LinearAlgebra
 using DoubleFloats
+using Random
+using StableRNGs
+
+rng = StableRNG(42)
+Random.seed!(rng, 42)
 
 @testset "Multi-precision tests" begin
     rhs = 1
@@ -21,7 +26,7 @@ using DoubleFloats
 
     @testset "Multi-precision test for $T" for T in test_types
         lmo = FrankWolfe.ProbabilitySimplexOracle{T}(rhs)
-        direction = rand(n)
+        direction = rand(rng, n)
         x0 = FrankWolfe.compute_extreme_point(lmo, direction)
 
         x, v, primal, dual_gap, status, trajectory = FrankWolfe.frank_wolfe(
