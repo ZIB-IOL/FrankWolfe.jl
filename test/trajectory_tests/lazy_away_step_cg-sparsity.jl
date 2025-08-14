@@ -2051,7 +2051,7 @@ end
 
     @test norm(res1[1] - x_true1) ≈ 0 atol = 1e-6
     @test res1[3] ≈ primal_true1 atol = 1e-7
-    @test res1[5][end][1] <= 54
+    @test res1.traj_data[end][1] <= 54
 
 
     trajectory_adaptive = []
@@ -3079,7 +3079,7 @@ end
 
     @test norm(res2[1] - x_true2) ≈ 0 atol = 1e-6
     @test res2[3] ≈ primal_true2 atol = 1e-7
-    @test res2[5][end][1] <= 1001
+    @test res2.traj_data[end][1] <= 1001
 
     trajectory_adaptiveLoc15 = []
     callback = build_callback(trajectory_adaptiveLoc15)
@@ -4108,7 +4108,7 @@ end
 
     @test norm(res3[1] - x_true3) ≈ 0 atol = 1e-6
     @test res3[3] ≈ primal_true3 atol = 1e-7
-    @test res3[5][end][1] <= 245
+    @test res3.traj_data[end][1] <= 245
 
 
     trajectory_adaptiveLoc2 = []
@@ -5138,6 +5138,6 @@ end
 
     @test norm(res4[1] - x_true4) <= 1e-6
     @test res4[3] ≈ primal_true4 atol = 1e-7
-    @test res4[5][end][1] <= 279
+    @test res4.traj_data[end][1] <= 279
 
 end
