@@ -378,7 +378,6 @@ function lazified_conditional_gradient(
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
     end
     while t <= max_iteration && dual_gap >= max(epsilon, eps(float(typeof(dual_gap))))
-        @info "get into loop"
         #####################
         # managing time and Ctrl-C
         #####################
