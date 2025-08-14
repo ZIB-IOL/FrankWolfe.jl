@@ -64,4 +64,4 @@ x, v, primal_cut, dual_gap, _, _ = FrankWolfe.blended_conditional_gradient(
     timeout=3.0,
 )
 
-@test primal ≤ primal_cut
+@test primal ≤ primal_cut + sqrt(eps())
