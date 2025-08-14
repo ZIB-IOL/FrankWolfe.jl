@@ -2,6 +2,11 @@ using FrankWolfe
 
 using Test
 using LinearAlgebra
+using Random
+using StableRNGs
+
+rng = StableRNG(42)
+Random.seed!(rng, 42)
 
 @testset "Open-loop FW on polytope" begin
     n = Int(1e2)
@@ -48,7 +53,7 @@ using LinearAlgebra
 
     # strongly convex set
     xp2 = 10 * ones(n)
-    diag_term = 100 * rand(n)
+    diag_term = 100 * rand(rng, n)
     covariance_matrix = zeros(n, n) + LinearAlgebra.Diagonal(diag_term)
     lmo2 = FrankWolfe.EllipsoidLMO(covariance_matrix)
 
@@ -57,7 +62,7 @@ using LinearAlgebra
         @. storage = 2 * (x - xp2)
     end
 
-    x0 = FrankWolfe.compute_extreme_point(lmo2, randn(n))
+    x0 = FrankWolfe.compute_extreme_point(lmo2, randn(rng, n))
 
     res_2 = FrankWolfe.frank_wolfe(
         f2,

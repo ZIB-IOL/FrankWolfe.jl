@@ -2,6 +2,11 @@
 using FrankWolfe
 using LinearAlgebra
 using Test
+using Random
+using StableRNGs
+
+rng = StableRNG(42)
+Random.seed!(rng, 42)
 
 n = Int(1e3)
 k = n
@@ -66,7 +71,7 @@ end
     n = 40
     k = 1000
 
-    xpi = rand(big(1):big(100), n)
+    xpi = rand(rng, big(1):big(100), n)
     total = sum(xpi)
     xp = xpi .// total
 
@@ -76,7 +81,7 @@ end
     end
 
     lmo = FrankWolfe.ProbabilitySimplexOracle{Rational{BigInt}}(rhs)
-    direction = rand(n)
+    direction = rand(rng, n)
     x0 = FrankWolfe.compute_extreme_point(lmo, direction)
     @test eltype(x0) == Rational{BigInt}
 

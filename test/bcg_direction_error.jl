@@ -9,9 +9,10 @@ n = Int(1e4)
 k = 1000
 
 s = 41
-Random.seed!(StableRNG(s), s)
+rng = StableRNG(s)
+Random.seed!(rng, s)
 
-xpi = rand(n);
+xpi = rand(rng, n);
 total = sum(xpi);
 const xp = xpi # ./ total;
 
