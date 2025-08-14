@@ -197,14 +197,12 @@ function frank_wolfe(
             end
         end
 
-        if dual_gap < min(epsilon, eps(float(typeof(dual_gap))))
-            execution_status = STATUS_OPTIMAL
-        end
-
         x = muladd_memory_mode(memory_mode, x, gamma, d)
     end
-
-    if t >= max_iteration
+    
+    if dual_gap < max(epsilon, eps(float(typeof(dual_gap))))
+        execution_status = STATUS_OPTIMAL
+    elseif t >= max_iteration
         execution_status = STATUS_MAXITER
     end
     if execution_status === STATUS_RUNNING
@@ -379,9 +377,8 @@ function lazified_conditional_gradient(
     if linesearch_workspace === nothing
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
     end
-
-    while t <= max_iteration && dual_gap >= max(epsilon, eps(float(dual_gap)))
-
+    while t <= max_iteration && dual_gap >= max(epsilon, eps(float(typeof(dual_gap))))
+        @info "get into loop"
         #####################
         # managing time and Ctrl-C
         #####################
@@ -460,14 +457,11 @@ function lazified_conditional_gradient(
             end
         end
 
-        if dual_gap < min(epsilon, eps(float(dual_gap)))
-            execution_status = STATUS_OPTIMAL
-        end
-
         x = muladd_memory_mode(memory_mode, x, gamma, d)
     end
-
-    if t >= max_iteration
+    if dual_gap <= max(epsilon, eps(float(typeof(dual_gap))))
+        execution_status = STATUS_OPTIMAL
+    elseif t >= max_iteration
         execution_status = STATUS_MAXITER
     end
     if execution_status === STATUS_RUNNING

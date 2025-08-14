@@ -428,7 +428,7 @@ function blended_pairwise_conditional_gradient(
 
     if t >= max_iteration
         execution_status = STATUS_MAXITER
-    elseif phi_value < min(eps(float(typeof(phi_value))), epsilon)
+    elseif phi < max(eps(float(typeof(phi))), epsilon)
         execution_status = STATUS_OPTIMAL
     end
     if execution_status === STATUS_RUNNING
