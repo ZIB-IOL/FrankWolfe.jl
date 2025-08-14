@@ -150,21 +150,18 @@ end
     [FrankWolfe.DualGapOrder(i) for i in [-1, 1, 2]]...,
     [FrankWolfe.DualProgressOrder(i) for i in [-1, 1, 2]]...,
 ]
-
-    for order in orders
-        x, _, _, _, _, _ = FrankWolfe.alternating_linear_minimization(
-            FrankWolfe.block_coordinate_frank_wolfe,
-            f,
-            grad!,
-            (lmo2, lmo_prob),
-            ones(n),
-            line_search=FrankWolfe.Adaptive(relaxed_smoothness=true),
-            update_order=order,
-            lambda=0.5,
-        )
-        @test abs(x.blocks[1][1] - 0.5 / n) < 1e-5
-        @test abs(x.blocks[2][1] - 1 / n) < 1e-5
-    end
+    x, _, _, _, _, _ = FrankWolfe.alternating_linear_minimization(
+        FrankWolfe.block_coordinate_frank_wolfe,
+        f,
+        grad!,
+        (lmo2, lmo_prob),
+        ones(n),
+        line_search=FrankWolfe.Adaptive(relaxed_smoothness=true),
+        update_order=order,
+        lambda=0.5,
+    )
+    @test abs(x.blocks[1][1] - 0.5 / n) < 1e-5
+    @test abs(x.blocks[2][1] - 1 / n) < 1e-5
 end
 
 @testset "Testing ALM with different FW methods" begin
