@@ -418,7 +418,6 @@ function blended_conditional_gradient(
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
-    #dual_gap = 2phi_value
     dual_gap = dot(gradient, x) - dot(gradient, v)
 
     # report post-processed iteration

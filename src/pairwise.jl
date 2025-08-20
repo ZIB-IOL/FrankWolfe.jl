@@ -407,7 +407,7 @@ function lazy_pfw_step(
     gradient,
     lmo,
     active_set,
-    phi,
+    phi_value,
     epsilon,
     d;
     use_extra_vertex_storage=false,
@@ -427,7 +427,7 @@ function lazy_pfw_step(
     # Do lazy pairwise step
     grad_dot_lazy_fw_vertex = dot(gradient, v_local)
 
-    if grad_dot_a_local - grad_dot_lazy_fw_vertex >= phi / sparsity_control &&
+    if grad_dot_a_local - grad_dot_lazy_fw_vertex >= phi_value / sparsity_control &&
        grad_dot_a_local - grad_dot_lazy_fw_vertex >= epsilon
         step_type = ST_LAZY
         v = v_local
@@ -436,7 +436,7 @@ function lazy_pfw_step(
     else
         # optionally: try vertex storage
         if use_extra_vertex_storage
-            lazy_threshold = dot(gradient, a_local) - phi / sparsity_control
+            lazy_threshold = dot(gradient, a_local) - phi_value / sparsity_control
             (found_better_vertex, new_forward_vertex) =
                 storage_find_argmin_vertex(extra_vertex_storage, gradient, lazy_threshold)
             if found_better_vertex
@@ -455,15 +455,15 @@ function lazy_pfw_step(
         # Real dual gap promises enough progress.
         grad_dot_fw_vertex = dot(gradient, v)
         dual_gap = grad_dot_x - grad_dot_fw_vertex
-        if dual_gap >= phi / sparsity_control
+        if dual_gap >= phi_value / sparsity_control
             d = muladd_memory_mode(memory_mode, d, a_local, v)
             #Lower our expectation for progress.
         else
             step_type = ST_DUALSTEP
-            phi = min(dual_gap, phi / 2.0)
+            phi_value = min(dual_gap, phi_value / 2)
         end
     end
-    return d, v, fw_index, a_local, away_index, gamma_max, phi, step_type
+    return d, v, fw_index, a_local, away_index, gamma_max, phi_value, step_type
 end
 
 
