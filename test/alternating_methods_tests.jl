@@ -289,13 +289,13 @@ end
     @test abs(x.blocks[2][1]) < 1e-6
     @test infeas < 1e-6
 
-    x, _, _, infeas, _ = FrankWolfe.alternating_projections((lmo2, lmo3), rand(rng, n))
+    x, _, _, infeas, _, _ = FrankWolfe.alternating_projections((lmo2, lmo3), rand(rng, n))
 
     @test abs(x.blocks[1][1] - 1) < 1e-4
     @test abs(x.blocks[2][1] - 1) < 1e-4
     @test infeas < 1e-6
 
-    x, _, _, infeas, traj_data =
+    x, _, _, infeas, _, traj_data =
         FrankWolfe.alternating_projections((lmo1, lmo3), rand(rng, n), trajectory=true)
 
     @test abs(x.blocks[1][1]) < 1e-6
