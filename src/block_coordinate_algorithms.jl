@@ -334,7 +334,7 @@ function update_iterate(
     linesearch_workspace,
     memory_mode,
     epsilon,
-    d,
+    d_container,
 )
 
     step_type = ST_REGULAR
@@ -355,7 +355,7 @@ function update_iterate(
     # minor modification from original paper for improved sparsity
     # (proof follows with minor modification when estimating the step)
     if local_gap > s.phi / s.sparsity_control && local_gap ≥ epsilon
-        d = muladd_memory_mode(memory_mode, d, a, v_local)
+        d = muladd_memory_mode(memory_mode, d_container, a, v_local)
         vertex_taken = v_local
         gamma_max = a_lambda
         gamma = perform_line_search(
@@ -389,7 +389,7 @@ function update_iterate(
             step_type = ST_REGULAR
         end
         vertex_taken = v
-        d = muladd_memory_mode(memory_mode, d, x, v)
+        d = muladd_memory_mode(memory_mode, d_container, x, v)
         dual_gap = dot(gradient, x) - dot(gradient, v)
         # if we are about to exit, compute dual_gap with the cleaned-up x
         if dual_gap ≤ epsilon
@@ -403,7 +403,7 @@ function update_iterate(
 
         if !s.lazy || dual_gap ≥ s.phi / s.sparsity_control
 
-            d = muladd_memory_mode(memory_mode, d, x, v)
+            d = muladd_memory_mode(memory_mode, d_container, x, v)
 
             gamma = perform_line_search(
                 line_search,
