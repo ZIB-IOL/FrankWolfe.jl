@@ -160,8 +160,8 @@ function blended_conditional_gradient(
     grad!(gradient, x)
     # initial gap estimate computation
     vmax = compute_extreme_point(lmo, gradient)
-    phi = (dot(gradient, x) - dot(gradient, vmax)) / 2
-    dual_gap = phi
+    phi_value = (dot(gradient, x) - dot(gradient, vmax)) / 2
+    dual_gap = phi_value
     execution_status = STATUS_RUNNING
 
     step_type = ST_REGULAR
@@ -206,7 +206,7 @@ function blended_conditional_gradient(
     # this is never used and only defines gamma in the scope outside of the loop
     gamma = NaN
 
-    while t <= max_iteration && (phi ≥ epsilon || t == 0) # do at least one iteration for consistency with other algos
+    while t <= max_iteration && (phi_value ≥ epsilon || t == 0) # do at least one iteration for consistency with other algos
         #####################
         # managing time and Ctrl-C
         #####################
@@ -237,7 +237,7 @@ function blended_conditional_gradient(
             grad!,
             gradient,
             active_set::AbstractActiveSet,
-            phi,
+            phi_value,
             t,
             time_start,
             non_simplex_iter,
@@ -266,21 +266,21 @@ function blended_conditional_gradient(
             lmo,
             active_set,
             gradient,
-            phi,
+            phi_value,
             sparsity_control;
             inplace_loop=(memory_mode isa InplaceEmphasis),
             force_fw_step=force_fw_step,
             use_extra_vertex_storage=use_extra_vertex_storage,
             extra_vertex_storage=extra_vertex_storage,
-            phi=phi,
+            phi_value=phi_value,
             lmo_kwargs...,
         )
         force_fw_step = false
         xval = dot(gradient, x)
-        if value > xval - phi / sparsity_control
+        if value > xval - phi_value / sparsity_control
             step_type = ST_DUALSTEP
             # setting gap estimate as ∇f(x) (x - v_FW) / 2
-            phi = (xval - value) / 2
+            phi_value = (xval - value) / 2
             if callback !== nothing
                 state = CallbackState(
                     t,
@@ -363,14 +363,14 @@ function blended_conditional_gradient(
         end
 
         x = get_active_set_iterate(active_set)
-        dual_gap = phi
+        dual_gap = phi_value
         non_simplex_iter += 1
     end
 
     ## post-processing and cleanup after loop
     if t >= max_iteration
         execution_status = STATUS_MAXITER
-    elseif phi < max(eps(float(typeof(phi))), epsilon)
+    elseif phi_value < max(eps(float(typeof(phi_value))), epsilon)
         execution_status = STATUS_OPTIMAL
     end
     if execution_status === STATUS_RUNNING
@@ -418,7 +418,7 @@ function blended_conditional_gradient(
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
-    #dual_gap = 2phi
+    #dual_gap = 2phi_value
     dual_gap = dot(gradient, x) - dot(gradient, v)
 
     # report post-processed iteration
@@ -1146,7 +1146,7 @@ function lp_separation_oracle(
     force_fw_step::Bool=false,
     use_extra_vertex_storage=false,
     extra_vertex_storage=nothing,
-    phi=Inf,
+    phi_value=Inf,
     kwargs...,
 )
     # if FW step forced, ignore active set
@@ -1183,7 +1183,7 @@ function lp_separation_oracle(
     end
     # optionally: try vertex storage
     if use_extra_vertex_storage && extra_vertex_storage !== nothing
-        lazy_threshold = dot(direction, x) - phi / sparsity_control
+        lazy_threshold = dot(direction, x) - phi_value / sparsity_control
         (found_better_vertex, new_forward_vertex) =
             storage_find_argmin_vertex(extra_vertex_storage, direction, lazy_threshold)
         if found_better_vertex
@@ -1196,6 +1196,6 @@ function lp_separation_oracle(
     else
         y = compute_extreme_point(lmo, direction; kwargs...)
     end
-    # don't return nothing but y, dot(direction, y) / use y for step outside / and update phi as in LCG (lines 402 - 406)
+    # don't return nothing but y, dot(direction, y) / use y for step outside / and update phi_value as in LCG (lines 402 - 406)
     return (y, dot(direction, y))
 end
