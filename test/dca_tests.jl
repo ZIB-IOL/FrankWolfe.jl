@@ -392,6 +392,7 @@ using StableRNGs
         )
         # Should terminate quickly due to timeout or converge very fast
         @test result.iterations >= 1
+        @test result.status == FrankWolfe.STATUS_TIMEOUT
     end
 
     @testset "Memory Modes" begin
