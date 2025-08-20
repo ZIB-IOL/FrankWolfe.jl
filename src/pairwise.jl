@@ -173,6 +173,7 @@ function pairwise_frank_wolfe(
     v = active_set.atoms[1]
     phi_value = convert(eltype(x), Inf)
     gamma = one(phi_value)
+    execution_status = STATUS_RUNNING
 
     if linesearch_workspace === nothing
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
@@ -197,6 +198,7 @@ function pairwise_frank_wolfe(
                 if verbose
                     @info "Time limit reached"
                 end
+                execution_status = STATUS_TIMEOUT
                 break
             end
         end
@@ -290,6 +292,7 @@ function pairwise_frank_wolfe(
                 step_type,
             )
             if callback(state, active_set) === false
+                execution_status = STATUS_INTERRUPTED
                 break
             end
         end
@@ -307,6 +310,16 @@ function pairwise_frank_wolfe(
             primal = f(x)
             dual_gap = phi_value
         end
+    end
+
+    if phi_value < max(epsilon, eps(float(typeof(phi_value))))
+        execution_status = STATUS_OPTIMAL
+    elseif t >= max_iteration
+        execution_status = STATUS_MAXITER
+    end
+    if execution_status === STATUS_RUNNING
+        @warn "Status not set"
+        execution_status = STATUS_OPTIMAL
     end
 
     # recompute everything once more for final verfication / do not record to trajectory though for now!
@@ -378,7 +391,15 @@ function pairwise_frank_wolfe(
         callback(state, active_set)
     end
 
-    return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data, active_set=active_set)
+    return (
+        x=x,
+        v=v,
+        primal=primal,
+        dual_gap=dual_gap,
+        status=execution_status,
+        traj_data=traj_data,
+        active_set=active_set,
+    )
 end
 
 function lazy_pfw_step(

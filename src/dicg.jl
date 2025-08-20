@@ -287,7 +287,14 @@ function decomposition_invariant_conditional_gradient(
             callback(state, nothing, v)
         end
     end
-    return (x=x, v=v, primal=primal, dual_gap=dual_gap, status=execution_status, traj_data=traj_data)
+    return (
+        x=x,
+        v=v,
+        primal=primal,
+        dual_gap=dual_gap,
+        status=execution_status,
+        traj_data=traj_data,
+    )
 end
 
 """
@@ -549,7 +556,14 @@ function blended_decomposition_invariant_conditional_gradient(
             callback(state, nothing, v)
         end
     end
-    return (x=x, v=v, primal=primal, dual_gap=dual_gap, status=execution_status, traj_data=traj_data)
+    return (
+        x=x,
+        v=v,
+        primal=primal,
+        dual_gap=dual_gap,
+        status=execution_status,
+        traj_data=traj_data,
+    )
 end
 
 """
