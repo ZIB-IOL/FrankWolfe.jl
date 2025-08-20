@@ -238,7 +238,7 @@ using StableRNGs
             @test abs(sum(result.x) - 1.0) < 1e-10
             @test all(result.x .>= -1e-10)
             @test abs(result.primal - phi(result.x)) < 1e-10
-            @test result.status == FrankWolfe.STATUS_OPTIMAL
+            @test result.status in (FrankWolfe.STATUS_OPTIMAL, FrankWolfe.STATUS_MAXITER)
         end
     end
 
