@@ -84,11 +84,14 @@ end
         lazy=true,
         epsilon=3e-7,
     )
-    @test res_afw[3] ≈ res_bpcg[3]
-    @test res_afw[3] ≈ res_pfw[3]
-    @test res_afw[3] ≈ res_afw_lazy[3]
-    @test res_pfw[3] ≈ res_pfw_lazy[3]
-    @test res_bpcg[3] ≈ res_bpcg_lazy[3]
+    @test res_pfw.status == FrankWolfe.STATUS_OPTIMAL
+    @test res_pfw_lazy.status == FrankWolfe.STATUS_OPTIMAL
+    @test res_afw.status == FrankWolfe.STATUS_OPTIMAL
+    @test res_afw.primal ≈ res_bpcg.primal
+    @test res_afw.primal ≈ res_pfw.primal
+    @test res_afw.primal ≈ res_afw_lazy.primal
+    @test res_pfw.primal ≈ res_pfw_lazy.primal
+    @test res_bpcg.primal ≈ res_bpcg_lazy.primal
     @test norm(res_afw[1] - res_bpcg[1]) ≈ 0 atol = 1e-6
     @test norm(res_afw[1] - res_pfw[1]) ≈ 0 atol = 1e-6
     @test norm(res_afw[1] - res_afw_lazy[1]) ≈ 0 atol = 1e-6
@@ -105,7 +108,7 @@ end
         lazy=true,
         epsilon=3e-7,
     )
-    @test res_bpcg2[3] ≈ res_bpcg[3] atol = 1e-5
+    @test res_bpcg2.primal ≈ res_bpcg.primal atol = 1e-5
     active_set_afw = res_afw[end]
     storage = copy(active_set_afw.x)
     grad!(storage, active_set_afw.x)
@@ -233,6 +236,6 @@ end
         line_search=FrankWolfe.Adaptive(L_est=10.0, relaxed_smoothness=true),
         trajectory=true,
     )
-    @test abs(res[3] - 0.70939) ≤ 0.001
+    @test abs(res.primal - 0.70939) ≤ 0.001
     @test res[4] ≤ 1e-2
 end
