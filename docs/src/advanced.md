@@ -154,7 +154,6 @@ The above is the optional benchmarking of the oracles that we provide to underst
 Vanilla Frank-Wolfe Algorithm.
 EMPHASIS: memory STEPSIZE: agnostic EPSILON: 1.0e-7 MAXITERATION: 1000 TYPE: Float64
 MOMENTUM: nothing GRADIENTTYPE: Nothing
-WARNING: In memory emphasis mode iterates are written back into x0!
 
 ─────────────────────────────────────────────────────────────────────────────────────────────────
   Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec

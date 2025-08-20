@@ -61,6 +61,8 @@ function decomposition_invariant_conditional_gradient(
     linesearch_workspace=nothing,
     sparsity_control=2.0,
     extra_vertex_storage=nothing,
+    x_container=nothing,
+    d_container=nothing,
 )
 
     if !is_decomposition_invariant_oracle(lmo)
@@ -96,12 +98,18 @@ function decomposition_invariant_conditional_gradient(
 
     x = x0
 
-    if memory_mode isa InplaceEmphasis && !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
-        # if integer, convert element type to most appropriate float
-        if eltype(x) <: Integer
-            x = copyto!(similar(x, float(eltype(x))), x)
+    # we don't want to overwrite x0
+    if memory_mode isa InplaceEmphasis
+        if x_container !== nothing
+            x = x_container
+            copyto!(x, x0)
         else
-            x = copyto!(similar(x), x)
+            # if integer, convert element type to most appropriate float
+            if eltype(x) <: Integer
+                x = copyto!(similar(x, float(eltype(x))), x)
+            else
+                x = copyto!(similar(x), x)
+            end
         end
     end
 
@@ -110,7 +118,7 @@ function decomposition_invariant_conditional_gradient(
     step_type = ST_REGULAR
     time_start = time_ns()
 
-    d = similar(x)
+    d = d_container !== nothing ? d_container : similar(x)
 
     if gradient === nothing
         gradient = collect(x)
@@ -125,9 +133,6 @@ function decomposition_invariant_conditional_gradient(
         grad_type = typeof(gradient)
         println("GRADIENstep_typeYPE: $grad_type LAZY: $lazy sparsity_control: $sparsity_control")
         println("LMO: $(typeof(lmo))")
-        if memory_mode isa InplaceEmphasis
-            @info("In memory_mode memory iterates are written back into x0!")
-        end
     end
 
     grad!(gradient, x)
@@ -329,6 +334,8 @@ function blended_decomposition_invariant_conditional_gradient(
     linesearch_workspace=nothing,
     sparsity_control=2.0,
     extra_vertex_storage=nothing,
+    x_container=nothing,
+    d_container=nothing,
 )
 
     if !is_decomposition_invariant_oracle(lmo)
@@ -361,12 +368,17 @@ function blended_decomposition_invariant_conditional_gradient(
     end
 
     x = x0
-    if memory_mode isa InplaceEmphasis && !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
-        # if integer, convert element type to most appropriate float
-        if eltype(x) <: Integer
-            x = copyto!(similar(x, float(eltype(x))), x)
+    if memory_mode isa InplaceEmphasis
+        if x_container !== nothing
+            x = x_container
+            copyto!(x, x0)
         else
-            x = copyto!(similar(x), x)
+            # if integer, convert element type to most appropriate float
+            if eltype(x) <: Integer
+                x = copyto!(similar(x, float(eltype(x))), x)
+            else
+                x = copyto!(similar(x), x)
+            end
         end
     end
 
@@ -375,7 +387,7 @@ function blended_decomposition_invariant_conditional_gradient(
     step_type = ST_REGULAR
     time_start = time_ns()
 
-    d = similar(x)
+    d = d_container !== nothing ? d_container : similar(x)
 
     if gradient === nothing
         gradient = collect(x)
@@ -390,9 +402,6 @@ function blended_decomposition_invariant_conditional_gradient(
         grad_type = typeof(gradient)
         println("GRADIENstep_typeYPE: $grad_type LAZY: $lazy sparsity_control: $sparsity_control")
         println("LMO: $(typeof(lmo))")
-        if memory_mode isa InplaceEmphasis
-            @info("In memory_mode memory iterates are written back into x0!")
-        end
     end
 
     grad!(gradient, x)

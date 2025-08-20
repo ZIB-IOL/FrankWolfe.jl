@@ -50,7 +50,7 @@ function build_callback(trajectory_arr)
 end
 
 trajectoryBPCG_standard = []
-x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+x, v, primal, dual_gap, status, _, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -67,7 +67,7 @@ MOI.set(o, MOI.Silent(), true)
 active_set_sparse =
     FrankWolfe.ActiveSetSparsifier(FrankWolfe.ActiveSet([1.0], [x000], similar(x000)), o)
 trajectoryBPCG_as_sparse = []
-x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+x, v, primal, dual_gap, status, _, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
