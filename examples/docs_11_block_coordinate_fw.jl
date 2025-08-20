@@ -53,7 +53,7 @@ for order in [
     CustomOrder(),
 ]
 
-    _, _, _, _, traj_data = FrankWolfe.block_coordinate_frank_wolfe(
+    res = FrankWolfe.block_coordinate_frank_wolfe(
         f,
         grad!,
         prod_lmo,
@@ -62,7 +62,7 @@ for order in [
         trajectory=true,
         update_order=order,
     )
-    push!(trajectories, traj_data)
+    push!(trajectories, res.traj_data)
 end
 # ### Plotting the results
 labels = ["Full update", "Cyclic order", "Stochstic order", "Custom order"]
@@ -81,7 +81,7 @@ for us in [
     FrankWolfe.FrankWolfeStep(),
 ]
 
-    _, _, _, _, traj_data = FrankWolfe.block_coordinate_frank_wolfe(
+    res = FrankWolfe.block_coordinate_frank_wolfe(
         f,
         grad!,
         prod_lmo,
@@ -90,7 +90,7 @@ for us in [
         trajectory=true,
         update_step=us,
     )
-    push!(trajectories, traj_data)
+    push!(trajectories, res.traj_data)
 end
 # ### Plotting the results
 labels = ["BPCG FW", "FW BPCG", "BPCG", "FW"]
