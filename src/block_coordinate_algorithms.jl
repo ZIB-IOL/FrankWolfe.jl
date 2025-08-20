@@ -509,6 +509,7 @@ function block_coordinate_frank_wolfe(
     traj_data=[],
     timeout=Inf,
     linesearch_workspace=nothing,
+    d_container=nothing,
 ) where {
     N,
     US<:Union{UpdateStep,NTuple{N,UpdateStep}},
@@ -563,7 +564,7 @@ function block_coordinate_frank_wolfe(
     end
 
     gamma = nothing
-    v = similar(x)
+    v = x0
 
     time_start = time_ns()
 
