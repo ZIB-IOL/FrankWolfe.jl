@@ -107,7 +107,7 @@ using StableRNGs
             epsilon=1e-6,
             verbose=false,
         )
-        
+
         # Check feasibility
         @test abs(sum(result.x) - 1.0) < 1e-10
         @test all(result.x .>= -1e-10)
