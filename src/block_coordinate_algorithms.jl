@@ -677,7 +677,7 @@ function block_coordinate_frank_wolfe(
                     linesearch_workspace[i],
                     memory_mode,
                     epsilon / N, # smaller tolerance s.t. the total gap is smaller than epsilon
-                    d[i],
+                    d.blocks[i],
                 )
             end
 
