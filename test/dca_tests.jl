@@ -384,9 +384,9 @@ using StableRNGs
             grad_g!,
             lmo,
             copy(x0),
-            max_iteration=1000,
+            max_iteration=5000,
             timeout=0.01,  # Very short timeout
-            verbose=false,
+            verbose=true,
         )
         # Should terminate quickly due to timeout or converge very fast
         @test result.iterations >= 1
