@@ -686,7 +686,8 @@ function lazy_blended_dicg_step(
     end
 
     # Do lazy pairwise step
-    if grad_dot_a_taken - grad_dot_v_taken >= phi_value && grad_dot_a_taken - grad_dot_v_taken >= epsilon
+    if grad_dot_a_taken - grad_dot_v_taken >= phi_value &&
+       grad_dot_a_taken - grad_dot_v_taken >= epsilon
         step_type = ST_LAZY
         v = v_taken
         a = a_taken
