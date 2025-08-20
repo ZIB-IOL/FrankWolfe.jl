@@ -2,9 +2,9 @@ using FrankWolfe
 using LinearAlgebra
 using Random
 
-max_iter = Int(1e5)
-print_iter = max_iter // 100
-epsilon = 1e-10
+max_iter = 10_000
+print_iter = max_iter ÷ 100
+epsilon = 1e-5
 
 """
 Simple quadratic function f(x) = 1/2 * x'Qx + b'x
