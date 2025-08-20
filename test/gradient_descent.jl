@@ -228,15 +228,16 @@ const f_opt = f_gd(x_opt)
 
             @testset "Box comparison" begin
                 τ_box = 1.0
-                x_prox_box, f_prox_box, status_prox_box, _ = FrankWolfe.proximal_adaptive_gradient_descent(
-                    f_gd,
-                    grad_gd!,
-                    x0,
-                    ProximalOperators.IndBox(0.0, τ_box);
-                    epsilon=target_tolerance,
-                    print_iter=print_iter,
-                    verbose=false,
-                )
+                x_prox_box, f_prox_box, status_prox_box, _ =
+                    FrankWolfe.proximal_adaptive_gradient_descent(
+                        f_gd,
+                        grad_gd!,
+                        x0,
+                        ProximalOperators.IndBox(0.0, τ_box);
+                        epsilon=target_tolerance,
+                        print_iter=print_iter,
+                        verbose=false,
+                    )
                 @test status_prox_box == FrankWolfe.STATUS_OPTIMAL
                 lmo_box = FrankWolfe.ScaledBoundLInfNormBall(zeros(n), τ_box * ones(n))
                 x0 = FrankWolfe.compute_extreme_point(lmo_box, zeros(n))
