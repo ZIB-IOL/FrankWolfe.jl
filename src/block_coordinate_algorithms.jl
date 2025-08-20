@@ -389,6 +389,7 @@ function update_iterate(
             step_type = ST_REGULAR
         end
         vertex_taken = v
+        d = muladd_memory_mode(memory_mode, d, x, v)
         dual_gap = dot(gradient, x) - dot(gradient, v)
         # if we are about to exit, compute dual_gap with the cleaned-up x
         if dual_gap ≤ epsilon

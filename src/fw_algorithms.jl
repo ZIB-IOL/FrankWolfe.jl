@@ -109,7 +109,7 @@ function frank_wolfe(
 
     # container for direction
     d = d_container !== nothing ? d_container : similar(x)
-    
+
     gtemp = momentum === nothing ? d : similar(x)
 
     while t <= max_iteration && dual_gap >= max(epsilon, eps(float(typeof(dual_gap))))
