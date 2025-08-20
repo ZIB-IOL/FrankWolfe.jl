@@ -82,7 +82,7 @@ lmo_moi = FrankWolfe.MathOptLMO(o)
 
 x0 = FrankWolfe.compute_extreme_point(lmo_moi, zeros(n))
 
-xfinal, vfinal, primal_value, dual_gap, traj_data, status = FrankWolfe.frank_wolfe(
+xfinal, vfinal, primal_value, dual_gap, status, traj_data = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo_moi,
