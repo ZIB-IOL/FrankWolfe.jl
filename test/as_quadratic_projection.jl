@@ -41,7 +41,7 @@ function build_callback(trajectory_arr)
 end
 
 trajectoryBPCG_standard = []
-x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -57,7 +57,7 @@ active_set_quadratic_automatic_standard = FrankWolfe.ActiveSetQuadraticLinearSol
     scheduler=FrankWolfe.LogScheduler(start_time=10, scaling_factor=1),
 )
 trajectoryBPCG_quadratic_automatic_standard = []
-x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -73,7 +73,7 @@ active_set_quadratic_automatic = FrankWolfe.ActiveSetQuadraticLinearSolve(
     scheduler=FrankWolfe.LogScheduler(start_time=10, scaling_factor=1),
 )
 trajectoryBPCG_quadratic_automatic = []
-x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -90,7 +90,7 @@ active_set_quadratic_manual = FrankWolfe.ActiveSetQuadraticLinearSolve(
     scheduler=FrankWolfe.LogScheduler(start_time=10, scaling_factor=1),
 )
 trajectoryBPCG_quadratic_manual = []
-x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -124,7 +124,7 @@ active_set_quadratic_manual_wolfe = FrankWolfe.ActiveSetQuadraticLinearSolve(
 )
 
 trajectoryBPCG_quadratic_manual = []
-x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -133,7 +133,7 @@ x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     callback=build_callback(trajectoryBPCG_quadratic_manual),
 );
 trajectoryBPCG_quadratic_manual_wolfe = []
-x, v, primal_manual_wolfe, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+x, v, primal_manual_wolfe, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -154,14 +154,15 @@ active_set_quadratic_partial_caching = FrankWolfe.ActiveSetQuadraticLinearSolve(
     wolfe_step=true,
 )
 trajectoryBPCG_quadratic_partial_caching = []
-x, v, primal_partial_caching, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
-    f,
-    grad!,
-    lmo,
-    active_set_quadratic_partial_caching,
-    max_iteration=k,
-    callback=build_callback(trajectoryBPCG_quadratic_partial_caching),
-);
+x, v, primal_partial_caching, dual_gap, status, _ =
+    FrankWolfe.blended_pairwise_conditional_gradient(
+        f,
+        grad!,
+        lmo,
+        active_set_quadratic_partial_caching,
+        max_iteration=k,
+        callback=build_callback(trajectoryBPCG_quadratic_partial_caching),
+    );
 
 @test abs(primal_partial_caching - primal_manual_wolfe) < 1e-10
 @test length(active_set_quadratic_partial_caching) < 150

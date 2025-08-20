@@ -34,7 +34,7 @@ lmo = FrankWolfe.ProbabilitySimplexOracle{Rational{BigInt}}(1)
 # compute some initial vertex
 x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
-x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+x, v, primal, dual_gap, status, trajectory = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -52,7 +52,7 @@ println("\nOutput type of solution: ", eltype(x))
 # smoothness inequality as ``\gamma_t=\frac{\langle \nabla f(x_t),x_t-v_t\rangle}{2L||x_t-v_t||^2}``. However, as this step size depends on an upper bound on the
 # Lipschitz constant ``L`` as well as the inner product with the gradient ``\nabla f(x_t)``, both have to be of a rational type.
 
-@time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+@time x, v, primal, dual_gap, status, trajectory = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,

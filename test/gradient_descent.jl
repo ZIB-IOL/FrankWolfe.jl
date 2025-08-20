@@ -148,16 +148,17 @@ const f_opt = f_gd(x_opt)
         target_tolerance = 1e-8
 
         # Test with identity proximal operator (should match regular variant)
-        x_id, f_id, _ = FrankWolfe.proximal_adaptive_gradient_descent(
+        x_id, f_id, status_id, _ = FrankWolfe.proximal_adaptive_gradient_descent(
             f_gd,
             grad_gd!,
             x0;
             epsilon=target_tolerance,
             verbose=false,
         )
+        @test status_id == FrankWolfe.STATUS_OPTIMAL
 
         # Test with L1 proximal operator
-        x_l1, f_l1, _ = FrankWolfe.proximal_adaptive_gradient_descent(
+        x_l1, f_l1, status_l1, _ = FrankWolfe.proximal_adaptive_gradient_descent(
             f_gd,
             grad_gd!,
             x0,
@@ -166,15 +167,17 @@ const f_opt = f_gd(x_opt)
             max_iteration=k,
             verbose=false,
         )
+        @test status_l1 == FrankWolfe.STATUS_OPTIMAL
 
         # Identity proximal operator should give same result as regular variant
-        x_reg, f_reg, _ = FrankWolfe.adaptive_gradient_descent(
+        x_reg, f_reg, status_reg, _ = FrankWolfe.adaptive_gradient_descent(
             f_gd,
             grad_gd!,
             x0;
             epsilon=target_tolerance,
             verbose=false,
         )
+        @test status_reg == FrankWolfe.STATUS_OPTIMAL
 
         @testset "Comparison with FW variants" begin
             @testset "L1-ball comparison" begin
@@ -195,7 +198,7 @@ const f_opt = f_gd(x_opt)
             end
 
             @testset "Probability simplex comparison" begin
-                x_prox_prob, f_prox_prob, _ = FrankWolfe.proximal_adaptive_gradient_descent(
+                x_prox_prob, f_prox_prob, _, _ = FrankWolfe.proximal_adaptive_gradient_descent(
                     f_gd,
                     grad_gd!,
                     x0,
@@ -225,18 +228,20 @@ const f_opt = f_gd(x_opt)
 
             @testset "Box comparison" begin
                 τ_box = 1.0
-                x_prox_box, f_prox_box, _ = FrankWolfe.proximal_adaptive_gradient_descent(
-                    f_gd,
-                    grad_gd!,
-                    x0,
-                    ProximalOperators.IndBox(0.0, τ_box);
-                    epsilon=target_tolerance,
-                    print_iter=print_iter,
-                    verbose=false,
-                )
+                x_prox_box, f_prox_box, status_prox_box, _ =
+                    FrankWolfe.proximal_adaptive_gradient_descent(
+                        f_gd,
+                        grad_gd!,
+                        x0,
+                        ProximalOperators.IndBox(0.0, τ_box);
+                        epsilon=target_tolerance,
+                        print_iter=print_iter,
+                        verbose=false,
+                    )
+                @test status_prox_box == FrankWolfe.STATUS_OPTIMAL
                 lmo_box = FrankWolfe.ScaledBoundLInfNormBall(zeros(n), τ_box * ones(n))
                 x0 = FrankWolfe.compute_extreme_point(lmo_box, zeros(n))
-                x_fw_box, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+                res_fw_box = FrankWolfe.blended_pairwise_conditional_gradient(
                     f_gd,
                     grad_gd!,
                     lmo_box,
@@ -246,6 +251,8 @@ const f_opt = f_gd(x_opt)
                     max_iteration=k,
                     verbose=false,
                 )
+                x_fw_box = res_fw_box.x
+                @test res_fw_box.status == FrankWolfe.STATUS_OPTIMAL
                 f_fw_box = f_gd(x_fw_box)
                 @test abs(f_prox_box - f_fw_box) ≤ target_tolerance * 10
             end

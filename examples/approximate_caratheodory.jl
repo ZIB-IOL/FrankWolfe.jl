@@ -23,7 +23,7 @@ FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo; k=100)
 # the algorithm runs in rational arithmetic even if the gradients and the function itself are not rational
 # this is because we replace the descent direction by the directions of the LMO are rational
 
-@time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+@time x, v, primal, dual_gap, status, trajectory = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -40,7 +40,7 @@ println("\nOutput type of solution: ", eltype(x))
 # you can even run everything in rational arithmetic using the shortstep rule
 # NOTE: in this case the gradient computation has to be rational as well
 
-@time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+@time x, v, primal, dual_gap, status, trajectory = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -82,7 +82,7 @@ lmo = FrankWolfe.ProbabilitySimplexOracle{Rational{BigInt}}(rhs)
 direction = rand(n)
 x0 = FrankWolfe.compute_extreme_point(lmo, direction)
 
-@time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+@time x, v, primal, dual_gap, status, trajectory = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,

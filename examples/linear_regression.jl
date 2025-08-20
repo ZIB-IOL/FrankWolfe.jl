@@ -143,7 +143,7 @@ function gradf(storage, x)
     end
 end
 
-@time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+@time x, v, primal, dual_gap, status, trajectory = FrankWolfe.frank_wolfe(
     ff,
     gradf,
     lmo,

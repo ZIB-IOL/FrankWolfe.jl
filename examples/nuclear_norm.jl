@@ -65,7 +65,7 @@ const k = 500
 
 x00 = copy(x0)
 
-xfin, vmin, _, _, traj_data = FrankWolfe.frank_wolfe(
+xfin, vmin, _, _, status, traj_data = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -80,7 +80,7 @@ xfin, vmin, _, _, traj_data = FrankWolfe.frank_wolfe(
     gradient=spzeros(size(x0)...),
 )
 
-xfinlcg, vmin, _, _, traj_data = FrankWolfe.lazified_conditional_gradient(
+xfinlcg, vmin, _, _, traj_data, _ = FrankWolfe.lazified_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -98,7 +98,7 @@ xfinlcg, vmin, _, _, traj_data = FrankWolfe.lazified_conditional_gradient(
 
 x00 = copy(x0)
 
-xfinAFW, vmin, _, _, traj_data = FrankWolfe.away_frank_wolfe(
+xfinAFW, vmin, _, _, status, traj_data, _ = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,

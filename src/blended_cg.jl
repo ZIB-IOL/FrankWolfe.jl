@@ -162,6 +162,7 @@ function blended_conditional_gradient(
     vmax = compute_extreme_point(lmo, gradient)
     phi = (dot(gradient, x) - dot(gradient, vmax)) / 2
     dual_gap = phi
+    execution_status = STATUS_RUNNING
 
     step_type = ST_REGULAR
     time_start = time_ns()
@@ -221,6 +222,7 @@ function blended_conditional_gradient(
                 if verbose
                     @info "Time limit reached"
                 end
+                execution_status = STATUS_TIMEOUT
                 break
             end
         end
@@ -297,6 +299,7 @@ function blended_conditional_gradient(
                     step_type,
                 )
                 if callback(state, active_set, non_simplex_iter) === false
+                    execution_status = STATUS_INTERRUPTED
                     break
                 end
             end
@@ -334,6 +337,7 @@ function blended_conditional_gradient(
                     step_type,
                 )
                 if callback(state, active_set, non_simplex_iter) === false
+                    execution_status = STATUS_INTERRUPTED
                     break
                 end
             end
@@ -364,6 +368,15 @@ function blended_conditional_gradient(
     end
 
     ## post-processing and cleanup after loop
+    if t >= max_iteration
+        execution_status = STATUS_MAXITER
+    elseif phi < max(eps(float(typeof(phi))), epsilon)
+        execution_status = STATUS_OPTIMAL
+    end
+    if execution_status === STATUS_RUNNING
+        @warn "Status not set"
+        execution_status = STATUS_OPTIMAL
+    end
 
     # report last iteration
     if callback !== nothing
@@ -430,7 +443,15 @@ function blended_conditional_gradient(
         )
         callback(state, active_set, non_simplex_iter)
     end
-    return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data, active_set=active_set)
+    return (
+        x=x,
+        v=v,
+        primal=primal,
+        dual_gap=dual_gap,
+        status=execution_status,
+        traj_data=traj_data,
+        active_set=active_set,
+    )
 end
 
 
@@ -458,7 +479,7 @@ function minimize_over_convex_hull!(
     time_start,
     non_simplex_iter;
     line_search_inner=Secant(),
-    verbose=true,
+    verbose=false,
     print_iter=1000,
     hessian=nothing,
     weight_purge_threshold=weight_purge_threshold_default(R),
@@ -922,7 +943,7 @@ function simplex_gradient_descent_over_convex_hull(
     non_simplex_iter,
     memory_mode::MemoryEmphasis=InplaceEmphasis();
     line_search_inner=Secant(),
-    verbose=true,
+    verbose=false,
     print_iter=1000,
     hessian=nothing,
     weight_purge_threshold=weight_purge_threshold_default(R),

@@ -486,6 +486,7 @@ The method returns a tuple `(x, v, primal, dual_gap, traj_data)` with:
 - `v` cartesian product of last vertices of the LMOs
 - `primal` primal value `f(x)`
 - `dual_gap` final Frank-Wolfe gap
+- `status` the termination status
 - `traj_data` vector of trajectory information.
 """
 function block_coordinate_frank_wolfe(
@@ -537,6 +538,7 @@ function block_coordinate_frank_wolfe(
     primal = Inf
     x = copy(x0)
     step_type = ST_REGULAR
+    execution_status = STATUS_RUNNING
 
     if trajectory
         callback = make_trajectory_callback(callback, traj_data)
@@ -641,6 +643,7 @@ function block_coordinate_frank_wolfe(
                 if verbose
                     @info "Time limit reached"
                 end
+                execution_status = STATUS_TIMEOUT
                 break
             end
         end
@@ -726,18 +729,28 @@ function block_coordinate_frank_wolfe(
                 step_type,
             )
             if callback !== nothing
-                # @show state
                 if callback(state, dual_gaps) === false
+                    execution_status = STATUS_INTERRUPTED
                     break
                 end
             end
         end
-
     end
     # recompute everything once for final verfication / do not record to trajectory though for now!
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
     # hence the final computation.
     step_type = ST_LAST
+
+    if t >= max_iteration
+        execution_status = STATUS_MAXITER
+    elseif dual_gap < max(eps(float(typeof(dual_gap))), epsilon)
+        execution_status = STATUS_OPTIMAL
+    end
+    if execution_status === STATUS_RUNNING
+        @warn "Status not set"
+        execution_status = STATUS_OPTIMAL
+    end
+
 
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
@@ -767,5 +780,12 @@ function block_coordinate_frank_wolfe(
         callback(state, dual_gaps)
     end
 
-    return x, v, primal, dual_gap, traj_data
+    return (
+        x=x,
+        v=v,
+        primal=primal,
+        dual_gap=dual_gap,
+        status=execution_status,
+        traj_data=traj_data,
+    )
 end

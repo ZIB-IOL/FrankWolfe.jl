@@ -111,7 +111,7 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
     @test norm(x.blocks[1] - zeros(n)) < 1e-6
     @test norm(x.blocks[2] - ones(n)) < 1e-6
 
-    x, _, _, _, _, traj_data = FrankWolfe.alternating_linear_minimization(
+    x, _, _, _, _, _, traj_data = FrankWolfe.alternating_linear_minimization(
         FrankWolfe.block_coordinate_frank_wolfe,
         f,
         grad!,
@@ -144,30 +144,25 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
 
 end
 
-@testset "Testing update orders for block-coordinate ALM-FW" begin
-
-    orders = [
-        FrankWolfe.FullUpdate(),
-        [FrankWolfe.CyclicUpdate(i) for i in [-1, 1, 2]]...,
-        [FrankWolfe.StochasticUpdate(i) for i in [-1, 1, 2]]...,
-        [FrankWolfe.DualGapOrder(i) for i in [-1, 1, 2]]...,
-        [FrankWolfe.DualProgressOrder(i) for i in [-1, 1, 2]]...,
-    ]
-
-    for order in orders
-        x, _, _, _, _, _ = FrankWolfe.alternating_linear_minimization(
-            FrankWolfe.block_coordinate_frank_wolfe,
-            f,
-            grad!,
-            (lmo2, lmo_prob),
-            ones(n),
-            line_search=FrankWolfe.Adaptive(relaxed_smoothness=true),
-            update_order=order,
-            lambda=0.5,
-        )
-        @test abs(x.blocks[1][1] - 0.5 / n) < 1e-5
-        @test abs(x.blocks[2][1] - 1 / n) < 1e-5
-    end
+@testset "Testing update order $order for block-coordinate ALM-FW" for order in [
+    FrankWolfe.FullUpdate(),
+    [FrankWolfe.CyclicUpdate(i) for i in [-1, 1, 2]]...,
+    [FrankWolfe.StochasticUpdate(i) for i in [-1, 1, 2]]...,
+    [FrankWolfe.DualGapOrder(i) for i in [-1, 1, 2]]...,
+    [FrankWolfe.DualProgressOrder(i) for i in [-1, 1, 2]]...,
+]
+    x, _, _, _, _, _ = FrankWolfe.alternating_linear_minimization(
+        FrankWolfe.block_coordinate_frank_wolfe,
+        f,
+        grad!,
+        (lmo2, lmo_prob),
+        ones(n),
+        line_search=FrankWolfe.Adaptive(relaxed_smoothness=true),
+        update_order=order,
+        lambda=0.5,
+    )
+    @test abs(x.blocks[1][1] - 0.5 / n) < 1e-5
+    @test abs(x.blocks[2][1] - 1 / n) < 1e-5
 end
 
 @testset "Testing ALM with different FW methods" begin
@@ -178,7 +173,7 @@ end
         FrankWolfe.lazified_conditional_gradient,
     ]
 
-    for fw_method in methods
+    @testset "Testing with $fw_method" for fw_method in methods
         x, _, _, _, _ = FrankWolfe.alternating_linear_minimization(
             fw_method,
             f,

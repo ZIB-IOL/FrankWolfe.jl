@@ -32,7 +32,7 @@ lmo = FrankWolfe.FrankWolfe.ProbabilitySimplexOracle(lmo_radius)
 x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
 gradient = collect(x00)
 
-x_lmo, v, primal, dual_gap, trajectory_lmo = FrankWolfe.frank_wolfe(
+x_lmo, v, primal, dual_gap, status, trajectory_lmo = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -62,7 +62,7 @@ MOI.add_constraint(
 
 lmo_moi = FrankWolfe.MathOptLMO(o)
 
-x, v, primal, dual_gap, trajectory_moi = FrankWolfe.frank_wolfe(
+x, v, primal, dual_gap, status, trajectory_moi = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo_moi,
@@ -83,7 +83,7 @@ m = JuMP.Model(GLPK.Optimizer)
 
 lmo_jump = FrankWolfe.MathOptLMO(m.moi_backend)
 
-x, v, primal, dual_gap, trajectory_jump = FrankWolfe.frank_wolfe(
+x, v, primal, dual_gap, status, trajectory_jump = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo_jump,
@@ -96,7 +96,7 @@ x, v, primal, dual_gap, trajectory_jump = FrankWolfe.frank_wolfe(
     trajectory=true,
 )
 
-x_lmo, v, primal, dual_gap, trajectory_lmo_blas = FrankWolfe.frank_wolfe(
+x_lmo, v, primal, dual_gap, status, trajectory_lmo_blas = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -109,7 +109,7 @@ x_lmo, v, primal, dual_gap, trajectory_lmo_blas = FrankWolfe.frank_wolfe(
     trajectory=true,
 )
 
-x, v, primal, dual_gap, trajectory_jump_blas = FrankWolfe.frank_wolfe(
+x, v, primal, dual_gap, status, trajectory_jump_blas = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo_jump,

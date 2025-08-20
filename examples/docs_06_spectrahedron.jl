@@ -82,7 +82,7 @@ FrankWolfe.lazified_conditional_gradient( #src
 
 # ## Running standard and lazified Frank-Wolfe
 
-Xfinal, Vfinal, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+Xfinal, Vfinal, primal, dual_gap, status, trajectory = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -96,7 +96,7 @@ Xfinal, Vfinal, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
     epsilon=target_tolerance,
 )
 
-Xfinal, Vfinal, primal, dual_gap, trajectory_lazy = FrankWolfe.lazified_conditional_gradient(
+Xfinal, Vfinal, primal, dual_gap, status, trajectory_lazy = FrankWolfe.lazified_conditional_gradient(
     f,
     grad!,
     lmo,

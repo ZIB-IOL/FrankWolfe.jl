@@ -258,7 +258,7 @@ const xp = [
 
     @test norm(res1[1] - x_true) ≈ 0 atol = 1e-5
     @test res1[3] ≈ primal_true
-    @test res1[5][end][1] <= niters
+    @test res1.traj_data[end][1] <= niters
     @test res1_adaptive[3] ≈ primal_true
 
     x_true2 = [
@@ -508,7 +508,7 @@ const xp = [
 
     @test norm(res3[1] - x_true3) <= 5e-5
     @test res3[3] ≈ primal_true3
-    @test res3[5][end][1] <= 1750
+    @test res3.traj_data[end][1] <= 1750
 
     x_true4 = [
         0.12350364160905855,
@@ -634,6 +634,6 @@ const xp = [
 
     @test norm(res4[1] - x_true4) <= 5e-5
     @test res4[3] ≈ primal_true4
-    @test res4[5][end][1] <= 1750
+    @test res4.traj_data[end][1] <= 1750
 
 end

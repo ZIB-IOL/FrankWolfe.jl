@@ -17,6 +17,7 @@ using StableRNGs
 
 using FrankWolfe
 import HiGHS
+import MathOptInterface as MOI
 
 n = Int(1e4)
 k = 10000
@@ -49,7 +50,7 @@ function build_callback(trajectory_arr)
 end
 
 trajectoryBPCG_standard = []
-x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -61,12 +62,12 @@ x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     callback=build_callback(trajectoryBPCG_standard),
 );
 
-active_set_sparse = FrankWolfe.ActiveSetSparsifier(
-    FrankWolfe.ActiveSet([1.0], [x000], similar(x000)),
-    HiGHS.Optimizer(),
-)
+o = HiGHS.Optimizer()
+MOI.set(o, MOI.Silent(), true)
+active_set_sparse =
+    FrankWolfe.ActiveSetSparsifier(FrankWolfe.ActiveSet([1.0], [x000], similar(x000)), o)
 trajectoryBPCG_as_sparse = []
-x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,

@@ -40,6 +40,7 @@ Returns a tuple `(x, v, primal, dual_gap, dist2, traj_data)` with:
 - `v` cartesian product of last vertices of the LMOs
 - `primal` primal value `f(x)`
 - `dual_gap` final Frank-Wolfe gap
+- `status` is the termination status
 - `dist2` is 1/2 of the sum of squared, pairwise distances between iterates
 - `traj_data` vector of trajectory information.
 """
@@ -191,7 +192,7 @@ function alternating_linear_minimization(
         callback = make_lambda_callback(callback, lambda)
     end
 
-    x, v, primal, dual_gap, traj_data = bc_method(
+    fw_res = bc_method(
         f_bc,
         grad_bc!,
         prod_lmo,
@@ -206,11 +207,16 @@ function alternating_linear_minimization(
         line_search=line_search,
         kwargs...,
     )
+    x = fw_res.x
+    v = fw_res.v
+    primal = fw_res.primal
+    dual_gap = fw_res.dual_gap
+    traj_data = fw_res.traj_data
 
     if trajectory
         traj_data = [(t..., dist2_data[i]) for (i, t) in enumerate(traj_data)]
     end
-    return x, v, primal, dual_gap, dist2(x), traj_data
+    return x, v, primal, dual_gap, dist2(x), fw_res.status, traj_data
 end
 
 

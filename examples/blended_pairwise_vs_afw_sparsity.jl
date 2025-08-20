@@ -62,7 +62,7 @@ end
 FrankWolfe.benchmark_oracles(f, grad!, () -> randn(n), lmo; k=100)
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, trajectory_shortstep = FrankWolfe.frank_wolfe(
+@time x, v, primal, dual_gap, status, trajectory_shortstep = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -80,7 +80,7 @@ trajectory_afw = []
 callback = build_callback(trajectory_afw)
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
+@time x, v, primal, dual_gap, status, _, _ = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
@@ -99,7 +99,7 @@ trajectory_lafw = []
 callback = build_callback(trajectory_lafw)
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
+@time x, v, primal, dual_gap, status, _, _ = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
@@ -118,7 +118,7 @@ trajectoryBPCG = []
 callback = build_callback(trajectoryBPCG)
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+@time x, v, primal, dual_gap, _, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -137,7 +137,7 @@ trajectoryLBPCG = []
 callback = build_callback(trajectoryLBPCG)
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+@time x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,

@@ -103,3 +103,23 @@ Select a subset of fields from [`CallbackState`](@ref) to include in the traject
 function callback_state(state::CallbackState)
     return (state.t, state.primal, state.dual, state.dual_gap, state.time)
 end
+
+@enum ExecutionStatus begin
+    STATUS_RUNNING = 0
+    STATUS_OPTIMAL = 1
+    STATUS_MAXITER = 2
+    STATUS_TIMEOUT = 3
+    STATUS_INTERRUPTED = 4
+    STATUS_SUBOPTIMAL = 50
+    STATUS_OTHER = 99
+end
+
+const execution_status_string = (
+    STATUS_RUNNING="RUNNING",
+    STATUS_OPTIMAL="OPTIMAL",
+    STATUS_MAXITER="MAXITER",
+    STATUS_TIMEOUT="TIMEOUT",
+    STATUS_INTERRUPTED="INTERRUPTED",
+    STATUS_SUBOPTIMAL="SUBOPTIMAL",
+    STATUS_OTHER="UNKNOWN",
+)

@@ -220,7 +220,7 @@ end
     lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
     x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n))
 
-    x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
+    x, v, primal, dual_gap, status, trajectory = FrankWolfe.lazified_conditional_gradient(
         f,
         grad!,
         lmo_prob,
@@ -232,7 +232,7 @@ end
 
     @test primal - 1 / n <= bound
 
-    x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
+    x, v, primal, dual_gap, status, trajectory = FrankWolfe.lazified_conditional_gradient(
         f,
         grad!,
         lmo_prob,
@@ -245,7 +245,7 @@ end
 
     @test primal - 1 / n <= bound
 
-    x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
+    x, v, primal, dual_gap, status, trajectory = FrankWolfe.lazified_conditional_gradient(
         f,
         grad!,
         lmo_prob,
@@ -370,7 +370,7 @@ end
         memory_mode=FrankWolfe.OutplaceEmphasis(),
     )
 
-    x, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
+    x, v, primal, dual_gap, status, trajectory = FrankWolfe.away_frank_wolfe(
         f,
         grad!,
         lmo_prob,
@@ -385,7 +385,7 @@ end
     @test x !== nothing
     @test xref ≈ x atol = (1e-3 / length(x))
 
-    xs, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
+    xs, v, primal, dual_gap, status, trajectory = FrankWolfe.away_frank_wolfe(
         f,
         grad!,
         lmo_prob,
@@ -400,7 +400,7 @@ end
     @test xs !== nothing
     @test xref ≈ xs atol = (1e-3 / length(x))
 
-    x, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
+    x, v, primal, dual_gap, status, trajectory = FrankWolfe.away_frank_wolfe(
         f,
         grad!,
         lmo_prob,
@@ -416,7 +416,7 @@ end
     @test x !== nothing
     @test xref ≈ x atol = (1e-3 / length(x))
 
-    xs, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
+    xs, v, primal, dual_gap, status, trajectory = FrankWolfe.away_frank_wolfe(
         f,
         grad!,
         lmo_prob,
@@ -431,7 +431,7 @@ end
     @test xs !== nothing
     @test xref ≈ xs atol = (1e-3 / length(x))
 
-    x, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
+    x, v, primal, dual_gap, status, trajectory = FrankWolfe.away_frank_wolfe(
         f,
         grad!,
         lmo_prob,
@@ -446,7 +446,7 @@ end
     @test x !== nothing
     @test xref ≈ x atol = (1e-3 / length(x))
 
-    x, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
+    x, v, primal, dual_gap, status, trajectory = FrankWolfe.away_frank_wolfe(
         f,
         grad!,
         lmo_prob,
@@ -462,7 +462,7 @@ end
     @test x !== nothing
     @test xref ≈ x atol = (1e-3 / length(x))
 
-    xs, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
+    xs, v, primal, dual_gap, status, trajectory = FrankWolfe.away_frank_wolfe(
         f,
         grad!,
         lmo_prob,
