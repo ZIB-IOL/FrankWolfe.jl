@@ -212,7 +212,15 @@ function alternating_linear_minimization(
     if trajectory
         traj_data = [(t..., dist2_data[i]) for (i, t) in enumerate(traj_data)]
     end
-    return (x=x, v=v, primal=primal, dual_gap=dual_gap, dist2=dist2(x), status=fw_res.status, traj_data=traj_data)
+    return (
+        x=x,
+        v=v,
+        primal=primal,
+        dual_gap=dual_gap,
+        dist2=dist2(x),
+        status=fw_res.status,
+        traj_data=traj_data,
+    )
 end
 
 
@@ -487,5 +495,12 @@ function alternating_projections(
         callback(state, primal)
     end
 
-    return (x=x, v=v, primal=primal, dual_gap=dual_gap, status=execution_status, traj_data=traj_data)
+    return (
+        x=x,
+        v=v,
+        primal=primal,
+        dual_gap=dual_gap,
+        status=execution_status,
+        traj_data=traj_data,
+    )
 end
