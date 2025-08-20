@@ -374,8 +374,6 @@ LinearAlgebra.dot(v1::ScaledHotVector{<:Number}, v2::NegatingArray{<:Number,1}) 
 LinearAlgebra.dot(a::NegatingArray{<:Number,2}, d::LinearAlgebra.Diagonal) = -dot(a.array, d)
 LinearAlgebra.dot(d::LinearAlgebra.Diagonal, a::NegatingArray{<:Number,2}) = -dot(d, a.array)
 
-@deprecate fast_dot(A, B) dot(A, B) false
-
 fast_dot(a, Q, b) = dot(a, Q, b)
 
 function fast_dot(

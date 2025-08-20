@@ -845,8 +845,6 @@ end
 MonotonicStepSize(f::F) where {F<:Function} = MonotonicStepSize{F}(f, 0)
 MonotonicStepSize() = MonotonicStepSize(x -> true, 0)
 
-@deprecate MonotonousStepSize(args...) MonotonicStepSize(args...) false
-
 Base.print(io::IO, ::MonotonicStepSize) = print(io, "MonotonicStepSize")
 
 function perform_line_search(
@@ -886,8 +884,6 @@ end
 
 MonotonicNonConvexStepSize(f::F) where {F<:Function} = MonotonicNonConvexStepSize{F}(f, 0)
 MonotonicNonConvexStepSize() = MonotonicNonConvexStepSize(x -> true, 0)
-
-@deprecate MonotonousNonConvexStepSize(args...) MonotonicNonConvexStepSize(args...) false
 
 Base.print(io::IO, ::MonotonicNonConvexStepSize) = print(io, "MonotonicNonConvexStepSize")
 

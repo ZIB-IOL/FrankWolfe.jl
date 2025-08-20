@@ -405,7 +405,7 @@ function reset_quadratic_dots!(as::ActiveSetQuadraticPartialCaching{AT,R}) where
     @inbounds for idx in 1:length(as)
         as.dots_A[idx] = Vector{R}(undef, idx)
         for idy in 1:idx
-            as.dots_A[idx][idy] = fast_dot(as.A * as.atoms[idx], as.atoms[idy])
+            as.dots_A[idx][idy] = fast_dot(as.atoms[idx], as.A, as.atoms[idy])
         end
     end
     return as
