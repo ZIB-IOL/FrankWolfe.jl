@@ -213,23 +213,7 @@ end
 """
 Update step for block-coordinate Frank-Wolfe.
 These are implementations of different FW-algorithms to be used in a blockwise manner.
-Each update step must implement
-```
-update_iterate(
-    step::UpdateStep,
-    x,
-    lmo,
-    f,
-    gradient,
-    grad!,
-    dual_gap,
-    t,
-    line_search,
-    linesearch_workspace,
-    memory_mode,
-    epsilon,
-)
-```
+Each update step must implement [`FrankWolfe.update_iterate`](@ref).
 """
 abstract type UpdateStep end
 
@@ -247,6 +231,7 @@ abstract type UpdateStep end
         linesearch_workspace,
         memory_mode,
         epsilon,
+        d,
     )
     
 Executes one iteration of the defined [`FrankWolfe.UpdateStep`](@ref) and updates the iterate `x` implicitly.
@@ -256,6 +241,8 @@ The function returns a tuple `(dual_gap, v, d, gamma, step_type)`:
 - `d` is the update direction
 - `gamma` is the applied step-size
 - `step_type` is the applied step-type
+
+The `d` passed as argument is used as a container to avoid allocating `d` inside the function
 """
 function update_iterate end
 
@@ -307,8 +294,8 @@ function update_iterate(
     linesearch_workspace,
     memory_mode,
     epsilon,
+    d,
 )
-    d = d_container !== nothing ? d_container : similar(x)
     v = compute_extreme_point(lmo, gradient)
     dual_gap = dot(gradient, x) - dot(gradient, v)
 
@@ -347,9 +334,9 @@ function update_iterate(
     linesearch_workspace,
     memory_mode,
     epsilon,
+    d,
 )
 
-    d = zero(x)
     step_type = ST_REGULAR
 
     _, v_local, v_local_loc, _, a_lambda, a, a_loc, _, _ =
@@ -458,8 +445,6 @@ function update_iterate(
     if mod(t, s.renorm_interval) == 0
         active_set_renormalize!(s.active_set)
     end
-
-    x .= get_active_set_iterate(s.active_set)
 
     return (dual_gap, vertex_taken, d, gamma, step_type)
 end
@@ -692,6 +677,7 @@ function block_coordinate_frank_wolfe(
                     linesearch_workspace[i],
                     memory_mode,
                     epsilon / N, # smaller tolerance s.t. the total gap is smaller than epsilon
+                    d,
                 )
             end
 
