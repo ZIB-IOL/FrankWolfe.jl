@@ -447,6 +447,8 @@ function update_iterate(
         active_set_renormalize!(s.active_set)
     end
 
+    x .= get_active_set_iterate(s.active_set)
+
     return (dual_gap, vertex_taken, d, gamma, step_type)
 end
 
