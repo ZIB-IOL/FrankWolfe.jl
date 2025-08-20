@@ -18,10 +18,11 @@ Lipschitz estimates.
 - `memory_mode`: Memory emphasis mode (default: InplaceEmphasis())
 
 # Returns
-Tuple containing:
-- Final iterate
-- Final objective value
-- Vector of states from callback
+Named tuple containing:
+- `x`: final iterate
+- `primal`: final objective value
+- `status`: ExecutionStatus with which the algorithm terminated
+- `traj_data`: vector of states from callback
 """
 function adaptive_gradient_descent(
     f,
@@ -172,6 +173,13 @@ end
 Second variant of adaptive gradient descent with modified step size adaptation.
 
 Takes the same arguments as `adaptive_gradient_descent`.
+
+# Returns
+Named tuple containing:
+- `x`: final iterate
+- `primal`: final objective value
+- `status`: ExecutionStatus with which the algorithm terminated
+- `traj_data`: vector of states from callback
 """
 function adaptive_gradient_descent2(
     f,
@@ -330,10 +338,11 @@ Proximal variant of adaptive gradient descent that includes a proximal operator 
 - `memory_mode`: Memory emphasis mode (default: InplaceEmphasis())
 
 # Returns
-Tuple containing:
-- Final iterate
-- Final objective value
-- Vector of states from callback
+Named tuple containing:
+- `x`: final iterate
+- `primal`: final objective value
+- `status`: ExecutionStatus with which the algorithm terminated
+- `traj_data`: vector of states from callback
 """
 function proximal_adaptive_gradient_descent(
     f,

@@ -3,11 +3,12 @@
 const RETURN = """
 # Return
 
-Returns a tuple `(x, v, primal, dual_gap, traj_data)` with:
+Returns a named tuple `(; x, v, primal, dual_gap, status, traj_data)` with:
 - `x`: the final iterate
 - `v`: the last vertex from the linear minimization oracle
 - `primal`: the final primal value `f(x)`
 - `dual_gap`: the final Frank-Wolfe gap
+- `status`: the `ExecutionStatus` with which the algorithm terminated
 - `traj_data`: a vector of trajectory information, each element being the output of [`callback_state`](@ref).
 """
 

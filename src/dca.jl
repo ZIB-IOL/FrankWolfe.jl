@@ -263,9 +263,10 @@ written as the difference of two convex functions. At each iteration, it:
 Named tuple with:
 - `x`: Final iterate x_T
 - `primal`: Final objective value φ(x_T) = f(x_T) - g(x_T)  
-- `traj_data`: Trajectory data (if trajectory=true)
 - `dca_gap`: Final DCA gap estimate
 - `iterations`: Number of outer iterations performed
+- `status`: `ExecutionStatus` with which the algorithm terminated
+- `traj_data`: Trajectory data (if trajectory=true)
 
 # DCA Gap Definition
 The DCA gap is defined as:
