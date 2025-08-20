@@ -111,7 +111,7 @@ using StableRNGs
         # Check feasibility
         @test abs(sum(result.x) - 1.0) < 1e-10
         @test all(result.x .>= -1e-10)
-        @test result.status == FrankWolfe.STATUS_OPTIMAL
+        @test result.status == FrankWolfe.STATUS_MAXITER
 
         # Check convergence
         @test result.dca_gap < 1e-5

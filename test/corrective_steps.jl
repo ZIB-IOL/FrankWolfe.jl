@@ -30,7 +30,7 @@ using SparseArrays
         lmo,
         copy(x0),
         max_iteration=k,
-        verbose=true,
+        verbose=false,
         print_iter=1,
         lazy=true,
     )

@@ -479,7 +479,7 @@ function minimize_over_convex_hull!(
     time_start,
     non_simplex_iter;
     line_search_inner=Secant(),
-    verbose=true,
+    verbose=false,
     print_iter=1000,
     hessian=nothing,
     weight_purge_threshold=weight_purge_threshold_default(R),
@@ -943,7 +943,7 @@ function simplex_gradient_descent_over_convex_hull(
     non_simplex_iter,
     memory_mode::MemoryEmphasis=InplaceEmphasis();
     line_search_inner=Secant(),
-    verbose=true,
+    verbose=false,
     print_iter=1000,
     hessian=nothing,
     weight_purge_threshold=weight_purge_threshold_default(R),

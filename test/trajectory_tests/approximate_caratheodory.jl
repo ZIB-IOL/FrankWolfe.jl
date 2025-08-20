@@ -278,7 +278,7 @@ using LinearAlgebra
         max_iteration=k,
         line_search=FrankWolfe.AdaptiveZerothOrder(),
         print_iter=k / 10,
-        verbose=true,
+        verbose=false,
         memory_mode=FrankWolfe.OutplaceEmphasis(),
         trajectory=true,
     )
@@ -291,7 +291,7 @@ using LinearAlgebra
         max_iteration=2k,
         line_search=FrankWolfe.Adaptive(),
         print_iter=k / 10,
-        verbose=true,
+        verbose=false,
         memory_mode=FrankWolfe.OutplaceEmphasis(),
         trajectory=true,
     )
