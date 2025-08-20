@@ -585,7 +585,10 @@ function block_coordinate_frank_wolfe(
     end
 
     # container for direction
-    d = d_container !== nothing ? d_container : similar(x)
+    d = similar(x)
+    if d_container === nothing
+        d_container = similar(d)
+    end
     gtemp = if momentum === nothing
         d
     else
@@ -678,7 +681,7 @@ function block_coordinate_frank_wolfe(
                     linesearch_workspace[i],
                     memory_mode,
                     epsilon / N, # smaller tolerance s.t. the total gap is smaller than epsilon
-                    d.blocks[i],
+                    d_container.blocks[i],
                 )
             end
 
