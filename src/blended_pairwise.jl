@@ -98,6 +98,7 @@ function blended_pairwise_conditional_gradient(
     add_dropped_vertices=false,
     use_extra_vertex_storage=false,
     recompute_last_vertex=true,
+    d_container=nothing,
 ) where {AT,R}
 
     # format string for output of the algorithm
