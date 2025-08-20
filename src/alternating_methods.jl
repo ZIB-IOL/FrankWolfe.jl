@@ -300,7 +300,7 @@ function alternating_projections(
     t = 0
     dual_gap = Inf
     dual_gaps = fill(Inf, N)
-    x = BlockVector([compute_extreme_point(lmo, x0) for lmo in lmos])
+    x = BlockVector([compute_extreme_point(lmo, x0) for lmo in lmo.lmos])
     step_type = ST_REGULAR
     gradient = similar(x)
 
