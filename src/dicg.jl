@@ -134,6 +134,7 @@ function decomposition_invariant_conditional_gradient(
     v = x0
     phi = primal
     gamma = one(phi)
+    execution_status = STATUS_RUNNING
 
     if lazy
         if extra_vertex_storage === nothing
@@ -163,6 +164,7 @@ function decomposition_invariant_conditional_gradient(
                 if verbose
                     @info "Time limit reached"
                 end
+                execution_status = STATUS_TIMEOUT
                 break
             end
         end
@@ -236,10 +238,21 @@ function decomposition_invariant_conditional_gradient(
                 step_type,
             )
             if callback(state, a, v) === false
+                execution_status = STATUS_INTERRUPTED
                 break
             end
         end
         x = muladd_memory_mode(memory_mode, x, gamma, d)
+    end
+
+    if phi <= max(epsilon, eps(epsilon))
+        execution_status = STATUS_OPTIMAL
+    elseif t >= max_iteration
+        execution_status = STATUS_MAXITER
+    end
+    if execution_status === STATUS_RUNNING
+        @warn "Status not set"
+        execution_status = STATUS_OPTIMAL
     end
 
     # recompute everything once more for final verfication / do not record to trajectory though
@@ -274,7 +287,7 @@ function decomposition_invariant_conditional_gradient(
             callback(state, nothing, v)
         end
     end
-    return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data)
+    return (x=x, v=v, primal=primal, dual_gap=dual_gap, status=execution_status, traj_data=traj_data)
 end
 
 """
@@ -379,6 +392,7 @@ function blended_decomposition_invariant_conditional_gradient(
     v = x0
     phi = primal
     gamma = one(phi)
+    execution_status = STATUS_RUNNING
 
     if lazy
         if extra_vertex_storage === nothing
@@ -408,6 +422,7 @@ function blended_decomposition_invariant_conditional_gradient(
                 if verbose
                     @info "Time limit reached"
                 end
+                execution_status = STATUS_TIMEOUT
                 break
             end
         end
@@ -485,10 +500,21 @@ function blended_decomposition_invariant_conditional_gradient(
                 step_type,
             )
             if callback(state, a, v) === false
+                execution_status = STATUS_INTERRUPTED
                 break
             end
         end
         x = muladd_memory_mode(memory_mode, x, gamma, d)
+    end
+
+    if phi <= max(epsilon, eps(epsilon))
+        execution_status = STATUS_OPTIMAL
+    elseif t >= max_iteration
+        execution_status = STATUS_MAXITER
+    end
+    if execution_status === STATUS_RUNNING
+        @warn "Status not set"
+        execution_status = STATUS_OPTIMAL
     end
 
     # recompute everything once more for final verfication / do not record to trajectory though
@@ -523,7 +549,7 @@ function blended_decomposition_invariant_conditional_gradient(
             callback(state, nothing, v)
         end
     end
-    return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data)
+    return (x=x, v=v, primal=primal, dual_gap=dual_gap, status=execution_status, traj_data=traj_data)
 end
 
 """
