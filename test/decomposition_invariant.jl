@@ -267,6 +267,9 @@ end
         end
         @test norm(res[1] - res_blended[1]) ≤ n * 1e-4
         @test norm(res_MOI[1] - res_blended[1]) ≤ n * 1e-4
+        @test res.status == FrankWolfe.STATUS_OPTIMAL
+        @test res_MOI.status == FrankWolfe.STATUS_OPTIMAL
+        @test res_blended.status == FrankWolfe.STATUS_OPTIMAL
     end
 
     @testset "Zero-one cube" begin
