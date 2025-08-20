@@ -314,6 +314,8 @@ function dca_fw(
     grad_g_workspace=nothing,
     effective_grad_workspace=nothing,
     linesearch_workspace=nothing,
+    x_container=nothing,
+    d_container=nothing,
 
     # Algorithm variants
     use_corrective_fw=true,
@@ -333,14 +335,18 @@ function dca_fw(
 
     # Initialize current point with proper memory handling
     # We always create a copy since x0 is used as a vertex
-    x_current = copy(x0)
-    if memory_mode isa FrankWolfe.InplaceEmphasis &&
-       !isa(x_current, Union{Array,SparseArrays.AbstractSparseArray})
-        if eltype(x_current) <: Integer
-            x_current = convert(AbstractArray{float(eltype(x_current))}, x_current)
+    x_current = if x_container !== nothing
+        copyto!(x_container, x0)
+        x_container
+    else
+        if eltype(x0) <: Integer
+            x = copyto!(similar(x0, float(eltype(x0))), x0)
         else
-            x_current = copy(x_current)
+            x = copyto!(similar(x0), x0)
         end
+    end
+    if d_container !== nothing
+        d_container = similar(x_current)
     end
 
     # Initialize gradient workspaces
@@ -384,15 +390,11 @@ function dca_fw(
         println(
             "FW_METHOD: $subsolver_print DCA_EARLY_STOPPING: $use_dca_early_stopping BOOSTED: $boosted",
         )
-
-        if memory_mode isa FrankWolfe.InplaceEmphasis
-            @info("In memory_mode: iterates are written back into x_current!")
-        end
     end
 
     # Initialize algorithm variables
     dca_gap_current = Inf
-    extreme_point_current = similar(x_current)
+    extreme_point_current = x0
     active_set = nothing
     execution_status = STATUS_RUNNING
 
@@ -455,7 +457,6 @@ function dca_fw(
         end
 
         # Step 4: Solve the convex subproblem min_x m(x) using Frank-Wolfe variants
-        x_inner_start = copy(x_current)
 
         if !use_corrective_fw
             # Use standard Frank-Wolfe
@@ -463,7 +464,7 @@ function dca_fw(
                 linearized_objective,
                 linearized_gradient!,
                 lmo,
-                x_inner_start,
+                x_current,
                 line_search=line_search,
                 epsilon=epsilon * DEFAULT_DCA_EPSILON_FACTOR,
                 max_iteration=max_inner_iteration,
@@ -474,6 +475,7 @@ function dca_fw(
                 linesearch_workspace=linesearch_workspace,
                 timeout=timeout - elapsed_time,
                 callback=inner_callback,
+                d_container=d_container,
             )
         else # Use an active-set based FW variant
             # if active set not created already, or if we don't warm-start
@@ -497,6 +499,7 @@ function dca_fw(
                 linesearch_workspace=linesearch_workspace,
                 timeout=timeout - elapsed_time,
                 callback=inner_callback,
+                d_container=d_container,
             )
             active_set = fw_result.active_set
         end
@@ -527,7 +530,7 @@ function dca_fw(
             @. x_current = alpha_optimal .* x_new .+ (1 - alpha_optimal) .* x_current
         else
             # Standard DCA update: directly use subproblem solution
-            x_current .= x_new
+            copyto!(x_current, x_new)
         end
 
         # Step 7: Update effective gradient for callback (∇φ(x_{t+1}) = ∇f(x_{t+1}) - ∇g(x_{t+1}))

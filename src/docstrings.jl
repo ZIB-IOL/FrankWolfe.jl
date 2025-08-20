@@ -49,5 +49,7 @@ These keyword arguments are common to most Frank-Wolfe variants.
 - `traj_data=[]`: pre-allocated storage for the trajectory of algorithm states
 - `timeout::Real=Inf`: maximum time after which the algorithm is interrupted (in nanoseconds)
 - `linesearch_workspace=nothing`: pre-allocated workspace for the line search 
-- `dual_gap_compute_frequency::Integer=1`: frequency of dual gap computation, 
+- `dual_gap_compute_frequency::Integer=1`: frequency of dual gap computation
+- `x_container=nothing`: pre-allocated container for the iterates of the algorithm
+- `d_container=nothing`: pre-allocated container for the update directions computed by the algorithm
 """

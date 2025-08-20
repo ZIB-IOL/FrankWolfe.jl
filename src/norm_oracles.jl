@@ -225,7 +225,7 @@ function compute_extreme_point(
     for i in 1:N
         scal = zero(eltype(lmo.direction_abs[1]))
         for k in 1:i
-            scal += lmo.mat_B[i] * lmo.direction_abs[perm_grad][k]
+            scal += lmo.mat_B[i] * lmo.direction_abs[perm_grad[k]]
         end
         if scal > scal_max
             scal_max = scal

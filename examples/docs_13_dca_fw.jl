@@ -145,7 +145,7 @@ FrankWolfe.dca_fw( # hide
     grad_g_workspace=collect(x0), # hide
 ) # hide
 
-_, _, _, _, _, traj_data_boosted = FrankWolfe.dca_fw(
+res_boost = FrankWolfe.dca_fw(
     f,
     grad_f!,
     g,
@@ -171,7 +171,7 @@ _, _, _, _, _, traj_data_boosted = FrankWolfe.dca_fw(
 # ## Plotting the resulting trajectory
 # 
 # We modify the y axis to highlight that we are plotting the DCA gap, not the FW gap
-data = [traj_data, traj_data_boosted]
+data = [traj_data, traj_data_boosted.traj_data]
 label = ["DCA-FW", "DCA-FW-B"]
 p_res = plot_trajectories(data, label, marker_shapes=[:o, :x])
 ylabel!(p_res.subplots[3], "DCA gap")

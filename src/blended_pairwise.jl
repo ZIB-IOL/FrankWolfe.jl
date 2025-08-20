@@ -98,6 +98,7 @@ function blended_pairwise_conditional_gradient(
     add_dropped_vertices=false,
     use_extra_vertex_storage=false,
     recompute_last_vertex=true,
+    d_container=nothing,
 ) where {AT,R}
 
     # format string for output of the algorithm
@@ -136,7 +137,7 @@ function blended_pairwise_conditional_gradient(
     time_start = time_ns()
     execution_status = STATUS_RUNNING
 
-    d = similar(x)
+    d = d_container !== nothing ? d_container : similar(x)
 
     if gradient === nothing
         gradient = collect(x)

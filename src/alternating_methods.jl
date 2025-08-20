@@ -124,10 +124,6 @@ function alternating_linear_minimization(
         println("TYPE: $num_type GRADIENTTYPE: $grad_type")
         println("LAMBDA: $lambda")
 
-        if memory_mode isa InplaceEmphasis
-            @info("In memory_mode memory iterates are written back into x0!")
-        end
-
         # header and format string for output of the algorithm
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "Dist2"]
         format_string = "%6s %13s %14e %14e %14e %14e %14e %14e\n"
@@ -304,7 +300,7 @@ function alternating_projections(
     t = 0
     dual_gap = Inf
     dual_gaps = fill(Inf, N)
-    x = BlockVector(compute_extreme_point.(lmo.lmos, fill(x0, N)))
+    x = BlockVector([compute_extreme_point(lmo, x0) for lmo in lmo.lmos])
     step_type = ST_REGULAR
     gradient = similar(x)
 
@@ -378,9 +374,6 @@ function alternating_projections(
         )
         grad_type = typeof(gradient)
         println("GRADIENTTYPE: $grad_type")
-        if memory_mode isa InplaceEmphasis
-            @info("In memory_mode memory iterates are written back into x0!")
-        end
     end
 
     first_iter = true
@@ -388,7 +381,7 @@ function alternating_projections(
     while t <= max_iteration && dual_gap >= max(epsilon, eps(float(typeof(dual_gap))))
 
         #####################
-        # managing time and Ctrl-C
+        # time management
         #####################
         time_at_loop = time_ns()
         if t == 0
@@ -425,7 +418,7 @@ function alternating_projections(
 
         first_iter = false
 
-        t = t + 1
+        t += 1
         if callback !== nothing
             state = CallbackState(
                 t,
@@ -443,7 +436,6 @@ function alternating_projections(
                 gradient,
                 step_type,
             )
-            # @show state
             if callback(state, primal) === false
                 break
             end
@@ -483,5 +475,4 @@ function alternating_projections(
     end
 
     return x, v, dual_gap, primal, traj_data
-
 end

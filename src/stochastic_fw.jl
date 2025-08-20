@@ -145,6 +145,8 @@ function stochastic_frank_wolfe(
     traj_data=[],
     timeout=Inf,
     linesearch_workspace=nothing,
+    x_container=nothing,
+    d_container=nothing,
 )
 
     # format string for output of the algorithm
@@ -168,9 +170,22 @@ function stochastic_frank_wolfe(
     t = 0
     dual_gap = Inf
     primal = Inf
-    v = []
+    v = x0
     x = x0
-    d = similar(x)
+    if memory_mode isa InplaceEmphasis
+        if x_container !== nothing
+            x = x_container
+            copyto!(x, x0)
+        else
+            if eltype(x) <: Integer
+                x = copyto!(similar(x, float(eltype(x))), x)
+            else
+                x = copyto!(similar(x), x)
+            end
+        end
+    end
+
+    d = d_container !== nothing ? d_container : similar(x)
     step_type = ST_REGULAR
 
     if trajectory
@@ -207,18 +222,8 @@ function stochastic_frank_wolfe(
             "GRADIENTTYPE: $(typeof(f.storage)) MOMENTUM: $(momentum_iterator !== nothing) BATCH_POLICY: $(typeof(batch_iterator)) ",
         )
         println("LMO: $(typeof(lmo))")
-        if memory_mode isa InplaceEmphasis
-            @info("In memory_mode memory iterates are written back into x0!")
-        end
     end
 
-    if memory_mode isa InplaceEmphasis && !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
-        if eltype(x) <: Integer
-            x = copyto!(similar(x, float(eltype(x))), x)
-        else
-            x = copyto!(similar(x), x)
-        end
-    end
     first_iter = true
     gradient = f.storage
     if linesearch_workspace === nothing
@@ -228,7 +233,7 @@ function stochastic_frank_wolfe(
     while t <= max_iteration
 
         #####################
-        # managing time and Ctrl-C
+        # time management
         #####################
         time_at_loop = time_ns()
         if t == 0

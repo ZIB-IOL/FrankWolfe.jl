@@ -433,11 +433,11 @@ function Base.push!(as::ActiveSetQuadraticPartialCaching{AT,R}, (λ, a)) where {
     dot_A = Vector{R}(undef, length(as))
     Aa = as.A * a
     @inbounds for i in 1:length(as)
-        dot_A[i] = fast_dot(Aa, as.atoms[i])
+        dot_A[i] = dot(Aa, as.atoms[i])
         as.dots_x[i] += λ * dot_A[i]
         dot_x += as.weights[i] * dot_A[i]
     end
-    push!(dot_A, fast_dot(Aa, a))
+    push!(dot_A, dot(Aa, a))
     dot_x += λ * dot_A[end]
     push!(as.weights, λ)
     push!(as.atoms, a)
