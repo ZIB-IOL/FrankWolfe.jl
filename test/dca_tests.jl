@@ -107,16 +107,11 @@ using StableRNGs
             epsilon=1e-6,
             verbose=false,
         )
-
-        @test haskey(result, :x)
-        @test haskey(result, :primal)
-        @test haskey(result, :dca_gap)
-        @test haskey(result, :iterations)
-        @test haskey(result, :traj_data)
-
+        
         # Check feasibility
         @test abs(sum(result.x) - 1.0) < 1e-10
         @test all(result.x .>= -1e-10)
+        @test result.status == FrankWolfe.STATUS_OPTIMAL
 
         # Check convergence
         @test result.dca_gap < 1e-5
@@ -156,6 +151,7 @@ using StableRNGs
                 verbose=false,
             )
 
+            @test result.status == FrankWolfe.STATUS_MAXITER
             @test result.dca_gap < 1e-4
             @test result.iterations > 0
             @test abs(result.primal - phi(result.x)) < 1e-10
@@ -242,6 +238,7 @@ using StableRNGs
             @test abs(sum(result.x) - 1.0) < 1e-10
             @test all(result.x .>= -1e-10)
             @test abs(result.primal - phi(result.x)) < 1e-10
+            @test result.status == FrankWolfe.STATUS_OPTIMAL
         end
     end
 
@@ -363,6 +360,7 @@ using StableRNGs
         result =
             FrankWolfe.dca_fw(f, grad_f!, g, grad_g!, lmo, copy(x0), max_iteration=1, verbose=false)
         @test result.iterations <= 1
+        @test result.status == STATUS_MAXITER
 
         # Test with very loose tolerance
         result = FrankWolfe.dca_fw(

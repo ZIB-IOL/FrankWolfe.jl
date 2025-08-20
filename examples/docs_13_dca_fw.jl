@@ -102,7 +102,7 @@ FrankWolfe.dca_fw( # hide
     grad_g_workspace=collect(x0), # hide
 ) # hide
 
-x_final, primal_final, traj_data, dca_gap_final, iterations = FrankWolfe.dca_fw(
+x_final, primal_final, dca_gap_final, iterations, status, traj_data = FrankWolfe.dca_fw(
     f,
     grad_f!,
     g,
@@ -145,7 +145,7 @@ FrankWolfe.dca_fw( # hide
     grad_g_workspace=collect(x0), # hide
 ) # hide
 
-_, _, traj_data_boosted, _, _ = FrankWolfe.dca_fw(
+_, _, _, _, _, traj_data_boosted = FrankWolfe.dca_fw(
     f,
     grad_f!,
     g,

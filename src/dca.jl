@@ -393,6 +393,7 @@ function dca_fw(
     dca_gap_current = Inf
     extreme_point_current = similar(x_current)
     active_set = nothing
+    execution_status = STATUS_RUNNING
 
     # Setup boost line search if needed
     if boosted && boost_line_search === nothing
@@ -414,6 +415,7 @@ function dca_fw(
             if verbose
                 @info "Timeout reached after $elapsed_time seconds."
             end
+            execution_status = STATUS_TIMEOUT
             break
         end
 
@@ -554,10 +556,21 @@ function dca_fw(
             )
 
             # Check for early termination
-            if callback(state) === false || dca_gap_current < epsilon
+            if callback(state) === false
+                execution_status = STATUS_INTERRUPTED
+                break
+            elseif dca_gap_current < epsilon
+                execution_status = STATUS_OPTIMAL
                 break
             end
         end
+    end
+
+    if outer_t >= max_iteration
+        execution_status = STATUS_MAXITER
+    elseif execution_status == STATUS_RUNNING
+        @warn "Status not set"
+        execution_status = STATUS_OPTIMAL
     end
 
     # ==============================================================================
@@ -592,8 +605,9 @@ function dca_fw(
     return (
         x=x_current,
         primal=final_primal,
-        traj_data=traj_data,
         dca_gap=dca_gap_current,
         iterations=outer_t,
+        status=execution_status,
+        traj_data=traj_data,
     )
 end
