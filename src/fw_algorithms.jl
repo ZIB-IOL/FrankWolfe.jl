@@ -29,6 +29,8 @@ function frank_wolfe(
     timeout=Inf,
     linesearch_workspace=nothing,
     dual_gap_compute_frequency=1,
+    x_container=nothing,
+    d_container=nothing,
 )
 
     # header and format string for output of the algorithm
@@ -52,6 +54,21 @@ function frank_wolfe(
     primal = Inf
     v = []
     x = x0
+    if memory_mode isa InplaceEmphasis
+        # we don't want to overwrite x0
+        if x_container !== nothing
+            x = x_container
+            copyto!(x, x0)
+        else
+            # if integer, convert element type to most appropriate float
+            if eltype(x) <: Integer
+                x = copyto!(similar(x, float(eltype(x))), x)
+            else
+                x = copyto!(similar(x), x)
+            end
+        end
+    end
+
     step_type = ST_REGULAR
     execution_status = STATUS_RUNNING
 
@@ -78,17 +95,6 @@ function frank_wolfe(
         grad_type = typeof(gradient)
         println("MOMENTUM: $momentum GRADIENTTYPE: $grad_type")
         println("LMO: $(typeof(lmo))")
-        if memory_mode isa InplaceEmphasis
-            @info("In memory_mode memory iterates are written back into x0!")
-        end
-    end
-    if memory_mode isa InplaceEmphasis && !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
-        # if integer, convert element type to most appropriate float
-        if eltype(x) <: Integer
-            x = copyto!(similar(x, float(eltype(x))), x)
-        else
-            x = copyto!(similar(x), x)
-        end
     end
 
     # instanciating container for gradient
@@ -102,13 +108,14 @@ function frank_wolfe(
     end
 
     # container for direction
-    d = similar(x)
+    d = d_container !== nothing ? d_container : similar(x)
+    
     gtemp = momentum === nothing ? d : similar(x)
 
     while t <= max_iteration && dual_gap >= max(epsilon, eps(float(typeof(dual_gap))))
 
         #####################
-        # managing time and Ctrl-C
+        # time management
         #####################
         time_at_loop = time_ns()
         if t == 0
@@ -297,6 +304,8 @@ function lazified_conditional_gradient(
     VType=typeof(x0),
     timeout=Inf,
     linesearch_workspace=nothing,
+    x_container=nothing,
+    d_container=nothing,
 )
 
     # format string for output of the algorithm
@@ -350,6 +359,19 @@ function lazified_conditional_gradient(
         gradient = collect(x)
     end
 
+    if memory_mode isa InplaceEmphasis
+        if x_container !== nothing
+            x = x_container
+            copyto!(x, x0)
+        else
+            if eltype(x) <: Integer
+                x = copyto!(similar(x, float(eltype(x))), x)
+            else
+                x = copyto!(similar(x), x)
+            end
+        end
+    end
+
     if verbose
         println("\nLazified Conditional Gradient (Frank-Wolfe + Lazification).")
         NumType = eltype(x0)
@@ -359,27 +381,16 @@ function lazified_conditional_gradient(
         grad_type = typeof(gradient)
         println("GRADIENTTYPE: $grad_type CACHESIZE $cache_size GREEDYCACHE: $greedy_lazy")
         println("LMO: $(typeof(lmo))")
-        if memory_mode isa InplaceEmphasis
-            @info("In memory_mode memory iterates are written back into x0!")
-        end
-    end
-
-    if memory_mode isa InplaceEmphasis && !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
-        if eltype(x) <: Integer
-            x = copyto!(similar(x, float(eltype(x))), x)
-        else
-            x = copyto!(similar(x), x)
-        end
     end
 
     # container for direction
-    d = similar(x)
+    d = d_container !== nothing ? d_container : similar(x)
     if linesearch_workspace === nothing
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
     end
     while t <= max_iteration && dual_gap >= max(epsilon, eps(float(typeof(dual_gap))))
         #####################
-        # managing time and Ctrl-C
+        # time management
         #####################
         time_at_loop = time_ns()
         if t == 0

@@ -42,6 +42,7 @@ function blended_conditional_gradient(
     linesearch_workspace=nothing,
     linesearch_inner_workspace=nothing,
     renorm_interval=1000,
+    d_container=nothing,
     lmo_kwargs...,
 )
     # add the first vertex to active set from initialization
@@ -74,6 +75,7 @@ function blended_conditional_gradient(
         linesearch_workspace=linesearch_workspace,
         linesearch_inner_workspace=linesearch_inner_workspace,
         renorm_interval=renorm_interval,
+        d_container=d_container,
         lmo_kwargs=lmo_kwargs,
     )
 end
@@ -105,6 +107,7 @@ function blended_conditional_gradient(
     linesearch_workspace=nothing,
     linesearch_inner_workspace=nothing,
     renorm_interval=1000,
+    d_container=nothing,
     lmo_kwargs...,
 ) where {AT,R}
 
@@ -155,7 +158,7 @@ function blended_conditional_gradient(
     if gradient === nothing
         gradient = collect(x)
     end
-    d = similar(x)
+    d = d_container !== nothing ? d_container : similar(x)
     primal = f(x)
     grad!(gradient, x)
     # initial gap estimate computation
@@ -208,7 +211,7 @@ function blended_conditional_gradient(
 
     while t <= max_iteration && (phi ≥ epsilon || t == 0) # do at least one iteration for consistency with other algos
         #####################
-        # managing time and Ctrl-C
+        # time management
         #####################
         time_at_loop = time_ns()
         if t == 0

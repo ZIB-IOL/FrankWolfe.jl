@@ -139,7 +139,7 @@ function pairwise_frank_wolfe(
 
     time_start = time_ns()
 
-    d = similar(x)
+    d = d_container !== nothing ? d_container : similar(x)
 
     if gradient === nothing
         gradient = collect(x)
@@ -184,7 +184,7 @@ function pairwise_frank_wolfe(
 
     while t <= max_iteration && phi_value >= max(eps(float(typeof(phi_value))), epsilon)
         #####################
-        # managing time and Ctrl-C
+        # time management
         #####################
         time_at_loop = time_ns()
         if t == 0

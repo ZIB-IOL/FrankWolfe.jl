@@ -136,7 +136,7 @@ function blended_pairwise_conditional_gradient(
     time_start = time_ns()
     execution_status = STATUS_RUNNING
 
-    d = similar(x)
+    d = d_container !== nothing ? d_container : similar(x)
 
     if gradient === nothing
         gradient = collect(x)
