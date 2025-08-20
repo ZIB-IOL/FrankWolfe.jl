@@ -360,7 +360,7 @@ using StableRNGs
         result =
             FrankWolfe.dca_fw(f, grad_f!, g, grad_g!, lmo, copy(x0), max_iteration=1, verbose=false)
         @test result.iterations <= 1
-        @test result.status == STATUS_MAXITER
+        @test result.status == FrankWolfe.STATUS_MAXITER
 
         # Test with very loose tolerance
         result = FrankWolfe.dca_fw(
