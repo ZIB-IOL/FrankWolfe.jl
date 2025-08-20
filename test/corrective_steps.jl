@@ -36,19 +36,21 @@ using SparseArrays
     )
 
     for lazy in (true, false)
-        x_cfw, v_cfw, primal_cfw, dual_gap_cfw, traj_cfw = FrankWolfe.corrective_frank_wolfe(
-            f,
-            grad!,
-            lmo,
-            FrankWolfe.AwayStep(lazy),
-            FrankWolfe.ActiveSet([(1.0, x0)]),
-            max_iteration=k,
-            verbose=false,
-        )
+        x_cfw, v_cfw, primal_cfw, dual_gap_cfw, status_aw, traj_cfw =
+            FrankWolfe.corrective_frank_wolfe(
+                f,
+                grad!,
+                lmo,
+                FrankWolfe.AwayStep(lazy),
+                FrankWolfe.ActiveSet([(1.0, x0)]),
+                max_iteration=k,
+                verbose=false,
+            )
         @test abs(primal_cfw - primal_afw) <= 1e-6
         @test isapprox(x_cfw, x_afw, rtol=1e-5)
+        @test status_aw == FrankWolfe.STATUS_OPTIMAL
 
-        x_bp, _, primal_bp, dual_gap_bp, _ = FrankWolfe.corrective_frank_wolfe(
+        x_bp, _, primal_bp, dual_gap_bp, status_bp, _ = FrankWolfe.corrective_frank_wolfe(
             f,
             grad!,
             lmo,
@@ -59,8 +61,9 @@ using SparseArrays
         )
         # Check solutions match
         @test abs(primal_bp - primal_afw) <= 1e-6
+        @test status_bp == FrankWolfe.STATUS_OPTIMAL
         @test isapprox(x_bp, x_afw, rtol=1e-5)
-        x_pw, _, primal_pw, dualgap_pw, _ = FrankWolfe.corrective_frank_wolfe(
+        x_pw, _, primal_pw, dualgap_pw, status_pw, _ = FrankWolfe.corrective_frank_wolfe(
             f,
             grad!,
             lmo,
@@ -81,10 +84,11 @@ using SparseArrays
 
         @test abs(primal_pw - primal_pw0) <= 1e-6
         @test isapprox(x_pw, x_pw0, rtol=1e-5)
+        @test status_pw == FrankWolfe.STATUS_OPTIMAL
     end
 
     lazy = true
-    x_hyb, _, primal_hyb, _ = FrankWolfe.corrective_frank_wolfe(
+    x_hyb, _, primal_hyb, _, status_h, _, _ = FrankWolfe.corrective_frank_wolfe(
         f,
         grad!,
         lmo,
@@ -95,4 +99,5 @@ using SparseArrays
     )
     @test abs(primal_hyb - primal_afw) <= 1e-6
     @test isapprox(x_hyb, x_afw, rtol=1e-5)
+    @test status_h == FrankWolfe.STATUS_OPTIMAL
 end
