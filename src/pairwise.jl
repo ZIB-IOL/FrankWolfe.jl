@@ -40,6 +40,7 @@ function pairwise_frank_wolfe(
     use_extra_vertex_storage=false,
     linesearch_workspace=nothing,
     recompute_last_vertex=true,
+    d_container=nothing,
 )
     # add the first vertex to active set from initialization
     active_set = ActiveSet([(1.0, x0)])
@@ -71,6 +72,7 @@ function pairwise_frank_wolfe(
         use_extra_vertex_storage=use_extra_vertex_storage,
         linesearch_workspace=linesearch_workspace,
         recompute_last_vertex=recompute_last_vertex,
+        d_container=d_container,
     )
 end
 
@@ -102,6 +104,7 @@ function pairwise_frank_wolfe(
     use_extra_vertex_storage=false,
     linesearch_workspace=nothing,
     recompute_last_vertex=true,
+    d_container=nothing,
 ) where {AT,R}
     # format string for output of the algorithm
     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
