@@ -72,11 +72,11 @@ FrankWolfe.LazyUpdate
 
 ## Update step for block-coordinate Frank-Wolfe
 
-Block-coordinate Frank-Wolfe (BCFW) can run different FW algorithms on different blocks. All update steps are subtypes of [`FrankWolfe.UpdateStep`](@ref) and implement [`FrankWolfe.update_iterate`](@ref) which defines one iteration of the corresponding method.
+Block-coordinate Frank-Wolfe (BCFW) can run different FW algorithms on different blocks. All update steps are subtypes of [`FrankWolfe.UpdateStep`](@ref) and implement [`FrankWolfe.update_block_iterate`](@ref) which defines one iteration of the corresponding method.
 
 ```@docs
 FrankWolfe.UpdateStep
-FrankWolfe.update_iterate
+FrankWolfe.update_block_iterate
 FrankWolfe.FrankWolfeStep
 FrankWolfe.BPCGStep
 ```

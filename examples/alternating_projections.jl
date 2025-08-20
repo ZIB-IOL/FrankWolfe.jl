@@ -22,7 +22,7 @@ methods = [
 
 for (i, m) in enumerate(methods)
     if i == 1
-        x, _, _, _, traj_data = FrankWolfe.alternating_projections(
+        res = FrankWolfe.alternating_projections(
             (lmo, lmo2),
             ones(n);
             verbose=true,
@@ -31,7 +31,7 @@ for (i, m) in enumerate(methods)
             proj_method=m,
         )
     elseif i == 2
-        x, _, _, _, traj_data = FrankWolfe.alternating_projections(
+        res = FrankWolfe.alternating_projections(
             (lmo, lmo2),
             ones(n);
             verbose=true,
@@ -42,7 +42,7 @@ for (i, m) in enumerate(methods)
             lazy=true,
         )
     else
-        x, _, _, _, traj_data = FrankWolfe.alternating_projections(
+        res = FrankWolfe.alternating_projections(
             (lmo, lmo2),
             ones(n);
             verbose=true,
@@ -53,7 +53,7 @@ for (i, m) in enumerate(methods)
             lazy=true,
         )
     end
-    push!(trajectories, traj_data)
+    push!(trajectories, res.traj_data)
 end
 
 

@@ -213,28 +213,12 @@ end
 """
 Update step for block-coordinate Frank-Wolfe.
 These are implementations of different FW-algorithms to be used in a blockwise manner.
-Each update step must implement
-```
-update_iterate(
-    step::UpdateStep,
-    x,
-    lmo,
-    f,
-    gradient,
-    grad!,
-    dual_gap,
-    t,
-    line_search,
-    linesearch_workspace,
-    memory_mode,
-    epsilon,
-)
-```
+Each update step must implement [`FrankWolfe.update_iterate`](@ref).
 """
 abstract type UpdateStep end
 
 """
-    update_iterate(
+    update_block_iterate(
         step::UpdateStep,
         x,
         lmo,
@@ -247,6 +231,7 @@ abstract type UpdateStep end
         linesearch_workspace,
         memory_mode,
         epsilon,
+        d,
     )
     
 Executes one iteration of the defined [`FrankWolfe.UpdateStep`](@ref) and updates the iterate `x` implicitly.
@@ -256,8 +241,10 @@ The function returns a tuple `(dual_gap, v, d, gamma, step_type)`:
 - `d` is the update direction
 - `gamma` is the applied step-size
 - `step_type` is the applied step-type
+
+The `d` passed as argument is used as a container to avoid allocating `d` inside the function
 """
-function update_iterate end
+function update_block_iterate end
 
 """
 Implementation of the vanilla Frank-Wolfe algorithm as an update step for block-coordinate Frank-Wolfe.
@@ -294,7 +281,7 @@ end
 BPCGStep(lazy::Bool) = BPCGStep(lazy, nothing, 1000, 2.0, Inf)
 BPCGStep() = BPCGStep(false)
 
-function update_iterate(
+function update_block_iterate(
     ::FrankWolfeStep,
     x,
     lmo,
@@ -307,8 +294,8 @@ function update_iterate(
     linesearch_workspace,
     memory_mode,
     epsilon,
+    d,
 )
-    d = similar(x)
     v = compute_extreme_point(lmo, gradient)
     dual_gap = dot(gradient, x) - dot(gradient, v)
 
@@ -334,7 +321,7 @@ function update_iterate(
     return (dual_gap, v, d, gamma, step_type)
 end
 
-function update_iterate(
+function update_block_iterate(
     s::BPCGStep,
     x,
     lmo,
@@ -347,9 +334,9 @@ function update_iterate(
     linesearch_workspace,
     memory_mode,
     epsilon,
+    d_container,
 )
 
-    d = zero(x)
     step_type = ST_REGULAR
 
     _, v_local, v_local_loc, _, a_lambda, a, a_loc, _, _ =
@@ -368,7 +355,7 @@ function update_iterate(
     # minor modification from original paper for improved sparsity
     # (proof follows with minor modification when estimating the step)
     if local_gap > s.phi / s.sparsity_control && local_gap ≥ epsilon
-        d = muladd_memory_mode(memory_mode, d, a, v_local)
+        d = muladd_memory_mode(memory_mode, d_container, a, v_local)
         vertex_taken = v_local
         gamma_max = a_lambda
         gamma = perform_line_search(
@@ -402,6 +389,7 @@ function update_iterate(
             step_type = ST_REGULAR
         end
         vertex_taken = v
+        d = muladd_memory_mode(memory_mode, d_container, x, v)
         dual_gap = dot(gradient, x) - dot(gradient, v)
         # if we are about to exit, compute dual_gap with the cleaned-up x
         if dual_gap ≤ epsilon
@@ -415,7 +403,7 @@ function update_iterate(
 
         if !s.lazy || dual_gap ≥ s.phi / s.sparsity_control
 
-            d = muladd_memory_mode(memory_mode, d, x, v)
+            d = muladd_memory_mode(memory_mode, d_container, x, v)
 
             gamma = perform_line_search(
                 line_search,
@@ -509,6 +497,7 @@ function block_coordinate_frank_wolfe(
     traj_data=[],
     timeout=Inf,
     linesearch_workspace=nothing,
+    d_container=nothing,
 ) where {
     N,
     US<:Union{UpdateStep,NTuple{N,UpdateStep}},
@@ -563,7 +552,7 @@ function block_coordinate_frank_wolfe(
     end
 
     gamma = nothing
-    v = similar(x)
+    v = x0
 
     time_start = time_ns()
 
@@ -588,9 +577,6 @@ function block_coordinate_frank_wolfe(
         println(
             "MOMENTUM: $momentum GRADIENTTYPE: $grad_type UPDATE_ORDER: $update_order UPDATE_STEP: $update_step_type",
         )
-        if memory_mode isa InplaceEmphasis
-            @info("In memory_mode memory iterates are written back into x0!")
-        end
     end
 
     first_iter = true
@@ -602,6 +588,9 @@ function block_coordinate_frank_wolfe(
 
     # container for direction
     d = similar(x)
+    if d_container === nothing
+        d_container = similar(d)
+    end
     gtemp = if momentum === nothing
         d
     else
@@ -629,7 +618,7 @@ function block_coordinate_frank_wolfe(
     while t <= max_iteration && dual_gap >= max(epsilon, eps(float(typeof(dual_gap))))
 
         #####################
-        # managing time and Ctrl-C
+        # time management
         #####################
         time_at_loop = time_ns()
         if t == 0
@@ -681,7 +670,7 @@ function block_coordinate_frank_wolfe(
                     @. storage = big_storage.blocks[i]
                 end
 
-                dual_gaps[i], v.blocks[i], d.blocks[i], gamma, step_type = update_iterate(
+                dual_gaps[i], v.blocks[i], d.blocks[i], gamma, step_type = update_block_iterate(
                     update_step[i],
                     x.blocks[i],
                     lmo.lmos[i],
@@ -694,6 +683,7 @@ function block_coordinate_frank_wolfe(
                     linesearch_workspace[i],
                     memory_mode,
                     epsilon / N, # smaller tolerance s.t. the total gap is smaller than epsilon
+                    d_container.blocks[i],
                 )
             end
 
@@ -710,7 +700,7 @@ function block_coordinate_frank_wolfe(
         end
 
 
-        t = t + 1
+        t += 1
         if callback !== nothing || update_order isa CyclicUpdate
             state = CallbackState(
                 t,

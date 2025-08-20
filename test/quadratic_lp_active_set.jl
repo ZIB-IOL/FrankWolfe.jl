@@ -34,7 +34,7 @@ function build_callback(trajectory_arr)
 end
 
 trajectoryBPCG_standard = []
-x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+x, v, primal, dual_gap, status, _, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -53,7 +53,7 @@ as_quad_direct = FrankWolfe.ActiveSetQuadraticLinearSolve(
 )
 
 trajectoryBPCG_quadratic_direct_specialized = []
-x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+x, v, primal, dual_gap, status, _, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -72,7 +72,7 @@ as_quad_direct_generic = FrankWolfe.ActiveSetQuadraticLinearSolve(
 )
 
 trajectoryBPCG_quadratic_direct_generic = []
-x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+x, v, primal, dual_gap, status, _, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -91,7 +91,7 @@ as_quad_direct_basic_as = FrankWolfe.ActiveSetQuadraticLinearSolve(
 )
 
 trajectoryBPCG_quadratic_noqas = []
-x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+x, v, primal, dual_gap, status, _, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -110,7 +110,7 @@ as_quad_direct_product_caching = FrankWolfe.ActiveSetQuadraticLinearSolve(
 )
 
 trajectoryBPCG_quadratic_direct_product_caching = []
-x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+x, v, primal, dual_gap, status, _, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,

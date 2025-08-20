@@ -31,7 +31,7 @@ linf = FrankWolfe.ScaledBoundLInfNormBall(lower, upper)
 x1 = FrankWolfe.compute_extreme_point(l1, zeros(n))
 gradient = collect(x1)
 
-x_l1, v_1, primal_1, dual_gap_1, trajectory_1, status_1 = FrankWolfe.frank_wolfe(
+x_l1, v_1, primal_1, dual_gap_1, status_1, trajectory_1 = FrankWolfe.frank_wolfe(
     f,
     grad!,
     l1,
@@ -49,7 +49,7 @@ println("\nFinal solution: ", x_l1)
 x2 = FrankWolfe.compute_extreme_point(linf, zeros(n))
 gradient = collect(x2)
 
-x_linf, v_2, primal_2, dual_gap_2, trajectory_2, status_2 = FrankWolfe.frank_wolfe(
+x_linf, v_2, primal_2, dual_gap_2, status_2, trajectory_2 = FrankWolfe.frank_wolfe(
     f,
     grad!,
     linf,
