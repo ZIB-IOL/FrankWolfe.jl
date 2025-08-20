@@ -94,6 +94,7 @@ function corrective_frank_wolfe(
     phi = max(0, dot(gradient, x) - dot(gradient, v))
     dual_gap = phi
     gamma = one(phi)
+    execution_status = STATUS_RUNNING
 
     if linesearch_workspace === nothing
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
@@ -118,6 +119,7 @@ function corrective_frank_wolfe(
                 if verbose
                     @info "Time limit reached"
                 end
+                execution_status = STATUS_TIMEOUT
                 break
             end
         end
@@ -174,6 +176,7 @@ function corrective_frank_wolfe(
         )
         # interrupt from callback
         if should_continue === false
+            execution_status = STATUS_INTERRUPTED
             break
         end
         if should_fw_step
@@ -223,6 +226,7 @@ function corrective_frank_wolfe(
                         step_type,
                     )
                     if callback(state, active_set) === false
+                        execution_status = STATUS_INTERRUPTED
                         break
                     end
                 end
@@ -240,6 +244,16 @@ function corrective_frank_wolfe(
                 end
             end
         end
+    end
+
+    if phi < max(epsilon, eps(float(typeof(phi))))
+        execution_status = STATUS_OPTIMAL
+    elseif t >= max_iteration
+        execution_status = STATUS_MAXITER
+    end
+    if execution_status === STATUS_RUNNING
+        @warn "Status not set"
+        execution_status = STATUS_OPTIMAL
     end
 
     # recompute everything once more for final verfication / do not record to trajectory though for now!
@@ -310,5 +324,5 @@ function corrective_frank_wolfe(
         callback(state, active_set)
     end
 
-    return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data, active_set=active_set)
+    return (x=x, v=v, primal=primal, dual_gap=dual_gap, status=execution_status, traj_data=traj_data, active_set=active_set)
 end
