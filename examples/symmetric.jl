@@ -134,7 +134,7 @@ function benchmark_Bell(
         f,
         grad!,
         lmo,
-        res[6];
+        res.active_set;
         line_search=FrankWolfe.Shortstep(one(T)),
         lazy=true,
         sparsity_control=10^6,
