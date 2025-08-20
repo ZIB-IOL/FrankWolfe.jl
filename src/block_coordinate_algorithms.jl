@@ -218,7 +218,7 @@ Each update step must implement [`FrankWolfe.update_iterate`](@ref).
 abstract type UpdateStep end
 
 """
-    update_iterate(
+    update_block_iterate(
         step::UpdateStep,
         x,
         lmo,
@@ -244,7 +244,7 @@ The function returns a tuple `(dual_gap, v, d, gamma, step_type)`:
 
 The `d` passed as argument is used as a container to avoid allocating `d` inside the function
 """
-function update_iterate end
+function update_block_iterate end
 
 """
 Implementation of the vanilla Frank-Wolfe algorithm as an update step for block-coordinate Frank-Wolfe.
@@ -281,7 +281,7 @@ end
 BPCGStep(lazy::Bool) = BPCGStep(lazy, nothing, 1000, 2.0, Inf)
 BPCGStep() = BPCGStep(false)
 
-function update_iterate(
+function update_block_iterate(
     ::FrankWolfeStep,
     x,
     lmo,
@@ -321,7 +321,7 @@ function update_iterate(
     return (dual_gap, v, d, gamma, step_type)
 end
 
-function update_iterate(
+function update_block_iterate(
     s::BPCGStep,
     x,
     lmo,
@@ -670,7 +670,7 @@ function block_coordinate_frank_wolfe(
                     @. storage = big_storage.blocks[i]
                 end
 
-                dual_gaps[i], v.blocks[i], d.blocks[i], gamma, step_type = update_iterate(
+                dual_gaps[i], v.blocks[i], d.blocks[i], gamma, step_type = update_block_iterate(
                     update_step[i],
                     x.blocks[i],
                     lmo.lmos[i],
