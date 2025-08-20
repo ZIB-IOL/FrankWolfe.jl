@@ -405,7 +405,7 @@ function reset_quadratic_dots!(as::ActiveSetQuadraticPartialCaching{AT,R}) where
     @inbounds for idx in 1:length(as)
         as.dots_A[idx] = Vector{R}(undef, idx)
         for idy in 1:idx
-            as.dots_A[idx][idy] = fast_dot(as.A * as.atoms[idx], as.atoms[idy])
+            as.dots_A[idx][idy] = fast_dot(as.atoms[idx], as.A, as.atoms[idy])
         end
     end
     return as
@@ -433,11 +433,11 @@ function Base.push!(as::ActiveSetQuadraticPartialCaching{AT,R}, (λ, a)) where {
     dot_A = Vector{R}(undef, length(as))
     Aa = as.A * a
     @inbounds for i in 1:length(as)
-        dot_A[i] = fast_dot(Aa, as.atoms[i])
+        dot_A[i] = dot(Aa, as.atoms[i])
         as.dots_x[i] += λ * dot_A[i]
         dot_x += as.weights[i] * dot_A[i]
     end
-    push!(dot_A, fast_dot(Aa, a))
+    push!(dot_A, dot(Aa, a))
     dot_x += λ * dot_A[end]
     push!(as.weights, λ)
     push!(as.atoms, a)
