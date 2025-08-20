@@ -308,7 +308,7 @@ function update_iterate(
     memory_mode,
     epsilon,
 )
-    d = similar(x)
+    d = d_container !== nothing ? d_container : similar(x)
     v = compute_extreme_point(lmo, gradient)
     dual_gap = dot(gradient, x) - dot(gradient, v)
 
@@ -509,6 +509,7 @@ function block_coordinate_frank_wolfe(
     traj_data=[],
     timeout=Inf,
     linesearch_workspace=nothing,
+    d_container=nothing,
 ) where {
     N,
     US<:Union{UpdateStep,NTuple{N,UpdateStep}},
@@ -563,7 +564,7 @@ function block_coordinate_frank_wolfe(
     end
 
     gamma = nothing
-    v = similar(x)
+    v = x0
 
     time_start = time_ns()
 
@@ -588,9 +589,6 @@ function block_coordinate_frank_wolfe(
         println(
             "MOMENTUM: $momentum GRADIENTTYPE: $grad_type UPDATE_ORDER: $update_order UPDATE_STEP: $update_step_type",
         )
-        if memory_mode isa InplaceEmphasis
-            @info("In memory_mode memory iterates are written back into x0!")
-        end
     end
 
     first_iter = true
@@ -601,7 +599,7 @@ function block_coordinate_frank_wolfe(
     end
 
     # container for direction
-    d = similar(x)
+    d = d_container !== nothing ? d_container : similar(x)
     gtemp = if momentum === nothing
         d
     else
@@ -629,7 +627,7 @@ function block_coordinate_frank_wolfe(
     while t <= max_iteration && dual_gap >= max(epsilon, eps(float(typeof(dual_gap))))
 
         #####################
-        # managing time and Ctrl-C
+        # time management
         #####################
         time_at_loop = time_ns()
         if t == 0
@@ -710,7 +708,7 @@ function block_coordinate_frank_wolfe(
         end
 
 
-        t = t + 1
+        t += 1
         if callback !== nothing || update_order isa CyclicUpdate
             state = CallbackState(
                 t,
