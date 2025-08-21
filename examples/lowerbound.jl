@@ -85,7 +85,7 @@ FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo; k=100)
     trajectory=true,
 );
 
-@time x, v, primal, dual_gap, trajectoryBCG, _ = FrankWolfe.blended_conditional_gradient(
+@time x, v, primal, dual_gap, status, trajectoryBCG, _ = FrankWolfe.blended_conditional_gradient(
     f,
     grad!,
     lmo,
