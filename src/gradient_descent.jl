@@ -1,5 +1,11 @@
 # BASED ON: https://arxiv.org/abs/2308.02261
 
+import FrankWolfe: InplaceEmphasis, @memory_mode
+import FrankWolfe: ExecutionStatus, STATUS_RUNNING, STATUS_OPTIMAL, STATUS_MAXITER
+import ProximalCore
+using LinearAlgebra
+using Printf
+
 """
     adaptive_gradient_descent(f, grad!, x0; kwargs...)
 
@@ -71,7 +77,7 @@ function adaptive_gradient_descent(
             "Grad Norm",
             "Time (s)",
             "L_k",
-            "Step"
+            "Step",
         )
         println("-"^88)
     end
@@ -115,10 +121,10 @@ function adaptive_gradient_descent(
                     norm(grad_curr),
                     elapsed,
                     L_k,
-                    step_new
+                    step_new,
                 )
             end
-            execution_status = FrankWolfe.STATUS_OPTIMAL
+            execution_status = STATUS_OPTIMAL
             break
         end
 
@@ -138,7 +144,7 @@ function adaptive_gradient_descent(
                 norm(grad_curr),
                 elapsed,
                 L_k,
-                step_new
+                step_new,
             )
         end
     end
@@ -160,7 +166,7 @@ function adaptive_gradient_descent(
             norm(grad_curr),
             elapsed,
             L_k,
-            step
+            step,
         )
     end
 
@@ -227,7 +233,7 @@ function adaptive_gradient_descent2(
             "Grad Norm",
             "Time (s)",
             "L_k",
-            "Step"
+            "Step",
         )
         println("-"^88)
     end
@@ -412,7 +418,7 @@ function proximal_adaptive_gradient_descent(
             "GM Norm",
             "Time (s)",
             "L_k",
-            "Step"
+            "Step",
         )
         println("-"^88)
     end
@@ -465,7 +471,7 @@ function proximal_adaptive_gradient_descent(
                     error_value,
                     elapsed,
                     L_k,
-                    step_new
+                    step_new,
                 )
             end
             execution_status = STATUS_OPTIMAL
@@ -488,7 +494,7 @@ function proximal_adaptive_gradient_descent(
                 error,
                 elapsed,
                 L_k,
-                step_new
+                step_new,
             )
         end
     end
@@ -506,7 +512,7 @@ function proximal_adaptive_gradient_descent(
             error,
             elapsed,
             L_k,
-            step
+            step,
         )
     end
 
