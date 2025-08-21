@@ -5,6 +5,7 @@ using FrankWolfe
 using ProximalOperators
 using DoubleFloats
 using StableRNGs
+import FrankWolfe.Experimental as FWExpe
 
 n = 100
 k = Int(1e4)
@@ -47,7 +48,7 @@ const f_opt = f_gd(x_opt)
         target_tolerance = convert(T, 1e-8)
 
         # Test first variant
-        x1, f1, hist1 = FrankWolfe.Experimental.adaptive_gradient_descent(
+        x1, f1, hist1 = FWExpe.adaptive_gradient_descent(
             f_gd,
             grad_gd!,
             convert.(T, x0);
@@ -60,7 +61,7 @@ const f_opt = f_gd(x_opt)
         )
 
         # Test second variant
-        x2, f2, hist2 = FrankWolfe.Experimental.adaptive_gradient_descent2(
+        x2, f2, hist2 = FWExpe.adaptive_gradient_descent2(
             f_gd,
             grad_gd!,
             convert.(T, x0);
@@ -93,7 +94,7 @@ const f_opt = f_gd(x_opt)
         target_tolerance = 1e-8
 
         # Test with InplaceEmphasis
-        x_inplace, f_inplace, _ = FrankWolfe.Experimental.adaptive_gradient_descent(
+        x_inplace, f_inplace, _ = FWExpe.adaptive_gradient_descent(
             f_gd,
             grad_gd!,
             x0;
@@ -104,7 +105,7 @@ const f_opt = f_gd(x_opt)
         )
 
         # Test with OutplaceEmphasis
-        x_outplace, f_outplace, _ = FrankWolfe.Experimental.adaptive_gradient_descent(
+        x_outplace, f_outplace, _ = FWExpe.adaptive_gradient_descent(
             f_gd,
             grad_gd!,
             x0;
@@ -125,7 +126,7 @@ const f_opt = f_gd(x_opt)
 
         callback(state) = push!(history, state)
 
-        _, _, _ = FrankWolfe.Experimental.adaptive_gradient_descent(
+        _, _, _ = FWExpe.adaptive_gradient_descent(
             f_gd,
             grad_gd!,
             x0;
@@ -148,7 +149,7 @@ const f_opt = f_gd(x_opt)
         target_tolerance = 1e-8
 
         # Test with identity proximal operator (should match regular variant)
-        x_id, f_id, status_id, _ = FrankWolfe.Experimental.proximal_adaptive_gradient_descent(
+        x_id, f_id, status_id, _ = FWExpe.proximal_adaptive_gradient_descent(
             f_gd,
             grad_gd!,
             x0;
@@ -158,7 +159,7 @@ const f_opt = f_gd(x_opt)
         @test status_id == FrankWolfe.STATUS_OPTIMAL
 
         # Test with L1 proximal operator
-        x_l1, f_l1, status_l1, _ = FrankWolfe.Experimental.proximal_adaptive_gradient_descent(
+        x_l1, f_l1, status_l1, _ = FWExpe.proximal_adaptive_gradient_descent(
             f_gd,
             grad_gd!,
             x0,
@@ -170,7 +171,7 @@ const f_opt = f_gd(x_opt)
         @test status_l1 == FrankWolfe.STATUS_OPTIMAL
 
         # Identity proximal operator should give same result as regular variant
-        x_reg, f_reg, status_reg, _ = FrankWolfe.Experimental.adaptive_gradient_descent(
+        x_reg, f_reg, status_reg, _ = FWExpe.adaptive_gradient_descent(
             f_gd,
             grad_gd!,
             x0;
@@ -198,7 +199,7 @@ const f_opt = f_gd(x_opt)
             end
 
             @testset "Probability simplex comparison" begin
-                x_prox_prob, f_prox_prob, _, _ = FrankWolfe.Experimental.proximal_adaptive_gradient_descent(
+                x_prox_prob, f_prox_prob, _, _ = FWExpe.proximal_adaptive_gradient_descent(
                     f_gd,
                     grad_gd!,
                     x0,
@@ -229,7 +230,7 @@ const f_opt = f_gd(x_opt)
             @testset "Box comparison" begin
                 τ_box = 1.0
                 x_prox_box, f_prox_box, status_prox_box, _ =
-                    FrankWolfe.Experimental.proximal_adaptive_gradient_descent(
+                    FWExpe.proximal_adaptive_gradient_descent(
                         f_gd,
                         grad_gd!,
                         x0,
@@ -303,7 +304,7 @@ const f_opt = f_gd(x_opt)
         target_tolerance = 1e-8
 
         # Test with identity proximal operator (should match regular variant)
-        x_id, f_id, _ = FrankWolfe.Experimental.proximal_adaptive_gradient_descent(
+        x_id, f_id, _ = FWExpe.proximal_adaptive_gradient_descent(
             f_gd,
             grad_gd!,
             x0;
@@ -313,7 +314,7 @@ const f_opt = f_gd(x_opt)
         )
 
         # Test with L1 proximal operator
-        x_l1, f_l1, _ = FrankWolfe.Experimental.proximal_adaptive_gradient_descent(
+        x_l1, f_l1, _ = FWExpe.proximal_adaptive_gradient_descent(
             f_gd,
             grad_gd!,
             x0,
@@ -323,7 +324,7 @@ const f_opt = f_gd(x_opt)
 
         # Identity proximal operator should give same result as regular variant
         x_reg, f_reg, _ =
-            FrankWolfe.Experimental.adaptive_gradient_descent(f_gd, grad_gd!, x0; epsilon=target_tolerance)
+            FWExpe.adaptive_gradient_descent(f_gd, grad_gd!, x0; epsilon=target_tolerance)
 
         @testset "Comparison with FW variants" begin
             @testset "L1-ball comparison" begin
@@ -345,7 +346,7 @@ const f_opt = f_gd(x_opt)
             end
 
             @testset "Probability simplex comparison" begin
-                x_prox_prob, f_prox_prob, _ = FrankWolfe.Experimental.proximal_adaptive_gradient_descent(
+                x_prox_prob, f_prox_prob, _ = FWExpe.proximal_adaptive_gradient_descent(
                     f_gd,
                     grad_gd!,
                     x0,
@@ -371,7 +372,7 @@ const f_opt = f_gd(x_opt)
 
             @testset "Box comparison" begin
                 τ_box = 1.0
-                x_prox_box, f_prox_box, _ = FrankWolfe.Experimental.proximal_adaptive_gradient_descent(
+                x_prox_box, f_prox_box, _ = FWExpe.proximal_adaptive_gradient_descent(
                     f_gd,
                     grad_gd!,
                     x0,
