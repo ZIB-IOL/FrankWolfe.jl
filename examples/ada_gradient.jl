@@ -43,7 +43,7 @@ x0 = 10 * rand(n)
 println("Testing Adaptive Gradient Descent (variant 1)")
 println("============================================")
 
-x1, f1, hist1 = FrankWolfe.adaptive_gradient_descent(
+x1, f1, hist1 = FrankWolfe.Experimental.adaptive_gradient_descent(
     f,
     grad!,
     x0;
@@ -60,7 +60,7 @@ println("Final gradient norm: $(norm(grad!(similar(x0), x1)))")
 println("\nTesting Adaptive Gradient Descent (variant 2)")
 println("============================================")
 
-x2, f2, hist2 = FrankWolfe.adaptive_gradient_descent2(
+x2, f2, hist2 = FrankWolfe.Experimental.adaptive_gradient_descent2(
     f,
     grad!,
     x0;
