@@ -259,23 +259,18 @@ mutable struct BPCGStep <: UpdateStep
     active_set::Union{FrankWolfe.AbstractActiveSet,Nothing}
     renorm_interval::Int
     sparsity_control::Float64
-    phi::Float64
+    phi_value::Float64
 end
 
 Base.copy(::FrankWolfeStep) = FrankWolfeStep()
 
 function Base.copy(obj::BPCGStep)
-    if obj.active_set === nothing
-        return BPCGStep(obj.lazy, nothing, obj.renorm_interval, obj.sparsity_control, obj.phi)
+    active_set = if obj.active_set !== nothing
+        copy(obj.active_set)
     else
-        return BPCGStep(
-            obj.lazy,
-            copy(obj.active_set),
-            obj.renorm_interval,
-            obj.sparsity_control,
-            obj.phi,
-        )
+        nothing
     end
+    return BPCGStep(obj.lazy, active_set, obj.renorm_interval, obj.sparsity_control, obj.phi_value)
 end
 
 BPCGStep(lazy::Bool) = BPCGStep(lazy, nothing, 1000, 2.0, Inf)
@@ -349,12 +344,12 @@ function update_block_iterate(
     if !s.lazy
         v = compute_extreme_point(lmo, gradient)
         dual_gap = dot(gradient, x) - dot(gradient, v)
-        s.phi = dual_gap
+        s.phi_value = dual_gap
     end
 
     # minor modification from original paper for improved sparsity
     # (proof follows with minor modification when estimating the step)
-    if local_gap > s.phi / s.sparsity_control && local_gap ≥ epsilon
+    if local_gap > s.phi_value / s.sparsity_control && local_gap ≥ epsilon
         d = muladd_memory_mode(memory_mode, d_container, a, v_local)
         vertex_taken = v_local
         gamma_max = a_lambda
@@ -401,7 +396,7 @@ function update_block_iterate(
             dual_gap = dot(gradient, x) - dot(gradient, v)
         end
 
-        if !s.lazy || dual_gap ≥ s.phi / s.sparsity_control
+        if !s.lazy || dual_gap ≥ s.phi_value / s.sparsity_control
 
             d = muladd_memory_mode(memory_mode, d_container, x, v)
 
@@ -427,7 +422,7 @@ function update_block_iterate(
             end
         else # dual step
             if step_type != ST_LAZYSTORAGE
-                s.phi = dual_gap
+                s.phi_value = dual_gap
                 @debug begin
                     @assert step_type == ST_REGULAR
                     v2 = compute_extreme_point(lmo, gradient)

@@ -345,7 +345,7 @@ function lazified_conditional_gradient(
     primal = Inf
     v = x0
     x = x0
-    phi = Inf
+    phi_value = Inf
     step_type = ST_REGULAR
     execution_status = STATUS_RUNNING
 
@@ -413,7 +413,7 @@ function lazified_conditional_gradient(
 
         grad!(gradient, x)
 
-        threshold = dot(gradient, x) - phi / sparsity_control
+        threshold = dot(gradient, x) - phi_value / sparsity_control
 
         # go easy on the memory - only compute if really needed
         if ((mod(t, print_iter) == 0 && verbose) || callback !== nothing)
@@ -425,7 +425,7 @@ function lazified_conditional_gradient(
         if dot(gradient, v) > threshold
             step_type = ST_DUALSTEP
             dual_gap = dot(gradient, x) - dot(gradient, v)
-            phi = min(dual_gap, phi / 2)
+            phi_value = min(dual_gap, phi_value / 2)
         end
 
         d = muladd_memory_mode(memory_mode, d, x, v)
