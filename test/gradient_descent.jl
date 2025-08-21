@@ -350,7 +350,7 @@ const f_opt = f_gd(x_opt)
                     f_gd,
                     grad_gd!,
                     x0,
-                    FrankWolfe.ProbabilitySimplexProx();
+                    FWExpe.ProbabilitySimplexProx();
                     epsilon=target_tolerance,
                 )
                 lmo_probsimplex = FrankWolfe.ProbabilitySimplexOracle(1.0)
