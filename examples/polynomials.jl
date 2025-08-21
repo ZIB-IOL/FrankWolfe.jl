@@ -101,7 +101,7 @@ end
 #Check the gradient using finite differences just in case
 gradient = similar(all_coeffs)
 
-max_iter = 100_000
+max_iteration = 10_000
 random_initialization_vector = rand(length(all_coeffs))
 
 #lmo = FrankWolfe.LpNormLMO{1}(100 * maximum(all_coeffs))
@@ -164,7 +164,7 @@ test_gd = Float64[]
 coeff_error = Float64[]
 time_start = time_ns()
 gd_times = Float64[]
-for iter in 1:max_iter
+for iter in 1:max_iteration
     global xgd
     grad!(gradient, xgd)
     xgd = projnorm1(xgd - gradient / L_estimate, lmo.right_hand_side)
@@ -190,9 +190,9 @@ callback = build_callback(trajectory_lafw)
     grad!,
     lmo,
     x0,
-    max_iteration=max_iter,
+    max_iteration=max_iteration,
     line_search=FrankWolfe.Adaptive(L_est=L_estimate),
-    print_iter=max_iter ÷ 10,
+    print_iter=max_iteration ÷ 10,
     memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     lazy=true,
@@ -213,9 +213,9 @@ x0 = deepcopy(x00)
     grad!,
     lmo,
     x0,
-    max_iteration=max_iter,
+    max_iteration=max_iteration,
     line_search=FrankWolfe.Adaptive(L_est=L_estimate),
-    print_iter=max_iter ÷ 10,
+    print_iter=max_iteration ÷ 10,
     memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     weight_purge_threshold=1e-10,
@@ -237,9 +237,9 @@ callback = build_callback(trajectory_lafw_ref)
     grad!,
     lmo,
     x0,
-    max_iteration=2 * max_iter,
+    max_iteration=max_iteration,
     line_search=FrankWolfe.Adaptive(L_est=L_estimate),
-    print_iter=max_iter ÷ 10,
+    print_iter=max_iteration ÷ 10,
     memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     lazy=true,
