@@ -513,7 +513,7 @@ end
         memory_mode=FrankWolfe.OutplaceEmphasis(),
     )
 
-    x, v, primal, dual_gap, trajectory, _ = FrankWolfe.blended_conditional_gradient(
+    x, v, primal, dual_gap, status, trajectory, _ = FrankWolfe.blended_conditional_gradient(
         f,
         grad!,
         lmo_prob,
