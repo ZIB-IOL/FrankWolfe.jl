@@ -74,7 +74,7 @@ Random.seed!(rng, 42)
         @test eltype(x0) == T
         @test primal - 1 // n <= bound
 
-        x, v, primal, dual_gap, trajectory, _ = FrankWolfe.blended_conditional_gradient(
+        x, v, primal, dual_gap, status, trajectory, _ = FrankWolfe.blended_conditional_gradient(
             f,
             grad!,
             lmo,

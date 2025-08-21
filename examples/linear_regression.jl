@@ -93,7 +93,7 @@ params0 = rand(6) .- 1 # start params in (-1,0)
 
 k = 10000
 
-@time x, v, primal, dual_gap, trajectoryS = FrankWolfe.stochastic_frank_wolfe(
+@time x, v, primal, dual_gap, status, trajectoryS = FrankWolfe.stochastic_frank_wolfe(
     f_stoch_noisy,
     lmo,
     copy(params0),
@@ -106,7 +106,7 @@ k = 10000
     trajectory=true,
 )
 
-@time x, v, primal, dual_gap, trajectory09 = FrankWolfe.stochastic_frank_wolfe(
+@time x, v, primal, dual_gap, status, trajectory09 = FrankWolfe.stochastic_frank_wolfe(
     f_stoch_noisy,
     lmo,
     copy(params0),
@@ -120,7 +120,7 @@ k = 10000
     trajectory=true,
 )
 
-@time x, v, primal, dual_gap, trajectory099 = FrankWolfe.stochastic_frank_wolfe(
+@time x, v, primal, dual_gap, status, trajectory099 = FrankWolfe.stochastic_frank_wolfe(
     f_stoch_noisy,
     lmo,
     copy(params0),

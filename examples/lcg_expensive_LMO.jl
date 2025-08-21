@@ -132,7 +132,7 @@ x, v, primal, dual_gap, status, trajectoryLAFW = FrankWolfe.away_frank_wolfe(
 
 x0 = copy(x00)
 
-x, v, primal, dual_gap, trajectoryBCG, _ = FrankWolfe.blended_conditional_gradient(
+x, v, primal, dual_gap, status, trajectoryBCG, _ = FrankWolfe.blended_conditional_gradient(
     x -> cf(x, xp),
     (str, x) -> cgrad!(str, x, xp),
     lmo,
@@ -151,7 +151,7 @@ x, v, primal, dual_gap, trajectoryBCG, _ = FrankWolfe.blended_conditional_gradie
 
 x0 = copy(x00)
 
-x, v, primal, dual_gap, trajectoryBCG_ref, _ = FrankWolfe.blended_conditional_gradient(
+x, v, primal, dual_gap, status, trajectoryBCG_ref, _ = FrankWolfe.blended_conditional_gradient(
     x -> cf(x, xp),
     (str, x) -> cgrad!(str, x, xp),
     lmo,

@@ -212,7 +212,15 @@ function alternating_linear_minimization(
     if trajectory
         traj_data = [(t..., dist2_data[i]) for (i, t) in enumerate(traj_data)]
     end
-    return x, v, primal, dual_gap, dist2(x), fw_res.status, traj_data
+    return (
+        x=x,
+        v=v,
+        primal=primal,
+        dual_gap=dual_gap,
+        dist2=dist2(x),
+        status=fw_res.status,
+        traj_data=traj_data,
+    )
 end
 
 
@@ -220,11 +228,12 @@ end
     alternating_projections(lmos::NTuple{N,LinearMinimizationOracle}, x0; ...) where {N}
 
 Computes a point in the intersection of feasible domains specified by `lmos`.
-Returns a tuple `(x, v, dual_gap, dist2, traj_data)` with:
+Returns a named tuple `(; x, v, dual_gap, dist2, status, traj_data)` with:
 - `x` cartesian product of final iterates
 - `v` cartesian product of last vertices of the LMOs
 - `dual_gap` final Frank-Wolfe gap
 - `dist2` is 1/2 * sum of squared, pairwise distances between iterates
+- `status` the ExecutionStatus of the algorithm
 - `traj_data` vector of trajectory information.
 """
 function alternating_projections(
@@ -303,6 +312,7 @@ function alternating_projections(
     x = BlockVector([compute_extreme_point(lmo, x0) for lmo in lmo.lmos])
     step_type = ST_REGULAR
     gradient = similar(x)
+    execution_status = STATUS_RUNNING
 
     if reuse_active_set
         if proj_method ∉
@@ -395,6 +405,7 @@ function alternating_projections(
                 if verbose
                     @info "Time limit reached"
                 end
+                execution_status = STATUS_TIMEOUT
                 break
             end
         end
@@ -437,12 +448,22 @@ function alternating_projections(
                 step_type,
             )
             if callback(state, primal) === false
+                execution_status = STATUS_INTERRUPTED
                 break
             end
         end
-
-
     end
+
+    if dual_gap <= max(epsilon, eps(float(typeof(dual_gap))))
+        execution_status = STATUS_OPTIMAL
+    elseif t >= max_iteration
+        execution_status = STATUS_MAXITER
+    end
+    if execution_status == STATUS_RUNNING
+        @warn "Status not set"
+        execution_status = STATUS_OPTIMAL
+    end
+
     # recompute everything once for final verfication / do not record to trajectory though for now!
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
     # hence the final computation.
@@ -474,5 +495,12 @@ function alternating_projections(
         callback(state, primal)
     end
 
-    return x, v, dual_gap, primal, traj_data
+    return (
+        x=x,
+        v=v,
+        primal=primal,
+        dual_gap=dual_gap,
+        status=execution_status,
+        traj_data=traj_data,
+    )
 end
