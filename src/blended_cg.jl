@@ -182,7 +182,7 @@ function blended_conditional_gradient(
             "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
         )
         grad_type = typeof(gradient)
-        println("GRADIENTTYPE: $grad_type sparsity_control: $sparsity_control")
+        println("GRADIENT_TYPE: $grad_type sparsity_control: $sparsity_control")
         println("LMO: $(typeof(lmo))")
 
         if (use_extra_vertex_storage || add_dropped_vertices) && extra_vertex_storage === nothing

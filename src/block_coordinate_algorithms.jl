@@ -570,7 +570,7 @@ function block_coordinate_frank_wolfe(
         grad_type = typeof(gradient)
         update_step_type = [typeof(s) for s in update_step]
         println(
-            "MOMENTUM: $momentum GRADIENTTYPE: $grad_type UPDATE_ORDER: $update_order UPDATE_STEP: $update_step_type",
+            "MOMENTUM: $momentum GRADIENT_TYPE: $grad_type UPDATE_ORDER: $update_order UPDATE_STEP: $update_step_type",
         )
     end
 

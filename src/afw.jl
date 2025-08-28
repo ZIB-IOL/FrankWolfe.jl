@@ -164,7 +164,7 @@ function away_frank_wolfe(
         )
         grad_type = typeof(gradient)
         println(
-            "GRADIENTTYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance MOMENTUM: $momentum AWAYSTEPS: $away_steps",
+            "GRADIENT_TYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance MOMENTUM: $momentum AWAYSTEPS: $away_steps",
         )
         println("LMO: $(typeof(lmo))")
         if (use_extra_vertex_storage || add_dropped_vertices) && extra_vertex_storage === nothing
