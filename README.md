@@ -73,7 +73,7 @@ julia> p_opt, _ = frank_wolfe(f, grad!, lmo, p0; verbose=true);
 
 Vanilla Frank-Wolfe Algorithm.
 MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: Adaptive EPSILON: 1.0e-7 MAXITERATION: 10000 TYPE: Float64
-MOMENTUM: nothing GRADIENTTYPE: Nothing
+MOMENTUM: nothing GRADIENT_TYPE: Nothing
 
 -------------------------------------------------------------------------------------------------
   Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec

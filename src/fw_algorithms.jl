@@ -86,6 +86,11 @@ function frank_wolfe(
         @warn("Momentum-averaged gradients should usually be used with agnostic stepsize rules.",)
     end
 
+    # instanciating container for gradient
+    if gradient === nothing
+        gradient = collect(x)
+    end
+
     if verbose
         println("\nVanilla Frank-Wolfe Algorithm.")
         NumType = eltype(x0)
@@ -93,13 +98,8 @@ function frank_wolfe(
             "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
         )
         grad_type = typeof(gradient)
-        println("MOMENTUM: $momentum GRADIENTTYPE: $grad_type")
+        println("MOMENTUM: $momentum GRADIENT_TYPE: $grad_type")
         println("LMO: $(typeof(lmo))")
-    end
-
-    # instanciating container for gradient
-    if gradient === nothing
-        gradient = collect(x)
     end
 
     first_iter = true
@@ -379,7 +379,7 @@ function lazified_conditional_gradient(
             "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration sparsity_control: $sparsity_control TYPE: $NumType",
         )
         grad_type = typeof(gradient)
-        println("GRADIENTTYPE: $grad_type CACHESIZE $cache_size GREEDYCACHE: $greedy_lazy")
+        println("GRADIENT_TYPE: $grad_type CACHESIZE $cache_size GREEDYCACHE: $greedy_lazy")
         println("LMO: $(typeof(lmo))")
     end
 

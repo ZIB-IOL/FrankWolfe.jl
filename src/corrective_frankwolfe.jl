@@ -85,7 +85,7 @@ function corrective_frank_wolfe(
             "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
         )
         grad_type = typeof(gradient)
-        println("GRADIENTTYPE: $grad_type")
+        println("GRADIENT_TYPE: $grad_type")
         println("LMO: $(typeof(lmo))")
     end
 

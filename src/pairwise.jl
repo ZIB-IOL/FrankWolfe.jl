@@ -161,7 +161,7 @@ function pairwise_frank_wolfe(
         )
         grad_type = typeof(gradient)
         println(
-            "GRADIENTTYPE: $grad_type LAZY: $lazy sparsity_control: $sparsity_control MOMENTUM: $momentum",
+            "GRADIENT_TYPE: $grad_type LAZY: $lazy sparsity_control: $sparsity_control MOMENTUM: $momentum",
         )
         println("LMO: $(typeof(lmo))")
         if (use_extra_vertex_storage || add_dropped_vertices) && extra_vertex_storage === nothing

@@ -121,7 +121,7 @@ function alternating_linear_minimization(
         println(
             "MEMORY_MODE: $memory_mode STEPSIZE: $line_search_type EPSILON: $epsilon MAXITERATION: $max_iteration",
         )
-        println("TYPE: $num_type GRADIENTTYPE: $grad_type")
+        println("TYPE: $num_type GRADIENT_TYPE: $grad_type")
         println("LAMBDA: $lambda")
 
         # header and format string for output of the algorithm
@@ -383,7 +383,7 @@ function alternating_projections(
             "MEMORY_MODE: $memory_mode EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $num_type",
         )
         grad_type = typeof(gradient)
-        println("GRADIENTTYPE: $grad_type")
+        println("GRADIENT_TYPE: $grad_type")
     end
 
     first_iter = true
