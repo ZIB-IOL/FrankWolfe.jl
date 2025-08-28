@@ -90,7 +90,7 @@ function frank_wolfe(
     if gradient === nothing
         gradient = collect(x)
     end
-    
+
     if verbose
         println("\nVanilla Frank-Wolfe Algorithm.")
         NumType = eltype(x0)
