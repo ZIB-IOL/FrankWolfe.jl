@@ -86,6 +86,11 @@ function frank_wolfe(
         @warn("Momentum-averaged gradients should usually be used with agnostic stepsize rules.",)
     end
 
+    # instanciating container for gradient
+    if gradient === nothing
+        gradient = collect(x)
+    end
+    
     if verbose
         println("\nVanilla Frank-Wolfe Algorithm.")
         NumType = eltype(x0)
@@ -95,11 +100,6 @@ function frank_wolfe(
         grad_type = typeof(gradient)
         println("MOMENTUM: $momentum GRADIENT_TYPE: $grad_type")
         println("LMO: $(typeof(lmo))")
-    end
-
-    # instanciating container for gradient
-    if gradient === nothing
-        gradient = collect(x)
     end
 
     first_iter = true
