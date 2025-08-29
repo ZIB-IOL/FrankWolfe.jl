@@ -1,4 +1,4 @@
-# Noteworthy changes from v0.6
+# Noteworthy changes in v0.6
 
 - The function `FrankWolfe.update_iterate` was renamed to `FrankWolfe.update_block_iterate` to be more specific about it belonging to the block coordinate interface and avoid confusion.
 - A `status` field was added to the named tuple return of all algorithms, corresponding to a `FrankWolfe.ExecutionStatus` enum value indicating why the algorithm stopped.
