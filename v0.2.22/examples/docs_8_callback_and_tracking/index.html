@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Tracking, counters and custom callbacks for Frank Wolfe · FrankWolfe.jl</title><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">FrankWolfe.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../basics/">How does it work?</a></li><li><a class="tocitem" href="../../advanced/">Advanced features</a></li><li><input class="collapse-toggle" id="menuitem-4" type="checkbox" checked/><label class="tocitem" for="menuitem-4"><span class="docs-label">Examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../docs_0_fw_visualized/">Visualization of Frank-Wolfe running on a 2-dimensional polytope</a></li><li><a class="tocitem" href="../docs_1_mathopt_lmo/">Comparison with MathOptInterface on a Probability Simplex</a></li><li><a class="tocitem" href="../docs_2_polynomial_regression/">Polynomial Regression</a></li><li><a class="tocitem" href="../docs_3_matrix_completion/">Matrix Completion</a></li><li><a class="tocitem" href="../docs_4_rational_opt/">Exact Optimization with Rational Arithmetic</a></li><li><a class="tocitem" href="../docs_5_blended_cg/">Blended Conditional Gradients</a></li><li><a class="tocitem" href="../docs_6_spectrahedron/">Spectrahedron</a></li><li><a class="tocitem" href="../docs_7_shifted_norm_polytopes/">FrankWolfe for scaled, shifted <span>$\ell^1$</span> and <span>$\ell^{\infty}$</span> norm balls</a></li><li class="is-active"><a class="tocitem" href>Tracking, counters and custom callbacks for Frank Wolfe</a><ul class="internal"><li><a class="tocitem" href="#The-trackers-for-primal-objective,-gradient-and-LMO."><span>The trackers for primal objective, gradient and LMO.</span></a></li><li><a class="tocitem" href="#Adding-a-custom-callback"><span>Adding a custom callback</span></a></li></ul></li><li><a class="tocitem" href="../docs_9_extra_vertex_storage/">Extra-lazification</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-5" type="checkbox"/><label class="tocitem" for="menuitem-5"><span class="docs-label">API reference</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../reference/0_reference/">API Reference</a></li><li><a class="tocitem" href="../../reference/1_algorithms/">Algorithms</a></li><li><a class="tocitem" href="../../reference/2_lmo/">Linear Minimization Oracles</a></li><li><a class="tocitem" href="../../reference/3_backend/">Utilities and data structures</a></li><li><a class="tocitem" href="../../reference/4_linesearch/">Line search and step size settings</a></li></ul></li><li><a class="tocitem" href="../../contributing/">Contributing</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Tracking, counters and custom callbacks for Frank Wolfe</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Tracking, counters and custom callbacks for Frank Wolfe</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/ZIB-IOL/FrankWolfe.jl/blob/master/examples/docs_8_callback_and_tracking.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Main.check_gradients</code></pre><h1 id="Tracking,-counters-and-custom-callbacks-for-Frank-Wolfe"><a class="docs-heading-anchor" href="#Tracking,-counters-and-custom-callbacks-for-Frank-Wolfe">Tracking, counters and custom callbacks for Frank Wolfe</a><a id="Tracking,-counters-and-custom-callbacks-for-Frank-Wolfe-1"></a><a class="docs-heading-anchor-permalink" href="#Tracking,-counters-and-custom-callbacks-for-Frank-Wolfe" title="Permalink"></a></h1><p>In this example we will run the standard Frank-Wolfe algorithm while tracking the number of calls to the different oracles, namely function, gradient evaluations, and LMO calls. In order to track each of these metrics, a &quot;Tracking&quot; version of the Gradient, LMO and Function methods have to be supplied to the frank_wolfe algorithm, which are wrapping a standard one.</p><pre><code class="language-julia hljs">using FrankWolfe
+using Test
+using LinearAlgebra
+using FrankWolfe: ActiveSet</code></pre><h2 id="The-trackers-for-primal-objective,-gradient-and-LMO."><a class="docs-heading-anchor" href="#The-trackers-for-primal-objective,-gradient-and-LMO.">The trackers for primal objective, gradient and LMO.</a><a id="The-trackers-for-primal-objective,-gradient-and-LMO.-1"></a><a class="docs-heading-anchor-permalink" href="#The-trackers-for-primal-objective,-gradient-and-LMO." title="Permalink"></a></h2><p>In order to count the number of function calls, a <code>TrackingObjective</code> is built from a standard objective function <code>f</code>, which will act in the same way as the original function does, but with an additional <code>.counter</code> field which tracks the number of calls.</p><pre><code class="language-julia hljs">f(x) = norm(x)^2
+tf = FrankWolfe.TrackingObjective(f)
+@show tf.counter
+tf(rand(3))
+@show tf.counter
+# Resetting the counter
+tf.counter = 0;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">tf.counter = 0
+tf.counter = 1</code></pre><p>Similarly, the <code>tgrad!</code> function tracks the number of gradient calls:</p><pre><code class="language-julia hljs">function grad!(storage, x)
+    return storage .= 2x
+end
+tgrad! = FrankWolfe.TrackingGradient(grad!)
+@show tgrad!.counter;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">tgrad!.counter = 0</code></pre><p>The tracking LMO operates in a similar fashion and tracks the number of <code>compute_extreme_point</code> calls.</p><pre><code class="language-julia hljs">lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
+tlmo_prob = FrankWolfe.TrackingLMO(lmo_prob)
+@show tlmo_prob.counter;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">tlmo_prob.counter = 0</code></pre><p>The tracking LMO can be applied for all types of LMOs and even in a nested way, which can be useful to track the number of calls to a lazified oracle. We can now pass the tracking versions <code>tf</code>, <code>tgrad</code> and <code>tlmo_prob</code> to <code>frank_wolfe</code> and display their call counts after the optimization process.</p><pre><code class="language-julia hljs">x0 = FrankWolfe.compute_extreme_point(tlmo_prob, ones(5))
+fw_results = FrankWolfe.frank_wolfe(
+    tf,
+    tgrad!,
+    tlmo_prob,
+    x0,
+    max_iteration=1000,
+    line_search=FrankWolfe.Agnostic(),
+    callback=nothing,
+)
+
+@show tf.counter
+@show tgrad!.counter
+@show tlmo_prob.counter;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">tf.counter = 1
+tgrad!.counter = 1002
+tlmo_prob.counter = 1003</code></pre><h2 id="Adding-a-custom-callback"><a class="docs-heading-anchor" href="#Adding-a-custom-callback">Adding a custom callback</a><a id="Adding-a-custom-callback-1"></a><a class="docs-heading-anchor-permalink" href="#Adding-a-custom-callback" title="Permalink"></a></h2><p>A callback is a user-defined function called at every iteration of the algorithm with the current state passed as a named tuple.</p><p>We can implement our own callback, for example with:</p><ul><li>Extended trajectory logging, similar to the <code>trajectory = true</code> option</li><li>Stop criterion after a certain number of calls to the primal objective function</li></ul><p>To reuse the same tracking functions, Let us first reset their counters:</p><pre><code class="language-julia hljs">tf.counter = 0
+tgrad!.counter = 0
+tlmo_prob.counter = 0;</code></pre><p>The <code>storage</code> variable stores in the trajectory array the number of calls to each oracle at each iteration.</p><pre><code class="language-julia hljs">storage = []</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Any[]</code></pre><p>Now define our own trajectory logging function that extends the five default logged elements <code>(iterations, primal, dual, dual_gap, time)</code> with &quot;.counter&quot; field arguments present in the tracking functions.</p><pre><code class="language-julia hljs">function push_tracking_state(state, storage)
+    base_tuple = FrankWolfe.callback_state(state)
+    if state.lmo isa FrankWolfe.CachedLinearMinimizationOracle
+        complete_tuple = tuple(
+            base_tuple...,
+            state.gamma,
+            state.f.counter,
+            state.grad!.counter,
+            state.lmo.inner.counter,
+        )
+    else
+        complete_tuple = tuple(
+            base_tuple...,
+            state.gamma,
+            state.f.counter,
+            state.grad!.counter,
+            state.lmo.counter,
+        )
+    end
+    return push!(storage, complete_tuple)
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">push_tracking_state (generic function with 1 method)</code></pre><p>In case we want to stop the frank_wolfe algorithm prematurely after a certain condition is met, we can return a boolean stop criterion <code>false</code>. Here, we will implement a callback that terminates the algorithm if the primal objective function is evaluated more than 500 times.</p><pre><code class="language-julia hljs">function make_callback(storage)
+    return function callback(state, args...)
+        push_tracking_state(state, storage)
+        return state.f.counter &lt; 500
+    end
+end
+
+callback = make_callback(storage)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">callback (generic function with 1 method)</code></pre><p>We can show the difference between this standard run and the lazified conditional gradient algorithm which does not call the LMO at each iteration.</p><pre><code class="language-julia hljs">FrankWolfe.lazified_conditional_gradient(
+    tf,
+    tgrad!,
+    tlmo_prob,
+    x0,
+    max_iteration=1000,
+    traj_data=storage,
+    line_search=FrankWolfe.Agnostic(),
+    callback=callback,
+)
+
+total_iterations = storage[end][1]
+@show total_iterations
+@show tf.counter
+@show tgrad!.counter
+@show tlmo_prob.counter;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌ Warning: Lazification is not known to converge with open-loop step size strategies.
+└ @ FrankWolfe ~/work/FrankWolfe.jl/FrankWolfe.jl/src/fw_algorithms.jl:315
+total_iterations = 500
+tf.counter = 501
+tgrad!.counter = 501
+tlmo_prob.counter = 13</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../docs_7_shifted_norm_polytopes/">« FrankWolfe for scaled, shifted <span>$\ell^1$</span> and <span>$\ell^{\infty}$</span> norm balls</a><a class="docs-footer-nextpage" href="../docs_9_extra_vertex_storage/">Extra-lazification »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Tuesday 7 March 2023 15:09">Tuesday 7 March 2023</span>. Using Julia version 1.6.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
