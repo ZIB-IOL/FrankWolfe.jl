@@ -309,7 +309,7 @@ m = 300
         @test isapprox(f(x_s), f(x), atol=1e-7)
         @test isapprox(f(x_s), f(x_d), atol=1e-7)
         @test isapprox(f(x_s), f(x_b), atol=1e-7)
-        @test status_bd in (FrankWolfe.STATUS_OPTIMAL, FrankWolfe.STATUS_MAXITERATION)
+        @test status_bd in (FrankWolfe.STATUS_OPTIMAL, FrankWolfe.STATUS_MAXITER)
         @test status_d == FrankWolfe.STATUS_OPTIMAL
         @test status_s == FrankWolfe.STATUS_OPTIMAL
     end
