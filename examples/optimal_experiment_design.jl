@@ -320,7 +320,7 @@ m = 300
         lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
         x0, active_set = build_start_point(A)
         domain_oracle = build_domain_oracle(A)
-        x, _, primal, dual_gap, _, traj_data, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+        x, _, primal, dual_gap, status_result, traj_data, _ = FrankWolfe.blended_pairwise_conditional_gradient(
             f,
             grad!,
             lmo,
@@ -334,7 +334,7 @@ m = 300
         f, grad! = build_d_criterion(A, build_safe=false)
         x0, active_set = build_start_point(A)
         domain_oracle = build_domain_oracle(A)
-        x_s, _, primal, dual_gap, traj_data_s, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+        x_s, _, primal, dual_gap, status_s, traj_data_s, _ = FrankWolfe.blended_pairwise_conditional_gradient(
             f,
             grad!,
             lmo,
