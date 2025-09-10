@@ -319,16 +319,16 @@ function compute_extreme_point(
 end
 
 """
-    ConvexHullOracle{AT,VT}
+    ConvexHullLMO{AT,VT}
 
 Convex hull of a finite number of vertices of type `AT`, stored in a vector of type `VT`.
 """
-struct ConvexHullOracle{AT,VT<:AbstractVector{AT}} <: LinearMinimizationOracle
+struct ConvexHullLMO{AT,VT<:AbstractVector{AT}} <: LinearMinimizationOracle
     vertices::VT
 end
 
 function compute_extreme_point(
-    lmo::ConvexHullOracle{AT},
+    lmo::ConvexHullLMO{AT},
     direction;
     v=nothing,
     kwargs...,

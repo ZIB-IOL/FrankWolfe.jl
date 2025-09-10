@@ -955,7 +955,7 @@ end
 end
 
 @testset "Convex hull" begin
-    lmo = FrankWolfe.ConvexHullOracle([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+    lmo = FrankWolfe.ConvexHullLMO([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
     for _ in 1:100
         d = randn(rng, 3)
         v = FrankWolfe.compute_extreme_point(lmo, d)
