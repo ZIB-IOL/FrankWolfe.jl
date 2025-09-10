@@ -181,7 +181,7 @@ end
 
 
 """
-    OrderWeightNormLMO(weights,radius)
+    OrderWeightNormBallLMO(weights,radius)
     
 LMO with feasible set being the atomic ordered weighted l1 norm: https://arxiv.org/pdf/1409.4271
 
@@ -190,13 +190,13 @@ C = {x ∈ R^n, Ω_w(x) ≤ R}
 ```
 The weights are assumed to be positive.
 """
-struct OrderWeightNormLMO{R,B,D} <: LinearMinimizationOracle
+struct OrderWeightNormBallLMO{R,B,D} <: LinearMinimizationOracle
     radius::R
     mat_B::B
     direction_abs::D
 end
 
-function OrderWeightNormLMO(weights, radius)
+function OrderWeightNormBallLMO(weights, radius)
     N = length(weights)
     s = zero(eltype(weights))
     B = zeros(float(typeof(s)), N)
@@ -206,11 +206,11 @@ function OrderWeightNormLMO(weights, radius)
         B[i] = 1 / s
     end
     w_sort = similar(weights)
-    return OrderWeightNormLMO(radius, B, w_sort)
+    return OrderWeightNormBallLMO(radius, B, w_sort)
 end
 
 function compute_extreme_point(
-    lmo::OrderWeightNormLMO,
+    lmo::OrderWeightNormBallLMO,
     direction::M;
     v=nothing,
     kwargs...,

@@ -1057,7 +1057,7 @@ end
 
         #norm l1
         weights = ones(N)
-        lmo = FrankWolfe.OrderWeightNormLMO(weights, radius)
+        lmo = FrankWolfe.OrderWeightNormBallLMO(weights, radius)
         lmo_l1 = FrankWolfe.LpNormBallLMO{1}(radius)
         v1 = FrankWolfe.compute_extreme_point(lmo, direction)
         v2 = FrankWolfe.compute_extreme_point(lmo_l1, direction)
@@ -1066,7 +1066,7 @@ end
         #norm L_∞
         weights = zeros(N)
         weights[1] = 1
-        lmo = FrankWolfe.OrderWeightNormLMO(weights, radius)
+        lmo = FrankWolfe.OrderWeightNormBallLMO(weights, radius)
         lmo_l_inf = FrankWolfe.LpNormBallLMO{Inf}(radius)
         v1 = FrankWolfe.compute_extreme_point(lmo, direction)
         v2 = FrankWolfe.compute_extreme_point(lmo_l_inf, direction)
@@ -1075,7 +1075,7 @@ end
         #symmetry
         direction_opp = -1 * direction
         weights = rand(rng, N)
-        lmo_opp = FrankWolfe.OrderWeightNormLMO(weights, radius)
+        lmo_opp = FrankWolfe.OrderWeightNormBallLMO(weights, radius)
         v = FrankWolfe.compute_extreme_point(lmo_opp, direction)
         v_opp = FrankWolfe.compute_extreme_point(lmo_opp, direction_opp)
         @test v == -1 * v_opp
