@@ -70,7 +70,7 @@ end
         K = 1
         n = 5
         direction = randn(rng, n)
-        hypersimplex = FrankWolfe.HyperSimplexOracle(K, 3.0)
+        hypersimplex = FrankWolfe.HyperSimplexLMO(K, 3.0)
         unit_hypersimplex = FrankWolfe.UnitHyperSimplexOracle(K, 3.0)
         v = FrankWolfe.compute_extreme_point(hypersimplex, direction)
         @test SparseArrays.nnz(v) == K

@@ -384,10 +384,10 @@ end
 end
 
 @testset "DICG Hypersimplex $n $K" for n in (20, 500, 10000), K in (1, n ÷ 10, n ÷ 2)
-    for lmo in (FrankWolfe.HyperSimplexOracle(K, 3.0), FrankWolfe.UnitHyperSimplexOracle(K, 3.0))
+    for lmo in (FrankWolfe.HyperSimplexLMO(K, 3.0), FrankWolfe.UnitHyperSimplexOracle(K, 3.0))
         K = 4
         n = 10
-        lmo = FrankWolfe.HyperSimplexOracle(K, 3.0)
+        lmo = FrankWolfe.HyperSimplexLMO(K, 3.0)
         xref = fill(0.4, n)
         function f(x)
             return 1 / 2 * (norm(x)^2 - 2 * dot(x, xref) + norm(xref)^2)

@@ -422,7 +422,7 @@ function convert_mathopt(
 end
 
 """
-    HyperSimplexOracle(K, radius)
+    HyperSimplexLMO(K, radius)
 
 Represents the scaled hypersimplex of radius τ, the convex hull of vectors `v` such that:
 - v_i ∈ {0, τ}
@@ -430,15 +430,15 @@ Represents the scaled hypersimplex of radius τ, the convex hull of vectors `v` 
 
 Equivalently, this is the convex hull of the vertices of the K-sparse polytope lying in the nonnegative orthant.
 """
-struct HyperSimplexOracle{T} <: LinearMinimizationOracle
+struct HyperSimplexLMO{T} <: LinearMinimizationOracle
     K::Int
     radius::T
 end
 
-HyperSimplexOracle{T}(K::Integer) where {T} = HyperSimplexOracle{T}(K, one(T))
+HyperSimplexLMO{T}(K::Integer) where {T} = HyperSimplexLMO{T}(K, one(T))
 
 function compute_extreme_point(
-    lmo::HyperSimplexOracle{T},
+    lmo::HyperSimplexLMO{T},
     direction;
     v=nothing,
     kwargs...,
@@ -457,9 +457,9 @@ function compute_extreme_point(
     return v
 end
 
-is_decomposition_invariant_oracle(::HyperSimplexOracle) = true
+is_decomposition_invariant_oracle(::HyperSimplexLMO) = true
 
-function compute_inface_extreme_point(lmo::HyperSimplexOracle, direction, x; kwargs...)
+function compute_inface_extreme_point(lmo::HyperSimplexLMO, direction, x; kwargs...)
     # faces for the hypersimplex are bounds x_i ∈ {0, τ}
     v = spzeros(eltype(x), size(direction)...)
     K = min(lmo.K, length(x))
@@ -494,7 +494,7 @@ function compute_inface_extreme_point(lmo::HyperSimplexOracle, direction, x; kwa
     return v
 end
 
-function dicg_maximum_step(lmo::HyperSimplexOracle, direction, x)
+function dicg_maximum_step(lmo::HyperSimplexLMO, direction, x)
     T = promote_type(eltype(x), eltype(direction))
     gamma_max = one(T)
     for idx in eachindex(x)
@@ -516,7 +516,7 @@ function dicg_maximum_step(lmo::HyperSimplexOracle, direction, x)
 end
 
 function convert_mathopt(
-    lmo::HyperSimplexOracle{T},
+    lmo::HyperSimplexLMO{T},
     optimizer::OT;
     dimension::Integer,
     use_modify::Bool=true,
