@@ -22,21 +22,21 @@ All LMOs should accept keyword arguments that they can ignore.
 function compute_extreme_point end
 
 """
-    CachedLinearMinimizationOracle{LMO}
+    CachedLMO{LMO}
 
 Oracle wrapping another one of type lmo.
-Subtypes of `CachedLinearMinimizationOracle` contain a cache of
+Subtypes of `CachedLMO` contain a cache of
 previous solutions.
 
 By convention, the inner oracle is named `inner`.
 Cached optimizers are expected to implement `Base.empty!` and `Base.length`.
 """
-abstract type CachedLinearMinimizationOracle{LMO<:LinearMinimizationOracle} <:
+abstract type CachedLMO{LMO<:LinearMinimizationOracle} <:
               LinearMinimizationOracle end
 
 # by default do nothing and return the LMO itself
-Base.empty!(lmo::CachedLinearMinimizationOracle) = lmo
-Base.length(::CachedLinearMinimizationOracle) = 0
+Base.empty!(lmo::CachedLMO) = lmo
+Base.length(::CachedLMO) = 0
 
 """
     SingleLastCachedLMO{LMO, VT}
@@ -44,7 +44,7 @@ Base.length(::CachedLinearMinimizationOracle) = 0
 Caches only the last result from an LMO and stores it in `last_vertex`.
 Vertices of `LMO` have to be of type `VT` if provided.
 """
-mutable struct SingleLastCachedLMO{LMO,A} <: CachedLinearMinimizationOracle{LMO}
+mutable struct SingleLastCachedLMO{LMO,A} <: CachedLMO{LMO}
     last_vertex::Union{Nothing,A}
     inner::LMO
 end
@@ -88,7 +88,7 @@ Cache for a LMO storing up to `N` vertices in the cache, removed in FIFO style.
 `VT`, if provided, must be the type of vertices returned by `LMO`
 """
 mutable struct MultiCacheLMO{N,LMO<:LinearMinimizationOracle,A} <:
-               CachedLinearMinimizationOracle{LMO}
+               CachedLMO{LMO}
     vertices::NTuple{N,Union{A,Nothing}}
     inner::LMO
     oldest_idx::Int
@@ -186,7 +186,7 @@ Cache for a LMO storing an unbounded number of vertices of type `VT` in the cach
 `VT`, if provided, must be the type of vertices returned by `LMO`
 """
 mutable struct VectorCacheLMO{LMO<:LinearMinimizationOracle,VT} <:
-               CachedLinearMinimizationOracle{LMO}
+               CachedLMO{LMO}
     vertices::Vector{VT}
     inner::LMO
 end

@@ -83,7 +83,7 @@ storage = []
 
 function push_tracking_state(state, storage)
     base_tuple = FrankWolfe.callback_state(state)
-    if state.lmo isa FrankWolfe.CachedLinearMinimizationOracle
+    if state.lmo isa FrankWolfe.CachedLMO
         complete_tuple = tuple(
             base_tuple...,
             state.gamma,
