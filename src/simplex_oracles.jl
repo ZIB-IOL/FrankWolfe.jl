@@ -282,7 +282,7 @@ function compute_dual_solution(
 end
 
 """
-    UnitHyperSimplexOracle(radius)
+    UnitHyperSimplexLMO(radius)
 
 Represents the scaled unit hypersimplex of radius τ, the convex hull of vectors `v` such that:
 - v_i ∈ {0, τ}
@@ -290,18 +290,18 @@ Represents the scaled unit hypersimplex of radius τ, the convex hull of vectors
 
 Equivalently, this is the intersection of the K-sparse polytope and the nonnegative orthant.
 """
-struct UnitHyperSimplexOracle{T} <: LinearMinimizationOracle
+struct UnitHyperSimplexLMO{T} <: LinearMinimizationOracle
     K::Int
     radius::T
 end
 
-UnitHyperSimplexOracle{T}(K::Integer) where {T} = UnitHyperSimplexOracle{T}(K, one(T))
+UnitHyperSimplexLMO{T}(K::Integer) where {T} = UnitHyperSimplexLMO{T}(K, one(T))
 
-UnitHyperSimplexOracle(K::Int, radius::Integer) =
-    UnitHyperSimplexOracle(K, convert(Rational{BigInt}, radius))
+UnitHyperSimplexLMO(K::Int, radius::Integer) =
+    UnitHyperSimplexLMO(K, convert(Rational{BigInt}, radius))
 
 function compute_extreme_point(
-    lmo::UnitHyperSimplexOracle{TL},
+    lmo::UnitHyperSimplexLMO{TL},
     direction;
     v=nothing,
     kwargs...,
@@ -317,9 +317,9 @@ function compute_extreme_point(
     return v
 end
 
-is_decomposition_invariant_oracle(::UnitHyperSimplexOracle) = true
+is_decomposition_invariant_oracle(::UnitHyperSimplexLMO) = true
 
-function compute_inface_extreme_point(lmo::UnitHyperSimplexOracle, direction, x; kwargs...)
+function compute_inface_extreme_point(lmo::UnitHyperSimplexLMO, direction, x; kwargs...)
     # faces for the hypersimplex are:
     # bounds x_i ∈ {0, τ}
     # the simplex face ∑ x_i == K * τ
@@ -368,7 +368,7 @@ function compute_inface_extreme_point(lmo::UnitHyperSimplexOracle, direction, x;
     return v
 end
 
-function dicg_maximum_step(lmo::UnitHyperSimplexOracle, direction, x)
+function dicg_maximum_step(lmo::UnitHyperSimplexLMO, direction, x)
     T = promote_type(eltype(x), eltype(direction))
     gamma_max = one(T)
     xsum = zero(T)
@@ -403,7 +403,7 @@ function dicg_maximum_step(lmo::UnitHyperSimplexOracle, direction, x)
 end
 
 function convert_mathopt(
-    lmo::UnitHyperSimplexOracle{T},
+    lmo::UnitHyperSimplexLMO{T},
     optimizer::OT;
     dimension::Integer,
     use_modify::Bool=true,
