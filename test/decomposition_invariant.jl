@@ -19,7 +19,7 @@ MOI.empty!(o)
 
 @testset "Hypercube interface" begin
     # no fixed variable
-    cube = FrankWolfe.ZeroOneHypercube()
+    cube = FrankWolfe.ZeroOneHypercubeLMO()
     n = 5
     cube_MOI = FrankWolfe.convert_mathopt(cube, o; dimension=n)
     x = fill(0.4, n)
@@ -227,7 +227,7 @@ end
     end
 
     @testset "Non-improving descent direction termination" begin
-        cube = FrankWolfe.ZeroOneHypercube()
+        cube = FrankWolfe.ZeroOneHypercubeLMO()
         cube_MOI = FrankWolfe.convert_mathopt(cube, o; dimension=n)
         x0 = ones(n)
 
@@ -273,7 +273,7 @@ end
     end
 
     @testset "Zero-one cube" begin
-        cube = FrankWolfe.ZeroOneHypercube()
+        cube = FrankWolfe.ZeroOneHypercubeLMO()
         cube_MOI = FrankWolfe.convert_mathopt(cube, o; dimension=n)
         x0 = FrankWolfe.compute_extreme_point(cube, randn(rng, n))
 

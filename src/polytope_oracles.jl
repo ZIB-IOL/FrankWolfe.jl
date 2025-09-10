@@ -347,14 +347,14 @@ function compute_extreme_point(
 end
 
 """
-    ZeroOneHypercube
+    ZeroOneHypercubeLMO
 
 {0,1} hypercube polytope.
 """
-struct ZeroOneHypercube <: LinearMinimizationOracle end
+struct ZeroOneHypercubeLMO <: LinearMinimizationOracle end
 
 function convert_mathopt(
-    lmo::ZeroOneHypercube,
+    lmo::ZeroOneHypercubeLMO,
     optimizer::OT;
     dimension::Integer,
     use_modify=true::Bool,
@@ -366,9 +366,9 @@ function convert_mathopt(
     return MathOptLMO(optimizer, use_modify)
 end
 
-is_decomposition_invariant_oracle(::ZeroOneHypercube) = true
+is_decomposition_invariant_oracle(::ZeroOneHypercubeLMO) = true
 
-function is_inface_feasible(ZeroOneHypercube, a, x)
+function is_inface_feasible(ZeroOneHypercubeLMO, a, x)
     for idx in eachindex(a)
         if (x[idx] == 0 && a[idx] != 0) || (x[idx] == 1 && a[idx] != 1)
             return false
@@ -377,12 +377,12 @@ function is_inface_feasible(ZeroOneHypercube, a, x)
     return true
 end
 
-function compute_extreme_point(::ZeroOneHypercube, direction; lazy=false, kwargs...)
+function compute_extreme_point(::ZeroOneHypercubeLMO, direction; lazy=false, kwargs...)
     v = BitVector(signbit(di) for di in direction)
     return v
 end
 
-function compute_inface_extreme_point(::ZeroOneHypercube, direction, x; lazy=false, kwargs...)
+function compute_inface_extreme_point(::ZeroOneHypercubeLMO, direction, x; lazy=false, kwargs...)
     v = BitVector(signbit(di) for di in direction)
     for idx in eachindex(x)
         if x[idx] ≈ 1
@@ -396,7 +396,7 @@ function compute_inface_extreme_point(::ZeroOneHypercube, direction, x; lazy=fal
 end
 
 # Find the maximum step size γ such that `x - γ d` remains in the feasible set.
-function dicg_maximum_step(::ZeroOneHypercube, direction, x)
+function dicg_maximum_step(::ZeroOneHypercubeLMO, direction, x)
     T = promote_type(eltype(x), eltype(direction))
     gamma_max = one(T)
     for idx in eachindex(x)
