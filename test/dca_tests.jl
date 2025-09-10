@@ -131,7 +131,7 @@ using StableRNGs
         # Test with different LMOs
         lmos = [
             FrankWolfe.ProbabilitySimplexLMO(1.0),
-            FrankWolfe.ScaledBoundL1NormBall(-ones(n), ones(n)),
+            FrankWolfe.DiamondLMO(-ones(n), ones(n)),
             FrankWolfe.KSparseLMO(2, 1.0),
         ]
 

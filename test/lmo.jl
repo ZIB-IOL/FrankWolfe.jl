@@ -776,12 +776,12 @@ end
 end
 
 @testset "Scaled L-1 norm polytopes" begin
-    lmo = FrankWolfe.ScaledBoundL1NormBall(-ones(10), ones(10))
+    lmo = FrankWolfe.DiamondLMO(-ones(10), ones(10))
     # equivalent to LMO
     lmo_ref = FrankWolfe.LpNormLMO{1}(1)
     # all coordinates shifted up
-    lmo_shifted = FrankWolfe.ScaledBoundL1NormBall(zeros(10), 2 * ones(10))
-    lmo_scaled = FrankWolfe.ScaledBoundL1NormBall(-2 * ones(10), 2 * ones(10))
+    lmo_shifted = FrankWolfe.DiamondLMO(zeros(10), 2 * ones(10))
+    lmo_scaled = FrankWolfe.DiamondLMO(-2 * ones(10), 2 * ones(10))
     for _ in 1:100
         d = randn(rng, 10)
         v = FrankWolfe.compute_extreme_point(lmo, d)
@@ -799,7 +799,7 @@ end
     @test norm(v) == 1
     # non-uniform scaling
     # validates bugfix
-    lmo_nonunif = FrankWolfe.ScaledBoundL1NormBall([-1.0, -1.0], [3.0, 1.0])
+    lmo_nonunif = FrankWolfe.DiamondLMO([-1.0, -1.0], [3.0, 1.0])
     direction = [-0.8272727272727383, -0.977272727272718]
     v = FrankWolfe.compute_extreme_point(lmo_nonunif, direction)
     @test v ≈ [3, 0]
@@ -904,7 +904,7 @@ end
         return mul!(g, M, p, 2, 1)
     end
 
-    lmo_dense = FrankWolfe.ScaledBoundL1NormBall(-ones(3), ones(3))
+    lmo_dense = FrankWolfe.DiamondLMO(-ones(3), ones(3))
     lmo_standard = FrankWolfe.LpNormLMO{1}(1.0)
     x_dense, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad!, lmo_dense, [1.0, 0.0, 0.0])
     x_standard, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad!, lmo_standard, [1.0, 0.0, 0.0])

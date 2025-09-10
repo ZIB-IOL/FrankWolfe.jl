@@ -269,21 +269,21 @@ end
 
 
 """
-    ScaledBoundL1NormBall(lower_bounds, upper_bounds)
+    DiamondLMO(lower_bounds, upper_bounds)
 
 Polytope similar to a L1-ball with shifted bounds.
 It is the convex hull of two scaled and shifted unit vectors for each axis (shifted to the center of the polytope, i.e., the elementwise midpoint of the bounds).
 Lower and upper bounds are passed on as abstract vectors, possibly of different types.
 For the standard L1-ball, all lower and upper bounds would be -1 and 1.
 """
-struct ScaledBoundL1NormBall{T,N,VT1<:AbstractArray{T,N},VT2<:AbstractArray{T,N}} <:
+struct DiamondLMO{T,N,VT1<:AbstractArray{T,N},VT2<:AbstractArray{T,N}} <:
        LinearMinimizationOracle
     lower_bounds::VT1
     upper_bounds::VT2
 end
 
 function compute_extreme_point(
-    lmo::ScaledBoundL1NormBall,
+    lmo::DiamondLMO,
     direction;
     v=similar(lmo.lower_bounds),
     kwargs...,

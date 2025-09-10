@@ -15,7 +15,7 @@ end
 
 n = 10
 
-lmo_nb = FrankWolfe.ScaledBoundL1NormBall(-ones(n), ones(n))
+lmo_nb = FrankWolfe.DiamondLMO(-ones(n), ones(n))
 lmo_prob = FrankWolfe.ProbabilitySimplexLMO(1.0)
 lmo1 = FrankWolfe.BoxLMO(-ones(n), zeros(n))
 lmo2 = FrankWolfe.BoxLMO(zeros(n), ones(n))

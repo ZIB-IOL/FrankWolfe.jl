@@ -15,7 +15,7 @@ end
 
 vertices = 2 * rand(100, n) .- 1
 
-lmo_nb = FrankWolfe.ScaledBoundL1NormBall(-ones(n), ones(n))
+lmo_nb = FrankWolfe.DiamondLMO(-ones(n), ones(n))
 lmo_ball = FrankWolfe.KNormBallLMO(5, 1.0)
 lmo_sparse = FrankWolfe.KSparseLMO(100, 1.0)
 lmo_prob = FrankWolfe.ProbabilitySimplexLMO(1.0)

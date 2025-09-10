@@ -1238,7 +1238,7 @@ Base.precompile(
         typeof(frank_wolfe),
         Function,
         Function,
-        ScaledBoundL1NormBall{Float64,1,Vector{Float64},Vector{Float64}},
+        DiamondLMO{Float64,1,Vector{Float64},Vector{Float64}},
         Vector{Float64},
     },
 )   # time: 0.19644113
