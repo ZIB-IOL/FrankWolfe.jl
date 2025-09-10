@@ -405,7 +405,7 @@ end
         lmo,
         active_set;
         verbose=true,
-        line_search=FrankWolfe.Secant(domain_oracle=domain_oracle),
+        line_search=FrankWolfe.Adaptive(domain_oracle=domain_oracle),
     )
     @test status == FrankWolfe.STATUS_OPTIMAL
     @test isfinite(primal)
