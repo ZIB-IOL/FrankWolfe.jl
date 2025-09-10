@@ -103,7 +103,7 @@ end
 #norm_estimation = 400 * Arpack.svds(rating_matrix, nsv=1, ritzvec=false)[1].S[1]
 norm_estimation = 10 * Arpack.svds(rating_matrix, nsv=1, ritzvec=false)[1].S[1]
 
-const lmo = FrankWolfe.NuclearNormLMO(norm_estimation)
+const lmo = FrankWolfe.NuclearNormBallLMO(norm_estimation)
 const x0 = FrankWolfe.compute_extreme_point(lmo, zero(rating_matrix))
 const k = 100
 

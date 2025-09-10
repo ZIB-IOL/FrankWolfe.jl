@@ -856,7 +856,7 @@ Base.precompile(
         typeof(compute_extreme_point),
         MultiCacheLMO{
             _A,
-            NuclearNormLMO{Float64},
+            NuclearNormBallLMO{Float64},
             RankOneMatrix{Float64,Vector{Float64},Vector{Float64}},
         } where _A,
         SparseArrays.SparseMatrixCSC{Float64,Int64},
@@ -868,7 +868,7 @@ Base.precompile(
         NamedTuple{(:threshold, :greedy),_A} where _A<:Tuple{Any,Bool},
         typeof(compute_extreme_point),
         VectorCacheLMO{
-            NuclearNormLMO{Float64},
+            NuclearNormBallLMO{Float64},
             RankOneMatrix{Float64,Vector{Float64},Vector{Float64}},
         },
         SparseArrays.SparseMatrixCSC{Float64,Int64},
@@ -881,7 +881,7 @@ Base.precompile(
         typeof(compute_extreme_point),
         MultiCacheLMO{
             _A,
-            NuclearNormLMO{Float64},
+            NuclearNormBallLMO{Float64},
             RankOneMatrix{Float64,Vector{Float64},Vector{Float64}},
         } where _A,
         SparseArrays.SparseMatrixCSC{Float64,Int64},
@@ -892,7 +892,7 @@ Base.precompile(
         typeof(length),
         MultiCacheLMO{
             _A,
-            NuclearNormLMO{Float64},
+            NuclearNormBallLMO{Float64},
             RankOneMatrix{Float64,Vector{Float64},Vector{Float64}},
         } where _A,
     },
@@ -901,22 +901,22 @@ Base.precompile(
     Tuple{typeof(print_callback),Tuple{String,String,Any,Any,Any,Float64,Float64,Int64},String},
 )   # time: 0.00435821
 Base.precompile(
-    Tuple{Type{MultiCacheLMO{_A,NuclearNormLMO{Float64},_B}} where {_A,_B},NuclearNormLMO{Float64}},
+    Tuple{Type{MultiCacheLMO{_A,NuclearNormBallLMO{Float64},_B}} where {_A,_B},NuclearNormBallLMO{Float64}},
 )   # time: 0.00359918
 Base.precompile(
     Tuple{
         Type{
             MultiCacheLMO{
                 _A,
-                NuclearNormLMO{Float64},
+                NuclearNormBallLMO{Float64},
                 RankOneMatrix{Float64,Vector{Float64},Vector{Float64}},
             },
         } where _A,
-        NuclearNormLMO{Float64},
+        NuclearNormBallLMO{Float64},
     },
 )   # time: 0.003546448
 Base.precompile(
-    Tuple{Type{VectorCacheLMO{NuclearNormLMO{Float64},_A}} where _A,NuclearNormLMO{Float64}},
+    Tuple{Type{VectorCacheLMO{NuclearNormBallLMO{Float64},_A}} where _A,NuclearNormBallLMO{Float64}},
 )   # time: 0.003143188
 Base.precompile(
     Tuple{
@@ -924,7 +924,7 @@ Base.precompile(
         NamedTuple{(:threshold, :greedy),Tuple{Float64,Bool}},
         typeof(compute_extreme_point),
         VectorCacheLMO{
-            NuclearNormLMO{Float64},
+            NuclearNormBallLMO{Float64},
             RankOneMatrix{Float64,Vector{Float64},Vector{Float64}},
         },
         SparseArrays.SparseMatrixCSC{Float64,Int64},
@@ -972,7 +972,7 @@ Base.precompile(
         typeof(frank_wolfe),
         Function,
         Function,
-        NuclearNormLMO{Float64},
+        NuclearNormBallLMO{Float64},
         RankOneMatrix{Float64,Vector{Float64},Vector{Float64}},
     },
 )   # time: 0.6235743
@@ -1004,7 +1004,7 @@ Base.precompile(
         typeof(lazified_conditional_gradient),
         Function,
         Function,
-        NuclearNormLMO{Float64},
+        NuclearNormBallLMO{Float64},
         RankOneMatrix{Float64,Vector{Float64},Vector{Float64}},
     },
 )   # time: 0.36729497
@@ -1027,7 +1027,7 @@ Base.precompile(
         typeof(away_frank_wolfe),
         Function,
         Function,
-        NuclearNormLMO{Float64},
+        NuclearNormBallLMO{Float64},
         RankOneMatrix{Float64,Vector{Float64},Vector{Float64}},
     },
 )   # time: 0.828201
@@ -1049,7 +1049,7 @@ Base.precompile(
         typeof(blended_conditional_gradient),
         Function,
         Function,
-        NuclearNormLMO{Float64},
+        NuclearNormBallLMO{Float64},
         RankOneMatrix{Float64,Vector{Float64},Vector{Float64}},
     },
 )   # time: 1.6012237
@@ -1058,7 +1058,7 @@ Base.precompile(
         Core.kwftype(typeof(lp_separation_oracle)),
         NamedTuple{(:inplace_loop, :force_fw_step),Tuple{Bool,Bool}},
         typeof(lp_separation_oracle),
-        NuclearNormLMO{Float64},
+        NuclearNormBallLMO{Float64},
         ActiveSet{RankOneMatrix{Float64,Vector{Float64},Vector{Float64}},Float64,Matrix{Float64}},
         Matrix{Float64},
         Float64,
@@ -1083,7 +1083,7 @@ Base.precompile(
         typeof(blended_pairwise_conditional_gradient),
         Function,
         Function,
-        NuclearNormLMO{Float64},
+        NuclearNormBallLMO{Float64},
         RankOneMatrix{Float64,Vector{Float64},Vector{Float64}},
     },
 )   # time: 0.34339795
