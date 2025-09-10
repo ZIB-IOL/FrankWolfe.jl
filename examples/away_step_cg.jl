@@ -18,7 +18,7 @@ end
 
 # problem with active set updates and the ksparselmo
 lmo = FrankWolfe.KSparseLMO(40, 1.0);
-# lmo = FrankWolfe.ProbabilitySimplexOracle(1)
+# lmo = FrankWolfe.ProbabilitySimplexLMO(1)
 x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
 FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo; k=100)

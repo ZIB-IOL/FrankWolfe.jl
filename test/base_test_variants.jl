@@ -12,7 +12,7 @@ Random.seed!(rng, 42)
     function grad!(storage, x)
         return storage .= 2x
     end
-    lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
+    lmo_prob = FrankWolfe.ProbabilitySimplexLMO(1)
     x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(5))
     @test abs(
         FrankWolfe.frank_wolfe(
@@ -158,7 +158,7 @@ end
         @. storage = 2x
         return nothing
     end
-    lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
+    lmo_prob = FrankWolfe.ProbabilitySimplexLMO(1)
     x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(5))
     @test abs(
         FrankWolfe.lazified_conditional_gradient(
@@ -217,7 +217,7 @@ end
         @. storage = 2 * x
         return nothing
     end
-    lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
+    lmo_prob = FrankWolfe.ProbabilitySimplexLMO(1)
     x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n))
 
     x, v, primal, dual_gap, status, trajectory = FrankWolfe.lazified_conditional_gradient(
@@ -349,7 +349,7 @@ end
 
 @testset "Away-step FW" begin
     n = 50
-    lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1.0)
+    lmo_prob = FrankWolfe.ProbabilitySimplexLMO(1.0)
     x0 = FrankWolfe.compute_extreme_point(lmo_prob, rand(rng, n))
     f(x) = norm(x)^2
     function grad!(storage, x)
@@ -493,7 +493,7 @@ end
 
 @testset "Testing Blended Conditional Gradient" begin
     n = 50
-    lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1.0)
+    lmo_prob = FrankWolfe.ProbabilitySimplexLMO(1.0)
     x0 = FrankWolfe.compute_extreme_point(lmo_prob, randn(rng, n))
     f(x) = norm(x)^2
     function grad!(storage, x)

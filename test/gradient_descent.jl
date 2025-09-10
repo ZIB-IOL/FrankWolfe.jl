@@ -209,13 +209,13 @@ const f_opt = f_gd(x_opt)
                 )
 
                 x0 = FrankWolfe.compute_extreme_point(
-                    FrankWolfe.ProbabilitySimplexOracle(1.0),
+                    FrankWolfe.ProbabilitySimplexLMO(1.0),
                     zeros(n),
                 )
                 x_fw_prob, _ = FrankWolfe.blended_pairwise_conditional_gradient(
                     f_gd,
                     grad_gd!,
-                    FrankWolfe.ProbabilitySimplexOracle(1.0),
+                    FrankWolfe.ProbabilitySimplexLMO(1.0),
                     line_search=FrankWolfe.Secant(),
                     x0;
                     epsilon=target_tolerance,
@@ -353,7 +353,7 @@ const f_opt = f_gd(x_opt)
                     FWExpe.ProbabilitySimplexProx();
                     epsilon=target_tolerance,
                 )
-                lmo_probsimplex = FrankWolfe.ProbabilitySimplexOracle(1.0)
+                lmo_probsimplex = FrankWolfe.ProbabilitySimplexLMO(1.0)
                 x0 = FrankWolfe.compute_extreme_point(lmo_probsimplex, zeros(n))
                 x_fw_prob, _ = FrankWolfe.blended_pairwise_conditional_gradient(
                     f_gd,

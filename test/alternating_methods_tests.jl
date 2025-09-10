@@ -16,7 +16,7 @@ end
 n = 10
 
 lmo_nb = FrankWolfe.ScaledBoundL1NormBall(-ones(n), ones(n))
-lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1.0)
+lmo_prob = FrankWolfe.ProbabilitySimplexLMO(1.0)
 lmo1 = FrankWolfe.ScaledBoundLInfNormBall(-ones(n), zeros(n))
 lmo2 = FrankWolfe.ScaledBoundLInfNormBall(zeros(n), ones(n))
 lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))

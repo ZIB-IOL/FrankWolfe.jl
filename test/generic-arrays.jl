@@ -17,7 +17,7 @@ end
         @. storage = 2 * x
     end
 
-    lmo = FrankWolfe.ProbabilitySimplexOracle(1)
+    lmo = FrankWolfe.ProbabilitySimplexLMO(1)
 
     x0 = GenericArray(collect(FrankWolfe.compute_extreme_point(lmo, zeros(n))))
 

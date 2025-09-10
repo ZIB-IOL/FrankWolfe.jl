@@ -61,7 +61,7 @@ Base.precompile(
         typeof(frank_wolfe),
         Function,
         Function,
-        ProbabilitySimplexOracle{Rational{BigInt}},
+        ProbabilitySimplexLMO{Rational{BigInt}},
         ScaledHotVector{Rational{BigInt}},
     },
 )   # time: 0.2661169
@@ -81,7 +81,7 @@ Base.precompile(
         typeof(frank_wolfe),
         Function,
         Function,
-        ProbabilitySimplexOracle{Rational{BigInt}},
+        ProbabilitySimplexLMO{Rational{BigInt}},
         ScaledHotVector{Rational{BigInt}},
     },
 )   # time: 0.43984142
@@ -165,7 +165,7 @@ Base.precompile(
         typeof(blended_conditional_gradient),
         Function,
         Function,
-        ProbabilitySimplexOracle{Float64},
+        ProbabilitySimplexLMO{Float64},
         ScaledHotVector{Float64},
     },
 )   # time: 0.5107306
@@ -664,7 +664,7 @@ Base.precompile(
         typeof(frank_wolfe),
         Function,
         Function,
-        ProbabilitySimplexOracle{Float64},
+        ProbabilitySimplexLMO{Float64},
         ScaledHotVector{Float64},
     },
 )   # time: 0.7329921
@@ -686,7 +686,7 @@ Base.precompile(
         typeof(away_frank_wolfe),
         Function,
         Function,
-        ProbabilitySimplexOracle{Float64},
+        ProbabilitySimplexLMO{Float64},
         ScaledHotVector{Float64},
     },
 )   # time: 0.746063
@@ -708,7 +708,7 @@ Base.precompile(
         typeof(blended_conditional_gradient),
         Function,
         Function,
-        ProbabilitySimplexOracle{Float64},
+        ProbabilitySimplexLMO{Float64},
         ScaledHotVector{Float64},
     },
 )   # time: 1.6212598
@@ -717,7 +717,7 @@ Base.precompile(
         Core.kwftype(typeof(lp_separation_oracle)),
         NamedTuple{(:inplace_loop, :force_fw_step),Tuple{Bool,Bool}},
         typeof(lp_separation_oracle),
-        ProbabilitySimplexOracle{Float64},
+        ProbabilitySimplexLMO{Float64},
         ActiveSet{ScaledHotVector{Float64},Float64,Vector{Float64}},
         SparseVector{Float64,Int64},
         Float64,
@@ -734,7 +734,7 @@ Base.precompile(
         typeof(frank_wolfe),
         Function,
         Function,
-        ProbabilitySimplexOracle{Float64},
+        ProbabilitySimplexLMO{Float64},
         Vector{Float64},
     },
 )   # time: 0.19531982
@@ -769,7 +769,7 @@ Base.precompile(
         typeof(frank_wolfe),
         Function,
         Function,
-        ProbabilitySimplexOracle{Float64},
+        ProbabilitySimplexLMO{Float64},
         ScaledHotVector{Float64},
     },
 )   # time: 0.14588983
@@ -940,7 +940,7 @@ Base.precompile(
         typeof(frank_wolfe),
         Function,
         Function,
-        ProbabilitySimplexOracle{Float64},
+        ProbabilitySimplexLMO{Float64},
         Vector{Float64},
     },
 )   # time: 0.2234393
@@ -1223,7 +1223,7 @@ Base.precompile(
         typeof(frank_wolfe),
         Function,
         Function,
-        ProbabilitySimplexOracle{Rational{BigInt}},
+        ProbabilitySimplexLMO{Rational{BigInt}},
         ScaledHotVector{Rational{BigInt}},
     },
 )   # time: 0.141858

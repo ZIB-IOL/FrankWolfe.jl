@@ -15,7 +15,7 @@ end
         @. storage = 2x
         return nothing
     end
-    lmo_prob = FrankWolfe.ProbabilitySimplexOracle(4)
+    lmo_prob = FrankWolfe.ProbabilitySimplexLMO(4)
     x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(10))
     res_bpcg = FrankWolfe.blended_pairwise_conditional_gradient(
         f,
@@ -144,7 +144,7 @@ end
         @. storage = 2x
         return nothing
     end
-    lmo_prob = FrankWolfe.ProbabilitySimplexOracle(4)
+    lmo_prob = FrankWolfe.ProbabilitySimplexLMO(4)
     lmo = FrankWolfe.TrackingLMO(lmo_prob)
     x0 = FrankWolfe.compute_extreme_point(lmo_prob, ones(10))
     FrankWolfe.blended_pairwise_conditional_gradient(

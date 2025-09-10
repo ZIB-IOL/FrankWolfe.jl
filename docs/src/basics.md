@@ -26,7 +26,7 @@ v \in \argmin_{x\in \mathcal{C}} \langle d,x \rangle.
 
 Several common implementations of LMOS s are available out-of-the-box:
 
-- **simplices**: unit simplex [`FrankWolfe.UnitSimplexOracle`](@ref) , probability simplex [`FrankWolfe.ProbabilitySimplexOracle`](@ref);
+- **simplices**: unit simplex [`FrankWolfe.UnitSimplexOracle`](@ref) , probability simplex [`FrankWolfe.ProbabilitySimplexLMO`](@ref);
 - **balls** in various norms [`FrankWolfe.LpNormLMO`](@ref);
 - **polytopes**: K-sparse [`FrankWolfe.KSparseLMO`](@ref) , Birkhoff [`FrankWolfe.BirkhoffPolytopeLMO `](@ref).
   

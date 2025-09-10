@@ -140,7 +140,7 @@ end
         FrankWolfe.compute_inface_extreme_point(lmo, d_test, x_fixed)
     end
     @testset "Probability simplex" begin
-        lmo = FrankWolfe.ProbabilitySimplexOracle(5.0)
+        lmo = FrankWolfe.ProbabilitySimplexLMO(5.0)
         n = 5
         lmo_MOI = FrankWolfe.convert_mathopt(lmo, o; dimension=n)
         # x in relative interior
@@ -315,9 +315,9 @@ end
 
     @testset "LMO: $lmo" for lmo in (
         FrankWolfe.UnitSimplexOracle(1.0),
-        FrankWolfe.ProbabilitySimplexOracle(1.0),
+        FrankWolfe.ProbabilitySimplexLMO(1.0),
         FrankWolfe.convert_mathopt(FrankWolfe.UnitSimplexOracle(1.0), o; dimension=n),
-        FrankWolfe.convert_mathopt(FrankWolfe.ProbabilitySimplexOracle(1.0), o; dimension=n),
+        FrankWolfe.convert_mathopt(FrankWolfe.ProbabilitySimplexLMO(1.0), o; dimension=n),
     )
         lmo = FrankWolfe.UnitSimplexOracle(1.0)
 

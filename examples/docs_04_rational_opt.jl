@@ -29,7 +29,7 @@ end
 
 # pick feasible region
 # radius needs to be integer or rational
-lmo = FrankWolfe.ProbabilitySimplexOracle{Rational{BigInt}}(1)
+lmo = FrankWolfe.ProbabilitySimplexLMO{Rational{BigInt}}(1)
 
 # compute some initial vertex
 x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));

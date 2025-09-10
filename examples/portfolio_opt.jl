@@ -40,7 +40,7 @@ true_obj_value = -2
 
 (f, ∇f) = build_objective(W)
 
-lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
+lmo = FrankWolfe.ProbabilitySimplexLMO(1.0)
 x0 = FrankWolfe.compute_extreme_point(lmo, rand(size(W, 1)))
 storage = Vector{Float64}(undef, size(x0)...)
 

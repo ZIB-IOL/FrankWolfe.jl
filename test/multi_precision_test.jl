@@ -25,7 +25,7 @@ Random.seed!(rng, 42)
     test_types = (Float16, Float32, Float64, Double64, BigFloat, Rational{BigInt})
 
     @testset "Multi-precision test for $T" for T in test_types
-        lmo = FrankWolfe.ProbabilitySimplexOracle{T}(rhs)
+        lmo = FrankWolfe.ProbabilitySimplexLMO{T}(rhs)
         direction = rand(rng, n)
         x0 = FrankWolfe.compute_extreme_point(lmo, direction)
 

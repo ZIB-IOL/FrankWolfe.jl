@@ -69,7 +69,7 @@ end
 
 function main()
     # Feasible region: Probability Simplex
-    # lmo = FrankWolfe.ProbabilitySimplexOracle(1.0) # sum(x_i) = 1, x_i >= 0
+    # lmo = FrankWolfe.ProbabilitySimplexLMO(1.0) # sum(x_i) = 1, x_i >= 0
     lmo = FrankWolfe.KSparseLMO(5, 1000.0)
 
     # Initial point: a vertex of the simplex

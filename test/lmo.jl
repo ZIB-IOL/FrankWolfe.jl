@@ -23,7 +23,7 @@ Random.seed!(rng, 42)
     n = 6
     direction = zeros(6)
     rhs = 10 * rand(rng)
-    lmo_prob = FrankWolfe.ProbabilitySimplexOracle(rhs)
+    lmo_prob = FrankWolfe.ProbabilitySimplexLMO(rhs)
     lmo_unit = FrankWolfe.UnitSimplexOracle(rhs)
     @testset "Choosing improving direction" for idx in 1:n
         direction .= 0
@@ -559,7 +559,7 @@ end
             MOI.EqualTo(1.0),
         )
         lmo = FrankWolfe.MathOptLMO(o)
-        lmo_ref = FrankWolfe.ProbabilitySimplexOracle(1.0)
+        lmo_ref = FrankWolfe.ProbabilitySimplexLMO(1.0)
         lmo_moi_ref = FrankWolfe.convert_mathopt(lmo_ref, GLPK.Optimizer(), dimension=n)
         direction = Vector{Float64}(undef, n)
         for _ in 1:5
@@ -605,7 +605,7 @@ end
             MOI.EqualTo(1.0),
         )
         lmo = FrankWolfe.MathOptLMO(o, false)
-        lmo_ref = FrankWolfe.ProbabilitySimplexOracle(1.0)
+        lmo_ref = FrankWolfe.ProbabilitySimplexLMO(1.0)
         direction = Vector{Float64}(undef, n)
         for _ in 1:5
             Random.randn!(rng, direction)
@@ -959,7 +959,7 @@ end
     for _ in 1:100
         d = randn(rng, 3)
         v = FrankWolfe.compute_extreme_point(lmo, d)
-        v_simplex = FrankWolfe.compute_extreme_point(FrankWolfe.ProbabilitySimplexOracle(1), d)
+        v_simplex = FrankWolfe.compute_extreme_point(FrankWolfe.ProbabilitySimplexLMO(1), d)
         @test v == v_simplex
     end
     d = zeros(3)

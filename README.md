@@ -63,7 +63,7 @@ julia> f(p) = sum(abs2, p)
 julia> grad!(storage, p) = storage .= 2p  
 
 # pre-defined type implementing the linear minimization oracle interface for the simplex
-julia> lmo = FrankWolfe.ProbabilitySimplexOracle(1.)
+julia> lmo = FrankWolfe.ProbabilitySimplexLMO(1.)
 
 # starting vector (of dimension n=3)
 julia> p0 = [1., 0., 0.]

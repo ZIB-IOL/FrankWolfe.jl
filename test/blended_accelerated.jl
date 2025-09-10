@@ -27,7 +27,7 @@ const L = eigmax(hessian)
 # only few iterations are run because linear algebra with BigFloat is intensive
 @testset "Type $T" for T in (Float64, Double64, BigFloat)
     @testset "LMO $(typeof(lmo)) Probability simplex" for lmo in (
-        FrankWolfe.ProbabilitySimplexOracle{T}(1.0),
+        FrankWolfe.ProbabilitySimplexLMO{T}(1.0),
         FrankWolfe.KSparseLMO{T}(100, 100.0),
     )
         x0 = FrankWolfe.compute_extreme_point(lmo, spzeros(T, n))

@@ -34,7 +34,7 @@ tgrad! = FrankWolfe.TrackingGradient(grad!)
 
 # The tracking LMO operates in a similar fashion and tracks the number of `compute_extreme_point` calls.
 
-lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
+lmo_prob = FrankWolfe.ProbabilitySimplexLMO(1)
 tlmo_prob = FrankWolfe.TrackingLMO(lmo_prob)
 @show tlmo_prob.counter;
 

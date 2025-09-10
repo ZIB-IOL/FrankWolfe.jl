@@ -51,7 +51,7 @@ function grad!(storage, x)
 end
 
 # define LMO and do initial call to obtain starting point
-lmo = FrankWolfe.ProbabilitySimplexOracle(1)
+lmo = FrankWolfe.ProbabilitySimplexLMO(1)
 x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
 # simple benchmarking of oracles to get an idea how expensive each component is

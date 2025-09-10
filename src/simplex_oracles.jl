@@ -168,20 +168,20 @@ function dicg_maximum_step(
 end
 
 """
-    ProbabilitySimplexOracle(right_side)
+    ProbabilitySimplexLMO(right_side)
 
 Represents the scaled probability simplex:
 ```
 C = {x ∈ R^n_+, ∑x = right_side}
 ```
 """
-struct ProbabilitySimplexOracle{T} <: LinearMinimizationOracle
+struct ProbabilitySimplexLMO{T} <: LinearMinimizationOracle
     right_side::T
 end
 
-ProbabilitySimplexOracle{T}() where {T} = ProbabilitySimplexOracle{T}(one(T))
+ProbabilitySimplexLMO{T}() where {T} = ProbabilitySimplexLMO{T}(one(T))
 
-ProbabilitySimplexOracle(rhs::Integer) = ProbabilitySimplexOracle{Float64}(rhs)
+ProbabilitySimplexLMO(rhs::Integer) = ProbabilitySimplexLMO{Float64}(rhs)
 
 """
 LMO for scaled probability simplex.
@@ -189,7 +189,7 @@ Returns a vector with one active value equal to RHS in the
 most improving (or least degrading) direction.
 """
 function compute_extreme_point(
-    lmo::ProbabilitySimplexOracle{T},
+    lmo::ProbabilitySimplexLMO{T},
     direction;
     v=nothing,
     kwargs...,
@@ -201,9 +201,9 @@ function compute_extreme_point(
     return ScaledHotVector(lmo.right_side, idx, length(direction))
 end
 
-is_decomposition_invariant_oracle(::ProbabilitySimplexOracle) = true
+is_decomposition_invariant_oracle(::ProbabilitySimplexLMO) = true
 
-function is_inface_feasible(lmo::ProbabilitySimplexOracle, a, x)
+function is_inface_feasible(lmo::ProbabilitySimplexLMO, a, x)
     for idx in eachindex(x)
         if (x[idx] ≈ lmo.right_side && a[idx] ≉ lmo.right_side) || (x[idx] ≈ 0.0 && a[idx] ≉ 0.0)
             return false
@@ -213,7 +213,7 @@ function is_inface_feasible(lmo::ProbabilitySimplexOracle, a, x)
 end
 
 function compute_inface_extreme_point(
-    lmo::ProbabilitySimplexOracle{T},
+    lmo::ProbabilitySimplexLMO{T},
     direction,
     x::SparseArrays.AbstractSparseVector;
     kwargs...,
@@ -233,7 +233,7 @@ function compute_inface_extreme_point(
     return ScaledHotVector(lmo.right_side, x_inds[min_idx], length(direction))
 end
 
-function dicg_maximum_step(::ProbabilitySimplexOracle{T}, direction, x) where {T}
+function dicg_maximum_step(::ProbabilitySimplexLMO{T}, direction, x) where {T}
     gamma_max = one(promote_type(T, eltype(direction)))
     @inbounds for idx in eachindex(x)
         di = direction[idx]
@@ -245,7 +245,7 @@ function dicg_maximum_step(::ProbabilitySimplexOracle{T}, direction, x) where {T
 end
 
 function convert_mathopt(
-    lmo::ProbabilitySimplexOracle{T},
+    lmo::ProbabilitySimplexLMO{T},
     optimizer::OT;
     dimension::Integer,
     use_modify=true::Bool,
@@ -270,7 +270,7 @@ Returns two vectors. The first one is the dual costs associated with the constra
 and the second is the reduced costs for the variables.
 """
 function compute_dual_solution(
-    ::ProbabilitySimplexOracle{T},
+    ::ProbabilitySimplexLMO{T},
     direction,
     primal_solution;
     kwargs...,
