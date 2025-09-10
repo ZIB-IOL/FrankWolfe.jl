@@ -808,14 +808,14 @@ end
 end
 
 @testset "Scaled L-inf norm polytopes" begin
-    # tests ScaledBoundLInfNormBall for the standard hypercube, a shifted one, and a scaled one
-    lmo = FrankWolfe.ScaledBoundLInfNormBall(-ones(10), ones(10))
+    # tests BoxLMO for the standard hypercube, a shifted one, and a scaled one
+    lmo = FrankWolfe.BoxLMO(-ones(10), ones(10))
     lmo_ref = FrankWolfe.LpNormLMO{Inf}(1)
-    lmo_shifted = FrankWolfe.ScaledBoundLInfNormBall(zeros(10), 2 * ones(10))
-    lmo_scaled = FrankWolfe.ScaledBoundLInfNormBall(-2 * ones(10), 2 * ones(10))
+    lmo_shifted = FrankWolfe.BoxLMO(zeros(10), 2 * ones(10))
+    lmo_scaled = FrankWolfe.BoxLMO(-2 * ones(10), 2 * ones(10))
     bounds = collect(1.0:10)
-    # tests another ScaledBoundLInfNormBall with unequal bounds against a MOI optimizer
-    lmo_scaled_unequally = FrankWolfe.ScaledBoundLInfNormBall(-bounds, bounds)
+    # tests another BoxLMO with unequal bounds against a MOI optimizer
+    lmo_scaled_unequally = FrankWolfe.BoxLMO(-bounds, bounds)
     o = GLPK.Optimizer()
     MOI.set(o, MOI.Silent(), true)
     x = MOI.add_variables(o, 10)
@@ -841,8 +841,8 @@ end
     @test v ≈ vref
     @test norm(v, Inf) == 1
     # test with non-flat array
-    lmo = FrankWolfe.ScaledBoundLInfNormBall(-ones(3, 3), ones(3, 3))
-    lmo_flat = FrankWolfe.ScaledBoundLInfNormBall(-ones(9), ones(9))
+    lmo = FrankWolfe.BoxLMO(-ones(3, 3), ones(3, 3))
+    lmo_flat = FrankWolfe.BoxLMO(-ones(9), ones(9))
     for _ in 1:10
         d = randn(rng, 3, 3)
         v = FrankWolfe.compute_extreme_point(lmo, d)
@@ -910,7 +910,7 @@ end
     x_standard, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad!, lmo_standard, [1.0, 0.0, 0.0])
     @test x_dense == x_standard
 
-    lmo_dense = FrankWolfe.ScaledBoundLInfNormBall(-ones(3), ones(3))
+    lmo_dense = FrankWolfe.BoxLMO(-ones(3), ones(3))
     lmo_standard = FrankWolfe.LpNormLMO{Inf}(1.0)
     x_dense, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad!, lmo_dense, [1.0, 0.0, 0.0])
     x_standard, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad!, lmo_standard, [1.0, 0.0, 0.0])

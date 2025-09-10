@@ -1252,7 +1252,7 @@ Base.precompile(
         typeof(frank_wolfe),
         Function,
         Function,
-        ScaledBoundLInfNormBall{Float64,1,Vector{Float64},Vector{Float64}},
+        BoxLMO{Float64,1,Vector{Float64},Vector{Float64}},
         Vector{Float64},
     },
 )   # time: 0.046453062

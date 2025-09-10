@@ -22,7 +22,7 @@ end
 
 # In our example we consider the probability simplex and an L-infinity norm ball as the feasible sets.
 n = 100
-lmo1 = FrankWolfe.ScaledBoundLInfNormBall(-ones(n), zeros(n))
+lmo1 = FrankWolfe.BoxLMO(-ones(n), zeros(n))
 lmo2 = FrankWolfe.ProbabilitySimplexLMO(1.0)
 prod_lmo = FrankWolfe.ProductLMO((lmo1, lmo2))
 

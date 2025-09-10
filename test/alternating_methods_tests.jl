@@ -17,9 +17,9 @@ n = 10
 
 lmo_nb = FrankWolfe.ScaledBoundL1NormBall(-ones(n), ones(n))
 lmo_prob = FrankWolfe.ProbabilitySimplexLMO(1.0)
-lmo1 = FrankWolfe.ScaledBoundLInfNormBall(-ones(n), zeros(n))
-lmo2 = FrankWolfe.ScaledBoundLInfNormBall(zeros(n), ones(n))
-lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
+lmo1 = FrankWolfe.BoxLMO(-ones(n), zeros(n))
+lmo2 = FrankWolfe.BoxLMO(zeros(n), ones(n))
+lmo3 = FrankWolfe.BoxLMO(ones(n), 2 * ones(n))
 
 @testset "Testing ALM with block-coordinate FW" begin
 

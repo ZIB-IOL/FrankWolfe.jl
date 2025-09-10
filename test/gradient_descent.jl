@@ -240,7 +240,7 @@ const f_opt = f_gd(x_opt)
                         verbose=false,
                     )
                 @test status_prox_box == FrankWolfe.STATUS_OPTIMAL
-                lmo_box = FrankWolfe.ScaledBoundLInfNormBall(zeros(n), τ_box * ones(n))
+                lmo_box = FrankWolfe.BoxLMO(zeros(n), τ_box * ones(n))
                 x0 = FrankWolfe.compute_extreme_point(lmo_box, zeros(n))
                 res_fw_box = FrankWolfe.blended_pairwise_conditional_gradient(
                     f_gd,

@@ -6,7 +6,7 @@ using Plots
 # # FrankWolfe for scaled, shifted ``\ell^1`` and ``\ell^{\infty}`` norm balls
 
 # In this example, we run the vanilla FrankWolfe algorithm on a scaled and shifted ``\ell^1`` and ``\ell^{\infty}`` norm ball, using the `ScaledBoundL1NormBall`
-# and `ScaledBoundLInfNormBall` LMOs. We shift both onto the point ``(1,0)`` and then scale them by a factor of ``2`` along the x-axis. We project the point ``(2,1)`` onto the polytopes.
+# and `BoxLMO` LMOs. We shift both onto the point ``(1,0)`` and then scale them by a factor of ``2`` along the x-axis. We project the point ``(2,1)`` onto the polytopes.
 
 n = 2
 
@@ -26,7 +26,7 @@ upper = [3.0, 1.0]
 
 l1 = FrankWolfe.ScaledBoundL1NormBall(lower, upper)
 
-linf = FrankWolfe.ScaledBoundLInfNormBall(lower, upper)
+linf = FrankWolfe.BoxLMO(lower, upper)
 
 x1 = FrankWolfe.compute_extreme_point(l1, zeros(n))
 gradient = collect(x1)
