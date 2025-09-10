@@ -39,7 +39,7 @@ const lmo = FrankWolfe.KSparseLMO(5, 1.0)
 
 ## other LMOs to try
 # lmo_big = FrankWolfe.KSparseLMO(100, big"1.0")
-# lmo = FrankWolfe.LpNormLMO{Float64,5}(1.0)
+# lmo = FrankWolfe.LpNormBallLMO{Float64,5}(1.0)
 # lmo = FrankWolfe.ProbabilitySimplexLMO(1.0);
 # lmo = FrankWolfe.UnitSimplexLMO(1.0);
 

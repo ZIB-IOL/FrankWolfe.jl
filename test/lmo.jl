@@ -5,7 +5,7 @@ import SparseArrays
 using Random
 using StableRNGs
 
-import FrankWolfe: compute_extreme_point, LpNormLMO, KSparseLMO
+import FrankWolfe: compute_extreme_point, LpNormBallLMO, KSparseLMO
 
 import MathOptInterface as MOI
 
@@ -201,7 +201,7 @@ end
         τ = 5 + 3 * rand(rng)
         # tests that the "special" p behaves like the "any" p, i.e. 2.0 and 2
         @testset "$p-norm" for p in (1, 1.0, 1.5, 2, 2.0, Inf, Inf32)
-            lmo = LpNormLMO{Float64,p}(τ)
+            lmo = LpNormBallLMO{Float64,p}(τ)
             for _ in 1:100
                 c = 5 * randn(rng, n)
                 v = FrankWolfe.compute_extreme_point(lmo, c)
@@ -216,8 +216,8 @@ end
             for _ in 1:20
                 c = 5 * randn(rng, n)
                 v = FrankWolfe.compute_extreme_point(lmo_ball, c)
-                v1 = FrankWolfe.compute_extreme_point(FrankWolfe.LpNormLMO{1}(τ), c)
-                v_inf = FrankWolfe.compute_extreme_point(FrankWolfe.LpNormLMO{Inf}(τ / K), c)
+                v1 = FrankWolfe.compute_extreme_point(FrankWolfe.LpNormBallLMO{1}(τ), c)
+                v_inf = FrankWolfe.compute_extreme_point(FrankWolfe.LpNormBallLMO{Inf}(τ / K), c)
                 # K-norm is convex hull of union of the two norm epigraphs
                 # => cannot do better than the best of them
                 @test dot(v, c) ≈ min(dot(v1, c), dot(v_inf, c))
@@ -233,7 +233,7 @@ end
     end
     # testing issue on zero direction
     for n in (1, 5)
-        lmo = FrankWolfe.LpNormLMO{Float64,2}(1.0)
+        lmo = FrankWolfe.LpNormBallLMO{Float64,2}(1.0)
         x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
         @test all(!isnan, x0)
     end
@@ -757,7 +757,7 @@ end
 end
 
 @testset "Product LMO" begin
-    lmo = FrankWolfe.ProductLMO(FrankWolfe.LpNormLMO{Inf}(3.0), FrankWolfe.LpNormLMO{1}(2.0))
+    lmo = FrankWolfe.ProductLMO(FrankWolfe.LpNormBallLMO{Inf}(3.0), FrankWolfe.LpNormBallLMO{1}(2.0))
     dinf = randn(rng, 10)
     d1 = randn(rng, 5)
     vtup = FrankWolfe.compute_extreme_point(lmo, (dinf, d1))
@@ -770,7 +770,7 @@ end
     @test vvec ≈ [vinf; v1]
 
     # Test different constructor for ProductLMO and and direction as BlockVector
-    lmo2 = FrankWolfe.ProductLMO([FrankWolfe.LpNormLMO{Inf}(3.0), FrankWolfe.LpNormLMO{1}(2.0)])
+    lmo2 = FrankWolfe.ProductLMO([FrankWolfe.LpNormBallLMO{Inf}(3.0), FrankWolfe.LpNormBallLMO{1}(2.0)])
     v_block = FrankWolfe.compute_extreme_point(lmo2, FrankWolfe.BlockVector([dinf, d1]))
     @test FrankWolfe.BlockVector([vinf, v1]) == v_block
 end
@@ -778,7 +778,7 @@ end
 @testset "Scaled L-1 norm polytopes" begin
     lmo = FrankWolfe.DiamondLMO(-ones(10), ones(10))
     # equivalent to LMO
-    lmo_ref = FrankWolfe.LpNormLMO{1}(1)
+    lmo_ref = FrankWolfe.LpNormBallLMO{1}(1)
     # all coordinates shifted up
     lmo_shifted = FrankWolfe.DiamondLMO(zeros(10), 2 * ones(10))
     lmo_scaled = FrankWolfe.DiamondLMO(-2 * ones(10), 2 * ones(10))
@@ -810,7 +810,7 @@ end
 @testset "Scaled L-inf norm polytopes" begin
     # tests BoxLMO for the standard hypercube, a shifted one, and a scaled one
     lmo = FrankWolfe.BoxLMO(-ones(10), ones(10))
-    lmo_ref = FrankWolfe.LpNormLMO{Inf}(1)
+    lmo_ref = FrankWolfe.LpNormBallLMO{Inf}(1)
     lmo_shifted = FrankWolfe.BoxLMO(zeros(10), 2 * ones(10))
     lmo_scaled = FrankWolfe.BoxLMO(-2 * ones(10), 2 * ones(10))
     bounds = collect(1.0:10)
@@ -905,13 +905,13 @@ end
     end
 
     lmo_dense = FrankWolfe.DiamondLMO(-ones(3), ones(3))
-    lmo_standard = FrankWolfe.LpNormLMO{1}(1.0)
+    lmo_standard = FrankWolfe.LpNormBallLMO{1}(1.0)
     x_dense, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad!, lmo_dense, [1.0, 0.0, 0.0])
     x_standard, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad!, lmo_standard, [1.0, 0.0, 0.0])
     @test x_dense == x_standard
 
     lmo_dense = FrankWolfe.BoxLMO(-ones(3), ones(3))
-    lmo_standard = FrankWolfe.LpNormLMO{Inf}(1.0)
+    lmo_standard = FrankWolfe.LpNormBallLMO{Inf}(1.0)
     x_dense, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad!, lmo_dense, [1.0, 0.0, 0.0])
     x_standard, _, _, _, _ = FrankWolfe.frank_wolfe(fun0, fun0_grad!, lmo_standard, [1.0, 0.0, 0.0])
     @test x_dense == x_standard
@@ -1058,7 +1058,7 @@ end
         #norm l1
         weights = ones(N)
         lmo = FrankWolfe.OrderWeightNormLMO(weights, radius)
-        lmo_l1 = FrankWolfe.LpNormLMO{1}(radius)
+        lmo_l1 = FrankWolfe.LpNormBallLMO{1}(radius)
         v1 = FrankWolfe.compute_extreme_point(lmo, direction)
         v2 = FrankWolfe.compute_extreme_point(lmo_l1, direction)
         @test v1 == v2
@@ -1067,7 +1067,7 @@ end
         weights = zeros(N)
         weights[1] = 1
         lmo = FrankWolfe.OrderWeightNormLMO(weights, radius)
-        lmo_l_inf = FrankWolfe.LpNormLMO{Inf}(radius)
+        lmo_l_inf = FrankWolfe.LpNormBallLMO{Inf}(radius)
         v1 = FrankWolfe.compute_extreme_point(lmo, direction)
         v2 = FrankWolfe.compute_extreme_point(lmo_l_inf, direction)
         @test v1 == v2

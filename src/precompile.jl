@@ -631,7 +631,7 @@ Base.precompile(
     },
 )   # time: 0.002293631
 Base.precompile(Tuple{typeof(fast_dot),Vector{Float64},Int64})   # time: 0.004132393
-Base.precompile(Tuple{typeof(compute_extreme_point),LpNormLMO{Float64,2},Int64})   # time: 0.001986683
+Base.precompile(Tuple{typeof(compute_extreme_point),LpNormBallLMO{Float64,2},Int64})   # time: 0.001986683
 Base.precompile(
     Tuple{
         Core.kwftype(typeof(frank_wolfe)),
@@ -642,7 +642,7 @@ Base.precompile(
         typeof(frank_wolfe),
         Function,
         Function,
-        LpNormLMO{Float64,2},
+        LpNormBallLMO{Float64,2},
         Vector{Float64},
     },
 )   # time: 0.23070359
@@ -1119,7 +1119,7 @@ Base.precompile(
         typeof(lazy_afw_step),
         Vector{Float64},
         Vector{Float64},
-        LpNormLMO{Float64,1},
+        LpNormBallLMO{Float64,1},
         ActiveSet{ScaledHotVector{Float64},Float64,Vector{Float64}},
         Float64,
         Vector{Float64},
@@ -1140,7 +1140,7 @@ Base.precompile(
         typeof(afw_step),
         Vector{Float64},
         Vector{Float64},
-        LpNormLMO{Float64,1},
+        LpNormBallLMO{Float64,1},
         ActiveSet{ScaledHotVector{Float64},Float64,Vector{Float64}},
         Vector{Float64},
     },
@@ -1150,7 +1150,7 @@ Base.precompile(
         Core.kwftype(typeof(lp_separation_oracle)),
         NamedTuple{(:inplace_loop, :force_fw_step),Tuple{Bool,Bool}},
         typeof(lp_separation_oracle),
-        LpNormLMO{Float64,1},
+        LpNormBallLMO{Float64,1},
         ActiveSet{ScaledHotVector{Float64},Float64,Vector{Float64}},
         SparseVector{Float64,Int64},
         Float64,
@@ -1196,7 +1196,7 @@ Base.precompile(
 )   # time: 0.009839748
 Base.precompile(Tuple{typeof(fast_dot),Vector{BigFloat},Vector{BigFloat}})   # time: 0.003462153
 Base.precompile(
-    Tuple{typeof(compute_extreme_point),LpNormLMO{Float64,1},SparseVector{Float64,Int64}},
+    Tuple{typeof(compute_extreme_point),LpNormBallLMO{Float64,1},SparseVector{Float64,Int64}},
 )   # time: 0.00309479
 Base.precompile(
     Tuple{
@@ -1266,7 +1266,7 @@ Base.precompile(
         typeof(frank_wolfe),
         Function,
         Function,
-        LpNormLMO{Float64,1},
+        LpNormBallLMO{Float64,1},
         SparseVector{Float64,Int64},
     },
 )   # time: 0.5265395
@@ -1288,7 +1288,7 @@ Base.precompile(
         typeof(frank_wolfe),
         Function,
         Function,
-        LpNormLMO{Float64,1},
+        LpNormBallLMO{Float64,1},
         SparseVector{Float64,Int64},
     },
 )   # time: 0.10808421
@@ -1302,7 +1302,7 @@ Base.precompile(
         typeof(frank_wolfe),
         Function,
         Function,
-        LpNormLMO{Float64,1},
+        LpNormBallLMO{Float64,1},
         SparseVector{Float64,Int64},
     },
 )   # time: 0.053366497
@@ -1316,7 +1316,7 @@ Base.precompile(
         typeof(frank_wolfe),
         Function,
         Function,
-        LpNormLMO{Float64,1},
+        LpNormBallLMO{Float64,1},
         SparseVector{Float64,Int64},
     },
 )   # time: 0.06719333

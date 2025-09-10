@@ -291,7 +291,7 @@ end
         data_perfect,
         similar(params),
     )
-    lmo = FrankWolfe.LpNormLMO{2}(1.1 * norm(params_perfect))
+    lmo = FrankWolfe.LpNormBallLMO{2}(1.1 * norm(params_perfect))
 
     θ, _, _, _, _ = FrankWolfe.stochastic_frank_wolfe(
         f_stoch,

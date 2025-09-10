@@ -183,11 +183,11 @@ const f_opt = f_gd(x_opt)
         @testset "Comparison with FW variants" begin
             @testset "L1-ball comparison" begin
                 x0 =
-                    FrankWolfe.compute_extreme_point(FrankWolfe.LpNormLMO{Float64,1}(1.0), zeros(n))
+                    FrankWolfe.compute_extreme_point(FrankWolfe.LpNormBallLMO{Float64,1}(1.0), zeros(n))
                 x_fw_l1, _ = FrankWolfe.blended_pairwise_conditional_gradient(
                     f_gd,
                     grad_gd!,
-                    FrankWolfe.LpNormLMO{Float64,1}(1.0),
+                    FrankWolfe.LpNormBallLMO{Float64,1}(1.0),
                     line_search=FrankWolfe.Secant(),
                     x0;
                     epsilon=target_tolerance,
@@ -329,11 +329,11 @@ const f_opt = f_gd(x_opt)
         @testset "Comparison with FW variants" begin
             @testset "L1-ball comparison" begin
                 x0 =
-                    FrankWolfe.compute_extreme_point(FrankWolfe.LpNormLMO{Float64,1}(1.0), zeros(n))
+                    FrankWolfe.compute_extreme_point(FrankWolfe.LpNormBallLMO{Float64,1}(1.0), zeros(n))
                 x_fw_l1, _ = FrankWolfe.blended_pairwise_conditional_gradient(
                     f_gd,
                     grad_gd!,
-                    FrankWolfe.LpNormLMO{Float64,1}(1.0),
+                    FrankWolfe.LpNormBallLMO{Float64,1}(1.0),
                     line_search=FrankWolfe.Secant(),
                     x0;
                     epsilon=target_tolerance,
@@ -379,7 +379,7 @@ const f_opt = f_gd(x_opt)
                     ProximalOperators.IndBox(-τ_box, τ_box);
                     epsilon=target_tolerance,
                 )
-                lmo_box = FrankWolfe.LpNormLMO{Float64,Inf}(τ_box)
+                lmo_box = FrankWolfe.LpNormBallLMO{Float64,Inf}(τ_box)
                 x0 = FrankWolfe.compute_extreme_point(lmo_box, zeros(n))
                 x_fw_box, _ = FrankWolfe.blended_pairwise_conditional_gradient(
                     f_gd,

@@ -39,7 +39,7 @@ function grad!(storage, x)
     @. storage = 2 * (x - xp)
 end
 
-lmo = FrankWolfe.LpNormLMO{Float64,5}(1.0)
+lmo = FrankWolfe.LpNormBallLMO{Float64,5}(1.0)
 
 x000 = FrankWolfe.compute_extreme_point(lmo, rand(rng, n))
 
