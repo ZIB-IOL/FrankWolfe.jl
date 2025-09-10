@@ -437,12 +437,7 @@ end
 
 HyperSimplexLMO{T}(K::Integer) where {T} = HyperSimplexLMO{T}(K, one(T))
 
-function compute_extreme_point(
-    lmo::HyperSimplexLMO{T},
-    direction;
-    v=nothing,
-    kwargs...,
-) where {T}
+function compute_extreme_point(lmo::HyperSimplexLMO{T}, direction; v=nothing, kwargs...) where {T}
     n = length(direction)
     K = min(lmo.K, n)
     K_indices = sortperm(direction)[1:K]

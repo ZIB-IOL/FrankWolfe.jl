@@ -901,7 +901,10 @@ Base.precompile(
     Tuple{typeof(print_callback),Tuple{String,String,Any,Any,Any,Float64,Float64,Int64},String},
 )   # time: 0.00435821
 Base.precompile(
-    Tuple{Type{MultiCacheLMO{_A,NuclearNormBallLMO{Float64},_B}} where {_A,_B},NuclearNormBallLMO{Float64}},
+    Tuple{
+        Type{MultiCacheLMO{_A,NuclearNormBallLMO{Float64},_B}} where {_A,_B},
+        NuclearNormBallLMO{Float64},
+    },
 )   # time: 0.00359918
 Base.precompile(
     Tuple{
@@ -916,7 +919,10 @@ Base.precompile(
     },
 )   # time: 0.003546448
 Base.precompile(
-    Tuple{Type{VectorCacheLMO{NuclearNormBallLMO{Float64},_A}} where _A,NuclearNormBallLMO{Float64}},
+    Tuple{
+        Type{VectorCacheLMO{NuclearNormBallLMO{Float64},_A}} where _A,
+        NuclearNormBallLMO{Float64},
+    },
 )   # time: 0.003143188
 Base.precompile(
     Tuple{
