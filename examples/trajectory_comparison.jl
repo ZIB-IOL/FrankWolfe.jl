@@ -25,7 +25,7 @@ end
 # lmo = FrankWolfe.KSparseLMO(100, 1.0)
 lmo = FrankWolfe.LpNormLMO{Float64,1}(1.0)
 # lmo = FrankWolfe.ProbabilitySimplexLMO(1.0);
-# lmo = FrankWolfe.UnitSimplexOracle(1.0);
+# lmo = FrankWolfe.UnitSimplexLMO(1.0);
 x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
 # print(x0)
 

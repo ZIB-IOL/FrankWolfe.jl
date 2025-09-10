@@ -65,7 +65,7 @@ end
 
 @testset "Simplex interfaces" begin
     @testset "Unit simplex" begin
-        lmo = FrankWolfe.UnitSimplexOracle(4.0)
+        lmo = FrankWolfe.UnitSimplexLMO(4.0)
         n = 5
         lmo_MOI = FrankWolfe.convert_mathopt(lmo, o; dimension=n)
         # x interior
@@ -314,12 +314,12 @@ end
     end
 
     @testset "LMO: $lmo" for lmo in (
-        FrankWolfe.UnitSimplexOracle(1.0),
+        FrankWolfe.UnitSimplexLMO(1.0),
         FrankWolfe.ProbabilitySimplexLMO(1.0),
-        FrankWolfe.convert_mathopt(FrankWolfe.UnitSimplexOracle(1.0), o; dimension=n),
+        FrankWolfe.convert_mathopt(FrankWolfe.UnitSimplexLMO(1.0), o; dimension=n),
         FrankWolfe.convert_mathopt(FrankWolfe.ProbabilitySimplexLMO(1.0), o; dimension=n),
     )
-        lmo = FrankWolfe.UnitSimplexOracle(1.0)
+        lmo = FrankWolfe.UnitSimplexLMO(1.0)
 
         x0_simplex = FrankWolfe.compute_extreme_point(lmo, randn(rng, n))
         res_di = FrankWolfe.decomposition_invariant_conditional_gradient(

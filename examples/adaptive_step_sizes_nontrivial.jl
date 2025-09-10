@@ -41,7 +41,7 @@ function grad!(storage, x)
 end
 
 # lmo = FrankWolfe.KSparseLMO(40, 1.0);
-lmo = FrankWolfe.UnitSimplexOracle(1.0);
+lmo = FrankWolfe.UnitSimplexLMO(1.0);
 # lmo = FrankWolfe.ScaledBoundLInfNormBall(zeros(n),ones(n))
 
 x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n));

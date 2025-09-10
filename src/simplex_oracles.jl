@@ -1,19 +1,19 @@
 
 """
-    UnitSimplexOracle(right_side)
+    UnitSimplexLMO(right_side)
 
 Represents the scaled unit simplex:
 ```
 C = {x ∈ R^n_+, ∑x ≤ right_side}
 ```
 """
-struct UnitSimplexOracle{T} <: LinearMinimizationOracle
+struct UnitSimplexLMO{T} <: LinearMinimizationOracle
     right_side::T
 end
 
-UnitSimplexOracle{T}() where {T} = UnitSimplexOracle{T}(one(T))
+UnitSimplexLMO{T}() where {T} = UnitSimplexLMO{T}(one(T))
 
-UnitSimplexOracle(rhs::Integer) = UnitSimplexOracle{Rational{BigInt}}(rhs)
+UnitSimplexLMO(rhs::Integer) = UnitSimplexLMO{Rational{BigInt}}(rhs)
 
 """
 LMO for scaled unit simplex:
@@ -21,7 +21,7 @@ LMO for scaled unit simplex:
 Returns either vector of zeros or vector with one active value equal to RHS if
 there exists an improving direction.
 """
-function compute_extreme_point(lmo::UnitSimplexOracle{T}, direction; v=nothing, kwargs...) where {T}
+function compute_extreme_point(lmo::UnitSimplexLMO{T}, direction; v=nothing, kwargs...) where {T}
     idx = argmin_(direction)
     if direction[idx] < 0
         return ScaledHotVector(lmo.right_side, idx, length(direction))
@@ -57,7 +57,7 @@ function argmin_(v::SparseArrays.SparseVector{T}) where {T}
 end
 
 function convert_mathopt(
-    lmo::UnitSimplexOracle{T},
+    lmo::UnitSimplexLMO{T},
     optimizer::OT;
     dimension::Integer,
     use_modify::Bool=true,
@@ -81,7 +81,7 @@ for scaled unit simplex.
 Returns two vectors. The first one is the dual costs associated with the constraints
 and the second is the reduced costs for the variables.
 """
-function compute_dual_solution(::UnitSimplexOracle{T}, direction, primalSolution) where {T}
+function compute_dual_solution(::UnitSimplexLMO{T}, direction, primalSolution) where {T}
     idx = argmax(primalSolution)
     critical = min(direction[idx], 0)
     lambda = [critical]
@@ -89,9 +89,9 @@ function compute_dual_solution(::UnitSimplexOracle{T}, direction, primalSolution
     return lambda, mu
 end
 
-is_decomposition_invariant_oracle(::UnitSimplexOracle) = true
+is_decomposition_invariant_oracle(::UnitSimplexLMO) = true
 
-function is_inface_feasible(lmo::UnitSimplexOracle{T}, a, x) where {T}
+function is_inface_feasible(lmo::UnitSimplexLMO{T}, a, x) where {T}
     for idx in eachindex(x)
         if x[idx] ≈ lmo.right_side && a[idx] ≉ lmo.right_side
             return false
@@ -104,7 +104,7 @@ function is_inface_feasible(lmo::UnitSimplexOracle{T}, a, x) where {T}
     return true
 end
 
-function compute_inface_extreme_point(lmo::UnitSimplexOracle{T}, direction, x; kwargs...) where {T}
+function compute_inface_extreme_point(lmo::UnitSimplexLMO{T}, direction, x; kwargs...) where {T}
     # faces for the unit simplex are:
     # - coordinate faces: {x_i = 0}
     # - simplex face: {∑ x == τ}
@@ -134,7 +134,7 @@ function compute_inface_extreme_point(lmo::UnitSimplexOracle{T}, direction, x; k
     return ScaledHotVector(lmo.right_side, min_idx, length(direction))
 end
 
-function dicg_maximum_step(lmo::UnitSimplexOracle{T}, direction, x) where {T}
+function dicg_maximum_step(lmo::UnitSimplexLMO{T}, direction, x) where {T}
     gamma_max = one(promote_type(T, eltype(direction)))
     # first check the simplex x_i = 0 faces
     @inbounds for idx in eachindex(x)
@@ -151,7 +151,7 @@ function dicg_maximum_step(lmo::UnitSimplexOracle{T}, direction, x) where {T}
 end
 
 function dicg_maximum_step(
-    ::UnitSimplexOracle{T},
+    ::UnitSimplexLMO{T},
     direction::SparseArrays.AbstractSparseVector,
     x,
 ) where {T}

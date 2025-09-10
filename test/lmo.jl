@@ -24,7 +24,7 @@ Random.seed!(rng, 42)
     direction = zeros(6)
     rhs = 10 * rand(rng)
     lmo_prob = FrankWolfe.ProbabilitySimplexLMO(rhs)
-    lmo_unit = FrankWolfe.UnitSimplexOracle(rhs)
+    lmo_unit = FrankWolfe.UnitSimplexLMO(rhs)
     @testset "Choosing improving direction" for idx in 1:n
         direction .= 0
         direction[idx] = -1
@@ -273,7 +273,7 @@ end
     n = 6
     direction = zeros(6)
     rhs = 10 * rand(rng)
-    lmo_unit = FrankWolfe.UnitSimplexOracle(rhs)
+    lmo_unit = FrankWolfe.UnitSimplexLMO(rhs)
     lmo_never_cached = FrankWolfe.SingleLastCachedLMO(lmo_unit)
     lmo_cached = FrankWolfe.SingleLastCachedLMO(lmo_unit)
     lmo_multicached = FrankWolfe.MultiCacheLMO{3}(lmo_unit)
@@ -535,7 +535,7 @@ end
             MOI.LessThan(1.0),
         )
         lmo = FrankWolfe.MathOptLMO(o)
-        lmo_ref = FrankWolfe.UnitSimplexOracle(1.0)
+        lmo_ref = FrankWolfe.UnitSimplexLMO(1.0)
         lmo_moi_ref = FrankWolfe.convert_mathopt(lmo_ref, GLPK.Optimizer(), dimension=n)
         direction = Vector{Float64}(undef, n)
         for _ in 1:5

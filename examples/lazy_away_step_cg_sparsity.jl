@@ -41,7 +41,7 @@ const lmo = FrankWolfe.KSparseLMO(100, 1.0)
 # lmo_big = FrankWolfe.KSparseLMO(100, big"1.0")
 # lmo = FrankWolfe.LpNormLMO{Float64,5}(1.0)
 # lmo = FrankWolfe.ProbabilitySimplexLMO(1.0);
-# lmo = FrankWolfe.UnitSimplexOracle(1.0);
+# lmo = FrankWolfe.UnitSimplexLMO(1.0);
 
 const x00 = FrankWolfe.compute_extreme_point(lmo, rand(n))
 
