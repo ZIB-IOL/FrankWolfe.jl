@@ -5,6 +5,19 @@
 - The internal function `fast_dot(a, b)` was removed, now that the fast implementation of sparse dot products was added to `SparseArrays`. The quadratic form `fast_dot(a, Q, b)` still exists.
 - The deprecated `MonotonousStepSize` was removed.
 - Some features for which we do not want to commit to SemVer non-breaking rules were moved to an `Experimental` submodule.
+- The following oracle types have been renamed for consistency:
+    - CachedLinearMinimizationOracle -> CachedLMO
+    - ConvexHullOracle -> ConvexHullLMO
+    - HyperSimplexOracle -> HyperSimplexLMO
+    - LpNormLMO -> LpNormBallLMO
+    - NuclearNormLMO -> NuclearNormBallLMO
+    - OrderWeightNormLMO -> OrderWeightNormBallLMO
+    - ProbabilitySimplexOracle -> ProbabilitySimplexLMO
+    - ScaledBoundL1NormBall -> DiamondLMO
+    - ScaledBoundLInfNormBall -> BoxLMO
+    - UnitHyperSimplexOracle -> UnitHyperSimplexLMO
+    - UnitSimplexOracle -> UnitSimplexLMO
+    - ZeroOneHypercube -> ZeroOneHypercubeLMO
 
 # Noteworthy changes from v0.4 to v0.5
 
