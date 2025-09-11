@@ -18,7 +18,7 @@ evals = sort!(exp.(2 * randn(n)))
 e.values .= evals
 const A = Matrix(e)
 
-lmo = FrankWolfe.LpNormLMO{1}(100.0)
+lmo = FrankWolfe.LpNormBallLMO{1}(100.0)
 
 x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 

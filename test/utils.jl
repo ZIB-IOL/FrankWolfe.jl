@@ -20,7 +20,7 @@ Random.seed!(rng, 42)
         @. storage = 2 * (x - xp)
     end
 
-    lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
+    lmo_prob = FrankWolfe.ProbabilitySimplexLMO(1)
     x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n))
 
     FrankWolfe.benchmark_oracles(f, grad!, () -> rand(rng, n), lmo_prob; k=100)

@@ -34,7 +34,7 @@ L = eigmax(hessian)
 
 # We run over the probability simplex and call the LMO to get an initial feasible point:
 
-lmo = FrankWolfe.ProbabilitySimplexOracle(1.0);
+lmo = FrankWolfe.ProbabilitySimplexLMO(1.0);
 x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
 
 target_tolerance = 1e-5

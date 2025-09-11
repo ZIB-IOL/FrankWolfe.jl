@@ -40,7 +40,7 @@ function grad!(storage, X)
 end
 
 
-const lmo = FrankWolfe.NuclearNormLMO(275_000.0)
+const lmo = FrankWolfe.NuclearNormBallLMO(275_000.0)
 const x0 = FrankWolfe.compute_extreme_point(lmo, zero(Xreal))
 
 FrankWolfe.benchmark_oracles(f, grad!, () -> randn(size(Xreal)), lmo; k=100)

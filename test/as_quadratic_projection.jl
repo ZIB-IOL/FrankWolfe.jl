@@ -28,9 +28,9 @@ end
 
 ## other LMOs to try
 # lmo_big = FrankWolfe.KSparseLMO(100, big"1.0")
-# lmo = FrankWolfe.LpNormLMO{Float64,5}(100.0)
-# lmo = FrankWolfe.ProbabilitySimplexOracle(100.0);
-lmo = FrankWolfe.UnitSimplexOracle(10000.0);
+# lmo = FrankWolfe.LpNormBallLMO{Float64,5}(100.0)
+# lmo = FrankWolfe.ProbabilitySimplexLMO(100.0);
+lmo = FrankWolfe.UnitSimplexLMO(10000.0);
 
 x000 = FrankWolfe.compute_extreme_point(lmo, rand(rng, n))
 
@@ -112,7 +112,7 @@ for traj in traj_data
     @test traj[end][4] ≤ 1e-7
 end
 
-lmo = FrankWolfe.LpNormLMO{Float64,5}(100.0)
+lmo = FrankWolfe.LpNormBallLMO{Float64,5}(100.0)
 
 active_set_quadratic_manual_wolfe = FrankWolfe.ActiveSetQuadraticLinearSolve(
     FrankWolfe.ActiveSet([(1.0, copy(x000))]),

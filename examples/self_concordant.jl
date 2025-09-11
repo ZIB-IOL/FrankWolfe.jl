@@ -17,7 +17,7 @@ function grad!(storage, x)
 end
 
 
-lmo = FrankWolfe.ProbabilitySimplexOracle(1);
+lmo = FrankWolfe.ProbabilitySimplexLMO(1);
 x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
 FrankWolfe.benchmark_oracles(x -> f(x), (str, x) -> grad!(str, x), () -> randn(n), lmo; k=100)

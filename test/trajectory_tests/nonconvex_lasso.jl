@@ -1015,7 +1015,7 @@ const xp = [
 
     grad!(storage, x) = ReverseDiff.gradient!(storage, f, x)
 
-    lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
+    lmo = FrankWolfe.ProbabilitySimplexLMO(1.0)
 
     x0 = collect(FrankWolfe.compute_extreme_point(lmo, zeros(n)))
 

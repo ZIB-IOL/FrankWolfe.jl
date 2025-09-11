@@ -26,7 +26,7 @@ end
 L = eigmax(hessian)
 
 #Run over the probability simplex and call LMO to get initial feasible point
-lmo = FrankWolfe.ProbabilitySimplexOracle(1.0);
+lmo = FrankWolfe.ProbabilitySimplexLMO(1.0);
 x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
 
 target_tolerance = 1e-5
@@ -106,23 +106,24 @@ lmo = FrankWolfe.KSparseLMO(100, 100.0)
 x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
 
 x0 = deepcopy(x00)
-x, v, primal, dual_gap, status, trajectoryBCG_accel_simplex, _ = FrankWolfe.blended_conditional_gradient(
-    f,
-    grad!,
-    lmo,
-    x0,
-    epsilon=target_tolerance,
-    max_iteration=k,
-    line_search=FrankWolfe.Adaptive(L_est=L),
-    print_iter=k / 10,
-    hessian=hessian,
-    memory_mode=FrankWolfe.InplaceEmphasis(),
-    accelerated=true,
-    verbose=true,
-    trajectory=true,
-    sparsity_control=1.0,
-    weight_purge_threshold=1e-10,
-)
+x, v, primal, dual_gap, status, trajectoryBCG_accel_simplex, _ =
+    FrankWolfe.blended_conditional_gradient(
+        f,
+        grad!,
+        lmo,
+        x0,
+        epsilon=target_tolerance,
+        max_iteration=k,
+        line_search=FrankWolfe.Adaptive(L_est=L),
+        print_iter=k / 10,
+        hessian=hessian,
+        memory_mode=FrankWolfe.InplaceEmphasis(),
+        accelerated=true,
+        verbose=true,
+        trajectory=true,
+        sparsity_control=1.0,
+        weight_purge_threshold=1e-10,
+    )
 
 x0 = deepcopy(x00)
 x, v, primal, dual_gap, status, trajectoryBCG_simplex, _ = FrankWolfe.blended_conditional_gradient(
@@ -161,19 +162,20 @@ x, v, primal, dual_gap, status, trajectoryBCG_convex, _ = FrankWolfe.blended_con
 )
 
 x0 = deepcopy(x00)
-x, v, primal, dual_gap, status, trajectoryBPCG, _ = FrankWolfe.blended_pairwise_conditional_gradient(
-    f,
-    grad!,
-    lmo,
-    x0,
-    epsilon=target_tolerance,
-    max_iteration=k,
-    line_search=FrankWolfe.Adaptive(L_est=L),
-    print_iter=k / 10,
-    memory_mode=FrankWolfe.InplaceEmphasis(),
-    verbose=true,
-    trajectory=true,
-)
+x, v, primal, dual_gap, status, trajectoryBPCG, _ =
+    FrankWolfe.blended_pairwise_conditional_gradient(
+        f,
+        grad!,
+        lmo,
+        x0,
+        epsilon=target_tolerance,
+        max_iteration=k,
+        line_search=FrankWolfe.Adaptive(L_est=L),
+        print_iter=k / 10,
+        memory_mode=FrankWolfe.InplaceEmphasis(),
+        verbose=true,
+        trajectory=true,
+    )
 
 data = [trajectoryBCG_accel_simplex, trajectoryBCG_simplex, trajectoryBCG_convex, trajectoryBPCG]
 label = ["BCG (accel simplex)", "BCG (simplex)", "BCG (convex)", "BPCG"]

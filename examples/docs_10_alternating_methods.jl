@@ -32,8 +32,8 @@ function grad!(storage, x)
 end
 
 
-lmo1 = FrankWolfe.ProbabilitySimplexOracle(1.0)
-lmo2 = FrankWolfe.ScaledBoundLInfNormBall(-ones(n), zeros(n))
+lmo1 = FrankWolfe.ProbabilitySimplexLMO(1.0)
+lmo2 = FrankWolfe.BoxLMO(-ones(n), zeros(n))
 lmos = (lmo1, lmo2)
 
 x0 = rand(n)

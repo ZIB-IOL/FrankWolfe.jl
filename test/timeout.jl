@@ -7,7 +7,7 @@ using SparseArrays
     function grad!(storage, x)
         return storage .= 2x
     end
-    lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
+    lmo_prob = FrankWolfe.ProbabilitySimplexLMO(1)
     x0 = FrankWolfe.compute_extreme_point(lmo_prob, spzeros(5))
     @test abs(
         FrankWolfe.frank_wolfe(

@@ -16,7 +16,7 @@ f(x) = 2 * norm(x - xp)^3 - norm(x)^2
 grad!(storage, x) = ReverseDiff.gradient!(storage, f, x)
 
 # pick feasible region
-lmo = FrankWolfe.ProbabilitySimplexOracle(1.0); #radius needs to be float
+lmo = FrankWolfe.ProbabilitySimplexLMO(1.0); #radius needs to be float
 
 # compute some initial vertex
 x0 = collect(FrankWolfe.compute_extreme_point(lmo, zeros(n)))

@@ -19,7 +19,7 @@ Random.seed!(rng, 42)
         return nothing
     end
     @testset "Using sparse structure" begin
-        lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1.0)
+        lmo_prob = FrankWolfe.ProbabilitySimplexLMO(1.0)
         x0 = FrankWolfe.compute_extreme_point(lmo_prob, spzeros(n))
 
         x, v, primal, dual_gap, status, trajectory = FrankWolfe.frank_wolfe(

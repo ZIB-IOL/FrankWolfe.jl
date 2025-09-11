@@ -28,7 +28,7 @@ end
 # The `TrackingLMO` will let us count how many real calls to the LMO are performed
 # by a single run of the algorithm.
 
-lmo = FrankWolfe.UnitSimplexOracle(4.3)
+lmo = FrankWolfe.UnitSimplexLMO(4.3)
 tlmo = FrankWolfe.TrackingLMO(lmo)
 x0 = FrankWolfe.compute_extreme_point(lmo, randn(n));
 

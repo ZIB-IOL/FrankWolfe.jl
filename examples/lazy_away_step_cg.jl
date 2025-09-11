@@ -19,7 +19,7 @@ end
 
 lmo = FrankWolfe.KSparseLMO(number_nonzero, 1.0);
 ## alternative lmo
-# lmo = FrankWolfe.ProbabilitySimplexOracle(1)
+# lmo = FrankWolfe.ProbabilitySimplexLMO(1)
 x0 = FrankWolfe.compute_extreme_point(lmo, ones(n));
 
 @time x, v, primal, dual_gap, status, trajectorylazy, active_set = FrankWolfe.away_frank_wolfe(
