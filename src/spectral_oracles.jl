@@ -1,18 +1,18 @@
 """
-    NuclearNormLMO{T}(radius)
+    NuclearNormBallLMO{T}(radius)
 
 LMO over matrices that have a nuclear norm less than `radius`.
 The LMO returns the best rank-one approximation matrix with singular value `radius`, computed with Arpack.
 """
-struct NuclearNormLMO{T} <: LinearMinimizationOracle
+struct NuclearNormBallLMO{T} <: LinearMinimizationOracle
     radius::T
 end
 
-NuclearNormLMO{T}() where {T} = NuclearNormLMO{T}(one(T))
-NuclearNormLMO() = NuclearNormLMO(1.0)
+NuclearNormBallLMO{T}() where {T} = NuclearNormBallLMO{T}(one(T))
+NuclearNormBallLMO() = NuclearNormBallLMO(1.0)
 
 function compute_extreme_point(
-    lmo::NuclearNormLMO{TL},
+    lmo::NuclearNormBallLMO{TL},
     direction::AbstractMatrix{TD};
     tol=1e-8,
     kwargs...,
@@ -24,7 +24,7 @@ function compute_extreme_point(
 end
 
 function convert_mathopt(
-    lmo::NuclearNormLMO,
+    lmo::NuclearNormBallLMO,
     optimizer::OT;
     row_dimension::Integer,
     col_dimension::Integer,

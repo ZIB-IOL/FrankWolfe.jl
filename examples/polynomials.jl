@@ -104,9 +104,9 @@ gradient = similar(all_coeffs)
 max_iteration = 10_000
 random_initialization_vector = rand(length(all_coeffs))
 
-#lmo = FrankWolfe.LpNormLMO{1}(100 * maximum(all_coeffs))
+#lmo = FrankWolfe.LpNormBallLMO{1}(100 * maximum(all_coeffs))
 
-lmo = FrankWolfe.LpNormLMO{1}(0.95 * norm(all_coeffs, 1))
+lmo = FrankWolfe.LpNormBallLMO{1}(0.95 * norm(all_coeffs, 1))
 
 # L estimate
 num_pairs = 10000

@@ -1,21 +1,21 @@
 import Arpack
 
 """
-    LpNormLMO{T, p}(right_hand_side)
+    LpNormBallLMO{T, p}(right_hand_side)
 
 LMO with feasible set being an L-p norm ball:
 ```
 C = {x ∈ R^n, norm(x, p) ≤ right_hand_side}
 ```
 """
-struct LpNormLMO{T,p} <: LinearMinimizationOracle
+struct LpNormBallLMO{T,p} <: LinearMinimizationOracle
     right_hand_side::T
 end
 
-LpNormLMO{p}(right_hand_side::T) where {T,p} = LpNormLMO{T,p}(right_hand_side)
+LpNormBallLMO{p}(right_hand_side::T) where {T,p} = LpNormBallLMO{T,p}(right_hand_side)
 
 function compute_extreme_point(
-    lmo::LpNormLMO{T,2},
+    lmo::LpNormBallLMO{T,2},
     direction;
     v=similar(direction),
     kwargs...,
@@ -32,7 +32,7 @@ function compute_extreme_point(
 end
 
 function compute_extreme_point(
-    lmo::LpNormLMO{T,Inf},
+    lmo::LpNormBallLMO{T,Inf},
     direction;
     v=similar(direction),
     kwargs...,
@@ -43,7 +43,7 @@ function compute_extreme_point(
     return v
 end
 
-function compute_extreme_point(lmo::LpNormLMO{T,1}, direction; v=nothing, kwargs...) where {T}
+function compute_extreme_point(lmo::LpNormBallLMO{T,1}, direction; v=nothing, kwargs...) where {T}
     idx = 0
     v = -one(eltype(direction))
     for i in eachindex(direction)
@@ -60,17 +60,17 @@ function compute_extreme_point(lmo::LpNormLMO{T,1}, direction; v=nothing, kwargs
 end
 
 function compute_extreme_point(
-    lmo::LpNormLMO{T,p},
+    lmo::LpNormBallLMO{T,p},
     direction;
     v=similar(direction),
     kwargs...,
 ) where {T,p}
     # covers the case where the Inf or 1 is of another type
     if p == Inf
-        v = compute_extreme_point(LpNormLMO{T,Inf}(lmo.right_hand_side), direction, v=v)
+        v = compute_extreme_point(LpNormBallLMO{T,Inf}(lmo.right_hand_side), direction, v=v)
         return v
     elseif p == 1
-        v = compute_extreme_point(LpNormLMO{T,1}(lmo.right_hand_side), direction)
+        v = compute_extreme_point(LpNormBallLMO{T,1}(lmo.right_hand_side), direction)
         return v
     end
     q = p / (p - 1)
@@ -181,7 +181,7 @@ end
 
 
 """
-    OrderWeightNormLMO(weights,radius)
+    OrderWeightNormBallLMO(weights,radius)
     
 LMO with feasible set being the atomic ordered weighted l1 norm: https://arxiv.org/pdf/1409.4271
 
@@ -190,13 +190,13 @@ C = {x ∈ R^n, Ω_w(x) ≤ R}
 ```
 The weights are assumed to be positive.
 """
-struct OrderWeightNormLMO{R,B,D} <: LinearMinimizationOracle
+struct OrderWeightNormBallLMO{R,B,D} <: LinearMinimizationOracle
     radius::R
     mat_B::B
     direction_abs::D
 end
 
-function OrderWeightNormLMO(weights, radius)
+function OrderWeightNormBallLMO(weights, radius)
     N = length(weights)
     s = zero(eltype(weights))
     B = zeros(float(typeof(s)), N)
@@ -206,11 +206,11 @@ function OrderWeightNormLMO(weights, radius)
         B[i] = 1 / s
     end
     w_sort = similar(weights)
-    return OrderWeightNormLMO(radius, B, w_sort)
+    return OrderWeightNormBallLMO(radius, B, w_sort)
 end
 
 function compute_extreme_point(
-    lmo::OrderWeightNormLMO,
+    lmo::OrderWeightNormBallLMO,
     direction::M;
     v=nothing,
     kwargs...,

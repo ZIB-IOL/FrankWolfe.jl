@@ -8,8 +8,8 @@ include("../examples/plot_utils.jl")
 Random.seed!(100)
 
 n = 500
-lmo = FrankWolfe.ConvexHullOracle([rand(Float64, (n,)) .+ 1.0 for _ in 1:n])
-lmo2 = FrankWolfe.ConvexHullOracle([rand(Float64, (n,)) .- 1.0 for _ in 1:n])
+lmo = FrankWolfe.ConvexHullLMO([rand(Float64, (n,)) .+ 1.0 for _ in 1:n])
+lmo2 = FrankWolfe.ConvexHullLMO([rand(Float64, (n,)) .- 1.0 for _ in 1:n])
 
 
 trajectories = []

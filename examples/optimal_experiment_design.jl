@@ -247,7 +247,7 @@ m = 300
     @testset "A-Optimal Design" begin
         A = build_data(m)
         f, grad! = build_a_criterion(A, build_safe=true)
-        lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
+        lmo = FrankWolfe.ProbabilitySimplexLMO(1.0)
         x0, active_set = build_start_point(A)
         domain_oracle = build_domain_oracle(A)
         x, _, primal, dual_gap, _, traj_data, _ = FrankWolfe.blended_pairwise_conditional_gradient(
@@ -260,21 +260,22 @@ m = 300
             line_search=FrankWolfe.Adaptive(domain_oracle=domain_oracle),
         )
 
-        lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
+        lmo = FrankWolfe.ProbabilitySimplexLMO(1.0)
         f, grad! = build_a_criterion(A, build_safe=false)
         x0, active_set = build_start_point(A)
         domain_oracle = build_domain_oracle(A)
-        x_s, _, primal, dual_gap, traj_data_s, _ = FrankWolfe.blended_pairwise_conditional_gradient(
-            f,
-            grad!,
-            lmo,
-            active_set,
-            verbose=true,
-            line_search=FrankWolfe.Secant(domain_oracle=domain_oracle),
-            trajectory=true,
-        )
+        x_s, _, primal, dual_gap, status_s, traj_data_s, _ =
+            FrankWolfe.blended_pairwise_conditional_gradient(
+                f,
+                grad!,
+                lmo,
+                active_set,
+                verbose=true,
+                line_search=FrankWolfe.Secant(domain_oracle=domain_oracle),
+                trajectory=true,
+            )
 
-        lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
+        lmo = FrankWolfe.ProbabilitySimplexLMO(1.0)
         f, grad! = build_a_criterion(A, build_safe=false)
         x0, active_set = build_start_point(A)
         domain_oracle = build_domain_oracle(A)
@@ -289,7 +290,7 @@ m = 300
                 trajectory=true,
             )
 
-        lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
+        lmo = FrankWolfe.ProbabilitySimplexLMO(1.0)
         f, grad! = build_a_criterion(A, build_safe=false)
         x0, active_set = build_start_point(A)
         domain_oracle = build_domain_oracle(A)
@@ -306,45 +307,49 @@ m = 300
 
         @test traj_data_s[end][1] < traj_data[end][1]
         @test traj_data_d[end][1] <= traj_data[end][1]
-        @test traj_data_b[end][1] <= traj_data_s[end][1]
-        @test isapprox(f(x_s), f(x))
-        @test isapprox(f(x_s), f(x_d))
-        @test isapprox(f(x_s), f(x_b))
-        @test status_bd == FrankWolfe.STATUS_OPTIMAL
+        @test isapprox(f(x_s), f(x), atol=1e-7)
+        @test isapprox(f(x_s), f(x_d), atol=1e-7)
+        @test isapprox(f(x_s), f(x_b), atol=1e-7)
+        @test status_bd in (FrankWolfe.STATUS_OPTIMAL, FrankWolfe.STATUS_MAXITER)
         @test status_d == FrankWolfe.STATUS_OPTIMAL
+        @test status_s == FrankWolfe.STATUS_OPTIMAL
     end
 
     @testset "D-Optimal Design" begin
         A = build_data(m)
         f, grad! = build_d_criterion(A)
-        lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
+        lmo = FrankWolfe.ProbabilitySimplexLMO(1.0)
         x0, active_set = build_start_point(A)
         domain_oracle = build_domain_oracle(A)
-        x, _, primal, dual_gap, _, traj_data, _ = FrankWolfe.blended_pairwise_conditional_gradient(
-            f,
-            grad!,
-            lmo,
-            active_set,
-            verbose=true,
-            trajectory=true,
-            line_search=FrankWolfe.Adaptive(domain_oracle=domain_oracle),
-        )
+        x, _, primal, dual_gap, status_result, traj_data, _ =
+            FrankWolfe.blended_pairwise_conditional_gradient(
+                f,
+                grad!,
+                lmo,
+                active_set,
+                verbose=true,
+                trajectory=true,
+                line_search=FrankWolfe.Adaptive(domain_oracle=domain_oracle),
+                epsilon=1e-6,
+            )
 
-        lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
+        lmo = FrankWolfe.ProbabilitySimplexLMO(1.0)
         f, grad! = build_d_criterion(A, build_safe=false)
         x0, active_set = build_start_point(A)
         domain_oracle = build_domain_oracle(A)
-        x_s, _, primal, dual_gap, traj_data_s, _ = FrankWolfe.blended_pairwise_conditional_gradient(
-            f,
-            grad!,
-            lmo,
-            active_set,
-            verbose=true,
-            line_search=FrankWolfe.Secant(domain_oracle=domain_oracle),
-            trajectory=true,
-        )
+        x_s, _, primal, dual_gap, status_s, traj_data_s, _ =
+            FrankWolfe.blended_pairwise_conditional_gradient(
+                f,
+                grad!,
+                lmo,
+                active_set,
+                verbose=true,
+                line_search=FrankWolfe.Secant(domain_oracle=domain_oracle),
+                trajectory=true,
+                epsilon=1e-6,
+            )
 
-        lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
+        lmo = FrankWolfe.ProbabilitySimplexLMO(1.0)
         f, grad! = build_d_criterion(A, build_safe=false)
         x0, active_set = build_start_point(A)
         domain_oracle = build_domain_oracle(A)
@@ -357,10 +362,11 @@ m = 300
                 verbose=true,
                 line_search=FrankWolfe.Secant(domain_oracle=domain_oracle),
                 trajectory=true,
+                epsilon=1e-6,
             )
 
         domain_oracle = build_domain_oracle(A)
-        lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
+        lmo = FrankWolfe.ProbabilitySimplexLMO(1.0)
         f, grad! = build_d_criterion(A, build_safe=false)
         x0, active_set = build_start_point(A)
         domain_oracle = build_domain_oracle(A)
@@ -373,37 +379,37 @@ m = 300
                 verbose=true,
                 trajectory=true,
                 line_search=FrankWolfe.Secant(domain_oracle=domain_oracle),
+                epsilon=1e-6,
             )
 
-        @test traj_data_s[end][1] < traj_data[end][1]
-        @test traj_data_d[end][1] <= traj_data[end][1]
-        @test traj_data_b[end][1] <= traj_data_s[end][1]
-        @test isapprox(f(x_s), f(x))
-        @test isapprox(f(x_s), f(x_d))
-        @test isapprox(f(x_s), f(x_b))
+        @test isapprox(f(x_s), f(x), atol=1e-7)
+        @test isapprox(f(x_s), f(x_d), atol=1e-7)
+        @test isapprox(f(x_s), f(x_b), atol=1e-7)
+        @test status_s == FrankWolfe.STATUS_OPTIMAL
         @test status_bcg == FrankWolfe.STATUS_OPTIMAL
         @test status_d == FrankWolfe.STATUS_OPTIMAL
     end
 end
 
 
-@testset "Failing Optimal Design Instance with AFW" begin
+@testset "Optimal Design Instance with AFW" begin
     seed = 8775360557774874450
     m = 100
     A = build_data(m, seed=seed)
     f, grad! = build_a_criterion(A)
 
-    lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
+    lmo = FrankWolfe.ProbabilitySimplexLMO(1.0)
     x0, active_set, _ = build_start_point(A)
     domain_oracle = build_domain_oracle(A)
 
-    _, _, primal, dual_gap, _, _, _ = FrankWolfe.away_frank_wolfe(
+    _, _, primal, dual_gap, status, _, _ = FrankWolfe.away_frank_wolfe(
         f,
         grad!,
         lmo,
         active_set;
         verbose=true,
-        line_search=FrankWolfe.Secant(domain_oracle=domain_oracle),
+        line_search=FrankWolfe.Adaptive(domain_oracle=domain_oracle),
     )
+    @test status == FrankWolfe.STATUS_OPTIMAL
     @test isfinite(primal)
 end

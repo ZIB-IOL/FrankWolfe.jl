@@ -22,7 +22,7 @@ function grad!(storage, x)
     return nothing
 end
 
-lmo = FrankWolfe.UnitSimplexOracle(1.0)
+lmo = FrankWolfe.UnitSimplexLMO(1.0)
 x0 = FrankWolfe.compute_extreme_point(lmo, rand(rng, n))
 
 xblas, _ = FrankWolfe.frank_wolfe(

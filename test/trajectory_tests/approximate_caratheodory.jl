@@ -9,7 +9,7 @@ using LinearAlgebra
     function grad!(storage, x)
         @. storage = 2 * x
     end
-    lmo = FrankWolfe.ProbabilitySimplexOracle{Rational{BigInt}}(1)
+    lmo = FrankWolfe.ProbabilitySimplexLMO{Rational{BigInt}}(1)
     x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
     res1 = FrankWolfe.frank_wolfe(
         f,
@@ -587,7 +587,7 @@ end
         @. storage = 2 * (x - xp)
     end
 
-    lmo = FrankWolfe.ProbabilitySimplexOracle{Rational{BigInt}}(rhs)
+    lmo = FrankWolfe.ProbabilitySimplexLMO{Rational{BigInt}}(rhs)
     x0 = FrankWolfe.compute_extreme_point(lmo, direction)
 
     res5 = FrankWolfe.frank_wolfe(

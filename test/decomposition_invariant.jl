@@ -19,7 +19,7 @@ MOI.empty!(o)
 
 @testset "Hypercube interface" begin
     # no fixed variable
-    cube = FrankWolfe.ZeroOneHypercube()
+    cube = FrankWolfe.ZeroOneHypercubeLMO()
     n = 5
     cube_MOI = FrankWolfe.convert_mathopt(cube, o; dimension=n)
     x = fill(0.4, n)
@@ -65,7 +65,7 @@ end
 
 @testset "Simplex interfaces" begin
     @testset "Unit simplex" begin
-        lmo = FrankWolfe.UnitSimplexOracle(4.0)
+        lmo = FrankWolfe.UnitSimplexLMO(4.0)
         n = 5
         lmo_MOI = FrankWolfe.convert_mathopt(lmo, o; dimension=n)
         # x interior
@@ -140,7 +140,7 @@ end
         FrankWolfe.compute_inface_extreme_point(lmo, d_test, x_fixed)
     end
     @testset "Probability simplex" begin
-        lmo = FrankWolfe.ProbabilitySimplexOracle(5.0)
+        lmo = FrankWolfe.ProbabilitySimplexLMO(5.0)
         n = 5
         lmo_MOI = FrankWolfe.convert_mathopt(lmo, o; dimension=n)
         # x in relative interior
@@ -227,7 +227,7 @@ end
     end
 
     @testset "Non-improving descent direction termination" begin
-        cube = FrankWolfe.ZeroOneHypercube()
+        cube = FrankWolfe.ZeroOneHypercubeLMO()
         cube_MOI = FrankWolfe.convert_mathopt(cube, o; dimension=n)
         x0 = ones(n)
 
@@ -273,7 +273,7 @@ end
     end
 
     @testset "Zero-one cube" begin
-        cube = FrankWolfe.ZeroOneHypercube()
+        cube = FrankWolfe.ZeroOneHypercubeLMO()
         cube_MOI = FrankWolfe.convert_mathopt(cube, o; dimension=n)
         x0 = FrankWolfe.compute_extreme_point(cube, randn(rng, n))
 
@@ -314,12 +314,12 @@ end
     end
 
     @testset "LMO: $lmo" for lmo in (
-        FrankWolfe.UnitSimplexOracle(1.0),
-        FrankWolfe.ProbabilitySimplexOracle(1.0),
-        FrankWolfe.convert_mathopt(FrankWolfe.UnitSimplexOracle(1.0), o; dimension=n),
-        FrankWolfe.convert_mathopt(FrankWolfe.ProbabilitySimplexOracle(1.0), o; dimension=n),
+        FrankWolfe.UnitSimplexLMO(1.0),
+        FrankWolfe.ProbabilitySimplexLMO(1.0),
+        FrankWolfe.convert_mathopt(FrankWolfe.UnitSimplexLMO(1.0), o; dimension=n),
+        FrankWolfe.convert_mathopt(FrankWolfe.ProbabilitySimplexLMO(1.0), o; dimension=n),
     )
-        lmo = FrankWolfe.UnitSimplexOracle(1.0)
+        lmo = FrankWolfe.UnitSimplexLMO(1.0)
 
         x0_simplex = FrankWolfe.compute_extreme_point(lmo, randn(rng, n))
         res_di = FrankWolfe.decomposition_invariant_conditional_gradient(
@@ -384,10 +384,10 @@ end
 end
 
 @testset "DICG Hypersimplex $n $K" for n in (20, 500, 10000), K in (1, n ÷ 10, n ÷ 2)
-    for lmo in (FrankWolfe.HyperSimplexOracle(K, 3.0), FrankWolfe.UnitHyperSimplexOracle(K, 3.0))
+    for lmo in (FrankWolfe.HyperSimplexLMO(K, 3.0), FrankWolfe.UnitHyperSimplexLMO(K, 3.0))
         K = 4
         n = 10
-        lmo = FrankWolfe.HyperSimplexOracle(K, 3.0)
+        lmo = FrankWolfe.HyperSimplexLMO(K, 3.0)
         xref = fill(0.4, n)
         function f(x)
             return 1 / 2 * (norm(x)^2 - 2 * dot(x, xref) + norm(xref)^2)

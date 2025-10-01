@@ -987,7 +987,7 @@ function simplex_gradient_descent_over_convex_hull(
         descent_direction_product = dot(d, d) + (csum / k) * sum(d)
         @inbounds if descent_direction_product < line_search_inner.tol
             current_iteration = t + number_of_steps
-            @warn "Non-improving d ($descent_direction_product) due to numerical instability in iteration $current_iteration. Temporarily upgrading precision to BigFloat for the current iteration."
+            @debug "Non-improving d ($descent_direction_product) due to numerical instability in iteration $current_iteration. Temporarily upgrading precision to BigFloat for the current iteration."
             # extended warning - we can discuss what to integrate
             # If higher accuracy is required, consider using DoubleFloats.Double64 (still quite fast) and if that does not help BigFloat (slower) as type for the numbers.
             # Alternatively, consider using AFW (with lazy = true) instead."
@@ -998,8 +998,7 @@ function simplex_gradient_descent_over_convex_hull(
             d = c
             descent_direction_product_inner = dot(d, d) + (csum / k) * sum(d)
             if descent_direction_product_inner < line_search_inner.tol
-                @warn "d non-improving in large precision, forcing FW"
-                @warn "dot value: $descent_direction_product_inner"
+                @debug "d non-improving in large precision, forcing FW. Dot value: $descent_direction_product_inner, iteration $current_iteration"
                 return number_of_steps
             end
         end

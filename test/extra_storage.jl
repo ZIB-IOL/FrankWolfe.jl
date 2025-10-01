@@ -17,7 +17,7 @@ function grad!(storage, x)
 end
 
 @testset "Blended Pairwise Conditional Gradient" begin
-    lmo = FrankWolfe.UnitSimplexOracle(4.3)
+    lmo = FrankWolfe.UnitSimplexLMO(4.3)
     tlmo = FrankWolfe.TrackingLMO(lmo)
 
     x0 = FrankWolfe.compute_extreme_point(lmo, randn(rng, dim))
@@ -65,7 +65,7 @@ end
 end
 
 @testset "Away-Frank-Wolfe" begin
-    lmo = FrankWolfe.UnitSimplexOracle(4.3)
+    lmo = FrankWolfe.UnitSimplexLMO(4.3)
     tlmo = FrankWolfe.TrackingLMO(lmo)
 
     x0 = FrankWolfe.compute_extreme_point(lmo, randn(rng, dim))
@@ -113,7 +113,7 @@ end
 end
 
 @testset "Blended Pairwise Conditional Gradient" begin
-    lmo = FrankWolfe.UnitSimplexOracle(4.3)
+    lmo = FrankWolfe.UnitSimplexLMO(4.3)
     tlmo = FrankWolfe.TrackingLMO(lmo)
 
     x0 = FrankWolfe.compute_extreme_point(lmo, randn(rng, dim))

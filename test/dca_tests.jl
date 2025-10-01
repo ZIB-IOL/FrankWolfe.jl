@@ -91,7 +91,7 @@ using StableRNGs
         f, grad_f!, g, grad_g!, phi, a, b = create_simple_dc_problem(n, rng)
 
         # Test on probability simplex
-        lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
+        lmo = FrankWolfe.ProbabilitySimplexLMO(1.0)
         x0 = FrankWolfe.compute_extreme_point(lmo, randn(rng, n))
 
         # Run DCA algorithm
@@ -130,8 +130,8 @@ using StableRNGs
 
         # Test with different LMOs
         lmos = [
-            FrankWolfe.ProbabilitySimplexOracle(1.0),
-            FrankWolfe.ScaledBoundL1NormBall(-ones(n), ones(n)),
+            FrankWolfe.ProbabilitySimplexLMO(1.0),
+            FrankWolfe.DiamondLMO(-ones(n), ones(n)),
             FrankWolfe.KSparseLMO(2, 1.0),
         ]
 
@@ -168,7 +168,7 @@ using StableRNGs
         rng = StableRNG(456)
 
         f, grad_f!, g, grad_g!, phi = create_quadratic_dc_problem(n, rng)
-        lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
+        lmo = FrankWolfe.ProbabilitySimplexLMO(1.0)
         x0 = FrankWolfe.compute_extreme_point(lmo, randn(rng, n))
 
         # Test standard Frank-Wolfe subsolver
@@ -248,7 +248,7 @@ using StableRNGs
         rng = StableRNG(789)
 
         f, grad_f!, g, grad_g!, phi = create_quadratic_dc_problem(n, rng)
-        lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
+        lmo = FrankWolfe.ProbabilitySimplexLMO(1.0)
         x0 = FrankWolfe.compute_extreme_point(lmo, randn(rng, n))
 
         line_searches = [FrankWolfe.Agnostic(), FrankWolfe.Secant(), FrankWolfe.Adaptive()]
@@ -282,7 +282,7 @@ using StableRNGs
         rng = StableRNG(101)
 
         f, grad_f!, g, grad_g!, phi = create_quadratic_dc_problem(n, rng)
-        lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
+        lmo = FrankWolfe.ProbabilitySimplexLMO(1.0)
         x0 = FrankWolfe.compute_extreme_point(lmo, randn(rng, n))
 
         result = FrankWolfe.dca_fw(
@@ -316,7 +316,7 @@ using StableRNGs
 
         # For linear DC problem, we can verify against exact solution
         f, grad_f!, g, grad_g!, phi, a, b = create_simple_dc_problem(n, rng)
-        lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
+        lmo = FrankWolfe.ProbabilitySimplexLMO(1.0)
 
         # The exact optimal solution for linear φ(x) = (b-a)ᵀx + const
         # is the vertex that minimizes <b-a, x>, which is argmin <b-a, x>
@@ -353,7 +353,7 @@ using StableRNGs
         rng = StableRNG(303)
 
         f, grad_f!, g, grad_g!, phi = create_quadratic_dc_problem(n, rng)
-        lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
+        lmo = FrankWolfe.ProbabilitySimplexLMO(1.0)
         x0 = FrankWolfe.compute_extreme_point(lmo, randn(rng, n))
 
         # Test with max_iteration = 1
@@ -399,7 +399,7 @@ using StableRNGs
         rng = StableRNG(404)
 
         f, grad_f!, g, grad_g!, phi = create_quadratic_dc_problem(n, rng)
-        lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
+        lmo = FrankWolfe.ProbabilitySimplexLMO(1.0)
         x0 = FrankWolfe.compute_extreme_point(lmo, randn(rng, n))
 
         # Test InplaceEmphasis
@@ -447,7 +447,7 @@ using StableRNGs
         rng = StableRNG(505)
 
         f, grad_f!, g, grad_g!, phi = create_quadratic_dc_problem(n, rng)
-        lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
+        lmo = FrankWolfe.ProbabilitySimplexLMO(1.0)
         x0 = FrankWolfe.compute_extreme_point(lmo, randn(rng, n))
 
         # Test trajectory collection
@@ -512,7 +512,7 @@ using StableRNGs
         for n in [5, 10, 20]
             rng = StableRNG(606 + n)
             f, grad_f!, g, grad_g!, phi = create_quadratic_dc_problem(n, rng)
-            lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
+            lmo = FrankWolfe.ProbabilitySimplexLMO(1.0)
             x0 = FrankWolfe.compute_extreme_point(lmo, randn(rng, n))
 
             # Run algorithm

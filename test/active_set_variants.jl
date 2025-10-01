@@ -15,7 +15,7 @@ end
         @. storage = 2x
         return nothing
     end
-    lmo_prob = FrankWolfe.ProbabilitySimplexOracle(4)
+    lmo_prob = FrankWolfe.ProbabilitySimplexLMO(4)
     x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(10))
     res_bpcg = FrankWolfe.blended_pairwise_conditional_gradient(
         f,
@@ -144,7 +144,7 @@ end
         @. storage = 2x
         return nothing
     end
-    lmo_prob = FrankWolfe.ProbabilitySimplexOracle(4)
+    lmo_prob = FrankWolfe.ProbabilitySimplexLMO(4)
     lmo = FrankWolfe.TrackingLMO(lmo_prob)
     x0 = FrankWolfe.compute_extreme_point(lmo_prob, ones(10))
     FrankWolfe.blended_pairwise_conditional_gradient(
@@ -223,7 +223,7 @@ end
             ∇simple_reg_loss(storage, x, dp)
         end
     end
-    lmo = FrankWolfe.LpNormLMO{Float64,2}(1.05 * norm(params_perfect))
+    lmo = FrankWolfe.LpNormBallLMO{Float64,2}(1.05 * norm(params_perfect))
     x0 = FrankWolfe.compute_extreme_point(lmo, zeros(Float64, n + 1))
     active_set = FrankWolfe.ActiveSetQuadraticProductCaching([(1.0, x0)], gradf)
     res = FrankWolfe.blended_pairwise_conditional_gradient(

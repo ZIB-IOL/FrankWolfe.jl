@@ -11,7 +11,7 @@ function grad!(storage, x)
 end
 
 # pick feasible region
-lmo = FrankWolfe.ProbabilitySimplexOracle{Rational{BigInt}}(1); # radius needs to be integer or rational
+lmo = FrankWolfe.ProbabilitySimplexLMO{Rational{BigInt}}(1); # radius needs to be integer or rational
 
 # compute some initial vertex
 x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
@@ -78,7 +78,7 @@ function grad!(storage, x)
     @. storage = 2 * (x - xp)
 end
 
-lmo = FrankWolfe.ProbabilitySimplexOracle{Rational{BigInt}}(rhs)
+lmo = FrankWolfe.ProbabilitySimplexLMO{Rational{BigInt}}(rhs)
 direction = rand(n)
 x0 = FrankWolfe.compute_extreme_point(lmo, direction)
 

@@ -12,7 +12,7 @@ for n in (10, 100, 1000)
     @info "n = $n"
     direction = zeros(n)
     rhs = 10 * rand(rng)
-    lmo_unit = FrankWolfe.UnitSimplexOracle(rhs)
+    lmo_unit = FrankWolfe.UnitSimplexLMO(rhs)
     lmo_veccached = FrankWolfe.VectorCacheLMO(lmo_unit)
     res_vec = @benchmark begin
         for idx in 1:($n)

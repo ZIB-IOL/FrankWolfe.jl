@@ -50,9 +50,9 @@ end
 
 ## other LMOs to try
 # lmo_big = FrankWolfe.KSparseLMO(100, big"1.0")
-# lmo = FrankWolfe.LpNormLMO{Float64,5}(100.0)
-# lmo = FrankWolfe.ProbabilitySimplexOracle(100.0);
-lmo = FrankWolfe.UnitSimplexOracle(10000.0);
+# lmo = FrankWolfe.LpNormBallLMO{Float64,5}(100.0)
+# lmo = FrankWolfe.ProbabilitySimplexLMO(100.0);
+lmo = FrankWolfe.UnitSimplexLMO(10000.0);
 
 x00 = FrankWolfe.compute_extreme_point(lmo, rand(n))
 

@@ -7,7 +7,7 @@ using Test
     function grad!(storage, x)
         return storage .= 2x
     end
-    lmo = FrankWolfe.UnitSimplexOracle(1.0)
+    lmo = FrankWolfe.UnitSimplexLMO(1.0)
     x00 = FrankWolfe.compute_extreme_point(lmo, ones(5))
 
     x0 = copy(x00)
