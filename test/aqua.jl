@@ -1,3 +1,5 @@
+module Test_aqua
+
 using Aqua
 using FrankWolfe
 using Test
@@ -13,3 +15,5 @@ using Test
         # piracies=false,
     )
 end
+
+end # module

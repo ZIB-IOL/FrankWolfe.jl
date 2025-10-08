@@ -1,3 +1,5 @@
+module Test_alternating_methods_tests
+
 import FrankWolfe
 using LinearAlgebra
 using Test
@@ -305,3 +307,5 @@ end
     @test length(traj_data) >= 2
     @test length(traj_data) <= 10001
 end
+
+end # module

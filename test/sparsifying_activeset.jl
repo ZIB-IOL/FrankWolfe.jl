@@ -1,3 +1,5 @@
+module Test_sparsifying_activeset
+
 #=
 This example demonstrates the use of the Blended Pairwise Conditional Gradient algorithm
 with direct solve steps for a quadratic optimization problem over a sparse polytope.
@@ -85,3 +87,5 @@ as_cardinality_sparse = getindex.(trajectoryBPCG_as_sparse, 6)
 dual_gap_bpcg = getindex.(trajectoryBPCG_standard, 4)
 dual_gap_sparse = getindex.(trajectoryBPCG_as_sparse, 4)
 @test maximum(dual_gap_sparse - dual_gap_bpcg) <= 1e-7
+
+end # module

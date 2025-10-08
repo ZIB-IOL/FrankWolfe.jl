@@ -1,3 +1,5 @@
+module Test_extra_storage
+
 # # Extra-lazification
 
 using FrankWolfe
@@ -159,3 +161,5 @@ end
         @test tlmo.counter <= 2 * lmo_calls0
     end
 end
+
+end # module

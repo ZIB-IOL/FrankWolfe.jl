@@ -1,3 +1,5 @@
+module Test_bcg_direction_error
+
 import FrankWolfe
 using LinearAlgebra
 using Random
@@ -67,3 +69,5 @@ x, v, primal_cut, dual_gap, _, _ = FrankWolfe.blended_conditional_gradient(
 )
 
 @test primal ≤ primal_cut + sqrt(eps())
+
+end # module

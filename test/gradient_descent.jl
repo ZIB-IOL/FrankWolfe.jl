@@ -1,3 +1,5 @@
+module Test_gradient_descent
+
 using LinearAlgebra
 using Random
 using Test
@@ -409,3 +411,5 @@ const f_opt = f_gd(x_opt)
         @test abs(f_id - f_reg) ≤ 10 * target_tolerance
     end
 end
+
+end # module

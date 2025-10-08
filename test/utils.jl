@@ -1,3 +1,5 @@
+module Test_utils
+
 import FrankWolfe
 using LinearAlgebra
 using Test
@@ -272,3 +274,5 @@ end
         @test dot(s1, D, s2[1:100]) ≈ FrankWolfe.fast_dot(s1, D, s2[1:100])
     end
 end
+
+end # module

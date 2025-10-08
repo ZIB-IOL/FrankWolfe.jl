@@ -1,3 +1,5 @@
+module Test_active_set_variants
+
 using FrankWolfe
 using LinearAlgebra
 using Test
@@ -239,3 +241,5 @@ end
     @test abs(res.primal - 0.70939) ≤ 0.001
     @test res[4] ≤ 1e-2
 end
+
+end # module

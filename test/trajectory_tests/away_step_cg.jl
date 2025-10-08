@@ -1,3 +1,5 @@
+module Test_away_step_cg
+
 using FrankWolfe
 using Test
 
@@ -637,3 +639,5 @@ const xp = [
     @test res4.traj_data[end][1] <= 1750
 
 end
+
+end  # module

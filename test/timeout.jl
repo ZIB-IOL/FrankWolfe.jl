@@ -1,3 +1,6 @@
+module Test_timeout
+
+using Test
 using FrankWolfe
 using LinearAlgebra
 using SparseArrays
@@ -184,3 +187,5 @@ using SparseArrays
         )[3] - 0.2,
     ) < 1.0e-3
 end
+
+end # module

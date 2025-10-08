@@ -1,7 +1,10 @@
+module Test_memory_test
+
 using Test
 using FrankWolfe
 using LinearAlgebra
 using Random
+using SparseArrays
 using StableRNGs
 
 rng = StableRNG(42)
@@ -74,3 +77,5 @@ Random.seed!(rng, 42)
         @test primal < f(x0)
     end
 end
+
+end # module

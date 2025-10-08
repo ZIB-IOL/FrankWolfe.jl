@@ -1,3 +1,5 @@
+module Test_nonconvex_lasso
+
 using FrankWolfe
 using LinearAlgebra
 using Test
@@ -2039,3 +2041,5 @@ const xp = [
     @test res[3] ≈ primal_true
 
 end
+
+end  # module

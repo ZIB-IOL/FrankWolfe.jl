@@ -1,3 +1,5 @@
+module Test_rational_test
+
 
 using FrankWolfe
 using LinearAlgebra
@@ -141,3 +143,5 @@ end
     )
     @test eltype(x) == Rational{BigInt}
 end
+
+end # module

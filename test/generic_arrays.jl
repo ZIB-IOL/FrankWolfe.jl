@@ -1,7 +1,9 @@
+module Test_generic_arrays
+
 using FrankWolfe
 using LinearAlgebra
+using SparseArrays
 using Test
-
 
 # necessary for away step
 function Base.convert(::Type{GenericArray{Float64,1}}, v::FrankWolfe.ScaledHotVector{Float64})
@@ -96,3 +98,5 @@ end
         @test !isequal(2a, FrankWolfe.RankOneMatrix(2 * ones(4), ones(3)))
     end
 end
+
+end # module

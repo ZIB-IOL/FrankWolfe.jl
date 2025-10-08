@@ -1,3 +1,5 @@
+module Test_as_quadratic_projection
+
 using FrankWolfe
 using LinearAlgebra
 using Random
@@ -166,3 +168,5 @@ x, v, primal_partial_caching, dual_gap, status, _ =
 
 @test abs(primal_partial_caching - primal_manual_wolfe) < 1e-10
 @test length(active_set_quadratic_partial_caching) < 150
+
+end # module

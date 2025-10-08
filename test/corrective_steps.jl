@@ -1,3 +1,5 @@
+module Test_corrective_steps
+
 using FrankWolfe
 using Test
 using StableRNGs
@@ -101,3 +103,5 @@ using SparseArrays
     @test isapprox(x_hyb, x_afw, rtol=1e-5)
     @test status_h == FrankWolfe.STATUS_OPTIMAL
 end
+
+end # module

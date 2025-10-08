@@ -1,3 +1,5 @@
+module Test_blocks
+
 using Test
 using Random
 using LinearAlgebra
@@ -124,3 +126,5 @@ end
         @test active_set.x ≈ active_set_dense.x
     end
 end
+
+end # module

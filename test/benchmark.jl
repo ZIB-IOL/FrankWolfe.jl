@@ -1,3 +1,5 @@
+module Test_benchmark
+
 import FrankWolfe
 import LinearAlgebra
 using Random
@@ -40,3 +42,5 @@ FrankWolfe.benchmarkOracles(
     k=100,
     T=Float64,
 )
+
+end # module

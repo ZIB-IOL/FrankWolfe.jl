@@ -1,3 +1,5 @@
+module Test_momentum_memory
+
 import FrankWolfe
 import LinearAlgebra
 import Random
@@ -53,3 +55,5 @@ xmem, _ = FrankWolfe.frank_wolfe(
 )
 
 @test f(xblas) ≈ f(xmem)
+
+end # module

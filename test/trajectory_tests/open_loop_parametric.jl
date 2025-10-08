@@ -1,3 +1,5 @@
+module Test_open_loop_parametric
+
 using FrankWolfe
 
 using Test
@@ -94,3 +96,5 @@ Random.seed!(rng, 42)
     @test length(res_2[end]) <= 1492
 
 end
+
+end  # module

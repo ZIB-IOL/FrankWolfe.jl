@@ -1,3 +1,5 @@
+module Test_quadratic_lp_active_set
+
 using FrankWolfe
 using LinearAlgebra
 using Random
@@ -133,3 +135,5 @@ dual_gaps_quadratic_direct_product_caching =
 @test dual_gaps_quadratic_noqas[end] < dual_gaps_bpcg[end]
 @test dual_gaps_quadratic_direct_product_caching[end] < dual_gaps_bpcg[end]
 @test norm(dual_gaps_quadratic_noqas - dual_gaps_quadratic_noqas) ≤ k * 1e-5
+
+end # module

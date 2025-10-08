@@ -1,8 +1,10 @@
+module Test_active_set
+
 using Test
 
 using FrankWolfe
 import FrankWolfe: ActiveSet
-using LinearAlgebra: norm
+using LinearAlgebra: dot, norm
 using Random
 using StableRNGs
 
@@ -256,3 +258,5 @@ end
     # ensure that ActiveSet is created correctly, tests a fix for a bug when x0 is a BigFloat
     @test length(FrankWolfe.ActiveSet([(1.0, x0)])) == 1
 end
+
+end # module

@@ -1,3 +1,5 @@
+module Test_lmo
+
 using Test
 using FrankWolfe
 using LinearAlgebra
@@ -1113,3 +1115,5 @@ end
         end
     end
 end
+
+end # module

@@ -1,3 +1,5 @@
+module Test_benchmark_cache
+
 # benchmark for tuple VS vector cache
 
 using BenchmarkTools
@@ -44,3 +46,5 @@ for n in (10, 100, 1000)
         display(res_multi[N])
     end
 end
+
+end # module

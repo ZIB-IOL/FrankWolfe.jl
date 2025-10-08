@@ -1,3 +1,5 @@
+module Test_blended_accelerated
+
 using LinearAlgebra
 using Random
 using SparseArrays
@@ -87,3 +89,5 @@ const L = eigmax(hessian)
         )
     end
 end
+
+end # module
