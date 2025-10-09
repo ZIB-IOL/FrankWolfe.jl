@@ -1,3 +1,5 @@
+module Test_momentum_memory
+
 import FrankWolfe
 import LinearAlgebra
 import Random
@@ -12,9 +14,9 @@ s = 50
 rng = StableRNG(s)
 Random.seed!(rng, s)
 
-xpi = rand(rng, n);
-total = sum(xpi);
-const xp = xpi ./ total;
+xpi = rand(rng, n)
+total = sum(xpi)
+const xp = xpi ./ total
 
 f(x) = LinearAlgebra.norm(x - xp)^2
 function grad!(storage, x)
@@ -53,3 +55,5 @@ xmem, _ = FrankWolfe.frank_wolfe(
 )
 
 @test f(xblas) ≈ f(xmem)
+
+end # module

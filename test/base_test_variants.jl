@@ -1,3 +1,5 @@
+module Test_base_test_variants
+
 using FrankWolfe
 using Test
 using LinearAlgebra
@@ -356,7 +358,7 @@ end
         @. storage = 2x
     end
     k = 1000
-    active_set = ActiveSet([(1.0, x0)])
+    active_set = FrankWolfe.ActiveSet([(1.0, x0)])
 
     # compute reference from vanilla FW
     xref, _ = FrankWolfe.frank_wolfe(
@@ -530,3 +532,5 @@ end
     @test f(x) ≈ f(xref)
 
 end
+
+end # module

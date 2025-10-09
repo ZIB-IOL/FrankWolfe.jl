@@ -1,10 +1,12 @@
+module Test_nonconvex_lasso
+
 using FrankWolfe
 using LinearAlgebra
 using Test
 
 using ReverseDiff
 
-n = Int(1e3);
+n = Int(1e3)
 k = 1e3
 
 const xp = [
@@ -2039,3 +2041,5 @@ const xp = [
     @test res[3] ≈ primal_true
 
 end
+
+end  # module

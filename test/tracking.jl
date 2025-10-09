@@ -1,3 +1,5 @@
+module Test_tracking
+
 using Test
 using LinearAlgebra
 using SparseArrays
@@ -121,3 +123,5 @@ end
     # lazification
     @test tlmo.counter < niters
 end
+
+end # module

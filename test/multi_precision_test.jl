@@ -1,3 +1,5 @@
+module Test_multi_precision_test
+
 using Test
 using FrankWolfe
 using LinearAlgebra
@@ -91,3 +93,5 @@ Random.seed!(rng, 42)
 
     end
 end
+
+end # module

@@ -1,3 +1,5 @@
+module Test_decomposition_invariant
+
 using FrankWolfe
 using Test
 using LinearAlgebra
@@ -418,3 +420,5 @@ end
         @test norm(res_dicg_tracking.x - res_dicg.x) ≤ 1e-4
     end
 end
+
+end # module

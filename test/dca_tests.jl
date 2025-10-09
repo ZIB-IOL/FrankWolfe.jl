@@ -1,3 +1,5 @@
+module Test_dca_tests
+
 using FrankWolfe
 using Test
 using LinearAlgebra
@@ -534,3 +536,5 @@ using StableRNGs
     end
 
 end  # End main testset
+
+end # module

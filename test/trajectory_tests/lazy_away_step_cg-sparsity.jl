@@ -1,3 +1,5 @@
+module Test_lazy_away_step_cg
+
 using FrankWolfe
 using LinearAlgebra
 using Random
@@ -5142,3 +5144,5 @@ end
     @test res4.traj_data[end][1] <= 279
 
 end
+
+end  # module

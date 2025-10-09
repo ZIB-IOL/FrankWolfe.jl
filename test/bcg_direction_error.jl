@@ -1,3 +1,5 @@
+module Test_bcg_direction_error
+
 import FrankWolfe
 using LinearAlgebra
 using Random
@@ -12,8 +14,8 @@ s = 41
 rng = StableRNG(s)
 Random.seed!(rng, s)
 
-xpi = rand(rng, n);
-total = sum(xpi);
+xpi = rand(rng, n)
+total = sum(xpi)
 const xp = xpi # ./ total;
 
 f(x) = norm(x .- xp)^2
@@ -67,3 +69,5 @@ x, v, primal_cut, dual_gap, _, _ = FrankWolfe.blended_conditional_gradient(
 )
 
 @test primal ≤ primal_cut + sqrt(eps())
+
+end # module

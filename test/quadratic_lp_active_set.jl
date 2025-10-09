@@ -1,3 +1,5 @@
+module Test_quadratic_lp_active_set
+
 using FrankWolfe
 using LinearAlgebra
 using Random
@@ -13,10 +15,10 @@ s = 10
 rng = StableRNG(s)
 Random.seed!(rng, s)
 
-xpi = rand(rng, n);
-total = sum(xpi);
+xpi = rand(rng, n)
+total = sum(xpi)
 
-const xp = xpi ./ total;
+const xp = xpi ./ total
 
 f(x) = norm(x - xp)^2
 function grad!(storage, x)
@@ -43,7 +45,7 @@ x, v, primal, dual_gap, status, _, _ = FrankWolfe.blended_pairwise_conditional_g
     line_search=FrankWolfe.Shortstep(2.0),
     verbose=false,
     callback=build_callback(trajectoryBPCG_standard),
-);
+)
 
 as_quad_direct = FrankWolfe.ActiveSetQuadraticLinearSolve(
     [(1.0, copy(x00))],
@@ -62,7 +64,7 @@ x, v, primal, dual_gap, status, _, _ = FrankWolfe.blended_pairwise_conditional_g
     line_search=FrankWolfe.Shortstep(2.0),
     verbose=false,
     callback=build_callback(trajectoryBPCG_quadratic_direct_specialized),
-);
+)
 
 as_quad_direct_generic = FrankWolfe.ActiveSetQuadraticLinearSolve(
     [(1.0, copy(x00))],
@@ -81,7 +83,7 @@ x, v, primal, dual_gap, status, _, _ = FrankWolfe.blended_pairwise_conditional_g
     line_search=FrankWolfe.Shortstep(2.0),
     verbose=false,
     callback=build_callback(trajectoryBPCG_quadratic_direct_generic),
-);
+)
 
 as_quad_direct_basic_as = FrankWolfe.ActiveSetQuadraticLinearSolve(
     FrankWolfe.ActiveSet([1.0], [copy(x00)], collect(x00)),
@@ -100,7 +102,7 @@ x, v, primal, dual_gap, status, _, _ = FrankWolfe.blended_pairwise_conditional_g
     line_search=FrankWolfe.Shortstep(2.0),
     verbose=false,
     callback=build_callback(trajectoryBPCG_quadratic_noqas),
-);
+)
 
 as_quad_direct_product_caching = FrankWolfe.ActiveSetQuadraticLinearSolve(
     FrankWolfe.ActiveSetQuadraticProductCaching([(1.0, copy(x00))], 2 * LinearAlgebra.I, -2xp),
@@ -119,7 +121,7 @@ x, v, primal, dual_gap, status, _, _ = FrankWolfe.blended_pairwise_conditional_g
     line_search=FrankWolfe.Shortstep(2.0),
     verbose=false,
     callback=build_callback(trajectoryBPCG_quadratic_direct_product_caching),
-);
+)
 
 dual_gaps_quadratic_specialized = getindex.(trajectoryBPCG_quadratic_direct_specialized, 4)
 dual_gaps_quadratic_generic = getindex.(trajectoryBPCG_quadratic_direct_generic, 4)
@@ -133,3 +135,5 @@ dual_gaps_quadratic_direct_product_caching =
 @test dual_gaps_quadratic_noqas[end] < dual_gaps_bpcg[end]
 @test dual_gaps_quadratic_direct_product_caching[end] < dual_gaps_bpcg[end]
 @test norm(dual_gaps_quadratic_noqas - dual_gaps_quadratic_noqas) ≤ k * 1e-5
+
+end # module

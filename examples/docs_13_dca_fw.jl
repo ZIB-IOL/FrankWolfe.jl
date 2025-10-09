@@ -169,9 +169,9 @@ res_boost = FrankWolfe.dca_fw(
 
 
 # ## Plotting the resulting trajectory
-# 
+#
 # We modify the y axis to highlight that we are plotting the DCA gap, not the FW gap
-data = [traj_data, traj_data_boosted.traj_data]
+data = [traj_data, res_boost[6].traj_data]
 label = ["DCA-FW", "DCA-FW-B"]
 p_res = plot_trajectories(data, label, marker_shapes=[:o, :x])
 ylabel!(p_res.subplots[3], "DCA gap")

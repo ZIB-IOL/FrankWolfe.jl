@@ -1,3 +1,5 @@
+module Test_function_gradient
+
 using Test
 using FrankWolfe
 using Random
@@ -130,3 +132,5 @@ Random.seed!(rng, 123)
         end
     end
 end
+
+end # module

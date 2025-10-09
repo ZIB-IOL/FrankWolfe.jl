@@ -1,3 +1,5 @@
+module Test_approximate_caratheodory
+
 using FrankWolfe
 using Test
 using LinearAlgebra
@@ -606,3 +608,5 @@ end
     @test res5[3] ≈ primal_true
     @test res5.traj_data[end][1] == 100001
 end
+
+end  # module

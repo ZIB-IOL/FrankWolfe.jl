@@ -1,3 +1,5 @@
+module Test_oddities
+
 import FrankWolfe
 using LinearAlgebra
 using Test
@@ -89,3 +91,5 @@ using Test
 
 
 end
+
+end # module
