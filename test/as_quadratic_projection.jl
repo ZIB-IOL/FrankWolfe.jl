@@ -16,10 +16,10 @@ s = 10
 rng = StableRNG(s)
 Random.seed!(rng, s)
 
-xpi = rand(rng, n);
-total = sum(xpi);
+xpi = rand(rng, n)
+total = sum(xpi)
 
-xp = xpi ./ total;
+xp = xpi ./ total
 
 f(x) = norm(x - xp)^2
 function grad!(storage, x)
@@ -32,7 +32,7 @@ end
 # lmo_big = FrankWolfe.KSparseLMO(100, big"1.0")
 # lmo = FrankWolfe.LpNormBallLMO{Float64,5}(100.0)
 # lmo = FrankWolfe.ProbabilitySimplexLMO(100.0);
-lmo = FrankWolfe.UnitSimplexLMO(10000.0);
+lmo = FrankWolfe.UnitSimplexLMO(10000.0)
 
 x000 = FrankWolfe.compute_extreme_point(lmo, rand(rng, n))
 
@@ -50,7 +50,7 @@ x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_grad
     copy(x000),
     max_iteration=k,
     callback=build_callback(trajectoryBPCG_standard),
-);
+)
 
 active_set_quadratic_automatic_standard = FrankWolfe.ActiveSetQuadraticLinearSolve(
     FrankWolfe.ActiveSet([(1.0, copy(x000))]),
@@ -66,7 +66,7 @@ x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_grad
     active_set_quadratic_automatic_standard,
     max_iteration=k,
     callback=build_callback(trajectoryBPCG_quadratic_automatic_standard),
-);
+)
 
 active_set_quadratic_automatic = FrankWolfe.ActiveSetQuadraticLinearSolve(
     [(1.0, copy(x000))],
@@ -82,7 +82,7 @@ x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_grad
     active_set_quadratic_automatic,
     max_iteration=k,
     callback=build_callback(trajectoryBPCG_quadratic_automatic),
-);
+)
 
 active_set_quadratic_manual = FrankWolfe.ActiveSetQuadraticLinearSolve(
     FrankWolfe.ActiveSet([(1.0, copy(x000))]),
@@ -99,7 +99,7 @@ x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_grad
     active_set_quadratic_manual,
     max_iteration=k,
     callback=build_callback(trajectoryBPCG_quadratic_manual),
-);
+)
 
 traj_data = [
     trajectoryBPCG_standard,
@@ -133,7 +133,7 @@ x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_grad
     active_set_quadratic_manual,
     max_iteration=k,
     callback=build_callback(trajectoryBPCG_quadratic_manual),
-);
+)
 trajectoryBPCG_quadratic_manual_wolfe = []
 x, v, primal_manual_wolfe, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
@@ -142,7 +142,7 @@ x, v, primal_manual_wolfe, dual_gap, status, _ = FrankWolfe.blended_pairwise_con
     active_set_quadratic_manual_wolfe,
     max_iteration=k,
     callback=build_callback(trajectoryBPCG_quadratic_manual_wolfe),
-);
+)
 
 @test length(trajectoryBPCG_quadratic_manual) < 450
 @test length(trajectoryBPCG_quadratic_manual_wolfe) < 450
@@ -164,7 +164,7 @@ x, v, primal_partial_caching, dual_gap, status, _ =
         active_set_quadratic_partial_caching,
         max_iteration=k,
         callback=build_callback(trajectoryBPCG_quadratic_partial_caching),
-    );
+    )
 
 @test abs(primal_partial_caching - primal_manual_wolfe) < 1e-10
 @test length(active_set_quadratic_partial_caching) < 150

@@ -28,13 +28,13 @@ s = 10
 rng = StableRNG(s)
 Random.seed!(rng, s)
 
-xpi = rand(rng, n);
-total = sum(xpi);
+xpi = rand(rng, n)
+total = sum(xpi)
 
 # here the optimal solution lies in the interior if you want an optimal solution on a face and not the interior use:
 # const xp = xpi;
 
-const xp = xpi ./ total;
+const xp = xpi ./ total
 
 f(x) = norm(x - xp)^2
 function grad!(storage, x)
@@ -62,7 +62,7 @@ x, v, primal, dual_gap, status, _, _ = FrankWolfe.blended_pairwise_conditional_g
     verbose=false,
     trajectory=false,
     callback=build_callback(trajectoryBPCG_standard),
-);
+)
 
 o = HiGHS.Optimizer()
 MOI.set(o, MOI.Silent(), true)
@@ -78,7 +78,7 @@ x, v, primal, dual_gap, status, _, _ = FrankWolfe.blended_pairwise_conditional_g
     line_search=FrankWolfe.Shortstep(2.0),
     verbose=false,
     callback=build_callback(trajectoryBPCG_as_sparse),
-);
+)
 
 as_cardinality_bpcg = getindex.(trajectoryBPCG_standard, 6)
 as_cardinality_sparse = getindex.(trajectoryBPCG_as_sparse, 6)

@@ -19,10 +19,10 @@ function grad!(storage, x)
 end
 
 # pick feasible region
-lmo = FrankWolfe.ProbabilitySimplexLMO{Rational{BigInt}}(1); # radius needs to be integer or rational
+lmo = FrankWolfe.ProbabilitySimplexLMO{Rational{BigInt}}(1) # radius needs to be integer or rational
 
 # compute some initial vertex
-x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
+x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
 
 x, v, primal, dual_gap0, status, trajectory = FrankWolfe.frank_wolfe(
     f,

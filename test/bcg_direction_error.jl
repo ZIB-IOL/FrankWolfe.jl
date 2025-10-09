@@ -14,8 +14,8 @@ s = 41
 rng = StableRNG(s)
 Random.seed!(rng, s)
 
-xpi = rand(rng, n);
-total = sum(xpi);
+xpi = rand(rng, n)
+total = sum(xpi)
 const xp = xpi # ./ total;
 
 f(x) = norm(x .- xp)^2

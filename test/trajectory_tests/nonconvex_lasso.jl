@@ -6,7 +6,7 @@ using Test
 
 using ReverseDiff
 
-n = Int(1e3);
+n = Int(1e3)
 k = 1e3
 
 const xp = [
