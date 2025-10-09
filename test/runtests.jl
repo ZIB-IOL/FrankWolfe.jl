@@ -1,6 +1,6 @@
 using Test
 
-SKIP_FILES = ["runtests.jl", "benchmark.jl", "benchmark_cache.jl"]
+SKIP_FILES = ["runtests.jl"]
 
 filter_fn(f) = endswith(f, ".jl") && !(f in SKIP_FILES)
 
