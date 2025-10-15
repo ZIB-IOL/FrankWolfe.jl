@@ -175,13 +175,13 @@ function plot_results(
                 scatter!(
                     view(
                         list_data_x[i][j],
-                        1:length(list_data_x[i][j])÷number_markers_per_line:length(
+                        1:(length(list_data_x[i][j])÷number_markers_per_line):length(
                             list_data_x[i][j],
                         ),
                     ),
                     view(
                         list_data_y[i][j],
-                        1:length(list_data_y[i][j])÷number_markers_per_line:length(
+                        1:(length(list_data_y[i][j])÷number_markers_per_line):length(
                             list_data_y[i][j],
                         ),
                     ),
@@ -212,7 +212,7 @@ end
     if log
         xmin = log10(x[1])
         xmax = log10(x[end])
-        thresholds = collect(xmin:(xmax-xmin)/(n_markers-1):xmax)
+        thresholds = collect(xmin:((xmax-xmin)/(n_markers-1)):xmax)
         indices = [argmin(i -> abs(t - log10(x[i])), eachindex(x)) for t in thresholds]
     else
         indices = 1:Int(ceil(length(x) / n_markers)):n
@@ -385,7 +385,7 @@ function plot_sparsity(
 
             l = length(trajectory)
             if reduce_size && l > 1000
-                indices = Int.(round.(collect(1:l/1000:l)))
+                indices = Int.(round.(collect(1:(l/1000):l)))
                 trajectory = trajectory[indices]
             end
 
