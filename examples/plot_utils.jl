@@ -244,9 +244,13 @@ end
     z_order := 1
 end
 
-function plot_trajectories(
+function plot_grid(
     data,
-    label;
+    label::Vector{String},
+    x_indices::Vector{Int},
+    y_indices::Vector{Int},
+    x_labels::Vector{String},
+    y_labels::Vector{String};
     filename=nothing,
     xscalelog=false,
     yscalelog=true,
@@ -255,14 +259,9 @@ function plot_trajectories(
     marker_shapes=nothing,
     n_markers=10,
     reduce_size=false,
-    primal_offset=1e-8,
     line_width=1.3,
     empty_marker=false,
-    extra_y_plot=0,
-    extra_y_plot_label="",
-    extra_x_plot=0,
-    extra_x_plot_label="",
-    plot_title="",
+    offset=2,
 )
     # theme(:dark)
     # theme(:vibrant)
@@ -270,7 +269,6 @@ function plot_trajectories(
 
     x = []
     y = []
-    offset = 2
 
     function sub_plot(idx_x, idx_y; legend=false, xlabel="", ylabel="", y_offset=0)
 
@@ -279,13 +277,22 @@ function plot_trajectories(
         for (i, trajectory) in enumerate(data)
 
             l = length(trajectory)
+
             if reduce_size && l > 1000
-                indices = Int.(round.(collect(1:l/1000:l)))
+                if xscalelog
+                    xmin = log10(offset)
+                    xmax = log10(l)
+                    indices = Int.(round.(10.0 .^ (collect(xmin:((xmax-xmin)/1000):xmax))))
+                else
+                    indices = Int.(round.(collect(offset:(l/1000):l)))
+                end
                 trajectory = trajectory[indices]
+            else
+                trajectory = trajectory[offset:end]
             end
 
-            x = [trajectory[j][idx_x] for j in offset:length(trajectory)]
-            y = [trajectory[j][idx_y] + y_offset for j in offset:length(trajectory)]
+            x = [trajectory[j][idx_x] for j in eachindex(trajectory)]
+            y = [trajectory[j][idx_y] + y_offset for j in eachindex(trajectory)]
 
             if marker_shapes !== nothing && n_markers >= 2
                 marker_args = Dict(
@@ -324,39 +331,34 @@ function plot_trajectories(
         return fig
     end
 
-    plots = []
-    push!(plots, sub_plot(1, 2; legend=legend_position, ylabel="Primal", y_offset=primal_offset))
-    push!(plots, sub_plot(5, 2; y_offset=primal_offset))
-
-    if extra_x_plot != 0
-        push!(plots, sub_plot(extra_x_plot, 2))
-    end
-
-    push!(plots, sub_plot(1, 4; xlabel=(extra_y_plot == 0 ? "Iterations" : ""), ylabel="FW gap"))
-    push!(plots, sub_plot(5, 4; xlabel=(extra_y_plot == 0 ? "Time (s)" : "")))
-
-    if extra_x_plot != 0
-        push!(plots, sub_plot(extra_x_plot, 4; xlabel=(extra_y_plot == 0 ? extra_x_plot_label : "")))
-    end
-
-    if extra_y_plot != 0
-        push!(plots, sub_plot(1, extra_y_plot; ylabel=extra_y_plot_label, xlabel="Iterations"))
-        push!(plots, sub_plot(5, extra_y_plot; xlabel="Time (s)"))
-        if extra_x_plot != 0
-            push!(plots, sub_plot(extra_x_plot, extra_y_plot; ylabel=extra_y_plot_label, xlabel=extra_x_plot_label))
+    figs = []
+    for (j, idx_y) in enumerate(y_indices)
+        for (i, idx_x) in enumerate(x_indices)
+            fig = sub_plot(idx_x, idx_y;
+                legend=(i == 1 && j == 1 ? legend_position : nothing),  # Add legend to first plot of the grid
+                xlabel=(j==length(y_indices) ? x_labels[i] : ""),  # Add x_label to last plot of a column
+                ylabel=(i==1 ? y_labels[j] : ""))                  # Add y_label to first plot of a row
+            push!(figs, fig)
         end
     end
 
-    layout = (extra_y_plot == 0 ? 2 : 3, extra_x_plot == 0 ? 2 : 3)
-    size = (extra_x_plot == 0 ? 600 : 700, extra_y_plot == 0 ? 400 : 600)
+    size = (300 * length(y_indices), 200 * length(x_indices))
 
-    fp = plot(plots..., layout=layout, size=size, plot_title=plot_title)
+    fp = plot(figs..., layout=length(figs))
     plot!(size=size)
-
     if filename !== nothing
         savefig(fp, filename)
     end
     return fp
+
+end
+
+function plot_trajectories(
+    data,
+    label;
+    kwargs...
+)
+    plot_grid(data, label, [1, 5], [2, 4], ["Iterations", "Time (s)"], ["Primal", "FW gap"]; kwargs...)
 end
 
 function plot_sparsity(
