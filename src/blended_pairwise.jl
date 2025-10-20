@@ -409,6 +409,7 @@ function blended_pairwise_conditional_gradient(
                         step_type,
                     )
                     if callback(state, active_set) === false
+                        execution_status = STATUS_INTERRUPTED
                         break
                     end
                 end
