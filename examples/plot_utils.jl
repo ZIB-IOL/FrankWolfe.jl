@@ -383,9 +383,14 @@ function plot_sparsity(
 )
     Plots.gr()
 
-    xscale = xscalelog ? :log : :identity
+    if xscalelog
+        xscale = :log
+        offset = 1
+    else
+        xscale = :identity
+        offset = 2
+    end
     yscale = yscalelog ? :log : :identity
-    offset = 2
 
     function subplot(idx_x, idx_y, ylabel)
 
