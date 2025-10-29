@@ -251,6 +251,7 @@ function plot_grid(
     y_indices::Vector{Int},
     x_labels::Vector{String},
     y_labels::Vector{String};
+    size = (300 * length(x_indices), 200 * length(y_indices)),
     filename=nothing,
     xscalelog=false,
     yscalelog=true,
@@ -342,9 +343,9 @@ function plot_grid(
         end
     end
 
-    size = (300 * length(y_indices), 200 * length(x_indices))
+    l = grid(length(y_indices), length(x_indices), heights=fill(1/length(y_indices), length(y_indices)), widhts=fill(1/length(x_indices), length(x_indices)))
 
-    fp = plot(figs..., layout=length(figs))
+    fp = plot(figs..., layout=l)
     plot!(size=size)
     if filename !== nothing
         savefig(fp, filename)
@@ -356,9 +357,15 @@ end
 function plot_trajectories(
     data,
     label;
+    extra_plot=false,
+    extra_plot_label="",
     kwargs...
 )
-    plot_grid(data, label, [1, 5], [2, 4], ["Iterations", "Time (s)"], ["Primal", "FW gap"]; kwargs...)
+    if extra_plot
+        plot_grid(data, label, [1, 5], [2, 6, 4], ["Iterations", "Time (s)"], ["Primal", extra_plot_label, "FW gap"]; kwargs...)
+    else
+        plot_grid(data, label, [1, 5], [2, 4], ["Iterations", "Time (s)"], ["Primal", "FW gap"]; kwargs...)
+    end
 end
 
 function plot_sparsity(
