@@ -50,9 +50,9 @@ end
 
 ## other LMOs to try
 # lmo_big = FrankWolfe.KSparseLMO(100, big"1.0")
-# lmo = FrankWolfe.LpNormLMO{Float64,5}(100.0)
-# lmo = FrankWolfe.ProbabilitySimplexOracle(100.0);
-lmo = FrankWolfe.UnitSimplexOracle(10000.0);
+# lmo = FrankWolfe.LpNormBallLMO{Float64,5}(100.0)
+# lmo = FrankWolfe.ProbabilitySimplexLMO(100.0);
+lmo = FrankWolfe.UnitSimplexLMO(10000.0);
 
 x00 = FrankWolfe.compute_extreme_point(lmo, rand(n))
 
@@ -67,7 +67,7 @@ end
 trajectoryBPCG_standard = []
 callback = build_callback(trajectoryBPCG_standard)
 
-x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -88,7 +88,7 @@ active_set_quadratic_automatic = FrankWolfe.ActiveSetQuadraticLinearSolve(
     scheduler=FrankWolfe.LogScheduler(start_time=100, scaling_factor=1.2, max_interval=100),
 )
 trajectoryBPCG_quadratic_automatic = []
-x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -105,7 +105,7 @@ active_set_quadratic_automatic2 = FrankWolfe.ActiveSetQuadraticLinearSolve(
     scheduler=FrankWolfe.LogScheduler(start_time=10, scaling_factor=2),
 )
 trajectoryBPCG_quadratic_automatic2 = []
-x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -123,7 +123,7 @@ active_set_quadratic_automatic_standard = FrankWolfe.ActiveSetQuadraticLinearSol
     scheduler=FrankWolfe.LogScheduler(start_time=10, scaling_factor=2),
 )
 trajectoryBPCG_quadratic_automatic_standard = []
-x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,

@@ -42,9 +42,9 @@ end
 
 ## other LMOs to try
 # lmo_big = FrankWolfe.KSparseLMO(100, big"1.0")
-lmo = FrankWolfe.LpNormLMO{Float64,5}(1.0)
-# lmo = FrankWolfe.ProbabilitySimplexOracle(1.0);
-# lmo = FrankWolfe.UnitSimplexOracle(1.0);
+lmo = FrankWolfe.LpNormBallLMO{Float64,5}(1.0)
+# lmo = FrankWolfe.ProbabilitySimplexLMO(1.0);
+# lmo = FrankWolfe.UnitSimplexLMO(1.0);
 
 x00 = FrankWolfe.compute_extreme_point(lmo, rand(n))
 
@@ -57,7 +57,7 @@ end
 FrankWolfe.benchmark_oracles(f, grad!, () -> randn(n), lmo; k=100)
 
 trajectoryBPCG_standard = []
-@time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+@time x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -74,7 +74,7 @@ active_set_sparse = FrankWolfe.ActiveSetSparsifier(
     FrankWolfe.ActiveSet([1.0], [x00], similar(x00)),
     HiGHS.Optimizer(),
 )
-@time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+@time x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,

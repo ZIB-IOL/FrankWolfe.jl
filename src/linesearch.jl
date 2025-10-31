@@ -1,13 +1,14 @@
 
 """
+    LineSearchMethod
+
 Line search method to apply once the direction is computed.
 A `LineSearchMethod` must implement
 ```
 perform_line_search(ls::LineSearchMethod, t, f, grad!, gradient, x, d, gamma_max, workspace)
 ```
 with `d = x - v`.
-It may also implement `build_linesearch_workspace(x, gradient)` which creates a
-workspace structure that is passed as last argument to `perform_line_search`.
+It may also implement [`FrankWolfe.build_linesearch_workspace`](@ref).
 """
 abstract type LineSearchMethod end
 
@@ -21,6 +22,14 @@ Returns the step size `gamma` for step size strategy `ls`.
 """
 function perform_line_search end
 
+"""
+    build_linesearch_workspace(ls::LS, x, gradient)
+
+Optional method to implement for new line-search methods.
+Builds a workspace for the line search `ls` which will be used throughout an algorithm.
+A workspace may be any variable that will be passed along to `perform_line_search`,
+typically to avoid allocating intermediate structures (e.g., gradient evaluated at new points).
+"""
 build_linesearch_workspace(::LineSearchMethod, x, gradient) = nothing
 
 """
@@ -162,12 +171,12 @@ function perform_line_search(
     workspace,
     memory_mode,
 )
-    dd = fast_dot(d, d)
+    dd = dot(d, d)
     if dd <= eps(float(dd))
         return dd
     end
 
-    return min(max(fast_dot(gradient, d) * inv(line_search.L * dd), 0), gamma_max)
+    return min(max(dot(gradient, d) * inv(line_search.L * dd), 0), gamma_max)
 end
 
 Base.print(io::IO, ::Shortstep) = print(io, "Shortstep")
@@ -246,9 +255,9 @@ function perform_line_search(
     @. workspace.y = x - gamma_max * d
     @. workspace.left = x
     @. workspace.right = workspace.y
-    dgx = fast_dot(d, gradient)
+    dgx = dot(d, gradient)
     grad!(workspace.gradient, workspace.y)
-    dgy = fast_dot(d, workspace.gradient)
+    dgy = dot(d, workspace.gradient)
 
     # if the minimum is at an endpoint
     if dgx * dgy >= 0
@@ -324,7 +333,7 @@ function perform_line_search(
     gamma = gamma_max * one(line_search.tau)
     i = 0
 
-    dot_gdir = fast_dot(gradient, d)
+    dot_gdir = dot(gradient, d)
     if dot_gdir ≤ 0
         @warn "Non-improving"
         return zero(gamma)
@@ -383,11 +392,17 @@ function Secant(limit_num_steps, tol)
     return Secant(Adaptive(), false, limit_num_steps, tol, x -> true)
 end
 
-function Secant(;inner_ls=Adaptive(), safe=false, limit_num_steps=40, tol=1e-8, domain_oracle=(x -> true))
+function Secant(;
+    inner_ls=Adaptive(),
+    safe=false,
+    limit_num_steps=40,
+    tol=1e-8,
+    domain_oracle=(x -> true),
+)
     return Secant(inner_ls, safe, limit_num_steps, tol, domain_oracle)
 end
 
-mutable struct SecantWorkspace{XT,GT, IWS}
+mutable struct SecantWorkspace{XT,GT,IWS}
     inner_ws::IWS
     x::XT
     gradient::GT
@@ -426,6 +441,9 @@ function perform_line_search(
     i = 1
     gamma_prev = zero(best_gamma)
     clamping = false
+    if dot_gdir <= line_search.tol
+        return zero(gamma)
+    end
     while abs(dot_gdir) > line_search.tol
         if i > line_search.limit_num_steps
             workspace.last_gamma = best_gamma  # Update last_gamma before returning
@@ -433,7 +451,7 @@ function perform_line_search(
         end
 
         grad!(grad_storage, storage)
-        dot_gdir_new = fast_dot(grad_storage, d)
+        dot_gdir_new = dot(grad_storage, d)
 
         if dot_gdir_new ≈ dot_gdir
             clamping = true
@@ -515,8 +533,17 @@ mutable struct AdaptiveZerothOrder{T,TT,F} <: LineSearchMethod
     domain_oracle::F
 end
 
-AdaptiveZerothOrder(eta::T, tau::TT; domain_oracle=x->true) where {T,TT} =
-    AdaptiveZerothOrder{T,TT, typeof(domain_oracle)}(eta, tau, T(Inf), T(1e10), T(0.5), true, false, domain_oracle)
+AdaptiveZerothOrder(eta::T, tau::TT; domain_oracle=x -> true) where {T,TT} =
+    AdaptiveZerothOrder{T,TT,typeof(domain_oracle)}(
+        eta,
+        tau,
+        T(Inf),
+        T(1e10),
+        T(0.5),
+        true,
+        false,
+        domain_oracle,
+    )
 
 AdaptiveZerothOrder(;
     eta=0.9,
@@ -526,8 +553,17 @@ AdaptiveZerothOrder(;
     alpha=0.5,
     verbose=true,
     relaxed_smoothness=false,
-    domain_oracle=x->true,
-) = AdaptiveZerothOrder(eta, tau, L_est, max_estimate, alpha, verbose, relaxed_smoothness, domain_oracle)
+    domain_oracle=x -> true,
+) = AdaptiveZerothOrder(
+    eta,
+    tau,
+    L_est,
+    max_estimate,
+    alpha,
+    verbose,
+    relaxed_smoothness,
+    domain_oracle,
+)
 
 struct AdaptiveZerothOrderWorkspace{XT,BT}
     x::XT
@@ -569,7 +605,7 @@ function perform_line_search(
     end
     gamma_max = gamma
 
-    
+
     x_storage = storage.x
     if !isfinite(line_search.L_est)
         epsilon_step = min(1e-3, gamma_max)
@@ -594,8 +630,7 @@ function perform_line_search(
         # Additional smoothness condition
         if line_search.relaxed_smoothness
             grad!(gradient_storage, x_storage)
-            if fast_dot(gradient, d) - fast_dot(gradient_storage, d) <=
-               γ * M * ndir2 + eps(float(γ))
+            if dot(gradient, d) - dot(gradient_storage, d) <= γ * M * ndir2 + eps(float(γ))
                 break
             end
         end
@@ -647,13 +682,13 @@ Base.print(io::IO, ::AdaptiveZerothOrder) = print(io, "AdaptiveZerothOrder")
 
 function _upgrade_accuracy_adaptive(gradient, direction, storage, ::Val{true})
     direction_big = big.(direction)
-    dot_dir = fast_dot(big.(gradient), direction_big)
+    dot_dir = dot(big.(gradient), direction_big)
     ndir2 = norm(direction_big)^2
     return (dot_dir, ndir2, storage.xbig)
 end
 
 function _upgrade_accuracy_adaptive(gradient, direction, storage, ::Val{false})
-    dot_dir = fast_dot(gradient, direction)
+    dot_dir = dot(gradient, direction)
     ndir2 = norm(direction)^2
     return (dot_dir, ndir2, storage.x)
 end
@@ -675,11 +710,18 @@ mutable struct Adaptive{T,TT,F} <: LineSearchMethod
     domain_oracle::F
 end
 
-Adaptive(eta::T, tau::TT; domain_oracle=x->true) where {T,TT} =
-    Adaptive{T,TT, typeof(domain_oracle)}(eta, tau, T(Inf), T(1e10), true, false, domain_oracle)
+Adaptive(eta::T, tau::TT; domain_oracle=x -> true) where {T,TT} =
+    Adaptive{T,TT,typeof(domain_oracle)}(eta, tau, T(Inf), T(1e10), true, false, domain_oracle)
 
-Adaptive(; eta=0.9, tau=2, L_est=Inf, max_estimate=1e10, verbose=true, relaxed_smoothness=false, domain_oracle=x->true) =
-    Adaptive(eta, tau, L_est, max_estimate, verbose, relaxed_smoothness, domain_oracle)
+Adaptive(;
+    eta=0.9,
+    tau=2,
+    L_est=Inf,
+    max_estimate=1e10,
+    verbose=true,
+    relaxed_smoothness=false,
+    domain_oracle=x -> true,
+) = Adaptive(eta, tau, L_est, max_estimate, verbose, relaxed_smoothness, domain_oracle)
 
 struct AdaptiveWorkspace{XT,BT}
     x::XT
@@ -710,7 +752,7 @@ function perform_line_search(
             return zero(promote_type(eltype(d), eltype(gradient)))
         end
     end
-    
+
     # Deal with not trivial domain
     x_storage = similar(x)
     gamma = gamma_max
@@ -740,7 +782,7 @@ function perform_line_search(
     f_x = f(x)
 
     grad!(gradient_storage, x_storage)
-    while f(x_storage) > f_x || 0 > fast_dot(gradient_storage, d) && γ ≥ 100 * eps(float(γ))
+    while f(x_storage) > f_x || 0 > dot(gradient_storage, d) && γ ≥ 100 * eps(float(γ))
         M *= line_search.tau
         γ = min(max(dot_dir / (M * ndir2), 0), gamma_max)
         x_storage = muladd_memory_mode(memory_mode, x_storage, x, γ, d)
@@ -803,8 +845,6 @@ end
 MonotonicStepSize(f::F) where {F<:Function} = MonotonicStepSize{F}(f, 0)
 MonotonicStepSize() = MonotonicStepSize(x -> true, 0)
 
-@deprecate MonotonousStepSize(args...) MonotonicStepSize(args...) false
-
 Base.print(io::IO, ::MonotonicStepSize) = print(io, "MonotonicStepSize")
 
 function perform_line_search(
@@ -844,8 +884,6 @@ end
 
 MonotonicNonConvexStepSize(f::F) where {F<:Function} = MonotonicNonConvexStepSize{F}(f, 0)
 MonotonicNonConvexStepSize() = MonotonicNonConvexStepSize(x -> true, 0)
-
-@deprecate MonotonousNonConvexStepSize(args...) MonotonicNonConvexStepSize(args...) false
 
 Base.print(io::IO, ::MonotonicNonConvexStepSize) = print(io, "MonotonicNonConvexStepSize")
 

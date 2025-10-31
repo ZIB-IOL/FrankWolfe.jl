@@ -1,12 +1,18 @@
 
 """
-    pairwise_frank_wolfe(f, grad!, lmo, x0; ...)
+    pairwise_frank_wolfe(f, grad!, lmo, x0; kwargs...)
 
 Frank-Wolfe with pairwise steps.
 The algorithm maintains the current iterate as a convex combination of vertices in the
 [`FrankWolfe.ActiveSet`](@ref) data structure.
 See [M. Besançon, A. Carderera and S. Pokutta 2021](https://arxiv.org/abs/2104.06675) for illustrations of away steps. 
 Unlike away-step, it transfers weight from an away vertex to another vertex.
+
+$COMMON_ARGS
+
+$COMMON_KWARGS
+
+$RETURN_ACTIVESET
 """
 function pairwise_frank_wolfe(
     f,
@@ -34,6 +40,7 @@ function pairwise_frank_wolfe(
     use_extra_vertex_storage=false,
     linesearch_workspace=nothing,
     recompute_last_vertex=true,
+    d_container=nothing,
 )
     # add the first vertex to active set from initialization
     active_set = ActiveSet([(1.0, x0)])
@@ -65,6 +72,7 @@ function pairwise_frank_wolfe(
         use_extra_vertex_storage=use_extra_vertex_storage,
         linesearch_workspace=linesearch_workspace,
         recompute_last_vertex=recompute_last_vertex,
+        d_container=d_container,
     )
 end
 
@@ -75,7 +83,7 @@ function pairwise_frank_wolfe(
     grad!,
     lmo,
     active_set::AbstractActiveSet{AT,R};
-    line_search::LineSearchMethod=Adaptive(),
+    line_search::LineSearchMethod=Secant(),
     sparsity_control=2.0,
     epsilon=1e-7,
     lazy=false,
@@ -96,6 +104,7 @@ function pairwise_frank_wolfe(
     use_extra_vertex_storage=false,
     linesearch_workspace=nothing,
     recompute_last_vertex=true,
+    d_container=nothing,
 ) where {AT,R}
     # format string for output of the algorithm
     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
@@ -133,7 +142,7 @@ function pairwise_frank_wolfe(
 
     time_start = time_ns()
 
-    d = similar(x)
+    d = d_container !== nothing ? d_container : similar(x)
 
     if gradient === nothing
         gradient = collect(x)
@@ -152,7 +161,7 @@ function pairwise_frank_wolfe(
         )
         grad_type = typeof(gradient)
         println(
-            "GRADIENTTYPE: $grad_type LAZY: $lazy sparsity_control: $sparsity_control MOMENTUM: $momentum",
+            "GRADIENT_TYPE: $grad_type LAZY: $lazy sparsity_control: $sparsity_control MOMENTUM: $momentum",
         )
         println("LMO: $(typeof(lmo))")
         if (use_extra_vertex_storage || add_dropped_vertices) && extra_vertex_storage === nothing
@@ -167,6 +176,7 @@ function pairwise_frank_wolfe(
     v = active_set.atoms[1]
     phi_value = convert(eltype(x), Inf)
     gamma = one(phi_value)
+    execution_status = STATUS_RUNNING
 
     if linesearch_workspace === nothing
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
@@ -177,7 +187,7 @@ function pairwise_frank_wolfe(
 
     while t <= max_iteration && phi_value >= max(eps(float(typeof(phi_value))), epsilon)
         #####################
-        # managing time and Ctrl-C
+        # time management
         #####################
         time_at_loop = time_ns()
         if t == 0
@@ -191,6 +201,7 @@ function pairwise_frank_wolfe(
                 if verbose
                     @info "Time limit reached"
                 end
+                execution_status = STATUS_TIMEOUT
                 break
             end
         end
@@ -252,28 +263,19 @@ function pairwise_frank_wolfe(
 
             gamma = min(gamma_max, gamma)
 
-            # away update
-            active_set_update!(
+            # pairwise update
+            active_set_update_pairwise!(
                 active_set,
-                -gamma,
-                away_vertex,
-                false,
+                gamma,
+                gamma_max,
+                fw_index,
                 away_index,
-                add_dropped_vertices=use_extra_vertex_storage,
-                vertex_storage=extra_vertex_storage,
+                fw_vertex,
+                away_vertex,
+                use_extra_vertex_storage,
+                extra_vertex_storage,
             )
-            if add_dropped_vertices && gamma ≈ gamma_max
-                for vtx in active_set.atoms
-                    if vtx != v
-                        push!(extra_vertex_storage, vtx)
-                    end
-                end
-            end
-            # fw update
-            active_set_update!(active_set, gamma, fw_vertex, true, fw_index)
         end
-        # println(active_set.weights)
-        # println([atom[1] for atom in active_set.atoms])
 
         if callback !== nothing
             state = CallbackState(
@@ -293,6 +295,7 @@ function pairwise_frank_wolfe(
                 step_type,
             )
             if callback(state, active_set) === false
+                execution_status = STATUS_INTERRUPTED
                 break
             end
         end
@@ -312,6 +315,16 @@ function pairwise_frank_wolfe(
         end
     end
 
+    if phi_value < max(epsilon, eps(float(typeof(phi_value))))
+        execution_status = STATUS_OPTIMAL
+    elseif t >= max_iteration
+        execution_status = STATUS_MAXITER
+    end
+    if execution_status === STATUS_RUNNING
+        @warn "Status not set"
+        execution_status = STATUS_OPTIMAL
+    end
+
     # recompute everything once more for final verfication / do not record to trajectory though for now!
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
     # hence the final computation.
@@ -321,7 +334,7 @@ function pairwise_frank_wolfe(
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
-    dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
+    dual_gap = dot(gradient, x) - dot(gradient, v)
     dual_gap = min(phi_value, dual_gap)
     step_type = ST_LAST
     tot_time = (time_ns() - time_start) / 1e9
@@ -357,7 +370,7 @@ function pairwise_frank_wolfe(
     if recompute_last_vertex
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
-        dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
+        dual_gap = dot(gradient, x) - dot(gradient, v)
     end
     step_type = ST_POSTPROCESS
     tot_time = (time_ns() - time_start) / 1e9
@@ -381,7 +394,15 @@ function pairwise_frank_wolfe(
         callback(state, active_set)
     end
 
-    return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data, active_set=active_set)
+    return (
+        x=x,
+        v=v,
+        primal=primal,
+        dual_gap=dual_gap,
+        status=execution_status,
+        traj_data=traj_data,
+        active_set=active_set,
+    )
 end
 
 function lazy_pfw_step(
@@ -389,7 +410,7 @@ function lazy_pfw_step(
     gradient,
     lmo,
     active_set,
-    phi,
+    phi_value,
     epsilon,
     d;
     use_extra_vertex_storage=false,
@@ -403,13 +424,13 @@ function lazy_pfw_step(
     gamma_max = a_lambda
     away_index = a_local_loc
     fw_index = nothing
-    grad_dot_x = fast_dot(x, gradient)
-    grad_dot_a_local = fast_dot(a_local, gradient)
+    grad_dot_x = dot(gradient, x)
+    grad_dot_a_local = dot(gradient, a_local)
 
     # Do lazy pairwise step
-    grad_dot_lazy_fw_vertex = fast_dot(v_local, gradient)
+    grad_dot_lazy_fw_vertex = dot(gradient, v_local)
 
-    if grad_dot_a_local - grad_dot_lazy_fw_vertex >= phi / sparsity_control &&
+    if grad_dot_a_local - grad_dot_lazy_fw_vertex >= phi_value / sparsity_control &&
        grad_dot_a_local - grad_dot_lazy_fw_vertex >= epsilon
         step_type = ST_LAZY
         v = v_local
@@ -418,7 +439,7 @@ function lazy_pfw_step(
     else
         # optionally: try vertex storage
         if use_extra_vertex_storage
-            lazy_threshold = fast_dot(gradient, a_local) - phi / sparsity_control
+            lazy_threshold = dot(gradient, a_local) - phi_value / sparsity_control
             (found_better_vertex, new_forward_vertex) =
                 storage_find_argmin_vertex(extra_vertex_storage, gradient, lazy_threshold)
             if found_better_vertex
@@ -435,17 +456,17 @@ function lazy_pfw_step(
         end
 
         # Real dual gap promises enough progress.
-        grad_dot_fw_vertex = fast_dot(v, gradient)
+        grad_dot_fw_vertex = dot(gradient, v)
         dual_gap = grad_dot_x - grad_dot_fw_vertex
-        if dual_gap >= phi / sparsity_control
+        if dual_gap >= phi_value / sparsity_control
             d = muladd_memory_mode(memory_mode, d, a_local, v)
             #Lower our expectation for progress.
         else
             step_type = ST_DUALSTEP
-            phi = min(dual_gap, phi / 2.0)
+            phi_value = min(dual_gap, phi_value / 2)
         end
     end
-    return d, v, fw_index, a_local, away_index, gamma_max, phi, step_type
+    return d, v, fw_index, a_local, away_index, gamma_max, phi_value, step_type
 end
 
 
@@ -468,8 +489,8 @@ function pfw_step(
     v = compute_extreme_point(lmo, gradient)
     fw_vertex = v
     fw_index = nothing
-    grad_dot_x = fast_dot(x, gradient)
-    dual_gap = grad_dot_x - fast_dot(v, gradient)
+    grad_dot_x = dot(gradient, x)
+    dual_gap = grad_dot_x - dot(gradient, v)
     d = muladd_memory_mode(memory_mode, d, a_local, v)
     return d, fw_vertex, fw_index, away_vertex, away_index, gamma_max, dual_gap, step_type
 end

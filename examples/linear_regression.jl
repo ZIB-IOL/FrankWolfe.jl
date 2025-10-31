@@ -15,16 +15,16 @@ include("../examples/plot_utils.jl")
 
 function simple_reg_loss(θ, data_point)
     (xi, yi) = data_point
-    (a, b) = (θ[1:end-1], θ[end])
+    (a, b) = (θ[1:(end-1)], θ[end])
     pred = a ⋅ xi + b
     return (pred - yi)^2 / 2
 end
 
 function ∇simple_reg_loss(storage, θ, data_point)
     (xi, yi) = data_point
-    (a, b) = (θ[1:end-1], θ[end])
+    (a, b) = (θ[1:(end-1)], θ[end])
     pred = a ⋅ xi + b
-    @. storage[1:end-1] += xi * (pred - yi)
+    @. storage[1:(end-1)] += xi * (pred - yi)
     storage[end] += pred - yi
     return storage
 end
@@ -87,13 +87,13 @@ end
 # Stochastic Frank Wolfe version
 # We constrain the argument in the L2-norm ball with a large-enough radius
 
-lmo = FrankWolfe.LpNormLMO{2}(1.05 * norm(params_perfect))
+lmo = FrankWolfe.LpNormBallLMO{2}(1.05 * norm(params_perfect))
 
 params0 = rand(6) .- 1 # start params in (-1,0)
 
 k = 10000
 
-@time x, v, primal, dual_gap, trajectoryS = FrankWolfe.stochastic_frank_wolfe(
+@time x, v, primal, dual_gap, status, trajectoryS = FrankWolfe.stochastic_frank_wolfe(
     f_stoch_noisy,
     lmo,
     copy(params0),
@@ -106,7 +106,7 @@ k = 10000
     trajectory=true,
 )
 
-@time x, v, primal, dual_gap, trajectory09 = FrankWolfe.stochastic_frank_wolfe(
+@time x, v, primal, dual_gap, status, trajectory09 = FrankWolfe.stochastic_frank_wolfe(
     f_stoch_noisy,
     lmo,
     copy(params0),
@@ -120,7 +120,7 @@ k = 10000
     trajectory=true,
 )
 
-@time x, v, primal, dual_gap, trajectory099 = FrankWolfe.stochastic_frank_wolfe(
+@time x, v, primal, dual_gap, status, trajectory099 = FrankWolfe.stochastic_frank_wolfe(
     f_stoch_noisy,
     lmo,
     copy(params0),
@@ -143,7 +143,7 @@ function gradf(storage, x)
     end
 end
 
-@time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+@time x, v, primal, dual_gap, status, trajectory = FrankWolfe.frank_wolfe(
     ff,
     gradf,
     lmo,

@@ -1,3 +1,24 @@
+# Noteworthy changes in v0.6
+
+- The function `FrankWolfe.update_iterate` was renamed to `FrankWolfe.update_block_iterate` to be more specific about it belonging to the block coordinate interface and avoid confusion.
+- A `status` field was added to the named tuple return of all algorithms, corresponding to a `FrankWolfe.ExecutionStatus` enum value indicating why the algorithm stopped.
+- The internal function `fast_dot(a, b)` was removed, now that the fast implementation of sparse dot products was added to `SparseArrays`. The quadratic form `fast_dot(a, Q, b)` still exists.
+- The deprecated `MonotonousStepSize` was removed.
+- Some features for which we do not want to commit to SemVer non-breaking rules were moved to an `Experimental` submodule.
+- The following oracle types have been renamed for consistency:
+    - CachedLinearMinimizationOracle -> CachedLMO
+    - ConvexHullOracle -> ConvexHullLMO
+    - HyperSimplexOracle -> HyperSimplexLMO
+    - LpNormLMO -> LpNormBallLMO
+    - NuclearNormLMO -> NuclearNormBallLMO
+    - OrderWeightNormLMO -> OrderWeightNormBallLMO
+    - ProbabilitySimplexOracle -> ProbabilitySimplexLMO
+    - ScaledBoundL1NormBall -> DiamondLMO
+    - ScaledBoundLInfNormBall -> BoxLMO
+    - UnitHyperSimplexOracle -> UnitHyperSimplexLMO
+    - UnitSimplexOracle -> UnitSimplexLMO
+    - ZeroOneHypercube -> ZeroOneHypercubeLMO
+
 # Noteworthy changes from v0.4 to v0.5
 
 - change keyword argument `lazy_tolerance` to `sparsity_control` in all algorithms except `away_frank_wolfe` [PR556](https://github.com/ZIB-IOL/FrankWolfe.jl/pull/556)

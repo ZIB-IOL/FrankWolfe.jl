@@ -1,21 +1,21 @@
 import Arpack
 
 """
-    LpNormLMO{T, p}(right_hand_side)
+    LpNormBallLMO{T, p}(right_hand_side)
 
 LMO with feasible set being an L-p norm ball:
 ```
 C = {x ∈ R^n, norm(x, p) ≤ right_hand_side}
 ```
 """
-struct LpNormLMO{T,p} <: LinearMinimizationOracle
+struct LpNormBallLMO{T,p} <: LinearMinimizationOracle
     right_hand_side::T
 end
 
-LpNormLMO{p}(right_hand_side::T) where {T,p} = LpNormLMO{T,p}(right_hand_side)
+LpNormBallLMO{p}(right_hand_side::T) where {T,p} = LpNormBallLMO{T,p}(right_hand_side)
 
 function compute_extreme_point(
-    lmo::LpNormLMO{T,2},
+    lmo::LpNormBallLMO{T,2},
     direction;
     v=similar(direction),
     kwargs...,
@@ -32,7 +32,7 @@ function compute_extreme_point(
 end
 
 function compute_extreme_point(
-    lmo::LpNormLMO{T,Inf},
+    lmo::LpNormBallLMO{T,Inf},
     direction;
     v=similar(direction),
     kwargs...,
@@ -43,7 +43,7 @@ function compute_extreme_point(
     return v
 end
 
-function compute_extreme_point(lmo::LpNormLMO{T,1}, direction; v=nothing, kwargs...) where {T}
+function compute_extreme_point(lmo::LpNormBallLMO{T,1}, direction; v=nothing, kwargs...) where {T}
     idx = 0
     v = -one(eltype(direction))
     for i in eachindex(direction)
@@ -60,17 +60,17 @@ function compute_extreme_point(lmo::LpNormLMO{T,1}, direction; v=nothing, kwargs
 end
 
 function compute_extreme_point(
-    lmo::LpNormLMO{T,p},
+    lmo::LpNormBallLMO{T,p},
     direction;
     v=similar(direction),
     kwargs...,
 ) where {T,p}
     # covers the case where the Inf or 1 is of another type
     if p == Inf
-        v = compute_extreme_point(LpNormLMO{T,Inf}(lmo.right_hand_side), direction, v=v)
+        v = compute_extreme_point(LpNormBallLMO{T,Inf}(lmo.right_hand_side), direction, v=v)
         return v
     elseif p == 1
-        v = compute_extreme_point(LpNormLMO{T,1}(lmo.right_hand_side), direction)
+        v = compute_extreme_point(LpNormBallLMO{T,1}(lmo.right_hand_side), direction)
         return v
     end
     q = p / (p - 1)
@@ -137,188 +137,6 @@ function compute_extreme_point(
 end
 
 """
-    NuclearNormLMO{T}(radius)
-
-LMO over matrices that have a nuclear norm less than `radius`.
-The LMO returns the best rank-one approximation matrix with singular value `radius`, computed with Arpack.
-"""
-struct NuclearNormLMO{T} <: LinearMinimizationOracle
-    radius::T
-end
-
-NuclearNormLMO{T}() where {T} = NuclearNormLMO{T}(one(T))
-NuclearNormLMO() = NuclearNormLMO(1.0)
-
-function compute_extreme_point(
-    lmo::NuclearNormLMO{TL},
-    direction::AbstractMatrix{TD};
-    tol=1e-8,
-    kwargs...,
-) where {TL,TD}
-    T = promote_type(TD, TL)
-    Z = Arpack.svds(direction, nsv=1, tol=tol)[1]
-    u = -lmo.radius * view(Z.U, :)
-    return RankOneMatrix(u::Vector{T}, Z.V[:]::Vector{T})
-end
-
-function convert_mathopt(
-    lmo::NuclearNormLMO,
-    optimizer::OT;
-    row_dimension::Integer,
-    col_dimension::Integer,
-    use_modify=true::Bool,
-    kwargs...,
-) where {OT}
-    MOI.empty!(optimizer)
-    x = MOI.add_variables(optimizer, row_dimension * col_dimension)
-    (t, _) = MOI.add_constrained_variable(optimizer, MOI.LessThan(lmo.radius))
-    MOI.add_constraint(optimizer, [t; x], MOI.NormNuclearCone(row_dimension, col_dimension))
-    return MathOptLMO(optimizer, use_modify)
-end
-
-"""
-    SpectraplexLMO{T,M}(radius::T,gradient_container::M,ensure_symmetry::Bool=true)
-
-Feasible set
-```
-{X ∈ 𝕊_n^+, trace(X) == radius}
-```
-`gradient_container` is used to store the symmetrized negative direction.
-`ensure_symmetry` indicates whether the linear function is made symmetric before computing the eigenvector.
-"""
-struct SpectraplexLMO{T,M} <: LinearMinimizationOracle
-    radius::T
-    gradient_container::M
-    ensure_symmetry::Bool
-    maxiters::Int
-end
-
-function SpectraplexLMO(
-    radius::T,
-    side_dimension::Int,
-    ensure_symmetry::Bool=true,
-    maxiters::Int=500,
-) where {T}
-    return SpectraplexLMO(
-        radius,
-        Matrix{T}(undef, side_dimension, side_dimension),
-        ensure_symmetry,
-        maxiters,
-    )
-end
-
-function SpectraplexLMO(
-    radius::Integer,
-    side_dimension::Int,
-    ensure_symmetry::Bool=true,
-    maxiters::Int=500,
-)
-    return SpectraplexLMO(float(radius), side_dimension, ensure_symmetry, maxiters)
-end
-
-function compute_extreme_point(
-    lmo::SpectraplexLMO{T},
-    direction::M;
-    v=nothing,
-    kwargs...,
-) where {T,M<:AbstractMatrix}
-    lmo.gradient_container .= direction
-    if !(M <: Union{LinearAlgebra.Symmetric,LinearAlgebra.Diagonal,LinearAlgebra.UniformScaling}) &&
-       lmo.ensure_symmetry
-        # make gradient symmetric
-        @. lmo.gradient_container += direction'
-    end
-    lmo.gradient_container .*= -1
-
-    _, evec = Arpack.eigs(lmo.gradient_container; nev=1, which=:LR, maxiter=lmo.maxiters)
-    # type annotation because of Arpack instability
-    unit_vec::Vector{T} = vec(evec)
-    # scaling by sqrt(radius) so that x x^T has spectral norm radius while using a single vector
-    unit_vec .*= sqrt(lmo.radius)
-    return FrankWolfe.RankOneMatrix(unit_vec, unit_vec)
-end
-
-"""
-    UnitSpectrahedronLMO{T,M}(radius::T, gradient_container::M)
-
-Feasible set of PSD matrices with bounded trace:
-```
-{X ∈ 𝕊_n^+, trace(X) ≤ radius}
-```
-`gradient_container` is used to store the symmetrized negative direction.
-`ensure_symmetry` indicates whether the linear function is made symmetric before computing the eigenvector.
-"""
-struct UnitSpectrahedronLMO{T,M} <: LinearMinimizationOracle
-    radius::T
-    gradient_container::M
-    ensure_symmetry::Bool
-end
-
-function UnitSpectrahedronLMO(radius::T, side_dimension::Int, ensure_symmetry::Bool=true) where {T}
-    return UnitSpectrahedronLMO(
-        radius,
-        Matrix{T}(undef, side_dimension, side_dimension),
-        ensure_symmetry,
-    )
-end
-
-UnitSpectrahedronLMO(radius::Integer, side_dimension::Int) =
-    UnitSpectrahedronLMO(float(radius), side_dimension)
-
-function compute_extreme_point(
-    lmo::UnitSpectrahedronLMO{T},
-    direction::M;
-    v=nothing,
-    maxiters=500,
-    kwargs...,
-) where {T,M<:AbstractMatrix}
-    lmo.gradient_container .= direction
-    if !(M <: Union{LinearAlgebra.Symmetric,LinearAlgebra.Diagonal,LinearAlgebra.UniformScaling}) &&
-       lmo.ensure_symmetry
-        # make gradient symmetric
-        @. lmo.gradient_container += direction'
-    end
-    lmo.gradient_container .*= -1
-
-    e_val::Vector{T}, evec::Matrix{T} =
-        Arpack.eigs(lmo.gradient_container; nev=1, which=:LR, maxiter=maxiters)
-    # type annotation because of Arpack instability
-    unit_vec::Vector{T} = vec(evec)
-    if e_val[1] < 0
-        # return a zero rank-one matrix
-        unit_vec .*= 0
-    else
-        # scaling by sqrt(radius) so that x x^T has spectral norm radius while using a single vector
-        unit_vec .*= sqrt(lmo.radius)
-    end
-    return FrankWolfe.RankOneMatrix(unit_vec, unit_vec)
-end
-
-function convert_mathopt(
-    lmo::Union{SpectraplexLMO{T},UnitSpectrahedronLMO{T}},
-    optimizer::OT;
-    side_dimension::Integer,
-    use_modify::Bool=true,
-    kwargs...,
-) where {T,OT}
-    MOI.empty!(optimizer)
-    X = MOI.add_variables(optimizer, side_dimension * side_dimension)
-    MOI.add_constraint(optimizer, X, MOI.PositiveSemidefiniteConeSquare(side_dimension))
-    sum_diag_terms = MOI.ScalarAffineFunction{T}([], zero(T))
-    # collect diagonal terms of the matrix
-    for i in 1:side_dimension
-        push!(sum_diag_terms.terms, MOI.ScalarAffineTerm(one(T), X[i+side_dimension*(i-1)]))
-    end
-    constraint_set = if lmo isa SpectraplexLMO
-        MOI.EqualTo(lmo.radius)
-    else
-        MOI.LessThan(lmo.radius)
-    end
-    MOI.add_constraint(optimizer, sum_diag_terms, constraint_set)
-    return MathOptLMO(optimizer, use_modify)
-end
-
-"""
     EllipsoidLMO(A, c, r)
 
 Linear minimization over an ellipsoid centered at `c` of radius `r`:
@@ -363,7 +181,7 @@ end
 
 
 """
-    OrderWeightNormLMO(weights,radius)
+    OrderWeightNormBallLMO(weights,radius)
     
 LMO with feasible set being the atomic ordered weighted l1 norm: https://arxiv.org/pdf/1409.4271
 
@@ -372,27 +190,27 @@ C = {x ∈ R^n, Ω_w(x) ≤ R}
 ```
 The weights are assumed to be positive.
 """
-struct OrderWeightNormLMO{R,B,D} <: LinearMinimizationOracle
+struct OrderWeightNormBallLMO{R,B,D} <: LinearMinimizationOracle
     radius::R
     mat_B::B
     direction_abs::D
 end
 
-function OrderWeightNormLMO(weights, radius)
+function OrderWeightNormBallLMO(weights, radius)
     N = length(weights)
     s = zero(eltype(weights))
-    B = zeros(float(typeof(s)),N)
-    w_sort = sort(weights,rev=true)
+    B = zeros(float(typeof(s)), N)
+    w_sort = sort(weights, rev=true)
     for i in 1:N
         s += w_sort[i]
-        B[i] = 1/s
+        B[i] = 1 / s
     end
     w_sort = similar(weights)
-    return OrderWeightNormLMO(radius,B,w_sort)
+    return OrderWeightNormBallLMO(radius, B, w_sort)
 end
 
 function compute_extreme_point(
-    lmo::OrderWeightNormLMO,
+    lmo::OrderWeightNormBallLMO,
     direction::M;
     v=nothing,
     kwargs...,
@@ -407,14 +225,14 @@ function compute_extreme_point(
     for i in 1:N
         scal = zero(eltype(lmo.direction_abs[1]))
         for k in 1:i
-            scal += lmo.mat_B[i] * lmo.direction_abs[perm_grad][k]
+            scal += lmo.mat_B[i] * lmo.direction_abs[perm_grad[k]]
         end
         if scal > scal_max
             scal_max = scal
             ind_max = i
         end
     end
-    
+
     v = lmo.radius .* (2 * signbit.(direction) .- 1)
     unsort_perm = sortperm(perm_grad)
     for i in 1:N

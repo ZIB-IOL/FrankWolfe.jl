@@ -1,13 +1,29 @@
 
 
 """
+    MemoryEmphasis
+
 Emphasis given to the algorithm for memory-saving or not.
-The default memory-saving mode may be slower than
-OutplaceEmphasis mode for small dimensions.
+
+Concrete subtypes:
+
+- [`InplaceMemoryEmphasis`](@ref) (the default, meant to save memory)
+- [`OutplaceMemoryEmphasis`](@ref) (may be faster for small dimensions)
 """
 abstract type MemoryEmphasis end
 
+"""
+    InplaceEmphasis
+
+In-place version of [`MemoryEmphasis`](@ref).
+"""
 struct InplaceEmphasis <: MemoryEmphasis end
+
+"""
+    OutplaceEmphasis
+
+Out-of-place version of [`MemoryEmphasis`](@ref).
+"""
 struct OutplaceEmphasis <: MemoryEmphasis end
 
 @enum StepType begin
@@ -20,6 +36,7 @@ struct OutplaceEmphasis <: MemoryEmphasis end
     ST_PAIRWISE = 7
     ST_DROP = 8
     ST_SIMPLEXDESCENT = 101
+    ST_DCA_OUTER = 201
     ST_LAST = 1000
     ST_POSTPROCESS = 1001
 end
@@ -34,12 +51,32 @@ const steptype_string = (
     ST_PAIRWISE="P",
     ST_DROP="D",
     ST_SIMPLEXDESCENT="SD",
+    ST_DCA_OUTER="DCA",
     ST_LAST="Last",
     ST_POSTPROCESS="PP",
 )
 
 """
+    CallbackState
+
 Main structure created before and passed to the callback in first position.
+
+# Fields
+
+- `t`
+- `primal`
+- `dual`
+- `dual_gap`
+- `time`
+- `x`
+- `v`
+- `d`
+- `gamma`
+- `f`
+- `grad!`
+- `lmo`
+- `gradient`
+- `step_type`
 """
 struct CallbackState{TP,TDV,TDG,XT,VT,DT,TG,FT,GFT,LMO,GT}
     t::Int
@@ -58,6 +95,31 @@ struct CallbackState{TP,TDV,TDG,XT,VT,DT,TG,FT,GFT,LMO,GT}
     step_type::StepType
 end
 
+"""
+    callback_state(state::CallbackState)
+
+Select a subset of fields from [`CallbackState`](@ref) to include in the trajectory: `(t, primal, dual, dual_gap, time)`.
+"""
 function callback_state(state::CallbackState)
     return (state.t, state.primal, state.dual, state.dual_gap, state.time)
 end
+
+@enum ExecutionStatus begin
+    STATUS_RUNNING = 0
+    STATUS_OPTIMAL = 1
+    STATUS_MAXITER = 2
+    STATUS_TIMEOUT = 3
+    STATUS_INTERRUPTED = 4
+    STATUS_SUBOPTIMAL = 50
+    STATUS_OTHER = 99
+end
+
+const execution_status_string = (
+    STATUS_RUNNING="RUNNING",
+    STATUS_OPTIMAL="OPTIMAL",
+    STATUS_MAXITER="MAXITER",
+    STATUS_TIMEOUT="TIMEOUT",
+    STATUS_INTERRUPTED="INTERRUPTED",
+    STATUS_SUBOPTIMAL="SUBOPTIMAL",
+    STATUS_OTHER="UNKNOWN",
+)

@@ -103,7 +103,7 @@ end
 #norm_estimation = 400 * Arpack.svds(rating_matrix, nsv=1, ritzvec=false)[1].S[1]
 norm_estimation = 10 * Arpack.svds(rating_matrix, nsv=1, ritzvec=false)[1].S[1]
 
-const lmo = FrankWolfe.NuclearNormLMO(norm_estimation)
+const lmo = FrankWolfe.NuclearNormBallLMO(norm_estimation)
 const x0 = FrankWolfe.compute_extreme_point(lmo, zero(rating_matrix))
 const k = 100
 
@@ -188,7 +188,7 @@ end
 
 trajectory_arr_fw = Vector{Tuple{Int64,Float64,Float64,Float64,Float64,Float64}}()
 callback = build_callback(trajectory_arr_fw)
-xfin, _, _, _, traj_data = FrankWolfe.frank_wolfe(
+xfin, _, _, _, status, traj_data = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,

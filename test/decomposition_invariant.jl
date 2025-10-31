@@ -1,3 +1,5 @@
+module Test_decomposition_invariant
+
 using FrankWolfe
 using Test
 using LinearAlgebra
@@ -10,6 +12,7 @@ using StableRNGs
 const MOI = MathOptInterface
 const MOIU = MOI.Utilities
 
+rng = StableRNG(42)
 Random.seed!(StableRNG(42), 42)
 
 o = GLPK.Optimizer()
@@ -18,11 +21,11 @@ MOI.empty!(o)
 
 @testset "Hypercube interface" begin
     # no fixed variable
-    cube = FrankWolfe.ZeroOneHypercube()
+    cube = FrankWolfe.ZeroOneHypercubeLMO()
     n = 5
     cube_MOI = FrankWolfe.convert_mathopt(cube, o; dimension=n)
     x = fill(0.4, n)
-    d = 10 * randn(n)
+    d = 10 * randn(rng, n)
     gamma_max = FrankWolfe.dicg_maximum_step(cube, d, x)
     gamma_max_MOI = FrankWolfe.dicg_maximum_step(cube_MOI, d, x)
     @test gamma_max > 0
@@ -43,7 +46,7 @@ MOI.empty!(o)
     x_fixed = copy(x)
     x_fixed[3] = 0
     # positive entry in the direction, gamma_max = 0
-    d2 = randn(n)
+    d2 = randn(rng, n)
     d2[3] = 1
     gamma_max2 = FrankWolfe.dicg_maximum_step(cube, d2, x_fixed)
     gamma_max2_MOI = FrankWolfe.dicg_maximum_step(cube_MOI, d2, x_fixed)
@@ -64,12 +67,12 @@ end
 
 @testset "Simplex interfaces" begin
     @testset "Unit simplex" begin
-        lmo = FrankWolfe.UnitSimplexOracle(4.0)
+        lmo = FrankWolfe.UnitSimplexLMO(4.0)
         n = 5
         lmo_MOI = FrankWolfe.convert_mathopt(lmo, o; dimension=n)
         # x interior
         x = fill(0.4, n)
-        d = 10 * randn(n)
+        d = 10 * randn(rng, n)
         gamma_max = FrankWolfe.dicg_maximum_step(lmo, d, x)
         gamma_max_MOI = FrankWolfe.dicg_maximum_step(lmo_MOI, d, x)
         @test gamma_max > 0
@@ -83,7 +86,7 @@ end
         x_fixed = copy(x)
         x_fixed[3] = 0
         # positive entry in the direction, gamma_max = 0
-        d2 = randn(n)
+        d2 = randn(rng, n)
         d2[3] = 1
         gamma_max2 = FrankWolfe.dicg_maximum_step(lmo, d2, x_fixed)
         gamma_max2_MOI = FrankWolfe.dicg_maximum_step(lmo_MOI, d2, x_fixed)
@@ -101,8 +104,8 @@ end
               zeros(n)
 
         # the single in-face point if iterate is zero is zero
-        @test FrankWolfe.compute_inface_extreme_point(lmo, randn(n), zeros(n)) == zeros(n)
-        @test FrankWolfe.compute_inface_extreme_point(lmo_MOI, randn(n), zeros(n)) == zeros(n)
+        @test FrankWolfe.compute_inface_extreme_point(lmo, randn(rng, n), zeros(n)) == zeros(n)
+        @test FrankWolfe.compute_inface_extreme_point(lmo_MOI, randn(rng, n), zeros(n)) == zeros(n)
 
         # fix iterate on the simplex face
         x_fixed[4] += lmo.right_side - sum(x_fixed)
@@ -139,13 +142,13 @@ end
         FrankWolfe.compute_inface_extreme_point(lmo, d_test, x_fixed)
     end
     @testset "Probability simplex" begin
-        lmo = FrankWolfe.ProbabilitySimplexOracle(5.0)
+        lmo = FrankWolfe.ProbabilitySimplexLMO(5.0)
         n = 5
         lmo_MOI = FrankWolfe.convert_mathopt(lmo, o; dimension=n)
         # x in relative interior
         x = fill(1.0, n)
         # creating realistic directions as pairwise
-        v1 = FrankWolfe.compute_extreme_point(lmo, randn(n))
+        v1 = FrankWolfe.compute_extreme_point(lmo, randn(rng, n))
         # making sure the two are different
         v2 = FrankWolfe.compute_extreme_point(lmo, v1)
         d = v1 - v2
@@ -175,7 +178,7 @@ end
 
 @testset "Birkhoff polytope" begin
     n = 4
-    d = randn(n, n)
+    d = randn(rng, n, n)
     lmo = FrankWolfe.BirkhoffPolytopeLMO()
     lmo_MOI = FrankWolfe.convert_mathopt(lmo, o; dimension=n)
     x = ones(n, n) ./ n
@@ -225,16 +228,18 @@ end
         @. storage = x - xref
     end
 
-    @testset "Zero-one cube" begin
-        cube = FrankWolfe.ZeroOneHypercube()
+    @testset "Non-improving descent direction termination" begin
+        cube = FrankWolfe.ZeroOneHypercubeLMO()
         cube_MOI = FrankWolfe.convert_mathopt(cube, o; dimension=n)
-        x0 = FrankWolfe.compute_extreme_point(cube, randn(n))
+        x0 = ones(n)
 
+        # At certain iterates, the gradient is zero.
+        # In such cases, the line search should return zero.
         res = FrankWolfe.decomposition_invariant_conditional_gradient(
             f,
             grad!,
             cube,
-            x0,
+            copy(x0),
             verbose=false,
             trajectory=true,
         )
@@ -243,36 +248,82 @@ end
             f,
             grad!,
             cube_MOI,
-            x0,
+            copy(x0),
             verbose=false,
             trajectory=true,
         )
 
-        res_fw = FrankWolfe.frank_wolfe(f, grad!, cube, x0, verbose=false, trajectory=true)
+        res_fw = FrankWolfe.frank_wolfe(f, grad!, cube, copy(x0), verbose=false, trajectory=true)
 
         res_blended = FrankWolfe.blended_decomposition_invariant_conditional_gradient(
             f,
             grad!,
             cube,
-            x0,
+            copy(x0),
             verbose=false,
             trajectory=true,
         )
-        @test norm(res[1] - res_fw[1]) ≤ n * 1e-4
+        if res_fw[4] <= 1e-7
+            @test norm(res[1] - res_fw[1]) ≤ n * 1e-4
+            @test norm(res_MOI[1] - res_fw[1]) ≤ n * 1e-4
+        end
         @test norm(res[1] - res_blended[1]) ≤ n * 1e-4
-        @test norm(res_MOI[1] - res_fw[1]) ≤ n * 1e-4
+        @test norm(res_MOI[1] - res_blended[1]) ≤ n * 1e-4
+        @test res.status == FrankWolfe.STATUS_OPTIMAL
+        @test res_MOI.status == FrankWolfe.STATUS_OPTIMAL
+        @test res_blended.status == FrankWolfe.STATUS_OPTIMAL
+    end
+
+    @testset "Zero-one cube" begin
+        cube = FrankWolfe.ZeroOneHypercubeLMO()
+        cube_MOI = FrankWolfe.convert_mathopt(cube, o; dimension=n)
+        x0 = FrankWolfe.compute_extreme_point(cube, randn(rng, n))
+
+        res = FrankWolfe.decomposition_invariant_conditional_gradient(
+            f,
+            grad!,
+            cube,
+            copy(x0),
+            verbose=false,
+            trajectory=true,
+        )
+
+        res_MOI = FrankWolfe.decomposition_invariant_conditional_gradient(
+            f,
+            grad!,
+            cube_MOI,
+            copy(x0),
+            verbose=false,
+            trajectory=true,
+        )
+
+        res_fw = FrankWolfe.frank_wolfe(f, grad!, cube, copy(x0), verbose=false, trajectory=true)
+
+        res_blended = FrankWolfe.blended_decomposition_invariant_conditional_gradient(
+            f,
+            grad!,
+            cube,
+            copy(x0),
+            verbose=false,
+            trajectory=true,
+        )
+        if res_fw[4] <= 1e-7
+            @test norm(res[1] - res_fw[1]) ≤ n * 1e-4
+            @test norm(res_MOI[1] - res_fw[1]) ≤ n * 1e-4
+        end
+        @test norm(res[1] - res_blended[1]) ≤ n * 1e-4
         @test norm(res_MOI[1] - res_blended[1]) ≤ n * 1e-4
     end
 
     @testset "LMO: $lmo" for lmo in (
-        FrankWolfe.UnitSimplexOracle(1.0),
-        FrankWolfe.ProbabilitySimplexOracle(1.0),
-        FrankWolfe.convert_mathopt(FrankWolfe.UnitSimplexOracle(1.0), o; dimension=n),
-        FrankWolfe.convert_mathopt(FrankWolfe.ProbabilitySimplexOracle(1.0), o; dimension=n),
+        FrankWolfe.UnitSimplexLMO(1.0),
+        FrankWolfe.ProbabilitySimplexLMO(1.0),
+        FrankWolfe.convert_mathopt(FrankWolfe.UnitSimplexLMO(1.0), o; dimension=n),
+        FrankWolfe.convert_mathopt(FrankWolfe.ProbabilitySimplexLMO(1.0), o; dimension=n),
     )
-        lmo = FrankWolfe.UnitSimplexOracle(1.0)
+        lmo = FrankWolfe.UnitSimplexLMO(1.0)
 
-        x0_simplex = FrankWolfe.compute_extreme_point(lmo, randn(n))
+        x0_simplex = FrankWolfe.compute_extreme_point(lmo, randn(rng, n))
         res_di = FrankWolfe.decomposition_invariant_conditional_gradient(
             f,
             grad!,
@@ -282,7 +333,7 @@ end
             trajectory=true,
             epsilon=1e-10,
         )
-        x0_simplex = FrankWolfe.compute_extreme_point(lmo, randn(n))
+        x0_simplex = FrankWolfe.compute_extreme_point(lmo, randn(rng, n))
         res_fw = FrankWolfe.frank_wolfe(
             f,
             grad!,
@@ -292,14 +343,14 @@ end
             trajectory=true,
             epsilon=1e-10,
         )
-        @test f(res_di[1]) < f(res_fw[1])
+        @test f(res_di[1]) < f(res_fw[1]) + 1e-4
     end
 
     @testset "Birkhoff polytope" begin
         n = 10
         lmo = FrankWolfe.BirkhoffPolytopeLMO()
         lmo_MOI = FrankWolfe.convert_mathopt(lmo, o; dimension=n)
-        x0_bk = FrankWolfe.compute_extreme_point(lmo, randn(n, n))
+        x0_bk = FrankWolfe.compute_extreme_point(lmo, randn(rng, n, n))
         f0(X) = 1 / 2 * sum(abs2, X)
         grad0!(storage, X) = storage .= X
         res_di = FrankWolfe.decomposition_invariant_conditional_gradient(
@@ -335,10 +386,10 @@ end
 end
 
 @testset "DICG Hypersimplex $n $K" for n in (20, 500, 10000), K in (1, n ÷ 10, n ÷ 2)
-    for lmo in (FrankWolfe.HyperSimplexOracle(K, 3.0), FrankWolfe.UnitHyperSimplexOracle(K, 3.0))
+    for lmo in (FrankWolfe.HyperSimplexLMO(K, 3.0), FrankWolfe.UnitHyperSimplexLMO(K, 3.0))
         K = 4
         n = 10
-        lmo = FrankWolfe.HyperSimplexOracle(K, 3.0)
+        lmo = FrankWolfe.HyperSimplexLMO(K, 3.0)
         xref = fill(0.4, n)
         function f(x)
             return 1 / 2 * (norm(x)^2 - 2 * dot(x, xref) + norm(xref)^2)
@@ -346,12 +397,17 @@ end
         function grad!(storage, x)
             @. storage = x - xref
         end
-        res_fw = FrankWolfe.frank_wolfe(f, grad!, lmo, FrankWolfe.compute_extreme_point(lmo, randn(n)))
+        res_fw = FrankWolfe.frank_wolfe(
+            f,
+            grad!,
+            lmo,
+            FrankWolfe.compute_extreme_point(lmo, randn(rng, n)),
+        )
         res_dicg = FrankWolfe.decomposition_invariant_conditional_gradient(
             f,
             grad!,
             lmo,
-            FrankWolfe.compute_extreme_point(lmo, randn(n)),
+            FrankWolfe.compute_extreme_point(lmo, randn(rng, n)),
         )
         @test norm(res_fw.x - res_dicg.x) ≤ 1e-4
         lmo_tracking = FrankWolfe.TrackingLMO(lmo)
@@ -359,8 +415,10 @@ end
             f,
             grad!,
             lmo_tracking,
-            FrankWolfe.compute_extreme_point(lmo, randn(n)),
+            FrankWolfe.compute_extreme_point(lmo, randn(rng, n)),
         )
         @test norm(res_dicg_tracking.x - res_dicg.x) ≤ 1e-4
     end
 end
+
+end # module

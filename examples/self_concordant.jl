@@ -17,7 +17,7 @@ function grad!(storage, x)
 end
 
 
-lmo = FrankWolfe.ProbabilitySimplexOracle(1);
+lmo = FrankWolfe.ProbabilitySimplexLMO(1);
 x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
 FrankWolfe.benchmark_oracles(x -> f(x), (str, x) -> grad!(str, x), () -> randn(n), lmo; k=100)
@@ -26,7 +26,7 @@ println("\n==> Monotonic Step Size.\n")
 
 x0 = deepcopy(x00)
 
-@time x, v, primal, dual_gap, trajectory_monotonic = FrankWolfe.frank_wolfe(
+@time x, v, primal, dual_gap, status, trajectory_monotonic = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -43,7 +43,7 @@ println("\n==> Backtracking.\n")
 
 x0 = deepcopy(x00)
 
-@time x, v, primal, dual_gap, trajectory_backtracking = FrankWolfe.frank_wolfe(
+@time x, v, primal, dual_gap, status, trajectory_backtracking = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -60,7 +60,7 @@ println("\n==> Secant.\n")
 
 x0 = deepcopy(x00)
 
-@time x, v, primal, dual_gap, trajectory_secant = FrankWolfe.frank_wolfe(
+@time x, v, primal, dual_gap, status, trajectory_secant = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,

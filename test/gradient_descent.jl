@@ -1,3 +1,5 @@
+module Test_gradient_descent
+
 using LinearAlgebra
 using Random
 using Test
@@ -5,19 +7,21 @@ using FrankWolfe
 using ProximalOperators
 using DoubleFloats
 using StableRNGs
+import FrankWolfe.Experimental as FWExpe
 
 n = 100
 k = Int(1e4)
 print_iter = k // 10
 
 s = 42
-Random.seed!(StableRNG(s), s)
+rng = StableRNG(s)
+Random.seed!(rng, s)
 
 # Create test problem with controlled condition number
 const condition_number = 1000.0  # Much better than random conditioning
 const matrix = let
     # Create orthogonal matrix
-    Q = qr(randn(n, n)).Q
+    Q = qr(randn(rng, n, n)).Q
     # Create diagonal matrix with controlled condition number
     λ_max = 1.0
     λ_min = λ_max / condition_number
@@ -26,7 +30,7 @@ const matrix = let
     Q * sqrt(Λ)
 end
 const hessian = transpose(matrix) * matrix
-const linear = rand(n)
+const linear = rand(rng, n)
 
 f_gd(x) = dot(linear, x) + 0.5 * dot(x, hessian, x)
 
@@ -42,11 +46,11 @@ const f_opt = f_gd(x_opt)
 
 @testset "Adaptive Gradient Descent" begin
     @testset "Type $T" for T in (Float64, Double64)
-        x0 = 10 * rand(T, n)
+        x0 = 10 * rand(rng, T, n)
         target_tolerance = convert(T, 1e-8)
 
         # Test first variant
-        x1, f1, hist1 = FrankWolfe.adaptive_gradient_descent(
+        x1, f1, hist1 = FWExpe.adaptive_gradient_descent(
             f_gd,
             grad_gd!,
             convert.(T, x0);
@@ -59,7 +63,7 @@ const f_opt = f_gd(x_opt)
         )
 
         # Test second variant
-        x2, f2, hist2 = FrankWolfe.adaptive_gradient_descent2(
+        x2, f2, hist2 = FWExpe.adaptive_gradient_descent2(
             f_gd,
             grad_gd!,
             convert.(T, x0);
@@ -88,11 +92,11 @@ const f_opt = f_gd(x_opt)
     end
 
     @testset "Memory modes" begin
-        x0 = rand(n)
+        x0 = rand(rng, n)
         target_tolerance = 1e-8
 
         # Test with InplaceEmphasis
-        x_inplace, f_inplace, _ = FrankWolfe.adaptive_gradient_descent(
+        x_inplace, f_inplace, _ = FWExpe.adaptive_gradient_descent(
             f_gd,
             grad_gd!,
             x0;
@@ -103,7 +107,7 @@ const f_opt = f_gd(x_opt)
         )
 
         # Test with OutplaceEmphasis
-        x_outplace, f_outplace, _ = FrankWolfe.adaptive_gradient_descent(
+        x_outplace, f_outplace, _ = FWExpe.adaptive_gradient_descent(
             f_gd,
             grad_gd!,
             x0;
@@ -119,12 +123,12 @@ const f_opt = f_gd(x_opt)
     end
 
     @testset "Callback functionality" begin
-        x0 = rand(n)
+        x0 = rand(rng, n)
         history = []
 
         callback(state) = push!(history, state)
 
-        _, _, _ = FrankWolfe.adaptive_gradient_descent(
+        _, _, _ = FWExpe.adaptive_gradient_descent(
             f_gd,
             grad_gd!,
             x0;
@@ -143,20 +147,21 @@ const f_opt = f_gd(x_opt)
     end
 
     @testset "Proximal variant" begin
-        x0 = rand(n)
+        x0 = rand(rng, n)
         target_tolerance = 1e-8
 
         # Test with identity proximal operator (should match regular variant)
-        x_id, f_id, _ = FrankWolfe.proximal_adaptive_gradient_descent(
+        x_id, f_id, status_id, _ = FWExpe.proximal_adaptive_gradient_descent(
             f_gd,
             grad_gd!,
             x0;
             epsilon=target_tolerance,
             verbose=false,
         )
+        @test status_id == FrankWolfe.STATUS_OPTIMAL
 
         # Test with L1 proximal operator
-        x_l1, f_l1, _ = FrankWolfe.proximal_adaptive_gradient_descent(
+        x_l1, f_l1, status_l1, _ = FWExpe.proximal_adaptive_gradient_descent(
             f_gd,
             grad_gd!,
             x0,
@@ -165,19 +170,28 @@ const f_opt = f_gd(x_opt)
             max_iteration=k,
             verbose=false,
         )
+        @test status_l1 == FrankWolfe.STATUS_OPTIMAL
 
         # Identity proximal operator should give same result as regular variant
-        x_reg, f_reg, _ =
-            FrankWolfe.adaptive_gradient_descent(f_gd, grad_gd!, x0; epsilon=target_tolerance, verbose=false)
+        x_reg, f_reg, status_reg, _ = FWExpe.adaptive_gradient_descent(
+            f_gd,
+            grad_gd!,
+            x0;
+            epsilon=target_tolerance,
+            verbose=false,
+        )
+        @test status_reg == FrankWolfe.STATUS_OPTIMAL
 
         @testset "Comparison with FW variants" begin
             @testset "L1-ball comparison" begin
-                x0 =
-                    FrankWolfe.compute_extreme_point(FrankWolfe.LpNormLMO{Float64,1}(1.0), zeros(n))
+                x0 = FrankWolfe.compute_extreme_point(
+                    FrankWolfe.LpNormBallLMO{Float64,1}(1.0),
+                    zeros(n),
+                )
                 x_fw_l1, _ = FrankWolfe.blended_pairwise_conditional_gradient(
                     f_gd,
                     grad_gd!,
-                    FrankWolfe.LpNormLMO{Float64,1}(1.0),
+                    FrankWolfe.LpNormBallLMO{Float64,1}(1.0),
                     line_search=FrankWolfe.Secant(),
                     x0;
                     epsilon=target_tolerance,
@@ -189,7 +203,7 @@ const f_opt = f_gd(x_opt)
             end
 
             @testset "Probability simplex comparison" begin
-                x_prox_prob, f_prox_prob, _ = FrankWolfe.proximal_adaptive_gradient_descent(
+                x_prox_prob, f_prox_prob, _, _ = FWExpe.proximal_adaptive_gradient_descent(
                     f_gd,
                     grad_gd!,
                     x0,
@@ -199,13 +213,13 @@ const f_opt = f_gd(x_opt)
                 )
 
                 x0 = FrankWolfe.compute_extreme_point(
-                    FrankWolfe.ProbabilitySimplexOracle(1.0),
+                    FrankWolfe.ProbabilitySimplexLMO(1.0),
                     zeros(n),
                 )
                 x_fw_prob, _ = FrankWolfe.blended_pairwise_conditional_gradient(
                     f_gd,
                     grad_gd!,
-                    FrankWolfe.ProbabilitySimplexOracle(1.0),
+                    FrankWolfe.ProbabilitySimplexLMO(1.0),
                     line_search=FrankWolfe.Secant(),
                     x0;
                     epsilon=target_tolerance,
@@ -219,18 +233,20 @@ const f_opt = f_gd(x_opt)
 
             @testset "Box comparison" begin
                 τ_box = 1.0
-                x_prox_box, f_prox_box, _ = FrankWolfe.proximal_adaptive_gradient_descent(
-                    f_gd,
-                    grad_gd!,
-                    x0,
-                    ProximalOperators.IndBox(0.0, τ_box);
-                    epsilon=target_tolerance,
-                    print_iter=print_iter,
-                    verbose=false,
-                )
-                lmo_box = FrankWolfe.ScaledBoundLInfNormBall(zeros(n), τ_box * ones(n))
+                x_prox_box, f_prox_box, status_prox_box, _ =
+                    FWExpe.proximal_adaptive_gradient_descent(
+                        f_gd,
+                        grad_gd!,
+                        x0,
+                        ProximalOperators.IndBox(0.0, τ_box);
+                        epsilon=target_tolerance,
+                        print_iter=print_iter,
+                        verbose=false,
+                    )
+                @test status_prox_box == FrankWolfe.STATUS_OPTIMAL
+                lmo_box = FrankWolfe.BoxLMO(zeros(n), τ_box * ones(n))
                 x0 = FrankWolfe.compute_extreme_point(lmo_box, zeros(n))
-                x_fw_box, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+                res_fw_box = FrankWolfe.blended_pairwise_conditional_gradient(
                     f_gd,
                     grad_gd!,
                     lmo_box,
@@ -240,6 +256,8 @@ const f_opt = f_gd(x_opt)
                     max_iteration=k,
                     verbose=false,
                 )
+                x_fw_box = res_fw_box.x
+                @test res_fw_box.status == FrankWolfe.STATUS_OPTIMAL
                 f_fw_box = f_gd(x_fw_box)
                 @test abs(f_prox_box - f_fw_box) ≤ target_tolerance * 10
             end
@@ -260,7 +278,7 @@ const f_opt = f_gd(x_opt)
         # Create test problem with optimal solution in positive orthant
         matrix_pos = begin
             # Create orthogonal matrix 
-            Q = qr(randn(n, n)).Q
+            Q = qr(randn(rng, n, n)).Q
             # Create diagonal matrix with controlled condition number
             λ_max = 1.0
             λ_min = λ_max / condition_number
@@ -286,11 +304,11 @@ const f_opt = f_gd(x_opt)
 
         # Testing proximal gradient descent with positive orthant solution
 
-        x0 = rand(n)
+        x0 = rand(rng, n)
         target_tolerance = 1e-8
 
         # Test with identity proximal operator (should match regular variant)
-        x_id, f_id, _ = FrankWolfe.proximal_adaptive_gradient_descent(
+        x_id, f_id, _ = FWExpe.proximal_adaptive_gradient_descent(
             f_gd,
             grad_gd!,
             x0;
@@ -300,7 +318,7 @@ const f_opt = f_gd(x_opt)
         )
 
         # Test with L1 proximal operator
-        x_l1, f_l1, _ = FrankWolfe.proximal_adaptive_gradient_descent(
+        x_l1, f_l1, _ = FWExpe.proximal_adaptive_gradient_descent(
             f_gd,
             grad_gd!,
             x0,
@@ -310,16 +328,18 @@ const f_opt = f_gd(x_opt)
 
         # Identity proximal operator should give same result as regular variant
         x_reg, f_reg, _ =
-            FrankWolfe.adaptive_gradient_descent(f_gd, grad_gd!, x0; epsilon=target_tolerance)
+            FWExpe.adaptive_gradient_descent(f_gd, grad_gd!, x0; epsilon=target_tolerance)
 
         @testset "Comparison with FW variants" begin
             @testset "L1-ball comparison" begin
-                x0 =
-                    FrankWolfe.compute_extreme_point(FrankWolfe.LpNormLMO{Float64,1}(1.0), zeros(n))
+                x0 = FrankWolfe.compute_extreme_point(
+                    FrankWolfe.LpNormBallLMO{Float64,1}(1.0),
+                    zeros(n),
+                )
                 x_fw_l1, _ = FrankWolfe.blended_pairwise_conditional_gradient(
                     f_gd,
                     grad_gd!,
-                    FrankWolfe.LpNormLMO{Float64,1}(1.0),
+                    FrankWolfe.LpNormBallLMO{Float64,1}(1.0),
                     line_search=FrankWolfe.Secant(),
                     x0;
                     epsilon=target_tolerance,
@@ -332,14 +352,14 @@ const f_opt = f_gd(x_opt)
             end
 
             @testset "Probability simplex comparison" begin
-                x_prox_prob, f_prox_prob, _ = FrankWolfe.proximal_adaptive_gradient_descent(
+                x_prox_prob, f_prox_prob, _ = FWExpe.proximal_adaptive_gradient_descent(
                     f_gd,
                     grad_gd!,
                     x0,
-                    FrankWolfe.ProbabilitySimplexProx();
+                    FWExpe.ProbabilitySimplexProx();
                     epsilon=target_tolerance,
                 )
-                lmo_probsimplex = FrankWolfe.ProbabilitySimplexOracle(1.0)
+                lmo_probsimplex = FrankWolfe.ProbabilitySimplexLMO(1.0)
                 x0 = FrankWolfe.compute_extreme_point(lmo_probsimplex, zeros(n))
                 x_fw_prob, _ = FrankWolfe.blended_pairwise_conditional_gradient(
                     f_gd,
@@ -358,14 +378,14 @@ const f_opt = f_gd(x_opt)
 
             @testset "Box comparison" begin
                 τ_box = 1.0
-                x_prox_box, f_prox_box, _ = FrankWolfe.proximal_adaptive_gradient_descent(
+                x_prox_box, f_prox_box, _ = FWExpe.proximal_adaptive_gradient_descent(
                     f_gd,
                     grad_gd!,
                     x0,
                     ProximalOperators.IndBox(-τ_box, τ_box);
                     epsilon=target_tolerance,
                 )
-                lmo_box = FrankWolfe.LpNormLMO{Float64,Inf}(τ_box)
+                lmo_box = FrankWolfe.LpNormBallLMO{Float64,Inf}(τ_box)
                 x0 = FrankWolfe.compute_extreme_point(lmo_box, zeros(n))
                 x_fw_box, _ = FrankWolfe.blended_pairwise_conditional_gradient(
                     f_gd,
@@ -391,3 +411,5 @@ const f_opt = f_gd(x_opt)
         @test abs(f_id - f_reg) ≤ 10 * target_tolerance
     end
 end
+
+end # module

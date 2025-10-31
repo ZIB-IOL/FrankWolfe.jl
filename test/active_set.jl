@@ -1,8 +1,15 @@
+module Test_active_set
+
 using Test
 
 using FrankWolfe
 import FrankWolfe: ActiveSet
-using LinearAlgebra: norm
+using LinearAlgebra: dot, norm
+using Random
+using StableRNGs
+
+rng = StableRNG(42)
+Random.seed!(rng, 42)
 
 @testset "Active sets" begin
 
@@ -190,7 +197,7 @@ end
     active_set = ActiveSet([(0.6, [-1, -1]), (0.2, [0, 1]), (0.2, [1, 0])])
     f(x) = (x[1] - 1)^2 + (x[2] - 1)^2
     ∇f(x) = [2 * (x[1] - 1), 2 * (x[2] - 1)]
-    lmo = FrankWolfe.LpNormLMO{Inf}(1)
+    lmo = FrankWolfe.LpNormBallLMO{Inf}(1)
 
     x = FrankWolfe.get_active_set_iterate(active_set)
     @test x ≈ [-0.4, -0.4]
@@ -226,7 +233,7 @@ end
     v2 = FrankWolfe.ScaledHotVector(1, 2, 2)
     v3 = FrankWolfe.ScaledHotVector(0, 2, 2)
     active_set = FrankWolfe.ActiveSet([(0.6, v1), (0.2, v2), (0.2, v3)])
-    lmo = FrankWolfe.LpNormLMO{Float64,1}(1.0)
+    lmo = FrankWolfe.LpNormBallLMO{Float64,1}(1.0)
     direction = ones(2)
     min_gap = 0.5
     Ktolerance = 1.0
@@ -242,7 +249,7 @@ end
 
 @testset "ActiveSet for BigFloat" begin
     n = Int(1e2)
-    lmo = FrankWolfe.LpNormLMO{BigFloat,1}(rand())
+    lmo = FrankWolfe.LpNormBallLMO{BigFloat,1}(rand(rng))
     x0 = Vector(FrankWolfe.compute_extreme_point(lmo, zeros(n)))
 
     # add the first vertex to active set from initialization
@@ -251,3 +258,5 @@ end
     # ensure that ActiveSet is created correctly, tests a fix for a bug when x0 is a BigFloat
     @test length(FrankWolfe.ActiveSet([(1.0, x0)])) == 1
 end
+
+end # module

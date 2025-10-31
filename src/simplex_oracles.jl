@@ -1,19 +1,19 @@
 
 """
-    UnitSimplexOracle(right_side)
+    UnitSimplexLMO(right_side)
 
 Represents the scaled unit simplex:
 ```
 C = {x ∈ R^n_+, ∑x ≤ right_side}
 ```
 """
-struct UnitSimplexOracle{T} <: LinearMinimizationOracle
+struct UnitSimplexLMO{T} <: LinearMinimizationOracle
     right_side::T
 end
 
-UnitSimplexOracle{T}() where {T} = UnitSimplexOracle{T}(one(T))
+UnitSimplexLMO{T}() where {T} = UnitSimplexLMO{T}(one(T))
 
-UnitSimplexOracle(rhs::Integer) = UnitSimplexOracle{Rational{BigInt}}(rhs)
+UnitSimplexLMO(rhs::Integer) = UnitSimplexLMO{Rational{BigInt}}(rhs)
 
 """
 LMO for scaled unit simplex:
@@ -21,7 +21,7 @@ LMO for scaled unit simplex:
 Returns either vector of zeros or vector with one active value equal to RHS if
 there exists an improving direction.
 """
-function compute_extreme_point(lmo::UnitSimplexOracle{T}, direction; v=nothing, kwargs...) where {T}
+function compute_extreme_point(lmo::UnitSimplexLMO{T}, direction; v=nothing, kwargs...) where {T}
     idx = argmin_(direction)
     if direction[idx] < 0
         return ScaledHotVector(lmo.right_side, idx, length(direction))
@@ -29,8 +29,35 @@ function compute_extreme_point(lmo::UnitSimplexOracle{T}, direction; v=nothing, 
     return ScaledHotVector(zero(T), idx, length(direction))
 end
 
+# temporary fix because argmin is broken on julia 1.8
+argmin_(v) = argmin(v)
+function argmin_(v::SparseArrays.SparseVector{T}) where {T}
+    if isempty(v.nzind)
+        return 1
+    end
+    idx = -1
+    val = T(Inf)
+    for s_idx in eachindex(v.nzind)
+        if v.nzval[s_idx] < val
+            val = v.nzval[s_idx]
+            idx = s_idx
+        end
+    end
+    # if min value is already negative or the indices were all checked
+    if val < 0 || length(v.nzind) == length(v)
+        return v.nzind[idx]
+    end
+    # otherwise, find the first zero
+    for idx in eachindex(v)
+        if idx ∉ v.nzind
+            return idx
+        end
+    end
+    return error("unreachable")
+end
+
 function convert_mathopt(
-    lmo::UnitSimplexOracle{T},
+    lmo::UnitSimplexLMO{T},
     optimizer::OT;
     dimension::Integer,
     use_modify::Bool=true,
@@ -54,7 +81,7 @@ for scaled unit simplex.
 Returns two vectors. The first one is the dual costs associated with the constraints
 and the second is the reduced costs for the variables.
 """
-function compute_dual_solution(::UnitSimplexOracle{T}, direction, primalSolution) where {T}
+function compute_dual_solution(::UnitSimplexLMO{T}, direction, primalSolution) where {T}
     idx = argmax(primalSolution)
     critical = min(direction[idx], 0)
     lambda = [critical]
@@ -62,22 +89,22 @@ function compute_dual_solution(::UnitSimplexOracle{T}, direction, primalSolution
     return lambda, mu
 end
 
-is_decomposition_invariant_oracle(::UnitSimplexOracle) = true
+is_decomposition_invariant_oracle(::UnitSimplexLMO) = true
 
-function is_inface_feasible(lmo::UnitSimplexOracle{T}, a, x) where {T}
+function is_inface_feasible(lmo::UnitSimplexLMO{T}, a, x) where {T}
     for idx in eachindex(x)
-        if x[idx] ≈ lmo.right_side && a[idx] ≉  lmo.right_side
+        if x[idx] ≈ lmo.right_side && a[idx] ≉ lmo.right_side
             return false
-        elseif x[idx] ≈ 0.0 && a[idx] ≉  0.0
+        elseif x[idx] ≈ 0.0 && a[idx] ≉ 0.0
             return false
-        elseif sum(x) ≈ lmo.right_side && sum(a) ≉  lmo.right_side
+        elseif sum(x) ≈ lmo.right_side && sum(a) ≉ lmo.right_side
             return false
         end
     end
     return true
 end
 
-function compute_inface_extreme_point(lmo::UnitSimplexOracle{T}, direction, x; kwargs...) where {T}
+function compute_inface_extreme_point(lmo::UnitSimplexLMO{T}, direction, x; kwargs...) where {T}
     # faces for the unit simplex are:
     # - coordinate faces: {x_i = 0}
     # - simplex face: {∑ x == τ}
@@ -107,7 +134,7 @@ function compute_inface_extreme_point(lmo::UnitSimplexOracle{T}, direction, x; k
     return ScaledHotVector(lmo.right_side, min_idx, length(direction))
 end
 
-function dicg_maximum_step(lmo::UnitSimplexOracle{T}, direction, x) where {T}
+function dicg_maximum_step(lmo::UnitSimplexLMO{T}, direction, x) where {T}
     gamma_max = one(promote_type(T, eltype(direction)))
     # first check the simplex x_i = 0 faces
     @inbounds for idx in eachindex(x)
@@ -124,7 +151,7 @@ function dicg_maximum_step(lmo::UnitSimplexOracle{T}, direction, x) where {T}
 end
 
 function dicg_maximum_step(
-    ::UnitSimplexOracle{T},
+    ::UnitSimplexLMO{T},
     direction::SparseArrays.AbstractSparseVector,
     x,
 ) where {T}
@@ -141,20 +168,20 @@ function dicg_maximum_step(
 end
 
 """
-    ProbabilitySimplexOracle(right_side)
+    ProbabilitySimplexLMO(right_side)
 
 Represents the scaled probability simplex:
 ```
 C = {x ∈ R^n_+, ∑x = right_side}
 ```
 """
-struct ProbabilitySimplexOracle{T} <: LinearMinimizationOracle
+struct ProbabilitySimplexLMO{T} <: LinearMinimizationOracle
     right_side::T
 end
 
-ProbabilitySimplexOracle{T}() where {T} = ProbabilitySimplexOracle{T}(one(T))
+ProbabilitySimplexLMO{T}() where {T} = ProbabilitySimplexLMO{T}(one(T))
 
-ProbabilitySimplexOracle(rhs::Integer) = ProbabilitySimplexOracle{Float64}(rhs)
+ProbabilitySimplexLMO(rhs::Integer) = ProbabilitySimplexLMO{Float64}(rhs)
 
 """
 LMO for scaled probability simplex.
@@ -162,7 +189,7 @@ Returns a vector with one active value equal to RHS in the
 most improving (or least degrading) direction.
 """
 function compute_extreme_point(
-    lmo::ProbabilitySimplexOracle{T},
+    lmo::ProbabilitySimplexLMO{T},
     direction;
     v=nothing,
     kwargs...,
@@ -174,11 +201,11 @@ function compute_extreme_point(
     return ScaledHotVector(lmo.right_side, idx, length(direction))
 end
 
-is_decomposition_invariant_oracle(::ProbabilitySimplexOracle) = true
+is_decomposition_invariant_oracle(::ProbabilitySimplexLMO) = true
 
-function is_inface_feasible(lmo::ProbabilitySimplexOracle, a, x)
+function is_inface_feasible(lmo::ProbabilitySimplexLMO, a, x)
     for idx in eachindex(x)
-        if (x[idx] ≈ lmo.right_side && a[idx] ≉  lmo.right_side) || (x[idx] ≈ 0.0 && a[idx] ≉  0.0)
+        if (x[idx] ≈ lmo.right_side && a[idx] ≉ lmo.right_side) || (x[idx] ≈ 0.0 && a[idx] ≉ 0.0)
             return false
         end
     end
@@ -186,7 +213,7 @@ function is_inface_feasible(lmo::ProbabilitySimplexOracle, a, x)
 end
 
 function compute_inface_extreme_point(
-    lmo::ProbabilitySimplexOracle{T},
+    lmo::ProbabilitySimplexLMO{T},
     direction,
     x::SparseArrays.AbstractSparseVector;
     kwargs...,
@@ -206,7 +233,7 @@ function compute_inface_extreme_point(
     return ScaledHotVector(lmo.right_side, x_inds[min_idx], length(direction))
 end
 
-function dicg_maximum_step(::ProbabilitySimplexOracle{T}, direction, x) where {T}
+function dicg_maximum_step(::ProbabilitySimplexLMO{T}, direction, x) where {T}
     gamma_max = one(promote_type(T, eltype(direction)))
     @inbounds for idx in eachindex(x)
         di = direction[idx]
@@ -218,7 +245,7 @@ function dicg_maximum_step(::ProbabilitySimplexOracle{T}, direction, x) where {T
 end
 
 function convert_mathopt(
-    lmo::ProbabilitySimplexOracle{T},
+    lmo::ProbabilitySimplexLMO{T},
     optimizer::OT;
     dimension::Integer,
     use_modify=true::Bool,
@@ -243,7 +270,7 @@ Returns two vectors. The first one is the dual costs associated with the constra
 and the second is the reduced costs for the variables.
 """
 function compute_dual_solution(
-    ::ProbabilitySimplexOracle{T},
+    ::ProbabilitySimplexLMO{T},
     direction,
     primal_solution;
     kwargs...,
@@ -255,7 +282,7 @@ function compute_dual_solution(
 end
 
 """
-    UnitHyperSimplexOracle(radius)
+    UnitHyperSimplexLMO(radius)
 
 Represents the scaled unit hypersimplex of radius τ, the convex hull of vectors `v` such that:
 - v_i ∈ {0, τ}
@@ -263,18 +290,18 @@ Represents the scaled unit hypersimplex of radius τ, the convex hull of vectors
 
 Equivalently, this is the intersection of the K-sparse polytope and the nonnegative orthant.
 """
-struct UnitHyperSimplexOracle{T} <: LinearMinimizationOracle
+struct UnitHyperSimplexLMO{T} <: LinearMinimizationOracle
     K::Int
     radius::T
 end
 
-UnitHyperSimplexOracle{T}(K::Integer) where {T} = UnitHyperSimplexOracle{T}(K, one(T))
+UnitHyperSimplexLMO{T}(K::Integer) where {T} = UnitHyperSimplexLMO{T}(K, one(T))
 
-UnitHyperSimplexOracle(K::Int, radius::Integer) =
-    UnitHyperSimplexOracle(K, convert(Rational{BigInt}, radius))
+UnitHyperSimplexLMO(K::Int, radius::Integer) =
+    UnitHyperSimplexLMO(K, convert(Rational{BigInt}, radius))
 
 function compute_extreme_point(
-    lmo::UnitHyperSimplexOracle{TL},
+    lmo::UnitHyperSimplexLMO{TL},
     direction;
     v=nothing,
     kwargs...,
@@ -290,9 +317,9 @@ function compute_extreme_point(
     return v
 end
 
-is_decomposition_invariant_oracle(::UnitHyperSimplexOracle) = true
+is_decomposition_invariant_oracle(::UnitHyperSimplexLMO) = true
 
-function compute_inface_extreme_point(lmo::UnitHyperSimplexOracle, direction, x; kwargs...)
+function compute_inface_extreme_point(lmo::UnitHyperSimplexLMO, direction, x; kwargs...)
     # faces for the hypersimplex are:
     # bounds x_i ∈ {0, τ}
     # the simplex face ∑ x_i == K * τ
@@ -341,7 +368,7 @@ function compute_inface_extreme_point(lmo::UnitHyperSimplexOracle, direction, x;
     return v
 end
 
-function dicg_maximum_step(lmo::UnitHyperSimplexOracle, direction, x)
+function dicg_maximum_step(lmo::UnitHyperSimplexLMO, direction, x)
     T = promote_type(eltype(x), eltype(direction))
     gamma_max = one(T)
     xsum = zero(T)
@@ -376,7 +403,7 @@ function dicg_maximum_step(lmo::UnitHyperSimplexOracle, direction, x)
 end
 
 function convert_mathopt(
-    lmo::UnitHyperSimplexOracle{T},
+    lmo::UnitHyperSimplexLMO{T},
     optimizer::OT;
     dimension::Integer,
     use_modify::Bool=true,
@@ -395,7 +422,7 @@ function convert_mathopt(
 end
 
 """
-    HyperSimplexOracle(radius)
+    HyperSimplexLMO(K, radius)
 
 Represents the scaled hypersimplex of radius τ, the convex hull of vectors `v` such that:
 - v_i ∈ {0, τ}
@@ -403,35 +430,31 @@ Represents the scaled hypersimplex of radius τ, the convex hull of vectors `v` 
 
 Equivalently, this is the convex hull of the vertices of the K-sparse polytope lying in the nonnegative orthant.
 """
-struct HyperSimplexOracle{T} <: LinearMinimizationOracle
+struct HyperSimplexLMO{T} <: LinearMinimizationOracle
     K::Int
     radius::T
 end
 
-HyperSimplexOracle{T}(K::Integer) where {T} = HyperSimplexOracle{T}(K, one(T))
+HyperSimplexLMO{T}(K::Integer) where {T} = HyperSimplexLMO{T}(K, one(T))
 
-HyperSimplexOracle(K::Int, radius::Integer) = HyperSimplexOracle{Rational{BigInt}}(K, radius)
-
-function compute_extreme_point(
-    lmo::HyperSimplexOracle{TL},
-    direction;
-    v=nothing,
-    kwargs...,
-) where {TL}
-    T = promote_type(TL, eltype(direction))
+function compute_extreme_point(lmo::HyperSimplexLMO{T}, direction; v=nothing, kwargs...) where {T}
     n = length(direction)
     K = min(lmo.K, n)
     K_indices = sortperm(direction)[1:K]
-    v = spzeros(T, n)
+    if v === nothing
+        v = spzeros(T, n)
+    else
+        v .= 0
+    end
     for idx in 1:K
         v[K_indices[idx]] = lmo.radius
     end
     return v
 end
 
-is_decomposition_invariant_oracle(::HyperSimplexOracle) = true
+is_decomposition_invariant_oracle(::HyperSimplexLMO) = true
 
-function compute_inface_extreme_point(lmo::HyperSimplexOracle, direction, x; kwargs...)
+function compute_inface_extreme_point(lmo::HyperSimplexLMO, direction, x; kwargs...)
     # faces for the hypersimplex are bounds x_i ∈ {0, τ}
     v = spzeros(eltype(x), size(direction)...)
     K = min(lmo.K, length(x))
@@ -466,7 +489,7 @@ function compute_inface_extreme_point(lmo::HyperSimplexOracle, direction, x; kwa
     return v
 end
 
-function dicg_maximum_step(lmo::HyperSimplexOracle, direction, x)
+function dicg_maximum_step(lmo::HyperSimplexLMO, direction, x)
     T = promote_type(eltype(x), eltype(direction))
     gamma_max = one(T)
     for idx in eachindex(x)
@@ -488,7 +511,7 @@ function dicg_maximum_step(lmo::HyperSimplexOracle, direction, x)
 end
 
 function convert_mathopt(
-    lmo::HyperSimplexOracle{T},
+    lmo::HyperSimplexLMO{T},
     optimizer::OT;
     dimension::Integer,
     use_modify::Bool=true,

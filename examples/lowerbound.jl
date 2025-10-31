@@ -51,13 +51,13 @@ function grad!(storage, x)
 end
 
 # define LMO and do initial call to obtain starting point
-lmo = FrankWolfe.ProbabilitySimplexOracle(1)
+lmo = FrankWolfe.ProbabilitySimplexLMO(1)
 x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
 # simple benchmarking of oracles to get an idea how expensive each component is
 FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo; k=100)
 
-@time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+@time x, v, primal, dual_gap, status, trajectory = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -71,7 +71,7 @@ FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo; k=100)
     trajectory=true,
 );
 
-@time x, v, primal, dual_gap, trajectoryAFW = FrankWolfe.away_frank_wolfe(
+@time x, v, primal, dual_gap, status, trajectoryAFW = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
@@ -85,7 +85,7 @@ FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo; k=100)
     trajectory=true,
 );
 
-@time x, v, primal, dual_gap, trajectoryBCG, _ = FrankWolfe.blended_conditional_gradient(
+@time x, v, primal, dual_gap, status, trajectoryBCG, _ = FrankWolfe.blended_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -102,7 +102,7 @@ FrankWolfe.benchmark_oracles(f, grad!, () -> rand(n), lmo; k=100)
 # define lower bound
 
 trajLowerbound = []
-for i in 1:n-1
+for i in 1:(n-1)
     push!(trajLowerbound, (i, 1 / i - 1 / n, NaN, 1 / i - 1 / n, NaN))
 end
 
