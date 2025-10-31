@@ -1,5 +1,11 @@
 # BASED ON: https://arxiv.org/abs/2308.02261
 
+import FrankWolfe: InplaceEmphasis, @memory_mode
+import FrankWolfe: ExecutionStatus, STATUS_RUNNING, STATUS_OPTIMAL, STATUS_MAXITER
+import ProximalCore
+using LinearAlgebra
+using Printf
+
 """
     adaptive_gradient_descent(f, grad!, x0; kwargs...)
 
@@ -18,10 +24,11 @@ Lipschitz estimates.
 - `memory_mode`: Memory emphasis mode (default: InplaceEmphasis())
 
 # Returns
-Tuple containing:
-- Final iterate
-- Final objective value
-- Vector of states from callback
+Named tuple containing:
+- `x`: final iterate
+- `primal`: final objective value
+- `status`: ExecutionStatus with which the algorithm terminated
+- `traj_data`: vector of states from callback
 """
 function adaptive_gradient_descent(
     f,
@@ -70,11 +77,12 @@ function adaptive_gradient_descent(
             "Grad Norm",
             "Time (s)",
             "L_k",
-            "Step"
+            "Step",
         )
         println("-"^88)
     end
 
+    execution_status = STATUS_RUNNING
     start_time = time()
 
     for k in 1:max_iteration
@@ -113,9 +121,10 @@ function adaptive_gradient_descent(
                     norm(grad_curr),
                     elapsed,
                     L_k,
-                    step_new
+                    step_new,
                 )
             end
+            execution_status = STATUS_OPTIMAL
             break
         end
 
@@ -135,9 +144,16 @@ function adaptive_gradient_descent(
                 norm(grad_curr),
                 elapsed,
                 L_k,
-                step_new
+                step_new,
             )
         end
+    end
+    if k_final >= max_iteration
+        execution_status = STATUS_MAXITER
+    end
+    if execution_status == STATUS_RUNNING
+        @warn "Status not set"
+        execution_status = STATUS_OPTIMAL
     end
 
     # Print final iteration if not converged
@@ -150,11 +166,11 @@ function adaptive_gradient_descent(
             norm(grad_curr),
             elapsed,
             L_k,
-            step
+            step,
         )
     end
 
-    return x_curr, f(x_curr), cb_storage
+    return (x=x_curr, primal=f(x_curr), status=execution_status, traj_data=cb_storage)
 end
 
 """
@@ -163,6 +179,13 @@ end
 Second variant of adaptive gradient descent with modified step size adaptation.
 
 Takes the same arguments as `adaptive_gradient_descent`.
+
+# Returns
+Named tuple containing:
+- `x`: final iterate
+- `primal`: final objective value
+- `status`: ExecutionStatus with which the algorithm terminated
+- `traj_data`: vector of states from callback
 """
 function adaptive_gradient_descent2(
     f,
@@ -210,11 +233,12 @@ function adaptive_gradient_descent2(
             "Grad Norm",
             "Time (s)",
             "L_k",
-            "Step"
+            "Step",
         )
         println("-"^88)
     end
 
+    execution_status = STATUS_RUNNING
     start_time = time()
 
     for k in 1:max_iteration
@@ -254,9 +278,10 @@ function adaptive_gradient_descent2(
                     norm(grad_curr),
                     elapsed,
                     L_k,
-                    step_new
+                    step_new,
                 )
             end
+            execution_status = STATUS_OPTIMAL
             break
         end
 
@@ -276,11 +301,14 @@ function adaptive_gradient_descent2(
                 norm(grad_curr),
                 elapsed,
                 L_k,
-                step_new
+                step_new,
             )
         end
     end
 
+    if execution_status == STATUS_RUNNING
+        execution_status = STATUS_MAXITER
+    end
     # Print final iteration if not converged
     if verbose && norm(grad_curr) ≥ epsilon
         elapsed = time() - start_time
@@ -291,11 +319,11 @@ function adaptive_gradient_descent2(
             norm(grad_curr),
             elapsed,
             L_k,
-            step
+            step,
         )
     end
 
-    return x_curr, f(x_curr), cb_storage
+    return (x=x_curr, primal=f(x_curr), status=execution_status, traj_data=cb_storage)
 end
 
 """
@@ -316,10 +344,11 @@ Proximal variant of adaptive gradient descent that includes a proximal operator 
 - `memory_mode`: Memory emphasis mode (default: InplaceEmphasis())
 
 # Returns
-Tuple containing:
-- Final iterate
-- Final objective value
-- Vector of states from callback
+Named tuple containing:
+- `x`: final iterate
+- `primal`: final objective value
+- `status`: ExecutionStatus with which the algorithm terminated
+- `traj_data`: vector of states from callback
 """
 function proximal_adaptive_gradient_descent(
     f,
@@ -389,11 +418,12 @@ function proximal_adaptive_gradient_descent(
             "GM Norm",
             "Time (s)",
             "L_k",
-            "Step"
+            "Step",
         )
         println("-"^88)
     end
 
+    execution_status = STATUS_RUNNING
     start_time = time()
 
     for k in 1:max_iteration
@@ -429,21 +459,22 @@ function proximal_adaptive_gradient_descent(
         theta = step_new / step
         step = step_new
 
-        error = error_function(x_curr, x_prev, step) # basically gradient mapping -> collapses to gradient norm for identity prox
+        error_value = error_function(x_curr, x_prev, step) # basically gradient mapping -> collapses to gradient norm for identity prox
         # Check stopping criterion
-        if error < epsilon
+        if error_value < epsilon
             if verbose
                 elapsed = time() - start_time
                 @printf(
                     "%12d %15.6e %15.6e %15.3f %12.2e %12.2e (Converged)\n",
                     k,
                     f(x_curr),
-                    error,
+                    error_value,
                     elapsed,
                     L_k,
-                    step_new
+                    step_new,
                 )
             end
+            execution_status = STATUS_OPTIMAL
             break
         end
 
@@ -463,11 +494,14 @@ function proximal_adaptive_gradient_descent(
                 error,
                 elapsed,
                 L_k,
-                step_new
+                step_new,
             )
         end
     end
 
+    if execution_status == STATUS_RUNNING
+        execution_status = STATUS_MAXITER
+    end
     # Print final iteration if not converged
     if verbose && error ≥ epsilon
         elapsed = time() - start_time
@@ -478,11 +512,11 @@ function proximal_adaptive_gradient_descent(
             error,
             elapsed,
             L_k,
-            step
+            step,
         )
     end
 
-    return x_curr, f(x_curr), cb_storage
+    return (x=x_curr, primal=f(x_curr), status=execution_status, traj_data=cb_storage)
 end
 
 # Projection and Proximal Operators

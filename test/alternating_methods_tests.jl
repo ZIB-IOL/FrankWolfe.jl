@@ -1,10 +1,13 @@
+module Test_alternating_methods_tests
+
 import FrankWolfe
 using LinearAlgebra
 using Test
 using Random
 using StableRNGs
 
-Random.seed!(StableRNG(100), 100)
+rng = StableRNG(100)
+Random.seed!(rng, 100)
 
 f(x) = dot(x, x)
 
@@ -14,11 +17,11 @@ end
 
 n = 10
 
-lmo_nb = FrankWolfe.ScaledBoundL1NormBall(-ones(n), ones(n))
-lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1.0)
-lmo1 = FrankWolfe.ScaledBoundLInfNormBall(-ones(n), zeros(n))
-lmo2 = FrankWolfe.ScaledBoundLInfNormBall(zeros(n), ones(n))
-lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
+lmo_nb = FrankWolfe.DiamondLMO(-ones(n), ones(n))
+lmo_prob = FrankWolfe.ProbabilitySimplexLMO(1.0)
+lmo1 = FrankWolfe.BoxLMO(-ones(n), zeros(n))
+lmo2 = FrankWolfe.BoxLMO(zeros(n), ones(n))
+lmo3 = FrankWolfe.BoxLMO(ones(n), 2 * ones(n))
 
 @testset "Testing ALM with block-coordinate FW" begin
 
@@ -41,7 +44,7 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
         grad!,
         (lmo_nb, lmo_prob),
         ones(n),
-        lambda=1/6,
+        lambda=1 / 6,
         line_search=FrankWolfe.Adaptive(relaxed_smoothness=true),
     )
 
@@ -54,7 +57,7 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
         grad!,
         (lmo_nb, lmo_prob),
         ones(n),
-        lambda=1/18,
+        lambda=1 / 18,
         line_search=FrankWolfe.Adaptive(relaxed_smoothness=true),
     )
 
@@ -110,7 +113,7 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
     @test norm(x.blocks[1] - zeros(n)) < 1e-6
     @test norm(x.blocks[2] - ones(n)) < 1e-6
 
-    x, _, _, _, _, traj_data = FrankWolfe.alternating_linear_minimization(
+    x, _, _, _, _, _, traj_data = FrankWolfe.alternating_linear_minimization(
         FrankWolfe.block_coordinate_frank_wolfe,
         f,
         grad!,
@@ -135,7 +138,7 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
         ones(n),
         line_search=FrankWolfe.Agnostic(),
         momentum=0.9,
-        lambda=0.5
+        lambda=0.5,
     )
 
     @test abs(x.blocks[1][1] - 0.5 / n) < 1e-3
@@ -143,30 +146,25 @@ lmo3 = FrankWolfe.ScaledBoundLInfNormBall(ones(n), 2 * ones(n))
 
 end
 
-@testset "Testing update orders for block-coordinate ALM-FW" begin
-
-    orders = [
-        FrankWolfe.FullUpdate(),
-        [FrankWolfe.CyclicUpdate(i) for i in [-1, 1, 2]]...,
-        [FrankWolfe.StochasticUpdate(i) for i in [-1, 1, 2]]...,
-        [FrankWolfe.DualGapOrder(i) for i in [-1, 1, 2]]...,
-        [FrankWolfe.DualProgressOrder(i) for i in [-1, 1, 2]]...,
-    ]
-
-    for order in orders
-        x, _, _, _, _, _ = FrankWolfe.alternating_linear_minimization(
-            FrankWolfe.block_coordinate_frank_wolfe,
-            f,
-            grad!,
-            (lmo2, lmo_prob),
-            ones(n),
-            line_search=FrankWolfe.Adaptive(relaxed_smoothness=true),
-            update_order=order,
-            lambda=0.5,
-        )
-        @test abs(x.blocks[1][1] - 0.5 / n) < 1e-5
-        @test abs(x.blocks[2][1] - 1 / n) < 1e-5
-    end
+@testset "Testing update order $order for block-coordinate ALM-FW" for order in [
+    FrankWolfe.FullUpdate(),
+    [FrankWolfe.CyclicUpdate(i) for i in [-1, 1, 2]]...,
+    [FrankWolfe.StochasticUpdate(i) for i in [-1, 1, 2]]...,
+    [FrankWolfe.DualGapOrder(i) for i in [-1, 1, 2]]...,
+    [FrankWolfe.DualProgressOrder(i) for i in [-1, 1, 2]]...,
+]
+    x, _, _, _, _, _ = FrankWolfe.alternating_linear_minimization(
+        FrankWolfe.block_coordinate_frank_wolfe,
+        f,
+        grad!,
+        (lmo2, lmo_prob),
+        ones(n),
+        line_search=FrankWolfe.Adaptive(relaxed_smoothness=true),
+        update_order=order,
+        lambda=0.5,
+    )
+    @test abs(x.blocks[1][1] - 0.5 / n) < 1e-5
+    @test abs(x.blocks[2][1] - 1 / n) < 1e-5
 end
 
 @testset "Testing ALM with different FW methods" begin
@@ -177,19 +175,36 @@ end
         FrankWolfe.lazified_conditional_gradient,
     ]
 
-    for fw_method in methods
+    @testset "Testing with $fw_method" for fw_method in methods
         x, _, _, _, _ = FrankWolfe.alternating_linear_minimization(
             fw_method,
             f,
             grad!,
             (lmo2, lmo_prob),
             ones(n),
-            lambda=0.5
+            lambda=0.5,
         )
 
         @test abs(x.blocks[1][1] - 0.5 / n) < 1e-6
         @test abs(x.blocks[2][1] - 1 / n) < 1e-6
     end
+end
+
+@testset "Testing Splitting FW with variable lambda" begin
+
+    lambda_func(state) = 1 / (state.t^2 + 1)
+
+    x, _, _, _, _ = FrankWolfe.alternating_linear_minimization(
+        FrankWolfe.block_coordinate_frank_wolfe,
+        f,
+        grad!,
+        (lmo2, lmo3),
+        ones(n),
+        lambda=lambda_func,
+    )
+
+    @test all(x.blocks[1] .- ones(n) .< 1e-6)
+    @test all(x.blocks[2] .- ones(n) .< 1e-6)
 end
 
 @testset "Testing stepsize/linesearch in block-coordinate FW" begin
@@ -259,30 +274,31 @@ end
 
 @testset "Testing alternating projections" begin
 
-    x, _, _, _, _ = FrankWolfe.alternating_projections((lmo1, lmo_prob), rand(n), verbose=false)
+    x, _, _, _, _ =
+        FrankWolfe.alternating_projections((lmo1, lmo_prob), rand(rng, n), verbose=false)
 
     @test abs(x.blocks[1][1]) < 1e-6
     @test abs(x.blocks[2][1] - 1 / n) < 1e-6
 
-    x, _, _, _, _ = FrankWolfe.alternating_projections((lmo3, lmo_prob), rand(n))
+    x, _, _, _, _ = FrankWolfe.alternating_projections((lmo3, lmo_prob), rand(rng, n))
 
     @test abs(x.blocks[1][1] - 1) < 1e-6
     @test abs(x.blocks[2][1] - 1 / n) < 1e-6
 
-    x, _, _, infeas, _ = FrankWolfe.alternating_projections((lmo1, lmo2), rand(n))
+    x, _, _, infeas, _ = FrankWolfe.alternating_projections((lmo1, lmo2), rand(rng, n))
 
     @test abs(x.blocks[1][1]) < 1e-6
     @test abs(x.blocks[2][1]) < 1e-6
     @test infeas < 1e-6
 
-    x, _, _, infeas, _ = FrankWolfe.alternating_projections((lmo2, lmo3), rand(n))
+    x, _, _, infeas, _, _ = FrankWolfe.alternating_projections((lmo2, lmo3), rand(rng, n))
 
     @test abs(x.blocks[1][1] - 1) < 1e-4
     @test abs(x.blocks[2][1] - 1) < 1e-4
     @test infeas < 1e-6
 
-    x, _, _, infeas, traj_data =
-        FrankWolfe.alternating_projections((lmo1, lmo3), rand(n), trajectory=true)
+    x, _, _, infeas, _, traj_data =
+        FrankWolfe.alternating_projections((lmo1, lmo3), rand(rng, n), trajectory=true)
 
     @test abs(x.blocks[1][1]) < 1e-6
     @test abs(x.blocks[2][1] - 1) < 1e-6
@@ -291,3 +307,5 @@ end
     @test length(traj_data) >= 2
     @test length(traj_data) <= 10001
 end
+
+end # module

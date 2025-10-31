@@ -40,11 +40,11 @@ true_obj_value = -2
 
 (f, ∇f) = build_objective(W)
 
-lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
+lmo = FrankWolfe.ProbabilitySimplexLMO(1.0)
 x0 = FrankWolfe.compute_extreme_point(lmo, rand(size(W, 1)))
 storage = Vector{Float64}(undef, size(x0)...)
 
-(x, v, primal_agnostic, dual_gap, traj_data_agnostic) = FrankWolfe.frank_wolfe(
+x, v, primal_agnostic, dual_gap, status, traj_data_agnostic = FrankWolfe.frank_wolfe(
     x -> f(x) - true_obj_value,
     ∇f,
     lmo,
@@ -58,7 +58,7 @@ storage = Vector{Float64}(undef, size(x0)...)
     epsilon=eps,
 )
 
-(xback, v, primal_back, dual_gap, traj_data_backtracking) = FrankWolfe.frank_wolfe(
+xback, v, primal_back, dual_gap, status, traj_data_backtracking = FrankWolfe.frank_wolfe(
     x -> f(x) - true_obj_value,
     ∇f,
     lmo,
@@ -72,7 +72,7 @@ storage = Vector{Float64}(undef, size(x0)...)
     epsilon=eps,
 )
 
-(xback, v, primal_back, dual_gap, traj_data_monotoninc) = FrankWolfe.frank_wolfe(
+xback, v, primal_back, dual_gap, status, traj_data_monotoninc = FrankWolfe.frank_wolfe(
     x -> f(x) - true_obj_value,
     ∇f,
     lmo,
@@ -86,7 +86,7 @@ storage = Vector{Float64}(undef, size(x0)...)
     epsilon=eps,
 )
 
-(xsecant, v, primal_secant, dual_gap, traj_data_secant) = FrankWolfe.frank_wolfe(
+xsecant, v, primal_secant, dual_gap, status, traj_data_secant = FrankWolfe.frank_wolfe(
     x -> f(x) - true_obj_value,
     ∇f,
     lmo,

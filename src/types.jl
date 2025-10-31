@@ -28,13 +28,16 @@ function LinearAlgebra.dot(v1::ScaledHotVector{<:Number}, v2::AbstractVector{<:N
     return conj(v1.active_val) * v2[v1.val_idx]
 end
 
-function LinearAlgebra.dot(v1::ScaledHotVector{<:Number}, v2::SparseArrays.SparseVector{<:Number})
+function LinearAlgebra.dot(
+    v1::ScaledHotVector{<:Number},
+    v2::SparseArrays.SparseVectorUnion{<:Number},
+)
     return conj(v1.active_val) * v2[v1.val_idx]
 end
 
 LinearAlgebra.dot(v1::AbstractVector{<:Number}, v2::ScaledHotVector{<:Number}) = conj(dot(v2, v1))
 
-LinearAlgebra.dot(v1::SparseArrays.SparseVector{<:Number}, v2::ScaledHotVector{<:Number}) =
+LinearAlgebra.dot(v1::SparseArrays.SparseVectorUnion{<:Number}, v2::ScaledHotVector{<:Number}) =
     conj(dot(v2, v1))
 
 function LinearAlgebra.dot(v1::ScaledHotVector{<:Number}, v2::ScaledHotVector{<:Number})
@@ -135,18 +138,21 @@ end
 
 Base.size(R::RankOneMatrix) = (length(R.u), length(R.v))
 function Base.:*(R::RankOneMatrix, v::AbstractVector)
-    temp = fast_dot(R.v, v)
+    temp = dot(R.v, v)
     return R.u * temp
 end
 
 function Base.:*(R::RankOneMatrix, M::AbstractMatrix)
-    temp = R.v' * M
-    return RankOneMatrix(R.u, temp')
+    temp = M' * R.v
+    return RankOneMatrix(R.u, temp)
 end
+
+Base.:*(R::RankOneMatrix, D::LinearAlgebra.Diagonal) = RankOneMatrix(R.u, R.v .* D.diag)
+Base.:*(R::RankOneMatrix, T::LinearAlgebra.AbstractTriangular) = RankOneMatrix(R.u, T' * R.v)
 
 function Base.:*(R1::RankOneMatrix, R2::RankOneMatrix)
     # middle product
-    temp = fast_dot(R1.v, R2.u)
+    temp = dot(R1.v, R2.u)
     return RankOneMatrix(R1.u * temp, R2.v)
 end
 
@@ -234,24 +240,34 @@ Base.@propagate_inbounds function Base.isequal(a::RankOneMatrix, b::RankOneMatri
     return true
 end
 
-Base.@propagate_inbounds function muladd_memory_mode(::InplaceEmphasis, d::Matrix, x::Union{RankOneMatrix, Matrix}, v::RankOneMatrix)
+Base.@propagate_inbounds function muladd_memory_mode(
+    ::InplaceEmphasis,
+    d::Matrix,
+    x::Union{RankOneMatrix,Matrix},
+    v::RankOneMatrix,
+)
     @boundscheck size(d) == size(x) || throw(DimensionMismatch())
     @boundscheck size(d) == size(v) || throw(DimensionMismatch())
     m, n = size(d)
     @inbounds for j in 1:n
         for i in 1:m
-            d[i,j] = x[i,j] - v[i,j]
+            d[i, j] = x[i, j] - v[i, j]
         end
     end
     return d
 end
 
-Base.@propagate_inbounds function muladd_memory_mode(::InplaceEmphasis, x::Matrix, gamma::Real, d::RankOneMatrix)
+Base.@propagate_inbounds function muladd_memory_mode(
+    ::InplaceEmphasis,
+    x::Matrix,
+    gamma::Real,
+    d::RankOneMatrix,
+)
     @boundscheck size(d) == size(x) || throw(DimensionMismatch())
     m, n = size(x)
     @inbounds for j in 1:n
         for i in 1:m
-            x[i,j] -= gamma * d[i,j]
+            x[i, j] -= gamma * d[i, j]
         end
     end
     return x
@@ -294,8 +310,10 @@ Base.size(A::SubspaceVector) = size(A.vec)
 Base.eltype(A::SubspaceVector) = eltype(A.vec)
 Base.similar(A::SubspaceVector{true}) = SubspaceVector(similar(A.data), similar(A.vec), A.mul)
 Base.similar(A::SubspaceVector{false}) = SubspaceVector(similar(A.data), similar(A.vec))
-Base.similar(A::SubspaceVector{true}, ::Type{T}) where {T} = SubspaceVector(similar(A.data, T), similar(A.vec, T), convert(Vector{T}, A.mul))
-Base.similar(A::SubspaceVector{false}, ::Type{T}) where {T} = SubspaceVector(similar(A.data, T), similar(A.vec, T))
+Base.similar(A::SubspaceVector{true}, ::Type{T}) where {T} =
+    SubspaceVector(similar(A.data, T), similar(A.vec, T), convert(Vector{T}, A.mul))
+Base.similar(A::SubspaceVector{false}, ::Type{T}) where {T} =
+    SubspaceVector(similar(A.data, T), similar(A.vec, T))
 Base.collect(A::SubspaceVector{true}) = SubspaceVector(collect(A.data), collect(A.vec), A.mul)
 Base.collect(A::SubspaceVector{false}) = SubspaceVector(collect(A.data), collect(A.vec))
 Base.copyto!(dest::SubspaceVector, src::SubspaceVector) = copyto!(dest.vec, src.vec)
@@ -303,15 +321,159 @@ Base.:*(scalar::Real, A::SubspaceVector{true}) = SubspaceVector(A.data, scalar *
 Base.:*(scalar::Real, A::SubspaceVector{false}) = SubspaceVector(A.data, scalar * A.vec)
 Base.:*(A::SubspaceVector, scalar::Real) = scalar * A
 Base.:/(A::SubspaceVector, scalar::Real) = inv(scalar) * A
-Base.:+(A1::SubspaceVector{true,T}, A2::SubspaceVector{true,T}) where {T} = SubspaceVector(A1.data, A1.vec + A2.vec, A1.mul)
-Base.:+(A1::SubspaceVector{false,T}, A2::SubspaceVector{false,T}) where {T} = SubspaceVector(A1.data, A1.vec + A2.vec)
-Base.:-(A1::SubspaceVector{true,T}, A2::SubspaceVector{true,T}) where {T} = SubspaceVector(A1.data, A1.vec - A2.vec, A1.mul)
-Base.:-(A1::SubspaceVector{false,T}, A2::SubspaceVector{false,T}) where {T} = SubspaceVector(A1.data, A1.vec - A2.vec)
+Base.:+(A1::SubspaceVector{true,T}, A2::SubspaceVector{true,T}) where {T} =
+    SubspaceVector(A1.data, A1.vec + A2.vec, A1.mul)
+Base.:+(A1::SubspaceVector{false,T}, A2::SubspaceVector{false,T}) where {T} =
+    SubspaceVector(A1.data, A1.vec + A2.vec)
+Base.:-(A1::SubspaceVector{true,T}, A2::SubspaceVector{true,T}) where {T} =
+    SubspaceVector(A1.data, A1.vec - A2.vec, A1.mul)
+Base.:-(A1::SubspaceVector{false,T}, A2::SubspaceVector{false,T}) where {T} =
+    SubspaceVector(A1.data, A1.vec - A2.vec)
 Base.:-(A::SubspaceVector{true,T}) where {T} = SubspaceVector(A.data, -A.vec, A.mul)
 Base.:-(A::SubspaceVector{false,T}) where {T} = SubspaceVector(A.data, -A.vec)
 
-LinearAlgebra.dot(A1::SubspaceVector{true}, A2::SubspaceVector{true}) = dot(A1.vec, Diagonal(A1.mul), A2.vec)
+LinearAlgebra.dot(A1::SubspaceVector{true}, A2::SubspaceVector{true}) =
+    dot(A1.vec, Diagonal(A1.mul), A2.vec)
 LinearAlgebra.dot(A1::SubspaceVector{false}, A2::SubspaceVector{false}) = dot(A1.vec, A2.vec)
 LinearAlgebra.norm(A::SubspaceVector) = sqrt(dot(A, A))
 
-Base.@propagate_inbounds Base.isequal(A1::SubspaceVector, A2::SubspaceVector) = isequal(A1.vec, A2.vec)
+Base.@propagate_inbounds Base.isequal(A1::SubspaceVector, A2::SubspaceVector) =
+    isequal(A1.vec, A2.vec)
+
+"""
+Given an array `array`, `NegatingArray` represents `-1 * array` lazily.
+"""
+struct NegatingArray{T,N,AT<:AbstractArray{T,N}} <: AbstractArray{T,N}
+    array::AT
+    function NegatingArray(array::AT) where {T,N,AT<:AbstractArray{T,N}}
+        return new{T,N,AT}(array)
+    end
+end
+
+Base.size(a::NegatingArray) = Base.size(a.array)
+Base.getindex(a::NegatingArray, idxs...) = -Base.getindex(a.array, idxs...)
+
+LinearAlgebra.dot(a1::NegatingArray{<:Number}, a2::NegatingArray{<:Number}) =
+    dot(a1.array, a2.array)
+LinearAlgebra.dot(a1::NegatingArray{<:Number,N}, a2::AbstractArray{<:Number,N}) where {N} =
+    -dot(a1.array, a2)
+LinearAlgebra.dot(a1::AbstractArray{<:Number,N}, a2::NegatingArray{<:Number,N}) where {N} =
+    -dot(a1, a2.array)
+
+# removing method ambiguities
+LinearAlgebra.dot(a1::LinearAlgebra.Diagonal, a2::NegatingArray{<:Number}) = -dot(a1, a2.array)
+LinearAlgebra.dot(a1::NegatingArray{<:Number}, a2::SparseArrays.SparseVectorUnion) =
+    -dot(a1.array, a2)
+LinearAlgebra.dot(a1::SparseArrays.SparseVectorUnion, a2::NegatingArray{<:Number}) =
+    -dot(a1, a2.array)
+
+Base.sum(a::NegatingArray) = -sum(a.array)
+LinearAlgebra.dot(v1::NegatingArray{<:Number,1}, v2::ScaledHotVector{<:Number}) = -dot(v1.array, v2)
+LinearAlgebra.dot(v1::ScaledHotVector{<:Number}, v2::NegatingArray{<:Number,1}) = -dot(v1, v2.array)
+
+LinearAlgebra.dot(a::NegatingArray{<:Number,2}, d::LinearAlgebra.Diagonal) = -dot(a.array, d)
+LinearAlgebra.dot(d::LinearAlgebra.Diagonal, a::NegatingArray{<:Number,2}) = -dot(d, a.array)
+
+fast_dot(a, Q, b) = dot(a, Q, b)
+
+function fast_dot(
+    a::SparseArrays.AbstractSparseVector{<:Real},
+    Q::Diagonal{<:Real},
+    b::AbstractVector{<:Real},
+)
+    if a === b
+        return _fast_quadratic_form_symmetric(a, Q)
+    end
+    d = Q.diag
+    nzvals = SparseArrays.nonzeros(a)
+    nzinds = SparseArrays.nonzeroinds(a)
+    return sum(eachindex(nzvals); init=zero(eltype(a))) do nzidx
+        return nzvals[nzidx] * d[nzinds[nzidx]] * b[nzinds[nzidx]]
+    end
+end
+
+function fast_dot(
+    a::SparseArrays.AbstractSparseVector{<:Real},
+    Q::Diagonal{<:Real},
+    b::SparseArrays.AbstractSparseVector{<:Real},
+)
+    if a === b
+        return _fast_quadratic_form_symmetric(a, Q)
+    end
+    n = length(a)
+    if length(b) != n
+        throw(DimensionMismatch("Vector a has a length $n but b has a length $(length(b))"))
+    end
+    anzind = SparseArrays.nonzeroinds(a)
+    bnzind = SparseArrays.nonzeroinds(b)
+    anzval = SparseArrays.nonzeros(a)
+    bnzval = SparseArrays.nonzeros(b)
+    s = zero(Base.promote_eltype(a, Q, b))
+
+    if isempty(anzind) || isempty(bnzind)
+        return s
+    end
+
+    a_idx = 1
+    b_idx = 1
+    a_idx_last = length(anzind)
+    b_idx_last = length(bnzind)
+
+    # go through the nonzero indices of a and b simultaneously
+    @inbounds while a_idx <= a_idx_last && b_idx <= b_idx_last
+        ia = anzind[a_idx]
+        ib = bnzind[b_idx]
+        if ia == ib
+            s += dot(anzval[a_idx], Q.diag[ia], bnzval[b_idx])
+            a_idx += 1
+            b_idx += 1
+        elseif ia < ib
+            a_idx += 1
+        else
+            b_idx += 1
+        end
+    end
+    return s
+end
+
+function _fast_quadratic_form_symmetric(a, Q)
+    d = Q.diag
+    if length(d) != length(a)
+        throw(DimensionMismatch())
+    end
+    nzvals = SparseArrays.nonzeros(a)
+    nzinds = SparseArrays.nonzeroinds(a)
+    s = zero(Base.promote_eltype(a, Q))
+    @inbounds for nzidx in eachindex(nzvals)
+        s += nzvals[nzidx]^2 * d[nzinds[nzidx]]
+    end
+    return s
+end
+
+function fast_dot(
+    a::SparseArrays.AbstractSparseVector{<:Real},
+    Q::AbstractMatrix{<:Real},
+    b::SparseArrays.AbstractSparseVector{<:Real},
+)
+    n = length(a)
+    m = length(b)
+    if size(Q) != (n, m)
+        throw(DimensionMismatch("Matrix has a size $(size(Q)) but vectors have length $n, $m"))
+    end
+    anzind = SparseArrays.nonzeroinds(a)
+    bnzind = SparseArrays.nonzeroinds(b)
+    anzval = SparseArrays.nonzeros(a)
+    bnzval = SparseArrays.nonzeros(b)
+    s = zero(Base.promote_eltype(a, Q, b))
+    if isempty(anzind) || isempty(bnzind)
+        return s
+    end
+    for a_idx in eachindex(anzind)
+        for b_idx in eachindex(bnzind)
+            ia = anzind[a_idx]
+            ib = bnzind[b_idx]
+            s += dot(anzval[a_idx], Q[ia, ib], bnzval[b_idx])
+        end
+    end
+    return s
+end

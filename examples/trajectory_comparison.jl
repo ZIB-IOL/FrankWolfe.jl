@@ -23,9 +23,9 @@ function cf(x, xp)
 end
 
 # lmo = FrankWolfe.KSparseLMO(100, 1.0)
-lmo = FrankWolfe.LpNormLMO{Float64,1}(1.0)
-# lmo = FrankWolfe.ProbabilitySimplexOracle(1.0);
-# lmo = FrankWolfe.UnitSimplexOracle(1.0);
+lmo = FrankWolfe.LpNormBallLMO{Float64,1}(1.0)
+# lmo = FrankWolfe.ProbabilitySimplexLMO(1.0);
+# lmo = FrankWolfe.UnitSimplexLMO(1.0);
 x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
 # print(x0)
 
@@ -38,7 +38,7 @@ FrankWolfe.benchmark_oracles(f, grad!, () -> randn(n), lmo; k=100)
 println("\n==> Short Step rule - if you know L.\n")
 
 x0 = copy(x00)
-@time x, v, primal, dual_gap, trajectory_shortstep = FrankWolfe.frank_wolfe(
+@time x, v, primal, dual_gap, status, trajectory_shortstep = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -55,7 +55,7 @@ println("\n==> Short Step rule with momentum - if you know L.\n")
 
 x0 = copy(x00)
 
-@time x, v, primal, dual_gap, trajectoryM = FrankWolfe.frank_wolfe(
+@time x, v, primal, dual_gap, status, trajectoryM = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -73,7 +73,7 @@ println("\n==> Adaptive if you do not know L.\n")
 
 x0 = copy(x00)
 
-@time x, v, primal, dual_gap, trajectory_adaptive = FrankWolfe.frank_wolfe(
+@time x, v, primal, dual_gap, status, trajectory_adaptive = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -90,7 +90,7 @@ println("\n==> Agnostic if function is too expensive for adaptive.\n")
 
 x0 = copy(x00)
 
-@time x, v, primal, dual_gap, trajectory_agnostic = FrankWolfe.frank_wolfe(
+@time x, v, primal, dual_gap, status, trajectory_agnostic = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,

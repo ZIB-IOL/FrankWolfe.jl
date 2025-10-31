@@ -22,8 +22,8 @@ end
 
 # In our example we consider the probability simplex and an L-infinity norm ball as the feasible sets.
 n = 100
-lmo1 = FrankWolfe.ScaledBoundLInfNormBall(-ones(n), zeros(n))
-lmo2 = FrankWolfe.ProbabilitySimplexOracle(1.0)
+lmo1 = FrankWolfe.BoxLMO(-ones(n), zeros(n))
+lmo2 = FrankWolfe.ProbabilitySimplexLMO(1.0)
 prod_lmo = FrankWolfe.ProductLMO((lmo1, lmo2))
 
 # We initialize the starting point `x0` as a [`FrankWolfe.BlockVector`](@ref) with two blocks.
@@ -53,7 +53,7 @@ for order in [
     CustomOrder(),
 ]
 
-    _, _, _, _, traj_data = FrankWolfe.block_coordinate_frank_wolfe(
+    res = FrankWolfe.block_coordinate_frank_wolfe(
         f,
         grad!,
         prod_lmo,
@@ -62,7 +62,7 @@ for order in [
         trajectory=true,
         update_order=order,
     )
-    push!(trajectories, traj_data)
+    push!(trajectories, res.traj_data)
 end
 # ### Plotting the results
 labels = ["Full update", "Cyclic order", "Stochstic order", "Custom order"]
@@ -74,9 +74,14 @@ plot_trajectories(trajectories, labels, xscalelog=true)
 
 trajectories = []
 
-for us in [(FrankWolfe.BPCGStep(), FrankWolfe.FrankWolfeStep()), (FrankWolfe.FrankWolfeStep(), FrankWolfe.BPCGStep()), FrankWolfe.BPCGStep(), FrankWolfe.FrankWolfeStep()]
+for us in [
+    (FrankWolfe.BPCGStep(), FrankWolfe.FrankWolfeStep()),
+    (FrankWolfe.FrankWolfeStep(), FrankWolfe.BPCGStep()),
+    FrankWolfe.BPCGStep(),
+    FrankWolfe.FrankWolfeStep(),
+]
 
-    _, _, _, _, traj_data = FrankWolfe.block_coordinate_frank_wolfe(
+    res = FrankWolfe.block_coordinate_frank_wolfe(
         f,
         grad!,
         prod_lmo,
@@ -85,7 +90,7 @@ for us in [(FrankWolfe.BPCGStep(), FrankWolfe.FrankWolfeStep()), (FrankWolfe.Fra
         trajectory=true,
         update_step=us,
     )
-    push!(trajectories, traj_data)
+    push!(trajectories, res.traj_data)
 end
 # ### Plotting the results
 labels = ["BPCG FW", "FW BPCG", "BPCG", "FW"]

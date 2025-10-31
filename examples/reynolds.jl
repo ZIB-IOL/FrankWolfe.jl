@@ -14,9 +14,9 @@ end
 
 function FrankWolfe.compute_extreme_point(
     lmo::BellCorrelationsLMO{T},
-    A::Array{T, 3};
+    A::Array{T,3};
     kwargs...,
-) where {T <: Number}
+) where {T<:Number}
     ax = [ones(T, lmo.m) for n in 1:3]
     sc1 = zero(T)
     sc2 = one(T)
@@ -24,10 +24,10 @@ function FrankWolfe.compute_extreme_point(
     scm = typemax(T)
     L = 2^lmo.m
     intax = zeros(Int, lmo.m)
-    for λa3 in 0:(L÷2)-1
+    for λa3 in 0:((L÷2)-1)
         digits!(intax, λa3, base=2)
         ax[3][1:lmo.m] .= 2intax .- 1
-        for λa2 in 0:L-1
+        for λa2 in 0:(L-1)
             digits!(intax, λa2, base=2)
             ax[2][1:lmo.m] .= 2intax .- 1
             for x1 in 1:lmo.m
@@ -47,20 +47,20 @@ function FrankWolfe.compute_extreme_point(
         end
     end
     # returning a full tensor is naturally naive, but this is only a toy example
-    return [axm[1][x1]*axm[2][x2]*axm[3][x3] for x1 in 1:lmo.m, x2 in 1:lmo.m, x3 in 1:lmo.m]
+    return [axm[1][x1] * axm[2][x2] * axm[3][x3] for x1 in 1:lmo.m, x2 in 1:lmo.m, x3 in 1:lmo.m]
 end
 
 function correlation_tensor_GHZ_polygon(N::Int, m::Int; type=Float64)
-    res = zeros(type, m*ones(Int, N)...)
-    tab_cos = [cos(x*type(pi)/m) for x in 0:N*m]
-    tab_cos[abs.(tab_cos) .< Base.rtoldefault(type)] .= zero(type)
+    res = zeros(type, m * ones(Int, N)...)
+    tab_cos = [cos(x * type(pi) / m) for x in 0:(N*m)]
+    tab_cos[abs.(tab_cos).<Base.rtoldefault(type)] .= zero(type)
     for ci in CartesianIndices(res)
         res[ci] = tab_cos[sum(ci.I)-N+1]
     end
     return res
 end
 
-function benchmark_Bell(p::Array{T, 3}, sym::Bool; kwargs...) where {T <: Number}
+function benchmark_Bell(p::Array{T,3}, sym::Bool; kwargs...) where {T<:Number}
     normp2 = dot(p, p) / 2
     # weird syntax to enable the compiler to correctly understand the type
     f = let p = p, normp2 = normp2
@@ -73,7 +73,7 @@ function benchmark_Bell(p::Array{T, 3}, sym::Bool; kwargs...) where {T <: Number
             end
         end
     end
-    function reynolds_permutedims(atom::Array{Int, 3}, lmo::BellCorrelationsLMO{T}) where {T <: Number}
+    function reynolds_permutedims(atom::Array{Int,3}, lmo::BellCorrelationsLMO{T}) where {T<:Number}
         res = zeros(T, size(atom))
         for per in [[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]]
             res .+= permutedims(atom, per)
@@ -81,7 +81,7 @@ function benchmark_Bell(p::Array{T, 3}, sym::Bool; kwargs...) where {T <: Number
         res ./= 6
         return res
     end
-    function reynolds_adjoint(gradient::Array{T, 3}, lmo::BellCorrelationsLMO{T}) where {T <: Number}
+    function reynolds_adjoint(gradient::Array{T,3}, lmo::BellCorrelationsLMO{T}) where {T<:Number}
         return gradient # we can spare symmetrising the gradient as it remains symmetric throughout the algorithm
     end
     lmo = BellCorrelationsLMO{T}(size(p, 1), zeros(T, size(p, 1)))
@@ -92,7 +92,15 @@ function benchmark_Bell(p::Array{T, 3}, sym::Bool; kwargs...) where {T <: Number
     println("Output type of the LMO: ", typeof(x0))
     active_set = FrankWolfe.ActiveSet([(one(T), x0)])
     # active_set = FrankWolfe.ActiveSetQuadraticProductCaching([(one(T), x0)], I, -p)
-    return FrankWolfe.blended_pairwise_conditional_gradient(f, grad!, lmo, active_set; lazy=true, line_search=FrankWolfe.Shortstep(one(T)), kwargs...)
+    return FrankWolfe.blended_pairwise_conditional_gradient(
+        f,
+        grad!,
+        lmo,
+        active_set;
+        lazy=true,
+        line_search=FrankWolfe.Shortstep(one(T)),
+        kwargs...,
+    )
 end
 
 p = 0.5correlation_tensor_GHZ_polygon(3, 8)

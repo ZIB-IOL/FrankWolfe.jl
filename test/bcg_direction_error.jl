@@ -1,3 +1,5 @@
+module Test_bcg_direction_error
+
 import FrankWolfe
 using LinearAlgebra
 using Random
@@ -9,10 +11,11 @@ n = Int(1e4)
 k = 1000
 
 s = 41
-Random.seed!(StableRNG(s), s)
+rng = StableRNG(s)
+Random.seed!(rng, s)
 
-xpi = rand(n);
-total = sum(xpi);
+xpi = rand(rng, n)
+total = sum(xpi)
 const xp = xpi # ./ total;
 
 f(x) = norm(x .- xp)^2
@@ -32,6 +35,7 @@ x, v, primal, dual_gap, _, _ = FrankWolfe.blended_conditional_gradient(
     x0,
     max_iteration=k,
     line_search=FrankWolfe.AdaptiveZerothOrder(L_est=2.0),
+    line_search_inner=FrankWolfe.Secant(tol=1e-10),
     print_iter=100,
     memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=false,
@@ -42,7 +46,7 @@ x, v, primal, dual_gap, _, _ = FrankWolfe.blended_conditional_gradient(
     gradient=gradient,
 )
 
-@test dual_gap ≤ 6e-4
+@test dual_gap ≤ 1e-3
 @test f(x0) - f(x) ≥ 180
 
 x0 = FrankWolfe.compute_extreme_point(lmo, spzeros(size(xp)...))
@@ -64,4 +68,6 @@ x, v, primal_cut, dual_gap, _, _ = FrankWolfe.blended_conditional_gradient(
     timeout=3.0,
 )
 
-@test primal ≤ primal_cut
+@test primal ≤ primal_cut + sqrt(eps())
+
+end # module

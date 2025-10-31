@@ -1,8 +1,14 @@
+module Test_blocks
+
 using Test
 using Random
 using LinearAlgebra
 using FrankWolfe
 using SparseArrays
+using StableRNGs
+
+rng = StableRNG(42)
+Random.seed!(rng, 42)
 
 @testset "Block array behavior" begin
     arr = FrankWolfe.BlockVector([
@@ -39,7 +45,7 @@ using SparseArrays
     arr4 = 2 * arr3
     @test arr4.blocks[1] == 6 * ones(2, 2)
     arr5 = FrankWolfe.BlockVector([6 * ones(2, 2), 2 * ones(3, 3)],)
-    arr6 = arr3/2
+    arr6 = arr3 / 2
     arr7 = arr3 * 2
     @test arr6.blocks[1] == 1.5 * ones(2, 2)
     @test isequal(arr4, arr7)
@@ -67,12 +73,12 @@ end
                 1 3 5.0
             ],
         ],)
-        arr1 = rand() * arr0
+        arr1 = rand(rng) * arr0
         d = similar(arr1)
         FrankWolfe.muladd_memory_mode(mem, d, arr1, arr0)
         dref = arr1 - arr0
         @test d == dref
-        gamma = rand()
+        gamma = rand(rng)
         arr2 = zero(arr0)
         FrankWolfe.muladd_memory_mode(mem, arr2, gamma, arr0)
         @test arr2 == -gamma * arr0
@@ -101,37 +107,24 @@ end
         v2 = spzeros(3) .+ 1
         v3 = spzeros(3)
         v3[1] = 1
-        active_set = FrankWolfe.ActiveSet(
-            1/3 * ones(3),
-            [v1, v2, v3],
-            spzeros(3),
-        )
+        active_set = FrankWolfe.ActiveSet(1 / 3 * ones(3), [v1, v2, v3], spzeros(3))
         FrankWolfe.compute_active_set_iterate!(active_set)
-        active_set_dense = FrankWolfe.ActiveSet(
-            1/3 * ones(3),
-            collect.([v1, v2, v3]),
-            zeros(3),
-        )
+        active_set_dense = FrankWolfe.ActiveSet(1 / 3 * ones(3), collect.([v1, v2, v3]), zeros(3))
         FrankWolfe.compute_active_set_iterate!(active_set_dense)
         @test active_set.x ≈ active_set_dense.x
     end
     @testset "Sparse matrices as atoms" begin
         v1 = sparse(1.0I, 3, 3)
         v2 = sparse(2.0I, 3, 3)
-        v2[1,2] = 2
+        v2[1, 2] = 2
         v3 = spzeros(3, 3)
-        active_set = FrankWolfe.ActiveSet(
-            1/3 * ones(3),
-            [v1, v2, v3],
-            spzeros(3,3),
-        )
+        active_set = FrankWolfe.ActiveSet(1 / 3 * ones(3), [v1, v2, v3], spzeros(3, 3))
         FrankWolfe.compute_active_set_iterate!(active_set)
-        active_set_dense = FrankWolfe.ActiveSet(
-            1/3 * ones(3),
-            collect.([v1, v2, v3]),
-            zeros(3,3),
-        )
+        active_set_dense =
+            FrankWolfe.ActiveSet(1 / 3 * ones(3), collect.([v1, v2, v3]), zeros(3, 3))
         FrankWolfe.compute_active_set_iterate!(active_set_dense)
         @test active_set.x ≈ active_set_dense.x
     end
 end
+
+end # module

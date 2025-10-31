@@ -1,6 +1,6 @@
 
 """
-    blended_conditional_gradient(f, grad!, lmo, x0)
+    blended_conditional_gradient(f, grad!, lmo, x0; kwargs...)
 
 Entry point for the Blended Conditional Gradient algorithm.
 See Braun, Gábor, et al. "Blended conditonal gradients" ICML 2019.
@@ -8,6 +8,12 @@ The method works on an active set like [`FrankWolfe.away_frank_wolfe`](@ref),
 performing gradient descent over the convex hull of active vertices,
 removing vertices when their weight drops to 0 and adding new vertices
 by calling the linear oracle in a lazy fashion.
+
+$COMMON_ARGS
+
+$COMMON_KWARGS
+
+$RETURN_ACTIVESET
 """
 function blended_conditional_gradient(
     f,
@@ -36,6 +42,7 @@ function blended_conditional_gradient(
     linesearch_workspace=nothing,
     linesearch_inner_workspace=nothing,
     renorm_interval=1000,
+    d_container=nothing,
     lmo_kwargs...,
 )
     # add the first vertex to active set from initialization
@@ -68,6 +75,7 @@ function blended_conditional_gradient(
         linesearch_workspace=linesearch_workspace,
         linesearch_inner_workspace=linesearch_inner_workspace,
         renorm_interval=renorm_interval,
+        d_container=d_container,
         lmo_kwargs=lmo_kwargs,
     )
 end
@@ -77,8 +85,8 @@ function blended_conditional_gradient(
     grad!,
     lmo,
     active_set::AbstractActiveSet{AT,R};
-    line_search::LineSearchMethod=Adaptive(),
-    line_search_inner::LineSearchMethod=Adaptive(),
+    line_search::LineSearchMethod=Secant(),
+    line_search_inner::LineSearchMethod=Secant(),
     hessian=nothing,
     epsilon=1e-7,
     max_iteration=10000,
@@ -99,6 +107,7 @@ function blended_conditional_gradient(
     linesearch_workspace=nothing,
     linesearch_inner_workspace=nothing,
     renorm_interval=1000,
+    d_container=nothing,
     lmo_kwargs...,
 ) where {AT,R}
 
@@ -149,13 +158,14 @@ function blended_conditional_gradient(
     if gradient === nothing
         gradient = collect(x)
     end
-    d = similar(x)
+    d = d_container !== nothing ? d_container : similar(x)
     primal = f(x)
     grad!(gradient, x)
     # initial gap estimate computation
     vmax = compute_extreme_point(lmo, gradient)
-    phi = (fast_dot(gradient, x) - fast_dot(gradient, vmax)) / 2
-    dual_gap = phi
+    phi_value = (dot(gradient, x) - dot(gradient, vmax)) / 2
+    dual_gap = phi_value
+    execution_status = STATUS_RUNNING
 
     step_type = ST_REGULAR
     time_start = time_ns()
@@ -172,7 +182,7 @@ function blended_conditional_gradient(
             "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
         )
         grad_type = typeof(gradient)
-        println("GRADIENTTYPE: $grad_type sparsity_control: $sparsity_control")
+        println("GRADIENT_TYPE: $grad_type sparsity_control: $sparsity_control")
         println("LMO: $(typeof(lmo))")
 
         if (use_extra_vertex_storage || add_dropped_vertices) && extra_vertex_storage === nothing
@@ -199,9 +209,9 @@ function blended_conditional_gradient(
     # this is never used and only defines gamma in the scope outside of the loop
     gamma = NaN
 
-    while t <= max_iteration && (phi ≥ epsilon || t == 0) # do at least one iteration for consistency with other algos
+    while t <= max_iteration && (phi_value ≥ epsilon || t == 0) # do at least one iteration for consistency with other algos
         #####################
-        # managing time and Ctrl-C
+        # time management
         #####################
         time_at_loop = time_ns()
         if t == 0
@@ -215,6 +225,7 @@ function blended_conditional_gradient(
                 if verbose
                     @info "Time limit reached"
                 end
+                execution_status = STATUS_TIMEOUT
                 break
             end
         end
@@ -229,7 +240,7 @@ function blended_conditional_gradient(
             grad!,
             gradient,
             active_set::AbstractActiveSet,
-            phi,
+            phi_value,
             t,
             time_start,
             non_simplex_iter,
@@ -258,21 +269,21 @@ function blended_conditional_gradient(
             lmo,
             active_set,
             gradient,
-            phi,
+            phi_value,
             sparsity_control;
             inplace_loop=(memory_mode isa InplaceEmphasis),
             force_fw_step=force_fw_step,
             use_extra_vertex_storage=use_extra_vertex_storage,
             extra_vertex_storage=extra_vertex_storage,
-            phi=phi,
+            phi_value=phi_value,
             lmo_kwargs...,
         )
         force_fw_step = false
-        xval = fast_dot(x, gradient)
-        if value > xval - phi / sparsity_control
+        xval = dot(gradient, x)
+        if value > xval - phi_value / sparsity_control
             step_type = ST_DUALSTEP
             # setting gap estimate as ∇f(x) (x - v_FW) / 2
-            phi = (xval - value) / 2
+            phi_value = (xval - value) / 2
             if callback !== nothing
                 state = CallbackState(
                     t,
@@ -291,6 +302,7 @@ function blended_conditional_gradient(
                     step_type,
                 )
                 if callback(state, active_set, non_simplex_iter) === false
+                    execution_status = STATUS_INTERRUPTED
                     break
                 end
             end
@@ -328,6 +340,7 @@ function blended_conditional_gradient(
                     step_type,
                 )
                 if callback(state, active_set, non_simplex_iter) === false
+                    execution_status = STATUS_INTERRUPTED
                     break
                 end
             end
@@ -342,16 +355,31 @@ function blended_conditional_gradient(
                 end
                 active_set_initialize!(active_set, v)
             else
-                active_set_update!(active_set, gamma, v, add_dropped_vertices=use_extra_vertex_storage, vertex_storage=extra_vertex_storage)
+                active_set_update!(
+                    active_set,
+                    gamma,
+                    v,
+                    add_dropped_vertices=use_extra_vertex_storage,
+                    vertex_storage=extra_vertex_storage,
+                )
             end
         end
 
         x = get_active_set_iterate(active_set)
-        dual_gap = phi
+        dual_gap = phi_value
         non_simplex_iter += 1
     end
 
     ## post-processing and cleanup after loop
+    if t >= max_iteration
+        execution_status = STATUS_MAXITER
+    elseif phi_value < max(eps(float(typeof(phi_value))), epsilon)
+        execution_status = STATUS_OPTIMAL
+    end
+    if execution_status === STATUS_RUNNING
+        @warn "Status not set"
+        execution_status = STATUS_OPTIMAL
+    end
 
     # report last iteration
     if callback !== nothing
@@ -359,7 +387,7 @@ function blended_conditional_gradient(
         grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
-        dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
+        dual_gap = dot(gradient, x) - dot(gradient, v)
         tot_time = (time_ns() - time_start) / 1e9
         step_type = ST_LAST
         state = CallbackState(
@@ -382,14 +410,18 @@ function blended_conditional_gradient(
     end
 
     # cleanup the active set, renormalize, and recompute values
-    active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold, add_dropped_vertices=use_extra_vertex_storage, vertex_storage=extra_vertex_storage)
+    active_set_cleanup!(
+        active_set,
+        weight_purge_threshold=weight_purge_threshold,
+        add_dropped_vertices=use_extra_vertex_storage,
+        vertex_storage=extra_vertex_storage,
+    )
     active_set_renormalize!(active_set)
     x = get_active_set_iterate(active_set)
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
-    #dual_gap = 2phi
-    dual_gap = fast_dot(x, gradient) - fast_dot(v, gradient)
+    dual_gap = dot(gradient, x) - dot(gradient, v)
 
     # report post-processed iteration
     if callback !== nothing
@@ -413,7 +445,15 @@ function blended_conditional_gradient(
         )
         callback(state, active_set, non_simplex_iter)
     end
-    return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data, active_set=active_set)
+    return (
+        x=x,
+        v=v,
+        primal=primal,
+        dual_gap=dual_gap,
+        status=execution_status,
+        traj_data=traj_data,
+        active_set=active_set,
+    )
 end
 
 
@@ -440,8 +480,8 @@ function minimize_over_convex_hull!(
     t,
     time_start,
     non_simplex_iter;
-    line_search_inner=Adaptive(),
-    verbose=true,
+    line_search_inner=Secant(),
+    verbose=false,
     print_iter=1000,
     hessian=nothing,
     weight_purge_threshold=weight_purge_threshold_default(R),
@@ -499,10 +539,7 @@ function minimize_over_convex_hull!(
         S = schur(M)
         L_reduced = maximum(S.values)::T
         reduced_f(y) =
-            f(x) - fast_dot(gradient, x) +
-            0.5 * dot(x, hessian, x) +
-            fast_dot(b, y) +
-            0.5 * dot(y, M, y)
+            f(x) - dot(gradient, x) + 0.5 * dot(x, hessian, x) + dot(b, y) + 0.5 * dot(y, M, y)
         function reduced_grad!(storage, x)
             return storage .= b + M * x
         end
@@ -552,7 +589,12 @@ function minimize_over_convex_hull!(
             @. active_set.weights = new_weights
         end
     end
-    active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold, add_dropped_vertices=use_extra_vertex_storage, vertex_storage=extra_vertex_storage)
+    active_set_cleanup!(
+        active_set,
+        weight_purge_threshold=weight_purge_threshold,
+        add_dropped_vertices=use_extra_vertex_storage,
+        vertex_storage=extra_vertex_storage,
+    )
     # if we reached a renorm interval
     if (t + number_of_steps) ÷ renorm_interval > t ÷ renorm_interval
         active_set_renormalize!(active_set)
@@ -588,7 +630,7 @@ function build_reduced_problem(
 )
     n = length(atoms[1])
     k = length(atoms)
-    reduced_linear = [fast_dot(gradient, a) for a in atoms]
+    reduced_linear = [dot(gradient, a) for a in atoms]
     if strong_frankwolfe_gap(reduced_linear) <= tolerance
         return nothing, nothing
     end
@@ -617,7 +659,7 @@ function build_reduced_problem(
     n = length(atoms[1])
     k = length(atoms)
 
-    reduced_linear = [fast_dot(gradient, a) for a in atoms]
+    reduced_linear = [dot(gradient, a) for a in atoms]
     if strong_frankwolfe_gap(reduced_linear) <= tolerance
         return nothing, nothing
     end
@@ -643,7 +685,7 @@ function build_reduced_problem(
     n = length(atoms[1])
     k = length(atoms)
 
-    reduced_linear = [fast_dot(gradient, a) for a in atoms]
+    reduced_linear = [dot(gradient, a) for a in atoms]
     if strong_frankwolfe_gap(reduced_linear) <= tolerance
         return nothing, nothing
     end
@@ -902,8 +944,8 @@ function simplex_gradient_descent_over_convex_hull(
     time_start,
     non_simplex_iter,
     memory_mode::MemoryEmphasis=InplaceEmphasis();
-    line_search_inner=Adaptive(),
-    verbose=true,
+    line_search_inner=Secant(),
+    verbose=false,
     print_iter=1000,
     hessian=nothing,
     weight_purge_threshold=weight_purge_threshold_default(R),
@@ -927,7 +969,7 @@ function simplex_gradient_descent_over_convex_hull(
     while t + number_of_steps ≤ max_iteration
         grad!(gradient, x)
         #Check if strong Wolfe gap over the convex hull is small enough.
-        c = [fast_dot(gradient, a) for a in active_set.atoms]
+        c = [dot(gradient, a) for a in active_set.atoms]
         if maximum(c) - minimum(c) <= tolerance || t + number_of_steps ≥ max_iteration
             return number_of_steps
         end
@@ -942,22 +984,21 @@ function simplex_gradient_descent_over_convex_hull(
         # in that case, inverting the sense of d
         # Computing the quantity below is the same as computing the <-\nabla f(x), direction>.
         # If <-\nabla f(x), direction>  >= 0 the direction is a descent direction.
-        descent_direction_product = fast_dot(d, d) + (csum / k) * sum(d)
-        @inbounds if descent_direction_product < eps(float(eltype(d))) * length(d)
+        descent_direction_product = dot(d, d) + (csum / k) * sum(d)
+        @inbounds if descent_direction_product < line_search_inner.tol
             current_iteration = t + number_of_steps
-            @warn "Non-improving d ($descent_direction_product) due to numerical instability in iteration $current_iteration. Temporarily upgrading precision to BigFloat for the current iteration."
+            @debug "Non-improving d ($descent_direction_product) due to numerical instability in iteration $current_iteration. Temporarily upgrading precision to BigFloat for the current iteration."
             # extended warning - we can discuss what to integrate
             # If higher accuracy is required, consider using DoubleFloats.Double64 (still quite fast) and if that does not help BigFloat (slower) as type for the numbers.
             # Alternatively, consider using AFW (with lazy = true) instead."
             bdir = big.(gradient)
-            c = [fast_dot(bdir, a) for a in active_set.atoms]
+            c = [dot(bdir, a) for a in active_set.atoms]
             csum = sum(c)
             c .-= csum / k
             d = c
-            descent_direction_product_inner = fast_dot(d, d) + (csum / k) * sum(d)
-            if descent_direction_product_inner < 0
-                @warn "d non-improving in large precision, forcing FW"
-                @warn "dot value: $descent_direction_product_inner"
+            descent_direction_product_inner = dot(d, d) + (csum / k) * sum(d)
+            if descent_direction_product_inner < line_search_inner.tol
+                @debug "d non-improving in large precision, forcing FW. Dot value: $descent_direction_product_inner, iteration $current_iteration"
                 return number_of_steps
             end
         end
@@ -981,7 +1022,12 @@ function simplex_gradient_descent_over_convex_hull(
         number_of_steps += 1
         gamma = NaN
         if f(x) ≥ f(y)
-            active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold, add_dropped_vertices=use_extra_vertex_storage, vertex_storage=extra_vertex_storage)
+            active_set_cleanup!(
+                active_set,
+                weight_purge_threshold=weight_purge_threshold,
+                add_dropped_vertices=use_extra_vertex_storage,
+                vertex_storage=extra_vertex_storage,
+            )
         else
             if line_search_inner isa Adaptive
                 gamma = perform_line_search(
@@ -1015,6 +1061,9 @@ function simplex_gradient_descent_over_convex_hull(
                     )
                 end
             else
+                if dot(gradient, x - y) < line_search_inner.tol
+                    return number_of_steps
+                end
                 gamma = perform_line_search(
                     line_search_inner,
                     t,
@@ -1032,7 +1081,12 @@ function simplex_gradient_descent_over_convex_hull(
             # step back from y to x by (1 - γ) η d
             # new point is x - γ η d
             if gamma == 1.0
-                active_set_cleanup!(active_set, weight_purge_threshold=weight_purge_threshold, add_dropped_vertices=use_extra_vertex_storage, vertex_storage=extra_vertex_storage)
+                active_set_cleanup!(
+                    active_set,
+                    weight_purge_threshold=weight_purge_threshold,
+                    add_dropped_vertices=use_extra_vertex_storage,
+                    vertex_storage=extra_vertex_storage,
+                )
             else
                 @. active_set.weights += η * (1 - gamma) * d
                 @. active_set.x = x + gamma * (y - x)
@@ -1093,7 +1147,7 @@ function lp_separation_oracle(
     force_fw_step::Bool=false,
     use_extra_vertex_storage=false,
     extra_vertex_storage=nothing,
-    phi=Inf,
+    phi_value=Inf,
     kwargs...,
 )
     # if FW step forced, ignore active set
@@ -1109,7 +1163,7 @@ function lp_separation_oracle(
                 end
             end
         end
-        val_best = fast_dot(direction, ybest)
+        val_best = dot(direction, ybest)
         for idx in 2:length(active_set)
             y = active_set.atoms[idx]
             if inplace_loop
@@ -1117,20 +1171,20 @@ function lp_separation_oracle(
             else
                 x += active_set.weights[idx] * y
             end
-            val = fast_dot(direction, y)
+            val = dot(direction, y)
             if val < val_best
                 val_best = val
                 ybest = y
             end
         end
-        xval = fast_dot(direction, x)
+        xval = dot(direction, x)
         if xval - val_best ≥ min_gap / sparsity_control
             return (ybest, val_best)
         end
     end
-     # optionally: try vertex storage
+    # optionally: try vertex storage
     if use_extra_vertex_storage && extra_vertex_storage !== nothing
-        lazy_threshold = fast_dot(direction, x) - phi / sparsity_control
+        lazy_threshold = dot(direction, x) - phi_value / sparsity_control
         (found_better_vertex, new_forward_vertex) =
             storage_find_argmin_vertex(extra_vertex_storage, direction, lazy_threshold)
         if found_better_vertex
@@ -1143,6 +1197,6 @@ function lp_separation_oracle(
     else
         y = compute_extreme_point(lmo, direction; kwargs...)
     end
-    # don't return nothing but y, fast_dot(direction, y) / use y for step outside / and update phi as in LCG (lines 402 - 406)
-    return (y, fast_dot(direction, y))
+    # don't return nothing but y, dot(direction, y) / use y for step outside / and update phi_value as in LCG (lines 402 - 406)
+    return (y, dot(direction, y))
 end

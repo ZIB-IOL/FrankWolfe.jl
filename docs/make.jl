@@ -30,8 +30,11 @@ function literate_directory(jl_dir, md_dir)
         # in a testset to isolate local variables between files.
         if startswith(filename, "docs")
             Literate.markdown(
-                filepath, md_dir;
-                documenter=true, flavor=Literate.DocumenterFlavor(), preprocess=include_utils,
+                filepath,
+                md_dir;
+                documenter=true,
+                flavor=Literate.DocumenterFlavor(),
+                preprocess=include_utils,
             )
         end
     end
@@ -88,11 +91,10 @@ makedocs(;
         "How does it work?" => "basics.md",
         "Advanced features" => "advanced.md",
         "Examples" => [joinpath("examples", f) for f in file_list(DOCS_EXAMPLE_DIR, ".md")],
-        "API reference" =>
-            [joinpath("reference", f) for f in file_list(DOCS_REFERENCE_DIR, ".md")],
+        "API reference" => [joinpath("reference", f) for f in file_list(DOCS_REFERENCE_DIR, ".md")],
         "Contributing" => "contributing.md",
     ],
     warnonly=true,
 )
 
-deploydocs(; repo="github.com/ZIB-IOL/FrankWolfe.jl.git", push_preview=true)
+deploydocs(; repo="github.com/ZIB-IOL/FrankWolfe.jl.git", push_preview=true, forcepush=true)

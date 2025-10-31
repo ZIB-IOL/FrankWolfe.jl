@@ -5,6 +5,7 @@
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://zib-iol.github.io/FrankWolfe.jl/stable/)
 [![Coverage](https://codecov.io/gh/ZIB-IOL/FrankWolfe.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/ZIB-IOL/FrankWolfe.jl)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.12720673.svg)](https://doi.org/10.5281/zenodo.12720673)
+[![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
 This package is a toolbox for Frank-Wolfe and conditional gradients algorithms.
 
@@ -62,7 +63,7 @@ julia> f(p) = sum(abs2, p)
 julia> grad!(storage, p) = storage .= 2p  
 
 # pre-defined type implementing the linear minimization oracle interface for the simplex
-julia> lmo = FrankWolfe.ProbabilitySimplexOracle(1.)
+julia> lmo = FrankWolfe.ProbabilitySimplexLMO(1.)
 
 # starting vector (of dimension n=3)
 julia> p0 = [1., 0., 0.]
@@ -72,8 +73,7 @@ julia> p_opt, _ = frank_wolfe(f, grad!, lmo, p0; verbose=true);
 
 Vanilla Frank-Wolfe Algorithm.
 MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: Adaptive EPSILON: 1.0e-7 MAXITERATION: 10000 TYPE: Float64
-MOMENTUM: nothing GRADIENTTYPE: Nothing
-[ Info: In memory_mode memory iterates are written back into x0!
+MOMENTUM: nothing GRADIENT_TYPE: Nothing
 
 -------------------------------------------------------------------------------------------------
   Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec

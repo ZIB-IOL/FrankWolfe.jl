@@ -2,15 +2,15 @@
 abstract type CorrectiveStep end
 
 """
-    run_corrective_step(corrective_step, f, grad!, gradient, x, active_set, t, lmo, line_search, linesearch_workspace, primal, phi, tot_time, callback, renorm_interval) -> (x, phi, primal)
+    run_corrective_step(corrective_step, f, grad!, gradient, x, active_set, t, lmo, line_search, linesearch_workspace, primal, phi_value, tot_time, callback, renorm_interval) -> (x, phi_value, primal)
 
 Corrective step method specific to the `CS` corrective_step type.
-The corrective step can perform whatever update over the current active set, the function should return the new iterate  a FW step should be run next with the boolean `should_fw_step` and compute a new dual gap estimate `phi`.
+The corrective step can perform whatever update over the current active set, the function should return the new iterate  a FW step should be run next with the boolean `should_fw_step` and compute a new dual gap estimate `phi_value`.
 """
 function run_corrective_step end
 
 """
-    prepare_corrective_step(corrective_step::CS, f, grad!, gradient, active_set, t, lmo, primal, phi, tot_time) -> (should_compute_vertex, use_corrective)
+    prepare_corrective_step(corrective_step::CS, f, grad!, gradient, active_set, t, lmo, primal, phi_value, tot_time) -> (should_compute_vertex, use_corrective)
 
 `should_compute_vertex` is a boolean flag deciding whether a new vertex should be computed.
 `use_corrective` is a function that takes the vertex (the vertex is a valid new vertex only if should_compute_vertex was true)
@@ -27,15 +27,46 @@ end
 
 AwayStep(lazy=false) = AwayStep(lazy, 2.0)
 
-function prepare_corrective_step(corrective_step::AwayStep, f, grad!, gradient, active_set, t, lmo, primal, phi)
+function prepare_corrective_step(
+    corrective_step::AwayStep,
+    f,
+    grad!,
+    gradient,
+    active_set,
+    t,
+    lmo,
+    primal,
+    phi_value,
+)
     should_compute_vertex = !corrective_step.lazy
     return should_compute_vertex
 end
 
-function run_corrective_step(corrective_step::AwayStep, f, grad!, gradient, x, v, dual_gap, active_set, t, lmo, line_search, linesearch_workspace, primal, phi, tot_time, callback, renorm_interval, memory_mode, epsilon, d)
+function run_corrective_step(
+    corrective_step::AwayStep,
+    f,
+    grad!,
+    gradient,
+    x,
+    v,
+    dual_gap,
+    active_set,
+    t,
+    lmo,
+    line_search,
+    linesearch_workspace,
+    primal,
+    phi_value,
+    tot_time,
+    callback,
+    renorm_interval,
+    memory_mode,
+    epsilon,
+    d,
+)
     _, v_lazy, v_loc, _, a_lambda, a, a_loc, _, _ = active_set_argminmax(active_set, gradient)
-    grad_dot_x = fast_dot(x, gradient)
-    grad_dot_a = fast_dot(a, gradient)
+    grad_dot_x = dot(gradient, x)
+    grad_dot_a = dot(gradient, a)
     away_gap = grad_dot_a - grad_dot_x
     # flag for whether callback interrupts the solving process
     should_continue = true
@@ -62,8 +93,8 @@ function run_corrective_step(corrective_step::AwayStep, f, grad!, gradient, x, v
                 state = CallbackState(
                     t,
                     primal,
-                    primal - phi,
-                    phi,
+                    primal - phi_value,
+                    phi_value,
                     tot_time,
                     x,
                     v,
@@ -77,7 +108,7 @@ function run_corrective_step(corrective_step::AwayStep, f, grad!, gradient, x, v
                 )
                 should_continue = callback(state, active_set)
             end
-            active_set_update!(active_set, -gamma, a, true, a_loc)        
+            active_set_update!(active_set, -gamma, a, true, a_loc)
         else
             should_fw_step = true
         end
@@ -85,9 +116,9 @@ function run_corrective_step(corrective_step::AwayStep, f, grad!, gradient, x, v
         # compute the local FW gap over the active set 
         away_step_taken = false
         lazy_fw_step_taken = false
-        grad_dot_lazy_fw_vertex = fast_dot(v_lazy, gradient)
+        grad_dot_lazy_fw_vertex = dot(gradient, v_lazy)
         lazy_gap = grad_dot_x - grad_dot_lazy_fw_vertex
-        if lazy_gap >= max(away_gap, phi / corrective_step.lazy_tolerance, epsilon)
+        if lazy_gap >= max(away_gap, phi_value / corrective_step.lazy_tolerance, epsilon)
             step_type = ST_LAZY
             gamma_max = one(a_lambda)
             d = muladd_memory_mode(memory_mode, d, x, v_lazy)
@@ -95,7 +126,7 @@ function run_corrective_step(corrective_step::AwayStep, f, grad!, gradient, x, v
             lazy_fw_step_taken = true
             index = v_loc
             should_fw_step = false
-        elseif away_gap >= max(phi / corrective_step.lazy_tolerance, epsilon)
+        elseif away_gap >= max(phi_value / corrective_step.lazy_tolerance, epsilon)
             step_type = ST_AWAY
             gamma_max = a_lambda / (1 - a_lambda)
             d = muladd_memory_mode(memory_mode, d, a, x)
@@ -106,20 +137,20 @@ function run_corrective_step(corrective_step::AwayStep, f, grad!, gradient, x, v
         else
             # call the true LMO since `v` was not updated
             v = vertex = compute_extreme_point(lmo, gradient)
-            grad_dot_fw_vertex = fast_dot(v, gradient)
+            grad_dot_fw_vertex = dot(gradient, v)
             dual_gap = grad_dot_x - grad_dot_fw_vertex
             # if enough progress, perform regular FW step
-            if dual_gap >= phi / corrective_step.lazy_tolerance
+            if dual_gap >= phi_value / corrective_step.lazy_tolerance
                 should_fw_step = true
             else
                 step_type = ST_DUALSTEP
-                phi = min(dual_gap, phi / 2)
+                phi_value = min(dual_gap, phi_value / 2)
                 should_fw_step = false
                 state = CallbackState(
                     t,
                     primal,
-                    primal - phi,
-                    phi,
+                    primal - phi_value,
+                    phi_value,
                     tot_time,
                     x,
                     v,
@@ -154,8 +185,8 @@ function run_corrective_step(corrective_step::AwayStep, f, grad!, gradient, x, v
             state = CallbackState(
                 t,
                 primal,
-                primal - phi,
-                phi,
+                primal - phi_value,
+                phi_value,
                 tot_time,
                 x,
                 vertex,
@@ -183,7 +214,7 @@ function run_corrective_step(corrective_step::AwayStep, f, grad!, gradient, x, v
             end
         end
     end
-    return x, v, phi, dual_gap, should_fw_step, should_continue
+    return x, v, phi_value, dual_gap, should_fw_step, should_continue
 end
 
 struct BlendedPairwiseStep{T} <: CorrectiveStep
@@ -193,22 +224,53 @@ end
 
 BlendedPairwiseStep(lazy=false) = BlendedPairwiseStep(lazy, 2.0)
 
-function prepare_corrective_step(corrective_step::BlendedPairwiseStep, f, grad!, gradient, active_set, t, lmo, primal, phi)
+function prepare_corrective_step(
+    corrective_step::BlendedPairwiseStep,
+    f,
+    grad!,
+    gradient,
+    active_set,
+    t,
+    lmo,
+    primal,
+    phi_value,
+)
     should_compute_vertex = !corrective_step.lazy
     return should_compute_vertex
 end
 
-function run_corrective_step(corrective_step::BlendedPairwiseStep, f, grad!, gradient, x, v, dual_gap, active_set, t, lmo, line_search, linesearch_workspace, primal, phi, tot_time, callback, renorm_interval, memory_mode, epsilon, d)
+function run_corrective_step(
+    corrective_step::BlendedPairwiseStep,
+    f,
+    grad!,
+    gradient,
+    x,
+    v,
+    dual_gap,
+    active_set,
+    t,
+    lmo,
+    line_search,
+    linesearch_workspace,
+    primal,
+    phi_value,
+    tot_time,
+    callback,
+    renorm_interval,
+    memory_mode,
+    epsilon,
+    d,
+)
     _, v_local, v_loc, _, a_lambda, a, a_loc, _, _ = active_set_argminmax(active_set, gradient)
-    grad_dot_x = fast_dot(x, gradient)
-    grad_dot_a = fast_dot(a, gradient)
-    grad_dot_local_fw_vertex = fast_dot(v_local, gradient)
+    grad_dot_x = dot(gradient, x)
+    grad_dot_a = dot(gradient, a)
+    grad_dot_local_fw_vertex = dot(gradient, v_local)
     local_gap = grad_dot_a - grad_dot_local_fw_vertex
     # flag for whether callback interrupts the solving process
     should_continue = true
     # perform local step if the local_gap promises enough progress
-    # if nonlazy, phi is already computed as the true dual gap
-    if local_gap >= max(phi / corrective_step.lazy_tolerance, epsilon)
+    # if nonlazy, phi_value is already computed as the true dual gap
+    if local_gap >= max(phi_value / corrective_step.lazy_tolerance, epsilon)
         d = muladd_memory_mode(memory_mode, d, a, v_local)
         vertex_taken = v_local
         gamma_max = a_lambda
@@ -230,8 +292,8 @@ function run_corrective_step(corrective_step::BlendedPairwiseStep, f, grad!, gra
         state = CallbackState(
             t,
             primal,
-            primal - phi,
-            phi,
+            primal - phi_value,
+            phi_value,
             tot_time,
             x,
             v,
@@ -263,21 +325,21 @@ function run_corrective_step(corrective_step::BlendedPairwiseStep, f, grad!, gra
             should_fw_step = true
         else # lazy case, v needs to be computed here
             v = compute_extreme_point(lmo, gradient)
-            dual_gap = grad_dot_x - fast_dot(gradient, v)
+            dual_gap = grad_dot_x - dot(gradient, v)
             # FW vertex promises progress
-            if dual_gap ≥ max(epsilon, phi / corrective_step.lazy_tolerance)
+            if dual_gap ≥ max(epsilon, phi_value / corrective_step.lazy_tolerance)
                 should_fw_step = true
             else
                 should_fw_step = false
                 step_type = ST_DUALSTEP
-                phi = min(dual_gap, phi / 2)
+                phi_value = min(dual_gap, phi_value / 2)
                 if callback !== nothing
                     gamma = zero(a_lambda)
                     state = CallbackState(
                         t,
                         primal,
-                        primal - phi,
-                        phi,
+                        primal - phi_value,
+                        phi_value,
                         tot_time,
                         x,
                         v,
@@ -294,7 +356,7 @@ function run_corrective_step(corrective_step::BlendedPairwiseStep, f, grad!, gra
             end
         end
     end
-    return x, v, phi, dual_gap, should_fw_step, should_continue
+    return x, v, phi_value, dual_gap, should_fw_step, should_continue
 end
 
 """
@@ -310,41 +372,72 @@ end
 
 HybridPairAwayStep(lazy, d_pairwise) = HybridPairAwayStep(lazy, d_pairwise, 2.0)
 
-function prepare_corrective_step(corrective_step::HybridPairAwayStep, f, grad!, gradient, active_set, t, lmo, primal, phi)
+function prepare_corrective_step(
+    corrective_step::HybridPairAwayStep,
+    f,
+    grad!,
+    gradient,
+    active_set,
+    t,
+    lmo,
+    primal,
+    phi_value,
+)
     return !corrective_step.lazy
 end
 
-function run_corrective_step(corrective_step::HybridPairAwayStep, f, grad!, gradient, x, v, dual_gap, active_set, t, lmo, line_search, linesearch_workspace, primal, phi, tot_time, callback, renorm_interval, memory_mode, epsilon, d)
+function run_corrective_step(
+    corrective_step::HybridPairAwayStep,
+    f,
+    grad!,
+    gradient,
+    x,
+    v,
+    dual_gap,
+    active_set,
+    t,
+    lmo,
+    line_search,
+    linesearch_workspace,
+    primal,
+    phi_value,
+    tot_time,
+    callback,
+    renorm_interval,
+    memory_mode,
+    epsilon,
+    d,
+)
     _, v_local, v_loc, _, a_lambda, a, a_loc, _, _ = active_set_argminmax(active_set, gradient)
-    grad_dot_x = fast_dot(x, gradient)
-    grad_dot_a = fast_dot(a, gradient)
-    grad_dot_local_fw_vertex = fast_dot(v_local, gradient)
+    grad_dot_x = dot(gradient, x)
+    grad_dot_a = dot(gradient, a)
+    grad_dot_local_fw_vertex = dot(gradient, v_local)
     pairwise_gap = grad_dot_a - grad_dot_local_fw_vertex
     lazy_gap = grad_dot_x - grad_dot_local_fw_vertex
     # flag for whether callback interrupts the solving process
     should_continue = true
     # if not enough progress from pairwise or local, directly perform a FW step
-    if max(pairwise_gap, lazy_gap) < max(phi / corrective_step.lazy_tolerance, epsilon)
+    if max(pairwise_gap, lazy_gap) < max(phi_value / corrective_step.lazy_tolerance, epsilon)
         if !corrective_step.lazy
             # v computed above already
             should_fw_step = true
         else # lazy case, v needs to be computed here
             v = compute_extreme_point(lmo, gradient)
-            dual_gap = grad_dot_x - fast_dot(gradient, v)
+            dual_gap = grad_dot_x - dot(gradient, v)
             # FW vertex promises progress
-            if dual_gap ≥ max(epsilon, phi / corrective_step.lazy_tolerance)
+            if dual_gap ≥ max(epsilon, phi_value / corrective_step.lazy_tolerance)
                 should_fw_step = true
             else
                 should_fw_step = false
                 step_type = ST_DUALSTEP
-                phi = min(dual_gap, phi / 2)
+                phi_value = min(dual_gap, phi_value / 2)
                 if callback !== nothing
                     gamma = zero(a_lambda)
                     state = CallbackState(
                         t,
                         primal,
-                        primal - phi,
-                        phi,
+                        primal - phi_value,
+                        phi_value,
                         tot_time,
                         x,
                         v,
@@ -360,7 +453,7 @@ function run_corrective_step(corrective_step::HybridPairAwayStep, f, grad!, grad
                 end
             end
         end
-    elseif pairwise_gap > max(phi / corrective_step.lazy_tolerance, epsilon)
+    elseif pairwise_gap > max(phi_value / corrective_step.lazy_tolerance, epsilon)
         should_fw_step = false
         d_pairwise = muladd_memory_mode(memory_mode, corrective_step.d_pairwise, a, v_local)
         vertex_taken = v_local
@@ -422,12 +515,12 @@ function run_corrective_step(corrective_step::HybridPairAwayStep, f, grad!, grad
             gamma = gamma_pairwise
             step_type = step_type_pairwise
         end
-        
+
         state = CallbackState(
             t,
             primal,
-            primal - phi,
-            phi,
+            primal - phi_value,
+            phi_value,
             tot_time,
             x,
             v_local,
@@ -462,8 +555,8 @@ function run_corrective_step(corrective_step::HybridPairAwayStep, f, grad!, grad
         state = CallbackState(
             t,
             primal,
-            primal - phi,
-            phi,
+            primal - phi_value,
+            phi_value,
             tot_time,
             x,
             v,
@@ -505,8 +598,8 @@ function run_corrective_step(corrective_step::HybridPairAwayStep, f, grad!, grad
         state = CallbackState(
             t,
             primal,
-            primal - phi,
-            phi,
+            primal - phi_value,
+            phi_value,
             tot_time,
             x,
             vertex,
@@ -528,7 +621,7 @@ function run_corrective_step(corrective_step::HybridPairAwayStep, f, grad!, grad
             x = compute_active_set_iterate!(active_set)
         end
     end
-    return x, v, phi, dual_gap, should_fw_step, should_continue
+    return x, v, phi_value, dual_gap, should_fw_step, should_continue
 end
 
 """
@@ -539,24 +632,56 @@ struct PairwiseStep{T} <: CorrectiveStep
     lazy_tolerance::T
 end
 
-PairwiseStep(lazy = false, lazy_tolerance = 2.0) = PairwiseStep(lazy, lazy_tolerance)
+PairwiseStep(lazy=false, lazy_tolerance=2.0) = PairwiseStep(lazy, lazy_tolerance)
 
-function prepare_corrective_step(corrective_step::PairwiseStep, f, grad!, gradient, active_set, t, lmo, primal, phi)
+function prepare_corrective_step(
+    corrective_step::PairwiseStep,
+    f,
+    grad!,
+    gradient,
+    active_set,
+    t,
+    lmo,
+    primal,
+    phi_value,
+)
     return !corrective_step.lazy
 end
 
-function run_corrective_step(corrective_step::PairwiseStep, f, grad!, gradient, x, v, dual_gap, active_set, t, lmo, line_search, linesearch_workspace, primal, phi, tot_time, callback, renorm_interval, memory_mode, epsilon, d)
+function run_corrective_step(
+    corrective_step::PairwiseStep,
+    f,
+    grad!,
+    gradient,
+    x,
+    v,
+    dual_gap,
+    active_set,
+    t,
+    lmo,
+    line_search,
+    linesearch_workspace,
+    primal,
+    phi_value,
+    tot_time,
+    callback,
+    renorm_interval,
+    memory_mode,
+    epsilon,
+    d,
+)
     _, v_local, v_loc, _, a_lambda, a, a_loc, _, _ = active_set_argminmax(active_set, gradient)
-    grad_dot_x = fast_dot(x, gradient)
-    grad_dot_a = fast_dot(a, gradient)
-    grad_dot_local_fw_vertex = fast_dot(v_local, gradient)
+    grad_dot_x = dot(gradient, x)
+    grad_dot_a = dot(gradient, a)
+    grad_dot_local_fw_vertex = dot(gradient, v_local)
     local_pairwise_gap = grad_dot_a - grad_dot_local_fw_vertex
     # flag for whether callback interrupts the solving process
     should_continue = true
     should_fw_step = false
     take_local = false
     fw_index = v_loc
-    if corrective_step.lazy && local_pairwise_gap >= max(phi / corrective_step.lazy_tolerance, epsilon)
+    if corrective_step.lazy &&
+       local_pairwise_gap >= max(phi_value / corrective_step.lazy_tolerance, epsilon)
         fw_vertex = v_local
         d = muladd_memory_mode(memory_mode, d, a, v_local)
         take_local = true
@@ -564,8 +689,8 @@ function run_corrective_step(corrective_step::PairwiseStep, f, grad!, gradient, 
         # if not lazy, v is already computed
         if corrective_step.lazy
             v = compute_extreme_point(lmo, gradient)
-            dual_gap = grad_dot_x - fast_dot(gradient, v)
-            phi = min(phi, dual_gap)
+            dual_gap = grad_dot_x - dot(gradient, v)
+            phi_value = min(phi_value, dual_gap)
         end
         d = muladd_memory_mode(memory_mode, d, a, v)
         fw_vertex = v
@@ -594,8 +719,8 @@ function run_corrective_step(corrective_step::PairwiseStep, f, grad!, gradient, 
     state = CallbackState(
         t,
         primal,
-        primal - phi,
-        phi,
+        primal - phi_value,
+        phi_value,
         tot_time,
         x,
         fw_vertex,
@@ -615,5 +740,5 @@ function run_corrective_step(corrective_step::PairwiseStep, f, grad!, gradient, 
     # fw update
     fw_index = take_local ? v_loc : nothing
     active_set_update!(active_set, gamma, fw_vertex, true, fw_index)
-    return x, v, phi, dual_gap, should_fw_step, should_continue
+    return x, v, phi_value, dual_gap, should_fw_step, should_continue
 end

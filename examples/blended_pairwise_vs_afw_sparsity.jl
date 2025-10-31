@@ -39,9 +39,9 @@ const lmo = FrankWolfe.KSparseLMO(5, 1.0)
 
 ## other LMOs to try
 # lmo_big = FrankWolfe.KSparseLMO(100, big"1.0")
-# lmo = FrankWolfe.LpNormLMO{Float64,5}(1.0)
-# lmo = FrankWolfe.ProbabilitySimplexOracle(1.0);
-# lmo = FrankWolfe.UnitSimplexOracle(1.0);
+# lmo = FrankWolfe.LpNormBallLMO{Float64,5}(1.0)
+# lmo = FrankWolfe.ProbabilitySimplexLMO(1.0);
+# lmo = FrankWolfe.UnitSimplexLMO(1.0);
 
 const x00 = FrankWolfe.compute_extreme_point(lmo, rand(n))
 
@@ -62,7 +62,7 @@ end
 FrankWolfe.benchmark_oracles(f, grad!, () -> randn(n), lmo; k=100)
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, trajectory_shortstep = FrankWolfe.frank_wolfe(
+@time x, v, primal, dual_gap, status, trajectory_shortstep = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -80,7 +80,7 @@ trajectory_afw = []
 callback = build_callback(trajectory_afw)
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
+@time x, v, primal, dual_gap, status, _, _ = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
@@ -99,7 +99,7 @@ trajectory_lafw = []
 callback = build_callback(trajectory_lafw)
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
+@time x, v, primal, dual_gap, status, _, _ = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
@@ -118,7 +118,7 @@ trajectoryBPCG = []
 callback = build_callback(trajectoryBPCG)
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+@time x, v, primal, dual_gap, _, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -137,7 +137,7 @@ trajectoryLBPCG = []
 callback = build_callback(trajectoryLBPCG)
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+@time x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
