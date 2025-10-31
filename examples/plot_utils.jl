@@ -262,7 +262,7 @@ function plot_grid(
     reduce_size=false,
     line_width=1.3,
     empty_marker=false,
-    offset=2,
+    offset=xscalelog ? 2 : 1,
 )
     # theme(:dark)
     # theme(:vibrant)
