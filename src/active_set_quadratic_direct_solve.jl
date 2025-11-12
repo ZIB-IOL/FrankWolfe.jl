@@ -116,30 +116,6 @@ end
 
 function ActiveSetQuadraticLinearSolve(
     inner_as::AbstractActiveSet,
-    A::LinearAlgebra.UniformScaling,
-    b,
-    lp_optimizer;
-    scheduler=LogScheduler(),
-    wolfe_step=false,
-)
-    as = ActiveSetQuadraticLinearSolve(
-        inner_as.weights,
-        inner_as.atoms,
-        inner_as.x,
-        A,
-        b,
-        inner_as,
-        lp_optimizer,
-        wolfe_step,
-        scheduler,
-        Ref(0),
-    )
-    compute_active_set_iterate!(as)
-    return as
-end
-
-function ActiveSetQuadraticLinearSolve(
-    inner_as::AbstractActiveSet,
     grad!::Function,
     lp_optimizer;
     scheduler=LogScheduler(),
