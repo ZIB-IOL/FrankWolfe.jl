@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Blended Conditional Gradients · FrankWolfe.jl</title><meta name="title" content="Blended Conditional Gradients · FrankWolfe.jl"/><meta property="og:title" content="Blended Conditional Gradients · FrankWolfe.jl"/><meta property="twitter:title" content="Blended Conditional Gradients · FrankWolfe.jl"/><meta name="description" content="Documentation for FrankWolfe.jl."/><meta property="og:description" content="Documentation for FrankWolfe.jl."/><meta property="twitter:description" content="Documentation for FrankWolfe.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">FrankWolfe.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../basics/">How does it work?</a></li><li><a class="tocitem" href="../../advanced/">Advanced features</a></li><li><input class="collapse-toggle" id="menuitem-4" type="checkbox" checked/><label class="tocitem" for="menuitem-4"><span class="docs-label">Examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../docs_00_fw_visualized/">Visualization of Frank-Wolfe running on a 2-dimensional polytope</a></li><li><a class="tocitem" href="../docs_01_mathopt_lmo/">Comparison with MathOptInterface on a Probability Simplex</a></li><li><a class="tocitem" href="../docs_02_polynomial_regression/">Polynomial Regression</a></li><li><a class="tocitem" href="../docs_03_matrix_completion/">Matrix Completion</a></li><li><a class="tocitem" href="../docs_04_rational_opt/">Exact Optimization with Rational Arithmetic</a></li><li class="is-active"><a class="tocitem" href>Blended Conditional Gradients</a></li><li><a class="tocitem" href="../docs_06_spectrahedron/">Spectrahedron</a></li><li><a class="tocitem" href="../docs_07_shifted_norm_polytopes/">FrankWolfe for scaled, shifted <span>$\ell^1$</span> and <span>$\ell^{\infty}$</span> norm balls</a></li><li><a class="tocitem" href="../docs_08_callback_and_tracking/">Tracking, counters and custom callbacks for Frank Wolfe</a></li><li><a class="tocitem" href="../docs_09_extra_vertex_storage/">Extra-lazification</a></li><li><a class="tocitem" href="../docs_10_alternating_methods/">Alternating methods</a></li><li><a class="tocitem" href="../docs_11_block_coordinate_fw/">Block-Coordinate Frank-Wolfe and Block-Vectors</a></li><li><a class="tocitem" href="../docs_12_quadratic_symmetric/">Accelerations for quadratic functions and symmetric problems</a></li><li><a class="tocitem" href="../docs_13_dca_fw/">Difference-of-Convex Algorithm with Frank-Wolfe</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-5" type="checkbox"/><label class="tocitem" for="menuitem-5"><span class="docs-label">API reference</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../reference/0_reference/">API Reference</a></li><li><a class="tocitem" href="../../reference/1_algorithms/">Algorithms</a></li><li><a class="tocitem" href="../../reference/2_lmo/">Linear Minimization Oracles</a></li><li><a class="tocitem" href="../../reference/3_backend/">Utilities and data structures</a></li><li><a class="tocitem" href="../../reference/4_linesearch/">Line search and step size settings</a></li><li><a class="tocitem" href="../../reference/5_gradient_descent/">Adaptive Proximal Gradient Descent Methods</a></li></ul></li><li><a class="tocitem" href="../../contributing/">Contributing</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Blended Conditional Gradients</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Blended Conditional Gradients</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/ZIB-IOL/FrankWolfe.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/ZIB-IOL/FrankWolfe.jl/blob/master/examples/docs_05_blended_cg.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><pre class="documenter-example-output"><code class="nohighlight hljs ansi">plot_sparsity (generic function with 1 method)</code></pre><h1 id="Blended-Conditional-Gradients"><a class="docs-heading-anchor" href="#Blended-Conditional-Gradients">Blended Conditional Gradients</a><a id="Blended-Conditional-Gradients-1"></a><a class="docs-heading-anchor-permalink" href="#Blended-Conditional-Gradients" title="Permalink"></a></h1><p>The FW and AFW algorithms, and their lazy variants share one feature: they attempt to make primal progress over a reduced set of vertices. The AFW algorithm does this through away steps (which do not increase the cardinality of the active set), and the lazy variants do this through the use of previously exploited vertices. A third strategy that one can follow is to explicitly <em>blend</em> Frank-Wolfe steps with gradient descent steps over the convex hull of the active set (note that this can be done without requiring a projection oracle over <span>$C$</span>, thus making the algorithm projection-free). This results in the <em>Blended Conditional Gradient</em> (BCG) algorithm, which attempts to make as much progress as possible through the convex hull of the current active set <span>$S_t$</span> until it automatically detects that in order to make further progress it requires additional calls to the LMO.</p><p>See also Blended Conditional Gradients: the unconditioning of conditional gradients, Braun et al, 2019, https://arxiv.org/abs/1805.07311</p><pre><code class="language-julia hljs">using FrankWolfe
+using LinearAlgebra
+using Random
+using SparseArrays
+
+n = 1000
+k = 10000
+
+Random.seed!(41)
+
+matrix = rand(n, n)
+hessian = transpose(matrix) * matrix
+linear = rand(n)
+f(x) = dot(linear, x) + 0.5 * transpose(x) * hessian * x
+function grad!(storage, x)
+    return storage .= linear + hessian * x
+end
+L = eigmax(hessian)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">250643.69867666418</code></pre><p>We run over the probability simplex and call the LMO to get an initial feasible point:</p><pre><code class="language-julia hljs">lmo = FrankWolfe.ProbabilitySimplexLMO(1.0);
+x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
+
+target_tolerance = 1e-5
+
+x0 = deepcopy(x00)
+res_accel_simplex = FrankWolfe.blended_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    x0,
+    epsilon=target_tolerance,
+    max_iteration=k,
+    line_search=FrankWolfe.Adaptive(L_est=L),
+    print_iter=k / 10,
+    hessian=hessian,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
+    accelerated=true,
+    verbose=true,
+    trajectory=true,
+    sparsity_control=1.0,
+    weight_purge_threshold=1e-10,
+)
+
+x0 = deepcopy(x00)
+res_simplex = FrankWolfe.blended_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    x0,
+    epsilon=target_tolerance,
+    max_iteration=k,
+    line_search=FrankWolfe.Adaptive(L_est=L),
+    print_iter=k / 10,
+    hessian=hessian,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
+    accelerated=false,
+    verbose=true,
+    trajectory=true,
+    sparsity_control=1.0,
+    weight_purge_threshold=1e-10,
+)
+
+x0 = deepcopy(x00)
+res_bcg_convex = FrankWolfe.blended_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    x0,
+    epsilon=target_tolerance,
+    max_iteration=k,
+    line_search=FrankWolfe.Adaptive(L_est=L),
+    print_iter=k / 10,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
+    verbose=true,
+    trajectory=true,
+    sparsity_control=1.0,
+    weight_purge_threshold=1e-10,
+)
+
+data = [res_accel_simplex.traj_data, res_simplex.traj_data, res_bcg_convex.traj_data]
+label = [&quot;BCG (accel simplex)&quot;, &quot;BCG (simplex)&quot;, &quot;BCG (convex)&quot;]
+plot_trajectories(data, label, xscalelog=true)
+
+
+
+matrix = rand(n, n)
+hessian = transpose(matrix) * matrix
+linear = rand(n)
+f(x) = dot(linear, x) + 0.5 * transpose(x) * hessian * x + 10
+function grad!(storage, x)
+    return storage .= linear + hessian * x
+end
+L = eigmax(hessian)
+
+lmo = FrankWolfe.KSparseLMO(100, 100.0)
+x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
+
+x0 = deepcopy(x00)
+x, v, primal, dual_gap, _, trajectoryBCG_accel_simplex, _ = FrankWolfe.blended_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    x0,
+    epsilon=target_tolerance,
+    max_iteration=k,
+    line_search=FrankWolfe.Adaptive(L_est=L),
+    print_iter=k / 10,
+    hessian=hessian,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
+    accelerated=true,
+    verbose=true,
+    trajectory=true,
+    sparsity_control=1.0,
+    weight_purge_threshold=1e-10,
+)
+
+x0 = deepcopy(x00)
+x, v, primal, dual_gap, _, trajectoryBCG_simplex, _ = FrankWolfe.blended_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    x0,
+    epsilon=target_tolerance,
+    max_iteration=k,
+    line_search=FrankWolfe.Adaptive(L_est=L),
+    print_iter=k / 10,
+    hessian=hessian,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
+    accelerated=false,
+    verbose=true,
+    trajectory=true,
+    sparsity_control=1.0,
+    weight_purge_threshold=1e-10,
+)
+
+x0 = deepcopy(x00)
+x, v, primal, dual_gap, _, trajectoryBCG_convex, _ = FrankWolfe.blended_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    x0,
+    epsilon=target_tolerance,
+    max_iteration=k,
+    line_search=FrankWolfe.Adaptive(L_est=L),
+    print_iter=k / 10,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
+    verbose=true,
+    trajectory=true,
+    sparsity_control=1.0,
+    weight_purge_threshold=1e-10,
+)
+
+data = [trajectoryBCG_accel_simplex, trajectoryBCG_simplex, trajectoryBCG_convex]
+label = [&quot;BCG (accel simplex)&quot;, &quot;BCG (simplex)&quot;, &quot;BCG (convex)&quot;]
+plot_trajectories(data, label, xscalelog=true)</code></pre><img src="920647b0.svg" alt="Example block output"/><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../docs_04_rational_opt/">« Exact Optimization with Rational Arithmetic</a><a class="docs-footer-nextpage" href="../docs_06_spectrahedron/">Spectrahedron »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.15.0 on <span class="colophon-date" title="Thursday 13 November 2025 14:39">Thursday 13 November 2025</span>. Using Julia version 1.6.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
