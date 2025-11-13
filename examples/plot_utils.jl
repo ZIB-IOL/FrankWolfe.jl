@@ -244,9 +244,14 @@ end
     z_order := 1
 end
 
-function plot_trajectories(
+function plot_grid(
     data,
-    label;
+    label::Vector{String},
+    x_indices::Vector{Int},
+    y_indices::Vector{Int},
+    x_labels::Vector{String},
+    y_labels::Vector{String};
+    size = (300 * length(x_indices), 200 * length(y_indices)),
     filename=nothing,
     xscalelog=false,
     yscalelog=true,
@@ -255,12 +260,9 @@ function plot_trajectories(
     marker_shapes=nothing,
     n_markers=10,
     reduce_size=false,
-    primal_offset=1e-8,
     line_width=1.3,
     empty_marker=false,
-    extra_plot=false,
-    extra_plot_label="",
-    plot_title="",
+    offset=xscalelog ? 2 : 1,
 )
     # theme(:dark)
     # theme(:vibrant)
@@ -268,7 +270,6 @@ function plot_trajectories(
 
     x = []
     y = []
-    offset = 2
 
     function sub_plot(idx_x, idx_y; legend=false, xlabel="", ylabel="", y_offset=0)
 
@@ -331,24 +332,40 @@ function plot_trajectories(
         return fig
     end
 
-    pit = sub_plot(1, 2; legend=legend_position, ylabel="Primal", y_offset=primal_offset)
-    pti = sub_plot(5, 2; y_offset=primal_offset)
-    dit = sub_plot(1, 4; xlabel="Iterations", ylabel="FW gap")
-    dti = sub_plot(5, 4; xlabel="Time (s)")
-
-    if extra_plot
-        iit = sub_plot(1, 6; ylabel=extra_plot_label)
-        iti = sub_plot(5, 6)
-        fp = plot(pit, pti, iit, iti, dit, dti, layout=(3, 2), plot_title=plot_title) # layout = @layout([A{0.01h}; [B C; D E]]))
-        plot!(size=(600, 600))
-    else
-        fp = plot(pit, pti, dit, dti, layout=(2, 2), plot_title=plot_title) # layout = @layout([A{0.01h}; [B C; D E]]))
-        plot!(size=(600, 400))
+    figs = []
+    for (j, idx_y) in enumerate(y_indices)
+        for (i, idx_x) in enumerate(x_indices)
+            fig = sub_plot(idx_x, idx_y;
+                legend=(i == 1 && j == 1 ? legend_position : nothing),  # Add legend to first plot of the grid
+                xlabel=(j==length(y_indices) ? x_labels[i] : ""),  # Add x_label to last plot of a column
+                ylabel=(i==1 ? y_labels[j] : ""))                  # Add y_label to first plot of a row
+            push!(figs, fig)
+        end
     end
+
+    l = grid(length(y_indices), length(x_indices), heights=fill(1/length(y_indices), length(y_indices)), widhts=fill(1/length(x_indices), length(x_indices)))
+
+    fp = plot(figs..., layout=l)
+    plot!(size=size)
     if filename !== nothing
         savefig(fp, filename)
     end
     return fp
+
+end
+
+function plot_trajectories(
+    data,
+    label;
+    extra_plot=false,
+    extra_plot_label="",
+    kwargs...
+)
+    if extra_plot
+        plot_grid(data, label, [1, 5], [2, 6, 4], ["Iterations", "Time (s)"], ["Primal", extra_plot_label, "FW gap"]; kwargs...)
+    else
+        plot_grid(data, label, [1, 5], [2, 4], ["Iterations", "Time (s)"], ["Primal", "FW gap"]; kwargs...)
+    end
 end
 
 function plot_sparsity(
@@ -366,9 +383,14 @@ function plot_sparsity(
 )
     Plots.gr()
 
-    xscale = xscalelog ? :log : :identity
+    if xscalelog
+        xscale = :log
+        offset = 1
+    else
+        xscale = :identity
+        offset = 2
+    end
     yscale = yscalelog ? :log : :identity
-    offset = 2
 
     function subplot(idx_x, idx_y, ylabel)
 
