@@ -1,7 +1,7 @@
 name = "FrankWolfe"
 uuid = "f55ce6ea-fdc5-4628-88c5-0087fe54bd30"
-authors = ["ZIB-IOL"]
 version = "0.6.1"
+authors = ["ZIB-IOL"]
 
 [deps]
 Arpack = "7d9fca2a-8960-54d3-9f78-7d1dccf2cb97"
@@ -24,6 +24,7 @@ ProximalOperators = "a725b495-10eb-56fe-b38b-717eba820537"
 FrankWolfeProxExt = "ProximalOperators"
 
 [compat]
+Aqua = "0.8"
 Arpack = "0.5"
 CSV = "0.10"
 Combinatorics = "1"
@@ -32,8 +33,8 @@ Distributions = "0.25"
 DoubleFloats = "1.1"
 DynamicPolynomials = "0.6"
 FiniteDifferences = "0.12"
-GenericSchur = "0.5.3"
 GLPK = "1"
+GenericSchur = "0.5.3"
 HiGHS = "1"
 Hungarian = "0.6, 0.7"
 Hypatia = "0.8.2"
@@ -47,7 +48,7 @@ Plots = "1.10"
 Polyhedra = "0.8"
 Printf = "1"
 ProgressMeter = "1.4"
-ProximalCore = "0.1"
+ProximalCore = "0.1, 0.2"
 ProximalOperators = "0.16"
 Random = "1"
 ReverseDiff = "1"
@@ -60,9 +61,9 @@ TimerOutputs = "0.5"
 Tullio = "0.3"
 ZipFile = "0.9.4"
 julia = "1"
-Aqua = "0.8"
 
 [extras]
+Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 Combinatorics = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
@@ -86,7 +87,6 @@ StableRNGs = "860ef19b-820b-49d6-a774-d7a799459cd3"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Tullio = "bc48ee85-29a4-5162-ae0b-a64e1601d4bc"
 ZipFile = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
-Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 
 [targets]
 test = ["CSV", "Combinatorics", "DataFrames", "Distributions", "DoubleFloats", "DynamicPolynomials", "FiniteDifferences", "GLPK", "HiGHS", "JSON", "JuMP", "LaTeXStrings", "MultivariatePolynomials", "Plots", "Polyhedra", "ProximalOperators", "ReverseDiff", "SCS", "StableRNGs", "ZipFile", "Test", "Tullio", "Hypatia", "Aqua"]
