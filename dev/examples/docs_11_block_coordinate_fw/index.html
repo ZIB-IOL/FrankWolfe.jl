@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Block-Coordinate Frank-Wolfe and Block-Vectors · FrankWolfe.jl</title><meta name="title" content="Block-Coordinate Frank-Wolfe and Block-Vectors · FrankWolfe.jl"/><meta property="og:title" content="Block-Coordinate Frank-Wolfe and Block-Vectors · FrankWolfe.jl"/><meta property="twitter:title" content="Block-Coordinate Frank-Wolfe and Block-Vectors · FrankWolfe.jl"/><meta name="description" content="Documentation for FrankWolfe.jl."/><meta property="og:description" content="Documentation for FrankWolfe.jl."/><meta property="twitter:description" content="Documentation for FrankWolfe.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">FrankWolfe.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../basics/">How does it work?</a></li><li><a class="tocitem" href="../../advanced/">Advanced features</a></li><li><input class="collapse-toggle" id="menuitem-4" type="checkbox" checked/><label class="tocitem" for="menuitem-4"><span class="docs-label">Examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../docs_00_fw_visualized/">Visualization of Frank-Wolfe running on a 2-dimensional polytope</a></li><li><a class="tocitem" href="../docs_01_mathopt_lmo/">Comparison with MathOptInterface on a Probability Simplex</a></li><li><a class="tocitem" href="../docs_02_polynomial_regression/">Polynomial Regression</a></li><li><a class="tocitem" href="../docs_03_matrix_completion/">Matrix Completion</a></li><li><a class="tocitem" href="../docs_04_rational_opt/">Exact Optimization with Rational Arithmetic</a></li><li><a class="tocitem" href="../docs_05_blended_cg/">Blended Conditional Gradients</a></li><li><a class="tocitem" href="../docs_06_spectrahedron/">Spectrahedron</a></li><li><a class="tocitem" href="../docs_07_shifted_norm_polytopes/">FrankWolfe for scaled, shifted <span>$\ell^1$</span> and <span>$\ell^{\infty}$</span> norm balls</a></li><li><a class="tocitem" href="../docs_08_callback_and_tracking/">Tracking, counters and custom callbacks for Frank Wolfe</a></li><li><a class="tocitem" href="../docs_09_extra_vertex_storage/">Extra-lazification</a></li><li><a class="tocitem" href="../docs_10_alternating_methods/">Alternating methods</a></li><li class="is-active"><a class="tocitem" href>Block-Coordinate Frank-Wolfe and Block-Vectors</a><ul class="internal"><li><a class="tocitem" href="#Import-and-setup"><span>Import and setup</span></a></li><li><a class="tocitem" href="#Running-block-coordinate-Frank-Wolfe-with-different-update-orders"><span>Running block-coordinate Frank-Wolfe with different update-orders</span></a></li><li><a class="tocitem" href="#Running-BCFW-with-different-update-methods"><span>Running BCFW with different update methods</span></a></li></ul></li><li><a class="tocitem" href="../docs_12_quadratic_symmetric/">Accelerations for quadratic functions and symmetric problems</a></li><li><a class="tocitem" href="../docs_13_dca_fw/">Difference-of-Convex Algorithm with Frank-Wolfe</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-5" type="checkbox"/><label class="tocitem" for="menuitem-5"><span class="docs-label">API reference</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../reference/0_reference/">API Reference</a></li><li><a class="tocitem" href="../../reference/1_algorithms/">Algorithms</a></li><li><a class="tocitem" href="../../reference/2_lmo/">Linear Minimization Oracles</a></li><li><a class="tocitem" href="../../reference/3_backend/">Utilities and data structures</a></li><li><a class="tocitem" href="../../reference/4_linesearch/">Line search and step size settings</a></li><li><a class="tocitem" href="../../reference/5_gradient_descent/">Adaptive Proximal Gradient Descent Methods</a></li></ul></li><li><a class="tocitem" href="../../contributing/">Contributing</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Block-Coordinate Frank-Wolfe and Block-Vectors</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Block-Coordinate Frank-Wolfe and Block-Vectors</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/ZIB-IOL/FrankWolfe.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/ZIB-IOL/FrankWolfe.jl/blob/master/examples/docs_11_block_coordinate_fw.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><pre class="documenter-example-output"><code class="nohighlight hljs ansi">plot_sparsity (generic function with 1 method)</code></pre><h1 id="Block-Coordinate-Frank-Wolfe-and-Block-Vectors"><a class="docs-heading-anchor" href="#Block-Coordinate-Frank-Wolfe-and-Block-Vectors">Block-Coordinate Frank-Wolfe and Block-Vectors</a><a id="Block-Coordinate-Frank-Wolfe-and-Block-Vectors-1"></a><a class="docs-heading-anchor-permalink" href="#Block-Coordinate-Frank-Wolfe-and-Block-Vectors" title="Permalink"></a></h1><p>In this example, we demonstrate the usage of the <a href="../../reference/1_algorithms/#FrankWolfe.block_coordinate_frank_wolfe"><code>FrankWolfe.block_coordinate_frank_wolfe</code></a> and <a href="../../reference/3_backend/#FrankWolfe.BlockVector"><code>FrankWolfe.BlockVector</code></a>. We consider the problem of minimizing the squared Euclidean distance between two sets. We compare different update orders and different update steps.</p><h2 id="Import-and-setup"><a class="docs-heading-anchor" href="#Import-and-setup">Import and setup</a><a id="Import-and-setup-1"></a><a class="docs-heading-anchor-permalink" href="#Import-and-setup" title="Permalink"></a></h2><p>We first import the necessary packages and include the code for plotting the results.</p><pre><code class="language-julia hljs">using FrankWolfe
+using LinearAlgebra
+
+include(&quot;plot_utils.jl&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">plot_sparsity (generic function with 1 method)</code></pre><p>Next, we define the objective function and its gradient. The iterates <code>x</code> are instances of the <a href="../../reference/3_backend/#FrankWolfe.BlockVector"><code>FrankWolfe.BlockVector</code></a> type. The different blocks of the vector can be accessed via the <code>blocks</code> field.</p><pre><code class="language-julia hljs">f(x) = dot(x.blocks[1] - x.blocks[2], x.blocks[1] - x.blocks[2])
+
+function grad!(storage, x)
+    @. storage.blocks = [x.blocks[1] - x.blocks[2], x.blocks[2] - x.blocks[1]]
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">grad! (generic function with 1 method)</code></pre><p>In our example we consider the probability simplex and an L-infinity norm ball as the feasible sets.</p><pre><code class="language-julia hljs">n = 100
+lmo1 = FrankWolfe.BoxLMO(-ones(n), zeros(n))
+lmo2 = FrankWolfe.ProbabilitySimplexLMO(1.0)
+prod_lmo = FrankWolfe.ProductLMO((lmo1, lmo2))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">FrankWolfe.ProductLMO{2, Tuple{FrankWolfe.BoxLMO{Float64, 1, Vector{Float64}, Vector{Float64}}, FrankWolfe.ProbabilitySimplexLMO{Float64}}}((FrankWolfe.BoxLMO{Float64, 1, Vector{Float64}, Vector{Float64}}([-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0  …  -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0  …  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]), FrankWolfe.ProbabilitySimplexLMO{Float64}(1.0)))</code></pre><p>We initialize the starting point <code>x0</code> as a <a href="../../reference/3_backend/#FrankWolfe.BlockVector"><code>FrankWolfe.BlockVector</code></a> with two blocks. The two other arguments are the block sizes and the overall number of entries.</p><pre><code class="language-julia hljs">x0 = FrankWolfe.BlockVector([-ones(n), [i == 1 ? 1 : 0 for i in 1:n]], [(n,), (n,)], 2 * n);</code></pre><h2 id="Running-block-coordinate-Frank-Wolfe-with-different-update-orders"><a class="docs-heading-anchor" href="#Running-block-coordinate-Frank-Wolfe-with-different-update-orders">Running block-coordinate Frank-Wolfe with different update-orders</a><a id="Running-block-coordinate-Frank-Wolfe-with-different-update-orders-1"></a><a class="docs-heading-anchor-permalink" href="#Running-block-coordinate-Frank-Wolfe-with-different-update-orders" title="Permalink"></a></h2><p>In a first step, we compare different update orders. There are three different update orders implemented, <a href="../../reference/3_backend/#FrankWolfe.FullUpdate"><code>FrankWolfe.FullUpdate</code></a>, <a href="@ref"><code>CyclicUpdate</code></a> and <a href="@ref"><code>Stochasticupdate</code></a>. For creating a custome <a href="../../reference/3_backend/#FrankWolfe.BlockCoordinateUpdateOrder"><code>FrankWolfe.BlockCoordinateUpdateOrder</code></a>, one needs to implement the function <code>select_update_indices</code>.</p><pre><code class="language-julia hljs">struct CustomOrder &lt;: FrankWolfe.BlockCoordinateUpdateOrder end
+
+function FrankWolfe.select_update_indices(::CustomOrder, state::FrankWolfe.CallbackState, dual_gaps)
+    return [rand() &lt; 1 / n ? 1 : 2 for _ in 1:length(state.lmo.lmos)]
+end</code></pre><p>We run the block-coordinate Frank-Wolfe method with the different update orders and store the trajectories.</p><pre><code class="language-julia hljs">trajectories = []
+
+for order in [
+    FrankWolfe.FullUpdate(),
+    FrankWolfe.CyclicUpdate(),
+    FrankWolfe.StochasticUpdate(),
+    CustomOrder(),
+]
+
+    res = FrankWolfe.block_coordinate_frank_wolfe(
+        f,
+        grad!,
+        prod_lmo,
+        x0;
+        verbose=true,
+        trajectory=true,
+        update_order=order,
+    )
+    push!(trajectories, res.traj_data)
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">
+Block coordinate Frank-Wolfe (BCFW).
+MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: DataType[FrankWolfe.Secant{FrankWolfe.var&quot;#24#26&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#45#47&quot;}}, FrankWolfe.Secant{FrankWolfe.var&quot;#24#26&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#45#47&quot;}}] EPSILON: 1.0e-7 MAXITERATION: 10000 TYPE: Float64
+MOMENTUM: nothing GRADIENT_TYPE: FrankWolfe.BlockVector{Float64, Vector{Float64}, Tuple{Int64}} UPDATE_ORDER: FrankWolfe.FullUpdate() UPDATE_STEP: DataType[FrankWolfe.FrankWolfeStep, FrankWolfe.FrankWolfeStep]
+
+-------------------------------------------------------------------------------------------------
+  Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec
+-------------------------------------------------------------------------------------------------
+     I             1   5.000000e-01  -1.015000e+02   1.020000e+02   0.000000e+00            Inf
+  Last           100   1.000000e-02   1.000000e-02   1.734723e-17   5.707822e-01   1.751982e+02
+-------------------------------------------------------------------------------------------------
+
+Block coordinate Frank-Wolfe (BCFW).
+MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: DataType[FrankWolfe.Secant{FrankWolfe.var&quot;#24#26&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#45#47&quot;}}, FrankWolfe.Secant{FrankWolfe.var&quot;#24#26&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#45#47&quot;}}] EPSILON: 1.0e-7 MAXITERATION: 10000 TYPE: Float64
+MOMENTUM: nothing GRADIENT_TYPE: FrankWolfe.BlockVector{Float64, Vector{Float64}, Tuple{Int64}} UPDATE_ORDER: FrankWolfe.CyclicUpdate(-1) UPDATE_STEP: DataType[FrankWolfe.FrankWolfeStep, FrankWolfe.FrankWolfeStep]
+
+-------------------------------------------------------------------------------------------------
+  Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec
+-------------------------------------------------------------------------------------------------
+     I             1   5.000000e-01  -5.000000e-01   1.000000e+00   0.000000e+00            Inf
+  Last           100   1.000000e-02   1.000000e-02   1.734723e-17   1.175553e-01   8.506632e+02
+-------------------------------------------------------------------------------------------------
+
+Block coordinate Frank-Wolfe (BCFW).
+MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: DataType[FrankWolfe.Secant{FrankWolfe.var&quot;#24#26&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#45#47&quot;}}, FrankWolfe.Secant{FrankWolfe.var&quot;#24#26&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#45#47&quot;}}] EPSILON: 1.0e-7 MAXITERATION: 10000 TYPE: Float64
+MOMENTUM: nothing GRADIENT_TYPE: FrankWolfe.BlockVector{Float64, Vector{Float64}, Tuple{Int64}} UPDATE_ORDER: FrankWolfe.StochasticUpdate(-1) UPDATE_STEP: DataType[FrankWolfe.FrankWolfeStep, FrankWolfe.FrankWolfeStep]
+
+-------------------------------------------------------------------------------------------------
+  Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec
+-------------------------------------------------------------------------------------------------
+     I             1   5.000000e-01  -5.000000e-01   1.000000e+00   0.000000e+00            Inf
+  Last            92   1.000000e-02   1.000000e-02   1.734723e-17   4.199543e-02   2.190715e+03
+-------------------------------------------------------------------------------------------------
+
+Block coordinate Frank-Wolfe (BCFW).
+MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: DataType[FrankWolfe.Secant{FrankWolfe.var&quot;#24#26&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#45#47&quot;}}, FrankWolfe.Secant{FrankWolfe.var&quot;#24#26&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#45#47&quot;}}] EPSILON: 1.0e-7 MAXITERATION: 10000 TYPE: Float64
+MOMENTUM: nothing GRADIENT_TYPE: FrankWolfe.BlockVector{Float64, Vector{Float64}, Tuple{Int64}} UPDATE_ORDER: Main.CustomOrder() UPDATE_STEP: DataType[FrankWolfe.FrankWolfeStep, FrankWolfe.FrankWolfeStep]
+
+-------------------------------------------------------------------------------------------------
+  Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec
+-------------------------------------------------------------------------------------------------
+     I             1   2.333333e+00           -Inf            Inf   0.000000e+00            Inf
+  Last            93   1.000000e-02   1.000000e-02   1.734723e-17   4.479692e-02   2.076036e+03
+-------------------------------------------------------------------------------------------------</code></pre><h3 id="Plotting-the-results"><a class="docs-heading-anchor" href="#Plotting-the-results">Plotting the results</a><a id="Plotting-the-results-1"></a><a class="docs-heading-anchor-permalink" href="#Plotting-the-results" title="Permalink"></a></h3><pre><code class="language-julia hljs">labels = [&quot;Full update&quot;, &quot;Cyclic order&quot;, &quot;Stochstic order&quot;, &quot;Custom order&quot;]
+plot_trajectories(trajectories, labels, xscalelog=true)</code></pre><img src="9d4c5e81.svg" alt="Example block output"/><h2 id="Running-BCFW-with-different-update-methods"><a class="docs-heading-anchor" href="#Running-BCFW-with-different-update-methods">Running BCFW with different update methods</a><a id="Running-BCFW-with-different-update-methods-1"></a><a class="docs-heading-anchor-permalink" href="#Running-BCFW-with-different-update-methods" title="Permalink"></a></h2><p>As a second step, we compare different update steps. We consider the <a href="../../reference/3_backend/#FrankWolfe.BPCGStep"><code>FrankWolfe.BPCGStep</code></a> and the <a href="../../reference/3_backend/#FrankWolfe.FrankWolfeStep"><code>FrankWolfe.FrankWolfeStep</code></a>. One can either pass a tuple of <a href="../../reference/3_backend/#FrankWolfe.UpdateStep"><code>FrankWolfe.UpdateStep</code></a> to define for each block the update procedure or pass a single update step so that each block uses the same procedure.</p><pre><code class="language-julia hljs">trajectories = []
+
+for us in [
+    (FrankWolfe.BPCGStep(), FrankWolfe.FrankWolfeStep()),
+    (FrankWolfe.FrankWolfeStep(), FrankWolfe.BPCGStep()),
+    FrankWolfe.BPCGStep(),
+    FrankWolfe.FrankWolfeStep(),
+]
+
+    res = FrankWolfe.block_coordinate_frank_wolfe(
+        f,
+        grad!,
+        prod_lmo,
+        x0;
+        verbose=true,
+        trajectory=true,
+        update_step=us,
+    )
+    push!(trajectories, res.traj_data)
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">
+Block coordinate Frank-Wolfe (BCFW).
+MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: DataType[FrankWolfe.Secant{FrankWolfe.var&quot;#24#26&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#45#47&quot;}}, FrankWolfe.Secant{FrankWolfe.var&quot;#24#26&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#45#47&quot;}}] EPSILON: 1.0e-7 MAXITERATION: 10000 TYPE: Float64
+MOMENTUM: nothing GRADIENT_TYPE: FrankWolfe.BlockVector{Float64, Vector{Float64}, Tuple{Int64}} UPDATE_ORDER: FrankWolfe.CyclicUpdate(-1) UPDATE_STEP: DataType[FrankWolfe.BPCGStep, FrankWolfe.FrankWolfeStep]
+
+-------------------------------------------------------------------------------------------------
+  Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec
+-------------------------------------------------------------------------------------------------
+     I             1   5.000000e-01  -5.000000e-01   1.000000e+00   0.000000e+00            Inf
+  Last           100   1.000000e-02   1.000000e-02   1.734723e-17   5.970606e-01   1.674872e+02
+-------------------------------------------------------------------------------------------------
+
+Block coordinate Frank-Wolfe (BCFW).
+MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: DataType[FrankWolfe.Secant{FrankWolfe.var&quot;#24#26&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#45#47&quot;}}, FrankWolfe.Secant{FrankWolfe.var&quot;#24#26&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#45#47&quot;}}] EPSILON: 1.0e-7 MAXITERATION: 10000 TYPE: Float64
+MOMENTUM: nothing GRADIENT_TYPE: FrankWolfe.BlockVector{Float64, Vector{Float64}, Tuple{Int64}} UPDATE_ORDER: FrankWolfe.CyclicUpdate(-1) UPDATE_STEP: DataType[FrankWolfe.FrankWolfeStep, FrankWolfe.BPCGStep]
+
+-------------------------------------------------------------------------------------------------
+  Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec
+-------------------------------------------------------------------------------------------------
+     I             1   5.000000e-01  -5.000000e-01   1.000000e+00   0.000000e+00            Inf
+  Last           100   1.000000e-02   1.000000e-02   1.040834e-17   2.967189e-01   3.370193e+02
+-------------------------------------------------------------------------------------------------
+
+Block coordinate Frank-Wolfe (BCFW).
+MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: DataType[FrankWolfe.Secant{FrankWolfe.var&quot;#24#26&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#45#47&quot;}}, FrankWolfe.Secant{FrankWolfe.var&quot;#24#26&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#45#47&quot;}}] EPSILON: 1.0e-7 MAXITERATION: 10000 TYPE: Float64
+MOMENTUM: nothing GRADIENT_TYPE: FrankWolfe.BlockVector{Float64, Vector{Float64}, Tuple{Int64}} UPDATE_ORDER: FrankWolfe.CyclicUpdate(-1) UPDATE_STEP: DataType[FrankWolfe.BPCGStep, FrankWolfe.BPCGStep]
+
+-------------------------------------------------------------------------------------------------
+  Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec
+-------------------------------------------------------------------------------------------------
+     I             1   5.000000e-01  -5.000000e-01   1.000000e+00   0.000000e+00            Inf
+  Last           100   1.000000e-02   1.000000e-02   1.734723e-17   1.073935e-02   9.311551e+03
+-------------------------------------------------------------------------------------------------
+
+Block coordinate Frank-Wolfe (BCFW).
+MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: DataType[FrankWolfe.Secant{FrankWolfe.var&quot;#24#26&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#45#47&quot;}}, FrankWolfe.Secant{FrankWolfe.var&quot;#24#26&quot;, FrankWolfe.Adaptive{Float64, Int64, FrankWolfe.var&quot;#45#47&quot;}}] EPSILON: 1.0e-7 MAXITERATION: 10000 TYPE: Float64
+MOMENTUM: nothing GRADIENT_TYPE: FrankWolfe.BlockVector{Float64, Vector{Float64}, Tuple{Int64}} UPDATE_ORDER: FrankWolfe.CyclicUpdate(-1) UPDATE_STEP: DataType[FrankWolfe.FrankWolfeStep, FrankWolfe.FrankWolfeStep]
+
+-------------------------------------------------------------------------------------------------
+  Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec
+-------------------------------------------------------------------------------------------------
+     I             1   5.000000e-01  -5.000000e-01   1.000000e+00   0.000000e+00            Inf
+  Last           100   1.000000e-02   1.000000e-02   1.734723e-17   4.377137e-03   2.284598e+04
+-------------------------------------------------------------------------------------------------</code></pre><h3 id="Plotting-the-results-2"><a class="docs-heading-anchor" href="#Plotting-the-results-2">Plotting the results</a><a class="docs-heading-anchor-permalink" href="#Plotting-the-results-2" title="Permalink"></a></h3><pre><code class="language-julia hljs">labels = [&quot;BPCG FW&quot;, &quot;FW BPCG&quot;, &quot;BPCG&quot;, &quot;FW&quot;]
+plot_trajectories(trajectories, labels, xscalelog=true)</code></pre><img src="5a9a3d49.svg" alt="Example block output"/><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../docs_10_alternating_methods/">« Alternating methods</a><a class="docs-footer-nextpage" href="../docs_12_quadratic_symmetric/">Accelerations for quadratic functions and symmetric problems »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.15.0 on <span class="colophon-date" title="Thursday 13 November 2025 14:39">Thursday 13 November 2025</span>. Using Julia version 1.6.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
