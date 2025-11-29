@@ -1,6 +1,15 @@
 struct QCMNPStep <: CorrectiveStep 
     A::H # Hessian matrix
     b::BT # linear term
+    ls_solve::Function # in-place solve of linear system (x, A_mat, b)
+end
+
+function QCMNPStep(A,b)
+    function solve(x, A_mat, b)
+        copyto!(x, A_mat \ b)
+        return true
+    end
+    return QCMNPStep(A, b, solve)
 end
 
 function prepare_corrective_step(
@@ -40,13 +49,71 @@ function run_corrective_step(
     d,
 )
 
-    
+    # Computes the minimizer for a quadratic function f(x) = xᵗAx + bᵗx over the affine hull over the atoms of a given active set
+    # by solving the non-symmetric linear system:
+    # Wᵗ A V λ == -Wᵗ b
+    # V has columns vi (atoms of the active set)
+    # W has columns vi - v1
 
 
+    nv = length(as)
 
+    # Pre-allocate arrays
+    A_mat = Matrix{Float64}(undef, nv, nv)
+    r_vec = Vector{Float64}(undef, nv)
+    μ = Vector{Float64}(undef, nv)
 
+    A_mat[1,:] .= 1.0
+    r_vec[1] = 1.0
+    if as.active_set isa ActiveSetQuadraticProductCaching
+        # dots_A is a lower triangular matrix
 
-    return x, v, phi_value, dual_gap, should_fw_step, should_continue
+        d1 = as.active_set.dots_A[1]
+        for i in 2:nv
+            di = as.active_set.dots_A[i]
+            for j in 1:i
+                val = di[j] - d1[j]
+                A_mat[i, j] = val
+                if i != j && j != 1
+                    A_mat[j, i] = val
+                end
+            end
+            r_vec[i] = as.active_set.dots_b[1] - as.active_set.dots_b[i]
+        end
+    else
+        temp1 = similar(as.atoms[1])
+        d1 = A * as.atoms[1]
+        for i in 2:nv
+            di = mul!(temp1, A, as.atoms[i])
+            for j in 1:i
+                val = dot(di, as.atoms[j]) - dot(d1, as.atoms[j])
+                A_mat[i, j] = val
+                if i != j && j != 1
+                    A_mat[j, i] = val
+                end
+            end
+            r_vec[i] = dot(b, as.atoms[1]) - dot(b, as.atoms[i])
+        end
+    end
+
+    # Solve system - μ are the bary-centric coordinates of the/an affine minizer
+    converged = solver.solve(μ, A_mat, r_vec)
+
+    if converged
+
+        # compute new new weights and what atoms to drop
+        indices_to_remove, new_weights = _truncate_weights(μ, as.weights)
+
+        # update active set
+        deleteat!(as.active_set, indices_to_remove)
+        @assert length(as) == length(new_weights)
+        update_weights!(as.active_set, new_weights)
+        active_set_cleanup!(as)
+        active_set_renormalize!(as)
+        x = compute_active_set_iterate!(as)
+    end
+
+    return x, v, phi_value, dual_gap, false, true
 end
 
 function _truncate_weights(weights::Vector{R}, old_weights::Vector{R}) where {R}
@@ -77,16 +144,186 @@ function _truncate_weights(weights::Vector{R}, old_weights::Vector{R}) where {R}
     weights[set_indices_zero] .= 0
     @assert all(>=(-2weight_purge_threshold_default(eltype(weights))), weights) "All weights must be between nonnegative: $(minimum(weights))"
     @assert isapprox(sum(weights), 1.0) "The sum of weights must be approximately 1"
-    indices_to_remove = Int[]
-    new_weights = R[]
-    for idx in eachindex(λ)
-        weight_value = weights[idx] # using new lambdas
-        if weight_value <= eps()
-            push!(indices_to_remove, idx)
-        else
-            push!(new_weights, weight_value)
+    return _purge_weights(weights)
+end
+
+
+
+"""
+    QCLPStep (Quadratic corrections LP)
+    This step attempts to find the optimal weights (for the current active set) for a quadratic objective with hessian ´A´ and linear term ´b´ through linear programming.
+    The LP is infeasible, if no minimizer over the affine hull of the atoms lie in the convex hull. In this case the method returns the current iterate unchanged.
+    If ´relax´ is true, we relax the non-negativity constraint and use the MNP approach as in QC-MNP.
+    The main difference to QCMNPStep is that it is still LP-based, but this allows to choose the best affine minimizer (in case it is not unique).
+"""
+struct QCLPStep{H, LT, OT<:MOI.AbstractOptimizer} <: CorrectiveStep
+    A::H # Hessian matrix
+    b::LT # linear term
+    lp_optimizer::OT
+    relax::Bool
+end
+
+function prepare_corrective_step(
+    corrective_step::QCLPStep,
+    f,
+    grad!,
+    gradient,
+    active_set,
+    t,
+    lmo,
+    primal,
+    phi_value,
+)
+    return false
+end
+
+function run_corrective_step(
+    step::QCLPStep,
+    f,
+    grad!,
+    gradient,
+    x,
+    v,
+    dual_gap,
+    active_set,
+    t,
+    lmo,
+    line_search,
+    linesearch_workspace,
+    primal,
+    phi_value,
+    tot_time,
+    callback,
+    renorm_interval,
+    memory_mode,
+    epsilon,
+    d,
+)
+
+    nv = length(as)
+    o = step.lp_optimizer
+    MOI.empty!(o)
+    λ = MOI.add_variables(o, nv)
+    sum_of_variables = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, λ), 0.0)
+    MOI.add_constraint(o, sum_of_variables, MOI.EqualTo(1.0))
+
+    if step.relax
+        β = MOI.add_variables(o, 1)
+        for j = 1:nv
+            MOI.add_constraint(MOI.ScalarAffineFunction{Float64}([MOI.ScalarAffineTerm(1, λ[j]), MOI.ScalarAffineTerm(as.weights[j], β[1])], 0.0),MOI.GreaterThan(0.0)) 
         end
+    else
+        MOI.add_constraint.(o, λ, MOI.GreaterThan(0.0))
     end
 
+    # Get scaling factor for active set partial caching
+    if as.active_set isa ActiveSetQuadraticPartialCaching
+        c = as.active_set.λ[]
+    else
+        c = 1.0
+    end
+
+    # Wᵗ A V λ == -Wᵗ b
+    # V has columns vi
+    # W has columns vi - v1
+    for i in 2:nv
+        lhs = MOI.ScalarAffineFunction{Float64}([], 0.0)
+        Base.sizehint!(lhs.terms, nv)
+        if as.active_set isa
+        Union{ActiveSetQuadraticProductCaching,ActiveSetQuadraticPartialCaching}
+            # dots_A is a lower triangular matrix
+            for j in 1:i
+                push!(
+                    lhs.terms,
+                    MOI.ScalarAffineTerm(
+                        c * (as.active_set.dots_A[i][j] - as.active_set.dots_A[j][1]),
+                        λ[j],
+                    ),
+                )
+            end
+            for j in i+1:nv
+                push!(
+                    lhs.terms,
+                    MOI.ScalarAffineTerm(
+                        c * (as.active_set.dots_A[j][i] - as.active_set.dots_A[j][1]),
+                        λ[j],
+                    ),
+                )
+            end
+            if as.active_set isa ActiveSetQuadraticProductCaching
+                rhs = as.active_set.dots_b[1] - as.active_set.dots_b[i]
+            else
+                rhs = dot(as.atoms[1], as.b) - dot(as.atoms[i], as.b)
+            end
+        else
+            # replaces direct sum because of MOI and MutableArithmetic slow sums
+            for j in 1:nv
+                push!(
+                    lhs.terms,
+                    _compute_quadratic_constraint_term(
+                        as.atoms[i],
+                        as.atoms[1],
+                        as.A,
+                        as.atoms[j],
+                        λ[j],
+                    ),
+                )
+            end
+            rhs = dot(as.atoms[1], as.b) - dot(as.atoms[i], as.b)
+        end
+        MOI.add_constraint(o, lhs, MOI.EqualTo{Float64}(rhs))
+    end
+
+    if step.relax
+        MOI.set(o, MOI,ObjectiveFunction{typeof(β[1])}(), β[1])
+    else
+        MOI.set(o, MOI.ObjectiveFunction{typeof(sum_of_variables)}(), sum_of_variables)
+    end
+    MOI.set(o, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+    MOI.optimize!(o)
+    if MOI.get(o, MOI.TerminationStatus()) ∉ (MOI.OPTIMAL, MOI.FEASIBLE_POINT, MOI.ALMOST_OPTIMAL)
+        return x, v, phi_value, dual_gap, false, true
+    end
+
+    # Compute new weights and which atoms to drop
+    indices_to_remove, new_weights = _purge_weights.(MOI.get(o, MOI.VariablePrimal(), λ))
+    # Update active set
+    deleteat!(as.active_set, indices_to_remove)
+    @assert length(as) == length(new_weights)
+    update_weights!(as.active_set, new_weights)
+    active_set_cleanup!(as)
+    active_set_renormalize!(as)
+    x = compute_active_set_iterate!(as)
+
+    return x, v, phi_value, dual_gap, false, true
+end
+
+
+function _compute_quadratic_constraint_term(atom1, atom0, A::AbstractMatrix, atom2, λ)
+    return MOI.ScalarAffineTerm(fast_dot(atom1, A, atom2) - fast_dot(atom0, A, atom2), λ)
+end
+
+function _compute_quadratic_constraint_term(
+    atom1,
+    atom0,
+    A::Union{Identity,LinearAlgebra.UniformScaling},
+    atom2,
+    λ,
+)
+    return MOI.ScalarAffineTerm(A.λ * (dot(atom1, atom2) - dot(atom0, atom2)), λ)
+end
+
+
+function _purge_weights(weights::AbstractArray{R}) where {R}
+    indices_to_remove = BitSet()
+    new_weights = R[]
+    eps = 2 * weight_purge_threshold_default(R)
+    for (idx, weight) in enumerate(weights)
+        if weight <= eps
+            push!(indices_to_remove, idx)
+        else
+            push!(new_weights, weight)
+        end
+    end
     return indices_to_remove, new_weights
 end
