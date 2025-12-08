@@ -195,7 +195,8 @@ function compute_inface_extreme_point(
     kwargs...,
 )
     n = isqrt(length(direction))
-    return compute_inface_extreme_point(lmo, reshape(direction, n, n), reshape(x, n, n); kwargs...)
+    V = compute_inface_extreme_point(lmo, reshape(direction, n, n), reshape(x, n, n); kwargs...)
+    return vec(V)
 end
 
 # Find the maximum step size γ such that `x - γ d` remains in the feasible set.
