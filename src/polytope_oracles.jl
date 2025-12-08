@@ -188,6 +188,17 @@ function compute_inface_extreme_point(
     return m
 end
 
+function compute_inface_extreme_point(
+    lmo::BirkhoffPolytopeLMO,
+    direction::AbstractVector,
+    x::AbstractVector;
+    kwargs...,
+)
+    n = isqrt(length(direction))
+    V = compute_inface_extreme_point(lmo, reshape(direction, n, n), reshape(x, n, n); kwargs...)
+    return vec(V)
+end
+
 # Find the maximum step size γ such that `x - γ d` remains in the feasible set.
 function dicg_maximum_step(::BirkhoffPolytopeLMO, direction::AbstractMatrix, x)
     T = promote_type(eltype(x), eltype(direction))
