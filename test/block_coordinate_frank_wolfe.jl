@@ -9,7 +9,6 @@ using StableRNGs
 rng = StableRNG(100)
 Random.seed!(rng, 100)
 
-
 @testset "Testing block-coordinate FW" begin
 
     f(x) = dot(x.blocks[1] - x.blocks[2], x.blocks[1] - x.blocks[2])
@@ -25,51 +24,44 @@ Random.seed!(rng, 100)
     prod_lmo = FrankWolfe.ProductLMO((lmo1, lmo2))
 
     orders = [
-    #     FrankWolfe.FullUpdate(),
+        FrankWolfe.FullUpdate(),
         FrankWolfe.CyclicUpdate(),
-    #     FrankWolfe.StochasticUpdate(),
-    #     FrankWolfe.LazyUpdate(2,5),
-    #     FrankWolfe.LazyUpdate(2,10),
+        FrankWolfe.StochasticUpdate(),
+        FrankWolfe.LazyUpdate(2,5),
+        FrankWolfe.LazyUpdate(2,10),
     ]
 
     x0 = FrankWolfe.compute_extreme_point(prod_lmo,FrankWolfe.BlockVector([randn(n), randn(n)]))
 
     for order in orders
 
-        # x, _, primal, fw_gap, _ = FrankWolfe.block_coordinate_frank_wolfe(
-        #     f,
-        #     grad!,
-        #     prod_lmo,
-        #     copy(x0);
-        #     verbose=true,
-        #     trajectory=false,
-        #     update_order=order,
-        #     line_search=FrankWolfe.Shortstep(2),
-        # )
+        x, _, primal, fw_gap, _ = FrankWolfe.block_coordinate_frank_wolfe(
+            f,
+            grad!,
+            prod_lmo,
+            copy(x0);
+            update_order=order,
+            line_search=FrankWolfe.Shortstep(2),
+        )
 
-        # @test abs(primal - 1/n) < 1e-6
-        # @test fw_gap < 1e-6
-        # @test norm(x.blocks[1] - 1/n*ones(n)) < 1e-2
-        # @test norm(x.blocks[2] - 0*ones(n)) < 1e-2
+        @test abs(primal - 1/n) < 1e-6
+        @test fw_gap < 1e-6
+        @test norm(x.blocks[1] - 1/n*ones(n)) < 1e-2
+        @test norm(x.blocks[2] - 0*ones(n)) < 1e-2
 
         x, _, primal, fw_gap, status = FrankWolfe.adaptive_block_coordinate_frank_wolfe(
             f,
             grad!,
             prod_lmo.lmos,
             copy(x0);
-            verbose=true,
-            trajectory=false,
             update_order=order,
-            print_iter=1,
-            #max_iteration=10,
+            verbose=true,
         )
         @info status
         @test abs(primal - 1/n) < 1e-6
         @test fw_gap < 1e-6
         @test norm(x.blocks[1] - 1/n*ones(n)) < 1e-2
         @test norm(x.blocks[2] - 0*ones(n)) < 1e-2
-
-
     end
 end
 

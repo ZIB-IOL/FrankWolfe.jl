@@ -846,13 +846,10 @@ function adaptive_block_coordinate_frank_wolfe(
 
             for i in last_block
                 cached_extreme_point.blocks[i] = state.v.blocks[i]
-            end
+            end          
 
-            gap_estimate = dot(state.gradient, state.x) - dot(state.gradient, cached_extreme_point)
-            
-
-            # If we are at the end of the last iteration, select all blocks to compute the final dual gap in the post-processing step.
-            if state.t == max_iteration || gap_estimate < epsilon
+            # If we areabout to terminate, select all blocks to compute the final dual gap in the post-processing step.
+            if state.t >= max_iteration || state.dual_gap < epsilon
                 blocks = collect(1:length(state.x.blocks))
             else
                 # UpdateOrders can return multiple rounds of lists of blocks to update.
@@ -867,11 +864,6 @@ function adaptive_block_coordinate_frank_wolfe(
             lmo.blocks = blocks
             ls.blocks = blocks
             lmo.x = state.x # Needed for the dual gap computation.
-
-            # If the gap estimate is less than the epsilon, we terminate early.
-            if gap_estimate < epsilon
-                return false
-            end
 
             if callback === nothing
                 return true
