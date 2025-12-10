@@ -321,16 +321,24 @@ end
     - `lmos::LT`: The linear minimization oracles to use.
 """
 
-mutable struct BlockSelectionLMO{LT<:Union{AbstractVector{LinearMinimizationOracle},Tuple{Vararg{LinearMinimizationOracle}}}} <: LinearMinimizationOracle
+mutable struct BlockSelectionLMO{
+    LT<:Union{AbstractVector{LinearMinimizationOracle},Tuple{Vararg{LinearMinimizationOracle}}},
+} <: LinearMinimizationOracle
     blocks::Vector{Int}
     lmos::LT
     x::BlockVector
 end
 
-function compute_extreme_point(lmo::BlockSelectionLMO, direction::BlockVector; v = zero(direction),kwargs...)
-    for i = 1: length(direction.blocks)
+function compute_extreme_point(
+    lmo::BlockSelectionLMO,
+    direction::BlockVector;
+    v=zero(direction),
+    kwargs...,
+)
+    for i in 1:length(direction.blocks)
         if i in lmo.blocks
-            v.blocks[i] = compute_extreme_point(lmo.lmos[i], direction.blocks[i]; v = v.blocks[i], kwargs...)
+            v.blocks[i] =
+                compute_extreme_point(lmo.lmos[i], direction.blocks[i]; v=v.blocks[i], kwargs...)
         else
             # Returning (not neccearily feasible) point that is strictly better than the current iterate.
             # This ensures that the dual gap stays non-negative.

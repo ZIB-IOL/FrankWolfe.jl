@@ -16,6 +16,7 @@ Random.seed!(rng, 100)
     function grad!(storage, x)
         storage.blocks[1] = 2 * (x.blocks[1] - x.blocks[2])
         storage.blocks[2] = 2 * (x.blocks[2] - x.blocks[1])
+        return storage
     end
 
     n = 10

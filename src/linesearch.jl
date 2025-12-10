@@ -1010,7 +1010,7 @@ function FrankWolfe.perform_line_search(
     d,
     gamma_max,
     storage,
-    memory_mode::FrankWolfe.MemoryEmphasis
+    memory_mode::FrankWolfe.MemoryEmphasis,
 )
     # Initialize step sizes and temporary iterate
     gamma = zeros(length(x.blocks))
@@ -1027,7 +1027,11 @@ function FrankWolfe.perform_line_search(
 
         # Compute step sizes gamma
         for i in ls.blocks
-            gamma[i] = min(1, dot(gradient.blocks[i], d.blocks[i]) / (ls.L_est * dot(d.blocks[i], d.blocks[i]) + eps(ls.L_est)))
+            gamma[i] = min(
+                1,
+                dot(gradient.blocks[i], d.blocks[i]) /
+                (ls.L_est * dot(d.blocks[i], d.blocks[i]) + eps(ls.L_est)),
+            )
         end
 
         # Compute temporary iterate x_tilde and its gradient
@@ -1035,7 +1039,8 @@ function FrankWolfe.perform_line_search(
         FrankWolfe.muladd_memory_mode(memory_mode, x_tilde, gamma, d)
         grad!(g_tilde, x_tilde)
 
-        if f(x) - f(x_tilde) - dot(g_tilde, x - x_tilde) >= dot(gradient - g_tilde, gradient - g_tilde) / (2 * ls.L_est)
+        if f(x) - f(x_tilde) - dot(g_tilde, x - x_tilde) >=
+           dot(gradient - g_tilde, gradient - g_tilde) / (2 * ls.L_est)
             break
         else
             ls.L_est = ls.tau * ls.L_est
