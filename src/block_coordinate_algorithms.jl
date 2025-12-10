@@ -774,3 +774,125 @@ function block_coordinate_frank_wolfe(
         traj_data=traj_data,
     )
 end
+
+
+
+
+"""
+    adaptive_block_coordinate_frank_wolfe(f, grad!, lmos, x0; kwargs...)
+    Adaptive block coordinate Frank-Wolfe.
+
+    # Arguments
+    - `f::Function`: The objective function to minimize.
+    - `grad!: The gradient of the objective function.
+    - `lmos::NTuple{N, FrankWolfe.LinearMinimizationOracle}`: The linear minimization oracles to use.
+    - `x0::FrankWolfe.BlockVector`: The initial point.
+    - `initial_blocks::Vector{Int}`: The initial blocks to update.
+    - `update_order::FrankWolfe.BlockCoordinateUpdateOrder`: The update order to use.
+    - `callback::Union{Nothing, Function}`: A callback function to call after each iteration.
+    - `line_search::Union{Nothing, BlockAdaptive}`: The line search to use.
+    - `eta::Real`: The eta parameter for the line search.
+    - `tau::Real`: The tau parameter for the line search.
+    - `L_max::Real`: The maximum value of the Lipschitz constant.
+    - `L_est::Real`: The estimated value of the Lipschitz constant.
+    - `kwargs...`: Additional keyword arguments to pass to the FrankWolfe.frank_wolfe function.
+"""
+
+function adaptive_block_coordinate_frank_wolfe(f, grad!, lmo::FrankWolfe.ProductLMO, x0; kwargs...)
+    return adaptive_block_coordinate_frank_wolfe(f, grad!, lmo.lmos, x0; kwargs...)
+end
+
+function adaptive_block_coordinate_frank_wolfe(
+    f,
+    grad!,
+    lmos::LT,
+    x0::FrankWolfe.BlockVector;
+    initial_blocks::Vector{Int}=collect(1:length(x0.blocks)), # compute a full update in the first iteration (the block selection callback is first called at the end of the first iteration)
+    update_order::FrankWolfe.BlockCoordinateUpdateOrder=FrankWolfe.CyclicUpdate(),
+    callback=nothing,
+    line_search=nothing, # Listed here so we don't pass it in kwargs...
+    eta::Real=0.9,
+    tau::Real=2.0,
+    L_max::Real=1e10,
+    L_est::Real=1.0,
+    max_iteration=10000,
+    epsilon::Real=1e-7,
+    kwargs...,
+) where {
+    LT<:Union{
+        AbstractVector{FrankWolfe.LinearMinimizationOracle},
+        Tuple{Vararg{FrankWolfe.LinearMinimizationOracle}},
+    },
+}
+
+
+    # Callback-wrapper for block selection
+    function make_block_selection_callback(
+        callback::Union{Nothing,Function},
+        ls::BlockAdaptive,
+        lmo::BlockSelectionLMO,
+        update_order::FrankWolfe.BlockCoordinateUpdateOrder,
+        x0::FrankWolfe.BlockVector,
+        epsilon::Real,
+        max_iteration,
+    )
+
+        cached_list_of_blocks = []
+        cached_extreme_point = copy(x0)
+
+        return function new_callback(state, args...)
+
+            last_block = ls.blocks
+
+            for i in last_block
+                cached_extreme_point.blocks[i] = state.v.blocks[i]
+            end
+
+            gap_estimate = dot(state.gradient, state.x) - dot(state.gradient, cached_extreme_point)
+            
+
+            # If we are at the end of the last iteration, select all blocks to compute the final dual gap in the post-processing step.
+            if state.t == max_iteration || gap_estimate < epsilon
+                blocks = collect(1:length(state.x.blocks))
+            else
+                # UpdateOrders can return multiple rounds of lists of blocks to update.
+                # We cache the list of blocks to update and return the next round of blocks to update.
+                if isempty(cached_list_of_blocks)
+                    cached_list_of_blocks =
+                        select_update_indices(update_order, state, zeros(length(state.x.blocks)))
+                end
+                blocks = pop!(cached_list_of_blocks)
+            end
+
+            lmo.blocks = blocks
+            ls.blocks = blocks
+            lmo.x = state.x # Needed for the dual gap computation.
+
+            # If the gap estimate is less than the epsilon, we terminate early.
+            if gap_estimate < epsilon
+                return false
+            end
+
+            if callback === nothing
+                return true
+            end
+
+            return callback(state, args...)
+        end
+    end
+
+    ls = BlockAdaptive(initial_blocks, eta, tau, L_est, L_max)
+    block_lmo = BlockSelectionLMO(initial_blocks, lmos, x0)
+
+    return frank_wolfe(
+        f,
+        grad!,
+        block_lmo,
+        x0;
+        line_search=ls,
+        epsilon=epsilon,
+        max_iteration=max_iteration,
+        callback=make_block_selection_callback(callback, ls, block_lmo, update_order, x0, epsilon, max_iteration),
+        kwargs...,
+    )
+end
