@@ -846,7 +846,7 @@ function adaptive_block_coordinate_frank_wolfe(
 
             for i in last_block
                 cached_extreme_point.blocks[i] = state.v.blocks[i]
-            end          
+            end
 
             # If we areabout to terminate, select all blocks to compute the final dual gap in the post-processing step.
             if state.t >= max_iteration || state.dual_gap < epsilon
@@ -884,7 +884,15 @@ function adaptive_block_coordinate_frank_wolfe(
         line_search=ls,
         epsilon=epsilon,
         max_iteration=max_iteration,
-        callback=make_block_selection_callback(callback, ls, block_lmo, update_order, x0, epsilon, max_iteration),
+        callback=make_block_selection_callback(
+            callback,
+            ls,
+            block_lmo,
+            update_order,
+            x0,
+            epsilon,
+            max_iteration,
+        ),
         kwargs...,
     )
 end
