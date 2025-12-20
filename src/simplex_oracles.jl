@@ -22,38 +22,11 @@ Returns either vector of zeros or vector with one active value equal to RHS if
 there exists an improving direction.
 """
 function compute_extreme_point(lmo::UnitSimplexLMO{T}, direction; v=nothing, kwargs...) where {T}
-    idx = argmin_(direction)
+    idx = argmin(direction)
     if direction[idx] < 0
         return ScaledHotVector(lmo.right_side, idx, length(direction))
     end
     return ScaledHotVector(zero(T), idx, length(direction))
-end
-
-# temporary fix because argmin is broken on julia 1.8
-argmin_(v) = argmin(v)
-function argmin_(v::SparseArrays.SparseVector{T}) where {T}
-    if isempty(v.nzind)
-        return 1
-    end
-    idx = -1
-    val = T(Inf)
-    for s_idx in eachindex(v.nzind)
-        if v.nzval[s_idx] < val
-            val = v.nzval[s_idx]
-            idx = s_idx
-        end
-    end
-    # if min value is already negative or the indices were all checked
-    if val < 0 || length(v.nzind) == length(v)
-        return v.nzind[idx]
-    end
-    # otherwise, find the first zero
-    for idx in eachindex(v)
-        if idx ∉ v.nzind
-            return idx
-        end
-    end
-    return error("unreachable")
 end
 
 function convert_mathopt(
@@ -194,9 +167,9 @@ function compute_extreme_point(
     v=nothing,
     kwargs...,
 ) where {T}
-    idx = argmin_(direction)
+    idx = argmin(direction)
     if idx === nothing
-        @show direction
+        error("Ill-defined gradient vector")
     end
     return ScaledHotVector(lmo.right_side, idx, length(direction))
 end
@@ -299,23 +272,6 @@ UnitHyperSimplexLMO{T}(K::Integer) where {T} = UnitHyperSimplexLMO{T}(K, one(T))
 
 UnitHyperSimplexLMO(K::Int, radius::Integer) =
     UnitHyperSimplexLMO(K, convert(Rational{BigInt}, radius))
-
-function compute_extreme_point(
-    lmo::UnitHyperSimplexLMO{TL},
-    direction;
-    v=nothing,
-    kwargs...,
-) where {TL}
-    T = promote_type(TL, eltype(direction))
-    n = length(direction)
-    K = min(lmo.K, n, sum(<(0), direction))
-    K_indices = sortperm(direction)[1:K]
-    v = spzeros(T, n)
-    for idx in 1:K
-        v[K_indices[idx]] = lmo.radius
-    end
-    return v
-end
 
 is_decomposition_invariant_oracle(::UnitHyperSimplexLMO) = true
 
@@ -437,9 +393,14 @@ end
 
 HyperSimplexLMO{T}(K::Integer) where {T} = HyperSimplexLMO{T}(K, one(T))
 
-function compute_extreme_point(lmo::HyperSimplexLMO{T}, direction; v=nothing, kwargs...) where {T}
+function compute_extreme_point(
+    lmo::Union{UnitHyperSimplexLMO{T},HyperSimplexLMO{T}},
+    direction;
+    v=nothing,
+    kwargs...,
+) where {T}
     n = length(direction)
-    K = min(lmo.K, n)
+    K = _compute_k_hypersimplex(lmo, direction)
     K_indices = sortperm(direction)[1:K]
     if v === nothing
         v = spzeros(T, n)
@@ -451,6 +412,11 @@ function compute_extreme_point(lmo::HyperSimplexLMO{T}, direction; v=nothing, kw
     end
     return v
 end
+
+_compute_k_hypersimplex(lmo::HyperSimplexLMO, direction) = min(lmo.K, length(direction))
+_compute_k_hypersimplex(lmo::UnitHyperSimplexLMO, direction) =
+    min(lmo.K, length(direction), sum(<(0), direction))
+
 
 is_decomposition_invariant_oracle(::HyperSimplexLMO) = true
 
