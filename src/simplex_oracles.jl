@@ -393,7 +393,12 @@ end
 
 HyperSimplexLMO{T}(K::Integer) where {T} = HyperSimplexLMO{T}(K, one(T))
 
-function compute_extreme_point(lmo::Union{UnitHyperSimplexLMO{T},HyperSimplexLMO{T}}, direction; v=nothing, kwargs...) where {T}
+function compute_extreme_point(
+    lmo::Union{UnitHyperSimplexLMO{T},HyperSimplexLMO{T}},
+    direction;
+    v=nothing,
+    kwargs...,
+) where {T}
     n = length(direction)
     K = _compute_k_hypersimplex(lmo, direction)
     K_indices = sortperm(direction)[1:K]
@@ -409,7 +414,8 @@ function compute_extreme_point(lmo::Union{UnitHyperSimplexLMO{T},HyperSimplexLMO
 end
 
 _compute_k_hypersimplex(lmo::HyperSimplexLMO, direction) = min(lmo.K, length(direction))
-_compute_k_hypersimplex(lmo::UnitHyperSimplexLMO, direction) = min(lmo.K, length(direction), sum(<(0), direction))
+_compute_k_hypersimplex(lmo::UnitHyperSimplexLMO, direction) =
+    min(lmo.K, length(direction), sum(<(0), direction))
 
 
 is_decomposition_invariant_oracle(::HyperSimplexLMO) = true
