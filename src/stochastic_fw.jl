@@ -374,5 +374,12 @@ function stochastic_frank_wolfe(
         )
         callback(state, batch_size)
     end
-    return (x=x, v=v, primal=primal, dual_gap=dual_gap, status=execution_status, traj_data=traj_data)
+    return (
+        x=x,
+        v=v,
+        primal=primal,
+        dual_gap=dual_gap,
+        status=execution_status,
+        traj_data=traj_data,
+    )
 end
