@@ -3,6 +3,7 @@ using KrylovKit
 using StableRNGs
 using Test
 using LinearAlgebra
+using Random
 
 rng = StableRNG(42)
 
