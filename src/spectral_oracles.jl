@@ -29,6 +29,8 @@ end
 NuclearNormBallLMO{T}() where {T} = NuclearNormBallLMO{T,ArpackBackend}(one(T), ArpackBackend(1e-8))
 NuclearNormBallLMO() = NuclearNormBallLMO(1.0, ArpackBackend())
 
+NuclearNormBallLMO(radius) = NuclearNormBallLMO(radius, ArpackBackend())
+
 function compute_extreme_point(
     lmo::NuclearNormBallLMO{TL,ArpackBackend},
     direction::AbstractMatrix{TD};
