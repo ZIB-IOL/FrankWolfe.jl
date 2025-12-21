@@ -1,5 +1,10 @@
 using FrankWolfe
 using KrylovKit
+using StableRNGs
+using Test
+using LinearAlgebra
+
+rng = StableRNG(42)
 
 @testset "Matrix completion and nuclear norm" begin
     nfeat = 50
@@ -16,9 +21,10 @@ using KrylovKit
     end
     @test rank(Xreal) == r
     missing_entries = unique!([(rand(rng, 1:nobs), rand(rng, 1:nfeat)) for _ in 1:1000])
-    f(X) =
-        0.5 *
+    function f(X)
+        return 0.5 *
         sum((X[i, j] - Xreal[i, j])^2 for i in 1:nobs, j in 1:nfeat if (i, j) ∉ missing_entries)
+    end
     function grad!(storage, X)
         storage .= 0
         for i in 1:nobs
@@ -30,7 +36,6 @@ using KrylovKit
         end
         return nothing
     end
-    # TODO value of radius?
     lmo = FrankWolfe.NuclearNormBallLMO(sum(svdvals(Xreal)))
     x0 = @inferred FrankWolfe.compute_extreme_point(lmo, zero(Xreal))
     gradient = similar(x0)
@@ -66,6 +71,15 @@ using KrylovKit
         line_search=FrankWolfe.Backtracking(),
         memory_mode=FrankWolfe.InplaceEmphasis(),
     )
+
+    lmo_krylov = FrankWolfe.NuclearNormBallLMO(sum(svdvals(Xreal)), FrankWolfe.KrylovKitBackend())
+    x0_krylov0 = @inferred FrankWolfe.compute_extreme_point(lmo_krylov, 0 * Xreal)
+    @test norm(x0_krylov0) ≈ sum(svdvals(Xreal))
+
+    d = randn(nobs, nfeat)
+    v_krylov = FrankWolfe.compute_extreme_point(lmo_krylov, d)
+    v_arpack = FrankWolfe.compute_extreme_point(lmo, d)
+    @test v_krylov ≈ v_arpack
 end
 
 @testset "Spectral norms" begin
