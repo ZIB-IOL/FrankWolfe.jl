@@ -1,20 +1,5 @@
 
 """
-    LinearAlgebraBackend
-
-Defines the backend to use to perform linear algebra subroutines for the spectral LMOs,
-including singular value decompositions, eigenvalue decompositions, etc.
-"""
-abstract type LinearAlgebraBackend end
-
-struct ArpackBackend <: LinearAlgebraBackend
-    tol::Float64
-    maxiter::Int
-end
-
-ArpackBackend() = ArpackBackend(1e-8, 500)
-
-"""
     NuclearNormBallLMO{T,LAB}(radius)
 
 LMO over matrices that have a nuclear norm less than `radius`.
