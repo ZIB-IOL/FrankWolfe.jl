@@ -149,7 +149,12 @@ struct UnitSpectrahedronLMO{T,M,LAB<:LinearAlgebraBackend} <: LinearMinimization
     backend::LAB
 end
 
-function UnitSpectrahedronLMO(radius::T, side_dimension::Int, ensure_symmetry::Bool=true, backend=ArpackBackend()) where {T}
+function UnitSpectrahedronLMO(
+    radius::T,
+    side_dimension::Int,
+    ensure_symmetry::Bool=true,
+    backend=ArpackBackend(),
+) where {T}
     return UnitSpectrahedronLMO(
         radius,
         Matrix{T}(undef, side_dimension, side_dimension),
