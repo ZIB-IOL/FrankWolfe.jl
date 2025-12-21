@@ -153,7 +153,7 @@ function UnitSpectrahedronLMO(
     radius::T,
     side_dimension::Int,
     ensure_symmetry::Bool=true,
-    backend=ArpackBackend(),
+    backend::LinearAlgebraBackend=ArpackBackend(),
 ) where {T}
     return UnitSpectrahedronLMO(
         radius,
