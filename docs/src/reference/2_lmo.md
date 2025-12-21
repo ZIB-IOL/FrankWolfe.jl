@@ -53,7 +53,7 @@ Pages = ["polytope_oracles.jl"]
 
 ```@autodocs
 Modules = [FrankWolfe]
-Pages = ["spectral_oracles.jl"]
+Pages = ["spectral_oracles.jl", "linear_algebra_backends.jl"]
 ```
 
 ## MathOptInterface
