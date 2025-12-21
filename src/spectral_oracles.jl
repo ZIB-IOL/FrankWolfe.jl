@@ -133,7 +133,7 @@ function compute_extreme_point(
 end
 
 """
-    UnitSpectrahedronLMO{T,M,LAB}(radius::T, gradient_container::M, backend::LAB)
+    UnitSpectrahedronLMO{T,M,LAB}(radius::T, gradient_container::M, ensure_symmetry::Bool, backend::LAB)
 
 Feasible set of PSD matrices with bounded trace:
 ```
@@ -146,15 +146,15 @@ struct UnitSpectrahedronLMO{T,M,LAB<:LinearAlgebraBackend} <: LinearMinimization
     radius::T
     gradient_container::M
     ensure_symmetry::Bool
-    backend::LinearAlgebraBackend
+    backend::LAB
 end
 
-function UnitSpectrahedronLMO(radius::T, side_dimension::Int, ensure_symmetry::Bool=true) where {T}
+function UnitSpectrahedronLMO(radius::T, side_dimension::Int, ensure_symmetry::Bool=true, backend=ArpackBackend()) where {T}
     return UnitSpectrahedronLMO(
         radius,
         Matrix{T}(undef, side_dimension, side_dimension),
         ensure_symmetry,
-        ArpackBackend(1e-8, 500),
+        backend,
     )
 end
 
