@@ -81,7 +81,7 @@ push!(trajectories, afw_trajectory);
 
 # ## Running Alternating Projections
 # Unlike ALM, Alternating Projections (AP) is only suitable for feasibility problems. One omits the objective and gradient as parameters.
-_, _, _, _, ap_trajectory = FrankWolfe.alternating_projections(
+_, _, _, _, _, ap_trajectory = FrankWolfe.alternating_projections(
     lmos,
     x0,
     trajectory=true,
