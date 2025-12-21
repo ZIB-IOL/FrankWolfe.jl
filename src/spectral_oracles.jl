@@ -1,20 +1,37 @@
+
 """
-    NuclearNormBallLMO{T}(radius)
+    LinearAlgebraBackend
+
+Defines the backend to use to perform linear algebra subroutines for the spectral LMOs,
+including singular value decompositions, eigenvalue decompositions, etc.
+"""
+abstract type LinearAlgebraBackend end
+
+struct ArpackBackend <: LinearAlgebraBackend
+    tol::Float64
+    maxiters::Int
+end
+
+ArpackBackend() = ArpackBackend(1e-8, 500)
+
+"""
+    NuclearNormBallLMO{T,LAB}(radius)
 
 LMO over matrices that have a nuclear norm less than `radius`.
 The LMO returns the best rank-one approximation matrix with singular value `radius`, computed with Arpack.
+`T` is the type of the radius and `LAB` is the type of the LinearAlgebraBackend
 """
-struct NuclearNormBallLMO{T} <: LinearMinimizationOracle
+struct NuclearNormBallLMO{T,LAB <: LinearAlgebraBackend} <: LinearMinimizationOracle
     radius::T
+    backend::LAB
 end
 
-NuclearNormBallLMO{T}() where {T} = NuclearNormBallLMO{T}(one(T))
-NuclearNormBallLMO() = NuclearNormBallLMO(1.0)
+NuclearNormBallLMO{T}() where {T} = NuclearNormBallLMO{T,ArpackBackend}(one(T), ArpackBackend(1e-8))
+NuclearNormBallLMO() = NuclearNormBallLMO(1.0, ArpackBackend())
 
 function compute_extreme_point(
-    lmo::NuclearNormBallLMO{TL},
+    lmo::NuclearNormBallLMO{TL,ArpackBackend},
     direction::AbstractMatrix{TD};
-    tol=1e-8,
     kwargs...,
 ) where {TL,TD}
     T = promote_type(TD, TL)
@@ -39,7 +56,7 @@ function convert_mathopt(
 end
 
 """
-    SpectraplexLMO{T,M}(radius::T,gradient_container::M,ensure_symmetry::Bool=true)
+    SpectraplexLMO{T,M}(radius::T, gradient_container::M, ensure_symmetry::Bool=true)
 
 Feasible set
 ```
@@ -48,11 +65,11 @@ Feasible set
 `gradient_container` is used to store the symmetrized negative direction.
 `ensure_symmetry` indicates whether the linear function is made symmetric before computing the eigenvector.
 """
-struct SpectraplexLMO{T,M} <: LinearMinimizationOracle
+struct SpectraplexLMO{T,M,LAB<:LinearAlgebraBackend} <: LinearMinimizationOracle
     radius::T
     gradient_container::M
     ensure_symmetry::Bool
-    maxiters::Int
+    backend::LAB
 end
 
 function SpectraplexLMO(
@@ -60,12 +77,13 @@ function SpectraplexLMO(
     side_dimension::Int,
     ensure_symmetry::Bool=true,
     maxiters::Int=500,
+    tol=1e-8,
 ) where {T}
     return SpectraplexLMO(
         radius,
         Matrix{T}(undef, side_dimension, side_dimension),
         ensure_symmetry,
-        maxiters,
+        ArpackBackend(maxiters, tol),
     )
 end
 
@@ -74,12 +92,13 @@ function SpectraplexLMO(
     side_dimension::Int,
     ensure_symmetry::Bool=true,
     maxiters::Int=500,
+    tol=1e-8,
 )
-    return SpectraplexLMO(float(radius), side_dimension, ensure_symmetry, maxiters)
+    return SpectraplexLMO(float(radius), side_dimension, ensure_symmetry, ArpackBackend(maxiters, tol))
 end
 
 function compute_extreme_point(
-    lmo::SpectraplexLMO{T},
+    lmo::SpectraplexLMO{T,<:Any,ArpackBackend},
     direction::M;
     v=nothing,
     kwargs...,
@@ -92,7 +111,7 @@ function compute_extreme_point(
     end
     lmo.gradient_container .*= -1
 
-    _, evec = Arpack.eigs(lmo.gradient_container; nev=1, which=:LR, maxiter=lmo.maxiters)
+    _, evec = Arpack.eigs(lmo.gradient_container; nev=1, which=:LR, maxiter=lmo.backend.maxiters, tol=lmo.backend.tol)
     # type annotation because of Arpack instability
     unit_vec::Vector{T} = vec(evec)
     # scaling by sqrt(radius) so that x x^T has spectral norm radius while using a single vector
@@ -101,7 +120,7 @@ function compute_extreme_point(
 end
 
 """
-    UnitSpectrahedronLMO{T,M}(radius::T, gradient_container::M)
+    UnitSpectrahedronLMO{T,M,LAB}(radius::T, gradient_container::M, backend::LAB)
 
 Feasible set of PSD matrices with bounded trace:
 ```
@@ -110,10 +129,11 @@ Feasible set of PSD matrices with bounded trace:
 `gradient_container` is used to store the symmetrized negative direction.
 `ensure_symmetry` indicates whether the linear function is made symmetric before computing the eigenvector.
 """
-struct UnitSpectrahedronLMO{T,M} <: LinearMinimizationOracle
+struct UnitSpectrahedronLMO{T,M,LAB<:LinearAlgebraBackend} <: LinearMinimizationOracle
     radius::T
     gradient_container::M
     ensure_symmetry::Bool
+    backend::LinearAlgebraBackend
 end
 
 function UnitSpectrahedronLMO(radius::T, side_dimension::Int, ensure_symmetry::Bool=true) where {T}
@@ -121,6 +141,7 @@ function UnitSpectrahedronLMO(radius::T, side_dimension::Int, ensure_symmetry::B
         radius,
         Matrix{T}(undef, side_dimension, side_dimension),
         ensure_symmetry,
+        ArpackBackend(1e-8, 500),
     )
 end
 
@@ -128,7 +149,7 @@ UnitSpectrahedronLMO(radius::Integer, side_dimension::Int) =
     UnitSpectrahedronLMO(float(radius), side_dimension)
 
 function compute_extreme_point(
-    lmo::UnitSpectrahedronLMO{T},
+    lmo::UnitSpectrahedronLMO{T,<:Any,ArpackBackend},
     direction::M;
     v=nothing,
     maxiters=500,
@@ -143,7 +164,7 @@ function compute_extreme_point(
     lmo.gradient_container .*= -1
 
     e_val::Vector{T}, evec::Matrix{T} =
-        Arpack.eigs(lmo.gradient_container; nev=1, which=:LR, maxiter=maxiters)
+        Arpack.eigs(lmo.gradient_container; nev=1, which=:LR, maxiter=lmo.backend.maxiters, tol=lmo.backend.tol)
     # type annotation because of Arpack instability
     unit_vec::Vector{T} = vec(evec)
     if e_val[1] < 0
@@ -181,6 +202,13 @@ function convert_mathopt(
 end
 
 """
+    StdLABackend
+
+A `LinearAlgebraBackend` for all operations performed with the LinearAlgebra standard library.
+"""
+struct StdLABackend <: LinearAlgebraBackend end
+
+"""
     FantopeLMO(k::Int)
 
 Spectrahedron defined on square symmetric matrices as:
@@ -190,11 +218,14 @@ Spectrahedron defined on square symmetric matrices as:
 Source: [V.Q. Vu, J. Cho, J. Lei, K. Rohe](https://papers.nips.cc/paper_files/paper/2013/hash/81e5f81db77c596492e6f1a5a792ed53-Abstract.html)
 [Dattorro, Convex optimization & euclidean distance geometry, 2.3.2](https://web.stanford.edu/group/SOL/Books/0976401304.pdf).
 """
-struct FantopeLMO <: FrankWolfe.LinearMinimizationOracle
+struct FantopeLMO{LAB} <: FrankWolfe.LinearMinimizationOracle
     k::Int
+    backend::LAB
 end
 
-function compute_extreme_point(lmo::FantopeLMO, direction::AbstractMatrix{T}; kwargs...) where {T}
+FantopeLMO(k::Int) = FantopeLMO(k, StdLABackend())
+
+function compute_extreme_point(lmo::FantopeLMO{StdLABackend}, direction::AbstractMatrix{T}; kwargs...) where {T}
     @assert issymmetric(direction)
     n = size(direction, 1)
     eigen_info = eigen(direction)
