@@ -26,7 +26,7 @@ struct NuclearNormBallLMO{T,LAB<:LinearAlgebraBackend} <: LinearMinimizationOrac
     backend::LAB
 end
 
-NuclearNormBallLMO{T}() where {T} = NuclearNormBallLMO{T,ArpackBackend}(one(T), ArpackBackend(1e-8))
+NuclearNormBallLMO{T}() where {T} = NuclearNormBallLMO{T,ArpackBackend}(one(T), ArpackBackend())
 NuclearNormBallLMO() = NuclearNormBallLMO(1.0, ArpackBackend())
 
 NuclearNormBallLMO(radius) = NuclearNormBallLMO(radius, ArpackBackend())
