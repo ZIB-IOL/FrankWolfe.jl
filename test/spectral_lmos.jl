@@ -22,8 +22,9 @@ rng = StableRNG(42)
     @test rank(Xreal) == r
     missing_entries = unique!([(rand(rng, 1:nobs), rand(rng, 1:nfeat)) for _ in 1:1000])
     function f(X)
-        return 0.5 *
-        sum((X[i, j] - Xreal[i, j])^2 for i in 1:nobs, j in 1:nfeat if (i, j) ∉ missing_entries)
+        return 0.5 * sum(
+            (X[i, j] - Xreal[i, j])^2 for i in 1:nobs, j in 1:nfeat if (i, j) ∉ missing_entries
+        )
     end
     function grad!(storage, X)
         storage .= 0
