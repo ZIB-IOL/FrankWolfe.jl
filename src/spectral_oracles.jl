@@ -9,7 +9,7 @@ abstract type LinearAlgebraBackend end
 
 struct ArpackBackend <: LinearAlgebraBackend
     tol::Float64
-    maxiters::Int
+    maxiter::Int
 end
 
 ArpackBackend() = ArpackBackend(1e-8, 500)
@@ -37,7 +37,7 @@ function compute_extreme_point(
     kwargs...,
 ) where {TL,TD}
     T = promote_type(TD, TL)
-    Z = Arpack.svds(direction, nsv=1, tol=tol)[1]
+    Z = Arpack.svds(direction, nsv=1, tol=lmo.backend.tol, maxiter=lmo.backend.maxiter)[1]
     u = -lmo.radius * view(Z.U, :)
     return RankOneMatrix(u::Vector{T}, Z.V[:]::Vector{T})
 end
@@ -78,14 +78,14 @@ function SpectraplexLMO(
     radius::T,
     side_dimension::Int,
     ensure_symmetry::Bool=true,
-    maxiters::Int=500,
+    maxiter::Int=500,
     tol=1e-8,
 ) where {T}
     return SpectraplexLMO(
         radius,
         Matrix{T}(undef, side_dimension, side_dimension),
         ensure_symmetry,
-        ArpackBackend(maxiters, tol),
+        ArpackBackend(maxiter, tol),
     )
 end
 
@@ -93,14 +93,14 @@ function SpectraplexLMO(
     radius::Integer,
     side_dimension::Int,
     ensure_symmetry::Bool=true,
-    maxiters::Int=500,
+    maxiter::Int=500,
     tol=1e-8,
 )
     return SpectraplexLMO(
         float(radius),
         side_dimension,
         ensure_symmetry,
-        ArpackBackend(maxiters, tol),
+        ArpackBackend(maxiter, tol),
     )
 end
 
@@ -122,7 +122,7 @@ function compute_extreme_point(
         lmo.gradient_container;
         nev=1,
         which=:LR,
-        maxiter=lmo.backend.maxiters,
+        maxiter=lmo.backend.maxiter,
         tol=lmo.backend.tol,
     )
     # type annotation because of Arpack instability
@@ -165,7 +165,7 @@ function compute_extreme_point(
     lmo::UnitSpectrahedronLMO{T,<:Any,ArpackBackend},
     direction::M;
     v=nothing,
-    maxiters=500,
+    maxiter=500,
     kwargs...,
 ) where {T,M<:AbstractMatrix}
     lmo.gradient_container .= direction
@@ -180,7 +180,7 @@ function compute_extreme_point(
         lmo.gradient_container;
         nev=1,
         which=:LR,
-        maxiter=lmo.backend.maxiters,
+        maxiter=lmo.backend.maxiter,
         tol=lmo.backend.tol,
     )
     # type annotation because of Arpack instability
