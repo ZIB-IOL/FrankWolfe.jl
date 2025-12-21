@@ -21,7 +21,7 @@ LMO over matrices that have a nuclear norm less than `radius`.
 The LMO returns the best rank-one approximation matrix with singular value `radius`, computed with Arpack.
 `T` is the type of the radius and `LAB` is the type of the LinearAlgebraBackend
 """
-struct NuclearNormBallLMO{T,LAB <: LinearAlgebraBackend} <: LinearMinimizationOracle
+struct NuclearNormBallLMO{T,LAB<:LinearAlgebraBackend} <: LinearMinimizationOracle
     radius::T
     backend::LAB
 end
@@ -96,7 +96,12 @@ function SpectraplexLMO(
     maxiters::Int=500,
     tol=1e-8,
 )
-    return SpectraplexLMO(float(radius), side_dimension, ensure_symmetry, ArpackBackend(maxiters, tol))
+    return SpectraplexLMO(
+        float(radius),
+        side_dimension,
+        ensure_symmetry,
+        ArpackBackend(maxiters, tol),
+    )
 end
 
 function compute_extreme_point(
@@ -113,7 +118,13 @@ function compute_extreme_point(
     end
     lmo.gradient_container .*= -1
 
-    _, evec = Arpack.eigs(lmo.gradient_container; nev=1, which=:LR, maxiter=lmo.backend.maxiters, tol=lmo.backend.tol)
+    _, evec = Arpack.eigs(
+        lmo.gradient_container;
+        nev=1,
+        which=:LR,
+        maxiter=lmo.backend.maxiters,
+        tol=lmo.backend.tol,
+    )
     # type annotation because of Arpack instability
     unit_vec::Vector{T} = vec(evec)
     # scaling by sqrt(radius) so that x x^T has spectral norm radius while using a single vector
@@ -165,8 +176,13 @@ function compute_extreme_point(
     end
     lmo.gradient_container .*= -1
 
-    e_val::Vector{T}, evec::Matrix{T} =
-        Arpack.eigs(lmo.gradient_container; nev=1, which=:LR, maxiter=lmo.backend.maxiters, tol=lmo.backend.tol)
+    e_val::Vector{T}, evec::Matrix{T} = Arpack.eigs(
+        lmo.gradient_container;
+        nev=1,
+        which=:LR,
+        maxiter=lmo.backend.maxiters,
+        tol=lmo.backend.tol,
+    )
     # type annotation because of Arpack instability
     unit_vec::Vector{T} = vec(evec)
     if e_val[1] < 0
@@ -227,7 +243,11 @@ end
 
 FantopeLMO(k::Int) = FantopeLMO(k, StdLABackend())
 
-function compute_extreme_point(lmo::FantopeLMO{StdLABackend}, direction::AbstractMatrix{T}; kwargs...) where {T}
+function compute_extreme_point(
+    lmo::FantopeLMO{StdLABackend},
+    direction::AbstractMatrix{T};
+    kwargs...,
+) where {T}
     @assert issymmetric(direction)
     n = size(direction, 1)
     eigen_info = eigen(direction)
