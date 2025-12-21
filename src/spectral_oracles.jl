@@ -85,7 +85,7 @@ function SpectraplexLMO(
         radius,
         Matrix{T}(undef, side_dimension, side_dimension),
         ensure_symmetry,
-        ArpackBackend(maxiter, tol),
+        ArpackBackend(tol, maxiter),
     )
 end
 
@@ -100,7 +100,7 @@ function SpectraplexLMO(
         float(radius),
         side_dimension,
         ensure_symmetry,
-        ArpackBackend(maxiter, tol),
+        ArpackBackend(tol, maxiter),
     )
 end
 
