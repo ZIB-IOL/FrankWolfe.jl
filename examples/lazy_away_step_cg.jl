@@ -68,6 +68,6 @@ x0 = FrankWolfe.compute_extreme_point(lmo, ones(n));
 );
 
 data = [trajectorylazy, trajectoryAFW, trajectoryFW]
-label = ["LAFW" "AFW" "FW"]
+label = ["LAFW", "AFW", "FW"]
 
 plot_trajectories(data, label, xscalelog=true)
