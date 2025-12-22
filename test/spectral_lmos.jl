@@ -5,6 +5,7 @@ using Test
 using LinearAlgebra
 using Random
 import Hypatia
+import MathOptInterface as MOI
 
 rng = StableRNG(42)
 
