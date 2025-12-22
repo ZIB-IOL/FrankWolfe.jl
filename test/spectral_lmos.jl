@@ -4,6 +4,7 @@ using StableRNGs
 using Test
 using LinearAlgebra
 using Random
+import Hypatia
 
 rng = StableRNG(42)
 
