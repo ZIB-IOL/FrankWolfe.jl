@@ -4,8 +4,10 @@ import FrankWolfe
 import KrylovKit
 using LinearAlgebra
 
+FrankWolfe._default_linearalgebra_backend_params(::Val{:KrylovKit}) = (tol=1e-8, maxiter=400)
+
 function FrankWolfe.compute_extreme_point(
-    lmo::FrankWolfe.NuclearNormBallLMO{TL,<:FrankWolfe.KrylovKitBackend},
+    lmo::FrankWolfe.NuclearNormBallLMO{TL,:KrylovKit},
     direction::AbstractMatrix{TD};
     kwargs...,
 ) where {TL,TD}

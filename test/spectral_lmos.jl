@@ -76,7 +76,7 @@ rng = StableRNG(42)
         memory_mode=FrankWolfe.InplaceEmphasis(),
     )
 
-    lmo_krylov = FrankWolfe.NuclearNormBallLMO(sum(svdvals(Xreal)), FrankWolfe.KrylovKitBackend())
+    lmo_krylov = FrankWolfe.NuclearNormBallLMO{Float64,:KrylovKit}(sum(svdvals(Xreal)), FrankWolfe._default_linearalgebra_backend_params(Val{:KrylovKit}()))
     x0_krylov0 = @inferred FrankWolfe.compute_extreme_point(lmo_krylov, 0 * Xreal)
     @test norm(x0_krylov0) ≈ sum(svdvals(Xreal))
 
