@@ -17,15 +17,20 @@ end
 _default_linearalgebra_backend_params(::Val{:Arpack}) = (tol=1e-8, maxiter=400)
 _default_linearalgebra_backend_params(::Val{:StdLib}) = (;)
 
-NuclearNormBallLMO{T}() where {T} = NuclearNormBallLMO{T,:Arpack}(one(T), _default_linearalgebra_backend_params(Val{:Arpack}()))
-NuclearNormBallLMO() = NuclearNormBallLMO{Float64,:Arpack}(1.0, _default_linearalgebra_backend_params(Val{:Arpack}()))
+NuclearNormBallLMO{T}() where {T} =
+    NuclearNormBallLMO{T,:Arpack}(one(T), _default_linearalgebra_backend_params(Val{:Arpack}()))
+NuclearNormBallLMO() =
+    NuclearNormBallLMO{Float64,:Arpack}(1.0, _default_linearalgebra_backend_params(Val{:Arpack}()))
 
 function NuclearNormBallLMO(radius::T) where {T}
     backend_params = _default_linearalgebra_backend_params(Val{:Arpack}())
-    NuclearNormBallLMO{T, :Arpack, typeof(backend_params)}(radius, backend_params)
+    return NuclearNormBallLMO{T,:Arpack,typeof(backend_params)}(radius, backend_params)
 end
 
-function NuclearNormBallLMO{T,LinearAlgebraBackend}(radius, backend::NT) where {T, NT, LinearAlgebraBackend}
+function NuclearNormBallLMO{T,LinearAlgebraBackend}(
+    radius,
+    backend::NT,
+) where {T,NT,LinearAlgebraBackend}
     return NuclearNormBallLMO{T,LinearAlgebraBackend,NT}(T(radius), backend)
 end
 
@@ -81,7 +86,7 @@ function SpectraplexLMO(
     tol=1e-8,
 ) where {T}
     backend_params = (; tol, maxiter)
-    return SpectraplexLMO{T, Matrix{T}, :Arpack, typeof(backend_params)}(
+    return SpectraplexLMO{T,Matrix{T},:Arpack,typeof(backend_params)}(
         radius,
         Matrix{T}(undef, side_dimension, side_dimension),
         ensure_symmetry,
@@ -96,13 +101,7 @@ function SpectraplexLMO(
     maxiter::Int=500,
     tol=1e-8,
 )
-    return SpectraplexLMO(
-        float(radius),
-        side_dimension,
-        ensure_symmetry,
-        maxiter,
-        tol,
-    )
+    return SpectraplexLMO(float(radius), side_dimension, ensure_symmetry, maxiter, tol)
 end
 
 function compute_extreme_point(
@@ -150,13 +149,9 @@ struct UnitSpectrahedronLMO{T,M,LinearAlgebraBackend,NT} <: LinearMinimizationOr
     backend::NT
 end
 
-function UnitSpectrahedronLMO(
-    radius::T,
-    side_dimension::Int,
-    ensure_symmetry::Bool=true,
-) where {T}
+function UnitSpectrahedronLMO(radius::T, side_dimension::Int, ensure_symmetry::Bool=true) where {T}
     backend_params = _default_linearalgebra_backend_params(Val{:Arpack}())
-    return UnitSpectrahedronLMO{T,Matrix{T},:Arpack, typeof(backend_params)}(
+    return UnitSpectrahedronLMO{T,Matrix{T},:Arpack,typeof(backend_params)}(
         radius,
         Matrix{T}(undef, side_dimension, side_dimension),
         ensure_symmetry,

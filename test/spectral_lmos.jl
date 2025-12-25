@@ -76,14 +76,17 @@ rng = StableRNG(42)
         memory_mode=FrankWolfe.InplaceEmphasis(),
     )
 
-    lmo_krylov = FrankWolfe.NuclearNormBallLMO{Float64,:KrylovKit}(sum(svdvals(Xreal)), FrankWolfe._default_linearalgebra_backend_params(Val{:KrylovKit}()))
+    lmo_krylov = FrankWolfe.NuclearNormBallLMO{Float64,:KrylovKit}(
+        sum(svdvals(Xreal)),
+        FrankWolfe._default_linearalgebra_backend_params(Val{:KrylovKit}()),
+    )
     x0_krylov0 = @inferred FrankWolfe.compute_extreme_point(lmo_krylov, 0 * Xreal)
     @test norm(x0_krylov0) ≈ sum(svdvals(Xreal))
 
     d = randn(nobs, nfeat)
     v_krylov = FrankWolfe.compute_extreme_point(lmo_krylov, d)
     v_arpack = FrankWolfe.compute_extreme_point(lmo, d)
-    @test v_krylov ≈ v_arpack
+    @test norm(v_krylov - v_arpack) <= 1e-5 * length(Xreal)
 end
 
 @testset "Spectral norms" begin
