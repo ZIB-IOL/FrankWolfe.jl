@@ -1,38 +1,41 @@
 
 """
-    LinearAlgebraBackend
-
-Defines the backend to use to perform linear algebra subroutines for the spectral LMOs,
-including singular value decompositions, eigenvalue decompositions, etc.
-"""
-abstract type LinearAlgebraBackend end
-
-struct ArpackBackend <: LinearAlgebraBackend
-    tol::Float64
-    maxiter::Int
-end
-
-ArpackBackend() = ArpackBackend(1e-8, 500)
-
-"""
-    NuclearNormBallLMO{T,LAB}(radius)
+    NuclearNormBallLMO{T,LinearAlgebraBackend,NT}(radius)
 
 LMO over matrices that have a nuclear norm less than `radius`.
 The LMO returns the best rank-one approximation matrix with singular value `radius`, computed with Arpack.
-`T` is the type of the radius and `LAB` is the type of the LinearAlgebraBackend
+`T` is the type of the radius. 
+`LinearAlgebraBackend` is a symbol indicating the linear algebra backend.
+`NT` is the type of the backend storage.
+The backends implemented in FrankWolfe or extensions use named tuples, external packages can define their own type.
 """
-struct NuclearNormBallLMO{T,LAB<:LinearAlgebraBackend} <: LinearMinimizationOracle
+struct NuclearNormBallLMO{T,LinearAlgebraBackend,NT} <: LinearMinimizationOracle
     radius::T
-    backend::LAB
+    backend::NT
 end
 
-NuclearNormBallLMO{T}() where {T} = NuclearNormBallLMO{T,ArpackBackend}(one(T), ArpackBackend())
-NuclearNormBallLMO() = NuclearNormBallLMO(1.0, ArpackBackend())
+_default_linearalgebra_backend_params(::Val{:Arpack}) = (tol=1e-8, maxiter=400)
+_default_linearalgebra_backend_params(::Val{:StdLib}) = (;)
 
-NuclearNormBallLMO(radius) = NuclearNormBallLMO(radius, ArpackBackend())
+NuclearNormBallLMO{T}() where {T} =
+    NuclearNormBallLMO{T,:Arpack}(one(T), _default_linearalgebra_backend_params(Val{:Arpack}()))
+NuclearNormBallLMO() =
+    NuclearNormBallLMO{Float64,:Arpack}(1.0, _default_linearalgebra_backend_params(Val{:Arpack}()))
+
+function NuclearNormBallLMO(radius::T) where {T}
+    backend_params = _default_linearalgebra_backend_params(Val{:Arpack}())
+    return NuclearNormBallLMO{T,:Arpack,typeof(backend_params)}(radius, backend_params)
+end
+
+function NuclearNormBallLMO{T,LinearAlgebraBackend}(
+    radius,
+    backend::NT,
+) where {T,NT,LinearAlgebraBackend}
+    return NuclearNormBallLMO{T,LinearAlgebraBackend,NT}(T(radius), backend)
+end
 
 function compute_extreme_point(
-    lmo::NuclearNormBallLMO{TL,ArpackBackend},
+    lmo::NuclearNormBallLMO{TL,:Arpack},
     direction::AbstractMatrix{TD};
     kwargs...,
 ) where {TL,TD}
@@ -58,7 +61,7 @@ function convert_mathopt(
 end
 
 """
-    SpectraplexLMO{T,M}(radius::T, gradient_container::M, ensure_symmetry::Bool=true)
+    SpectraplexLMO{T,M,LinearAlgebraBackend}(radius::T, gradient_container::M, ensure_symmetry::Bool=true)
 
 Feasible set
 ```
@@ -66,12 +69,13 @@ Feasible set
 ```
 `gradient_container` is used to store the symmetrized negative direction.
 `ensure_symmetry` indicates whether the linear function is made symmetric before computing the eigenvector.
+`LinearAlgebraBackend` is a symbol indicating the backend to use
 """
-struct SpectraplexLMO{T,M,LAB<:LinearAlgebraBackend} <: LinearMinimizationOracle
+struct SpectraplexLMO{T,M,LinearAlgebraBackend,NT} <: LinearMinimizationOracle
     radius::T
     gradient_container::M
     ensure_symmetry::Bool
-    backend::LAB
+    backend::NT
 end
 
 function SpectraplexLMO(
@@ -81,11 +85,12 @@ function SpectraplexLMO(
     maxiter::Int=500,
     tol=1e-8,
 ) where {T}
-    return SpectraplexLMO(
+    backend_params = (; tol, maxiter)
+    return SpectraplexLMO{T,Matrix{T},:Arpack,typeof(backend_params)}(
         radius,
         Matrix{T}(undef, side_dimension, side_dimension),
         ensure_symmetry,
-        ArpackBackend(tol, maxiter),
+        backend_params,
     )
 end
 
@@ -96,16 +101,11 @@ function SpectraplexLMO(
     maxiter::Int=500,
     tol=1e-8,
 )
-    return SpectraplexLMO(
-        float(radius),
-        side_dimension,
-        ensure_symmetry,
-        ArpackBackend(tol, maxiter),
-    )
+    return SpectraplexLMO(float(radius), side_dimension, ensure_symmetry, maxiter, tol)
 end
 
 function compute_extreme_point(
-    lmo::SpectraplexLMO{T,<:Any,ArpackBackend},
+    lmo::SpectraplexLMO{T,<:Any,:Arpack},
     direction::M;
     v=nothing,
     kwargs...,
@@ -142,24 +142,20 @@ Feasible set of PSD matrices with bounded trace:
 `gradient_container` is used to store the symmetrized negative direction.
 `ensure_symmetry` indicates whether the linear function is made symmetric before computing the eigenvector.
 """
-struct UnitSpectrahedronLMO{T,M,LAB<:LinearAlgebraBackend} <: LinearMinimizationOracle
+struct UnitSpectrahedronLMO{T,M,LinearAlgebraBackend,NT} <: LinearMinimizationOracle
     radius::T
     gradient_container::M
     ensure_symmetry::Bool
-    backend::LAB
+    backend::NT
 end
 
-function UnitSpectrahedronLMO(
-    radius::T,
-    side_dimension::Int,
-    ensure_symmetry::Bool=true,
-    backend::LinearAlgebraBackend=ArpackBackend(),
-) where {T}
-    return UnitSpectrahedronLMO(
+function UnitSpectrahedronLMO(radius::T, side_dimension::Int, ensure_symmetry::Bool=true) where {T}
+    backend_params = _default_linearalgebra_backend_params(Val{:Arpack}())
+    return UnitSpectrahedronLMO{T,Matrix{T},:Arpack,typeof(backend_params)}(
         radius,
         Matrix{T}(undef, side_dimension, side_dimension),
         ensure_symmetry,
-        backend,
+        backend_params,
     )
 end
 
@@ -167,10 +163,9 @@ UnitSpectrahedronLMO(radius::Integer, side_dimension::Int) =
     UnitSpectrahedronLMO(float(radius), side_dimension)
 
 function compute_extreme_point(
-    lmo::UnitSpectrahedronLMO{T,<:Any,ArpackBackend},
+    lmo::UnitSpectrahedronLMO{T,<:Any,:Arpack},
     direction::M;
     v=nothing,
-    maxiter=500,
     kwargs...,
 ) where {T,M<:AbstractMatrix}
     lmo.gradient_container .= direction
@@ -225,13 +220,6 @@ function convert_mathopt(
 end
 
 """
-    StdLABackend
-
-A `LinearAlgebraBackend` for all operations performed with the LinearAlgebra standard library.
-"""
-struct StdLABackend <: LinearAlgebraBackend end
-
-"""
     FantopeLMO(k::Int)
 
 Spectrahedron defined on square symmetric matrices as:
@@ -241,15 +229,15 @@ Spectrahedron defined on square symmetric matrices as:
 Source: [V.Q. Vu, J. Cho, J. Lei, K. Rohe](https://papers.nips.cc/paper_files/paper/2013/hash/81e5f81db77c596492e6f1a5a792ed53-Abstract.html)
 [Dattorro, Convex optimization & euclidean distance geometry, 2.3.2](https://web.stanford.edu/group/SOL/Books/0976401304.pdf).
 """
-struct FantopeLMO{LAB} <: FrankWolfe.LinearMinimizationOracle
+struct FantopeLMO{LinearAlgebraBackend,NT} <: FrankWolfe.LinearMinimizationOracle
     k::Int
-    backend::LAB
+    backend::NT
 end
 
-FantopeLMO(k::Int) = FantopeLMO(k, StdLABackend())
+FantopeLMO(k::Int) = FantopeLMO{:StdLib,@NamedTuple{}}(k, (;))
 
 function compute_extreme_point(
-    lmo::FantopeLMO{StdLABackend},
+    lmo::FantopeLMO{:StdLib},
     direction::AbstractMatrix{T};
     kwargs...,
 ) where {T}
