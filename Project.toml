@@ -18,17 +18,20 @@ SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 
 [weakdeps]
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 KrylovKit = "0b1a1467-8014-51b9-945f-bf0ae24f4b77"
 ProximalOperators = "a725b495-10eb-56fe-b38b-717eba820537"
 
 [extensions]
-FrankWolfeProxExt = "ProximalOperators"
 FrankWolfeKrylovKitExt = "KrylovKit"
+FrankWolfeProxExt = "ProximalOperators"
+FrankWolfeCudaExt = "CUDA"
 
 [compat]
 Aqua = "0.8"
 Arpack = "0.5"
 CSV = "0.10"
+CUDA = "5.9.6"
 Combinatorics = "1"
 DataFrames = "1"
 Distributions = "0.25"
