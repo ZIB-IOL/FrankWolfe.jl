@@ -1,4 +1,4 @@
-struct QCMNPStep <: CorrectiveStep 
+struct QCMNPStep{H, BT} <: CorrectiveStep 
     A::H # Hessian matrix
     b::BT # linear term
     ls_solve::Function # in-place solve of linear system (x, A_mat, b)
@@ -200,7 +200,7 @@ function run_corrective_step(
     d,
 )
 
-    nv = length(as)
+    nv = length(active_set)
     o = step.lp_optimizer
     MOI.empty!(o)
     λ = MOI.add_variables(o, nv)
@@ -208,17 +208,17 @@ function run_corrective_step(
     MOI.add_constraint(o, sum_of_variables, MOI.EqualTo(1.0))
 
     if step.relax
-        β = MOI.add_variables(o, 1)
+        β = MOI.add_variable(o)
         for j = 1:nv
-            MOI.add_constraint(MOI.ScalarAffineFunction{Float64}([MOI.ScalarAffineTerm(1, λ[j]), MOI.ScalarAffineTerm(as.weights[j], β[1])], 0.0),MOI.GreaterThan(0.0)) 
+            MOI.add_constraint(o,MOI.ScalarAffineFunction{Float64}([MOI.ScalarAffineTerm(1, λ[j]), MOI.ScalarAffineTerm(active_set.weights[j], β)], 0.0), MOI.GreaterThan(0.0)) 
         end
     else
         MOI.add_constraint.(o, λ, MOI.GreaterThan(0.0))
     end
 
     # Get scaling factor for active set partial caching
-    if as.active_set isa ActiveSetQuadraticPartialCaching
-        c = as.active_set.λ[]
+    if active_set isa ActiveSetQuadraticPartialCaching
+        c = active_set.λ[]
     else
         c = 1.0
     end
@@ -229,14 +229,14 @@ function run_corrective_step(
     for i in 2:nv
         lhs = MOI.ScalarAffineFunction{Float64}([], 0.0)
         Base.sizehint!(lhs.terms, nv)
-        if as.active_set isa
+        if active_set isa
         Union{ActiveSetQuadraticProductCaching,ActiveSetQuadraticPartialCaching}
             # dots_A is a lower triangular matrix
             for j in 1:i
                 push!(
                     lhs.terms,
                     MOI.ScalarAffineTerm(
-                        c * (as.active_set.dots_A[i][j] - as.active_set.dots_A[j][1]),
+                        c * (active_set.dots_A[i][j] - active_set.dots_A[j][1]),
                         λ[j],
                     ),
                 )
@@ -245,15 +245,16 @@ function run_corrective_step(
                 push!(
                     lhs.terms,
                     MOI.ScalarAffineTerm(
-                        c * (as.active_set.dots_A[j][i] - as.active_set.dots_A[j][1]),
+                        c * (active_set.dots_A[j][i] - active_set.dots_A[j][1]),
                         λ[j],
                     ),
                 )
             end
-            if as.active_set isa ActiveSetQuadraticProductCaching
-                rhs = as.active_set.dots_b[1] - as.active_set.dots_b[i]
+            if active_set isa ActiveSetQuadraticProductCaching
+                rhs = active_set.dots_b[1] - active_set.dots_b[i]
             else
-                rhs = dot(as.atoms[1], as.b) - dot(as.atoms[i], as.b)
+                # ActiveSetQuadraticPartialCaching doesn't have a b field, use step.b
+                rhs = dot(active_set.atoms[1], step.b) - dot(active_set.atoms[i], step.b)
             end
         else
             # replaces direct sum because of MOI and MutableArithmetic slow sums
@@ -261,21 +262,25 @@ function run_corrective_step(
                 push!(
                     lhs.terms,
                     _compute_quadratic_constraint_term(
-                        as.atoms[i],
-                        as.atoms[1],
-                        as.A,
-                        as.atoms[j],
+                        active_set.atoms[i],
+                        active_set.atoms[1],
+                        step.A,
+                        active_set.atoms[j],
                         λ[j],
                     ),
                 )
             end
-            rhs = dot(as.atoms[1], as.b) - dot(as.atoms[i], as.b)
+            rhs = dot(active_set.atoms[1], step.b) - dot(active_set.atoms[i], step.b)
         end
         MOI.add_constraint(o, lhs, MOI.EqualTo{Float64}(rhs))
     end
 
     if step.relax
-        MOI.set(o, MOI,ObjectiveFunction{typeof(β[1])}(), β[1])
+        MOI.set(
+           o,
+           MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
+           MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], β), 0.0),
+       )
     else
         MOI.set(o, MOI.ObjectiveFunction{typeof(sum_of_variables)}(), sum_of_variables)
     end
@@ -286,32 +291,33 @@ function run_corrective_step(
     end
 
     # Compute new weights and which atoms to drop
-    indices_to_remove, new_weights = _purge_weights.(MOI.get(o, MOI.VariablePrimal(), λ))
+    indices_to_remove, new_weights = _purge_weights(MOI.get.(o, MOI.VariablePrimal(), λ))
     # Update active set
-    deleteat!(as.active_set, indices_to_remove)
-    @assert length(as) == length(new_weights)
-    update_weights!(as.active_set, new_weights)
-    active_set_cleanup!(as)
-    active_set_renormalize!(as)
-    x = compute_active_set_iterate!(as)
+    deleteat!(active_set, indices_to_remove)
+    @assert length(active_set) == length(new_weights)
+    update_weights!(active_set, new_weights)
+    active_set_cleanup!(active_set)
+    active_set_renormalize!(active_set)
+    x = compute_active_set_iterate!(active_set)
 
-    return x, v, phi_value, dual_gap, false, true
+    return x, v, phi_value, dual_gap, true, true
 end
 
+#### Helper function that are already contained in the active set module
 
-function _compute_quadratic_constraint_term(atom1, atom0, A::AbstractMatrix, atom2, λ)
-    return MOI.ScalarAffineTerm(fast_dot(atom1, A, atom2) - fast_dot(atom0, A, atom2), λ)
-end
+# function _compute_quadratic_constraint_term(atom1, atom0, A::AbstractMatrix, atom2, λ)
+#     return MOI.ScalarAffineTerm(fast_dot(atom1, A, atom2) - fast_dot(atom0, A, atom2), λ)
+# end
 
-function _compute_quadratic_constraint_term(
-    atom1,
-    atom0,
-    A::Union{Identity,LinearAlgebra.UniformScaling},
-    atom2,
-    λ,
-)
-    return MOI.ScalarAffineTerm(A.λ * (dot(atom1, atom2) - dot(atom0, atom2)), λ)
-end
+# function _compute_quadratic_constraint_term(
+#     atom1,
+#     atom0,
+#     A::Union{Identity,LinearAlgebra.UniformScaling},
+#     atom2,
+#     λ,
+# )
+#     return MOI.ScalarAffineTerm(A.λ * (dot(atom1, atom2) - dot(atom0, atom2)), λ)
+# end
 
 
 function _purge_weights(weights::AbstractArray{R}) where {R}
