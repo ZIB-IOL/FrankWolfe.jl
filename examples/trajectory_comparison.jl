@@ -106,7 +106,7 @@ x0 = copy(x00)
 
 
 data = [trajectory_shortstep, trajectory_adaptive, trajectory_agnostic, trajectoryM]
-label = ["short step" "adaptive" "agnostic" "momentum"]
+label = ["short step", "adaptive", "agnostic", "momentum"]
 
 
 plot_trajectories(data, label)
