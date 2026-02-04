@@ -79,8 +79,7 @@ end
     moi_hypersimpler = FrankWolfe.convert_mathopt(hypersimplex, optimizer; dimension=n)
     v_moi = FrankWolfe.compute_extreme_point(moi_hypersimpler, direction)
     @test norm(v_moi - v) ≤ 1e-4
-    moi_unit_hypersimpler =
-        FrankWolfe.convert_mathopt(unit_hypersimplex, optimizer; dimension=n)
+    moi_unit_hypersimpler = FrankWolfe.convert_mathopt(unit_hypersimplex, optimizer; dimension=n)
     v_moi_unit = FrankWolfe.compute_extreme_point(moi_unit_hypersimpler, direction)
     @test norm(v_moi_unit - v_unit) ≤ 1e-4
     @testset "Inface oracle" begin
@@ -94,8 +93,7 @@ end
         for _ in 1:5
             rand_direction = randn(rng, n)
             v_fw = FrankWolfe.compute_extreme_point(hypersimplex, rand_direction)
-            v_face =
-                FrankWolfe.compute_inface_extreme_point(hypersimplex, rand_direction, x_int)
+            v_face = FrankWolfe.compute_inface_extreme_point(hypersimplex, rand_direction, x_int)
             @test v_fw == v_face
             # maximum step is one for x in the relint
             @test FrankWolfe.dicg_maximum_step(hypersimplex, x_int - v_face, x_int) ≈ 1
@@ -150,11 +148,8 @@ end
                     x_on_simplex_face,
                 ) ≈ 1
                 # maximum step is zero for a direction moving from zero to any point on the face, since we are already on the face
-                @test FrankWolfe.dicg_maximum_step(
-                    unit_hypersimplex,
-                    -v_face,
-                    x_on_simplex_face,
-                ) ≈ 0
+                @test FrankWolfe.dicg_maximum_step(unit_hypersimplex, -v_face, x_on_simplex_face) ≈
+                      0
                 @test FrankWolfe.dicg_maximum_step(
                     unit_hypersimplex,
                     -x_on_simplex_face,
