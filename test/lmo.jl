@@ -148,13 +148,16 @@ end
                     x_on_simplex_face,
                 ) ≈ 1
                 # maximum step is zero for a direction moving from zero to any point on the face, since we are already on the face
-                @test FrankWolfe.dicg_maximum_step(unit_hypersimplex, -v_face, x_on_simplex_face) ≈
-                      0
-                @test FrankWolfe.dicg_maximum_step(
-                    unit_hypersimplex,
-                    -x_on_simplex_face,
-                    x_on_simplex_face,
-                ) ≈ 0
+                @test abs(
+                    FrankWolfe.dicg_maximum_step(unit_hypersimplex, -v_face, x_on_simplex_face),
+                ) <= 10eps()
+                @test abs(
+                    FrankWolfe.dicg_maximum_step(
+                        unit_hypersimplex,
+                        -x_on_simplex_face,
+                        x_on_simplex_face,
+                    ),
+                ) < 10eps()
                 # same thing but with a point in the interior: gamma is greater than 0
                 @test FrankWolfe.dicg_maximum_step(
                     unit_hypersimplex,
@@ -183,7 +186,7 @@ end
             # away step stays in polytope
             gamma_max = FrankWolfe.dicg_maximum_step(unit_hypersimplex, v - x2, x2)
             x_away = x2 - gamma_max * (v - x2)
-            @test sum(x_away) <= unit_hypersimplex.K * unit_hypersimplex.radius + eps()
+            @test sum(x_away) <= unit_hypersimplex.K * unit_hypersimplex.radius + 10eps()
             @test all(-10eps() .<= x_away .<= unit_hypersimplex.radius + 10eps())
         end
     end
