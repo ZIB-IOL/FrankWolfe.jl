@@ -780,24 +780,24 @@ end
 
 """
     adaptive_block_coordinate_frank_wolfe(f, grad!, lmos, x0; kwargs...)
-    Adaptive block coordinate Frank-Wolfe.
 
-    # Arguments
-    - `f::Function`: The objective function to minimize.
-    - `grad!: The gradient of the objective function.
-    - `lmos::NTuple{N, FrankWolfe.LinearMinimizationOracle}`: The linear minimization oracles to use.
-    - `x0::FrankWolfe.BlockVector`: The initial point.
-    - `initial_blocks::Vector{Int}`: The initial blocks to update.
-    - `update_order::FrankWolfe.BlockCoordinateUpdateOrder`: The update order to use.
-    - `callback::Union{Nothing, Function}`: A callback function to call after each iteration.
-    - `line_search::Union{Nothing, BlockAdaptive}`: The line search to use.
-    - `eta::Real`: The eta parameter for the line search.
-    - `tau::Real`: The tau parameter for the line search.
-    - `L_max::Real`: The maximum value of the Lipschitz constant.
-    - `L_est::Real`: The estimated value of the Lipschitz constant.
-    - `kwargs...`: Additional keyword arguments to pass to the FrankWolfe.frank_wolfe function.
+Adaptive block coordinate Frank-Wolfe.
+
+# Arguments
+- `f::Function`: The objective function to minimize.
+- `grad!: The gradient of the objective function.
+- `lmos::NTuple{N, FrankWolfe.LinearMinimizationOracle}`: The linear minimization oracles to use.
+- `x0::FrankWolfe.BlockVector`: The initial point.
+- `initial_blocks::Vector{Int}`: The initial blocks to update.
+- `update_order::FrankWolfe.BlockCoordinateUpdateOrder`: The update order to use.
+- `callback::Union{Nothing, Function}`: A callback function to call after each iteration.
+- `line_search::Union{Nothing, BlockAdaptive}`: The line search to use.
+- `eta::Real`: The eta parameter for the line search.
+- `tau::Real`: The tau parameter for the line search.
+- `L_max::Real`: The maximum value of the Lipschitz constant.
+- `L_est::Real`: The estimated value of the Lipschitz constant.
+- `kwargs...`: Additional keyword arguments to pass to the FrankWolfe.frank_wolfe function.
 """
-
 function adaptive_block_coordinate_frank_wolfe(f, grad!, lmo::FrankWolfe.ProductLMO, x0; kwargs...)
     return adaptive_block_coordinate_frank_wolfe(f, grad!, lmo.lmos, x0; kwargs...)
 end

@@ -268,7 +268,7 @@ function FrankWolfe.muladd_memory_mode(
 end
 
 """
-    Adaption for iterate updates with per-block step sizes.
+Adaption for iterate updates with per-block step sizes.
 """
 function FrankWolfe.muladd_memory_mode(
     mem::FrankWolfe.MemoryEmphasis,
