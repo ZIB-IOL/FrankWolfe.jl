@@ -320,7 +320,6 @@ A linear minimization oracle that calls only on the specified blocks.
 - `blocks::Vector{Int}`: The blocks to update.
 - `lmos::LT`: The linear minimization oracles to use.
 """
-
 mutable struct BlockSelectionLMO{
     LT<:Union{AbstractVector{LinearMinimizationOracle},Tuple{Vararg{LinearMinimizationOracle}}},
 } <: LinearMinimizationOracle
