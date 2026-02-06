@@ -314,11 +314,11 @@ end
 
 """
     BlockSelectionLMO(blocks, lmos)
-    A linear minimization oracle that calls only on the specified blocks.
+A linear minimization oracle that calls only on the specified blocks.
 
-    # Arguments
-    - `blocks::Vector{Int}`: The blocks to update.
-    - `lmos::LT`: The linear minimization oracles to use.
+# Arguments
+- `blocks::Vector{Int}`: The blocks to update.
+- `lmos::LT`: The linear minimization oracles to use.
 """
 
 mutable struct BlockSelectionLMO{
