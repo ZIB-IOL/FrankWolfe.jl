@@ -267,6 +267,21 @@ function FrankWolfe.muladd_memory_mode(
     return x
 end
 
+"""
+Adaption for iterate updates with per-block step sizes.
+"""
+function FrankWolfe.muladd_memory_mode(
+    mem::FrankWolfe.MemoryEmphasis,
+    x::BlockVector,
+    gamma::Vector{T},
+    d::BlockVector,
+) where {T<:Real}
+    @inbounds for i in eachindex(x.blocks)
+        FrankWolfe.muladd_memory_mode(mem, x.blocks[i], gamma[i], d.blocks[i])
+    end
+    return x
+end
+
 function FrankWolfe.muladd_memory_mode(
     mem::FrankWolfe.InplaceEmphasis,
     d::BlockVector,
@@ -294,4 +309,40 @@ function FrankWolfe.compute_active_set_iterate!(active_set::FrankWolfe.ActiveSet
         end
     end
     return active_set.x
+end
+
+
+"""
+    BlockSelectionLMO(blocks, lmos)
+A linear minimization oracle that calls only on the specified blocks.
+
+# Arguments
+- `blocks::Vector{Int}`: The blocks to update.
+- `lmos::LT`: The linear minimization oracles to use.
+"""
+mutable struct BlockSelectionLMO{
+    LT<:Union{AbstractVector{LinearMinimizationOracle},Tuple{Vararg{LinearMinimizationOracle}}},
+} <: LinearMinimizationOracle
+    blocks::Vector{Int}
+    lmos::LT
+    x::BlockVector
+end
+
+function compute_extreme_point(
+    lmo::BlockSelectionLMO,
+    direction::BlockVector;
+    v=zero(direction),
+    kwargs...,
+)
+    for i in 1:length(direction.blocks)
+        if i in lmo.blocks
+            v.blocks[i] =
+                compute_extreme_point(lmo.lmos[i], direction.blocks[i]; v=v.blocks[i], kwargs...)
+        else
+            # Returning (not neccearily feasible) point that is strictly better than the current iterate.
+            # This ensures that the dual gap stays non-negative.
+            v.blocks[i] = lmo.x.blocks[i] - direction.blocks[i]
+        end
+    end
+    return v
 end
