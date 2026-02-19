@@ -1,19 +1,46 @@
-struct QCMNPStep{H, BT} <: CorrectiveStep 
+"""
+    QCMNPStep{H, BT}
+
+A corrective step structure for the Quadratic Correction Minimum Norm Problem (QCMNP).
+
+# Fields
+- `A::H`: Hessian matrix or operator representing the quadratic term.
+- `b::BT`: Linear term in the objective.
+- `ls_solve::Function`: In-place solver for the linear system (x, A_mat, b).
+
+This type is used to encapsulate the data and solver required for performing minimum-norm projections or corrective steps when working with quadratic correction methods.
+"""
+
+
+struct QuadraticLSCorrection{H, BT} <: CorrectiveStep 
     A::H # Hessian matrix
     b::BT # linear term
-    ls_solve::Function # in-place solve of linear system (x, A_mat, b)
+    ls_solve::Function
+    mnp::Bool
 end
 
-function QCMNPStep(A,b)
-    function solve(x, A_mat, b)
-        copyto!(x, A_mat \ b)
+function QuadraticLSCorrection(A::H, b::BT) where {H, BT}
+    function ls_solve(x, M, rhs; kwargs...)
+        x .= M \ rhs
         return true
     end
-    return QCMNPStep(A, b, solve)
+    return QuadraticLSCorrection{H, BT}(A, b, ls_solve, false)
 end
 
+function QuadraticLSCorrection(A::H, b::BT, mnp::Bool) where {H, BT}
+    function ls_solve(x, M, rhs; kwargs...)
+        x .= M \ rhs
+        return true
+    end
+    return QuadraticLSCorrection{H, BT}(A, b, ls_solve, mnp)
+end
+
+# Note: The 4-argument constructor is automatically provided by the struct definition
+# No need to explicitly define it here to avoid method overwriting during precompilation
+
+
 function prepare_corrective_step(
-    corrective_step::QCMNPStep,
+    corrective_step::QuadraticLSCorrection,
     f,
     grad!,
     gradient,
@@ -27,7 +54,7 @@ function prepare_corrective_step(
 end
 
 function run_corrective_step(
-    corrective_step::QCMNPStep,
+    corrective_step::QuadraticLSCorrection,
     f,
     grad!,
     gradient,
@@ -55,8 +82,7 @@ function run_corrective_step(
     # V has columns vi (atoms of the active set)
     # W has columns vi - v1
 
-
-    nv = length(as)
+    nv = length(active_set)
 
     # Pre-allocate arrays
     A_mat = Matrix{Float64}(undef, nv, nv)
@@ -65,12 +91,12 @@ function run_corrective_step(
 
     A_mat[1,:] .= 1.0
     r_vec[1] = 1.0
-    if as.active_set isa ActiveSetQuadraticProductCaching
+    if active_set isa ActiveSetQuadraticProductCaching
         # dots_A is a lower triangular matrix
 
-        d1 = as.active_set.dots_A[1]
+        d1 = active_set.dots_A[1]
         for i in 2:nv
-            di = as.active_set.dots_A[i]
+            di = active_set.dots_A[i]
             for j in 1:i
                 val = di[j] - d1[j]
                 A_mat[i, j] = val
@@ -78,39 +104,48 @@ function run_corrective_step(
                     A_mat[j, i] = val
                 end
             end
-            r_vec[i] = as.active_set.dots_b[1] - as.active_set.dots_b[i]
+            r_vec[i] = active_set.dots_b[1] - active_set.dots_b[i]
         end
     else
-        temp1 = similar(as.atoms[1])
-        d1 = A * as.atoms[1]
+        temp1 = similar(active_set.atoms[1])
+        d1 = A * active_set.atoms[1]
         for i in 2:nv
-            di = mul!(temp1, A, as.atoms[i])
+            di = mul!(temp1, A, active_set.atoms[i])
             for j in 1:i
-                val = dot(di, as.atoms[j]) - dot(d1, as.atoms[j])
+                val = dot(di, active_set.atoms[j]) - dot(d1, active_set.atoms[j])
                 A_mat[i, j] = val
                 if i != j && j != 1
                     A_mat[j, i] = val
                 end
             end
-            r_vec[i] = dot(b, as.atoms[1]) - dot(b, as.atoms[i])
+            r_vec[i] = dot(b, active_set.atoms[1]) - dot(b, active_set.atoms[i])
         end
     end
 
     # Solve system - μ are the bary-centric coordinates of the/an affine minizer
-    converged = solver.solve(μ, A_mat, r_vec)
+    converged = corrective_step.ls_solve(μ, A_mat, r_vec; active_set=active_set)
 
     if converged
 
-        # compute new new weights and what atoms to drop
-        indices_to_remove, new_weights = _truncate_weights(μ, as.weights)
+        # Perform pullback to the convex hull with a ratio test (minimum-norm point)
+        if corrective_step.mnp
+            indices_to_remove, new_weights = _truncate_weights(μ, active_set.weights)
+        else
+            if all(>=(-10eps()), μ)
+                indices_to_remove = Int[]
+                new_weights = μ
+            else
+                return x, v, phi_value, dual_gap, false, true
+            end
+        end
 
         # update active set
-        deleteat!(as.active_set, indices_to_remove)
-        @assert length(as) == length(new_weights)
-        update_weights!(as.active_set, new_weights)
-        active_set_cleanup!(as)
-        active_set_renormalize!(as)
-        x = compute_active_set_iterate!(as)
+        deleteat!(active_set, indices_to_remove)
+        @assert length(active_set) == length(new_weights)
+        update_weights!(active_set, new_weights)
+        active_set_cleanup!(active_set)
+        active_set_renormalize!(active_set)
+        x = compute_active_set_iterate!(active_set)
     end
 
     return x, v, phi_value, dual_gap, false, true
@@ -120,14 +155,14 @@ function _truncate_weights(weights::Vector{R}, old_weights::Vector{R}) where {R}
 
     indices_to_remove = Int[]
 
-    if all(>=(-10eps()), new_weights)
+    if all(>=(-10eps()), weights)
         return indices_to_remove, weights 
     end
 
     # ratio test - identify which coordinate hit zero first
     tau_min = 1.0
     set_indices_zero = BitSet()
-    for idx in eachindex(λ)
+    for idx in eachindex(weights)
         if weights[idx] < old_weights[idx]
             tau = old_weights[idx] / (old_weights[idx] - weights[idx])
             if abs(tau - tau_min) ≤ 2weight_purge_threshold_default(typeof(tau))
@@ -156,15 +191,32 @@ end
     If ´relax´ is true, we relax the non-negativity constraint and use the MNP approach as in QC-MNP.
     The main difference to QCMNPStep is that it is still LP-based, but this allows to choose the best affine minimizer (in case it is not unique).
 """
-struct QCLPStep{H, LT, OT<:MOI.AbstractOptimizer} <: CorrectiveStep
+struct QuadraticLPCorrection{H, LT, OT<:MOI.AbstractOptimizer} <: CorrectiveStep
     A::H # Hessian matrix
     b::LT # linear term
-    lp_optimizer::OT
-    relax::Bool
+    optimizer::OT
+    mnp::Bool
 end
 
+function QuadraticLPCorrection(A::H, b::LT) where {H, LT}
+    optimizer = MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true))
+    return QuadraticLPCorrection{H, LT, typeof(optimizer)}(A, b, optimizer, false)
+end
+
+function QuadraticLPCorrection(A::H, b::LT, optimizer::OT) where {H, LT, OT<:MOI.AbstractOptimizer}
+    return QuadraticLPCorrection{H, LT, OT}(A, b, optimizer, false)
+end
+
+function QuadraticLPCorrection(A::H, b::LT, mnp::Bool) where {H, LT}
+    optimizer = MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true))
+    return QuadraticLPCorrection{H, LT, typeof(optimizer)}(A, b, optimizer, mnp)
+end
+
+# Note: The 4-argument constructor is automatically provided by the struct definition
+# No need to explicitly define it here to avoid method overwriting during precompilation
+
 function prepare_corrective_step(
-    corrective_step::QCLPStep,
+    corrective_step::QuadraticLPCorrection{H, LT, OT},
     f,
     grad!,
     gradient,
@@ -173,12 +225,12 @@ function prepare_corrective_step(
     lmo,
     primal,
     phi_value,
-)
+) where {H, LT, OT<:MOI.AbstractOptimizer}
     return false
 end
 
 function run_corrective_step(
-    step::QCLPStep,
+    step::QuadraticLPCorrection{H, LT, OT},
     f,
     grad!,
     gradient,
@@ -198,16 +250,16 @@ function run_corrective_step(
     memory_mode,
     epsilon,
     d,
-)
+) where {H, LT, OT<:MOI.AbstractOptimizer}
 
     nv = length(active_set)
-    o = step.lp_optimizer
+    o = step.optimizer
     MOI.empty!(o)
     λ = MOI.add_variables(o, nv)
     sum_of_variables = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, λ), 0.0)
     MOI.add_constraint(o, sum_of_variables, MOI.EqualTo(1.0))
 
-    if step.relax
+    if step.mnp
         β = MOI.add_variable(o)
         for j = 1:nv
             MOI.add_constraint(o,MOI.ScalarAffineFunction{Float64}([MOI.ScalarAffineTerm(1, λ[j]), MOI.ScalarAffineTerm(active_set.weights[j], β)], 0.0), MOI.GreaterThan(0.0)) 
@@ -275,7 +327,7 @@ function run_corrective_step(
         MOI.add_constraint(o, lhs, MOI.EqualTo{Float64}(rhs))
     end
 
-    if step.relax
+    if step.mnp
         MOI.set(
            o,
            MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
