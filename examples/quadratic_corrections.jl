@@ -19,10 +19,10 @@ include(joinpath(@__DIR__, "plot_utils.jl"))
 
 # Problem size
 n_features = 500
-n_samples = 1000
+n_samples = 10000
 K = 50
 τ = 1.0  # right-hand side for K-sparse polytope
-max_iter = 5000
+max_iter = 10000
 target_tolerance = 1e-6
 
 Random.seed!(42)
@@ -39,78 +39,86 @@ linear_term = -X' * y
 f(β) = 0.5 * norm(X * β - y)^2
 function grad!(storage, β)
     mul!(storage, X', X * β)
-    storage .-= linear_term
+    storage .+= linear_term
 end
 
 lmo = FrankWolfe.KSparseLMO(K, τ)
 x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n_features))
 
-L = opnorm(hessian, 2)
-line_search = FrankWolfe.Adaptive(L_est=L)
-
 common_kw = (;
     max_iteration=max_iter,
     epsilon=target_tolerance,
-    line_search=line_search,
     verbose=true,
     trajectory=true,
 )
 
-# --- Blended Pairwise CG (baseline) ---
-@info "Blended Pairwise CG"
+# BPCG
 result_bpcg = FrankWolfe.blended_pairwise_conditional_gradient(
     f, grad!, lmo, copy(x0); common_kw...,
 )
 traj_bpcg = result_bpcg.traj_data
-@info "  primal=$(result_bpcg.primal) dual_gap=$(result_bpcg.dual_gap) status=$(result_bpcg.status)"
 
-# --- Quadratic LS correction (no MNP) ---
-@info "Quadratic LS correction (MNP off)"
+# QC-LS
 as_ls_no_mnp = FrankWolfe.ActiveSetQuadraticProductCaching([(1.0, copy(x0))], hessian, linear_term)
-step_ls_no_mnp = FrankWolfe.QuadraticLSCorrection(hessian, linear_term, false)
+step_ls_no_mnp = FrankWolfe.ScheduledStep(
+    FrankWolfe.BlendedPairwiseStep(true),           # BPCG-style fallback step
+    FrankWolfe.QuadraticLSCorrection(hessian, linear_term, false),  # QC step
+)
 result_qc_ls_no_mnp = FrankWolfe.corrective_frank_wolfe(
     f, grad!, lmo, step_ls_no_mnp, as_ls_no_mnp; common_kw...
 )
 traj_qc_ls_no_mnp = result_qc_ls_no_mnp.traj_data
-@info "  primal=$(result_qc_ls_no_mnp.primal) dual_gap=$(result_qc_ls_no_mnp.dual_gap) status=$(result_qc_ls_no_mnp.status)"
 
-# --- Quadratic LS correction (MNP on) ---
-@info "Quadratic LS correction (MNP on)"
+# QC-LS MNP
 as_ls_mnp = FrankWolfe.ActiveSetQuadraticProductCaching([(1.0, copy(x0))], hessian, linear_term)
-step_ls_mnp = FrankWolfe.QuadraticLSCorrection(hessian, linear_term, true)
+step_ls_mnp = FrankWolfe.ScheduledStep(
+    FrankWolfe.BlendedPairwiseStep(true),
+    FrankWolfe.QuadraticLSCorrection(hessian, linear_term, true),
+)
 result_qc_ls_mnp = FrankWolfe.corrective_frank_wolfe(
     f, grad!, lmo, step_ls_mnp, as_ls_mnp; common_kw...
 )
 traj_qc_ls_mnp = result_qc_ls_mnp.traj_data
-@info "  primal=$(result_qc_ls_mnp.primal) dual_gap=$(result_qc_ls_mnp.dual_gap) status=$(result_qc_ls_mnp.status)"
 
-# --- Quadratic LP correction (no MNP) ---
-@info "Quadratic LP correction (MNP off)"
+# QC-LP
 as_lp_no_mnp = FrankWolfe.ActiveSetQuadraticProductCaching([(1.0, copy(x0))], hessian, linear_term)
-step_lp_no_mnp = FrankWolfe.QuadraticLPCorrection(hessian, linear_term, false)
+step_lp_no_mnp = FrankWolfe.ScheduledStep(
+    FrankWolfe.BlendedPairwiseStep(true),
+    FrankWolfe.QuadraticLPCorrection(
+        hessian,
+        linear_term,
+        MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
+        false,
+    ),
+)
 result_qc_lp_no_mnp = FrankWolfe.corrective_frank_wolfe(
     f, grad!, lmo, step_lp_no_mnp, as_lp_no_mnp; common_kw..., traj_data=[]
 )
 traj_qc_lp_no_mnp = result_qc_lp_no_mnp.traj_data
-@info "  primal=$(result_qc_lp_no_mnp.primal) dual_gap=$(result_qc_lp_no_mnp.dual_gap) status=$(result_qc_lp_no_mnp.status)"
 
-# --- Quadratic LP correction (MNP on) ---
-@info "Quadratic LP correction (MNP on)"
+# QC-LP MNP
 as_lp_mnp = FrankWolfe.ActiveSetQuadraticProductCaching([(1.0, copy(x0))], hessian, linear_term)
-step_lp_mnp = FrankWolfe.QuadraticLPCorrection(hessian, linear_term, true)
+step_lp_mnp = FrankWolfe.ScheduledStep(
+    FrankWolfe.BlendedPairwiseStep(true),
+    FrankWolfe.QuadraticLPCorrection(
+        hessian,
+        linear_term,
+        MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
+        true,
+    ),
+)
 result_qc_lp_mnp = FrankWolfe.corrective_frank_wolfe(
     f, grad!, lmo, step_lp_mnp, as_lp_mnp; common_kw..., traj_data=[]
 )
 traj_qc_lp_mnp = result_qc_lp_mnp.traj_data
-@info "  primal=$(result_qc_lp_mnp.primal) dual_gap=$(result_qc_lp_mnp.dual_gap) status=$(result_qc_lp_mnp.status)"
 
 # Plot comparison
 data = [traj_bpcg, traj_qc_ls_no_mnp, traj_qc_ls_mnp, traj_qc_lp_no_mnp, traj_qc_lp_mnp]
 labels = [
-    "BlendedPairwise CG",
-    "QC-LS (MNP off)",
-    "QC-LS (MNP on)",
-    "QC-LP (MNP off)",
-    "QC-LP (MNP on)",
+    "BPCG",
+    "QC-LS",
+    "QC-LS MNP",
+    "QC-LP",
+    "QC-LP MNP",
 ]
 plot_trajectories(data, labels; xscalelog=true)

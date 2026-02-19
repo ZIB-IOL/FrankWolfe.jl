@@ -1,16 +1,162 @@
-"""
-    QCMNPStep{H, BT}
+struct ScheduledStep{S<:FrankWolfe.CorrectiveStep, T<:FrankWolfe.CorrectiveStep} <: FrankWolfe.CorrectiveStep
+    base_step::S
+    special_step::T
+    scheduler::Function
+    lazy::Bool
+    lazy_tolerance::Float64
+end
 
-A corrective step structure for the Quadratic Correction Minimum Norm Problem (QCMNP).
+function make_default_scheduler(start_time::Int, scaling_factor::Float64, max_interval::Int)
+    counter = Ref(0)
+    last_solve_counter = Ref(0)
+    current_interval = Ref(start_time)
+    function scheduler(t, active_set)
+        counter[] += 1
+        if counter[] - last_solve_counter[] >= current_interval[]
+            last_solve_counter[] = counter[]
+            current_interval[] = min(round(Int, scaling_factor * current_interval[]), max_interval)
+            return true
+        end
+        return false
+    end
+    return scheduler
+end
+
+ScheduledStep(base_step::S, special_step::T) where {S<:FrankWolfe.CorrectiveStep, T<:FrankWolfe.CorrectiveStep} = ScheduledStep{S, T}(base_step, special_step, make_default_scheduler(2, 2.0, 1000), true, 2.0)
+
+function FrankWolfe.prepare_corrective_step(
+    step::ScheduledStep,
+    f,
+    grad!,
+    gradient,
+    active_set,
+    t,
+    lmo,
+    primal,
+    phi_value,
+)
+    return !step.lazy
+end
+
+function FrankWolfe.run_corrective_step(
+    step::ScheduledStep,
+    f,
+    grad!,
+    gradient,
+    x,
+    v,
+    dual_gap,
+    active_set,
+    t,
+    lmo,
+    line_search,
+    linesearch_workspace,
+    primal,
+    phi_value,
+    tot_time,
+    callback,
+    renorm_interval,
+    memory_mode,
+    epsilon,
+    d,
+)
+
+    _, v_local, v_loc, _, a_lambda, a, a_loc, _, _ = FrankWolfe.active_set_argminmax(active_set, gradient)
+    grad_dot_x = dot(gradient, x)
+    grad_dot_a = dot(gradient, a)
+    grad_dot_local_fw_vertex = dot(gradient, v_local)
+    local_gap = grad_dot_a - grad_dot_local_fw_vertex
+
+    if local_gap >= max(phi_value / step.lazy_tolerance, epsilon)
+
+        if step.scheduler(t, active_set)
+            old_len = length(active_set)
+            old_weights = hasproperty(active_set, :weights) ? copy(active_set.weights) : nothing
+            x_s, v_s, phi_s, gap_s, _should_fw_step, should_continue = FrankWolfe.run_corrective_step(
+                step.special_step,
+                f,
+                grad!,
+                gradient,
+                x,
+                v,
+                dual_gap,
+                active_set,
+                t,
+                lmo,
+                line_search,
+                linesearch_workspace,
+                primal,
+                phi_value,
+                tot_time,
+                callback,
+                renorm_interval,
+                memory_mode,
+                epsilon,
+                d,
+            )
+
+            success = (length(active_set) != old_len) ||
+                      (old_weights !== nothing &&
+                       length(active_set.weights) == length(old_weights) &&
+                       !all(active_set.weights .== old_weights))
+
+            if success
+                # Spezialschritt hat das Active Set verändert – wir betrachten ihn als erfolgreich
+                # und erzwingen anschließend keinen FW-Step.
+                return x_s, v_s, phi_s, gap_s, false, should_continue
+            end
+        end
+
+        # kein Erfolg des Spezialschritts oder nicht im Schedule: Fallback-Step
+        return FrankWolfe.run_corrective_step(
+            step.base_step,
+            f,
+            grad!,
+            gradient,
+            x,
+            v,
+            dual_gap,
+            active_set,
+            t,
+            lmo,
+            line_search,
+            linesearch_workspace,
+            primal,
+            phi_value,
+            tot_time,
+            callback,
+            renorm_interval,
+            memory_mode,
+            epsilon,
+            d,
+        )
+    else
+        if step.lazy
+            v = FrankWolfe.compute_extreme_point(lmo, gradient)
+            dual_gap = grad_dot_x - dot(gradient, v)
+        end
+        if dual_gap ≥ max(epsilon, phi_value / step.lazy_tolerance)
+            should_fw_step = true
+        else
+            should_fw_step = false
+            phi_value = min(dual_gap, phi_value / 2)
+        end
+        return x, v, phi_value, dual_gap, should_fw_step, true
+    end
+end
+
+"""
+    QuadraticLSCorrection{H, BT}
+
+A corrective step structure for quadratic correction steps using linear system solving, as used in corrective Frank-Wolfe methods.
 
 # Fields
 - `A::H`: Hessian matrix or operator representing the quadratic term.
 - `b::BT`: Linear term in the objective.
-- `ls_solve::Function`: In-place solver for the linear system (x, A_mat, b).
+- `ls_solve::Function`: Function for solving the linear system in place. Should be of the form `(x, M, rhs; kwargs...)`.
+- `mnp::Bool`: If `true`, uses the Minimum-Norm Point (MNP) approach (i.e., allows for weights outside the simplex/convex hull).
 
-This type is used to encapsulate the data and solver required for performing minimum-norm projections or corrective steps when working with quadratic correction methods.
 """
-
 
 struct QuadraticLSCorrection{H, BT} <: CorrectiveStep 
     A::H # Hessian matrix
@@ -34,10 +180,6 @@ function QuadraticLSCorrection(A::H, b::BT, mnp::Bool) where {H, BT}
     end
     return QuadraticLSCorrection{H, BT}(A, b, ls_solve, mnp)
 end
-
-# Note: The 4-argument constructor is automatically provided by the struct definition
-# No need to explicitly define it here to avoid method overwriting during precompilation
-
 
 function prepare_corrective_step(
     corrective_step::QuadraticLSCorrection,
@@ -84,21 +226,26 @@ function run_corrective_step(
 
     nv = length(active_set)
 
+    if nv <= 1
+        return x, v, phi_value, dual_gap, false, true
+    end
+
     # Pre-allocate arrays
     A_mat = Matrix{Float64}(undef, nv, nv)
     r_vec = Vector{Float64}(undef, nv)
     μ = Vector{Float64}(undef, nv)
 
-    A_mat[1,:] .= 1.0
+    A_mat[1, :] .= 1.0
     r_vec[1] = 1.0
     if active_set isa ActiveSetQuadraticProductCaching
-        # dots_A is a lower triangular matrix
-
-        d1 = active_set.dots_A[1]
+        # dots_A is a lower triangular matrix. For i ≥ 2, the (i, j) entry of Wᵀ A V
+        # is (A v_i - A v_1)ᵀ v_j = (v_iᵀ A v_j) - (v_1ᵀ A v_j).
+        # Using the cached products, this corresponds to
+        #   active_set.dots_A[i][j] - active_set.dots_A[j][1]
+        # which matches the formulation used in `solve_quadratic_activeset_lp!`.
         for i in 2:nv
-            di = active_set.dots_A[i]
             for j in 1:i
-                val = di[j] - d1[j]
+                val = active_set.dots_A[i][j] - active_set.dots_A[j][1]
                 A_mat[i, j] = val
                 if i != j && j != 1
                     A_mat[j, i] = val
@@ -108,6 +255,8 @@ function run_corrective_step(
         end
     else
         temp1 = similar(active_set.atoms[1])
+        A = corrective_step.A
+        b = corrective_step.b
         d1 = A * active_set.atoms[1]
         for i in 2:nv
             di = mul!(temp1, A, active_set.atoms[i])
@@ -176,7 +325,9 @@ function _truncate_weights(weights::Vector{R}, old_weights::Vector{R}) where {R}
     end
     @assert length(set_indices_zero) >= 1
     weights = (1-tau_min) * old_weights + tau_min * weights
-    weights[set_indices_zero] .= 0
+    for idx in set_indices_zero
+        weights[idx] = 0
+    end
     @assert all(>=(-2weight_purge_threshold_default(eltype(weights))), weights) "All weights must be between nonnegative: $(minimum(weights))"
     @assert isapprox(sum(weights), 1.0) "The sum of weights must be approximately 1"
     return _purge_weights(weights)
@@ -207,9 +358,13 @@ function QuadraticLPCorrection(A::H, b::LT, optimizer::OT) where {H, LT, OT<:MOI
     return QuadraticLPCorrection{H, LT, OT}(A, b, optimizer, false)
 end
 
-function QuadraticLPCorrection(A::H, b::LT, mnp::Bool) where {H, LT}
-    optimizer = MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true))
-    return QuadraticLPCorrection{H, LT, typeof(optimizer)}(A, b, optimizer, mnp)
+function QuadraticLPCorrection(
+    A::H,
+    b::LT,
+    mnp::Bool,
+    optimizer::MOI.AbstractOptimizer=MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
+) where {H, LT}
+    return QuadraticLPCorrection(A, b, optimizer, mnp)
 end
 
 # Note: The 4-argument constructor is automatically provided by the struct definition
