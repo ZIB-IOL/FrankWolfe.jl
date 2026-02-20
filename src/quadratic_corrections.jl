@@ -23,6 +23,7 @@ function make_default_scheduler(start_time::Int, scaling_factor::Float64, max_in
 end
 
 ScheduledStep(base_step::S, special_step::T) where {S<:FrankWolfe.CorrectiveStep, T<:FrankWolfe.CorrectiveStep} = ScheduledStep{S, T}(base_step, special_step, make_default_scheduler(2, 2.0, 1000), true, 2.0)
+ScheduledStep(base_step::S, special_step::T, scheduler) where {S<:FrankWolfe.CorrectiveStep, T<:FrankWolfe.CorrectiveStep} = ScheduledStep{S, T}(base_step, special_step, scheduler, true, 2.0)
 
 function FrankWolfe.prepare_corrective_step(
     step::ScheduledStep,

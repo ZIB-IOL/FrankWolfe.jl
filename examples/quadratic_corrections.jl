@@ -19,7 +19,7 @@ include(joinpath(@__DIR__, "plot_utils.jl"))
 
 # Problem size
 n_features = 500
-n_samples = 10000
+n_samples = 5000
 K = 50
 τ = 1.0  # right-hand side for K-sparse polytope
 max_iter = 10000
@@ -54,15 +54,18 @@ common_kw = (;
 
 # BPCG
 result_bpcg = FrankWolfe.blended_pairwise_conditional_gradient(
-    f, grad!, lmo, copy(x0); common_kw...,
+    f, grad!, lmo, copy(x0); common_kw...,lazy=true,
 )
 traj_bpcg = result_bpcg.traj_data
+
+scheduler = FrankWolfe.make_default_scheduler(2, 2.0, 1000)
 
 # QC-LS
 as_ls_no_mnp = FrankWolfe.ActiveSetQuadraticProductCaching([(1.0, copy(x0))], hessian, linear_term)
 step_ls_no_mnp = FrankWolfe.ScheduledStep(
     FrankWolfe.BlendedPairwiseStep(true),           # BPCG-style fallback step
     FrankWolfe.QuadraticLSCorrection(hessian, linear_term, false),  # QC step
+    scheduler,
 )
 result_qc_ls_no_mnp = FrankWolfe.corrective_frank_wolfe(
     f, grad!, lmo, step_ls_no_mnp, as_ls_no_mnp; common_kw...
@@ -74,6 +77,7 @@ as_ls_mnp = FrankWolfe.ActiveSetQuadraticProductCaching([(1.0, copy(x0))], hessi
 step_ls_mnp = FrankWolfe.ScheduledStep(
     FrankWolfe.BlendedPairwiseStep(true),
     FrankWolfe.QuadraticLSCorrection(hessian, linear_term, true),
+    scheduler,
 )
 result_qc_ls_mnp = FrankWolfe.corrective_frank_wolfe(
     f, grad!, lmo, step_ls_mnp, as_ls_mnp; common_kw...
@@ -90,6 +94,7 @@ step_lp_no_mnp = FrankWolfe.ScheduledStep(
         MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
         false,
     ),
+    scheduler,
 )
 result_qc_lp_no_mnp = FrankWolfe.corrective_frank_wolfe(
     f, grad!, lmo, step_lp_no_mnp, as_lp_no_mnp; common_kw..., traj_data=[]
@@ -106,6 +111,7 @@ step_lp_mnp = FrankWolfe.ScheduledStep(
         MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
         true,
     ),
+    scheduler,
 )
 result_qc_lp_mnp = FrankWolfe.corrective_frank_wolfe(
     f, grad!, lmo, step_lp_mnp, as_lp_mnp; common_kw..., traj_data=[]
