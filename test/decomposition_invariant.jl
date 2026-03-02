@@ -263,15 +263,43 @@ end
             verbose=false,
             trajectory=true,
         )
+
+        res_lazy_blended = FrankWolfe.blended_decomposition_invariant_conditional_gradient(
+            f,
+            grad!,
+            cube,
+            copy(x0),
+            lazy=true,
+            verbose=false,
+            trajectory=true,
+        )
+
+        res_strong_lazy_blended = FrankWolfe.blended_decomposition_invariant_conditional_gradient(
+            f,
+            grad!,
+            cube,
+            copy(x0),
+            lazy=true,
+            use_strong_lazy=true,
+            verbose=false,
+            trajectory=true,
+        )
+
         if res_fw[4] <= 1e-7
             @test norm(res[1] - res_fw[1]) ≤ n * 1e-4
             @test norm(res_MOI[1] - res_fw[1]) ≤ n * 1e-4
         end
         @test norm(res[1] - res_blended[1]) ≤ n * 1e-4
+        @test norm(res[1] - res_lazy_blended[1]) ≤ n * 1e-4
+        @test norm(res[1] - res_strong_lazy_blended[1]) ≤ n * 1e-4
         @test norm(res_MOI[1] - res_blended[1]) ≤ n * 1e-4
+        @test norm(res_MOI[1] - res_lazy_blended[1]) ≤ n * 1e-4
+        @test norm(res_MOI[1] - res_strong_lazy_blended[1]) ≤ n * 1e-4
         @test res.status == FrankWolfe.STATUS_OPTIMAL
         @test res_MOI.status == FrankWolfe.STATUS_OPTIMAL
         @test res_blended.status == FrankWolfe.STATUS_OPTIMAL
+        @test res_lazy_blended.status == FrankWolfe.STATUS_OPTIMAL
+        @test res_strong_lazy_blended.status == FrankWolfe.STATUS_OPTIMAL
     end
 
     @testset "Zero-one cube" begin
@@ -307,12 +335,38 @@ end
             verbose=false,
             trajectory=true,
         )
+
+        res_lazy_blended = FrankWolfe.blended_decomposition_invariant_conditional_gradient(
+            f,
+            grad!,
+            cube,
+            copy(x0),
+            lazy=true,
+            verbose=false,
+            trajectory=true,
+        )
+
+        res_strong_lazy_blended = FrankWolfe.blended_decomposition_invariant_conditional_gradient(
+            f,
+            grad!,
+            cube,
+            copy(x0),
+            lazy=true,
+            use_strong_lazy=true,
+            verbose=false,
+            trajectory=true,
+        )
+        
         if res_fw[4] <= 1e-7
             @test norm(res[1] - res_fw[1]) ≤ n * 1e-4
             @test norm(res_MOI[1] - res_fw[1]) ≤ n * 1e-4
         end
         @test norm(res[1] - res_blended[1]) ≤ n * 1e-4
+        @test norm(res[1] - res_lazy_blended[1]) ≤ n * 1e-4
+        @test norm(res[1] - res_strong_lazy_blended[1]) ≤ n * 1e-4
         @test norm(res_MOI[1] - res_blended[1]) ≤ n * 1e-4
+        @test norm(res_MOI[1] - res_lazy_blended[1]) ≤ n * 1e-4
+        @test norm(res_MOI[1] - res_strong_lazy_blended[1]) ≤ n * 1e-4
     end
 
     @testset "LMO: $lmo" for lmo in (
