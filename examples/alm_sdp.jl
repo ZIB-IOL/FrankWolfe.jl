@@ -2,7 +2,7 @@ using FrankWolfe
 using LinearAlgebra
 using JuMP
 const MOI = JuMP.MOI
-import GLPK
+import HiGHS
 
 include("../examples/plot_utils.jl")
 
@@ -15,7 +15,7 @@ end
 
 dim = 10
 
-m = JuMP.Model(GLPK.Optimizer)
+m = JuMP.Model(HiGHS.Optimizer)
 @variable(m, x[1:dim, 1:dim])
 @constraint(m, sum(x * ones(dim, dim)) == 2)
 @constraint(m, sum(x * I(dim)) <= 2)

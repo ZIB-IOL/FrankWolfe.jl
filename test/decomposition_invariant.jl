@@ -184,6 +184,8 @@ end
     x = ones(n, n) ./ n
     # test without fixings
     v_if = FrankWolfe.compute_inface_extreme_point(lmo, d, x)
+    v_if_vec = FrankWolfe.compute_inface_extreme_point(lmo, vec(d), vec(x))
+    @test vec(v_if) ≈ v_if_vec
     v_if_MOI = FrankWolfe.compute_inface_extreme_point(lmo_MOI, d, x)
     v_fw = FrankWolfe.compute_extreme_point(lmo, d)
     @test norm(v_fw - v_if) ≤ n * eps()
