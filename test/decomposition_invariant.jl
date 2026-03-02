@@ -358,7 +358,7 @@ end
             verbose=false,
             trajectory=true,
         )
-        
+
         if res_fw[4] <= 1e-7
             @test norm(res[1] - res_fw[1]) ≤ n * 1e-4
             @test norm(res_MOI[1] - res_fw[1]) ≤ n * 1e-4
