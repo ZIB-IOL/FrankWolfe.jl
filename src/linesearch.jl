@@ -978,3 +978,79 @@ function perform_line_search(
     end
     return gamma
 end
+
+"""
+    BlockAdaptive(blocks, eta, tau, L_est, L_max)
+    A line search method that adapts the step size for each block.
+
+    # Arguments
+    - `blocks::Vector{Int}`: The blocks to update.
+    - `eta::T`: The eta parameter for the line search.
+    - `tau::T`: The tau parameter for the line search.
+    - `L_est::T`: The estimated value of the Lipschitz constant.
+    - `L_max::T`: The maximum value of the Lipschitz constant.
+"""
+
+
+mutable struct BlockAdaptive{T} <: FrankWolfe.LineSearchMethod
+    blocks::Vector{Int}
+    eta::T
+    tau::T
+    L_est::T
+    L_max::T
+end
+
+function FrankWolfe.perform_line_search(
+    ls::BlockAdaptive,
+    t,
+    f,
+    grad!,
+    gradient,
+    x,
+    d,
+    gamma_max,
+    storage,
+    memory_mode::FrankWolfe.MemoryEmphasis,
+)
+    # Initialize step sizes and temporary iterate
+    gamma = zeros(length(x.blocks))
+    x_tilde = similar(x)
+    g_tilde = similar(gradient)
+
+    # Update Lipschitz constant estimate
+    ls.L_est = ls.eta * ls.L_est
+
+    # Step at least once in the loop
+    first_iter = true
+
+    while ls.L_est < ls.L_max || first_iter
+
+        # Compute step sizes gamma
+        for i in ls.blocks
+            gamma[i] = min(
+                1,
+                dot(gradient.blocks[i], d.blocks[i]) /
+                (ls.L_est * dot(d.blocks[i], d.blocks[i]) + eps(ls.L_est)),
+            )
+        end
+
+        # Compute temporary iterate x_tilde and its gradient
+        copyto!(x_tilde, x)
+        FrankWolfe.muladd_memory_mode(memory_mode, x_tilde, gamma, d)
+        grad!(g_tilde, x_tilde)
+
+        if f(x) - f(x_tilde) - dot(g_tilde, x - x_tilde) >=
+           dot(gradient - g_tilde, gradient - g_tilde) / (2 * ls.L_est)
+            break
+        else
+            ls.L_est = ls.tau * ls.L_est
+        end
+        first_iter = false
+    end
+
+    if ls.L_est >= ls.L_max
+        @warn "Smoothness estimate run away -> hard clipping. Convergence might be not guaranteed."
+    end
+
+    return gamma
+end

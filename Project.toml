@@ -1,6 +1,6 @@
 name = "FrankWolfe"
 uuid = "f55ce6ea-fdc5-4628-88c5-0087fe54bd30"
-version = "0.6.2"
+version = "0.6.4"
 authors = ["ZIB-IOL"]
 
 [deps]
@@ -18,10 +18,12 @@ SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 
 [weakdeps]
+KrylovKit = "0b1a1467-8014-51b9-945f-bf0ae24f4b77"
 ProximalOperators = "a725b495-10eb-56fe-b38b-717eba820537"
 
 [extensions]
 FrankWolfeProxExt = "ProximalOperators"
+FrankWolfeKrylovKitExt = "KrylovKit"
 
 [compat]
 Aqua = "0.8"
@@ -38,8 +40,9 @@ GenericSchur = "0.5.3"
 HiGHS = "1"
 Hungarian = "0.6, 0.7"
 Hypatia = "0.8.2"
-JSON = "0.21"
+JSON = "1"
 JuMP = "1"
+KrylovKit = "0.10.2"
 LaTeXStrings = "1"
 LinearAlgebra = "1"
 MathOptInterface = "1"
@@ -60,7 +63,7 @@ Test = "1"
 TimerOutputs = "0.5"
 Tullio = "0.3"
 ZipFile = "0.9.4, 0.10"
-julia = "1"
+julia = "1.10"
 
 [extras]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
@@ -76,6 +79,7 @@ HiGHS = "87dc4568-4c63-4d18-b0c0-bb2238e4078b"
 Hypatia = "b99e6be6-89ff-11e8-14f8-45c827f4f8f2"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
+KrylovKit = "0b1a1467-8014-51b9-945f-bf0ae24f4b77"
 LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 MultivariatePolynomials = "102ac46a-7ee4-5c85-9060-abc95bfdeaa3"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
@@ -89,4 +93,4 @@ Tullio = "bc48ee85-29a4-5162-ae0b-a64e1601d4bc"
 ZipFile = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
 
 [targets]
-test = ["CSV", "Combinatorics", "DataFrames", "Distributions", "DoubleFloats", "DynamicPolynomials", "FiniteDifferences", "GLPK", "HiGHS", "JSON", "JuMP", "LaTeXStrings", "MultivariatePolynomials", "Plots", "Polyhedra", "ProximalOperators", "ReverseDiff", "SCS", "StableRNGs", "ZipFile", "Test", "Tullio", "Hypatia", "Aqua"]
+test = ["CSV", "Combinatorics", "DataFrames", "Distributions", "DoubleFloats", "DynamicPolynomials", "FiniteDifferences", "GLPK", "HiGHS", "JSON", "JuMP", "KrylovKit", "LaTeXStrings", "MultivariatePolynomials", "Plots", "Polyhedra", "ProximalOperators", "ReverseDiff", "SCS", "StableRNGs", "ZipFile", "Test", "Tullio", "Hypatia", "Aqua"]
