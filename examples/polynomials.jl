@@ -249,8 +249,8 @@ callback = build_callback(trajectory_lafw_ref)
 
 open(joinpath(@__DIR__, "polynomial_result.json"), "w") do f
     data = JSON.json((
-        trajectory_arr_lafw=trajectory_lafw,
-        trajectory_arr_bcg=trajectory_bcg,
+        trajectory_arr_lafw=trajectory_lafw[3:end],
+        trajectory_arr_bcg=trajectory_bcg[3:end],
         function_values_gd=training_gd,
         function_values_test_gd=test_gd,
         coefficient_error_gd=coeff_error,
