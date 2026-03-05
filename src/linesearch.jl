@@ -208,7 +208,9 @@ Base.print(io::IO, ::FixedStep) = print(io, "FixedStep")
 """
     UnsafeGoldenratio
 
-Simple golden-ratio based line search
+Simple golden-ratio based line search.
+
+This is the previous numerically unstable version. Use `Goldenration` instead.
 [Golden Section Search](https://en.wikipedia.org/wiki/Golden-section_search),
 based on [Combettes, Pokutta (2020)](http://proceedings.mlr.press/v119/combettes20a/combettes20a.pdf)
 code and adapted.
@@ -219,17 +221,8 @@ end
 
 UnsafeGoldenratio() = UnsafeGoldenratio(1e-7)
 
-struct UnsafeGoldenratioWorkspace{XT,GT}
-    y::XT
-    left::XT
-    right::XT
-    new_vec::XT
-    probe::XT
-    gradient::GT
-end
-
 function build_linesearch_workspace(::UnsafeGoldenratio, x::XT, gradient::GT) where {XT,GT}
-    return UnsafeGoldenratioWorkspace{XT,GT}(
+    return GoldenratioWorkspace{XT,GT}(
         similar(x),
         similar(x),
         similar(x),
@@ -248,7 +241,7 @@ function perform_line_search(
     x,
     d,
     gamma_max,
-    workspace::UnsafeGoldenratioWorkspace,
+    workspace::GoldenratioWorkspace,
     memory_mode,
 )
     # restrict segment of search to [x, y]
