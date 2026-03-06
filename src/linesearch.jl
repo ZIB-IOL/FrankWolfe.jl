@@ -221,6 +221,15 @@ end
 
 UnsafeGoldenratio() = UnsafeGoldenratio(1e-7)
 
+struct GoldenratioWorkspace{XT,GT}
+    y::XT
+    left::XT
+    right::XT
+    new_vec::XT
+    probe::XT
+    gradient::GT
+end
+
 function build_linesearch_workspace(::UnsafeGoldenratio, x::XT, gradient::GT) where {XT,GT}
     return GoldenratioWorkspace{XT,GT}(
         similar(x),
@@ -312,15 +321,6 @@ struct Goldenratio{T} <: LineSearchMethod
 end
 
 Goldenratio() = Goldenratio(1e-7)
-
-struct GoldenratioWorkspace{XT,GT}
-    y::XT
-    left::XT
-    right::XT
-    new_vec::XT
-    probe::XT
-    gradient::GT
-end
 
 function build_linesearch_workspace(::Goldenratio, x::XT, gradient::GT) where {XT,GT}
     return GoldenratioWorkspace{XT,GT}(
