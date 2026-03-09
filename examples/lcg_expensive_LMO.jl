@@ -175,7 +175,8 @@ open("lcg_expensive_data.json", "w") do f
             LAFW=trajectoryLAFW,
             BCG=trajectoryBCG,
             reference_BCG_primal=primal,
-        )),
+            
+        ), allownan=true),
     )
 end
 
