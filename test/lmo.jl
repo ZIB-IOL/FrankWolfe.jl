@@ -835,7 +835,7 @@ end
     # test on unit vectors for sparse conversion
     vertices = [FrankWolfe.ScaledHotVector(1.0, 3, 5), FrankWolfe.ScaledHotVector(1.0, 2, 5)]
     lmo_sparse = FrankWolfe.ConvexHullMatrixLMO(vertices)
-    @test lmo_sparse.vertex_matrix isa SparseMatrixCSC
+    @test lmo_sparse.vertex_matrix isa SparseArrays.SparseMatrixCSC
     @test size(lmo_sparse.vertex_matrix) == (5, 2)
     v1 = FrankWolfe.compute_extreme_point(lmo_sparse, [0, -1, 0, 0, 0])
     @test v1 == vertices[2]
