@@ -341,6 +341,43 @@ function compute_extreme_point(lmo::ConvexHullLMO{AT}, direction; v=nothing, kwa
 end
 
 """
+    ConvexHullMatrixLMO{AT,VT}
+
+Convex hull of a finite number of vertices stored in a matrix of type `MT`.
+Each column represents one vertex.
+The buffer stores the result of the matrix-vector multiplication of each column with the direction.
+The column minimizing that inner product is returned as a view.
+"""
+struct ConvexHullMatrixLMO{MT<:AbstractMatrix,BT<:AbstractVector} <: LinearMinimizationOracle
+    vertex_matrix::MT
+    buffer::BT
+end
+
+function ConvexHullMatrixLMO(vertex_matrix::AbstractMatrix{MT}) where {MT}
+    return ConvexHullMatrixLMO(
+        vertex_matrix,
+        collect(similar(vertex_matrix, float(MT), size(vertex_matrix, 2))),
+    )
+end
+
+function ConvexHullMatrixLMO(vertices::AbstractVector{AT}) where {AT<:AbstractVector}
+    vertex_matrix = similar(vertices[1], length(vertices[1]), length(vertices))
+    for idx in eachindex(vertices)
+        @view(vertex_matrix[:, idx]) .= vertices[idx]
+    end
+    buffer = collect(similar(vertices[1], float(eltype(AT)), length(vertices)))
+    return ConvexHullMatrixLMO(vertex_matrix, buffer)
+end
+
+ConvexHullMatrixLMO(lmo::ConvexHullLMO) = ConvexHullMatrixLMO(lmo.vertices)
+
+function compute_extreme_point(lmo::ConvexHullMatrixLMO, direction; v=nothing, kwargs...)
+    mul!(lmo.buffer, lmo.vertex_matrix', direction)
+    idx = argmin(lmo.buffer)
+    return @view(lmo.vertex_matrix[:, idx])
+end
+
+"""
     ZeroOneHypercubeLMO
 
 {0,1} hypercube polytope.
@@ -362,7 +399,7 @@ end
 
 is_decomposition_invariant_oracle(::ZeroOneHypercubeLMO) = true
 
-function is_inface_feasible(ZeroOneHypercubeLMO, a, x)
+function is_inface_feasible(::ZeroOneHypercubeLMO, a, x)
     for idx in eachindex(a)
         if (x[idx] == 0 && a[idx] != 0) || (x[idx] == 1 && a[idx] != 1)
             return false

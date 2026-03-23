@@ -811,6 +811,36 @@ end
     @test v == lmo.vertices[1]
 end
 
+@testset "Convex hull matrix" begin
+    vertices = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+    lmo_list = FrankWolfe.ConvexHullLMO(vertices)
+    lmo_mat = FrankWolfe.ConvexHullMatrixLMO(hcat(vertices...))
+    # Results should match ConvexHullLMO for random directions
+    for _ in 1:100
+        d = randn(rng, 3)
+        v_list = FrankWolfe.compute_extreme_point(lmo_list, d)
+        v_mat = FrankWolfe.compute_extreme_point(lmo_mat, d)
+        @test v_list == v_mat
+    end
+    # Constructor from ConvexHullLMO should give equivalent results
+    lmo_from_list = FrankWolfe.ConvexHullMatrixLMO(lmo_list)
+    @test lmo_from_list.vertex_matrix == lmo_mat.vertex_matrix
+    # Matches ProbabilitySimplexLMO on the standard simplex vertices
+    for _ in 1:100
+        d = randn(rng, 3)
+        v_mat = FrankWolfe.compute_extreme_point(lmo_mat, d)
+        v_simplex = FrankWolfe.compute_extreme_point(FrankWolfe.ProbabilitySimplexLMO(1), d)
+        @test v_mat == v_simplex
+    end
+    # test on unit vectors for sparse conversion
+    vertices = [FrankWolfe.ScaledHotVector(1.0, 3, 5), FrankWolfe.ScaledHotVector(1.0, 2, 5)]
+    lmo_sparse = FrankWolfe.ConvexHullMatrixLMO(vertices)
+    @test lmo_sparse.vertex_matrix isa SparseMatrixCSC
+    @test size(lmo_sparse.vertex_matrix) == (5, 2)
+    v1 = FrankWolfe.compute_extreme_point(lmo_sparse, [0, -1, 0, 0, 0])
+    @test v1 == vertices[2]
+end
+
 @testset "Symmetric LMO" begin
     # See examples/reynolds.jl
     struct BellCorrelationsLMO{T} <: FrankWolfe.LinearMinimizationOracle
