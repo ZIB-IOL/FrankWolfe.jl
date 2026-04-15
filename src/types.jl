@@ -86,6 +86,7 @@ Base.:-(x::ScaledHotVector, y::AbstractVector) = +(x, -y)
 Base.:-(x::ScaledHotVector, y::ScaledHotVector) = +(x, -y)
 
 Base.similar(v::ScaledHotVector{T}) where {T} = spzeros(T, length(v))
+Base.similar(::ScaledHotVector, ::Type{T}, dims::NTuple{N,Int}) where {T,N} = spzeros(T, dims)
 
 function Base.convert(::Type{Vector{T}}, v::ScaledHotVector) where {T}
     vc = zeros(T, v.len)

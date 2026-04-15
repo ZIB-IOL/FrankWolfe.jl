@@ -61,7 +61,7 @@ for order in [FrankWolfe.FullUpdate(), FrankWolfe.CyclicUpdate(), FrankWolfe.Sto
         trajectory=true,
         epsilon=target_tolerance,
     )
-    push!(trajectories, alm_res.trajectory)
+    push!(trajectories, alm_res.traj_data)
 end
 
 # As an alternative to Block-Coordiante Frank-Wolfe (BCFW), one can also run alternating linear minimization with standard Frank-Wolfe algorithm.
@@ -77,7 +77,7 @@ afw_res = FrankWolfe.alternating_linear_minimization(
     trajectory=true,
     epsilon=target_tolerance,
 )
-push!(trajectories, afw_res.trajectory);
+push!(trajectories, afw_res.traj_data);
 
 # ## Running Alternating Projections
 # Unlike ALM, Alternating Projections (AP) is only suitable for feasibility problems. One omits the objective and gradient as parameters.
@@ -89,7 +89,7 @@ ap_res = FrankWolfe.alternating_projections(
     print_iter=100,
     epsilon=target_tolerance,
 )
-push!(trajectories, ap_res.trajectory);
+push!(trajectories, ap_res.traj_data);
 
 # ## Plotting the resulting trajectories
 

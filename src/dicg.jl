@@ -331,6 +331,7 @@ function blended_decomposition_invariant_conditional_gradient(
     traj_data=[],
     timeout=Inf,
     lazy=false,
+    use_strong_lazy=false,
     linesearch_workspace=nothing,
     sparsity_control=2.0,
     extra_vertex_storage=nothing,
@@ -705,7 +706,7 @@ function lazy_blended_dicg_step(
         away_index = a_local_loc
     else
         if strong_lazification
-            v_inface = compute_inface_extreme_point(lmo, gradient)
+            v_inface = compute_inface_extreme_point(lmo, gradient, x)
             grad_dot_v_inface = dot(gradient, v_inface)
 
             if grad_dot_a_taken - grad_dot_v_inface >= phi_value &&
