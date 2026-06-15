@@ -58,6 +58,13 @@ Modules = [FrankWolfe]
 Pages = ["corrective_frankwolfe.jl", "corrective_step_interface.jl"]
 ```
 
+## Decomposition-invariant methods
+
+```@autodocs
+Modules = [FrankWolfe]
+Pages = ["dicg.jl"]
+```
+
 ## Alternating Methods
 
 Problems over intersections of convex sets, i.e.
