@@ -313,7 +313,7 @@ function blended_pairwise_conditional_gradient(
                 dual_gap = dot(gradient, x) - dot(gradient, v)
             end
             # Note: In the following, we differentiate between lazy and non-lazy updates.
-            # The reason is that the non-lazy version does not use phi_value but the lazy one heavily depends on it.
+            # The reason is that only the lazy version depends on the phi_value.
             # It is important that the phi_value is only updated after dropping
             # below phi_value / sparsity_control, as otherwise we simply have a "lagging" dual_gap estimate that just slows down convergence.
             # The logic is as follows:
@@ -374,11 +374,9 @@ function blended_pairwise_conditional_gradient(
                     active_set_update!(active_set, gamma, v, renorm, nothing)
                 end
             else # dual step
-                # set to computed dual_gap for consistency between the lazy and non-lazy run.
-                # that is ok as we scale with the K = 2.0 default anyways
                 # we only update the dual gap if the step was regular (not lazy from discarded set)
                 if step_type != ST_LAZYSTORAGE
-                    phi_value = dual_gap
+                    phi_value = phi_value / sparsity_control
                     @debug begin
                         @assert step_type == ST_REGULAR
                         v2 = compute_extreme_point(lmo, gradient)
