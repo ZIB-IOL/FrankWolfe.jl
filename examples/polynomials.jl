@@ -256,7 +256,7 @@ open(joinpath(@__DIR__, "polynomial_result.json"), "w") do f
         coefficient_error_gd=coeff_error,
         gd_times=gd_times,
         ref_primal_value=primal_ref,
-    ))
+    ), allownan=true)
     return write(f, data)
 end
 

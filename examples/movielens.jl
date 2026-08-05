@@ -259,7 +259,7 @@ open(joinpath(@__DIR__, "movielens_result.json"), "w") do f
         function_values_test_gd=function_test_values,
         timing_values_gd=timing_values,
         trajectory_arr_lazy_ref=trajectory_arr_lazy_ref,
-    ))
+    ), allownan=true)
     return write(f, data)
 end
 
