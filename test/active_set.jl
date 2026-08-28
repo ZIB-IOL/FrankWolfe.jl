@@ -202,12 +202,15 @@ end
     x = FrankWolfe.get_active_set_iterate(active_set)
     @test x ≈ [-0.4, -0.4]
     gradient_dir = ∇f(x)
-    (y, _) = FrankWolfe.lp_separation_oracle(lmo, active_set, gradient_dir, 0.5, 1)
+    (y, _, y_index) = FrankWolfe.lp_separation_oracle(lmo, active_set, gradient_dir, 0.5, 1)
     @test y ∈ active_set.atoms
-    (y2, _) =
+    # the oracle returns the position of the atom it took from the active set
+    @test active_set.atoms[y_index] == y
+    (y2, _, y2_index) =
         FrankWolfe.lp_separation_oracle(lmo, active_set, gradient_dir, 3 + dot(x, gradient_dir), 1)
-    # found new vertex not in active set
+    # found new vertex not in active set, and said so without a scan
     @test y2 ∉ active_set.atoms
+    @test y2_index == -1
 
     # Criterion too high, no satisfactory point
     (y3, _) = FrankWolfe.lp_separation_oracle(
@@ -257,6 +260,66 @@ end
 
     # ensure that ActiveSet is created correctly, tests a fix for a bug when x0 is a BigFloat
     @test length(FrankWolfe.ActiveSet([(1.0, x0)])) == 1
+end
+
+@testset "find_atom from the minimum a step already holds" begin
+    atoms = [rand(rng, 6) for _ in 1:25]
+    active_set = ActiveSet([(1 / 25, a) for a in atoms])
+    direction = randn(rng, 6)
+    _, v_local, v_local_loc, v_local_value, _, _, _, _, _ =
+        FrankWolfe.active_set_argminmax(active_set, direction)
+
+    # every active atom is found at its position, the best one without a scan
+    for (i, a) in enumerate(atoms)
+        @test FrankWolfe.find_atom(active_set, a, direction, v_local_loc, v_local_value) == i
+    end
+    @test FrankWolfe.find_atom(active_set, copy(v_local), direction, v_local_loc, v_local_value) ==
+          v_local_loc
+
+    # the LMO's vertex scores below the active set's minimum: certified absent
+    lmo = FrankWolfe.LpNormBallLMO{Inf}(1.0)
+    v = FrankWolfe.compute_extreme_point(lmo, direction)
+    @test dot(v, direction) < v_local_value
+    @test FrankWolfe.find_atom(active_set, v, direction, v_local_loc, v_local_value) == -1
+
+    # random queries, present or not, agree with the scan
+    for _ in 1:200
+        query = rand(rng, Bool) ? atoms[rand(rng, 1:25)] : rand(rng, 6)
+        @test FrankWolfe.find_atom(active_set, query, direction, v_local_loc, v_local_value) ==
+              FrankWolfe.find_atom(active_set, query)
+    end
+
+    # a tie with an atom other than the best one falls back to the scan:
+    # a zero direction makes every atom tie at zero
+    zero_direction = zeros(6)
+    @test FrankWolfe.find_atom(active_set, atoms[7], zero_direction, 1, 0.0) == 7
+    @test FrankWolfe.find_atom(active_set, rand(rng, 6), zero_direction, 1, 0.0) == -1
+
+    # a minimum that is no longer valid (index -1, value -Inf) also falls back
+    @test FrankWolfe.find_atom(active_set, atoms[3], direction, -1, -Inf) == 3
+    @test FrankWolfe.find_atom(active_set, rand(rng, 6), direction, -1, -Inf) == -1
+
+    # the update path uses it: no atom is ever stored twice, on sparse atoms too
+    n = 8
+    xp = rand(rng, n, n)
+    f(x) = dot(x - xp, x - xp)
+    function grad!(storage, x)
+        storage .= 2 .* (x .- xp)
+        return storage
+    end
+    birkhoff = FrankWolfe.BirkhoffPolytopeLMO()
+    x0 = FrankWolfe.compute_extreme_point(birkhoff, randn(rng, n, n))
+    for run in (
+        (f, g, l, x) -> FrankWolfe.pairwise_frank_wolfe(f, g, l, x; max_iteration=300, lazy=false),
+        (f, g, l, x) -> FrankWolfe.pairwise_frank_wolfe(f, g, l, x; max_iteration=300, lazy=true),
+        (f, g, l, x) ->
+            FrankWolfe.blended_pairwise_conditional_gradient(f, g, l, x; max_iteration=300),
+        (f, g, l, x) -> FrankWolfe.blended_conditional_gradient(f, g, l, x; max_iteration=300),
+    )
+        res = run(f, grad!, birkhoff, x0)
+        @test allunique(res.active_set.atoms)
+        @test FrankWolfe.active_set_validate(res.active_set)
+    end
 end
 
 end # module

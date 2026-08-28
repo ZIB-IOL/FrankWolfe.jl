@@ -334,7 +334,7 @@ function update_block_iterate(
 
     step_type = ST_REGULAR
 
-    _, v_local, v_local_loc, _, a_lambda, a, a_loc, _, _ =
+    _, v_local, v_local_loc, v_local_value, a_lambda, a, a_loc, _, _ =
         active_set_argminmax(s.active_set, gradient)
 
     dot_forward_vertex = dot(gradient, v_local)
@@ -394,6 +394,9 @@ function update_block_iterate(
             x = get_active_set_iterate(s.active_set)
             grad!(gradient, x)
             dual_gap = dot(gradient, x) - dot(gradient, v)
+            # the active set and the gradient changed: the minimum found
+            # above no longer says anything about the membership of v
+            v_local_loc, v_local_value = -1, typemin(typeof(v_local_value))
         end
 
         if !s.lazy || dual_gap ≥ s.phi_value / s.sparsity_control
@@ -418,7 +421,8 @@ function update_block_iterate(
                 active_set_initialize!(s.active_set, v)
             else
                 renorm = mod(t, s.renorm_interval) == 0
-                active_set_update!(s.active_set, gamma, v, renorm, nothing)
+                v_index = find_atom(s.active_set, v, gradient, v_local_loc, v_local_value)
+                active_set_update!(s.active_set, gamma, v, renorm, v_index)
             end
         else # dual step
             if step_type != ST_LAZYSTORAGE

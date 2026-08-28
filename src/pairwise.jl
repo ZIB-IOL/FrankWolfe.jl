@@ -418,7 +418,7 @@ function lazy_pfw_step(
     sparsity_control=2.0,
     memory_mode::MemoryEmphasis=InplaceEmphasis(),
 )
-    _, v_local, v_local_loc, _, a_lambda, a_local, a_local_loc, _, _ =
+    _, v_local, v_local_loc, v_local_value, a_lambda, a_local, a_local_loc, _, _ =
         active_set_argminmax(active_set, gradient)
     # We will always have an away vertex determining the steplength. 
     gamma_max = a_lambda
@@ -455,6 +455,8 @@ function lazy_pfw_step(
             step_type = ST_PAIRWISE
         end
 
+        # decided from the minimum computed above, without scanning the active set
+        fw_index = find_atom(active_set, v, gradient, v_local_loc, v_local_value)
         # Real dual gap promises enough progress.
         grad_dot_fw_vertex = dot(gradient, v)
         dual_gap = grad_dot_x - grad_dot_fw_vertex
@@ -480,7 +482,8 @@ function pfw_step(
     memory_mode::MemoryEmphasis=InplaceEmphasis(),
 )
     step_type = ST_PAIRWISE
-    _, _, _, _, a_lambda, a_local, a_local_loc = active_set_argminmax(active_set, gradient)
+    _, _, v_local_loc, v_local_value, a_lambda, a_local, a_local_loc =
+        active_set_argminmax(active_set, gradient)
     away_vertex = a_local
     away_index = a_local_loc
     # We will always have a away vertex determining the steplength. 
@@ -488,7 +491,8 @@ function pfw_step(
 
     v = compute_extreme_point(lmo, gradient)
     fw_vertex = v
-    fw_index = nothing
+    # decided from the minimum computed above, without scanning the active set
+    fw_index = find_atom(active_set, v, gradient, v_local_loc, v_local_value)
     grad_dot_x = dot(gradient, x)
     dual_gap = grad_dot_x - dot(gradient, v)
     d = muladd_memory_mode(memory_mode, d, a_local, v)

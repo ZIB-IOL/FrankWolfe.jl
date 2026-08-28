@@ -265,7 +265,7 @@ function blended_conditional_gradient(
         primal = f(x)
         grad!(gradient, x)
         # compute new atom
-        (v, value) = lp_separation_oracle(
+        (v, value, v_index) = lp_separation_oracle(
             lmo,
             active_set,
             gradient,
@@ -359,6 +359,8 @@ function blended_conditional_gradient(
                     active_set,
                     gamma,
                     v,
+                    true,
+                    v_index,
                     add_dropped_vertices=use_extra_vertex_storage,
                     vertex_storage=extra_vertex_storage,
                 )
@@ -1153,6 +1155,7 @@ function lp_separation_oracle(
     # if FW step forced, ignore active set
     if !force_fw_step
         ybest = active_set.atoms[1]
+        idx_best = 1
         x = active_set.weights[1] * active_set.atoms[1]
         if inplace_loop
             if !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
@@ -1175,11 +1178,12 @@ function lp_separation_oracle(
             if val < val_best
                 val_best = val
                 ybest = y
+                idx_best = idx
             end
         end
         xval = dot(direction, x)
         if xval - val_best ≥ min_gap / sparsity_control
-            return (ybest, val_best)
+            return (ybest, val_best, idx_best)
         end
     end
     # optionally: try vertex storage
@@ -1198,5 +1202,18 @@ function lp_separation_oracle(
         y = compute_extreme_point(lmo, direction; kwargs...)
     end
     # don't return nothing but y, dot(direction, y) / use y for step outside / and update phi_value as in LCG (lines 402 - 406)
-    return (y, dot(direction, y))
+    val = dot(direction, y)
+    # the position of y in the active set, decided from the scan above when
+    # there was one: below its minimum means absent, a tie is almost surely
+    # with the best atom, and only a tie with another atom searches the set
+    idx = if force_fw_step
+        nothing
+    elseif val < val_best
+        -1
+    elseif _unsafe_equal(ybest, y)
+        idx_best
+    else
+        find_atom(active_set, y)
+    end
+    return (y, val, idx)
 end
