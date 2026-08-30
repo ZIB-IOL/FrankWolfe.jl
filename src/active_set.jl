@@ -329,8 +329,8 @@ Position of `atom` in `active_set`, or -1, decided from values the step
 already holds: `best_value` is the minimum of `dot(a, direction)` over the
 active atoms `a` and `best_index` its position, as `active_set_argminmax`
 returns them. If `atom` were active, `dot(atom, direction)` would be one of
-the values just minimised, so a strictly smaller value proves it absent
-without comparing a single atom. Otherwise the best atom is compared first:
+the values just minimised, so a strictly smaller value proves it absent.
+Otherwise the best atom is compared first:
 a vertex returned by the LMO cannot score above the minimum, so equality is
 a tie, and the tie is almost surely with the best atom itself. Only a tie
 with a different atom, which has probability zero for a real-valued
