@@ -336,10 +336,6 @@ a tie, and the tie is almost surely with the best atom itself. Only a tie
 with a different atom, which has probability zero for a real-valued
 direction, falls back to the scan. Passing `best_index = -1` with
 `best_value = -Inf` (a minimum that is no longer valid) also falls back.
-
-Enabled for `ActiveSet`, whose `active_set_argminmax` computes exactly
-`dot(a, direction)`; other active set types keep the scan until their own
-minimum is known to be the same function of the same inputs.
 """
 function find_atom(active_set::ActiveSet, atom, direction, best_index::Integer, best_value)
     if dot(atom, direction) < best_value
