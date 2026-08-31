@@ -55,7 +55,10 @@ end
 
 Base.:*(x::Number, v::ScaledHotVector) = v * x
 
-function Base.:+(x::ScaledHotVector, y::AbstractVector)
+function Base.:+(
+    x::ScaledHotVector,
+    y::Union{Vector,SparseArrays.AbstractSparseVector,ScaledHotVector},
+)
     if length(x) != length(y)
         throw(DimensionMismatch())
     end
@@ -64,7 +67,12 @@ function Base.:+(x::ScaledHotVector, y::AbstractVector)
     return yc
 end
 
-Base.:+(y::AbstractVector, x::ScaledHotVector) = x + y
+function Base.:+(
+    y::Union{Vector,SparseArrays.AbstractSparseVector,ScaledHotVector},
+    x::ScaledHotVector,
+)
+    return x + y
+end
 
 function Base.:+(x::ScaledHotVector{T1}, y::ScaledHotVector{T2}) where {T1,T2}
     n = length(x)
@@ -142,16 +150,19 @@ function Base.:*(R::RankOneMatrix, v::AbstractVector)
     temp = dot(R.v, v)
     return R.u * temp
 end
+Base.:*(R::RankOneMatrix{T}, v::AbstractVector{T}) where {T} = R.u * dot(R.v, v)
+Base.:*(R::RankOneMatrix, v::FillArrays.AbstractZerosVector) = FillArrays.mult_zeros(R, v)
 
-function Base.:*(R::RankOneMatrix, M::AbstractMatrix)
+function LinearAlgebra.mul(R::RankOneMatrix, M::AbstractMatrix)
     temp = M' * R.v
     return RankOneMatrix(R.u, temp)
 end
 
-Base.:*(R::RankOneMatrix, D::LinearAlgebra.Diagonal) = RankOneMatrix(R.u, R.v .* D.diag)
-Base.:*(R::RankOneMatrix, T::LinearAlgebra.AbstractTriangular) = RankOneMatrix(R.u, T' * R.v)
+LinearAlgebra.mul(R::RankOneMatrix, D::LinearAlgebra.Diagonal) = RankOneMatrix(R.u, R.v .* D.diag)
+LinearAlgebra.mul(R::RankOneMatrix, T::LinearAlgebra.AbstractTriangular) =
+    RankOneMatrix(R.u, T' * R.v)
 
-function Base.:*(R1::RankOneMatrix, R2::RankOneMatrix)
+function LinearAlgebra.mul(R1::RankOneMatrix, R2::RankOneMatrix)
     # middle product
     temp = dot(R1.v, R2.u)
     return RankOneMatrix(R1.u * temp, R2.v)
