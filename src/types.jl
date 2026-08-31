@@ -159,7 +159,7 @@ function LinearAlgebra.mul(R::RankOneMatrix, M::AbstractMatrix)
 end
 
 LinearAlgebra.mul(R::RankOneMatrix, D::LinearAlgebra.Diagonal) = RankOneMatrix(R.u, R.v .* D.diag)
-LinearAlgebra.mul(R::RankOneMatrix, T::LinearAlgebra.AbstractTriangular) =
+LinearAlgebra.mul(R::RankOneMatrix, T::LinearAlgebra.UpperOrLowerTriangular) =
     RankOneMatrix(R.u, T' * R.v)
 
 function LinearAlgebra.mul(R1::RankOneMatrix, R2::RankOneMatrix)
