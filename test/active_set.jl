@@ -4,7 +4,7 @@ using Test
 
 using FrankWolfe
 import FrankWolfe: ActiveSet
-using LinearAlgebra: dot, norm
+using LinearAlgebra: dot, norm, I
 using Random
 using StableRNGs
 
@@ -213,13 +213,29 @@ end
     @test y2_index == -1
 
     # Criterion too high, no satisfactory point
-    (y3, _) = FrankWolfe.lp_separation_oracle(
+    (y3, _, y3_index) = FrankWolfe.lp_separation_oracle(
         lmo,
         active_set,
         gradient_dir,
         norm(gradient_dir)^2 + dot(x, gradient_dir),
         1,
     )
+    @test y3_index == FrankWolfe.find_atom(active_set, y3)
+
+    # the LMO's vertex is already active: the oracle reports its position
+    v_lmo = FrankWolfe.compute_extreme_point(lmo, gradient_dir)
+    active_set_with_v = ActiveSet([(0.5, [-1.0, -1.0]), (0.3, [0.0, 1.0]), (0.2, Vector(v_lmo))])
+    (y4, _, y4_index) =
+        FrankWolfe.lp_separation_oracle(lmo, active_set_with_v, gradient_dir, 1e6, 1)
+    @test y4_index == 3
+    @test active_set_with_v.atoms[y4_index] == y4
+
+    # a zero direction ties every atom and the LMO vertex is not the best atom:
+    # the oracle falls back to the scan and still reports the right position
+    active_set_reordered = ActiveSet([(0.3, [0.0, 1.0]), (0.5, [-1.0, -1.0]), (0.2, Vector(v_lmo))])
+    (y5, _, y5_index) = FrankWolfe.lp_separation_oracle(lmo, active_set_reordered, zeros(2), 1e6, 1)
+    @test y5_index == FrankWolfe.find_atom(active_set_reordered, y5)
+    @test y5_index == 2
 end
 
 @testset "Argminmax" begin
@@ -299,6 +315,15 @@ end
     @test FrankWolfe.find_atom(active_set, atoms[3], direction, -1, -Inf) == 3
     @test FrankWolfe.find_atom(active_set, rand(rng, 6), direction, -1, -Inf) == -1
 
+    # types without the certificate ignore the minimum arguments and scan
+    as_cached = FrankWolfe.ActiveSetQuadraticProductCaching(
+        [(1 / 25, a) for a in atoms],
+        Matrix{Float64}(I, 6, 6),
+        zeros(6),
+    )
+    @test FrankWolfe.find_atom(as_cached, atoms[7], direction, v_local_loc, Inf) == 7
+    @test FrankWolfe.find_atom(as_cached, rand(rng, 6), direction, v_local_loc, Inf) == -1
+
     # end-to-end on sparse atoms (Birkhoff): the update paths must never store an atom twice
     n = 8
     xp = rand(rng, n, n)
@@ -319,6 +344,8 @@ end
         res = run(f, grad!, birkhoff, x0)
         @test allunique(res.active_set.atoms)
         @test FrankWolfe.active_set_validate(res.active_set)
+        # weight landing on a wrong index would desynchronize x from the decomposition
+        @test res.active_set.x ≈ sum(λ .* a for (λ, a) in res.active_set)
     end
 
     # an atom stored in another representation must be found, never certified
