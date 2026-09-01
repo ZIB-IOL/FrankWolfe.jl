@@ -325,24 +325,22 @@ end
 """
     find_atom(active_set, atom, direction, best_index, best_value)
 
-Position of `atom` in `active_set`, or -1, decided from values the step
-already holds: `best_value` is the minimum of `dot(a, direction)` over the
-active atoms `a` and `best_index` its position, as `active_set_argminmax`
-returns them. If `atom` were active, `dot(atom, direction)` would be one of
-the values just minimised, so a strictly smaller value proves it absent.
-Otherwise the best atom is compared first:
-a vertex returned by the LMO cannot score above the minimum, so equality is
-a tie, and the tie is almost surely with the best atom itself. Only a tie
-with a different atom, which has probability zero for a real-valued
-direction, falls back to the scan. Passing `best_index = -1` with
-`best_value = -Inf` (a minimum that is no longer valid) also falls back.
+Position of `atom` in `active_set`, or -1 if it is not present. `best_index`
+and `best_value` are the position and value of the minimum of
+`dot(a, direction)` over the active atoms, as returned by
+[`active_set_argminmax`](@ref) with the same `direction`. Compares `atom`
+against `active_set.atoms[best_index]` first, certifies it absent when
+`dot(atom, direction) < best_value`, and scans otherwise. Pass
+`best_index = -1` and `best_value = -Inf` when no valid minimum is
+available. Active set types other than `ActiveSet` always scan: their
+`active_set_argminmax` may return a minimum that is not `dot(a, direction)`.
 """
 function find_atom(active_set::ActiveSet, atom, direction, best_index::Integer, best_value)
-    if dot(atom, direction) < best_value
-        return -1
-    end
     if best_index > 0 && _unsafe_equal(active_set.atoms[best_index], atom)
         return Int(best_index)
+    end
+    if dot(atom, direction) < best_value
+        return -1
     end
     return find_atom(active_set, atom)
 end

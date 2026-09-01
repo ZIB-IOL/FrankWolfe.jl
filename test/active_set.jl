@@ -320,6 +320,16 @@ end
         @test allunique(res.active_set.atoms)
         @test FrankWolfe.active_set_validate(res.active_set)
     end
+
+    # an atom stored in another representation must be found, never certified
+    # absent: its fresh dot can differ from the stored copy's by an ulp
+    vertices = unique([FrankWolfe.compute_extreme_point(birkhoff, randn(rng, n, n)) for _ in 1:20])
+    dense_set = ActiveSet([(1 / length(vertices), Matrix(v)) for v in vertices])
+    for _ in 1:50
+        dir = randn(rng, n, n)
+        _, _, loc, val, _, _, _, _, _ = FrankWolfe.active_set_argminmax(dense_set, dir)
+        @test FrankWolfe.find_atom(dense_set, vertices[loc], dir, loc, val) == loc
+    end
 end
 
 end # module

@@ -1208,10 +1208,10 @@ function lp_separation_oracle(
     # with the best atom, and only a tie with another atom searches the set
     idx = if force_fw_step
         nothing
-    elseif val < val_best
-        -1
     elseif _unsafe_equal(ybest, y)
         idx_best
+    elseif val < val_best
+        -1
     else
         find_atom(active_set, y)
     end
