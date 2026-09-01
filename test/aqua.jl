@@ -10,7 +10,7 @@ using LinearAlgebra
         FrankWolfe;
         # You can customize which tests to run and their options
         unbound_args=false,
-        ambiguities=(exclude=[LinearAlgebra.dot, Base.:-, Base.:+, Base.:*],),
+        ambiguities=(exclude=[Base.:*],),
         # stale_deps=(ignore=[:SomePackage],),
         # deps_compat=(ignore=[:SomeOtherPackage],),
         # piracies=false,
