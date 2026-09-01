@@ -35,8 +35,11 @@ function LinearAlgebra.dot(
     return conj(v1.active_val) * v2[v1.val_idx]
 end
 
-function LinearAlgebra.dot(v1::V, v2::ScaledHotVector{<:Number}) where {V <: Union{DenseVector{<:Number}, SparseArrays.SparseVectorUnion{<:Number}}}
-    conj(dot(v2, v1))
+function LinearAlgebra.dot(
+    v1::V,
+    v2::ScaledHotVector{<:Number},
+) where {V<:Union{DenseVector{<:Number},SparseArrays.SparseVectorUnion{<:Number}}}
+    return conj(dot(v2, v1))
 end
 
 function LinearAlgebra.dot(v1::ScaledHotVector{<:Number}, v2::ScaledHotVector{<:Number})
@@ -165,8 +168,7 @@ function Base.:*(R::RankOneMatrix, M::AbstractMatrix)
 end
 
 Base.:*(R::RankOneMatrix, D::LinearAlgebra.Diagonal) = RankOneMatrix(R.u, R.v .* D.diag)
-Base.:*(R::RankOneMatrix, T::LinearAlgebra.UpperOrLowerTriangular) =
-    RankOneMatrix(R.u, T' * R.v)
+Base.:*(R::RankOneMatrix, T::LinearAlgebra.UpperOrLowerTriangular) = RankOneMatrix(R.u, T' * R.v)
 
 function Base.:*(R1::RankOneMatrix, R2::RankOneMatrix)
     # middle product
