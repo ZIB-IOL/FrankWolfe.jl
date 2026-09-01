@@ -6,6 +6,7 @@ using Test
 using SparseArrays
 using Random
 using StableRNGs
+using FillArrays
 
 rng = StableRNG(42)
 Random.seed!(rng, 42)
@@ -40,6 +41,7 @@ end
                     @test M[i, j] ≈ R[i, j]
                 end
             end
+            @test R * FillArrays.Zeros(n) ≈ zeros(2n)
             @testset "Right- left-mul" for _ in 1:5
                 x = rand(rng, n)
                 r1 = R * x

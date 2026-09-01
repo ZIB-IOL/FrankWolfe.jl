@@ -102,7 +102,7 @@ FrankWolfe.dca_fw( # hide
     grad_g_workspace=collect(x0), # hide
 ) # hide
 
-res_dca =FrankWolfe.dca_fw(
+res_dca = FrankWolfe.dca_fw(
     f,
     grad_f!,
     g,
