@@ -394,8 +394,7 @@ function update_block_iterate(
             x = get_active_set_iterate(s.active_set)
             grad!(gradient, x)
             dual_gap = dot(gradient, x) - dot(gradient, v)
-            # the active set and the gradient changed: the minimum found
-            # above no longer says anything about the membership of v
+            # the cleanup and the recomputed gradient invalidate the minimum found above
             v_local_loc, v_local_value = -1, typemin(typeof(v_local_value))
         end
 

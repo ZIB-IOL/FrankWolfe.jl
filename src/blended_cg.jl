@@ -1132,9 +1132,11 @@ function simplex_gradient_descent_over_convex_hull(
 end
 
 """
-Returns either a tuple `(y, val)` with `y` an atom from the active set satisfying
-the progress criterion and `val` the corresponding gap `dot(y, direction)`
-or the same tuple with `y` from the LMO.
+Returns a tuple `(y, val, idx)` with `y` an atom from the active set satisfying
+the progress criterion and `val` the corresponding gap `dot(y, direction)`,
+or the same tuple with `y` from the LMO. `idx` is the position of `y` in the
+active set, -1 if `y` is not an active atom, and `nothing` when the active
+set was skipped (`force_fw_step = true`).
 
 `inplace_loop` controls whether the iterate type allows in-place writes.
 `kwargs` are passed on to the LMO oracle.
@@ -1201,11 +1203,7 @@ function lp_separation_oracle(
     else
         y = compute_extreme_point(lmo, direction; kwargs...)
     end
-    # don't return nothing but y, dot(direction, y) / use y for step outside / and update phi_value as in LCG (lines 402 - 406)
     val = dot(direction, y)
-    # the position of y in the active set, decided from the scan above when
-    # there was one: below its minimum means absent, a tie is almost surely
-    # with the best atom, and only a tie with another atom searches the set
     idx = if force_fw_step
         nothing
     elseif _unsafe_equal(ybest, y)

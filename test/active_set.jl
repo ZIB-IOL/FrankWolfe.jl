@@ -208,7 +208,7 @@ end
     @test active_set.atoms[y_index] == y
     (y2, _, y2_index) =
         FrankWolfe.lp_separation_oracle(lmo, active_set, gradient_dir, 3 + dot(x, gradient_dir), 1)
-    # found new vertex not in active set, and said so without a scan
+    # found new vertex not in active set
     @test y2 ∉ active_set.atoms
     @test y2_index == -1
 
@@ -262,14 +262,14 @@ end
     @test length(FrankWolfe.ActiveSet([(1.0, x0)])) == 1
 end
 
-@testset "find_atom from the minimum a step already holds" begin
+@testset "find_atom with argminmax result" begin
     atoms = [rand(rng, 6) for _ in 1:25]
     active_set = ActiveSet([(1 / 25, a) for a in atoms])
     direction = randn(rng, 6)
     _, v_local, v_local_loc, v_local_value, _, _, _, _, _ =
         FrankWolfe.active_set_argminmax(active_set, direction)
 
-    # every active atom is found at its position, the best one without a scan
+    # every active atom is found at its position, a copy of the best atom included
     for (i, a) in enumerate(atoms)
         @test FrankWolfe.find_atom(active_set, a, direction, v_local_loc, v_local_value) == i
     end
@@ -299,7 +299,7 @@ end
     @test FrankWolfe.find_atom(active_set, atoms[3], direction, -1, -Inf) == 3
     @test FrankWolfe.find_atom(active_set, rand(rng, 6), direction, -1, -Inf) == -1
 
-    # the update path uses it: no atom is ever stored twice, on sparse atoms too
+    # end-to-end on sparse atoms (Birkhoff): the update paths must never store an atom twice
     n = 8
     xp = rand(rng, n, n)
     f(x) = dot(x - xp, x - xp)

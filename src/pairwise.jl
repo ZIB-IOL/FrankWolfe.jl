@@ -455,7 +455,6 @@ function lazy_pfw_step(
             step_type = ST_PAIRWISE
         end
 
-        # decided from the minimum computed above, without scanning the active set
         fw_index = find_atom(active_set, v, gradient, v_local_loc, v_local_value)
         # Real dual gap promises enough progress.
         grad_dot_fw_vertex = dot(gradient, v)
@@ -491,7 +490,6 @@ function pfw_step(
 
     v = compute_extreme_point(lmo, gradient)
     fw_vertex = v
-    # decided from the minimum computed above, without scanning the active set
     fw_index = find_atom(active_set, v, gradient, v_local_loc, v_local_value)
     grad_dot_x = dot(gradient, x)
     dual_gap = grad_dot_x - dot(gradient, v)

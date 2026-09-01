@@ -311,8 +311,7 @@ function blended_pairwise_conditional_gradient(
                 x = get_active_set_iterate(active_set)
                 grad!(gradient, x)
                 dual_gap = dot(gradient, x) - dot(gradient, v)
-                # the active set and the gradient changed: the minimum found
-                # above no longer says anything about the membership of v
+                # the cleanup and the recomputed gradient invalidate the minimum found above
                 v_local_loc, v_local_value = -1, typemin(typeof(v_local_value))
             end
             # Note: In the following, we differentiate between lazy and non-lazy updates.
@@ -374,9 +373,6 @@ function blended_pairwise_conditional_gradient(
                     active_set_initialize!(active_set, v)
                 else
                     renorm = mod(t, renorm_interval) == 0
-                    # v is not active whenever it scores below the active set's
-                    # own minimum, which is the case in this branch in exact
-                    # arithmetic; the comparison replaces the scan of the set
                     v_index = find_atom(active_set, v, gradient, v_local_loc, v_local_value)
                     active_set_update!(active_set, gamma, v, renorm, v_index)
                 end
