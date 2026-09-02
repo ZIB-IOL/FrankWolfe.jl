@@ -5,6 +5,7 @@ using Test
 using FrankWolfe
 import FrankWolfe: ActiveSet
 using LinearAlgebra: dot, norm
+import LinearAlgebra
 using Random
 using StableRNGs
 
