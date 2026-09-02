@@ -208,7 +208,7 @@ function blended_pairwise_conditional_gradient(
             grad!(gradient, x)
         end
 
-        _, v_local, v_local_loc, _, a_lambda, a, a_loc, _, _ =
+        _, v_local, v_local_loc, v_local_value, a_lambda, a, a_loc, _, _ =
             active_set_argminmax(active_set, gradient)
 
         dot_forward_vertex = dot(gradient, v_local)
@@ -311,6 +311,8 @@ function blended_pairwise_conditional_gradient(
                 x = get_active_set_iterate(active_set)
                 grad!(gradient, x)
                 dual_gap = dot(gradient, x) - dot(gradient, v)
+                # the cleanup and the recomputed gradient invalidate the minimum found above
+                v_local_loc, v_local_value = -1, typemin(typeof(v_local_value))
             end
             # Note: In the following, we differentiate between lazy and non-lazy updates.
             # The reason is that only the lazy version depends on the phi_value.
@@ -371,7 +373,8 @@ function blended_pairwise_conditional_gradient(
                     active_set_initialize!(active_set, v)
                 else
                     renorm = mod(t, renorm_interval) == 0
-                    active_set_update!(active_set, gamma, v, renorm, nothing)
+                    v_index = find_atom(active_set, v, gradient, v_local_loc, v_local_value)
+                    active_set_update!(active_set, gamma, v, renorm, v_index)
                 end
             else # dual step
                 # we only update the dual gap if the step was regular (not lazy from discarded set)

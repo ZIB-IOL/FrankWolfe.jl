@@ -202,21 +202,40 @@ end
     x = FrankWolfe.get_active_set_iterate(active_set)
     @test x ≈ [-0.4, -0.4]
     gradient_dir = ∇f(x)
-    (y, _) = FrankWolfe.lp_separation_oracle(lmo, active_set, gradient_dir, 0.5, 1)
+    (y, _, y_index) = FrankWolfe.lp_separation_oracle(lmo, active_set, gradient_dir, 0.5, 1)
     @test y ∈ active_set.atoms
-    (y2, _) =
+    # the oracle returns the position of the atom it took from the active set
+    @test active_set.atoms[y_index] == y
+    (y2, _, y2_index) =
         FrankWolfe.lp_separation_oracle(lmo, active_set, gradient_dir, 3 + dot(x, gradient_dir), 1)
     # found new vertex not in active set
     @test y2 ∉ active_set.atoms
+    @test y2_index == -1
 
     # Criterion too high, no satisfactory point
-    (y3, _) = FrankWolfe.lp_separation_oracle(
+    (y3, _, y3_index) = FrankWolfe.lp_separation_oracle(
         lmo,
         active_set,
         gradient_dir,
         norm(gradient_dir)^2 + dot(x, gradient_dir),
         1,
     )
+    @test y3_index == FrankWolfe.find_atom(active_set, y3)
+
+    # the LMO's vertex is already active: the oracle reports its position
+    v_lmo = FrankWolfe.compute_extreme_point(lmo, gradient_dir)
+    active_set_with_v = ActiveSet([(0.5, [-1.0, -1.0]), (0.3, [0.0, 1.0]), (0.2, Vector(v_lmo))])
+    (y4, _, y4_index) =
+        FrankWolfe.lp_separation_oracle(lmo, active_set_with_v, gradient_dir, 1e6, 1)
+    @test y4_index == 3
+    @test active_set_with_v.atoms[y4_index] == y4
+
+    # a zero direction ties every atom and the LMO vertex is not the best atom:
+    # the oracle falls back to the scan and still reports the right position
+    active_set_reordered = ActiveSet([(0.3, [0.0, 1.0]), (0.5, [-1.0, -1.0]), (0.2, Vector(v_lmo))])
+    (y5, _, y5_index) = FrankWolfe.lp_separation_oracle(lmo, active_set_reordered, zeros(2), 1e6, 1)
+    @test y5_index == FrankWolfe.find_atom(active_set_reordered, y5)
+    @test y5_index == 2
 end
 
 @testset "Argminmax" begin
@@ -257,6 +276,87 @@ end
 
     # ensure that ActiveSet is created correctly, tests a fix for a bug when x0 is a BigFloat
     @test length(FrankWolfe.ActiveSet([(1.0, x0)])) == 1
+end
+
+@testset "find_atom with argminmax result" begin
+    atoms = [rand(rng, 6) for _ in 1:25]
+    active_set = ActiveSet([(1 / 25, a) for a in atoms])
+    direction = randn(rng, 6)
+    _, v_local, v_local_loc, v_local_value, _, _, _, _, _ =
+        FrankWolfe.active_set_argminmax(active_set, direction)
+
+    # every active atom is found at its position, a copy of the best atom included
+    for (i, a) in enumerate(atoms)
+        @test FrankWolfe.find_atom(active_set, a, direction, v_local_loc, v_local_value) == i
+    end
+    @test FrankWolfe.find_atom(active_set, copy(v_local), direction, v_local_loc, v_local_value) ==
+          v_local_loc
+
+    # the LMO's vertex scores below the active set's minimum: certified absent
+    lmo = FrankWolfe.LpNormBallLMO{Inf}(1.0)
+    v = FrankWolfe.compute_extreme_point(lmo, direction)
+    @test dot(v, direction) < v_local_value
+    @test FrankWolfe.find_atom(active_set, v, direction, v_local_loc, v_local_value) == -1
+
+    # random queries, present or not, agree with the scan
+    for _ in 1:200
+        query = rand(rng, Bool) ? atoms[rand(rng, 1:25)] : rand(rng, 6)
+        @test FrankWolfe.find_atom(active_set, query, direction, v_local_loc, v_local_value) ==
+              FrankWolfe.find_atom(active_set, query)
+    end
+
+    # a tie with an atom other than the best one falls back to the scan:
+    # a zero direction makes every atom tie at zero
+    zero_direction = zeros(6)
+    @test FrankWolfe.find_atom(active_set, atoms[7], zero_direction, 1, 0.0) == 7
+    @test FrankWolfe.find_atom(active_set, rand(rng, 6), zero_direction, 1, 0.0) == -1
+
+    # a minimum that is no longer valid (index -1, value -Inf) also falls back
+    @test FrankWolfe.find_atom(active_set, atoms[3], direction, -1, -Inf) == 3
+    @test FrankWolfe.find_atom(active_set, rand(rng, 6), direction, -1, -Inf) == -1
+
+    # types without the certificate ignore the minimum arguments and scan
+    as_cached = FrankWolfe.ActiveSetQuadraticProductCaching(
+        [(1 / 25, a) for a in atoms],
+        Matrix{Float64}(LinearAlgebra.I, 6, 6),
+        zeros(6),
+    )
+    @test FrankWolfe.find_atom(as_cached, atoms[7], direction, v_local_loc, Inf) == 7
+    @test FrankWolfe.find_atom(as_cached, rand(rng, 6), direction, v_local_loc, Inf) == -1
+
+    # end-to-end on sparse atoms (Birkhoff): the update paths must never store an atom twice
+    n = 8
+    xp = rand(rng, n, n)
+    f(x) = dot(x - xp, x - xp)
+    function grad!(storage, x)
+        storage .= 2 .* (x .- xp)
+        return storage
+    end
+    birkhoff = FrankWolfe.BirkhoffPolytopeLMO()
+    x0 = FrankWolfe.compute_extreme_point(birkhoff, randn(rng, n, n))
+    for run in (
+        (f, g, l, x) -> FrankWolfe.pairwise_frank_wolfe(f, g, l, x; max_iteration=300, lazy=false),
+        (f, g, l, x) -> FrankWolfe.pairwise_frank_wolfe(f, g, l, x; max_iteration=300, lazy=true),
+        (f, g, l, x) ->
+            FrankWolfe.blended_pairwise_conditional_gradient(f, g, l, x; max_iteration=300),
+        (f, g, l, x) -> FrankWolfe.blended_conditional_gradient(f, g, l, x; max_iteration=300),
+    )
+        res = run(f, grad!, birkhoff, x0)
+        @test allunique(res.active_set.atoms)
+        @test FrankWolfe.active_set_validate(res.active_set)
+        # weight landing on a wrong index would desynchronize x from the decomposition
+        @test res.active_set.x ≈ sum(λ .* a for (λ, a) in res.active_set)
+    end
+
+    # an atom stored in another representation must be found, never certified
+    # absent: its fresh dot can differ from the stored copy's by an ulp
+    vertices = unique([FrankWolfe.compute_extreme_point(birkhoff, randn(rng, n, n)) for _ in 1:20])
+    dense_set = ActiveSet([(1 / length(vertices), Matrix(v)) for v in vertices])
+    for _ in 1:50
+        dir = randn(rng, n, n)
+        _, _, loc, val, _, _, _, _, _ = FrankWolfe.active_set_argminmax(dense_set, dir)
+        @test FrankWolfe.find_atom(dense_set, vertices[loc], dir, loc, val) == loc
+    end
 end
 
 end # module
