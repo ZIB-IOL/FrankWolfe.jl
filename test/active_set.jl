@@ -318,7 +318,7 @@ end
     # types without the certificate ignore the minimum arguments and scan
     as_cached = FrankWolfe.ActiveSetQuadraticProductCaching(
         [(1 / 25, a) for a in atoms],
-        Matrix{Float64}(I, 6, 6),
+        Matrix{Float64}(LinearAlgebra.I, 6, 6),
         zeros(6),
     )
     @test FrankWolfe.find_atom(as_cached, atoms[7], direction, v_local_loc, Inf) == 7
