@@ -4,7 +4,7 @@ using Test
 
 using FrankWolfe
 import FrankWolfe: ActiveSet
-using LinearAlgebra: dot, norm, I
+using LinearAlgebra: dot, norm
 using Random
 using StableRNGs
 
