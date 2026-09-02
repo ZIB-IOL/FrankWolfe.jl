@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Accelerations for quadratic functions and symmetric problems · FrankWolfe.jl</title><meta name="title" content="Accelerations for quadratic functions and symmetric problems · FrankWolfe.jl"/><meta property="og:title" content="Accelerations for quadratic functions and symmetric problems · FrankWolfe.jl"/><meta property="twitter:title" content="Accelerations for quadratic functions and symmetric problems · FrankWolfe.jl"/><meta name="description" content="Documentation for FrankWolfe.jl."/><meta property="og:description" content="Documentation for FrankWolfe.jl."/><meta property="twitter:description" content="Documentation for FrankWolfe.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">FrankWolfe.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../basics/">How does it work?</a></li><li><a class="tocitem" href="../../advanced/">Advanced features</a></li><li><input class="collapse-toggle" id="menuitem-4" type="checkbox" checked/><label class="tocitem" for="menuitem-4"><span class="docs-label">Examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../docs_00_fw_visualized/">Visualization of Frank-Wolfe running on a 2-dimensional polytope</a></li><li><a class="tocitem" href="../docs_01_mathopt_lmo/">Comparison with MathOptInterface on a Probability Simplex</a></li><li><a class="tocitem" href="../docs_02_polynomial_regression/">Polynomial Regression</a></li><li><a class="tocitem" href="../docs_03_matrix_completion/">Matrix Completion</a></li><li><a class="tocitem" href="../docs_04_rational_opt/">Exact Optimization with Rational Arithmetic</a></li><li><a class="tocitem" href="../docs_05_blended_cg/">Blended Conditional Gradients</a></li><li><a class="tocitem" href="../docs_06_spectrahedron/">Spectrahedron</a></li><li><a class="tocitem" href="../docs_07_shifted_norm_polytopes/">FrankWolfe for scaled, shifted <span>$\ell^1$</span> and <span>$\ell^{\infty}$</span> norm balls</a></li><li><a class="tocitem" href="../docs_08_callback_and_tracking/">Tracking, counters and custom callbacks for Frank Wolfe</a></li><li><a class="tocitem" href="../docs_09_extra_vertex_storage/">Extra-lazification</a></li><li><a class="tocitem" href="../docs_10_alternating_methods/">Alternating methods</a></li><li><a class="tocitem" href="../docs_11_block_coordinate_fw/">Block-Coordinate Frank-Wolfe and Block-Vectors</a></li><li class="is-active"><a class="tocitem" href>Accelerations for quadratic functions and symmetric problems</a><ul class="internal"><li><a class="tocitem" href="#Import-and-setup"><span>Import and setup</span></a></li><li><a class="tocitem" href="#Naive-run"><span>Naive run</span></a></li><li><a class="tocitem" href="#Faster-active-set-for-quadratic-functions"><span>Faster active set for quadratic functions</span></a></li><li><a class="tocitem" href="#Dimension-reduction-via-symmetrization"><span>Dimension reduction via symmetrization</span></a></li></ul></li><li><a class="tocitem" href="../docs_13_dca_fw/">Difference-of-Convex Algorithm with Frank-Wolfe</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-5" type="checkbox"/><label class="tocitem" for="menuitem-5"><span class="docs-label">API reference</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../reference/0_reference/">API Reference</a></li><li><a class="tocitem" href="../../reference/1_algorithms/">Algorithms</a></li><li><a class="tocitem" href="../../reference/2_lmo/">Linear Minimization Oracles</a></li><li><a class="tocitem" href="../../reference/3_backend/">Utilities and data structures</a></li><li><a class="tocitem" href="../../reference/4_linesearch/">Line search and step size settings</a></li><li><a class="tocitem" href="../../reference/5_gradient_descent/">Adaptive Proximal Gradient Descent Methods</a></li></ul></li><li><a class="tocitem" href="../../contributing/">Contributing</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Accelerations for quadratic functions and symmetric problems</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Accelerations for quadratic functions and symmetric problems</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/ZIB-IOL/FrankWolfe.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/ZIB-IOL/FrankWolfe.jl/blob/master/examples/docs_12_quadratic_symmetric.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><pre class="documenter-example-output"><code class="nohighlight hljs ansi">plot_sparsity (generic function with 1 method)</code></pre><h1 id="Accelerations-for-quadratic-functions-and-symmetric-problems"><a class="docs-heading-anchor" href="#Accelerations-for-quadratic-functions-and-symmetric-problems">Accelerations for quadratic functions and symmetric problems</a><a id="Accelerations-for-quadratic-functions-and-symmetric-problems-1"></a><a class="docs-heading-anchor-permalink" href="#Accelerations-for-quadratic-functions-and-symmetric-problems" title="Permalink"></a></h1><p>This example illustrates how to exploit symmetry to reduce the dimension of the problem via <code>SubspaceLMO</code>. Moreover, active set based algorithms can be accelerated by using the specialized structure <code>ActiveSetQuadraticProductCaching</code>.</p><p>The specific problem we consider here comes from quantum information and some context can be found <a href="https://arxiv.org/abs/2302.04721">here</a>. Formally, we want to find the distance between a tensor of size <code>m^N</code> and the <code>N</code>-partite local polytope which is defined by its vertices</p><p class="math-container">\[d^{\vec{a}^{(1)}\ldots \vec{a}^{(N)}}_{x_1\ldots x_N}\coloneqq\prod_{n=1}^Na^{(n)}_{x_n}\]</p><p>labeled by <span>$\vec{a}^{(n)}=a^{(n)}_1\ldots a^{(n)}_m$</span> for <span>$n\in[1,N]$</span>, where <span>$a^{(n)}_x=\pm1$</span>. In the bipartite case (<code>N=2</code>), this polytope is affinely equivalent to the cut polytope.</p><h2 id="Import-and-setup"><a class="docs-heading-anchor" href="#Import-and-setup">Import and setup</a><a id="Import-and-setup-1"></a><a class="docs-heading-anchor-permalink" href="#Import-and-setup" title="Permalink"></a></h2><p>We first import the necessary packages.</p><pre><code class="language-julia hljs">import Combinatorics
+import FrankWolfe
+import LinearAlgebra
+import Tullio</code></pre><p>Then we can define our custom LMO, together with the method <code>compute_extreme_point</code>, which simply enumerates the vertices <span>$d^{\vec{a}^{(1)}}$</span> defined above. This structure is specialized for the case <code>N=5</code> and contains pre-allocated fields used to accelerate the enumeration. Note that the output type (full tensor) is quite naive, but this is enough to illustrate the syntax in this toy example.</p><pre><code class="language-julia hljs">struct BellCorrelationsLMO{T} &lt;: FrankWolfe.LinearMinimizationOracle
+    m::Int # size of the tensor
+    tmp1::Array{T,1}
+    tmp2::Array{T,2}
+    tmp3::Array{T,3}
+    tmp4::Array{T,4}
+end
+
+function FrankWolfe.compute_extreme_point(
+    lmo::BellCorrelationsLMO{T},
+    A::Array{T,5};
+    kwargs...,
+) where {T&lt;:Number}
+    ax = [ones(T, lmo.m) for n in 1:5]
+    sc1 = zero(T)
+    sc2 = one(T)
+    axm = [zeros(T, lmo.m) for n in 1:5]
+    scm = typemax(T)
+    L = 2^lmo.m
+    aux = zeros(Int, lmo.m)
+    for λa5 in 0:((L÷2)-1)
+        digits!(aux, λa5, base=2)
+        ax[5] .= 2aux .- 1
+        Tullio.@tullio lmo.tmp4[x1, x2, x3, x4] = A[x1, x2, x3, x4, x5] * ax[5][x5]
+        for λa4 in 0:(L-1)
+            digits!(aux, λa4, base=2)
+            ax[4] .= 2aux .- 1
+            Tullio.@tullio lmo.tmp3[x1, x2, x3] = lmo.tmp4[x1, x2, x3, x4] * ax[4][x4]
+            for λa3 in 0:(L-1)
+                digits!(aux, λa3, base=2)
+                ax[3] .= 2aux .- 1
+                Tullio.@tullio lmo.tmp2[x1, x2] = lmo.tmp3[x1, x2, x3] * ax[3][x3]
+                for λa2 in 0:(L-1)
+                    digits!(aux, λa2, base=2)
+                    ax[2] .= 2aux .- 1
+                    LinearAlgebra.mul!(lmo.tmp1, lmo.tmp2, ax[2])
+                    for x1 in 1:lmo.m
+                        ax[1][x1] = lmo.tmp1[x1] &gt; zero(T) ? -one(T) : one(T)
+                    end
+                    sc = LinearAlgebra.dot(ax[1], lmo.tmp1)
+                    if sc &lt; scm
+                        scm = sc
+                        for n in 1:5
+                            axm[n] .= ax[n]
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return [
+        axm[1][x1] * axm[2][x2] * axm[3][x3] * axm[4][x4] * axm[5][x5] for x1 in 1:lmo.m,
+        x2 in 1:lmo.m, x3 in 1:lmo.m, x4 in 1:lmo.m, x5 in 1:lmo.m
+    ]
+end</code></pre><p>Then we define our specific instance, coming from a GHZ state measured with measurements forming a regular polygon on the equator of the Bloch sphere. See <a href="https://arxiv.org/abs/2310.20677">this article</a> for definitions and references.</p><pre><code class="language-julia hljs">function correlation_tensor_GHZ_polygon(::Type{T}, N::Int, m::Int) where {T&lt;:Number}
+    res = zeros(T, m * ones(Int, N)...)
+    tab_cos = [cos(x * T(pi) / m) for x in 0:(N*m)]
+    tab_cos[abs.(tab_cos).&lt;Base.rtoldefault(T)] .= zero(T)
+    for ci in CartesianIndices(res)
+        res[ci] = tab_cos[sum(ci.I)-N+1]
+    end
+    return res
+end
+
+T = Float64
+verbose = true
+max_iteration = 10^4
+m = 5
+p = 0.23correlation_tensor_GHZ_polygon(T, 5, m)
+x0 = zeros(T, size(p))</code></pre><p>The objective function is simply <span>$\frac12\|x-p\|_2^2$</span>, which we decompose in different terms for speed.</p><pre><code class="language-julia hljs">normp2 = LinearAlgebra.dot(p, p) / 2
+f = let p = p, normp2 = normp2
+    x -&gt; LinearAlgebra.dot(x, x) / 2 - LinearAlgebra.dot(p, x) + normp2
+end
+grad! = let p = p
+    (storage, x) -&gt; begin
+        @inbounds for i in eachindex(x)
+            storage[i] = x[i] - p[i]
+        end
+    end
+end</code></pre><h2 id="Naive-run"><a class="docs-heading-anchor" href="#Naive-run">Naive run</a><a id="Naive-run-1"></a><a class="docs-heading-anchor-permalink" href="#Naive-run" title="Permalink"></a></h2><p>If we run the blended pairwise conditional gradient algorithm without modifications, convergence is not reached in 10000 iterations.</p><pre><code class="language-julia hljs">lmo_naive =
+    BellCorrelationsLMO{T}(m, zeros(T, m), zeros(T, m, m), zeros(T, m, m, m), zeros(T, m, m, m, m))
+FrankWolfe.blended_pairwise_conditional_gradient(
+    f,
+    grad!,
+    lmo_naive,
+    FrankWolfe.ActiveSet([(one(T), x0)]);
+    verbose=false,
+    lazy=true,
+    line_search=FrankWolfe.Shortstep(one(T)),
+    max_iteration=10,
+as_naive = FrankWolfe.ActiveSet([(one(T), x0)])
+@time FrankWolfe.blended_pairwise_conditional_gradient(
+    f,
+    grad!,
+    lmo_naive,
+    as_naive;
+    verbose,
+    lazy=true,
+    line_search=FrankWolfe.Shortstep(one(T)),
+    max_iteration,
+)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">
+Blended Pairwise Conditional Gradient Algorithm.
+MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: Shortstep EPSILON: 1.0e-7 MAXITERATION: 10000 TYPE: Float64
+GRADIENT_TYPE: Array{Float64, 5} LAZY: true sparsity_control: 2.0
+LMO: Main.BellCorrelationsLMO{Float64}
+
+----------------------------------------------------------------------------------------------------------------
+  Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec     #ActiveSet
+----------------------------------------------------------------------------------------------------------------
+     I             1   4.132813e+01  -4.029553e+01   8.162365e+01   0.000000e+00            Inf              1
+    LD            46   1.102218e+01  -2.978965e+01   4.081183e+01   3.942506e+00   1.166771e+01             46
+    LD           102   4.885285e+00  -1.552063e+01   2.040591e+01   6.894853e+00   1.479364e+01             77
+    LD           215   1.204417e+00  -8.998540e+00   1.020296e+01   1.153090e+01   1.864556e+01            126
+    LD           256   9.219228e-01  -4.179555e+00   5.101478e+00   1.161635e+01   2.203791e+01            126
+    LD           386   7.101789e-01  -1.840560e+00   2.550739e+00   1.577228e+01   2.447331e+01            168
+     P          1000   4.980251e-01  -2.052714e+00   2.550739e+00   2.631521e+01   3.800084e+01            278
+    FW          2000   2.459139e-01  -2.304825e+00   2.550739e+00   4.221885e+01   4.737220e+01            442
+    LD          2546   1.359567e-01  -1.139413e+00   1.275370e+00   5.382246e+01   4.730367e+01            552
+     P          3000   1.069451e-01  -1.168424e+00   1.275370e+00   5.432333e+01   5.522489e+01            549
+     P          4000   4.817892e-02  -1.227191e+00   1.275370e+00   6.232865e+01   6.417595e+01            615
+    LD          4445   2.314141e-02  -6.145434e-01   6.376848e-01   6.592966e+01   6.742034e+01            641
+    LD          4958   1.447597e-02  -3.043664e-01   3.188424e-01   6.623117e+01   7.485901e+01            625
+     P          5000   1.412202e-02  -3.047204e-01   3.188424e-01   6.633131e+01   7.537918e+01            625
+    LD          5737   1.074354e-02  -1.486777e-01   1.594212e-01   6.663973e+01   8.608978e+01            625
+     P          6000   1.025364e-02  -1.491676e-01   1.594212e-01   6.683062e+01   8.977920e+01            625
+    LD          6569   9.689158e-03  -7.002144e-02   7.971060e-02   6.707107e+01   9.794089e+01            625
+     P          7000   9.493240e-03  -7.021736e-02   7.971060e-02   6.733388e+01   1.039595e+02            625
+    LD          7504   9.379183e-03  -3.047612e-02   3.985530e-02   6.754797e+01   1.110914e+02            625
+     P          8000   9.325823e-03  -3.052948e-02   3.985530e-02   6.783632e+01   1.179309e+02            625
+    LD          8422   9.302447e-03  -1.062520e-02   1.992765e-02   6.801788e+01   1.238204e+02            625
+     P          9000   9.286710e-03  -1.064094e-02   1.992765e-02   6.833840e+01   1.316976e+02            625
+    LD          9447   9.280848e-03  -6.829761e-04   9.963825e-03   6.852626e+01   1.378596e+02            625
+     P         10000   9.277278e-03  -6.865465e-04   9.963825e-03   6.883628e+01   1.452722e+02            625
+  Last         10001   9.277269e-03   5.853245e-03   3.424023e-03   6.892657e+01   1.450964e+02            625
+----------------------------------------------------------------------------------------------------------------
+    PP         10001   9.277269e-03   5.853245e-03   3.424023e-03   6.901614e+01   1.449081e+02            625
+----------------------------------------------------------------------------------------------------------------
+ 69.099496 seconds (379.54 M allocations: 33.949 GiB, 12.21% gc time, 0.15% compilation time)</code></pre><h2 id="Faster-active-set-for-quadratic-functions"><a class="docs-heading-anchor" href="#Faster-active-set-for-quadratic-functions">Faster active set for quadratic functions</a><a id="Faster-active-set-for-quadratic-functions-1"></a><a class="docs-heading-anchor-permalink" href="#Faster-active-set-for-quadratic-functions" title="Permalink"></a></h2><p>A first acceleration can be obtained by using the active set specialized for the quadratic objective function, whose gradient is here <span>$x-p$</span>, explaining the hessian and linear part provided as arguments. The speedup is obtained by pre-computing some scalar products to quickly obtained, in each iteration, the best and worst atoms currently in the active set.</p><pre><code class="language-julia hljs">FrankWolfe.blended_pairwise_conditional_gradient(
+    f,
+    grad!,
+    lmo_naive,
+    FrankWolfe.ActiveSetQuadraticProductCaching([(one(T), x0)], LinearAlgebra.I, -p);
+    verbose=false,
+    lazy=true,
+    line_search=FrankWolfe.Shortstep(one(T)),
+    max_iteration=10,
+asq_naive = FrankWolfe.ActiveSetQuadraticProductCaching([(one(T), x0)], LinearAlgebra.I, -p)
+@time FrankWolfe.blended_pairwise_conditional_gradient(
+    f,
+    grad!,
+    lmo_naive,
+    asq_naive;
+    verbose,
+    lazy=true,
+    line_search=FrankWolfe.Shortstep(one(T)),
+    max_iteration,
+)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">
+Blended Pairwise Conditional Gradient Algorithm.
+MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: Shortstep EPSILON: 1.0e-7 MAXITERATION: 10000 TYPE: Float64
+GRADIENT_TYPE: Array{Float64, 5} LAZY: true sparsity_control: 2.0
+LMO: Main.BellCorrelationsLMO{Float64}
+
+----------------------------------------------------------------------------------------------------------------
+  Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec     #ActiveSet
+----------------------------------------------------------------------------------------------------------------
+     I             1   4.132813e+01  -4.029553e+01   8.162365e+01   0.000000e+00            Inf              1
+    LD            46   1.102218e+01  -2.978965e+01   4.081183e+01   4.147454e+00   1.109114e+01             46
+    LD            97   4.959629e+00  -1.544628e+01   2.040591e+01   6.982813e+00   1.389125e+01             76
+    LD           221   1.160601e+00  -9.042355e+00   1.020296e+01   1.164692e+01   1.897497e+01            126
+    LD           261   9.061899e-01  -4.195288e+00   5.101478e+00   1.173061e+01   2.224949e+01            126
+    LD           412   6.810057e-01  -1.869733e+00   2.550739e+00   1.789304e+01   2.302572e+01            190
+     P          1000   4.849067e-01  -2.065832e+00   2.550739e+00   2.684772e+01   3.724710e+01            286
+     P          2000   2.347951e-01  -2.315944e+00   2.550739e+00   4.311872e+01   4.638356e+01            456
+    LD          2455   1.422501e-01  -1.133119e+00   1.275370e+00   5.311219e+01   4.622291e+01            559
+    FW          3000   1.072136e-01  -1.168156e+00   1.275370e+00   5.377539e+01   5.578760e+01            558
+     P          4000   4.694262e-02  -1.228427e+00   1.275370e+00   6.118367e+01   6.537692e+01            607
+    LD          4463   2.024209e-02  -6.174427e-01   6.376848e-01   6.440765e+01   6.929301e+01            635
+    LD          4851   1.378294e-02  -3.050594e-01   3.188424e-01   6.449810e+01   7.521152e+01            626
+     P          5000   1.262986e-02  -3.062125e-01   3.188424e-01   6.458264e+01   7.742018e+01            625
+    LD          5474   1.065824e-02  -1.487630e-01   1.594212e-01   6.459838e+01   8.473897e+01            625
+     P          6000   9.833271e-03  -1.495879e-01   1.594212e-01   6.469306e+01   9.274564e+01            625
+    LD          6297   9.615002e-03  -7.009559e-02   7.971060e-02   6.470494e+01   9.731869e+01            625
+     P          7000   9.381774e-03  -7.032882e-02   7.971060e-02   6.480333e+01   1.080191e+02            625
+    LD          7093   9.366846e-03  -3.048845e-02   3.985530e-02   6.480992e+01   1.094431e+02            625
+    LD          7928   9.298819e-03  -1.062883e-02   1.992765e-02   6.491139e+01   1.221357e+02            625
+     P          8000   9.296222e-03  -1.063143e-02   1.992765e-02   6.499398e+01   1.230883e+02            625
+    LD          8835   9.280252e-03  -6.835724e-04   9.963825e-03   6.501862e+01   1.358842e+02            625
+     P          9000   9.278931e-03  -6.848934e-04   9.963825e-03   6.538660e+01   1.376429e+02            625
+    LD          9685   9.275898e-03   4.293985e-03   4.981912e-03   6.540764e+01   1.480714e+02            625
+     P         10000   9.275271e-03   4.293359e-03   4.981912e-03   6.547825e+01   1.527225e+02            625
+  Last         10001   9.275268e-03   7.168622e-03   2.106646e-03   6.556666e+01   1.525318e+02            625
+----------------------------------------------------------------------------------------------------------------
+    PP         10001   9.275268e-03   7.168622e-03   2.106646e-03   6.565587e+01   1.523245e+02            625
+----------------------------------------------------------------------------------------------------------------
+ 65.720210 seconds (381.15 M allocations: 34.101 GiB, 13.91% gc time, 0.15% compilation time)</code></pre><p>In this small example, the acceleration is quite minimal, but as soon as one of the following conditions is met, significant speedups (factor ten at least) can be expected:</p><ul><li>quite expensive scalar product between atoms, for instance, due to a high dimension (say, more than 10000),</li><li>high number of atoms in the active set (say, more than 1000),</li><li>high number of iterations (say, more than 100000), spending most of the time redistributing the weights in the active set.</li></ul><h2 id="Dimension-reduction-via-symmetrization"><a class="docs-heading-anchor" href="#Dimension-reduction-via-symmetrization">Dimension reduction via symmetrization</a><a id="Dimension-reduction-via-symmetrization-1"></a><a class="docs-heading-anchor-permalink" href="#Dimension-reduction-via-symmetrization" title="Permalink"></a></h2><h3 id="Permutation-of-the-tensor-axes"><a class="docs-heading-anchor" href="#Permutation-of-the-tensor-axes">Permutation of the tensor axes</a><a id="Permutation-of-the-tensor-axes-1"></a><a class="docs-heading-anchor-permalink" href="#Permutation-of-the-tensor-axes" title="Permalink"></a></h3><p>It is easy to see that our specific instance remains invariant under permutation of the dimensions of the tensor. This means that all computations can be performed in the symmetric subspace, which leads to an important speedup, owing to the reduced dimension (hence reduced size of the final active set and reduced number of iterations).</p><p>The way to operate this in the <code>FrankWolfe</code> package is to use a symmetrized LMO, which basically does the following:</p><ul><li>symmetrize the gradient, which is not necessary here as the gradient remains symmetric throughout the algorithm,</li><li>call the standard LMO,</li><li>symmetrize its output, which amounts to averaging over its orbit with respect to the group considered (here the symmetric group permuting the dimensions of the tensor).</li></ul><pre><code class="language-julia hljs">function reynolds_permutedims(atom::Array{T,N}, lmo::BellCorrelationsLMO{T}) where {T&lt;:Number,N}
+    res = zeros(T, size(atom))
+    for per in Combinatorics.permutations(1:N)
+        res .+= permutedims(atom, per)
+    end
+    res ./= factorial(N)
+    return res
+end</code></pre><p>Note that the second argument <code>lmo</code> is not used here but could in principle be exploited to obtain a very small speedup by precomputing and storing <code>Combinatorics.permutations(1:N)</code> in a dedicated field of our custom LMO.</p><pre><code class="language-julia hljs">lmo_permutedims = FrankWolfe.SubspaceLMO(lmo_naive, reynolds_permutedims)
+FrankWolfe.blended_pairwise_conditional_gradient(
+    f,
+    grad!,
+    lmo_permutedims,
+    FrankWolfe.ActiveSetQuadraticProductCaching([(one(T), x0)], LinearAlgebra.I, -p);
+    verbose=false,
+    lazy=true,
+    line_search=FrankWolfe.Shortstep(one(T)),
+    max_iteration=10,
+asq_permutedims = FrankWolfe.ActiveSetQuadraticProductCaching([(one(T), x0)], LinearAlgebra.I, -p)
+@time FrankWolfe.blended_pairwise_conditional_gradient(
+    f,
+    grad!,
+    lmo_permutedims,
+    asq_permutedims;
+    verbose,
+    lazy=true,
+    line_search=FrankWolfe.Shortstep(one(T)),
+    max_iteration,
+)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">
+Blended Pairwise Conditional Gradient Algorithm.
+MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: Shortstep EPSILON: 1.0e-7 MAXITERATION: 10000 TYPE: Float64
+GRADIENT_TYPE: Array{Float64, 5} LAZY: true sparsity_control: 2.0
+LMO: FrankWolfe.SubspaceLMO{Main.BellCorrelationsLMO{Float64}, typeof(Main.reynolds_permutedims), FrankWolfe.var&quot;#10#11&quot;}
+
+----------------------------------------------------------------------------------------------------------------
+  Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec     #ActiveSet
+----------------------------------------------------------------------------------------------------------------
+     I             1   4.132813e+01  -4.029553e+01   8.162365e+01   0.000000e+00            Inf              1
+    LD            11   1.153403e+01  -2.927780e+01   4.081183e+01   6.376081e-01   1.725198e+01              9
+    LD            28   4.151210e+00  -1.625470e+01   2.040591e+01   1.252251e+00   2.235974e+01             12
+    LD            46   1.960790e+00  -8.242167e+00   1.020296e+01   1.499094e+00   3.068519e+01             13
+    LD            80   1.088645e+00  -4.012833e+00   5.101478e+00   2.165228e+00   3.694761e+01             19
+    LD           166   2.817507e-01  -2.268988e+00   2.550739e+00   3.249440e+00   5.108572e+01             27
+    LD           253   7.359326e-02  -1.201776e+00   1.275370e+00   3.579463e+00   7.068099e+01             27
+    LD           344   3.430306e-02  -6.033817e-01   6.376848e-01   3.915550e+00   8.785484e+01             28
+    LD           477   1.620235e-02  -3.026400e-01   3.188424e-01   4.001567e+00   1.192033e+02             28
+    LD           612   1.093412e-02  -1.484871e-01   1.594212e-01   4.087267e+00   1.497333e+02             26
+    LD           706   9.881884e-03  -6.982871e-02   7.971060e-02   4.172193e+00   1.692156e+02             26
+    LD           855   9.416722e-03  -3.043858e-02   3.985530e-02   4.257892e+00   2.008036e+02             26
+    LD           991   9.311748e-03  -1.061590e-02   1.992765e-02   4.343166e+00   2.281746e+02             26
+     P          1000   9.308153e-03  -1.061950e-02   1.992765e-02   4.426156e+00   2.259297e+02             26
+    LD          1146   9.284070e-03  -6.797550e-04   9.963825e-03   4.440136e+00   2.581002e+02             26
+    LD          1309   9.277196e-03   4.295284e-03   4.981912e-03   4.526171e+00   2.892069e+02             26
+    LD          1493   9.274958e-03   6.784001e-03   2.490956e-03   4.612080e+00   3.237151e+02             26
+    LD          1691   9.274404e-03   8.028926e-03   1.245478e-03   4.698380e+00   3.599113e+02             26
+    LD          1899   9.274259e-03   8.651520e-03   6.227390e-04   4.784784e+00   3.968831e+02             26
+     P          2000   9.274238e-03   8.651499e-03   6.227390e-04   4.869322e+00   4.107348e+02             26
+    LD          2131   9.274224e-03   8.962855e-03   3.113695e-04   4.872291e+00   4.373713e+02             26
+    LD          2309   9.274217e-03   9.118532e-03   1.556848e-04   4.958084e+00   4.657040e+02             26
+    LD          2502   9.274215e-03   9.196372e-03   7.784238e-05   5.311460e+00   4.710570e+02             26
+    LD          2695   9.274214e-03   9.235293e-03   3.892119e-05   5.387612e+00   5.002217e+02             26
+    LD          2893   9.274214e-03   9.254753e-03   1.946059e-05   5.474254e+00   5.284738e+02             26
+     P          3000   9.274214e-03   9.254753e-03   1.946059e-05   5.558851e+00   5.396798e+02             26
+    LD          3090   9.274214e-03   9.264484e-03   9.730297e-06   5.561046e+00   5.556509e+02             26
+    LD          3295   9.274214e-03   9.269349e-03   4.865149e-06   5.647240e+00   5.834709e+02             26
+    LD          3524   9.274214e-03   9.271781e-03   2.432574e-06   5.734425e+00   6.145341e+02             26
+    LD          3719   9.274214e-03   9.272998e-03   1.216287e-06   5.821145e+00   6.388777e+02             26
+    LD          3890   9.274214e-03   9.273606e-03   6.081436e-07   5.907466e+00   6.584888e+02             26
+     P          4000   9.274214e-03   9.273606e-03   6.081436e-07   5.993477e+00   6.673922e+02             26
+    LD          4087   9.274214e-03   9.273910e-03   3.040718e-07   5.995587e+00   6.816680e+02             26
+    LD          4319   9.274214e-03   9.274062e-03   1.520359e-07   6.084128e+00   7.098799e+02             26
+    LD          4449   9.274214e-03   9.274138e-03   7.601795e-08   6.172200e+00   7.208126e+02             26
+  Last          4449   9.274214e-03   9.274166e-03   4.752002e-08   6.339168e+00   7.018271e+02             26
+----------------------------------------------------------------------------------------------------------------
+    PP          4449   9.274214e-03   9.274166e-03   4.752001e-08   6.422569e+00   6.927135e+02             26
+----------------------------------------------------------------------------------------------------------------
+  6.506607 seconds (36.47 M allocations: 3.450 GiB, 13.05% gc time, 1.64% compilation time)</code></pre><p>Now, convergence is reached within 10000 iterations, and the size of the final active set is considerably smaller than before, thanks to the reduced dimension.</p><h3 id="Uniqueness-pattern"><a class="docs-heading-anchor" href="#Uniqueness-pattern">Uniqueness pattern</a><a id="Uniqueness-pattern-1"></a><a class="docs-heading-anchor-permalink" href="#Uniqueness-pattern" title="Permalink"></a></h3><p>In this specific case, there is a bigger symmetry group that we can exploit. Its action roughly allows us to work in the subspace respecting the structure of the objective point <code>p</code>, that is, to average over tensor entries that have the same value in <code>p</code>. Although quite general, this kind of symmetry is not always applicable, and great care has to be taken when using it, in particular, to ensure that there exists a suitable group action whose Reynolds operator corresponds to this averaging procedure. In our current case, the theoretical study enabling this further symmetrization can be found <a href="https://arxiv.org/abs/2310.20677">here</a>.</p><pre><code class="language-julia hljs">function build_reynolds_unique(p::Array{T,N}) where {T&lt;:Number,N}
+    ptol = round.(p; digits=8)
+    ptol[ptol.==zero(T)] .= zero(T) # transform -0.0 into 0.0 as isequal(0.0, -0.0) is false
+    uniquetol = unique(ptol[:])
+    indices = [ptol .== u for u in uniquetol]
+    return function (A::Array{T,N}, lmo)
+        res = zeros(T, size(A))
+        for ind in indices
+            @view(res[ind]) .= sum(A[ind]) / sum(ind) # average over ind
+        end
+        return res
+    end
+end
+
+lmo_unique = FrankWolfe.SubspaceLMO(lmo_naive, build_reynolds_unique(p))
+FrankWolfe.blended_pairwise_conditional_gradient(
+    f,
+    grad!,
+    lmo_unique,
+    FrankWolfe.ActiveSetQuadraticProductCaching([(one(T), x0)], LinearAlgebra.I, -p);
+    verbose=false,
+    lazy=true,
+    line_search=FrankWolfe.Shortstep(one(T)),
+    max_iteration=10,
+asq_unique = FrankWolfe.ActiveSetQuadraticProductCaching([(one(T), x0)], LinearAlgebra.I, -p)
+@time FrankWolfe.blended_pairwise_conditional_gradient(
+    f,
+    grad!,
+    lmo_unique,
+    asq_unique;
+    verbose,
+    lazy=true,
+    line_search=FrankWolfe.Shortstep(one(T)),
+    max_iteration,
+)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">
+Blended Pairwise Conditional Gradient Algorithm.
+MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: Shortstep EPSILON: 1.0e-7 MAXITERATION: 10000 TYPE: Float64
+GRADIENT_TYPE: Array{Float64, 5} LAZY: true sparsity_control: 2.0
+LMO: FrankWolfe.SubspaceLMO{Main.BellCorrelationsLMO{Float64}, Main.var&quot;#44#46&quot;{5, Float64, Vector{BitArray{5}}}, FrankWolfe.var&quot;#10#11&quot;}
+
+----------------------------------------------------------------------------------------------------------------
+  Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec     #ActiveSet
+----------------------------------------------------------------------------------------------------------------
+     I             1   4.132813e+01  -4.029553e+01   8.162365e+01   0.000000e+00            Inf              1
+    LD             4   2.991558e+00  -3.782027e+01   4.081183e+01   1.335628e-01   2.994846e+01              3
+    LD             7   4.010409e-01  -2.000487e+01   2.040591e+01   2.490147e-01   2.811079e+01              3
+    LD             8   4.010409e-01  -9.801915e+00   1.020296e+01   3.298443e-01   2.425387e+01              3
+    LD             9   4.010409e-01  -4.700437e+00   5.101478e+00   4.107038e-01   2.191360e+01              3
+    LD            15   2.239889e-01  -2.326750e+00   2.550739e+00   6.525074e-01   2.298825e+01              4
+    LD            18   1.802237e-01  -1.095146e+00   1.275370e+00   8.149943e-01   2.208604e+01              5
+    LD            20   1.790624e-01  -4.586223e-01   6.376848e-01   9.807406e-01   2.039275e+01              6
+    LD            34   2.002946e-02  -2.988129e-01   3.188424e-01   1.144515e+00   2.970692e+01              5
+    LD            40   1.909145e-02  -1.403297e-01   1.594212e-01   1.225805e+00   3.263163e+01              4
+    LD            80   1.333373e-02  -6.637686e-02   7.971060e-02   1.307398e+00   6.119026e+01              3
+    LD           115   9.756619e-03  -3.009868e-02   3.985530e-02   1.469504e+00   7.825771e+01              4
+    LD           120   9.431770e-03  -1.049588e-02   1.992765e-02   1.550419e+00   7.739841e+01              4
+    LD           127   9.308054e-03  -6.557705e-04   9.963825e-03   1.631460e+00   7.784437e+01              4
+    LD           148   9.282651e-03   4.300739e-03   4.981912e-03   1.712881e+00   8.640411e+01              4
+    LD           173   9.276172e-03   6.785216e-03   2.490956e-03   1.794680e+00   9.639601e+01              4
+    LD           196   9.274885e-03   8.029407e-03   1.245478e-03   1.876292e+00   1.044613e+02              4
+    LD           228   9.274379e-03   8.651640e-03   6.227390e-04   2.261960e+00   1.007975e+02              4
+    LD           253   9.274252e-03   8.962883e-03   3.113695e-04   2.324153e+00   1.088568e+02              4
+    LD           272   9.274224e-03   9.118539e-03   1.556848e-04   2.400049e+00   1.133310e+02              4
+    LD           295   9.274216e-03   9.196374e-03   7.784238e-05   2.481437e+00   1.188827e+02              4
+    LD           318   9.274215e-03   9.235293e-03   3.892119e-05   2.563394e+00   1.240543e+02              4
+    LD           343   9.274214e-03   9.254754e-03   1.946059e-05   2.644927e+00   1.296822e+02              4
+    LD           364   9.274214e-03   9.264484e-03   9.730297e-06   2.726237e+00   1.335174e+02              4
+    LD           386   9.274214e-03   9.269349e-03   4.865149e-06   2.808343e+00   1.374476e+02              4
+    LD           409   9.274214e-03   9.271781e-03   2.432574e-06   2.890385e+00   1.415036e+02              4
+    LD           426   9.274214e-03   9.272998e-03   1.216287e-06   2.971941e+00   1.433407e+02              4
+    LD           449   9.274214e-03   9.273606e-03   6.081436e-07   3.054033e+00   1.470187e+02              4
+    LD           474   9.274214e-03   9.273910e-03   3.040718e-07   3.138771e+00   1.510145e+02              4
+    LD           497   9.274214e-03   9.274062e-03   1.520359e-07   3.228003e+00   1.539651e+02              4
+    LD           509   9.274214e-03   9.274138e-03   7.601795e-08   3.310866e+00   1.537362e+02              4
+  Last           509   9.274214e-03   9.274179e-03   3.464769e-08   3.474587e+00   1.464922e+02              4
+----------------------------------------------------------------------------------------------------------------
+    PP           509   9.274214e-03   9.274179e-03   3.464769e-08   3.556076e+00   1.431353e+02              4
+----------------------------------------------------------------------------------------------------------------
+  3.898816 seconds (21.75 M allocations: 1.950 GiB, 14.87% gc time, 2.50% compilation time)</code></pre><h3 id="Reduction-of-the-memory-footprint-of-the-iterate"><a class="docs-heading-anchor" href="#Reduction-of-the-memory-footprint-of-the-iterate">Reduction of the memory footprint of the iterate</a><a id="Reduction-of-the-memory-footprint-of-the-iterate-1"></a><a class="docs-heading-anchor-permalink" href="#Reduction-of-the-memory-footprint-of-the-iterate" title="Permalink"></a></h3><p>In the previous run, the dimension reduction is mathematically exploited to accelerate the algorithm, but it is not used to effectively work in a subspace of reduced dimension. Indeed, the iterate, although symmetric, was still a full tensor. As a last example of the speedup obtainable through symmetry reduction, we show how to map the computations into a space whose physical dimension is also reduced during the algorithm. This makes all in-place operations marginally faster, which can lead, in bigger instances, to significant accelerations, especially for active set based algorithms in the regime where many lazy iterations are performed. We refer to the example <code>symmetric.jl</code> for a small benchmark with symmetric matrices.</p><pre><code class="language-julia hljs">function build_deflate_inflate(p::Array{T,N}) where {T&lt;:Number,N}
+    ptol = round.(p; digits=8)
+    ptol[ptol.==zero(T)] .= zero(T) # transform -0.0 into 0.0 as isequal(0.0, -0.0) is false
+    uniquetol = unique(ptol[:])
+    dim = length(uniquetol) # reduced dimension
+    indices = [ptol .== u for u in uniquetol]
+    mul = [sum(ind) for ind in indices] # multiplicities, used to have matching scalar products
+    sqmul = sqrt.(mul) # precomputed for speed
+    return function (A::Array{T,N}, lmo)
+        vec = zeros(T, dim)
+        for (i, ind) in enumerate(indices)
+            vec[i] = sum(A[ind]) / sqmul[i]
+        end
+        return FrankWolfe.SubspaceVector(A, vec)
+    end,
+    function (x::FrankWolfe.SubspaceVector, lmo)
+        for (i, ind) in enumerate(indices)
+            @view(x.data[ind]) .= x.vec[i] / sqmul[i]
+        end
+        return x.data
+    end
+end
+
+deflate, inflate = build_deflate_inflate(p)
+p_deflate = deflate(p, nothing)
+x0_deflate = deflate(x0, nothing)
+f_deflate = let p_deflate = p_deflate, normp2 = normp2
+    x -&gt; LinearAlgebra.dot(x, x) / 2 - LinearAlgebra.dot(p_deflate, x) + normp2
+end
+grad_deflate! = let p_deflate = p_deflate
+    (storage, x) -&gt; begin
+        @inbounds for i in eachindex(x)
+            storage[i] = x[i] - p_deflate[i]
+        end
+    end
+end</code></pre><p>Note that the objective function and its gradient have to be explicitly rewritten. In this simple example, their shape remains unchanged, but in general this may need some reformulation, which falls to the user.</p><pre><code class="language-julia hljs">lmo_deflate = FrankWolfe.SubspaceLMO(lmo_naive, deflate, inflate)
+FrankWolfe.blended_pairwise_conditional_gradient(
+    f_deflate,
+    grad_deflate!,
+    lmo_deflate,
+    FrankWolfe.ActiveSetQuadraticProductCaching(
+        [(one(T), x0_deflate)],
+        LinearAlgebra.I,
+        -p_deflate,
+    );
+    verbose=false,
+    lazy=true,
+    line_search=FrankWolfe.Shortstep(one(T)),
+    max_iteration=10,
+asq_deflate =
+    FrankWolfe.ActiveSetQuadraticProductCaching([(one(T), x0_deflate)], LinearAlgebra.I, -p_deflate)
+@time FrankWolfe.blended_pairwise_conditional_gradient(
+    f_deflate,
+    grad_deflate!,
+    lmo_deflate,
+    asq_deflate;
+    verbose,
+    lazy=true,
+    line_search=FrankWolfe.Shortstep(one(T)),
+    max_iteration,
+)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">
+Blended Pairwise Conditional Gradient Algorithm.
+MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: Shortstep EPSILON: 1.0e-7 MAXITERATION: 10000 TYPE: Float64
+GRADIENT_TYPE: FrankWolfe.SubspaceVector{false, Float64, Array{Float64, 5}, Vector{Float64}} LAZY: true sparsity_control: 2.0
+LMO: FrankWolfe.SubspaceLMO{Main.BellCorrelationsLMO{Float64}, Main.var&quot;#49#53&quot;{5, Float64, Vector{Float64}, Vector{BitArray{5}}, Int64}, Main.var&quot;#50#54&quot;{Vector{Float64}, Vector{BitArray{5}}}}
+
+----------------------------------------------------------------------------------------------------------------
+  Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec     #ActiveSet
+----------------------------------------------------------------------------------------------------------------
+     I             1   4.132813e+01  -4.029553e+01   8.162365e+01   0.000000e+00            Inf              1
+    LD             4   2.991558e+00  -3.782027e+01   4.081183e+01   1.511578e-01   2.646241e+01              3
+    LD             9   3.974035e-01  -2.000851e+01   2.040591e+01   2.674464e-01   3.365161e+01              3
+    LD            10   3.974035e-01  -9.805553e+00   1.020296e+01   3.476067e-01   2.876814e+01              3
+    LD            11   3.974035e-01  -4.704075e+00   5.101478e+00   4.277999e-01   2.571295e+01              3
+    LD            17   2.239631e-01  -2.326776e+00   2.550739e+00   6.682212e-01   2.544068e+01              4
+    LD            20   1.802084e-01  -1.095161e+00   1.275370e+00   8.323802e-01   2.402748e+01              5
+    LD            21   1.802084e-01  -4.574764e-01   6.376848e-01   9.151766e-01   2.294639e+01              5
+    LD            41   1.701016e-02  -3.018322e-01   3.188424e-01   1.159573e+00   3.535786e+01              5
+    LD            43   1.700526e-02  -1.424159e-01   1.594212e-01   1.240833e+00   3.465415e+01              4
+    LD            71   1.326512e-02  -6.644548e-02   7.971060e-02   1.321589e+00   5.372319e+01              3
+    LD           115   9.727749e-03  -3.012755e-02   3.985530e-02   1.483402e+00   7.752452e+01              4
+    LD           122   9.417101e-03  -1.051055e-02   1.992765e-02   1.564135e+00   7.799838e+01              4
+    LD           134   9.302529e-03  -6.612957e-04   9.963825e-03   1.644708e+00   8.147345e+01              4
+    LD           154   9.284321e-03   4.302409e-03   4.981912e-03   1.725949e+00   8.922628e+01              4
+    LD           173   9.276505e-03   6.785549e-03   2.490956e-03   1.811324e+00   9.551023e+01              4
+    LD           192   9.274740e-03   8.029261e-03   1.245478e-03   2.182870e+00   8.795761e+01              4
+    LD           213   9.274327e-03   8.651588e-03   6.227390e-04   2.250146e+00   9.466051e+01              4
+    LD           232   9.274253e-03   8.962883e-03   3.113695e-04   2.330763e+00   9.953823e+01              4
+    LD           251   9.274223e-03   9.118538e-03   1.556848e-04   2.411964e+00   1.040646e+02              4
+    LD           272   9.274216e-03   9.196374e-03   7.784238e-05   2.494032e+00   1.090603e+02              4
+    LD           293   9.274215e-03   9.235293e-03   3.892119e-05   2.574564e+00   1.138057e+02              4
+    LD           312   9.274214e-03   9.254754e-03   1.946059e-05   2.655019e+00   1.175133e+02              4
+    LD           331   9.274214e-03   9.264484e-03   9.730297e-06   2.735713e+00   1.209922e+02              4
+    LD           352   9.274214e-03   9.269349e-03   4.865149e-06   2.816601e+00   1.249733e+02              4
+    LD           372   9.274214e-03   9.271781e-03   2.432574e-06   2.914613e+00   1.276327e+02              4
+    LD           393   9.274214e-03   9.272998e-03   1.216287e-06   2.996671e+00   1.311455e+02              4
+    LD           412   9.274214e-03   9.273606e-03   6.081436e-07   3.079887e+00   1.337712e+02              4
+    LD           437   9.274214e-03   9.273910e-03   3.040718e-07   3.163000e+00   1.381600e+02              4
+    LD           454   9.274214e-03   9.274062e-03   1.520359e-07   3.245079e+00   1.399041e+02              4
+    LD           467   9.274214e-03   9.274138e-03   7.601795e-08   3.327056e+00   1.403643e+02              4
+  Last           467   9.274214e-03   9.274182e-03   3.213534e-08   3.489604e+00   1.338261e+02              4
+----------------------------------------------------------------------------------------------------------------
+    PP           467   9.274214e-03   9.274182e-03   3.213534e-08   3.570508e+00   1.307937e+02              4
+----------------------------------------------------------------------------------------------------------------
+  3.659146 seconds (21.75 M allocations: 1.949 GiB, 8.34% gc time, 3.01% compilation time)</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../docs_11_block_coordinate_fw/">« Block-Coordinate Frank-Wolfe and Block-Vectors</a><a class="docs-footer-nextpage" href="../docs_13_dca_fw/">Difference-of-Convex Algorithm with Frank-Wolfe »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Tuesday 21 July 2026 03:30">Tuesday 21 July 2026</span>. Using Julia version 1.10.11.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

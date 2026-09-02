@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Difference-of-Convex Algorithm with Frank-Wolfe · FrankWolfe.jl</title><meta name="title" content="Difference-of-Convex Algorithm with Frank-Wolfe · FrankWolfe.jl"/><meta property="og:title" content="Difference-of-Convex Algorithm with Frank-Wolfe · FrankWolfe.jl"/><meta property="twitter:title" content="Difference-of-Convex Algorithm with Frank-Wolfe · FrankWolfe.jl"/><meta name="description" content="Documentation for FrankWolfe.jl."/><meta property="og:description" content="Documentation for FrankWolfe.jl."/><meta property="twitter:description" content="Documentation for FrankWolfe.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">FrankWolfe.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../basics/">How does it work?</a></li><li><a class="tocitem" href="../../advanced/">Advanced features</a></li><li><input class="collapse-toggle" id="menuitem-4" type="checkbox" checked/><label class="tocitem" for="menuitem-4"><span class="docs-label">Examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../docs_00_fw_visualized/">Visualization of Frank-Wolfe running on a 2-dimensional polytope</a></li><li><a class="tocitem" href="../docs_01_mathopt_lmo/">Comparison with MathOptInterface on a Probability Simplex</a></li><li><a class="tocitem" href="../docs_02_polynomial_regression/">Polynomial Regression</a></li><li><a class="tocitem" href="../docs_03_matrix_completion/">Matrix Completion</a></li><li><a class="tocitem" href="../docs_04_rational_opt/">Exact Optimization with Rational Arithmetic</a></li><li><a class="tocitem" href="../docs_05_blended_cg/">Blended Conditional Gradients</a></li><li><a class="tocitem" href="../docs_06_spectrahedron/">Spectrahedron</a></li><li><a class="tocitem" href="../docs_07_shifted_norm_polytopes/">FrankWolfe for scaled, shifted <span>$\ell^1$</span> and <span>$\ell^{\infty}$</span> norm balls</a></li><li><a class="tocitem" href="../docs_08_callback_and_tracking/">Tracking, counters and custom callbacks for Frank Wolfe</a></li><li><a class="tocitem" href="../docs_09_extra_vertex_storage/">Extra-lazification</a></li><li><a class="tocitem" href="../docs_10_alternating_methods/">Alternating methods</a></li><li><a class="tocitem" href="../docs_11_block_coordinate_fw/">Block-Coordinate Frank-Wolfe and Block-Vectors</a></li><li><a class="tocitem" href="../docs_12_quadratic_symmetric/">Accelerations for quadratic functions and symmetric problems</a></li><li class="is-active"><a class="tocitem" href>Difference-of-Convex Algorithm with Frank-Wolfe</a><ul class="internal"><li><a class="tocitem" href="#Setting-up-the-problem-functions-and-data"><span>Setting up the problem functions and data</span></a></li><li><a class="tocitem" href="#Plotting-the-resulting-trajectory"><span>Plotting the resulting trajectory</span></a></li></ul></li></ul></li><li><input class="collapse-toggle" id="menuitem-5" type="checkbox"/><label class="tocitem" for="menuitem-5"><span class="docs-label">API reference</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../reference/0_reference/">API Reference</a></li><li><a class="tocitem" href="../../reference/1_algorithms/">Algorithms</a></li><li><a class="tocitem" href="../../reference/2_lmo/">Linear Minimization Oracles</a></li><li><a class="tocitem" href="../../reference/3_backend/">Utilities and data structures</a></li><li><a class="tocitem" href="../../reference/4_linesearch/">Line search and step size settings</a></li><li><a class="tocitem" href="../../reference/5_gradient_descent/">Adaptive Proximal Gradient Descent Methods</a></li></ul></li><li><a class="tocitem" href="../../contributing/">Contributing</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Difference-of-Convex Algorithm with Frank-Wolfe</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Difference-of-Convex Algorithm with Frank-Wolfe</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/ZIB-IOL/FrankWolfe.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/ZIB-IOL/FrankWolfe.jl/blob/master/examples/docs_13_dca_fw.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><pre class="documenter-example-output"><code class="nohighlight hljs ansi">plot_sparsity (generic function with 1 method)</code></pre><h1 id="Difference-of-Convex-Algorithm-with-Frank-Wolfe"><a class="docs-heading-anchor" href="#Difference-of-Convex-Algorithm-with-Frank-Wolfe">Difference-of-Convex Algorithm with Frank-Wolfe</a><a id="Difference-of-Convex-Algorithm-with-Frank-Wolfe-1"></a><a class="docs-heading-anchor-permalink" href="#Difference-of-Convex-Algorithm-with-Frank-Wolfe" title="Permalink"></a></h1><p>This example shows the optimization of a difference-of-convex problem of the form:</p><p class="math-container">\[min\limits_{x \in \mathcal{X}} \phi(x) = f(x) - g(x)\]</p><p>with <span>$f$</span>, <span>$g$</span> convex functions with access to subgradients and <span>$f$</span> smooth.</p><p>The DCA-FW algorithm constructs local convex models of <span>$\phi$</span> by linearizing <span>$g$</span> and approximately optimizes them with FW. It is a local method that converges to a stationary point</p><pre><code class="language-julia hljs">using FrankWolfe
+using LinearAlgebra
+using Random
+using SparseArrays
+using StableRNGs
+using Random</code></pre><p>The convex functions <span>$f$</span>, <span>$g$</span> will be generated as random convex quadratics:</p><p class="math-container">\[\begin{align}
+f(x) &amp; = \frac12  x^\top A x + a^\top x + c \\
+g(x) &amp; = \frac12  x^\top B x + b^\top x + d
+\end{align}\]</p><h2 id="Setting-up-the-problem-functions-and-data"><a class="docs-heading-anchor" href="#Setting-up-the-problem-functions-and-data">Setting up the problem functions and data</a><a id="Setting-up-the-problem-functions-and-data-1"></a><a class="docs-heading-anchor-permalink" href="#Setting-up-the-problem-functions-and-data" title="Permalink"></a></h2><pre><code class="language-julia hljs">const n = 500  # Reduced dimension
+
+# Generate random positive definite matrices to ensure convexity
+function generate_problem_data(rng)
+    A_raw = randn(rng, n, n)
+    A_raw ./= opnorm(A_raw)
+    A = A_raw&#39; * A_raw + 0.1 * I
+
+    B_raw = randn(rng, n, n)
+    B_raw ./= opnorm(B_raw)
+    B = B_raw&#39; * B_raw + 0.1 * I
+
+    a = randn(rng, n)
+    b = randn(rng, n)
+
+    c = randn(rng)
+    d = -359434.0
+
+    return A, B, a, b, c, d
+end
+
+const rng = StableRNGs.StableRNG(1)
+const A, B, a, b, c, d = generate_problem_data(rng)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">([0.36647164615458394 0.007434201971305419 … 0.004451785375884825 0.015514411527022771; 0.007434201971305419 0.3482281394741432 … 0.013654308840956 -0.025910486878046358; … ; 0.004451785375884825 0.013654308840956 … 0.3806261404722966 0.011896910948147398; 0.015514411527022771 -0.025910486878046358 … 0.011896910948147398 0.34299337924542406], [0.36858235928505045 0.003647736865763906 … -0.01474711849204959 -0.00939075884232428; 0.003647736865763906 0.3683227732422839 … -0.00470842392230873 0.01931972691415089; … ; -0.01474711849204959 -0.00470842392230873 … 0.37182444470673925 -0.007058980450873037; -0.00939075884232428 0.01931972691415089 … -0.007058980450873037 0.36976970853592184], [-0.5056985849854947, 1.8254695540945816, 1.1686948924955953, 0.025865043318803068, 0.7618207158940428, -1.9599078996573032, -0.28701522778989075, -1.210555966368952, -0.3476555815275666, 0.36622748810084865  …  -1.2418975260665193, -2.042717239142079, -0.977247840514734, -0.9480533072182336, 0.2354971732415276, 1.1489207372892907, 0.26713737924876685, -0.11111819389928967, 1.2106291210589706, -0.36135542009200855], [-1.7352231531269595, -1.0889348569606767, -1.9696069675033783, -0.6944538146281424, 0.12594479576421444, 2.43890963984164, -0.3332102207771672, -1.598587279152474, 0.8970898814075347, 0.7441204116527911  …  -0.07885951683533911, 0.921491279700674, 0.8755353895807455, 0.4142785039140312, 1.0607172005644177, -0.9845905380360871, 0.7603797972500105, 1.0314248598279463, -1.0727076372535254, -0.1591576537893938], -0.6622940864130684, -359434.0)</code></pre><p>We can now define the two functions</p><pre><code class="language-julia hljs">function f(x)
+    return 0.5 * FrankWolfe.fast_dot(x, A, x) + dot(a, x) + c
+end
+
+function grad_f!(storage, x)
+    mul!(storage, A, x)
+    storage .+= a
+    return nothing
+end
+
+function g(x)
+    return 0.5 * FrankWolfe.fast_dot(x, B, x) + dot(b, x) + d
+end
+
+function grad_g!(storage, x)
+    mul!(storage, B, x)
+    storage .+= b
+    return nothing
+end
+
+# True objective function for verification
+# It is not needed by the solver
+function phi(x)
+    return f(x) - g(x)
+end
+
+lmo = FrankWolfe.KSparseLMO(5, 1000.0)
+
+x0 = FrankWolfe.compute_extreme_point(lmo, randn(n))
+
+
+x_final, primal_final, dca_gap_final, iterations, status, traj_data = FrankWolfe.dca_fw(
+    f,
+    grad_f!,
+    g,
+    grad_g!,
+    lmo,
+    copy(x0),
+    max_iteration=200, # Outer iterations
+    max_inner_iteration=10000, # Inner iterations
+    epsilon=1e-5, # Tolerance for DCA gap
+    line_search=FrankWolfe.Secant(),
+    verbose=true,
+    trajectory=true,
+    verbose_inner=false,
+    print_iter=10,
+    use_corrective_fw=true,
+    use_dca_early_stopping=true,
+    grad_f_workspace=collect(x0),
+    grad_g_workspace=collect(x0),
+)
+
+
+_, _, _, _, _, traj_data_boosted = FrankWolfe.dca_fw(
+    f,
+    grad_f!,
+    g,
+    grad_g!,
+    lmo,
+    copy(x0),
+    boosted=true,
+    max_iteration=200, # Outer iterations
+    max_inner_iteration=10000, # Inner iterations
+    epsilon=1e-5, # Tolerance for DCA gap
+    line_search=FrankWolfe.Secant(),
+    verbose=true,
+    trajectory=true,
+    verbose_inner=false,
+    print_iter=10,
+    use_corrective_fw=true,
+    use_dca_early_stopping=true,
+    grad_f_workspace=collect(x0),
+    grad_g_workspace=collect(x0),
+)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(x =   [87 ]  =  1000.0
+  [153]  =  1000.0
+  [193]  =  1000.0
+  [244]  =  1000.0
+  [294]  =  -1000.0, primal = 63251.552139938576, dca_gap = 0.0, iterations = 65, status = FrankWolfe.STATUS_OPTIMAL, traj_data = Any[(1, 319610.02056188043, 215841.7192705979, 103768.3012912825, 0.000174906), (2, 269535.6492878398, 216942.82630100782, 52592.82298683202, 0.001168246), (3, 236708.72848857503, 204668.25849849803, 32040.469990076985, 0.001913404), (4, 205518.32359062822, 175751.28698315448, 29767.036607473743, 0.002719135), (5, 174795.9255569452, 140826.90930109203, 33969.01625585318, 0.003719989), (6, 154132.1700719355, 130892.63232595142, 23239.53774598409, 0.004648829), (7, 142381.72833484685, 129943.7586762733, 12437.96965857355, 0.0055835), (8, 132981.4708785941, 124381.83964747647, 8599.631231117612, 0.006479288), (9, 125189.24942312867, 115923.75883177899, 9265.490591349677, 0.007324643), (10, 118123.60689529625, 112351.47390464309, 5772.132990653168, 0.008035647)  …  (57, 63541.93046006083, 62385.418375709196, 1156.5120843516343, 0.024610119), (58, 63481.644941475126, 62821.15265372065, 660.4922877544741, 0.024869032), (59, 63434.923505298095, 63411.123558280335, 23.799947017758313, 0.025079664), (60, 63391.58740153781, 63369.51194628962, 22.07545524818852, 0.025295676), (61, 63351.39133646025, 63330.91542010469, 20.475916355557274, 0.025652381), (62, 63314.10778977431, 63295.115513244404, 18.992276529902938, 0.025941349), (63, 63279.52572680742, 63261.909588826114, 17.616137981304178, 0.026147433), (64, 63251.552139938576, 63235.48870729224, 16.06343264633324, 0.02633893), (65, 63251.552139938576, 63251.552139938576, 0.0, 0.026582624), (65, 63251.552139938576, 63251.552139938576, 0.0, 0.026775863)])</code></pre><h2 id="Plotting-the-resulting-trajectory"><a class="docs-heading-anchor" href="#Plotting-the-resulting-trajectory">Plotting the resulting trajectory</a><a id="Plotting-the-resulting-trajectory-1"></a><a class="docs-heading-anchor-permalink" href="#Plotting-the-resulting-trajectory" title="Permalink"></a></h2><p>We modify the y axis to highlight that we are plotting the DCA gap, not the FW gap</p><pre><code class="language-julia hljs">data = [traj_data, traj_data_boosted]
+label = [&quot;DCA-FW&quot;, &quot;DCA-FW-B&quot;]
+p_res = plot_trajectories(data, label, marker_shapes=[:o, :x])
+ylabel!(p_res.subplots[3], &quot;DCA gap&quot;)</code></pre><img src="f2dd5b14.svg" alt="Example block output"/><pre><code class="language-julia hljs">display(p_res)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌ Warning: No strict ticks found
+└ @ PlotUtils ~/.julia/packages/PlotUtils/dVEMd/src/ticks.jl:194
+┌ Warning: No strict ticks found
+└ @ PlotUtils ~/.julia/packages/PlotUtils/dVEMd/src/ticks.jl:194
+┌ Warning: No strict ticks found
+└ @ PlotUtils ~/.julia/packages/PlotUtils/dVEMd/src/ticks.jl:194
+┌ Warning: Invalid negative or zero value 0.0 found at series index 10 for log10 based yscale
+└ @ Plots ~/.julia/packages/Plots/xKhUG/src/utils.jl:106
+┌ Warning: Invalid negative or zero value 0.0 found at series index 64 for log10 based yscale
+└ @ Plots ~/.julia/packages/Plots/xKhUG/src/utils.jl:106
+┌ Warning: No strict ticks found
+└ @ PlotUtils ~/.julia/packages/PlotUtils/dVEMd/src/ticks.jl:194
+┌ Warning: Invalid negative or zero value 0.0 found at series index 10 for log10 based yscale
+└ @ Plots ~/.julia/packages/Plots/xKhUG/src/utils.jl:106
+┌ Warning: Invalid negative or zero value 0.0 found at series index 64 for log10 based yscale
+└ @ Plots ~/.julia/packages/Plots/xKhUG/src/utils.jl:106</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../docs_12_quadratic_symmetric/">« Accelerations for quadratic functions and symmetric problems</a><a class="docs-footer-nextpage" href="../../reference/0_reference/">API Reference »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.14.1 on <span class="colophon-date" title="Wednesday 20 August 2025 15:47">Wednesday 20 August 2025</span>. Using Julia version 1.6.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
