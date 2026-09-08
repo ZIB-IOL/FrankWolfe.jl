@@ -19,10 +19,10 @@ include(joinpath(@__DIR__, "plot_utils.jl"))
 
 # Problem size
 n_features = 500
-n_samples = 5000
-K = 50
+n_samples = 10000
+K = 5
 τ = 1.0  # right-hand side for K-sparse polytope
-max_iter = 10000
+max_iter = 3000
 target_tolerance = 1e-6
 
 Random.seed!(42)
@@ -58,7 +58,31 @@ result_bpcg = FrankWolfe.blended_pairwise_conditional_gradient(
 )
 traj_bpcg = result_bpcg.traj_data
 
-scheduler = FrankWolfe.make_default_scheduler(2, 2.0, 1000)
+function make_custom_scheduler(start_size::Int, scaling_factor::Float64, max_interval::Int)
+    as_counter = Ref(0)
+    last_solve_counter = Ref(0)
+    current_interval = Ref(start_size)
+    counter = Ref(0)
+    function scheduler(t, active_set)
+        # Update the active set counter if the size of the active set has changed and increment the counter
+        if length(active_set) > as_counter[]
+            as_counter[] = length(active_set)
+            counter[] += 1
+        end
+
+        # Check if the counter has reached the current interval
+        if counter[] - last_solve_counter[] >= current_interval[]
+            last_solve_counter[] = counter[]
+            current_interval[] = min(round(Int, scaling_factor * current_interval[]), max_interval)
+            return true
+        end
+        return false
+    end
+    return scheduler
+end
+
+
+scheduler = make_custom_scheduler(10, 1.0, 1000)
 
 # QC-LS
 as_ls_no_mnp = FrankWolfe.ActiveSetQuadraticProductCaching([(1.0, copy(x0))], hessian, linear_term)

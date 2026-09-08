@@ -1,3 +1,17 @@
+
+"""
+    ScheduledStep{S,T}
+
+Corrective-step wrapper that runs `base_step` by default and periodically runs
+`special_step` according to `scheduler`.
+
+The default constructor uses an exponentially increasing schedule created by
+`make_default_scheduler(2, 2.0, 1000)`, and enables lazy triggering based on
+the local gap (`lazy = true`, `lazy_tolerance = 2.0`).
+
+The `scheduler` argument must be a callable `(t, active_set) -> Bool` that
+returns `true` when `special_step` should be applied.
+"""
 struct ScheduledStep{S<:FrankWolfe.CorrectiveStep, T<:FrankWolfe.CorrectiveStep} <: FrankWolfe.CorrectiveStep
     base_step::S
     special_step::T
@@ -101,14 +115,12 @@ function FrankWolfe.run_corrective_step(
                        length(active_set.weights) == length(old_weights) &&
                        !all(active_set.weights .== old_weights))
 
-            if success
-                # Spezialschritt hat das Active Set verändert – wir betrachten ihn als erfolgreich
-                # und erzwingen anschließend keinen FW-Step.
+            if success # Special step was successful, return
                 return x_s, v_s, phi_s, gap_s, false, should_continue
             end
         end
 
-        # kein Erfolg des Spezialschritts oder nicht im Schedule: Fallback-Step
+        # Sepcial step was unsuccessful, perform fallback step
         return FrankWolfe.run_corrective_step(
             step.base_step,
             f,
@@ -368,9 +380,6 @@ function QuadraticLPCorrection(
     return QuadraticLPCorrection(A, b, optimizer, mnp)
 end
 
-# Note: The 4-argument constructor is automatically provided by the struct definition
-# No need to explicitly define it here to avoid method overwriting during precompilation
-
 function prepare_corrective_step(
     corrective_step::QuadraticLPCorrection{H, LT, OT},
     f,
@@ -469,7 +478,7 @@ function run_corrective_step(
             for j in 1:nv
                 push!(
                     lhs.terms,
-                    _compute_quadratic_constraint_term(
+                    _compute_quadratic_constraint(
                         active_set.atoms[i],
                         active_set.atoms[1],
                         step.A,
@@ -511,21 +520,19 @@ function run_corrective_step(
     return x, v, phi_value, dual_gap, true, true
 end
 
-#### Helper function that are already contained in the active set module
+function _compute_quadratic_constraint(atom1, atom0, A::AbstractMatrix, atom2, λ)
+    return MOI.ScalarAffineTerm(fast_dot(atom1, A, atom2) - fast_dot(atom0, A, atom2), λ)
+end
 
-# function _compute_quadratic_constraint_term(atom1, atom0, A::AbstractMatrix, atom2, λ)
-#     return MOI.ScalarAffineTerm(fast_dot(atom1, A, atom2) - fast_dot(atom0, A, atom2), λ)
-# end
-
-# function _compute_quadratic_constraint_term(
-#     atom1,
-#     atom0,
-#     A::Union{Identity,LinearAlgebra.UniformScaling},
-#     atom2,
-#     λ,
-# )
-#     return MOI.ScalarAffineTerm(A.λ * (dot(atom1, atom2) - dot(atom0, atom2)), λ)
-# end
+function _compute_quadratic_constraint(
+    atom1,
+    atom0,
+    A::Union{Identity,LinearAlgebra.UniformScaling},
+    atom2,
+    λ,
+)
+    return MOI.ScalarAffineTerm(A.λ * (dot(atom1, atom2) - dot(atom0, atom2)), λ)
+end
 
 
 function _purge_weights(weights::AbstractArray{R}) where {R}
