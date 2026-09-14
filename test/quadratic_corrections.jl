@@ -42,14 +42,7 @@ common_kw = (;
     max_iteration=max_iter,
     epsilon=target_tolerance,
     verbose=false,
-    trajectory=true,
 )
-
-function build_callback(trajectory_arr)
-    return function callback(state, active_set, args...)
-        return push!(trajectory_arr, (FrankWolfe.callback_state(state)..., length(active_set)))
-    end
-end
 
 @testset "Quadratic Corrections - Linear Regression" begin
     @testset "QC-LS without MNP" begin
@@ -62,7 +55,6 @@ end
             FrankWolfe.BlendedPairwiseStep(true),
             FrankWolfe.QuadraticLSCorrection(hessian, linear_term, false),
         )
-        trajectory_qc_ls_no_mnp = []
         result_qc_ls_no_mnp = FrankWolfe.corrective_frank_wolfe(
             f,
             grad!,
@@ -70,10 +62,8 @@ end
             step_ls_no_mnp,
             as_ls_no_mnp;
             common_kw...,
-            callback=build_callback(trajectory_qc_ls_no_mnp),
         )
 
-        # Test that dual gap is sufficiently small
         @test result_qc_ls_no_mnp.dual_gap < target_tolerance
     end
 
@@ -87,7 +77,6 @@ end
             FrankWolfe.BlendedPairwiseStep(true),
             FrankWolfe.QuadraticLSCorrection(hessian, linear_term, true),
         )
-        trajectory_qc_ls_mnp = []
         result_qc_ls_mnp = FrankWolfe.corrective_frank_wolfe(
             f,
             grad!,
@@ -95,10 +84,8 @@ end
             step_ls_mnp,
             as_ls_mnp;
             common_kw...,
-            callback=build_callback(trajectory_qc_ls_mnp),
         )
 
-        # Test that dual gap is sufficiently small
         @test result_qc_ls_mnp.dual_gap < target_tolerance
     end
 
@@ -119,7 +106,6 @@ end
                 false,
             ),
         )
-        trajectory_qc_lp_no_mnp = []
         result_qc_lp_no_mnp = FrankWolfe.corrective_frank_wolfe(
             f,
             grad!,
@@ -127,10 +113,8 @@ end
             step_lp_no_mnp,
             as_lp_no_mnp;
             common_kw...,
-            callback=build_callback(trajectory_qc_lp_no_mnp),
         )
 
-        # Test that dual gap is sufficiently small
         @test result_qc_lp_no_mnp.dual_gap < target_tolerance
     end
 
@@ -151,7 +135,6 @@ end
                 true,
             ),
         )
-        trajectory_qc_lp_mnp = []
         result_qc_lp_mnp = FrankWolfe.corrective_frank_wolfe(
             f,
             grad!,
@@ -159,10 +142,8 @@ end
             step_lp_mnp,
             as_lp_mnp;
             common_kw...,
-            callback=build_callback(trajectory_qc_lp_mnp),
         )
 
-        # Test that dual gap is sufficiently small
         @test result_qc_lp_mnp.dual_gap < target_tolerance
     end
 end

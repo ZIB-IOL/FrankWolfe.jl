@@ -1,43 +1,80 @@
 
 """
-    ScheduledStep{S,T}
+    ScheduledStep(base_step, special_step, scheduler=LogScheduler(start_time=2, scaling_factor=2.0, max_interval=1000); lazy=true, lazy_tolerance=2.0)
 
-Corrective-step wrapper that runs `base_step` by default and periodically runs
-`special_step` according to `scheduler`.
+Hybrid corrective step used by [`corrective_frank_wolfe`](@ref): run `base_step`
+by default and replace it by `special_step` according to `scheduler`.
 
-The default constructor uses an exponentially increasing schedule created by
-`make_default_scheduler(2, 2.0, 1000)`, and enables lazy triggering based on
-the local gap (`lazy = true`, `lazy_tolerance = 2.0`).
+The schedule counts **new atoms** via the increase in active-set size since the
+previous iteration. The counter is updated every iteration, including Frank-Wolfe
+steps, but the scheduler is queried only when a corrective step is due.
 
-The `scheduler` argument must be a callable `(t, active_set) -> Bool` that
-returns `true` when `special_step` should be applied.
+`scheduler` may be a [`LogScheduler`](@ref) or a callable
+`(atom_counter, t, active_set) -> Bool`.
 """
-struct ScheduledStep{S<:FrankWolfe.CorrectiveStep, T<:FrankWolfe.CorrectiveStep} <: FrankWolfe.CorrectiveStep
+struct ScheduledStep{S<:FrankWolfe.CorrectiveStep,T<:FrankWolfe.CorrectiveStep,SF} <: FrankWolfe.CorrectiveStep
     base_step::S
     special_step::T
-    scheduler::Function
+    scheduler::SF
     lazy::Bool
     lazy_tolerance::Float64
+    atom_counter::Base.RefValue{Int}
+    prev_length::Base.RefValue{Int}
 end
 
-function make_default_scheduler(start_time::Int, scaling_factor::Float64, max_interval::Int)
-    counter = Ref(0)
-    last_solve_counter = Ref(0)
-    current_interval = Ref(start_time)
-    function scheduler(t, active_set)
-        counter[] += 1
-        if counter[] - last_solve_counter[] >= current_interval[]
-            last_solve_counter[] = counter[]
-            current_interval[] = min(round(Int, scaling_factor * current_interval[]), max_interval)
-            return true
-        end
-        return false
+make_default_scheduler(start_time::Int, scaling_factor::Float64, max_interval::Int) =
+    LogScheduler(; start_time=start_time, scaling_factor=scaling_factor, max_interval=max_interval)
+
+function ScheduledStep(
+    base_step::S,
+    special_step::T,
+    scheduler=make_default_scheduler(2, 2.0, 1000);
+    lazy::Bool=true,
+    lazy_tolerance::Float64=2.0,
+) where {S<:FrankWolfe.CorrectiveStep,T<:FrankWolfe.CorrectiveStep}
+    return ScheduledStep{S,T,typeof(scheduler)}(
+        base_step,
+        special_step,
+        scheduler,
+        lazy,
+        lazy_tolerance,
+        Ref(0),
+        Ref(-1),
+    )
+end
+
+function should_run_scheduled_step(scheduler::LogScheduler, atom_counter, t, active_set)
+    if atom_counter - scheduler.last_solve_counter[] >= scheduler.current_interval[]
+        scheduler.last_solve_counter[] = atom_counter
+        scheduler.current_interval[] = min(
+            round(Int, scheduler.scaling_factor * scheduler.current_interval[]),
+            scheduler.max_interval,
+        )
+        return true
     end
-    return scheduler
+    return false
 end
 
-ScheduledStep(base_step::S, special_step::T) where {S<:FrankWolfe.CorrectiveStep, T<:FrankWolfe.CorrectiveStep} = ScheduledStep{S, T}(base_step, special_step, make_default_scheduler(2, 2.0, 1000), true, 2.0)
-ScheduledStep(base_step::S, special_step::T, scheduler) where {S<:FrankWolfe.CorrectiveStep, T<:FrankWolfe.CorrectiveStep} = ScheduledStep{S, T}(base_step, special_step, scheduler, true, 2.0)
+function should_run_scheduled_step(scheduler, atom_counter, t, active_set)
+    return scheduler(atom_counter, t, active_set)
+end
+
+function _update_scheduled_atom_counter!(step::ScheduledStep, active_set)
+    n = length(active_set)
+    prev = step.prev_length[]
+
+    # initialize the prev counter to the initial active set size without increasing the atom counter of the scheduler
+    if prev < 0
+        step.prev_length[] = n
+        return
+    end
+
+    if n > prev
+        step.atom_counter[] += n - prev
+    end
+    step.prev_length[] = n
+    return
+end
 
 function FrankWolfe.prepare_corrective_step(
     step::ScheduledStep,
@@ -50,6 +87,8 @@ function FrankWolfe.prepare_corrective_step(
     primal,
     phi_value,
 )
+    # update the atom counter to count the new atoms added since the last iteration
+    _update_scheduled_atom_counter!(step, active_set)
     return !step.lazy
 end
 
@@ -84,7 +123,7 @@ function FrankWolfe.run_corrective_step(
 
     if local_gap >= max(phi_value / step.lazy_tolerance, epsilon)
 
-        if step.scheduler(t, active_set)
+        if should_run_scheduled_step(step.scheduler, step.atom_counter[], t, active_set)
             old_len = length(active_set)
             old_weights = hasproperty(active_set, :weights) ? copy(active_set.weights) : nothing
             x_s, v_s, phi_s, gap_s, _should_fw_step, should_continue = FrankWolfe.run_corrective_step(
@@ -120,7 +159,7 @@ function FrankWolfe.run_corrective_step(
             end
         end
 
-        # Sepcial step was unsuccessful, perform fallback step
+        # Special step was unsuccessful, perform fallback step
         return FrankWolfe.run_corrective_step(
             step.base_step,
             f,
@@ -159,16 +198,33 @@ function FrankWolfe.run_corrective_step(
 end
 
 """
-    QuadraticLSCorrection{H, BT}
+    QuadraticLSCorrection(A, b, mnp=true)
 
-A corrective step structure for quadratic correction steps using linear system solving, as used in corrective Frank-Wolfe methods.
+Quadratic correction step used by [`corrective_frank_wolfe`](@ref)
+implementings the linear-system-based variant from Halbey, Rakotomandimby,
+Besançon, Designolle, Pokutta (2025),
+[Efficient Quadratic Corrections for Frank-Wolfe Algorithms](https://arxiv.org/abs/2506.02635),
+Algorithm 6 (**QC-MNP**).
+This method solves the affine-minimization linear system over the
+current active set `S`. For a convex quadratic
+``f(x) = \\frac12 \\langle x, A x \\rangle + \\langle b, x \\rangle + c``,
+the affine minimizer over ``\\operatorname{aff}(S)`` is obtained from the
+symmetric reduced system (Remark 3 / Eq. 10 in the paper)
+``W^\\top A W \\mu = -W^\\top (A w + b)``.
 
-# Fields
-- `A::H`: Hessian matrix or operator representing the quadratic term.
-- `b::BT`: Linear term in the objective.
-- `ls_solve::Function`: Function for solving the linear system in place. Should be of the form `(x, M, rhs; kwargs...)`.
-- `mnp::Bool`: If `true`, uses the Minimum-Norm Point (MNP) approach (i.e., allows for weights outside the simplex/convex hull).
+- If `mnp=false`, the affine minimizer is accepted only when all barycentric
+  coordinates are nonnegative (a fully-corrective step), otherwise the correction
+  fails.
+- If `mnp=true`, a single Wolfe ratio test pulls the affine minimizer back onto
+  ``\\operatorname{conv}(S)`` and drops at least one atom.
 
+# Arguments
+- `A`: Hessian (or linear operator) of the quadratic term.
+- `b`: Linear term, so that ``\\nabla f(x) = A x + b``.
+- `mnp`: whether to apply the Minimum-Norm Point ratio test.
+
+The optional field `ls_solve` is an in-place solver `(x, M, rhs; kwargs...) -> Bool`
+for the reduced system of size `|S|-1`. The default uses `M \\ rhs`.
 """
 
 struct QuadraticLSCorrection{H, BT} <: CorrectiveStep 
@@ -178,15 +234,7 @@ struct QuadraticLSCorrection{H, BT} <: CorrectiveStep
     mnp::Bool
 end
 
-function QuadraticLSCorrection(A::H, b::BT) where {H, BT}
-    function ls_solve(x, M, rhs; kwargs...)
-        x .= M \ rhs
-        return true
-    end
-    return QuadraticLSCorrection{H, BT}(A, b, ls_solve, false)
-end
-
-function QuadraticLSCorrection(A::H, b::BT, mnp::Bool) where {H, BT}
+function QuadraticLSCorrection(A::H, b::BT, mnp::Bool=true) where {H, BT}
     function ls_solve(x, M, rhs; kwargs...)
         x .= M \ rhs
         return true
@@ -231,11 +279,10 @@ function run_corrective_step(
     d,
 )
 
-    # Computes the minimizer for a quadratic function f(x) = xᵗAx + bᵗx over the affine hull over the atoms of a given active set
-    # by solving the non-symmetric linear system:
-    # Wᵗ A V λ == -Wᵗ b
-    # V has columns vi (atoms of the active set)
-    # W has columns vi - v1
+    # Affine minimizer over aff(S) via the symmetric reduced system (paper Remark 3 / eq. 10):
+    #   Wᵀ A W μ = -Wᵀ (A w + b)
+    # W has columns vᵢ - w with w = atoms[1], μ has length |S|-1.
+    # Then λ_w = 1 - 1ᵀμ and λ_{vᵢ} = μᵢ.
 
     nv = length(active_set)
 
@@ -243,51 +290,52 @@ function run_corrective_step(
         return x, v, phi_value, dual_gap, false, true
     end
 
-    # Pre-allocate arrays
-    A_mat = Matrix{Float64}(undef, nv, nv)
-    r_vec = Vector{Float64}(undef, nv)
-    μ = Vector{Float64}(undef, nv)
+    nμ = nv - 1
+    A_mat = Matrix{Float64}(undef, nμ, nμ)
+    r_vec = Vector{Float64}(undef, nμ)
+    μ_red = Vector{Float64}(undef, nμ)
 
-    A_mat[1, :] .= 1.0
-    r_vec[1] = 1.0
     if active_set isa ActiveSetQuadraticProductCaching
-        # dots_A is a lower triangular matrix. For i ≥ 2, the (i, j) entry of Wᵀ A V
-        # is (A v_i - A v_1)ᵀ v_j = (v_iᵀ A v_j) - (v_1ᵀ A v_j).
-        # Using the cached products, this corresponds to
-        #   active_set.dots_A[i][j] - active_set.dots_A[j][1]
-        # which matches the formulation used in `solve_quadratic_activeset_lp!`.
+        dA11 = active_set.dots_A[1][1]
+        db1 = active_set.dots_b[1]
         for i in 2:nv
-            for j in 1:i
-                val = active_set.dots_A[i][j] - active_set.dots_A[j][1]
-                A_mat[i, j] = val
-                if i != j && j != 1
-                    A_mat[j, i] = val
-                end
+            ii = i - 1
+            for j in 2:i
+                jj = j - 1
+                # (vᵢ - w)ᵀ A (vⱼ - w)
+                val =
+                    active_set.dots_A[i][j] - active_set.dots_A[j][1] - active_set.dots_A[i][1] +
+                    dA11
+                A_mat[ii, jj] = val
+                A_mat[jj, ii] = val
             end
-            r_vec[i] = active_set.dots_b[1] - active_set.dots_b[i]
+            r_vec[ii] = -active_set.dots_A[i][1] + dA11 - active_set.dots_b[i] + db1
         end
     else
-        temp1 = similar(active_set.atoms[1])
         A = corrective_step.A
         b = corrective_step.b
-        d1 = A * active_set.atoms[1]
+        w = active_set.atoms[1]
+        d1 = A * w
+        dw_storage = similar(w)
         for i in 2:nv
-            di = mul!(temp1, A, active_set.atoms[i])
-            for j in 1:i
-                val = dot(di, active_set.atoms[j]) - dot(d1, active_set.atoms[j])
-                A_mat[i, j] = val
-                if i != j && j != 1
-                    A_mat[j, i] = val
-                end
+            ii = i - 1
+            di = mul!(dw_storage, A, active_set.atoms[i])
+            di .-= d1
+            for j in 2:nv
+                A_mat[ii, j-1] = dot(di, active_set.atoms[j]) - dot(di, w)
             end
-            r_vec[i] = dot(b, active_set.atoms[1]) - dot(b, active_set.atoms[i])
+            r_vec[ii] = -dot(di, w) - dot(b, active_set.atoms[i]) + dot(b, w)
         end
     end
 
-    # Solve system - μ are the bary-centric coordinates of the/an affine minizer
-    converged = corrective_step.ls_solve(μ, A_mat, r_vec; active_set=active_set)
+    # μ_red are barycentric coordinates of all atoms except the anchor w
+    converged = corrective_step.ls_solve(μ_red, Symmetric(A_mat), r_vec; active_set=active_set)
 
     if converged
+        # Compute barycentric coordinates from reduced coordinates µ_red
+        μ = Vector{Float64}(undef, nv)
+        μ[2:nv] .= μ_red
+        μ[1] = 1 - sum(μ_red)
 
         # Perform pullback to the convex hull with a ratio test (minimum-norm point)
         if corrective_step.mnp
@@ -349,11 +397,31 @@ end
 
 
 """
-    QCLPStep (Quadratic corrections LP)
-    This step attempts to find the optimal weights (for the current active set) for a quadratic objective with hessian ´A´ and linear term ´b´ through linear programming.
-    The LP is infeasible, if no minimizer over the affine hull of the atoms lie in the convex hull. In this case the method returns the current iterate unchanged.
-    If ´relax´ is true, we relax the non-negativity constraint and use the MNP approach as in QC-MNP.
-    The main difference to QCMNPStep is that it is still LP-based, but this allows to choose the best affine minimizer (in case it is not unique).
+    QuadraticLPCorrection(A, b, optimizer, mnp=false)
+
+Quadratic correction step used by [`corrective_frank_wolfe`](@ref)
+implementings the LP-based variant from Halbey, Rakotomandimby,
+Besançon, Designolle, Pokutta (2025),
+[Efficient Quadratic Corrections for Frank-Wolfe Algorithms](https://arxiv.org/abs/2506.02635).
+This method encodes affine minimality over the current active set
+as linear equalities and solves the resulting LP.
+
+- If `mnp=false`, this is **QC-LP** (Algorithm 5): the affine-minimality
+  equalities together with ``\\lambda \\ge 0`` and ``\\sum \\lambda = 1``.
+  The LP is feasible only when an affine minimizer lies in ``\\operatorname{conv}(S)``.
+  Otherwise the correction fails.
+  Unlike [`QuadraticLSCorrection`](@ref) with `mnp=false`, this method is guaranteed to select an affine minimizer inside the convex hull, if one exists.
+- If `mnp=true`, this is the LP form of **QC-MNP** (Algorithm 8): minimize
+  ``\\beta \\ge 0`` subject to ``\\lambda + \\beta \\lambda(x) \\ge 0`` and the
+  same affine-minimality equalities. Unlike [`QuadraticLSCorrection`](@ref),
+  this selects the affine minimizer that allows the largest feasible step when
+  the affine minimizer is not unique.
+
+# Arguments
+- `A`: Hessian (or linear operator) of the quadratic term.
+- `b`: Linear term, so that ``\\nabla f(x) = A x + b``.
+- `mnp`: whether to use the QC-MNP LP instead of QC-LP.
+- `optimizer`: a MathOptInterface optimizer used to solve the LP.
 """
 struct QuadraticLPCorrection{H, LT, OT<:MOI.AbstractOptimizer} <: CorrectiveStep
     A::H # Hessian matrix
@@ -426,6 +494,7 @@ function run_corrective_step(
 
     if step.mnp
         β = MOI.add_variable(o)
+        MOI.add_constraint(o, β, MOI.GreaterThan(0.0))
         for j = 1:nv
             MOI.add_constraint(o,MOI.ScalarAffineFunction{Float64}([MOI.ScalarAffineTerm(1, λ[j]), MOI.ScalarAffineTerm(active_set.weights[j], β)], 0.0), MOI.GreaterThan(0.0)) 
         end
@@ -508,7 +577,16 @@ function run_corrective_step(
     end
 
     # Compute new weights and which atoms to drop
-    indices_to_remove, new_weights = _purge_weights(MOI.get.(o, MOI.VariablePrimal(), λ))
+    λ_vals = MOI.get.(o, MOI.VariablePrimal(), λ)
+    if step.mnp
+        β_val = MOI.get(o, MOI.VariablePrimal(), β)
+        if β_val > 10 * eps(typeof(β_val))
+            τ = 1 / (β_val + 1)
+            λ_vals = τ .* λ_vals .+ (1 - τ) .* active_set.weights
+        end
+    end
+    indices_to_remove, new_weights = _purge_weights(λ_vals)
+
     # Update active set
     deleteat!(active_set, indices_to_remove)
     @assert length(active_set) == length(new_weights)
