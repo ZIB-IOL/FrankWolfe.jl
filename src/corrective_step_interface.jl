@@ -830,14 +830,10 @@ mutable struct SimplexGradientDescentStep{T,LS} <: CorrectiveStep
     lazy::Bool
     lazy_tolerance::T
     line_search_inner::LS
-    linesearch_inner_workspace
+    linesearch_inner_workspace::Any
 end
 
-function SimplexGradientDescentStep(
-    lazy=false;
-    lazy_tolerance=2.0,
-    line_search_inner=Secant(),
-)
+function SimplexGradientDescentStep(lazy=false; lazy_tolerance=2.0, line_search_inner=Secant())
     return SimplexGradientDescentStep(lazy, lazy_tolerance, line_search_inner, nothing)
 end
 
@@ -988,7 +984,7 @@ function run_corrective_step(
         deleteat!(active_set, drop_indices)
         compute_active_set_iterate!(active_set)
 
-    # Otherwise, perform a simplex descent step with line search
+        # Otherwise, perform a simplex descent step with line search
     else
         d = muladd_memory_mode(memory_mode, d, x_prev, y)
         if line_search_inner isa Adaptive
@@ -1111,16 +1107,11 @@ mutable struct ProjectedGradientDescentStep{H,T} <: CorrectiveStep
     lazy_tolerance::T
     hessian::H
     accelerated::Bool
-    y
+    y::Any
     alpha::Float64
 end
 
-function ProjectedGradientDescentStep(;
-    hessian,
-    lazy=false,
-    lazy_tolerance=2.0,
-    accelerated=false,
-)
+function ProjectedGradientDescentStep(; hessian, lazy=false, lazy_tolerance=2.0, accelerated=false)
     hessian === nothing && throw(ArgumentError("ProjectedGradientDescentStep requires a hessian"))
     return ProjectedGradientDescentStep(lazy, lazy_tolerance, hessian, accelerated, nothing, 0.0)
 end
@@ -1227,8 +1218,7 @@ function run_corrective_step(
     x_prev = copy(x)
     gamma = inv(L_reduced)
 
-    use_accelerated =
-        corrective_step.accelerated && L_reduced / mu_reduced > one(L_reduced)
+    use_accelerated = corrective_step.accelerated && L_reduced / mu_reduced > one(L_reduced)
     if use_accelerated
         if corrective_step.y === nothing || length(corrective_step.y) != k
             corrective_step.y = copy(λ)

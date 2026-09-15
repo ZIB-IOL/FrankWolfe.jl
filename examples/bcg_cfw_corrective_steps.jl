@@ -52,13 +52,7 @@ common_kwargs = (
     memory_mode=FrankWolfe.InplaceEmphasis(),
 )
 
-res_bcg = FrankWolfe.blended_conditional_gradient(
-    f,
-    grad!,
-    lmo,
-    copy(x00);
-    common_kwargs...,
-)
+res_bcg = FrankWolfe.blended_conditional_gradient(f, grad!, lmo, copy(x00); common_kwargs...)
 
 res_sigd = FrankWolfe.corrective_frank_wolfe(
     f,

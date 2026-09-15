@@ -120,11 +120,7 @@ using SparseArrays
             f,
             grad!,
             lmo,
-            FrankWolfe.ProjectedGradientDescentStep(
-                hessian=hessian,
-                lazy=lazy,
-                accelerated=true,
-            ),
+            FrankWolfe.ProjectedGradientDescentStep(hessian=hessian, lazy=lazy, accelerated=true),
             FrankWolfe.ActiveSet([(1.0, x0)]),
             max_iteration=k,
             verbose=false,
