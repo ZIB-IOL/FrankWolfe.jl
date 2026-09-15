@@ -71,6 +71,13 @@ FrankWolfe.QuadraticLSCorrection
 FrankWolfe.QuadraticLPCorrection
 ```
 
+## Decomposition-invariant methods
+
+```@autodocs
+Modules = [FrankWolfe]
+Pages = ["dicg.jl"]
+```
+
 ## Alternating Methods
 
 Problems over intersections of convex sets, i.e.

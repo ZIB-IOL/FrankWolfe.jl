@@ -69,6 +69,6 @@ x, v, primal, dual_gap, status, trajectory_away_outplace, active_set = FrankWolf
 );
 
 data = [trajectory, trajectory_away, trajectory_away_outplace]
-label = ["FW" "AFW" "MAFW"]
+label = ["FW", "AFW", "MAFW"]
 
 plot_trajectories(data, label)

@@ -208,7 +208,7 @@ function blended_pairwise_conditional_gradient(
             grad!(gradient, x)
         end
 
-        _, v_local, v_local_loc, _, a_lambda, a, a_loc, _, _ =
+        _, v_local, v_local_loc, v_local_value, a_lambda, a, a_loc, _, _ =
             active_set_argminmax(active_set, gradient)
 
         dot_forward_vertex = dot(gradient, v_local)
@@ -311,9 +311,11 @@ function blended_pairwise_conditional_gradient(
                 x = get_active_set_iterate(active_set)
                 grad!(gradient, x)
                 dual_gap = dot(gradient, x) - dot(gradient, v)
+                # the cleanup and the recomputed gradient invalidate the minimum found above
+                v_local_loc, v_local_value = -1, typemin(typeof(v_local_value))
             end
             # Note: In the following, we differentiate between lazy and non-lazy updates.
-            # The reason is that the non-lazy version does not use phi_value but the lazy one heavily depends on it.
+            # The reason is that only the lazy version depends on the phi_value.
             # It is important that the phi_value is only updated after dropping
             # below phi_value / sparsity_control, as otherwise we simply have a "lagging" dual_gap estimate that just slows down convergence.
             # The logic is as follows:
@@ -371,14 +373,13 @@ function blended_pairwise_conditional_gradient(
                     active_set_initialize!(active_set, v)
                 else
                     renorm = mod(t, renorm_interval) == 0
-                    active_set_update!(active_set, gamma, v, renorm, nothing)
+                    v_index = find_atom(active_set, v, gradient, v_local_loc, v_local_value)
+                    active_set_update!(active_set, gamma, v, renorm, v_index)
                 end
             else # dual step
-                # set to computed dual_gap for consistency between the lazy and non-lazy run.
-                # that is ok as we scale with the K = 2.0 default anyways
                 # we only update the dual gap if the step was regular (not lazy from discarded set)
                 if step_type != ST_LAZYSTORAGE
-                    phi_value = dual_gap
+                    phi_value = phi_value / sparsity_control
                     @debug begin
                         @assert step_type == ST_REGULAR
                         v2 = compute_extreme_point(lmo, gradient)

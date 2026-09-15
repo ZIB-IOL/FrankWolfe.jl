@@ -15,6 +15,10 @@ import MathOptInterface
 const MOI = MathOptInterface
 const MOIU = MOI.Utilities
 
+# to lift ambiguities
+import FillArrays
+import StaticArraysCore
+
 # for Birkhoff polytope LMO
 import Hungarian
 

@@ -1,5 +1,6 @@
 # Noteworthy changes in v0.6
 
+- The internal function `lp_separation_oracle` now returns a third element: the position of the returned atom in the active set, -1 when it is not an active atom, `nothing` when the active set was skipped [PR649](https://github.com/ZIB-IOL/FrankWolfe.jl/pull/649).
 - The function `FrankWolfe.update_iterate` was renamed to `FrankWolfe.update_block_iterate` to be more specific about it belonging to the block coordinate interface and avoid confusion.
 - A `status` field was added to the named tuple return of all algorithms, corresponding to a `FrankWolfe.ExecutionStatus` enum value indicating why the algorithm stopped.
 - The internal function `fast_dot(a, b)` was removed, now that the fast implementation of sparse dot products was added to `SparseArrays`. The quadratic form `fast_dot(a, Q, b)` still exists.

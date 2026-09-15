@@ -323,6 +323,32 @@ function find_atom(active_set::AbstractActiveSet, atom)
 end
 
 """
+    find_atom(active_set, atom, direction, best_index, best_value)
+
+Position of `atom` in `active_set`, or -1 if it is not present. `best_index`
+and `best_value` are the position and value of the minimum of
+`dot(a, direction)` over the active atoms, as returned by
+[`active_set_argminmax`](@ref) with the same `direction`. Compares `atom`
+against `active_set.atoms[best_index]` first, certifies it absent when
+`dot(atom, direction) < best_value`, and scans otherwise. Pass
+`best_index = -1` and `best_value = -Inf` when no valid minimum is
+available. Active set types other than `ActiveSet` always scan: their
+`active_set_argminmax` may return a minimum that is not `dot(a, direction)`.
+"""
+function find_atom(active_set::ActiveSet, atom, direction, best_index::Integer, best_value)
+    if best_index > 0 && _unsafe_equal(active_set.atoms[best_index], atom)
+        return Int(best_index)
+    end
+    if dot(atom, direction) < best_value
+        return -1
+    end
+    return find_atom(active_set, atom)
+end
+
+find_atom(active_set::AbstractActiveSet, atom, direction, best_index::Integer, best_value) =
+    find_atom(active_set, atom)
+
+"""
     active_set_argmin(active_set::AbstractActiveSet, direction)
 
 Computes the linear minimizer in the direction on the active set.
