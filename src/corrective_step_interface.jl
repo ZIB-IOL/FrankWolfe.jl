@@ -742,3 +742,552 @@ function run_corrective_step(
     active_set_update!(active_set, gamma, fw_vertex, true, fw_index)
     return x, v, phi_value, dual_gap, should_fw_step, should_continue
 end
+
+# Shared fallback when the local strong-Wolfe gap is too small for a hull step:
+# non-lazy → FW vertex already computed; lazy → LMO, then FW or dual (gap) step.
+function _corrective_fw_or_dual_step(
+    lazy,
+    lazy_tolerance,
+    gradient,
+    x,
+    v,
+    dual_gap,
+    phi_value,
+    lmo,
+    epsilon,
+    callback,
+    t,
+    primal,
+    tot_time,
+    f,
+    grad!,
+    active_set,
+)
+    should_continue = true
+    if !lazy
+        return v, dual_gap, phi_value, true, should_continue
+    end
+    v = compute_extreme_point(lmo, gradient)
+    dual_gap = dot(gradient, x) - dot(gradient, v)
+    if dual_gap ≥ max(epsilon, phi_value / lazy_tolerance)
+        return v, dual_gap, phi_value, true, should_continue
+    end
+    phi_value = min(dual_gap, phi_value / 2)
+    if callback !== nothing
+        state = CallbackState(
+            t,
+            primal,
+            primal - phi_value,
+            phi_value,
+            tot_time,
+            x,
+            v,
+            nothing,
+            zero(eltype(x)),
+            f,
+            grad!,
+            lmo,
+            gradient,
+            ST_DUALSTEP,
+        )
+        should_continue = callback(state, active_set)
+    end
+    return v, dual_gap, phi_value, false, should_continue
+end
+
+# Euclidean projection onto the probability simplex. Dropped coordinates are the
+# tail of the descending sort after the first `n_keep` entries.
+function _simplex_projection_with_drops(x; s=one(eltype(x)))
+    n = length(x)
+    v = x .- maximum(x)
+    perm = sortperm(v; rev=true)
+    u = v[perm]
+    cssv = cumsum(u)
+    n_keep = count(j -> u[j] * j > cssv[j] - s, eachindex(u))
+    n_keep = max(n_keep, 1)
+    theta = (cssv[n_keep] - s) / n_keep
+    w = zeros(eltype(v), n)
+    @inbounds for i in 1:n_keep
+        w[perm[i]] = v[perm[i]] - theta
+    end
+    drop_indices = n_keep == n ? Int[] : sort(perm[(n_keep+1):n])
+    return w, drop_indices
+end
+
+_linesearch_tol(ls) = hasproperty(ls, :tol) ? ls.tol : 1e-8
+
+"""
+    SimplexGradientDescentStep(lazy=false; lazy_tolerance=2.0, line_search_inner=Secant())
+
+One simplex gradient descent (SiGD) step over the active set, as in
+Braun et al., "Blended Conditional Gradients", Algorithm 2.
+
+If the local strong-Wolfe gap over the active set is large enough compared to
+`phi_value / lazy_tolerance`, a single SiGD step is taken. Otherwise a Frank-Wolfe
+step is requested from [`corrective_frank_wolfe`](@ref).
+"""
+mutable struct SimplexGradientDescentStep{T,LS} <: CorrectiveStep
+    lazy::Bool
+    lazy_tolerance::T
+    line_search_inner::LS
+    linesearch_inner_workspace
+end
+
+function SimplexGradientDescentStep(
+    lazy=false;
+    lazy_tolerance=2.0,
+    line_search_inner=Secant(),
+)
+    return SimplexGradientDescentStep(lazy, lazy_tolerance, line_search_inner, nothing)
+end
+
+function prepare_corrective_step(
+    corrective_step::SimplexGradientDescentStep,
+    f,
+    grad!,
+    gradient,
+    active_set,
+    t,
+    lmo,
+    primal,
+    phi_value,
+)
+    return !corrective_step.lazy
+end
+
+function run_corrective_step(
+    corrective_step::SimplexGradientDescentStep,
+    f,
+    grad!,
+    gradient,
+    x,
+    v,
+    dual_gap,
+    active_set,
+    t,
+    lmo,
+    line_search,
+    linesearch_workspace,
+    primal,
+    phi_value,
+    tot_time,
+    callback,
+    renorm_interval,
+    memory_mode,
+    epsilon,
+    d,
+)
+    _, v_local, _, _, _, a, _, _, _ = active_set_argminmax(active_set, gradient)
+    local_gap = dot(gradient, a) - dot(gradient, v_local)
+    should_continue = true
+
+    if local_gap < max(phi_value / corrective_step.lazy_tolerance, epsilon)
+        v, dual_gap, phi_value, should_fw_step, should_continue = _corrective_fw_or_dual_step(
+            corrective_step.lazy,
+            corrective_step.lazy_tolerance,
+            gradient,
+            x,
+            v,
+            dual_gap,
+            phi_value,
+            lmo,
+            epsilon,
+            callback,
+            t,
+            primal,
+            tot_time,
+            f,
+            grad!,
+            active_set,
+        )
+        return x, v, phi_value, dual_gap, should_fw_step, should_continue
+    end
+
+    if corrective_step.linesearch_inner_workspace === nothing
+        corrective_step.linesearch_inner_workspace =
+            build_linesearch_workspace(corrective_step.line_search_inner, x, gradient)
+    end
+    line_search_inner = corrective_step.line_search_inner
+    if line_search_inner isa Adaptive
+        line_search_inner.L_est = Inf
+    end
+
+    c = [dot(gradient, atom) for atom in active_set.atoms]
+    k = length(active_set)
+    csum = sum(c)
+    c .-= (csum / k)
+    dir = c
+    ls_tol = _linesearch_tol(line_search_inner)
+    descent_direction_product = dot(dir, dir) + (csum / k) * sum(dir)
+
+    # Check if the descent direction is too small, if so, proceed to the FW or dual step
+    if descent_direction_product < ls_tol
+        bdir = big.(gradient)
+        c = [dot(bdir, atom) for atom in active_set.atoms]
+        csum = sum(c)
+        c .-= csum / k
+        dir = c
+        descent_direction_product = dot(dir, dir) + (csum / k) * sum(dir)
+        if descent_direction_product < ls_tol
+            v, dual_gap, phi_value, should_fw_step, should_continue = _corrective_fw_or_dual_step(
+                corrective_step.lazy,
+                corrective_step.lazy_tolerance,
+                gradient,
+                x,
+                v,
+                dual_gap,
+                phi_value,
+                lmo,
+                epsilon,
+                callback,
+                t,
+                primal,
+                tot_time,
+                f,
+                grad!,
+                active_set,
+            )
+            return x, v, phi_value, dual_gap, should_fw_step, should_continue
+        end
+    end
+
+    # Ratio test: largest η ≥ 0 such that λ - η dir ≥ 0. The coordinates that
+    # hit zero first are the ones dropped on a drop step.
+    η = eltype(dir)(Inf)
+    drop_indices = Int[]
+    purge_tol = 2 * weight_purge_threshold_default(eltype(active_set.weights))
+    @inbounds for idx in eachindex(dir)
+        if dir[idx] > 0
+            η_idx = active_set.weights[idx] / dir[idx]
+            if abs(η_idx - η) ≤ purge_tol
+                push!(drop_indices, idx)
+            elseif η_idx < η
+                η = η_idx
+                empty!(drop_indices)
+                push!(drop_indices, idx)
+            end
+        end
+    end
+    η = isfinite(η) ? max(zero(η), η) : zero(eltype(dir))
+    λ_boundary = active_set.weights .- η .* dir
+    for idx in drop_indices
+        λ_boundary[idx] = zero(eltype(λ_boundary))
+    end
+    x_prev = copy(active_set.x)
+    y = similar(x_prev)
+    y .= 0
+    for (λi, ai) in zip(λ_boundary, active_set.atoms)
+        @. y += λi * ai
+    end
+    gamma = one(η)
+
+    # If the drop is non-increasing, perform a drop step
+    if f(x_prev) ≥ f(y)
+        step_type = ST_DROP
+        update_weights!(active_set, λ_boundary)
+        deleteat!(active_set, drop_indices)
+        compute_active_set_iterate!(active_set)
+
+    # Otherwise, perform a simplex descent step with line search
+    else
+        d = muladd_memory_mode(memory_mode, d, x_prev, y)
+        if line_search_inner isa Adaptive
+            gamma = perform_line_search(
+                line_search_inner,
+                t,
+                f,
+                grad!,
+                gradient,
+                x_prev,
+                d,
+                one(eltype(x_prev)),
+                corrective_step.linesearch_inner_workspace,
+                memory_mode,
+            )
+            if gamma < eps(float(gamma))
+                gamma = perform_line_search(
+                    line_search_inner,
+                    t,
+                    f,
+                    grad!,
+                    gradient,
+                    x_prev,
+                    d,
+                    one(eltype(x_prev)),
+                    corrective_step.linesearch_inner_workspace,
+                    memory_mode,
+                    should_upgrade=Val{true}(),
+                )
+            end
+        else
+            if dot(gradient, x_prev - y) < ls_tol
+                v, dual_gap, phi_value, should_fw_step, should_continue =
+                    _corrective_fw_or_dual_step(
+                        corrective_step.lazy,
+                        corrective_step.lazy_tolerance,
+                        gradient,
+                        x,
+                        v,
+                        dual_gap,
+                        phi_value,
+                        lmo,
+                        epsilon,
+                        callback,
+                        t,
+                        primal,
+                        tot_time,
+                        f,
+                        grad!,
+                        active_set,
+                    )
+                return x, v, phi_value, dual_gap, should_fw_step, should_continue
+            end
+            gamma = perform_line_search(
+                line_search_inner,
+                t,
+                f,
+                grad!,
+                gradient,
+                x_prev,
+                d,
+                one(eltype(x_prev)),
+                corrective_step.linesearch_inner_workspace,
+                memory_mode,
+            )
+        end
+        gamma = min(one(gamma), gamma)
+        if gamma == one(gamma)
+            step_type = ST_DROP
+            update_weights!(active_set, λ_boundary)
+            deleteat!(active_set, drop_indices)
+            compute_active_set_iterate!(active_set)
+        else
+            step_type = ST_SIMPLEXDESCENT
+            update_weights!(active_set, active_set.weights .- gamma * η .* dir)
+            compute_active_set_iterate!(active_set)
+        end
+    end
+
+    x = get_active_set_iterate(active_set)
+    d = muladd_memory_mode(memory_mode, d, x_prev, y)
+    if callback !== nothing
+        state = CallbackState(
+            t,
+            primal,
+            primal - phi_value,
+            phi_value,
+            tot_time,
+            x_prev,
+            y,
+            d,
+            gamma,
+            f,
+            grad!,
+            lmo,
+            gradient,
+            step_type,
+        )
+        should_continue = callback(state, active_set)
+    end
+    if mod(t, renorm_interval) == 0
+        active_set_renormalize!(active_set)
+        x = compute_active_set_iterate!(active_set)
+    end
+    return x, v, phi_value, dual_gap, false, should_continue
+end
+
+"""
+    ProjectedGradientDescentStep(; hessian, lazy=false, lazy_tolerance=2.0, accelerated=false)
+
+One projected gradient (or Nesterov-accelerated) step over the probability simplex
+of barycentric coordinates of the active set.
+
+Requires a Hessian of `f` to build the reduced quadratic and to estimate `L`
+(and `μ` if `accelerated=true`). If the local strong-Wolfe gap is small, a
+Frank-Wolfe step is requested from [`corrective_frank_wolfe`](@ref).
+"""
+mutable struct ProjectedGradientDescentStep{H,T} <: CorrectiveStep
+    lazy::Bool
+    lazy_tolerance::T
+    hessian::H
+    accelerated::Bool
+    y
+    alpha::Float64
+end
+
+function ProjectedGradientDescentStep(;
+    hessian,
+    lazy=false,
+    lazy_tolerance=2.0,
+    accelerated=false,
+)
+    hessian === nothing && throw(ArgumentError("ProjectedGradientDescentStep requires a hessian"))
+    return ProjectedGradientDescentStep(lazy, lazy_tolerance, hessian, accelerated, nothing, 0.0)
+end
+
+function prepare_corrective_step(
+    corrective_step::ProjectedGradientDescentStep,
+    f,
+    grad!,
+    gradient,
+    active_set,
+    t,
+    lmo,
+    primal,
+    phi_value,
+)
+    return !corrective_step.lazy
+end
+
+function run_corrective_step(
+    corrective_step::ProjectedGradientDescentStep,
+    f,
+    grad!,
+    gradient,
+    x,
+    v,
+    dual_gap,
+    active_set,
+    t,
+    lmo,
+    line_search,
+    linesearch_workspace,
+    primal,
+    phi_value,
+    tot_time,
+    callback,
+    renorm_interval,
+    memory_mode,
+    epsilon,
+    d,
+)
+    _, v_local, _, _, _, a, _, _, _ = active_set_argminmax(active_set, gradient)
+    local_gap = dot(gradient, a) - dot(gradient, v_local)
+    should_continue = true
+    progress_threshold = max(phi_value / corrective_step.lazy_tolerance, epsilon)
+
+    if local_gap < progress_threshold
+        v, dual_gap, phi_value, should_fw_step, should_continue = _corrective_fw_or_dual_step(
+            corrective_step.lazy,
+            corrective_step.lazy_tolerance,
+            gradient,
+            x,
+            v,
+            dual_gap,
+            phi_value,
+            lmo,
+            epsilon,
+            callback,
+            t,
+            primal,
+            tot_time,
+            f,
+            grad!,
+            active_set,
+        )
+        return x, v, phi_value, dual_gap, should_fw_step, should_continue
+    end
+
+    # Reformulate convex hull problem, as a quadratic prgroam over the simplex with quadratic term M and linear term b
+    M, b = build_reduced_problem(
+        active_set.atoms,
+        corrective_step.hessian,
+        active_set.weights,
+        gradient,
+        progress_threshold,
+    )
+    # If the reduced problem is build because the strong-Wolfe gap is too small, proceed to the FW or dual step
+    if M === nothing
+        v, dual_gap, phi_value, should_fw_step, should_continue = _corrective_fw_or_dual_step(
+            corrective_step.lazy,
+            corrective_step.lazy_tolerance,
+            gradient,
+            x,
+            v,
+            dual_gap,
+            phi_value,
+            lmo,
+            epsilon,
+            callback,
+            t,
+            primal,
+            tot_time,
+            f,
+            grad!,
+            active_set,
+        )
+        return x, v, phi_value, dual_gap, should_fw_step, should_continue
+    end
+
+    S = schur(M)
+    L_reduced = maximum(real, S.values)
+    mu_reduced = max(minimum(real, S.values), zero(L_reduced))
+    k = length(active_set.weights)
+    λ = copy(active_set.weights)
+    x_prev = copy(x)
+    gamma = inv(L_reduced)
+
+    use_accelerated =
+        corrective_step.accelerated && L_reduced / mu_reduced > one(L_reduced)
+    if use_accelerated
+        if corrective_step.y === nothing || length(corrective_step.y) != k
+            corrective_step.y = copy(λ)
+            corrective_step.alpha = 0.0
+        end
+        y = corrective_step.y
+        grad_y = b + M * y
+        λ_new, drop_indices = _simplex_projection_with_drops(y .- grad_y / L_reduced)
+        if mu_reduced < 1.0e-3
+            alpha_old = corrective_step.alpha
+            corrective_step.alpha = 0.5 * (1 + sqrt(1 + 4 * alpha_old^2))
+            gamma = (alpha_old - 1.0) / corrective_step.alpha
+        else
+            q = mu_reduced / L_reduced
+            sq = sqrt(q)
+            gamma = (1 - sq) / (1 + sq)
+        end
+        diff = λ_new - λ
+        @. y = λ_new + gamma * diff
+        λ = λ_new
+    else
+        corrective_step.y = nothing
+        corrective_step.alpha = 0.0
+        grad_λ = b + M * λ
+        λ, drop_indices = _simplex_projection_with_drops(λ .- grad_λ / L_reduced)
+        gamma = inv(L_reduced)
+    end
+
+    update_weights!(active_set, λ)
+    deleteat!(active_set, drop_indices)
+    if corrective_step.y !== nothing && !isempty(drop_indices)
+        deleteat!(corrective_step.y, drop_indices)
+    end
+    compute_active_set_iterate!(active_set)
+    x = get_active_set_iterate(active_set)
+    d = muladd_memory_mode(memory_mode, d, x_prev, x)
+    if callback !== nothing
+        state = CallbackState(
+            t,
+            primal,
+            primal - phi_value,
+            phi_value,
+            tot_time,
+            x_prev,
+            x,
+            d,
+            gamma,
+            f,
+            grad!,
+            lmo,
+            gradient,
+            ST_SIMPLEXDESCENT,
+        )
+        should_continue = callback(state, active_set)
+    end
+    if mod(t, renorm_interval) == 0
+        active_set_renormalize!(active_set)
+        x = compute_active_set_iterate!(active_set)
+    end
+    return x, v, phi_value, dual_gap, false, should_continue
+end
+
