@@ -150,9 +150,9 @@ function FrankWolfe.run_corrective_step(
             )
 
             success = (length(active_set) != old_len) ||
-                      (old_weights !== nothing &&
-                       length(active_set.weights) == length(old_weights) &&
-                       !all(active_set.weights .== old_weights))
+                (old_weights !== nothing &&
+                length(active_set.weights) == length(old_weights) &&
+                !all(active_set.weights .== old_weights))
 
             if success # Special step was successful, return
                 return x_s, v_s, phi_s, gap_s, false, should_continue
@@ -227,19 +227,19 @@ The optional field `ls_solve` is an in-place solver `(x, M, rhs; kwargs...) -> B
 for the reduced system of size `|S|-1`. The default uses `M \\ rhs`.
 """
 
-struct QuadraticLSCorrection{H, BT} <: CorrectiveStep 
+struct QuadraticLSCorrection{H,BT} <: CorrectiveStep
     A::H # Hessian matrix
     b::BT # linear term
     ls_solve::Function
     mnp::Bool
 end
 
-function QuadraticLSCorrection(A::H, b::BT, mnp::Bool=true) where {H, BT}
+function QuadraticLSCorrection(A::H, b::BT, mnp::Bool=true) where {H,BT}
     function ls_solve(x, M, rhs; kwargs...)
         x .= M \ rhs
         return true
     end
-    return QuadraticLSCorrection{H, BT}(A, b, ls_solve, mnp)
+    return QuadraticLSCorrection{H,BT}(A, b, ls_solve, mnp)
 end
 
 function prepare_corrective_step(
@@ -305,7 +305,7 @@ function run_corrective_step(
                 # (vᵢ - w)ᵀ A (vⱼ - w)
                 val =
                     active_set.dots_A[i][j] - active_set.dots_A[j][1] - active_set.dots_A[i][1] +
-                    dA11
+                        dA11
                 A_mat[ii, jj] = val
                 A_mat[jj, ii] = val
             end
@@ -366,7 +366,7 @@ function _truncate_weights(weights::Vector{R}, old_weights::Vector{R}) where {R}
     indices_to_remove = Int[]
 
     if all(>=(-10eps()), weights)
-        return indices_to_remove, weights 
+        return indices_to_remove, weights
     end
 
     # ratio test - identify which coordinate hit zero first
@@ -423,20 +423,20 @@ as linear equalities and solves the resulting LP.
 - `mnp`: whether to use the QC-MNP LP instead of QC-LP.
 - `optimizer`: a MathOptInterface optimizer used to solve the LP.
 """
-struct QuadraticLPCorrection{H, LT, OT<:MOI.AbstractOptimizer} <: CorrectiveStep
+struct QuadraticLPCorrection{H,LT,OT<:MOI.AbstractOptimizer} <: CorrectiveStep
     A::H # Hessian matrix
     b::LT # linear term
     optimizer::OT
     mnp::Bool
 end
 
-function QuadraticLPCorrection(A::H, b::LT) where {H, LT}
+function QuadraticLPCorrection(A::H, b::LT) where {H,LT}
     optimizer = MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true))
-    return QuadraticLPCorrection{H, LT, typeof(optimizer)}(A, b, optimizer, false)
+    return QuadraticLPCorrection{H,LT,typeof(optimizer)}(A, b, optimizer, false)
 end
 
-function QuadraticLPCorrection(A::H, b::LT, optimizer::OT) where {H, LT, OT<:MOI.AbstractOptimizer}
-    return QuadraticLPCorrection{H, LT, OT}(A, b, optimizer, false)
+function QuadraticLPCorrection(A::H, b::LT, optimizer::OT) where {H,LT,OT<:MOI.AbstractOptimizer}
+    return QuadraticLPCorrection{H,LT,OT}(A, b, optimizer, false)
 end
 
 function QuadraticLPCorrection(
@@ -444,12 +444,12 @@ function QuadraticLPCorrection(
     b::LT,
     mnp::Bool,
     optimizer::MOI.AbstractOptimizer=MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
-) where {H, LT}
+) where {H,LT}
     return QuadraticLPCorrection(A, b, optimizer, mnp)
 end
 
 function prepare_corrective_step(
-    corrective_step::QuadraticLPCorrection{H, LT, OT},
+    corrective_step::QuadraticLPCorrection{H,LT,OT},
     f,
     grad!,
     gradient,
@@ -458,12 +458,12 @@ function prepare_corrective_step(
     lmo,
     primal,
     phi_value,
-) where {H, LT, OT<:MOI.AbstractOptimizer}
+) where {H,LT,OT<:MOI.AbstractOptimizer}
     return false
 end
 
 function run_corrective_step(
-    step::QuadraticLPCorrection{H, LT, OT},
+    step::QuadraticLPCorrection{H,LT,OT},
     f,
     grad!,
     gradient,
@@ -483,7 +483,7 @@ function run_corrective_step(
     memory_mode,
     epsilon,
     d,
-) where {H, LT, OT<:MOI.AbstractOptimizer}
+) where {H,LT,OT<:MOI.AbstractOptimizer}
 
     nv = length(active_set)
     o = step.optimizer
@@ -496,7 +496,7 @@ function run_corrective_step(
         β = MOI.add_variable(o)
         MOI.add_constraint(o, β, MOI.GreaterThan(0.0))
         for j = 1:nv
-            MOI.add_constraint(o,MOI.ScalarAffineFunction{Float64}([MOI.ScalarAffineTerm(1, λ[j]), MOI.ScalarAffineTerm(active_set.weights[j], β)], 0.0), MOI.GreaterThan(0.0)) 
+            MOI.add_constraint(o, MOI.ScalarAffineFunction{Float64}([MOI.ScalarAffineTerm(1, λ[j]), MOI.ScalarAffineTerm(active_set.weights[j], β)], 0.0), MOI.GreaterThan(0.0))
         end
     else
         MOI.add_constraint.(o, λ, MOI.GreaterThan(0.0))
@@ -516,7 +516,7 @@ function run_corrective_step(
         lhs = MOI.ScalarAffineFunction{Float64}([], 0.0)
         Base.sizehint!(lhs.terms, nv)
         if active_set isa
-        Union{ActiveSetQuadraticProductCaching,ActiveSetQuadraticPartialCaching}
+            Union{ActiveSetQuadraticProductCaching,ActiveSetQuadraticPartialCaching}
             # dots_A is a lower triangular matrix
             for j in 1:i
                 push!(
@@ -527,7 +527,7 @@ function run_corrective_step(
                     ),
                 )
             end
-            for j in i+1:nv
+            for j in (i+1):nv
                 push!(
                     lhs.terms,
                     MOI.ScalarAffineTerm(
@@ -563,10 +563,10 @@ function run_corrective_step(
 
     if step.mnp
         MOI.set(
-           o,
-           MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
-           MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], β), 0.0),
-       )
+            o,
+            MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
+            MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], β), 0.0),
+        )
     else
         MOI.set(o, MOI.ObjectiveFunction{typeof(sum_of_variables)}(), sum_of_variables)
     end
