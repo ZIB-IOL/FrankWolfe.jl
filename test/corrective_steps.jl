@@ -23,6 +23,8 @@ using SparseArrays
         @. storage = 2 * (x - xp)
     end
 
+    hessian = Matrix(2.0 * I, n, n)
+
     lmo = FrankWolfe.ProbabilitySimplexLMO(1.0)
     x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
 
@@ -87,6 +89,45 @@ using SparseArrays
         @test abs(primal_pw - primal_pw0) <= 1e-6
         @test isapprox(x_pw, x_pw0, rtol=1e-5)
         @test status_pw == FrankWolfe.STATUS_OPTIMAL
+
+        x_sigd, _, primal_sigd, _, status_sigd, _ = FrankWolfe.corrective_frank_wolfe(
+            f,
+            grad!,
+            lmo,
+            FrankWolfe.SimplexGradientDescentStep(lazy),
+            FrankWolfe.ActiveSet([(1.0, x0)]),
+            max_iteration=k,
+            verbose=false,
+        )
+        @test abs(primal_sigd - primal_afw) <= 1e-5
+        @test isapprox(x_sigd, x_afw, rtol=1e-4)
+        @test status_sigd == FrankWolfe.STATUS_OPTIMAL
+
+        x_pgd, _, primal_pgd, _, status_pgd, _ = FrankWolfe.corrective_frank_wolfe(
+            f,
+            grad!,
+            lmo,
+            FrankWolfe.ProjectedGradientDescentStep(hessian=hessian, lazy=lazy),
+            FrankWolfe.ActiveSet([(1.0, x0)]),
+            max_iteration=k,
+            verbose=false,
+        )
+        @test abs(primal_pgd - primal_afw) <= 1e-5
+        @test isapprox(x_pgd, x_afw, rtol=1e-4)
+        @test status_pgd == FrankWolfe.STATUS_OPTIMAL
+
+        x_agd, _, primal_agd, _, status_agd, _ = FrankWolfe.corrective_frank_wolfe(
+            f,
+            grad!,
+            lmo,
+            FrankWolfe.ProjectedGradientDescentStep(hessian=hessian, lazy=lazy, accelerated=true),
+            FrankWolfe.ActiveSet([(1.0, x0)]),
+            max_iteration=k,
+            verbose=false,
+        )
+        @test abs(primal_agd - primal_afw) <= 1e-5
+        @test isapprox(x_agd, x_afw, rtol=1e-4)
+        @test status_agd == FrankWolfe.STATUS_OPTIMAL
     end
 
     lazy = true
