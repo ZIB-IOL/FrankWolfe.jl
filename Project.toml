@@ -30,7 +30,7 @@ FrankWolfeProxExt = "ProximalOperators"
 [compat]
 Aqua = "0.8"
 Arpack = "0.5"
-CSV = "0.10"
+CSV = "0.10, 1"
 Combinatorics = "1"
 DataFrames = "1"
 Distributions = "0.25"
