@@ -64,6 +64,12 @@ Note that these parameters can also be automatically detected, but the precision
 
 See the examples `quadratic.jl` and `quadratic_A.jl` for the exact syntax.
 
+## Quadratic correction steps
+
+For convex quadratic objectives, [`FrankWolfe.QuadraticLSCorrection`](@ref) and [`FrankWolfe.QuadraticLPCorrection`](@ref) implement the quadratic correction steps of [Halbey, Rakotomandimby, Besançon, Designolle, Pokutta (2025)](https://arxiv.org/abs/2506.02635).
+They minimize the quadratic over the affine hull of the current active set by solving a linear system or a linear program. These steps are typically wrapped in [`FrankWolfe.ScheduledStep`](@ref) with a cheaper fallback step.
+See [Quadratic corrections](@ref) for a complete example.
+
 ## Miscellaneous
 
 - Emphasis: All solvers support emphasis (parameter `Emphasis`) to either exploit vectorized linear algebra or be memory efficient, e.g., for large-scale instances
