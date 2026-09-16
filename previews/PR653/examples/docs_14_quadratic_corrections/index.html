@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Quadratic corrections · FrankWolfe.jl</title><meta name="title" content="Quadratic corrections · FrankWolfe.jl"/><meta property="og:title" content="Quadratic corrections · FrankWolfe.jl"/><meta property="twitter:title" content="Quadratic corrections · FrankWolfe.jl"/><meta name="description" content="Documentation for FrankWolfe.jl."/><meta property="og:description" content="Documentation for FrankWolfe.jl."/><meta property="twitter:description" content="Documentation for FrankWolfe.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.63.2/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">FrankWolfe.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../basics/">How does it work?</a></li><li><a class="tocitem" href="../../advanced/">Advanced features</a></li><li><input class="collapse-toggle" id="menuitem-4" type="checkbox" checked/><label class="tocitem" for="menuitem-4"><span class="docs-label">Examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../docs_00_fw_visualized/">Visualization of Frank-Wolfe running on a 2-dimensional polytope</a></li><li><a class="tocitem" href="../docs_01_mathopt_lmo/">Comparison with MathOptInterface on a Probability Simplex</a></li><li><a class="tocitem" href="../docs_02_polynomial_regression/">Polynomial Regression</a></li><li><a class="tocitem" href="../docs_03_matrix_completion/">Matrix Completion</a></li><li><a class="tocitem" href="../docs_04_rational_opt/">Exact Optimization with Rational Arithmetic</a></li><li><a class="tocitem" href="../docs_05_blended_cg/">Blended Conditional Gradients</a></li><li><a class="tocitem" href="../docs_06_spectrahedron/">Spectrahedron</a></li><li><a class="tocitem" href="../docs_07_shifted_norm_polytopes/">FrankWolfe for scaled, shifted <span>$\ell^1$</span> and <span>$\ell^{\infty}$</span> norm balls</a></li><li><a class="tocitem" href="../docs_08_callback_and_tracking/">Tracking, counters and custom callbacks for Frank Wolfe</a></li><li><a class="tocitem" href="../docs_09_extra_vertex_storage/">Extra-lazification</a></li><li><a class="tocitem" href="../docs_10_alternating_methods/">Alternating methods</a></li><li><a class="tocitem" href="../docs_11_block_coordinate_fw/">Block-Coordinate Frank-Wolfe and Block-Vectors</a></li><li><a class="tocitem" href="../docs_12_quadratic_symmetric/">Accelerations for quadratic functions and symmetric problems</a></li><li><a class="tocitem" href="../docs_13_dca_fw/">Difference-of-Convex Algorithm with Frank-Wolfe</a></li><li class="is-active"><a class="tocitem" href>Quadratic corrections</a><ul class="internal"><li><a class="tocitem" href="#Problem-data"><span>Problem data</span></a></li><li><a class="tocitem" href="#Blended-pairwise-conditional-gradients"><span>Blended pairwise conditional gradients</span></a></li><li><a class="tocitem" href="#Quadratic-corrections-with-a-pairwise-fallback"><span>Quadratic corrections with a pairwise fallback</span></a></li><li><a class="tocitem" href="#Comparison"><span>Comparison</span></a></li></ul></li></ul></li><li><input class="collapse-toggle" id="menuitem-5" type="checkbox"/><label class="tocitem" for="menuitem-5"><span class="docs-label">API reference</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../reference/0_reference/">API Reference</a></li><li><a class="tocitem" href="../../reference/1_algorithms/">Algorithms</a></li><li><a class="tocitem" href="../../reference/2_lmo/">Linear Minimization Oracles</a></li><li><a class="tocitem" href="../../reference/3_backend/">Utilities and data structures</a></li><li><a class="tocitem" href="../../reference/4_linesearch/">Line search and step size settings</a></li><li><a class="tocitem" href="../../reference/5_gradient_descent/">Adaptive Proximal Gradient Descent Methods</a></li></ul></li><li><a class="tocitem" href="../../contributing/">Contributing</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Quadratic corrections</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Quadratic corrections</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/ZIB-IOL/FrankWolfe.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/ZIB-IOL/FrankWolfe.jl/blob/master/examples/docs_14_quadratic_corrections.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><pre class="documenter-example-output"><code class="nohighlight hljs ansi">plot_sparsity (generic function with 1 method)</code></pre><h1 id="Quadratic-corrections"><a class="docs-heading-anchor" href="#Quadratic-corrections">Quadratic corrections</a><a id="Quadratic-corrections-1"></a><a class="docs-heading-anchor-permalink" href="#Quadratic-corrections" title="Permalink"></a></h1><p>This example compares quadratic correction steps for a convex quadratic objective over the <span>$K$</span>-sparse polytope</p><p class="math-container">\[\mathcal{P}_{K,\tau} = \operatorname{conv}\bigl\{ x \in \{\pm \tau/K, 0\}^n : \|x\|_0 \le K \bigr\}.\]</p><p>We solve a least-squares problem</p><p class="math-container">\[\min_{x \in \mathcal{P}_{K,\tau}} \frac{1}{m}\|A x - y\|_2^2,\]</p><p>so the Hessian is <span>$\nabla^2 f = (2/m) A^\top A$</span> and the linear term of <span>$\nabla f(x) = (2/m)(A^\top A x - A^\top y)$</span> is <span>$b = -(2/m) A^\top y$</span>.</p><p>The methods follow <a href="https://arxiv.org/abs/2506.02635">Halbey, Rakotomandimby, Besançon, Designolle, Pokutta (2025)</a>, <em>Efficient Quadratic Corrections for Frank-Wolfe Algorithms</em>:</p><ul><li><strong>BPCG</strong>: blended pairwise conditional gradients (local pairwise steps only).</li><li><strong>QC-LS</strong>: <a href="../../reference/1_algorithms/#FrankWolfe.QuadraticLSCorrection"><code>FrankWolfe.QuadraticLSCorrection</code></a> with <code>mnp=false</code> — affine minimizer via a linear system, accepted only if it lies in the convex hull (first branch of Algorithm 6).</li><li><strong>QC-LS MNP</strong>: the same linear system with a Wolfe ratio test, i.e. <strong>QC-MNP</strong> (Algorithm 6).</li><li><strong>QC-LP</strong>: <a href="../../reference/1_algorithms/#FrankWolfe.QuadraticLPCorrection"><code>FrankWolfe.QuadraticLPCorrection</code></a> with <code>mnp=false</code> — <strong>QC-LP</strong> (Algorithm 5).</li><li><strong>QC-LP MNP</strong>: the LP form of QC-MNP (Algorithm 8).</li></ul><p>Quadratic corrections are combined with BPCG pairwise steps through <a href="../../reference/1_algorithms/#FrankWolfe.ScheduledStep"><code>FrankWolfe.ScheduledStep</code></a>. If a non-MNP correction is infeasible, the pairwise step is used as fallback.</p><pre><code class="language-julia hljs">using FrankWolfe
+using LinearAlgebra
+using Random
+
+import HiGHS
+import MathOptInterface as MOI
+
+include(&quot;plot_utils.jl&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">plot_sparsity (generic function with 1 method)</code></pre><h2 id="Problem-data"><a class="docs-heading-anchor" href="#Problem-data">Problem data</a><a id="Problem-data-1"></a><a class="docs-heading-anchor-permalink" href="#Problem-data" title="Permalink"></a></h2><pre><code class="language-julia hljs">n_features = 500
+n_samples = 10000
+K = 5
+τ = 1.0
+max_iter = 5000
+target_tolerance = 1e-6
+
+Random.seed!(1)
+A = randn(n_samples, n_features)
+y = randn(n_samples)
+AA = A&#39; * A
+Aty = A&#39; * y
+
+hessian = (2 / n_samples) * AA
+linear_term = -(2 / n_samples) * Aty
+
+f(x) = (1 / n_samples) * norm(A * x - y)^2
+function grad!(storage, x)
+    mul!(storage, AA, x)
+    storage .-= Aty
+    storage .*= 2 / n_samples
+end
+
+lmo = FrankWolfe.KSparseLMO(K, τ)
+x0 = FrankWolfe.compute_extreme_point(lmo, ones(n_features))
+
+common_kw = (;
+    max_iteration=max_iter,
+    epsilon=target_tolerance,
+    verbose=true,
+    trajectory=true,
+    print_iter=max_iter ÷ 5,
+)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(max_iteration = 5000, epsilon = 1.0e-6, verbose = true, trajectory = true, print_iter = 1000)</code></pre><h2 id="Blended-pairwise-conditional-gradients"><a class="docs-heading-anchor" href="#Blended-pairwise-conditional-gradients">Blended pairwise conditional gradients</a><a id="Blended-pairwise-conditional-gradients-1"></a><a class="docs-heading-anchor-permalink" href="#Blended-pairwise-conditional-gradients" title="Permalink"></a></h2><pre><code class="language-julia hljs">result_bpcg = FrankWolfe.blended_pairwise_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    copy(x0);
+    common_kw...,
+    lazy=true,
+)
+traj_bpcg = result_bpcg.traj_data</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">2108-element Vector{Any}:
+ (1, 6.030930494921873, -14.245231388379807, 20.27616188330168, 0.0)
+ (2, 0.9950989998402416, -9.142981941810598, 10.13808094165084, 0.042309775)
+ (3, 0.9950989998402416, -4.0739414709851784, 5.06904047082542, 0.082896797)
+ (4, 0.9950989998402416, -1.5394212355724681, 2.53452023541271, 0.083175877)
+ (5, 0.9950989998402416, -0.2721611178661133, 1.267260117706355, 0.083412734)
+ (6, 0.9950989998402416, 0.36146894098706417, 0.6336300588531775, 0.083637142)
+ (7, 0.9950989998402416, 0.678283970413653, 0.31681502942658873, 0.083870874)
+ (8, 0.9950989998402416, 0.678283970413653, 0.31681502942658873, 0.084095292)
+ (9, 0.9916108247191818, 0.6747957952925931, 0.31681502942658873, 0.084305648)
+ (10, 0.9888359042137943, 0.6720208747872056, 0.31681502942658873, 0.084585279)
+ ⋮
+ (2100, 0.9444378757651188, 0.9444366672116924, 1.208553426462512e-6, 18.711585726)
+ (2101, 0.9444378757650582, 0.9444366672116318, 1.208553426462512e-6, 18.721508232)
+ (2102, 0.9444378757650315, 0.944436667211605, 1.208553426462512e-6, 18.731366322)
+ (2103, 0.9444378757649771, 0.9444366672115506, 1.208553426462512e-6, 18.741503141)
+ (2104, 0.9444378757649516, 0.9444366672115252, 1.208553426462512e-6, 18.751442172)
+ (2105, 0.9444378757649257, 0.9444366672114992, 1.208553426462512e-6, 18.761494254)
+ (2106, 0.9444378757648729, 0.9444372714881597, 6.04276713231256e-7, 18.771386535)
+ (2106, 0.9444378757648729, 0.9444372714881597, 6.04276713231256e-7, 18.778556668)
+ (2106, 0.9444378757648729, 0.9444369016113976, 9.7415347528581e-7, 18.781539639)</code></pre><h2 id="Quadratic-corrections-with-a-pairwise-fallback"><a class="docs-heading-anchor" href="#Quadratic-corrections-with-a-pairwise-fallback">Quadratic corrections with a pairwise fallback</a><a id="Quadratic-corrections-with-a-pairwise-fallback-1"></a><a class="docs-heading-anchor-permalink" href="#Quadratic-corrections-with-a-pairwise-fallback" title="Permalink"></a></h2><p>All QC variants share the same scheduler and BPCG fallback. A new <a href="@ref"><code>FrankWolfe.LogScheduler</code></a> is created for each run so that the atom counter starts from zero.</p><pre><code class="language-julia hljs">qc_scheduler() = FrankWolfe.LogScheduler(start_time=10, scaling_factor=1.0)
+bpcg_step() = FrankWolfe.BlendedPairwiseStep(true)
+silent_optimizer() =
+    MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() =&gt; true))
+
+function run_qc(correction)
+    active_set = FrankWolfe.ActiveSetQuadraticProductCaching(
+        [(1.0, copy(x0))],
+        hessian,
+        linear_term,
+    )
+    step = FrankWolfe.ScheduledStep(bpcg_step(), correction, qc_scheduler())
+    return FrankWolfe.corrective_frank_wolfe(f, grad!, lmo, step, active_set; common_kw...)
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">run_qc (generic function with 1 method)</code></pre><p>QC-LS (linear system, no ratio test):</p><pre><code class="language-julia hljs">result_qc_ls = run_qc(FrankWolfe.QuadraticLSCorrection(hessian, linear_term, false))
+traj_qc_ls = result_qc_ls.traj_data</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">407-element Vector{Any}:
+ (1, 6.030930494921873, -14.245231388379807, 20.27616188330168, 0.0)
+ (3, 0.9950989998402416, 0.7281873501123759, 0.2669116497278658, 0.846807546)
+ (4, 0.9916108247191818, 0.7246991749913161, 0.2669116497278658, 0.849704126)
+ (5, 0.9888359042137943, 0.7219242544859286, 0.2669116497278658, 0.85228443)
+ (6, 0.9862376608312549, 0.719326011103389, 0.2669116497278658, 0.854866637)
+ (7, 0.9839250250334386, 0.7170133753055727, 0.2669116497278658, 0.857520282)
+ (8, 0.9818176793461341, 0.7149060296182683, 0.2669116497278658, 0.86011656)
+ (9, 0.9799474655589236, 0.7130358158310579, 0.2669116497278658, 0.862743384)
+ (10, 0.9782144681639319, 0.7113028184360661, 0.2669116497278658, 0.865381135)
+ (11, 0.9766585736592411, 0.7097469239313754, 0.2669116497278658, 0.868001579)
+ ⋮
+ (441, 0.9444378757661483, 0.9444350190991387, 2.8566670096339184e-6, 2.139629734)
+ (442, 0.944437875766025, 0.9444350190990154, 2.8566670096339184e-6, 2.142340955)
+ (444, 0.9444378757641962, 0.9444350190971866, 2.8566670096339184e-6, 2.147271497)
+ (446, 0.9444378757640656, 0.944436583739007, 1.292025058633749e-6, 2.150746278)
+ (447, 0.9444378757639825, 0.9444365837389239, 1.292025058633749e-6, 2.153515586)
+ (448, 0.9444378757639147, 0.9444365837388561, 1.292025058633749e-6, 2.156461401)
+ (449, 0.944437875763851, 0.9444365837387924, 1.292025058633749e-6, 2.159412143)
+ (450, 0.944437875763799, 0.9444372297512696, 6.460125293168745e-7, 2.163936473)
+ (450, 0.944437875763799, 0.9444368886098973, 9.87153901706984e-7, 2.209610717)</code></pre><p>QC-LS MNP (Algorithm 6):</p><pre><code class="language-julia hljs">result_qc_ls_mnp = run_qc(FrankWolfe.QuadraticLSCorrection(hessian, linear_term, true))
+traj_qc_ls_mnp = result_qc_ls_mnp.traj_data</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">407-element Vector{Any}:
+ (1, 6.030930494921873, -14.245231388379807, 20.27616188330168, 0.0)
+ (3, 0.9950989998402416, 0.7281873501123759, 0.2669116497278658, 0.00500899)
+ (4, 0.9916108247191818, 0.7246991749913161, 0.2669116497278658, 0.00775936)
+ (5, 0.9888359042137943, 0.7219242544859286, 0.2669116497278658, 0.010282147)
+ (6, 0.9862376608312549, 0.719326011103389, 0.2669116497278658, 0.012869452)
+ (7, 0.9839250250334386, 0.7170133753055727, 0.2669116497278658, 0.015487012)
+ (8, 0.9818176793461341, 0.7149060296182683, 0.2669116497278658, 0.018061408)
+ (9, 0.9799474655589236, 0.7130358158310579, 0.2669116497278658, 0.020603755)
+ (10, 0.9782144681639319, 0.7113028184360661, 0.2669116497278658, 0.023232852)
+ (11, 0.9766585736592411, 0.7097469239313754, 0.2669116497278658, 0.02578914)
+ ⋮
+ (441, 0.9444378757661483, 0.9444350190991387, 2.8566670096339184e-6, 1.108717244)
+ (442, 0.944437875766025, 0.9444350190990154, 2.8566670096339184e-6, 1.111399762)
+ (444, 0.9444378757641962, 0.9444350190971866, 2.8566670096339184e-6, 1.116385087)
+ (446, 0.9444378757640656, 0.944436583739007, 1.292025058633749e-6, 1.119871284)
+ (447, 0.9444378757639825, 0.9444365837389239, 1.292025058633749e-6, 1.122563347)
+ (448, 0.9444378757639147, 0.9444365837388561, 1.292025058633749e-6, 1.125208689)
+ (449, 0.944437875763851, 0.9444365837387924, 1.292025058633749e-6, 1.127865869)
+ (450, 0.944437875763799, 0.9444372297512696, 6.460125293168745e-7, 1.131916596)
+ (450, 0.944437875763799, 0.9444368886098973, 9.87153901706984e-7, 1.133136072)</code></pre><p>QC-LP (Algorithm 5):</p><pre><code class="language-julia hljs">result_qc_lp = run_qc(FrankWolfe.QuadraticLPCorrection(hessian, linear_term, silent_optimizer(), false))
+traj_qc_lp = result_qc_lp.traj_data</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">407-element Vector{Any}:
+ (1, 6.030930494921873, -14.245231388379807, 20.27616188330168, 0.0)
+ (3, 0.9950989998402416, 0.7281873501123759, 0.2669116497278658, 0.548302791)
+ (4, 0.9916108247191818, 0.7246991749913161, 0.2669116497278658, 0.550964888)
+ (5, 0.9888359042137943, 0.7219242544859286, 0.2669116497278658, 0.553498332)
+ (6, 0.9862376608312549, 0.719326011103389, 0.2669116497278658, 0.556013488)
+ (7, 0.9839250250334386, 0.7170133753055727, 0.2669116497278658, 0.558721384)
+ (8, 0.9818176793461341, 0.7149060296182683, 0.2669116497278658, 0.561281648)
+ (9, 0.9799474655589236, 0.7130358158310579, 0.2669116497278658, 0.563844236)
+ (10, 0.9782144681639319, 0.7113028184360661, 0.2669116497278658, 0.566523819)
+ (11, 0.9766585736592411, 0.7097469239313754, 0.2669116497278658, 0.569074479)
+ ⋮
+ (441, 0.9444378757661483, 0.9444350190991395, 2.8566670087914446e-6, 3.285912762)
+ (442, 0.944437875766025, 0.9444350190990162, 2.8566670087914446e-6, 3.288564744)
+ (444, 0.9444378757641962, 0.9444350190971874, 2.8566670087914446e-6, 3.541396161)
+ (446, 0.9444378757640656, 0.9444365837389415, 1.2920251240833533e-6, 3.546373173)
+ (447, 0.9444378757639825, 0.9444365837388584, 1.2920251240833533e-6, 3.549122472)
+ (448, 0.9444378757639147, 0.9444365837387906, 1.2920251240833533e-6, 3.55175216)
+ (449, 0.944437875763851, 0.9444365837387269, 1.2920251240833533e-6, 3.554392855)
+ (450, 0.944437875763799, 0.944437229751237, 6.460125620416766e-7, 3.558429151)
+ (450, 0.944437875763799, 0.9444368886103918, 9.871534072446412e-7, 3.559624541)</code></pre><p>QC-LP MNP (Algorithm 8):</p><pre><code class="language-julia hljs">result_qc_lp_mnp = run_qc(FrankWolfe.QuadraticLPCorrection(hessian, linear_term, silent_optimizer(), true))
+traj_qc_lp_mnp = result_qc_lp_mnp.traj_data</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">407-element Vector{Any}:
+ (1, 6.030930494921873, -14.245231388379807, 20.27616188330168, 0.0)
+ (3, 0.9950989998402416, 0.7281873501123759, 0.2669116497278658, 0.003894722)
+ (4, 0.9916108247191818, 0.7246991749913161, 0.2669116497278658, 0.006484501)
+ (5, 0.9888359042137943, 0.7219242544859286, 0.2669116497278658, 0.009033648)
+ (6, 0.9862376608312549, 0.719326011103389, 0.2669116497278658, 0.011602074)
+ (7, 0.9839250250334386, 0.7170133753055727, 0.2669116497278658, 0.014207186)
+ (8, 0.9818176793461341, 0.7149060296182683, 0.2669116497278658, 0.016903054)
+ (9, 0.9799474655589236, 0.7130358158310579, 0.2669116497278658, 0.01985699)
+ (10, 0.9782144681639319, 0.7113028184360661, 0.2669116497278658, 0.022780491)
+ (11, 0.9766585736592411, 0.7097469239313754, 0.2669116497278658, 0.025701378)
+ ⋮
+ (441, 0.9444378757661483, 0.9444350190991485, 2.856666999812415e-6, 21.068361733)
+ (442, 0.944437875766025, 0.9444350190990252, 2.856666999812415e-6, 21.07102337)
+ (444, 0.9444378757641962, 0.9444350190971964, 2.856666999812415e-6, 24.130852465)
+ (446, 0.9444378757640656, 0.9444365837390151, 1.2920250505416728e-6, 24.136477052)
+ (447, 0.9444378757639825, 0.944436583738932, 1.2920250505416728e-6, 24.139573233)
+ (448, 0.9444378757639147, 0.9444365837388642, 1.2920250505416728e-6, 24.142355611)
+ (449, 0.944437875763851, 0.9444365837388005, 1.2920250505416728e-6, 24.1450321)
+ (450, 0.944437875763799, 0.9444372297512738, 6.460125252708364e-7, 24.149161356)
+ (450, 0.944437875763799, 0.9444368886098957, 9.871539032579489e-7, 24.150488224)</code></pre><h2 id="Comparison"><a class="docs-heading-anchor" href="#Comparison">Comparison</a><a id="Comparison-1"></a><a class="docs-heading-anchor-permalink" href="#Comparison" title="Permalink"></a></h2><p>QC-LS and QC-LP agree when the affine minimizer is unique (strongly convex quadratic). QC-MNP can drop atoms even when the affine minimizer lies outside the convex hull, so it typically makes more progress per correction than QC-LP, which then falls back to a pairwise step.</p><pre><code class="language-julia hljs">data = [traj_bpcg, traj_qc_ls, traj_qc_ls_mnp, traj_qc_lp, traj_qc_lp_mnp]
+labels = [&quot;BPCG&quot;, &quot;QC-LS&quot;, &quot;QC-LS MNP&quot;, &quot;QC-LP&quot;, &quot;QC-LP MNP&quot;]
+plot_trajectories(data, labels; xscalelog=false)</code></pre><img src="effccad6.svg" alt="Example block output"/><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../docs_13_dca_fw/">« Difference-of-Convex Algorithm with Frank-Wolfe</a><a class="docs-footer-nextpage" href="../../reference/0_reference/">API Reference »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.19.0 on <span class="colophon-date" title="Wednesday 16 September 2026 15:13">Wednesday 16 September 2026</span>. Using Julia version 1.10.12.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
