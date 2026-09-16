@@ -32,25 +32,18 @@ linear_term = -X' * y
 f(β) = 0.5 * norm(X * β - y)^2
 function grad!(storage, β)
     mul!(storage, X', X * β)
-    storage .+= linear_term
+    return storage .+= linear_term
 end
 
 lmo = FrankWolfe.KSparseLMO(K, τ)
 x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n_features))
 
-common_kw = (;
-    max_iteration=max_iter,
-    epsilon=target_tolerance,
-    verbose=false,
-)
+common_kw = (; max_iteration=max_iter, epsilon=target_tolerance, verbose=false)
 
 @testset "Quadratic Corrections - Linear Regression" begin
     @testset "QC-LS without MNP" begin
-        as_ls_no_mnp = FrankWolfe.ActiveSetQuadraticProductCaching(
-            [(1.0, copy(x0))],
-            hessian,
-            linear_term,
-        )
+        as_ls_no_mnp =
+            FrankWolfe.ActiveSetQuadraticProductCaching([(1.0, copy(x0))], hessian, linear_term)
         step_ls_no_mnp = FrankWolfe.ScheduledStep(
             FrankWolfe.BlendedPairwiseStep(true),
             FrankWolfe.QuadraticLSCorrection(hessian, linear_term, false),
@@ -68,41 +61,27 @@ common_kw = (;
     end
 
     @testset "QC-LS with MNP" begin
-        as_ls_mnp = FrankWolfe.ActiveSetQuadraticProductCaching(
-            [(1.0, copy(x0))],
-            hessian,
-            linear_term,
-        )
+        as_ls_mnp =
+            FrankWolfe.ActiveSetQuadraticProductCaching([(1.0, copy(x0))], hessian, linear_term)
         step_ls_mnp = FrankWolfe.ScheduledStep(
             FrankWolfe.BlendedPairwiseStep(true),
             FrankWolfe.QuadraticLSCorrection(hessian, linear_term, true),
         )
-        result_qc_ls_mnp = FrankWolfe.corrective_frank_wolfe(
-            f,
-            grad!,
-            lmo,
-            step_ls_mnp,
-            as_ls_mnp;
-            common_kw...,
-        )
+        result_qc_ls_mnp =
+            FrankWolfe.corrective_frank_wolfe(f, grad!, lmo, step_ls_mnp, as_ls_mnp; common_kw...)
 
         @test result_qc_ls_mnp.dual_gap < target_tolerance
     end
 
     @testset "QC-LP without MNP" begin
-        as_lp_no_mnp = FrankWolfe.ActiveSetQuadraticProductCaching(
-            [(1.0, copy(x0))],
-            hessian,
-            linear_term,
-        )
+        as_lp_no_mnp =
+            FrankWolfe.ActiveSetQuadraticProductCaching([(1.0, copy(x0))], hessian, linear_term)
         step_lp_no_mnp = FrankWolfe.ScheduledStep(
             FrankWolfe.BlendedPairwiseStep(true),
             FrankWolfe.QuadraticLPCorrection(
                 hessian,
                 linear_term,
-                MOI.instantiate(
-                    MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true),
-                ),
+                MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
                 false,
             ),
         )
@@ -119,30 +98,19 @@ common_kw = (;
     end
 
     @testset "QC-LP with MNP" begin
-        as_lp_mnp = FrankWolfe.ActiveSetQuadraticProductCaching(
-            [(1.0, copy(x0))],
-            hessian,
-            linear_term,
-        )
+        as_lp_mnp =
+            FrankWolfe.ActiveSetQuadraticProductCaching([(1.0, copy(x0))], hessian, linear_term)
         step_lp_mnp = FrankWolfe.ScheduledStep(
             FrankWolfe.BlendedPairwiseStep(true),
             FrankWolfe.QuadraticLPCorrection(
                 hessian,
                 linear_term,
-                MOI.instantiate(
-                    MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true),
-                ),
+                MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
                 true,
             ),
         )
-        result_qc_lp_mnp = FrankWolfe.corrective_frank_wolfe(
-            f,
-            grad!,
-            lmo,
-            step_lp_mnp,
-            as_lp_mnp;
-            common_kw...,
-        )
+        result_qc_lp_mnp =
+            FrankWolfe.corrective_frank_wolfe(f, grad!, lmo, step_lp_mnp, as_lp_mnp; common_kw...)
 
         @test result_qc_lp_mnp.dual_gap < target_tolerance
     end
