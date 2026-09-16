@@ -680,7 +680,8 @@ function run_corrective_step(
     should_fw_step = false
     take_local = false
     fw_index = v_loc
-    if corrective_step.lazy && local_pairwise_gap >= max(phi_value / corrective_step.lazy_tolerance, epsilon)
+    if corrective_step.lazy &&
+       local_pairwise_gap >= max(phi_value / corrective_step.lazy_tolerance, epsilon)
         fw_vertex = v_local
         d = muladd_memory_mode(memory_mode, d, a, v_local)
         take_local = true
