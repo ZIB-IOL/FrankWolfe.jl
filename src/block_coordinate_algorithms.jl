@@ -33,7 +33,7 @@ CyclicUpdate() = CyclicUpdate(-1)
 
 """
 The stochastic update initiates a sequence of update rounds.
-In each round only one block is updated. The order of the blocks is a random.
+In each round only one block is updated. The order of the blocks is a randomly permutated.
 """
 struct StochasticUpdate <: BlockCoordinateUpdateOrder
     limit::Int
@@ -125,10 +125,12 @@ function select_update_indices(u::StochasticUpdate, s::CallbackState, _)
     @assert u.limit <= l
     @assert u.limit > 0 || u.limit == -1
 
+    perm = Random.randperm(l)
+
     if u.limit == -1
-        return [[rand(1:l)] for i in 1:l]
+        return [[perm[i]] for i in 1:l]
     end
-    return [[rand(1:l)] for i in 1:u.limit]
+    return [[perm[i]] for i in 1:u.limit]
 end
 
 function sample_without_replacement(n::Int, weights::Vector{Float64})
