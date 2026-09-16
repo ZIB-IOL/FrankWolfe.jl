@@ -12,7 +12,8 @@ steps, but the scheduler is queried only when a corrective step is due.
 `scheduler` may be a [`LogScheduler`](@ref) or a callable
 `(atom_counter, t, active_set) -> Bool`.
 """
-struct ScheduledStep{S<:FrankWolfe.CorrectiveStep,T<:FrankWolfe.CorrectiveStep,SF} <: FrankWolfe.CorrectiveStep
+struct ScheduledStep{S<:FrankWolfe.CorrectiveStep,T<:FrankWolfe.CorrectiveStep,SF} <:
+       FrankWolfe.CorrectiveStep
     base_step::S
     special_step::T
     scheduler::SF
@@ -115,7 +116,8 @@ function FrankWolfe.run_corrective_step(
     d,
 )
 
-    _, v_local, v_loc, _, a_lambda, a, a_loc, _, _ = FrankWolfe.active_set_argminmax(active_set, gradient)
+    _, v_local, v_loc, _, a_lambda, a, a_loc, _, _ =
+        FrankWolfe.active_set_argminmax(active_set, gradient)
     grad_dot_x = dot(gradient, x)
     grad_dot_a = dot(gradient, a)
     grad_dot_local_fw_vertex = dot(gradient, v_local)
@@ -126,33 +128,36 @@ function FrankWolfe.run_corrective_step(
         if should_run_scheduled_step(step.scheduler, step.atom_counter[], t, active_set)
             old_len = length(active_set)
             old_weights = hasproperty(active_set, :weights) ? copy(active_set.weights) : nothing
-            x_s, v_s, phi_s, gap_s, _should_fw_step, should_continue = FrankWolfe.run_corrective_step(
-                step.special_step,
-                f,
-                grad!,
-                gradient,
-                x,
-                v,
-                dual_gap,
-                active_set,
-                t,
-                lmo,
-                line_search,
-                linesearch_workspace,
-                primal,
-                phi_value,
-                tot_time,
-                callback,
-                renorm_interval,
-                memory_mode,
-                epsilon,
-                d,
-            )
+            x_s, v_s, phi_s, gap_s, _should_fw_step, should_continue =
+                FrankWolfe.run_corrective_step(
+                    step.special_step,
+                    f,
+                    grad!,
+                    gradient,
+                    x,
+                    v,
+                    dual_gap,
+                    active_set,
+                    t,
+                    lmo,
+                    line_search,
+                    linesearch_workspace,
+                    primal,
+                    phi_value,
+                    tot_time,
+                    callback,
+                    renorm_interval,
+                    memory_mode,
+                    epsilon,
+                    d,
+                )
 
-            success = (length(active_set) != old_len) ||
-                (old_weights !== nothing &&
-                length(active_set.weights) == length(old_weights) &&
-                !all(active_set.weights .== old_weights))
+            success =
+                (length(active_set) != old_len) || (
+                    old_weights !== nothing &&
+                    length(active_set.weights) == length(old_weights) &&
+                    !all(active_set.weights .== old_weights)
+                )
 
             if success # Special step was successful, return
                 return x_s, v_s, phi_s, gap_s, false, should_continue
@@ -226,7 +231,6 @@ symmetric reduced system (Remark 3 / Eq. 10 in the paper)
 The optional field `ls_solve` is an in-place solver `(x, M, rhs; kwargs...) -> Bool`
 for the reduced system of size `|S|-1`. The default uses `M \\ rhs`.
 """
-
 struct QuadraticLSCorrection{H,BT} <: CorrectiveStep
     A::H # Hessian matrix
     b::BT # linear term
@@ -305,7 +309,7 @@ function run_corrective_step(
                 # (vᵢ - w)ᵀ A (vⱼ - w)
                 val =
                     active_set.dots_A[i][j] - active_set.dots_A[j][1] - active_set.dots_A[i][1] +
-                        dA11
+                    dA11
                 A_mat[ii, jj] = val
                 A_mat[jj, ii] = val
             end
@@ -385,7 +389,7 @@ function _truncate_weights(weights::Vector{R}, old_weights::Vector{R}) where {R}
         end
     end
     @assert length(set_indices_zero) >= 1
-    weights = (1-tau_min) * old_weights + tau_min * weights
+    weights = (1 - tau_min) * old_weights + tau_min * weights
     for idx in set_indices_zero
         weights[idx] = 0
     end
@@ -443,7 +447,9 @@ function QuadraticLPCorrection(
     A::H,
     b::LT,
     mnp::Bool,
-    optimizer::MOI.AbstractOptimizer=MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
+    optimizer::MOI.AbstractOptimizer=MOI.instantiate(
+        MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true),
+    ),
 ) where {H,LT}
     return QuadraticLPCorrection(A, b, optimizer, mnp)
 end
@@ -495,8 +501,15 @@ function run_corrective_step(
     if step.mnp
         β = MOI.add_variable(o)
         MOI.add_constraint(o, β, MOI.GreaterThan(0.0))
-        for j = 1:nv
-            MOI.add_constraint(o, MOI.ScalarAffineFunction{Float64}([MOI.ScalarAffineTerm(1, λ[j]), MOI.ScalarAffineTerm(active_set.weights[j], β)], 0.0), MOI.GreaterThan(0.0))
+        for j in 1:nv
+            MOI.add_constraint(
+                o,
+                MOI.ScalarAffineFunction{Float64}(
+                    [MOI.ScalarAffineTerm(1, λ[j]), MOI.ScalarAffineTerm(active_set.weights[j], β)],
+                    0.0,
+                ),
+                MOI.GreaterThan(0.0),
+            )
         end
     else
         MOI.add_constraint.(o, λ, MOI.GreaterThan(0.0))
@@ -515,8 +528,7 @@ function run_corrective_step(
     for i in 2:nv
         lhs = MOI.ScalarAffineFunction{Float64}([], 0.0)
         Base.sizehint!(lhs.terms, nv)
-        if active_set isa
-            Union{ActiveSetQuadraticProductCaching,ActiveSetQuadraticPartialCaching}
+        if active_set isa Union{ActiveSetQuadraticProductCaching,ActiveSetQuadraticPartialCaching}
             # dots_A is a lower triangular matrix
             for j in 1:i
                 push!(
