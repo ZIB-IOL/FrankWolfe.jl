@@ -1109,11 +1109,22 @@ struct ProjectedGradientDescentStep{H,T} <: CorrectiveStep
     accelerated::Bool
     y::Vector{Float64}
     alpha::Ref{Float64}
+    gradient_buffer::Vector{Float64}
+    projection_buffer::Vector{Float64}
 end
 
 function ProjectedGradientDescentStep(; hessian, lazy=false, lazy_tolerance=2.0, accelerated=false)
     hessian === nothing && throw(ArgumentError("ProjectedGradientDescentStep requires a hessian"))
-    return ProjectedGradientDescentStep(lazy, lazy_tolerance, hessian, accelerated, [0.0], Ref(0.0))
+    return ProjectedGradientDescentStep(
+        lazy,
+        lazy_tolerance,
+        hessian,
+        accelerated,
+        [0.0],
+        Ref(0.0),
+        Float64[],
+        Float64[],
+    )
 end
 
 function prepare_corrective_step(
@@ -1225,9 +1236,12 @@ function run_corrective_step(
             corrective_step.alpha[] = 0.0
         end
         y = corrective_step.y
-        # TODO optimize to reduce allocations
-        grad_y = b + M * y
-        λ_new, drop_indices = _simplex_projection_with_drops(y .- grad_y / L_reduced)
+        grad_y = resize!(corrective_step.gradient_buffer, k)
+        copy!(grad_y, b)
+        mul!(grad_y, M, y, true, true)
+        projection_argument = resize!(corrective_step.projection_buffer, k)
+        @. projection_argument = y - grad_y / L_reduced
+        λ_new, drop_indices = _simplex_projection_with_drops(projection_argument)
         if mu_reduced < 1e-3
             alpha_old = corrective_step.alpha[]
             corrective_step.alpha[] = 0.5 * (1 + sqrt(1 + 4 * alpha_old^2))
@@ -1242,8 +1256,12 @@ function run_corrective_step(
     else
         empty!(corrective_step.y)
         corrective_step.alpha[] = 0.0
-        grad_λ = b + M * λ
-        λ, drop_indices = _simplex_projection_with_drops(λ .- grad_λ / L_reduced)
+        grad_λ = resize!(corrective_step.gradient_buffer, k)
+        copy!(grad_λ, b)
+        mul!(grad_λ, M, λ, true, true)
+        projection_argument = resize!(corrective_step.projection_buffer, k)
+        @. projection_argument = λ - grad_λ / L_reduced
+        λ, drop_indices = _simplex_projection_with_drops(projection_argument)
         gamma = inv(L_reduced)
     end
 
