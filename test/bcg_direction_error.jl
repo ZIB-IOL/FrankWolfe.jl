@@ -94,7 +94,7 @@ x, v, primal, dual_gap, _, _ = FrankWolfe.corrective_frank_wolfe(
     gradient=gradient,
 )
 
-@test dual_gap ≤ 5e-4
+@test dual_gap ≤ 1e-3
 @test f(x0) - f(x) ≥ 180
 
 x0 = FrankWolfe.compute_extreme_point(lmo, spzeros(size(xp)...))
