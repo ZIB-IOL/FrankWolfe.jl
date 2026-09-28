@@ -1107,13 +1107,13 @@ mutable struct ProjectedGradientDescentStep{H,T} <: CorrectiveStep
     lazy_tolerance::T
     hessian::H
     accelerated::Bool
-    y::Any
+    y::Vector{Float64}
     alpha::Float64
 end
 
 function ProjectedGradientDescentStep(; hessian, lazy=false, lazy_tolerance=2.0, accelerated=false)
     hessian === nothing && throw(ArgumentError("ProjectedGradientDescentStep requires a hessian"))
-    return ProjectedGradientDescentStep(lazy, lazy_tolerance, hessian, accelerated, nothing, 0.0)
+    return ProjectedGradientDescentStep(lazy, lazy_tolerance, hessian, accelerated, [0.0], 0.0)
 end
 
 function prepare_corrective_step(
@@ -1220,27 +1220,27 @@ function run_corrective_step(
 
     use_accelerated = corrective_step.accelerated && L_reduced / mu_reduced > one(L_reduced)
     if use_accelerated
-        if corrective_step.y === nothing || length(corrective_step.y) != k
-            corrective_step.y = copy(λ)
+        if length(corrective_step.y) != k
+            copy!(corrective_step.y, λ)
             corrective_step.alpha = 0.0
         end
         y = corrective_step.y
+        # TODO optimize to reduce allocations
         grad_y = b + M * y
         λ_new, drop_indices = _simplex_projection_with_drops(y .- grad_y / L_reduced)
-        if mu_reduced < 1.0e-3
+        if mu_reduced < 1e-3
             alpha_old = corrective_step.alpha
             corrective_step.alpha = 0.5 * (1 + sqrt(1 + 4 * alpha_old^2))
-            gamma = (alpha_old - 1.0) / corrective_step.alpha
+            gamma = (alpha_old - 1) / corrective_step.alpha
         else
-            q = mu_reduced / L_reduced
-            sq = sqrt(q)
+            sq = sqrt(mu_reduced / L_reduced)
             gamma = (1 - sq) / (1 + sq)
         end
         diff = λ_new - λ
         @. y = λ_new + gamma * diff
         λ = λ_new
     else
-        corrective_step.y = nothing
+        empty!(corrective_step.y)
         corrective_step.alpha = 0.0
         grad_λ = b + M * λ
         λ, drop_indices = _simplex_projection_with_drops(λ .- grad_λ / L_reduced)
@@ -1249,7 +1249,7 @@ function run_corrective_step(
 
     update_weights!(active_set, λ)
     deleteat!(active_set, drop_indices)
-    if corrective_step.y !== nothing && !isempty(drop_indices)
+    if length(corrective_step.y) == length(active_set) && !isempty(drop_indices)
         deleteat!(corrective_step.y, drop_indices)
     end
     compute_active_set_iterate!(active_set)
