@@ -58,6 +58,19 @@ Modules = [FrankWolfe]
 Pages = ["corrective_frankwolfe.jl", "corrective_step_interface.jl"]
 ```
 
+### Quadratic correction steps
+
+Quadratic correction steps for convex quadratic objectives, following
+[Halbey, Rakotomandimby, Besançon, Designolle, Pokutta (2025)](https://arxiv.org/abs/2506.02635).
+They are typically combined with a pairwise fallback through [`FrankWolfe.ScheduledStep`](@ref)
+and passed to [`FrankWolfe.corrective_frank_wolfe`](@ref).
+
+```@docs
+FrankWolfe.ScheduledStep
+FrankWolfe.QuadraticLSCorrection
+FrankWolfe.QuadraticLPCorrection
+```
+
 ## Decomposition-invariant methods
 
 ```@autodocs
