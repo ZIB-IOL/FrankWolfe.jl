@@ -1102,18 +1102,18 @@ Requires a Hessian of `f` to build the reduced quadratic and to estimate `L`
 (and `μ` if `accelerated=true`). If the local strong-Wolfe gap is small, a
 Frank-Wolfe step is requested from [`corrective_frank_wolfe`](@ref).
 """
-mutable struct ProjectedGradientDescentStep{H,T} <: CorrectiveStep
+struct ProjectedGradientDescentStep{H,T} <: CorrectiveStep
     lazy::Bool
     lazy_tolerance::T
     hessian::H
     accelerated::Bool
     y::Vector{Float64}
-    alpha::Float64
+    alpha::Ref{Float64}
 end
 
 function ProjectedGradientDescentStep(; hessian, lazy=false, lazy_tolerance=2.0, accelerated=false)
     hessian === nothing && throw(ArgumentError("ProjectedGradientDescentStep requires a hessian"))
-    return ProjectedGradientDescentStep(lazy, lazy_tolerance, hessian, accelerated, [0.0], 0.0)
+    return ProjectedGradientDescentStep(lazy, lazy_tolerance, hessian, accelerated, [0.0], Ref(0.0))
 end
 
 function prepare_corrective_step(
@@ -1222,16 +1222,16 @@ function run_corrective_step(
     if use_accelerated
         if length(corrective_step.y) != k
             copy!(corrective_step.y, λ)
-            corrective_step.alpha = 0.0
+            corrective_step.alpha[] = 0.0
         end
         y = corrective_step.y
         # TODO optimize to reduce allocations
         grad_y = b + M * y
         λ_new, drop_indices = _simplex_projection_with_drops(y .- grad_y / L_reduced)
         if mu_reduced < 1e-3
-            alpha_old = corrective_step.alpha
-            corrective_step.alpha = 0.5 * (1 + sqrt(1 + 4 * alpha_old^2))
-            gamma = (alpha_old - 1) / corrective_step.alpha
+            alpha_old = corrective_step.alpha[]
+            corrective_step.alpha[] = 0.5 * (1 + sqrt(1 + 4 * alpha_old^2))
+            gamma = (alpha_old - 1) / corrective_step.alpha[]
         else
             sq = sqrt(mu_reduced / L_reduced)
             gamma = (1 - sq) / (1 + sq)
@@ -1241,7 +1241,7 @@ function run_corrective_step(
         λ = λ_new
     else
         empty!(corrective_step.y)
-        corrective_step.alpha = 0.0
+        corrective_step.alpha[] = 0.0
         grad_λ = b + M * λ
         λ, drop_indices = _simplex_projection_with_drops(λ .- grad_λ / L_reduced)
         gamma = inv(L_reduced)
