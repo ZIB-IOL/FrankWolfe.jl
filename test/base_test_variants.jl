@@ -318,11 +318,14 @@ end
         momentum=0.95,
         verbose=false,
         line_search=FrankWolfe.Nonconvex(),
-        max_iteration=5000,
+        max_iteration=10000,
         batch_iterator=batch_iterator,
         trajectory=false,
+        rng=StableRNG(1),
     )
     @test batch_iterator.maxreached
+    @test norm(θ - params_perfect) ≤ 0.1 * length(θ)
+
     # SFW damped momentum
     momentum_iterator = FrankWolfe.ExpMomentumIterator()
     θ, _, _, _, _ = FrankWolfe.stochastic_frank_wolfe(
@@ -347,6 +350,19 @@ end
         trajectory=false,
         momentum_iterator=nothing,
     )
+    θ_onesfw, _, _, _, _ = FrankWolfe.stochastic_frank_wolfe(
+        f_stoch,
+        lmo,
+        copy(params),
+        verbose=false,
+        line_search=FrankWolfe.Agnostic(),
+        max_iteration=100_000,
+        batch_size=1,
+        rng=StableRNG(1),
+        momentum_iterator=FrankWolfe.InverseIterateMomentum(),
+        use_one_sample_variant=true,
+    )
+    @test norm(θ_onesfw - params_perfect) ≤ 0.1 * length(θ)
 end
 
 @testset "Away-step FW" begin

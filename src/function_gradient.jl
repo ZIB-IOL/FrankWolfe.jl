@@ -116,6 +116,48 @@ function compute_gradient(
     return f.storage
 end
 
+"""
+    compute_gradient_pair!(prev_storage, f::AbstractStochasticObjective, θ, θ_prev; batch_size, rng)
+
+Computes the stochastic gradient at `θ` (stored in `f.storage`) and at `θ_prev` (stored in `prev_storage`)
+using the **same** random sample for both evaluations.
+The default implementation replays the random number generator.
+"""
+function compute_gradient_pair!(
+    prev_storage,
+    f::AbstractStochasticObjective,
+    θ,
+    θ_prev;
+    batch_size::Integer=length(f.xs) ÷ 10 + 1,
+    rng=Random.GLOBAL_RNG,
+)
+    rng_copy = copy(rng)
+    compute_gradient(f, θ_prev; batch_size=batch_size, rng=rng_copy, full_evaluation=false)
+    copyto!(prev_storage, f.storage)
+    compute_gradient(f, θ; batch_size=batch_size, rng=rng, full_evaluation=false)
+    return f.storage
+end
+
+function compute_gradient_pair!(
+    prev_storage,
+    f::StochasticObjective,
+    θ,
+    θ_prev;
+    batch_size::Integer=length(f.xs) ÷ 10 + 1,
+    rng=Random.GLOBAL_RNG,
+)
+    (batch_size, rand_indices) = _random_indices(f, batch_size, false; rng=rng)
+    prev_storage .= 0
+    f.storage .= 0
+    for idx in rand_indices
+        f.grad!(prev_storage, θ_prev, f.xs[idx])
+        f.grad!(f.storage, θ, f.xs[idx])
+    end
+    prev_storage ./= batch_size
+    f.storage ./= batch_size
+    return f.storage
+end
+
 function compute_value_gradient(
     f::StochasticObjective,
     θ;
