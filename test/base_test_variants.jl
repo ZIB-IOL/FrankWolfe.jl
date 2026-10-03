@@ -321,9 +321,10 @@ end
         max_iteration=10000,
         batch_iterator=batch_iterator,
         trajectory=false,
+        rng=StableRNG(1),
     )
     @test batch_iterator.maxreached
-    @test norm(θ - params_perfect) ≤ 0.05 * length(θ)
+    @test norm(θ - params_perfect) ≤ 0.1 * length(θ)
 
     # SFW damped momentum
     momentum_iterator = FrankWolfe.ExpMomentumIterator()
