@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Spectrahedron · FrankWolfe.jl</title><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">FrankWolfe.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../basics/">How does it work?</a></li><li><a class="tocitem" href="../../advanced/">Advanced features</a></li><li><input class="collapse-toggle" id="menuitem-4" type="checkbox" checked/><label class="tocitem" for="menuitem-4"><span class="docs-label">Examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../docs_0_fw_visualized/">Visualization of Frank-Wolfe running on a 2-dimensional polytope</a></li><li><a class="tocitem" href="../docs_1_mathopt_lmo/">Comparison with MathOptInterface on a Probability Simplex</a></li><li><a class="tocitem" href="../docs_2_polynomial_regression/">Polynomial Regression</a></li><li><a class="tocitem" href="../docs_3_matrix_completion/">Matrix Completion</a></li><li><a class="tocitem" href="../docs_4_rational_opt/">Exact Optimization with Rational Arithmetic</a></li><li><a class="tocitem" href="../docs_5_blended_cg/">Blended Conditional Gradients</a></li><li class="is-active"><a class="tocitem" href>Spectrahedron</a><ul class="internal"><li><a class="tocitem" href="#Setting-up-the-input-data,-objective,-and-gradient"><span>Setting up the input data, objective, and gradient</span></a></li><li><a class="tocitem" href="#Running-standard-and-lazified-Frank-Wolfe"><span>Running standard and lazified Frank-Wolfe</span></a></li><li><a class="tocitem" href="#Plotting-the-resulting-trajectories"><span>Plotting the resulting trajectories</span></a></li></ul></li><li><a class="tocitem" href="../docs_7_shifted_norm_polytopes/">FrankWolfe for scaled, shifted <span>$\ell^1$</span> and <span>$\ell^{\infty}$</span> norm balls</a></li><li><a class="tocitem" href="../docs_8_callback_and_tracking/">Tracking, counters and custom callbacks for Frank Wolfe</a></li><li><a class="tocitem" href="../docs_9_extra_vertex_storage/">Extra-lazification</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-5" type="checkbox"/><label class="tocitem" for="menuitem-5"><span class="docs-label">API reference</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../reference/0_reference/">API Reference</a></li><li><a class="tocitem" href="../../reference/1_algorithms/">Algorithms</a></li><li><a class="tocitem" href="../../reference/2_lmo/">Linear Minimization Oracles</a></li><li><a class="tocitem" href="../../reference/3_backend/">Utilities and data structures</a></li><li><a class="tocitem" href="../../reference/4_linesearch/">Line search and step size settings</a></li></ul></li><li><a class="tocitem" href="../../contributing/">Contributing</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Spectrahedron</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Spectrahedron</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/ZIB-IOL/FrankWolfe.jl/blob/master/examples/docs_6_spectrahedron.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Spectrahedron"><a class="docs-heading-anchor" href="#Spectrahedron">Spectrahedron</a><a id="Spectrahedron-1"></a><a class="docs-heading-anchor-permalink" href="#Spectrahedron" title="Permalink"></a></h1><p>This example shows an optimization problem over the spectraplex:</p><p class="math-container">\[S = \{X \in \mathbb{S}_+^n, Tr(X) = 1\}\]</p><p>with <span>$\mathbb{S}_+^n$</span> the set of positive semidefinite matrices. Linear optimization with symmetric objective <span>$D$</span> over the spetraplex consists in computing the leading eigenvector of <span>$D$</span>.</p><p>The package also exposes <code>UnitSpectrahedronLMO</code> which corresponds to the feasible set:</p><p class="math-container">\[S_u = \{X \in \mathbb{S}_+^n, Tr(X) \leq 1\}\]</p><pre><code class="language-julia hljs">using FrankWolfe
+using LinearAlgebra
+using Random
+using SparseArrays</code></pre><p>The objective function will be the symmetric squared distance to a set of known or observed entries <span>$Y_{ij}$</span> of the matrix.</p><p class="math-container">\[f(X) = \sum_{(i,j) \in L} 1/2 (X_{ij} - Y_{ij})^2\]</p><h2 id="Setting-up-the-input-data,-objective,-and-gradient"><a class="docs-heading-anchor" href="#Setting-up-the-input-data,-objective,-and-gradient">Setting up the input data, objective, and gradient</a><a id="Setting-up-the-input-data,-objective,-and-gradient-1"></a><a class="docs-heading-anchor-permalink" href="#Setting-up-the-input-data,-objective,-and-gradient" title="Permalink"></a></h2><p>Dimension, number of iterations and number of known entries:</p><pre><code class="language-julia hljs">n = 1500
+k = 5000
+n_entries = 1000
+
+Random.seed!(41)
+
+const entry_indices = unique!([minmax(rand(1:n, 2)...) for _ in 1:n_entries])
+const entry_values = randn(length(entry_indices))
+
+function f(X)
+    r = zero(eltype(X))
+    for (idx, (i, j)) in enumerate(entry_indices)
+        r += 1 / 2 * (X[i, j] - entry_values[idx])^2
+        r += 1 / 2 * (X[j, i] - entry_values[idx])^2
+    end
+    return r / length(entry_values)
+end
+
+function grad!(storage, X)
+    storage .= 0
+    for (idx, (i, j)) in enumerate(entry_indices)
+        storage[i, j] += (X[i, j] - entry_values[idx])
+        storage[j, i] += (X[j, i] - entry_values[idx])
+    end
+    return storage ./= length(entry_values)
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">grad! (generic function with 1 method)</code></pre><p>Note that the <code>ensure_symmetry = false</code> argument to <code>SpectraplexLMO</code>. It skips an additional step making the used direction symmetric. It is not necessary when the gradient is a <code>LinearAlgebra.Symmetric</code> (or more rarely a <code>LinearAlgebra.Diagonal</code> or <code>LinearAlgebra.UniformScaling</code>).</p><pre><code class="language- hljs">const lmo = FrankWolfe.SpectraplexLMO(1.0, n, false)
+const x0 = FrankWolfe.compute_extreme_point(lmo, spzeros(n, n))
+
+target_tolerance = 1e-8;
+
+FrankWolfe.frank_wolfe(
+    f,
+    grad!,
+    lmo,
+    x0,
+    max_iteration=2,
+    line_search=FrankWolfe.MonotonicStepSize(),
+FrankWolfe.lazified_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    x0,
+    max_iteration=2,
+    line_search=FrankWolfe.MonotonicStepSize(),</code></pre><h2 id="Running-standard-and-lazified-Frank-Wolfe"><a class="docs-heading-anchor" href="#Running-standard-and-lazified-Frank-Wolfe">Running standard and lazified Frank-Wolfe</a><a id="Running-standard-and-lazified-Frank-Wolfe-1"></a><a class="docs-heading-anchor-permalink" href="#Running-standard-and-lazified-Frank-Wolfe" title="Permalink"></a></h2><pre><code class="language-julia hljs">Xfinal, Vfinal, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+    f,
+    grad!,
+    lmo,
+    x0,
+    max_iteration=k,
+    line_search=FrankWolfe.MonotonicStepSize(),
+    print_iter=k / 10,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
+    verbose=true,
+    trajectory=true,
+    epsilon=target_tolerance,
+)
+
+Xfinal, Vfinal, primal, dual_gap, trajectory_lazy = FrankWolfe.lazified_conditional_gradient(
+    f,
+    grad!,
+    lmo,
+    x0,
+    max_iteration=k,
+    line_search=FrankWolfe.MonotonicStepSize(),
+    print_iter=k / 10,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
+    verbose=true,
+    trajectory=true,
+    epsilon=target_tolerance,
+);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">
+Vanilla Frank-Wolfe Algorithm.
+MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: MonotonicStepSize EPSILON: 1.0e-8 MAXITERATION: 5000 TYPE: Float64
+MOMENTUM: nothing GRADIENTTYPE: Nothing
+[ Info: In memory_mode memory iterates are written back into x0!
+
+-------------------------------------------------------------------------------------------------
+  Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec
+-------------------------------------------------------------------------------------------------
+     I             1   1.018651e+00   1.014119e+00   4.531396e-03   0.000000e+00            Inf
+  Last            26   1.014314e+00   1.014314e+00   8.598814e-09   1.767298e+00   1.471172e+01
+-------------------------------------------------------------------------------------------------
+
+Lazified Conditional Gradient (Frank-Wolfe + Lazification).
+MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: MonotonicStepSize EPSILON: 1.0e-8 MAXITERATION: 5000 lazy_tolerance: 2.0 TYPE: Float64
+GRADIENTTYPE: Nothing CACHESIZE Inf GREEDYCACHE: false
+[ Info: In memory_mode memory iterates are written back into x0!
+
+----------------------------------------------------------------------------------------------------------------
+  Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec     Cache Size
+----------------------------------------------------------------------------------------------------------------
+     I             1   1.018651e+00   1.014119e+00   4.531396e-03   0.000000e+00            Inf              1
+    LD             2   1.014317e+00   1.014314e+00   3.679257e-06   7.846063e-01   2.549049e+00              2
+    LD             3   1.014315e+00   1.014314e+00   1.036964e-06   8.447097e-01   3.551516e+00              3
+    LD             4   1.014315e+00   1.014314e+00   5.090329e-07   9.062468e-01   4.413809e+00              4
+    LD             6   1.014314e+00   1.014314e+00   2.019539e-07   9.857124e-01   6.086968e+00              5
+    LD             9   1.014314e+00   1.014314e+00   8.396068e-08   1.085966e+00   8.287553e+00              6
+    LD            13   1.014314e+00   1.014314e+00   3.872634e-08   1.205726e+00   1.078188e+01              7
+    LD            19   1.014314e+00   1.014314e+00   1.766051e-08   1.367122e+00   1.389781e+01              8
+    LD            27   1.014314e+00   1.014314e+00   8.603148e-09   1.574085e+00   1.715282e+01              9
+  Last            27   1.014314e+00   1.014314e+00   7.988600e-09   1.695173e+00   1.592758e+01             10
+----------------------------------------------------------------------------------------------------------------</code></pre><h2 id="Plotting-the-resulting-trajectories"><a class="docs-heading-anchor" href="#Plotting-the-resulting-trajectories">Plotting the resulting trajectories</a><a id="Plotting-the-resulting-trajectories-1"></a><a class="docs-heading-anchor-permalink" href="#Plotting-the-resulting-trajectories" title="Permalink"></a></h2><pre><code class="language- hljs">data = [trajectory, trajectory_lazy]
+label = [&quot;FW&quot;, &quot;LCG&quot;]
+plot_trajectories(data, label, xscalelog=true)</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../docs_5_blended_cg/">« Blended Conditional Gradients</a><a class="docs-footer-nextpage" href="../docs_7_shifted_norm_polytopes/">FrankWolfe for scaled, shifted <span>$\ell^1$</span> and <span>$\ell^{\infty}$</span> norm balls »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.22 on <span class="colophon-date" title="Friday 12 August 2022 16:03">Friday 12 August 2022</span>. Using Julia version 1.6.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

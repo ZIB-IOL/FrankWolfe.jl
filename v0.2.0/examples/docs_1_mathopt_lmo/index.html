@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Comparison with MathOptInterface on a Probability Simplex · FrankWolfe.jl</title><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.044/juliamono.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.11/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">FrankWolfe.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../basics/">How does it work?</a></li><li><a class="tocitem" href="../../advanced/">Advanced features</a></li><li><input class="collapse-toggle" id="menuitem-4" type="checkbox" checked/><label class="tocitem" for="menuitem-4"><span class="docs-label">Examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../docs_0_fw_visualized/">Visualization of Frank-Wolfe running on a 2-dimensional polytope</a></li><li class="is-active"><a class="tocitem" href>Comparison with MathOptInterface on a Probability Simplex</a></li><li><a class="tocitem" href="../docs_2_polynomial_regression/">Polynomial Regression</a></li><li><a class="tocitem" href="../docs_3_matrix_completion/">Matrix Completion</a></li><li><a class="tocitem" href="../docs_4_rational_opt/">Exact Optimization with Rational Arithmetic</a></li><li><a class="tocitem" href="../docs_5_blended_cg/">Blended Conditional Gradients</a></li><li><a class="tocitem" href="../docs_6_spectrahedron/">Spectrahedron</a></li><li><a class="tocitem" href="../docs_7_shifted_norm_polytopes/">FrankWolfe for scaled, shifted <span>$\ell^1$</span> and <span>$\ell^{\infty}$</span> norm balls</a></li><li><a class="tocitem" href="../docs_8_callback_and_tracking/">Tracking, counters and custom callbacks for Frank Wolfe</a></li><li><a class="tocitem" href="../docs_9_extra_vertex_storage/">Extra-lazification</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-5" type="checkbox"/><label class="tocitem" for="menuitem-5"><span class="docs-label">API reference</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../reference/1_lmo/">Linear Minimization Oracles</a></li><li><a class="tocitem" href="../../reference/2_algorithms/">Algorithms</a></li><li><a class="tocitem" href="../../reference/3_backend/">Utilities and data structures</a></li><li><a class="tocitem" href="../../reference/4_linesearch/">Line search and step size settings</a></li></ul></li><li><a class="tocitem" href="../../contributing/">Contributing</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Comparison with MathOptInterface on a Probability Simplex</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Comparison with MathOptInterface on a Probability Simplex</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/ZIB-IOL/FrankWolfe.jl/blob/master/examples/docs_1_mathopt_lmo.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Comparison-with-MathOptInterface-on-a-Probability-Simplex"><a class="docs-heading-anchor" href="#Comparison-with-MathOptInterface-on-a-Probability-Simplex">Comparison with MathOptInterface on a Probability Simplex</a><a id="Comparison-with-MathOptInterface-on-a-Probability-Simplex-1"></a><a class="docs-heading-anchor-permalink" href="#Comparison-with-MathOptInterface-on-a-Probability-Simplex" title="Permalink"></a></h1><p>In this example, we project a random point onto a probability simplex with the Frank-Wolfe algorithm using either the specialized LMO defined in the package or a generic LP formulation using <code>MathOptInterface.jl</code> (MOI) and <code>GLPK</code> as underlying LP solver. It can be found as Example 4.4 <a href="https://arxiv.org/abs/2104.06675">in the paper</a>.</p><pre><code class="language-julia hljs">using FrankWolfe
+
+using LinearAlgebra
+using LaTeXStrings
+
+using Plots
+
+using JuMP
+const MOI = JuMP.MOI
+
+import GLPK
+
+n = Int(1e3)
+k = 10000
+
+xpi = rand(n);
+total = sum(xpi);
+const xp = xpi ./ total;
+
+f(x) = norm(x - xp)^2
+function grad!(storage, x)
+    @. storage = 2 * (x - xp)
+    return nothing
+end
+
+lmo_radius = 2.5
+lmo = FrankWolfe.FrankWolfe.ProbabilitySimplexOracle(lmo_radius)
+
+x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
+gradient = collect(x00)
+
+x_lmo, v, primal, dual_gap, trajectory_lmo = FrankWolfe.frank_wolfe(
+    f,
+    grad!,
+    lmo,
+    collect(copy(x00)),
+    max_iteration=k,
+    line_search=FrankWolfe.Shortstep(2.0),
+    print_iter=k / 10,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
+    verbose=false,
+    trajectory=true,
+);</code></pre><p>Create a MathOptInterface Optimizer and build the same linear constraints:</p><pre><code class="language-julia hljs">o = GLPK.Optimizer()
+x = MOI.add_variables(o, n)
+
+for xi in x
+    MOI.add_constraint(o, xi, MOI.GreaterThan(0.0))
+end
+
+MOI.add_constraint(
+    o,
+    MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.(1.0, x), 0.0),
+    MOI.EqualTo(lmo_radius),
+)
+
+lmo_moi = FrankWolfe.MathOptLMO(o)
+
+x, v, primal, dual_gap, trajectory_moi = FrankWolfe.frank_wolfe(
+    f,
+    grad!,
+    lmo_moi,
+    collect(copy(x00)),
+    max_iteration=k,
+    line_search=FrankWolfe.Shortstep(2.0),
+    print_iter=k / 10,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
+    verbose=false,
+    trajectory=true,
+);</code></pre><p>Alternatively, we can use one of the modelling interfaces based on <code>MOI</code> to formulate the LP. The following example builds the same set of constraints using <code>JuMP</code>:</p><pre><code class="language- hljs">m = JuMP.Model(GLPK.Optimizer)
+@variable(m, y[1:n] ≥ 0)
+
+@constraint(m, sum(y) == lmo_radius)
+
+lmo_jump = FrankWolfe.MathOptLMO(m.moi_backend)
+
+x, v, primal, dual_gap, trajectory_jump = FrankWolfe.frank_wolfe(
+    f,
+    grad!,
+    lmo_jump,
+    collect(copy(x00)),
+    max_iteration=k,
+    line_search=FrankWolfe.Shortstep(2.0),
+    print_iter=k / 10,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
+    verbose=false,
+    trajectory=true,
+);
+
+x_lmo, v, primal, dual_gap, trajectory_lmo_blas = FrankWolfe.frank_wolfe(
+    f,
+    grad!,
+    lmo,
+    x00,
+    max_iteration=k,
+    line_search=FrankWolfe.Shortstep(2.0),
+    print_iter=k / 10,
+    memory_mode=FrankWolfe.OutplaceEmphasis(),
+    verbose=false,
+    trajectory=true,
+);
+
+x, v, primal, dual_gap, trajectory_jump_blas = FrankWolfe.frank_wolfe(
+    f,
+    grad!,
+    lmo_jump,
+    x00,
+    max_iteration=k,
+    line_search=FrankWolfe.Shortstep(2.0),
+    print_iter=k / 10,
+    memory_mode=FrankWolfe.OutplaceEmphasis(),
+    verbose=false,
+    trajectory=true,
+);
+
+
+iteration_list = [[x[1] + 1 for x in trajectory_lmo], [x[1] + 1 for x in trajectory_moi]]
+time_list = [[x[5] for x in trajectory_lmo], [x[5] for x in trajectory_moi]]
+primal_gap_list = [[x[2] for x in trajectory_lmo], [x[2] for x in trajectory_moi]]
+dual_gap_list = [[x[4] for x in trajectory_lmo], [x[4] for x in trajectory_moi]]
+
+label = [L&quot;\textrm{Closed-form LMO}&quot;, L&quot;\textrm{MOI LMO}&quot;]
+
+plot_results(
+    [primal_gap_list, primal_gap_list, dual_gap_list, dual_gap_list],
+    [iteration_list, time_list, iteration_list, time_list],
+    label,
+    [&quot;&quot;, &quot;&quot;, L&quot;\textrm{Iteration}&quot;, L&quot;\textrm{Time}&quot;],
+    [L&quot;\textrm{Primal Gap}&quot;, &quot;&quot;, L&quot;\textrm{Dual Gap}&quot;, &quot;&quot;],
+    xscalelog=[:log, :identity, :log, :identity],
+    yscalelog=[:log, :log, :log, :log],
+    legend_position=[:bottomleft, nothing, nothing, nothing],
+)</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../docs_0_fw_visualized/">« Visualization of Frank-Wolfe running on a 2-dimensional polytope</a><a class="docs-footer-nextpage" href="../docs_2_polynomial_regression/">Polynomial Regression »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.19 on <span class="colophon-date" title="Monday 4 July 2022 19:23">Monday 4 July 2022</span>. Using Julia version 1.6.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

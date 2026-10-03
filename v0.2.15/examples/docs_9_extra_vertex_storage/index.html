@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Extra-lazification · FrankWolfe.jl</title><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">FrankWolfe.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../basics/">How does it work?</a></li><li><a class="tocitem" href="../../advanced/">Advanced features</a></li><li><input class="collapse-toggle" id="menuitem-4" type="checkbox" checked/><label class="tocitem" for="menuitem-4"><span class="docs-label">Examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../docs_0_fw_visualized/">Visualization of Frank-Wolfe running on a 2-dimensional polytope</a></li><li><a class="tocitem" href="../docs_1_mathopt_lmo/">Comparison with MathOptInterface on a Probability Simplex</a></li><li><a class="tocitem" href="../docs_2_polynomial_regression/">Polynomial Regression</a></li><li><a class="tocitem" href="../docs_3_matrix_completion/">Matrix Completion</a></li><li><a class="tocitem" href="../docs_4_rational_opt/">Exact Optimization with Rational Arithmetic</a></li><li><a class="tocitem" href="../docs_5_blended_cg/">Blended Conditional Gradients</a></li><li><a class="tocitem" href="../docs_6_spectrahedron/">Spectrahedron</a></li><li><a class="tocitem" href="../docs_7_shifted_norm_polytopes/">FrankWolfe for scaled, shifted <span>$\ell^1$</span> and <span>$\ell^{\infty}$</span> norm balls</a></li><li><a class="tocitem" href="../docs_8_callback_and_tracking/">Tracking, counters and custom callbacks for Frank Wolfe</a></li><li class="is-active"><a class="tocitem" href>Extra-lazification</a><ul class="internal"><li><a class="tocitem" href="#Adding-a-vertex-storage"><span>Adding a vertex storage</span></a></li></ul></li></ul></li><li><input class="collapse-toggle" id="menuitem-5" type="checkbox"/><label class="tocitem" for="menuitem-5"><span class="docs-label">API reference</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../reference/0_reference/">API Reference</a></li><li><a class="tocitem" href="../../reference/1_algorithms/">Algorithms</a></li><li><a class="tocitem" href="../../reference/2_lmo/">Linear Minimization Oracles</a></li><li><a class="tocitem" href="../../reference/3_backend/">Utilities and data structures</a></li><li><a class="tocitem" href="../../reference/4_linesearch/">Line search and step size settings</a></li></ul></li><li><a class="tocitem" href="../../contributing/">Contributing</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Extra-lazification</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Extra-lazification</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/ZIB-IOL/FrankWolfe.jl/blob/master/examples/docs_9_extra_vertex_storage.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Main.check_gradients</code></pre><h1 id="Extra-lazification"><a class="docs-heading-anchor" href="#Extra-lazification">Extra-lazification</a><a id="Extra-lazification-1"></a><a class="docs-heading-anchor-permalink" href="#Extra-lazification" title="Permalink"></a></h1><p>Sometimes the Frank-Wolfe algorithm will be run multiple times with slightly different settings under which vertices collected in a previous run are still valid.</p><p>The extra-lazification feature can be used for this purpose. It consists of a storage that can collect dropped vertices during a run, and the ability to use these vertices in another run, when they are not part of the current active set. The vertices that are part of the active set do not need to be duplicated in the extra-lazification storage. The extra-vertices can be used instead of calling the LMO when it is a relatively expensive operation.</p><pre><code class="language-julia hljs">using FrankWolfe
+using Test
+using LinearAlgebra</code></pre><p>We will use a parameterized objective function <span>$1/2 \|x - c\|^2$</span> over the unit simplex.</p><pre><code class="language-julia hljs">const n = 100
+const center0 = 5.0 .+ 3 * rand(n)
+f(x) = 0.5 * norm(x .- center0)^2
+function grad!(storage, x)
+    return storage .= x .- center0
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">grad! (generic function with 1 method)</code></pre><p>The <code>TrackingLMO</code> will let us count how many real calls to the LMO are performed by a single run of the algorithm.</p><pre><code class="language-julia hljs">lmo = FrankWolfe.UnitSimplexOracle(4.3)
+tlmo = FrankWolfe.TrackingLMO(lmo)
+x0 = FrankWolfe.compute_extreme_point(lmo, randn(n));</code></pre><h2 id="Adding-a-vertex-storage"><a class="docs-heading-anchor" href="#Adding-a-vertex-storage">Adding a vertex storage</a><a id="Adding-a-vertex-storage-1"></a><a class="docs-heading-anchor-permalink" href="#Adding-a-vertex-storage" title="Permalink"></a></h2><p><code>FrankWolfe</code> offers a simple <code>FrankWolfe.DeletedVertexStorage</code> storage type which has as parameter <code>return_kth</code>, the number of good directions to find before returning the best. <code>return_kth</code> larger than the number of vertices means that the best-aligned vertex will be found. <code>return_kth = 1</code> means the first acceptable vertex (with the specified threhsold) is returned.</p><p>See <a href="examples/@ref">FrankWolfe.DeletedVertexStorage</a></p><pre><code class="language-julia hljs">vertex_storage = FrankWolfe.DeletedVertexStorage(typeof(x0)[], 5)
+tlmo.counter = 0
+
+results = FrankWolfe.blended_pairwise_conditional_gradient(
+    f,
+    grad!,
+    tlmo,
+    x0,
+    max_iteration=4000,
+    verbose=true,
+    lazy=true,
+    epsilon=1e-5,
+    add_dropped_vertices=true,
+    extra_vertex_storage=vertex_storage,
+)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">([0.40888431714577567, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0  …  0.0, 0.0, 0.2466794027516607, 0.0, 0.0, 0.0, 0.3856700335114282, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0  …  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 2114.012843766951, 2.184682145411898e-6, Any[], Tuple{Float64, FrankWolfe.ScaledHotVector{Float64}}[(0.0034751666036173185, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0  …  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]), (0.1115332878508738, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0  …  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]), (0.10971888384511826, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0  …  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]), (0.10675067717197936, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0  …  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]), (0.10077182735382699, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0  …  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]), (0.09508937608041294, [4.3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0  …  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]), (0.08969070546777401, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0  …  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.3, 0.0, 0.0, 0.0]), (0.085678657699809, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0  …  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]), (0.0757413019467824, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0  …  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]), (0.06090141410216889, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0  …  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]), (0.05736730296550249, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0  …  0.0, 0.0, 4.3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]), (0.05495972036895218, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0  …  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]), (0.04832167854318235, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0  …  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])])</code></pre><p>The counter indicates the number of initial calls to the LMO. We will now construct different objective functions based on new centers, call the BPCG algorithm while accumulating vertices in the storage, in addition to warm-starting with the active set of the previous iteration. This allows for a &quot;double-warmstarted&quot; algorithm, reducing the number of LMO calls from one problem to the next.</p><pre><code class="language-julia hljs">active_set = results[end]
+tlmo.counter
+
+for iter in 1:10
+    center = 5.0 .+ 3 * rand(n)
+    f_i(x) = 0.5 * norm(x .- center)^2
+    function grad_i!(storage, x)
+        return storage .= x .- center
+    end
+    tlmo.counter = 0
+    FrankWolfe.blended_pairwise_conditional_gradient(
+        f_i,
+        grad_i!,
+        tlmo,
+        active_set,
+        max_iteration=4000,
+        lazy=true,
+        epsilon=1e-5,
+        add_dropped_vertices=true,
+        use_extra_vertex_storage=true,
+        extra_vertex_storage=vertex_storage,
+        verbose=false,
+    )
+    @info &quot;Number of LMO calls in iter $iter: $(tlmo.counter)&quot;
+    @info &quot;Vertex storage size: $(length(vertex_storage.storage))&quot;
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Number of LMO calls in iter 1: 35
+[ Info: Vertex storage size: 8
+[ Info: Number of LMO calls in iter 2: 41
+[ Info: Vertex storage size: 22
+[ Info: Number of LMO calls in iter 3: 33
+[ Info: Vertex storage size: 38
+[ Info: Number of LMO calls in iter 4: 22
+[ Info: Vertex storage size: 52
+[ Info: Number of LMO calls in iter 5: 22
+[ Info: Vertex storage size: 56
+┌ Warning: Smoothness estimate run away -&gt; hard clipping. Convergence might be not guaranteed.
+└ @ FrankWolfe ~/work/FrankWolfe.jl/FrankWolfe.jl/src/linesearch.jl:367
+[ Info: Number of LMO calls in iter 6: 29
+[ Info: Vertex storage size: 62
+┌ Warning: Smoothness estimate run away -&gt; hard clipping. Convergence might be not guaranteed.
+└ @ FrankWolfe ~/work/FrankWolfe.jl/FrankWolfe.jl/src/linesearch.jl:367
+[ Info: Number of LMO calls in iter 7: 15
+[ Info: Vertex storage size: 69
+[ Info: Number of LMO calls in iter 8: 32
+[ Info: Vertex storage size: 71
+[ Info: Number of LMO calls in iter 9: 19
+[ Info: Vertex storage size: 77
+[ Info: Number of LMO calls in iter 10: 15
+[ Info: Vertex storage size: 82</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../docs_8_callback_and_tracking/">« Tracking, counters and custom callbacks for Frank Wolfe</a><a class="docs-footer-nextpage" href="../../reference/0_reference/">API Reference »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Tuesday 27 September 2022 16:34">Tuesday 27 September 2022</span>. Using Julia version 1.6.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
