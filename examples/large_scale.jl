@@ -35,7 +35,7 @@ function cgrad!(storage, x, xp)
     return @. storage = 2 * (x - xp)
 end
 
-lmo = FrankWolfe.ProbabilitySimplexOracle(1);
+lmo = FrankWolfe.ProbabilitySimplexLMO(1);
 x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
 FrankWolfe.benchmark_oracles(
@@ -46,7 +46,7 @@ FrankWolfe.benchmark_oracles(
     k=100,
 )
 
-@time x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+@time x, v, primal, dual_gap, status, trajectory = FrankWolfe.frank_wolfe(
     x -> cf(x, xp),
     (str, x) -> cgrad!(str, x, xp),
     lmo,

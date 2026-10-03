@@ -91,3 +91,15 @@ We try to follow the [Julia documentation guidelines](https://docs.julialang.org
 We run [`JuliaFormatter.jl`](https://github.com/domluna/JuliaFormatter.jl) on the repo in the way set in the `.JuliaFormatter.toml` file, which enforces a number of conventions.
 
 This contribution guide was inspired by [ColPrac](https://github.com/SciML/ColPrac) and the one in [Manopt.jl](https://github.com/JuliaManifolds/Manopt.jl).
+
+## Contributions Assisted with Generative AI
+
+We allow contributions with code written with the assistance of AI tools.
+However, reviewing and maintaining code becomes unsustainable if open-source gets flooded by huge pull requests.
+We explicitly require the following:
+- Documentation needs to be concise, to the point, helpful. AI-generated docs are verbose, try to "sell" the function instead of being helpful.
+- Comments follow the same rule
+- PRs should not add functions or modify behavior outside of their declared scope
+
+We reserve the right to close PRs that do not respect these rules to ease the work of maintainers.
+As a general rule of thumb, if one sees that a contribution heavily relied on AI tools, it should be reworked.

@@ -40,7 +40,7 @@ function gradf(storage, x)
     end
 end
 
-lmo = FrankWolfe.LpNormLMO{T,2}(1.05 * norm(params_perfect))
+lmo = FrankWolfe.LpNormBallLMO{T,2}(1.05 * norm(params_perfect))
 
 x0 = FrankWolfe.compute_extreme_point(lmo, zeros(T, n + 1))
 

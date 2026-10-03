@@ -82,7 +82,7 @@ FrankWolfe.lazified_conditional_gradient( #src
 
 # ## Running standard and lazified Frank-Wolfe
 
-Xfinal, Vfinal, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+Xfinal, Vfinal, primal, dual_gap, status, trajectory = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -96,19 +96,20 @@ Xfinal, Vfinal, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
     epsilon=target_tolerance,
 )
 
-Xfinal, Vfinal, primal, dual_gap, trajectory_lazy = FrankWolfe.lazified_conditional_gradient(
-    f,
-    grad!,
-    lmo,
-    x0,
-    max_iteration=k,
-    line_search=FrankWolfe.MonotonicStepSize(),
-    print_iter=k / 10,
-    memory_mode=FrankWolfe.InplaceEmphasis(),
-    verbose=true,
-    trajectory=true,
-    epsilon=target_tolerance,
-);
+Xfinal, Vfinal, primal, dual_gap, status, trajectory_lazy =
+    FrankWolfe.lazified_conditional_gradient(
+        f,
+        grad!,
+        lmo,
+        x0,
+        max_iteration=k,
+        line_search=FrankWolfe.MonotonicStepSize(),
+        print_iter=k / 10,
+        memory_mode=FrankWolfe.InplaceEmphasis(),
+        verbose=true,
+        trajectory=true,
+        epsilon=target_tolerance,
+    );
 
 # ## Plotting the resulting trajectories
 

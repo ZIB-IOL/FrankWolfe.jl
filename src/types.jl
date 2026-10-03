@@ -24,7 +24,7 @@ end
 
 Base.sum(v::ScaledHotVector) = v.active_val
 
-function LinearAlgebra.dot(v1::ScaledHotVector{<:Number}, v2::AbstractVector{<:Number})
+function LinearAlgebra.dot(v1::ScaledHotVector{<:Number}, v2::DenseVector{<:Number})
     return conj(v1.active_val) * v2[v1.val_idx]
 end
 
@@ -35,10 +35,12 @@ function LinearAlgebra.dot(
     return conj(v1.active_val) * v2[v1.val_idx]
 end
 
-LinearAlgebra.dot(v1::AbstractVector{<:Number}, v2::ScaledHotVector{<:Number}) = conj(dot(v2, v1))
-
-LinearAlgebra.dot(v1::SparseArrays.SparseVectorUnion{<:Number}, v2::ScaledHotVector{<:Number}) =
-    conj(dot(v2, v1))
+function LinearAlgebra.dot(
+    v1::V,
+    v2::ScaledHotVector{<:Number},
+) where {V<:Union{DenseVector{<:Number},SparseArrays.SparseVectorUnion{<:Number}}}
+    return conj(dot(v2, v1))
+end
 
 function LinearAlgebra.dot(v1::ScaledHotVector{<:Number}, v2::ScaledHotVector{<:Number})
     if length(v1) != length(v2)
@@ -55,7 +57,10 @@ end
 
 Base.:*(x::Number, v::ScaledHotVector) = v * x
 
-function Base.:+(x::ScaledHotVector, y::AbstractVector)
+function Base.:+(
+    x::ScaledHotVector,
+    y::Union{DenseVector,SparseArrays.AbstractSparseVector,ScaledHotVector},
+)
     if length(x) != length(y)
         throw(DimensionMismatch())
     end
@@ -64,7 +69,12 @@ function Base.:+(x::ScaledHotVector, y::AbstractVector)
     return yc
 end
 
-Base.:+(y::AbstractVector, x::ScaledHotVector) = x + y
+function Base.:+(
+    y::Union{DenseVector,SparseArrays.AbstractSparseVector,ScaledHotVector},
+    x::ScaledHotVector,
+)
+    return x + y
+end
 
 function Base.:+(x::ScaledHotVector{T1}, y::ScaledHotVector{T2}) where {T1,T2}
     n = length(x)
@@ -83,9 +93,17 @@ Base.:-(x::ScaledHotVector{T}) where {T} = ScaledHotVector{T}(-x.active_val, x.v
 Base.:-(x::AbstractVector, y::ScaledHotVector) = +(x, -y)
 Base.:-(x::ScaledHotVector, y::AbstractVector) = +(x, -y)
 
+for A in (StaticArraysCore.StaticArray{<:Tuple,<:Any,1}, FillArrays.AbstractZerosVector)
+    @eval begin
+        Base.:-(x::$A, y::ScaledHotVector) = +(x, -y)
+        Base.:-(x::ScaledHotVector, y::$A) = +(x, -y)
+    end
+end
+
 Base.:-(x::ScaledHotVector, y::ScaledHotVector) = +(x, -y)
 
 Base.similar(v::ScaledHotVector{T}) where {T} = spzeros(T, length(v))
+Base.similar(::ScaledHotVector, ::Type{T}, dims::NTuple{N,Int}) where {T,N} = spzeros(T, dims)
 
 function Base.convert(::Type{Vector{T}}, v::ScaledHotVector) where {T}
     vc = zeros(T, v.len)
@@ -141,6 +159,8 @@ function Base.:*(R::RankOneMatrix, v::AbstractVector)
     temp = dot(R.v, v)
     return R.u * temp
 end
+Base.:*(R::RankOneMatrix{T}, v::AbstractVector{T}) where {T} = R.u * dot(R.v, v)
+Base.:*(R::RankOneMatrix, v::FillArrays.AbstractZerosVector) = FillArrays.mult_zeros(R, v)
 
 function Base.:*(R::RankOneMatrix, M::AbstractMatrix)
     temp = M' * R.v
@@ -148,7 +168,7 @@ function Base.:*(R::RankOneMatrix, M::AbstractMatrix)
 end
 
 Base.:*(R::RankOneMatrix, D::LinearAlgebra.Diagonal) = RankOneMatrix(R.u, R.v .* D.diag)
-Base.:*(R::RankOneMatrix, T::LinearAlgebra.AbstractTriangular) = RankOneMatrix(R.u, T' * R.v)
+Base.:*(R::RankOneMatrix, T::LinearAlgebra.UpperOrLowerTriangular) = RankOneMatrix(R.u, T' * R.v)
 
 function Base.:*(R1::RankOneMatrix, R2::RankOneMatrix)
     # middle product
@@ -355,26 +375,19 @@ Base.getindex(a::NegatingArray, idxs...) = -Base.getindex(a.array, idxs...)
 
 LinearAlgebra.dot(a1::NegatingArray{<:Number}, a2::NegatingArray{<:Number}) =
     dot(a1.array, a2.array)
-LinearAlgebra.dot(a1::NegatingArray{<:Number,N}, a2::AbstractArray{<:Number,N}) where {N} =
-    -dot(a1.array, a2)
-LinearAlgebra.dot(a1::AbstractArray{<:Number,N}, a2::NegatingArray{<:Number,N}) where {N} =
-    -dot(a1, a2.array)
+
+for A in (SparseArrays.SparseVectorUnion, ScaledHotVector, DenseVector)
+    @eval begin
+        LinearAlgebra.dot(a1::NegatingArray{<:Number,1}, a2::$A{<:Number}) = -dot(a1.array, a2)
+        LinearAlgebra.dot(a1::$A{<:Number}, a2::NegatingArray{<:Number,1}) = -dot(a1, a2.array)
+    end
+end
 
 # removing method ambiguities
 LinearAlgebra.dot(a1::LinearAlgebra.Diagonal, a2::NegatingArray{<:Number}) = -dot(a1, a2.array)
-LinearAlgebra.dot(a1::NegatingArray{<:Number}, a2::SparseArrays.SparseVectorUnion) =
-    -dot(a1.array, a2)
-LinearAlgebra.dot(a1::SparseArrays.SparseVectorUnion, a2::NegatingArray{<:Number}) =
-    -dot(a1, a2.array)
+LinearAlgebra.dot(a1::NegatingArray{<:Number,2}, a2::LinearAlgebra.Diagonal) = -dot(a1.array, a2)
 
 Base.sum(a::NegatingArray) = -sum(a.array)
-LinearAlgebra.dot(v1::NegatingArray{<:Number,1}, v2::ScaledHotVector{<:Number}) = -dot(v1.array, v2)
-LinearAlgebra.dot(v1::ScaledHotVector{<:Number}, v2::NegatingArray{<:Number,1}) = -dot(v1, v2.array)
-
-LinearAlgebra.dot(a::NegatingArray{<:Number,2}, d::LinearAlgebra.Diagonal) = -dot(a.array, d)
-LinearAlgebra.dot(d::LinearAlgebra.Diagonal, a::NegatingArray{<:Number,2}) = -dot(d, a.array)
-
-@deprecate fast_dot(A, B) dot(A, B) false
 
 fast_dot(a, Q, b) = dot(a, Q, b)
 
@@ -448,6 +461,34 @@ function _fast_quadratic_form_symmetric(a, Q)
     s = zero(Base.promote_eltype(a, Q))
     @inbounds for nzidx in eachindex(nzvals)
         s += nzvals[nzidx]^2 * d[nzinds[nzidx]]
+    end
+    return s
+end
+
+function fast_dot(
+    a::SparseArrays.AbstractSparseVector{<:Real},
+    Q::AbstractMatrix{<:Real},
+    b::SparseArrays.AbstractSparseVector{<:Real},
+)
+    n = length(a)
+    m = length(b)
+    if size(Q) != (n, m)
+        throw(DimensionMismatch("Matrix has a size $(size(Q)) but vectors have length $n, $m"))
+    end
+    anzind = SparseArrays.nonzeroinds(a)
+    bnzind = SparseArrays.nonzeroinds(b)
+    anzval = SparseArrays.nonzeros(a)
+    bnzval = SparseArrays.nonzeros(b)
+    s = zero(Base.promote_eltype(a, Q, b))
+    if isempty(anzind) || isempty(bnzind)
+        return s
+    end
+    for a_idx in eachindex(anzind)
+        for b_idx in eachindex(bnzind)
+            ia = anzind[a_idx]
+            ib = bnzind[b_idx]
+            s += dot(anzval[a_idx], Q[ia, ib], bnzval[b_idx])
+        end
     end
     return s
 end

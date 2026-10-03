@@ -188,6 +188,17 @@ function compute_inface_extreme_point(
     return m
 end
 
+function compute_inface_extreme_point(
+    lmo::BirkhoffPolytopeLMO,
+    direction::AbstractVector,
+    x::AbstractVector;
+    kwargs...,
+)
+    n = isqrt(length(direction))
+    V = compute_inface_extreme_point(lmo, reshape(direction, n, n), reshape(x, n, n); kwargs...)
+    return vec(V)
+end
+
 # Find the maximum step size γ such that `x - γ d` remains in the feasible set.
 function dicg_maximum_step(::BirkhoffPolytopeLMO, direction::AbstractMatrix, x)
     T = promote_type(eltype(x), eltype(direction))
@@ -240,24 +251,18 @@ end
 
 
 """
-    ScaledBoundLInfNormBall(lower_bounds, upper_bounds)
+    BoxLMO(lower_bounds, upper_bounds)
 
 Polytope similar to a L-inf-ball with shifted bounds or general box constraints.
 Lower- and upper-bounds are passed on as abstract vectors, possibly of different types.
 For the standard L-inf ball, all lower- and upper-bounds would be -1 and 1.
 """
-struct ScaledBoundLInfNormBall{T,N,VT1<:AbstractArray{T,N},VT2<:AbstractArray{T,N}} <:
-       LinearMinimizationOracle
+struct BoxLMO{T,N,VT1<:AbstractArray{T,N},VT2<:AbstractArray{T,N}} <: LinearMinimizationOracle
     lower_bounds::VT1
     upper_bounds::VT2
 end
 
-function compute_extreme_point(
-    lmo::ScaledBoundLInfNormBall,
-    direction;
-    v=similar(lmo.lower_bounds),
-    kwargs...,
-)
+function compute_extreme_point(lmo::BoxLMO, direction; v=similar(lmo.lower_bounds), kwargs...)
     copyto!(v, lmo.lower_bounds)
     for i in eachindex(direction)
         if direction[i] * lmo.upper_bounds[i] < direction[i] * lmo.lower_bounds[i]
@@ -269,25 +274,19 @@ end
 
 
 """
-    ScaledBoundL1NormBall(lower_bounds, upper_bounds)
+    DiamondLMO(lower_bounds, upper_bounds)
 
 Polytope similar to a L1-ball with shifted bounds.
 It is the convex hull of two scaled and shifted unit vectors for each axis (shifted to the center of the polytope, i.e., the elementwise midpoint of the bounds).
 Lower and upper bounds are passed on as abstract vectors, possibly of different types.
 For the standard L1-ball, all lower and upper bounds would be -1 and 1.
 """
-struct ScaledBoundL1NormBall{T,N,VT1<:AbstractArray{T,N},VT2<:AbstractArray{T,N}} <:
-       LinearMinimizationOracle
+struct DiamondLMO{T,N,VT1<:AbstractArray{T,N},VT2<:AbstractArray{T,N}} <: LinearMinimizationOracle
     lower_bounds::VT1
     upper_bounds::VT2
 end
 
-function compute_extreme_point(
-    lmo::ScaledBoundL1NormBall,
-    direction;
-    v=similar(lmo.lower_bounds),
-    kwargs...,
-)
+function compute_extreme_point(lmo::DiamondLMO, direction; v=similar(lmo.lower_bounds), kwargs...)
     @inbounds for i in eachindex(lmo.lower_bounds)
         v[i] = (lmo.lower_bounds[i] + lmo.upper_bounds[i]) / 2
     end
@@ -319,20 +318,15 @@ function compute_extreme_point(
 end
 
 """
-    ConvexHullOracle{AT,VT}
+    ConvexHullLMO{AT,VT}
 
 Convex hull of a finite number of vertices of type `AT`, stored in a vector of type `VT`.
 """
-struct ConvexHullOracle{AT,VT<:AbstractVector{AT}} <: LinearMinimizationOracle
+struct ConvexHullLMO{AT,VT<:AbstractVector{AT}} <: LinearMinimizationOracle
     vertices::VT
 end
 
-function compute_extreme_point(
-    lmo::ConvexHullOracle{AT},
-    direction;
-    v=nothing,
-    kwargs...,
-) where {AT}
+function compute_extreme_point(lmo::ConvexHullLMO{AT}, direction; v=nothing, kwargs...) where {AT}
     T = promote_type(eltype(direction), eltype(AT))
     best_val = T(Inf)
     best_vertex = first(lmo.vertices)
@@ -347,14 +341,51 @@ function compute_extreme_point(
 end
 
 """
-    ZeroOneHypercube
+    ConvexHullMatrixLMO{AT,VT}
+
+Convex hull of a finite number of vertices stored in a matrix of type `MT`.
+Each column represents one vertex.
+The buffer stores the result of the matrix-vector multiplication of each column with the direction.
+The column minimizing that inner product is returned as a view.
+"""
+struct ConvexHullMatrixLMO{MT<:AbstractMatrix,BT<:AbstractVector} <: LinearMinimizationOracle
+    vertex_matrix::MT
+    buffer::BT
+end
+
+function ConvexHullMatrixLMO(vertex_matrix::AbstractMatrix{MT}) where {MT}
+    return ConvexHullMatrixLMO(
+        vertex_matrix,
+        collect(similar(vertex_matrix, float(MT), size(vertex_matrix, 2))),
+    )
+end
+
+function ConvexHullMatrixLMO(vertices::AbstractVector{AT}) where {AT<:AbstractVector}
+    vertex_matrix = similar(vertices[1], length(vertices[1]), length(vertices))
+    for idx in eachindex(vertices)
+        @view(vertex_matrix[:, idx]) .= vertices[idx]
+    end
+    buffer = collect(similar(vertices[1], float(eltype(AT)), length(vertices)))
+    return ConvexHullMatrixLMO(vertex_matrix, buffer)
+end
+
+ConvexHullMatrixLMO(lmo::ConvexHullLMO) = ConvexHullMatrixLMO(lmo.vertices)
+
+function compute_extreme_point(lmo::ConvexHullMatrixLMO, direction; v=nothing, kwargs...)
+    mul!(lmo.buffer, lmo.vertex_matrix', direction)
+    idx = argmin(lmo.buffer)
+    return @view(lmo.vertex_matrix[:, idx])
+end
+
+"""
+    ZeroOneHypercubeLMO
 
 {0,1} hypercube polytope.
 """
-struct ZeroOneHypercube <: LinearMinimizationOracle end
+struct ZeroOneHypercubeLMO <: LinearMinimizationOracle end
 
 function convert_mathopt(
-    lmo::ZeroOneHypercube,
+    lmo::ZeroOneHypercubeLMO,
     optimizer::OT;
     dimension::Integer,
     use_modify=true::Bool,
@@ -366,9 +397,9 @@ function convert_mathopt(
     return MathOptLMO(optimizer, use_modify)
 end
 
-is_decomposition_invariant_oracle(::ZeroOneHypercube) = true
+is_decomposition_invariant_oracle(::ZeroOneHypercubeLMO) = true
 
-function is_inface_feasible(ZeroOneHypercube, a, x)
+function is_inface_feasible(::ZeroOneHypercubeLMO, a, x)
     for idx in eachindex(a)
         if (x[idx] == 0 && a[idx] != 0) || (x[idx] == 1 && a[idx] != 1)
             return false
@@ -377,12 +408,12 @@ function is_inface_feasible(ZeroOneHypercube, a, x)
     return true
 end
 
-function compute_extreme_point(::ZeroOneHypercube, direction; lazy=false, kwargs...)
+function compute_extreme_point(::ZeroOneHypercubeLMO, direction; lazy=false, kwargs...)
     v = BitVector(signbit(di) for di in direction)
     return v
 end
 
-function compute_inface_extreme_point(::ZeroOneHypercube, direction, x; lazy=false, kwargs...)
+function compute_inface_extreme_point(::ZeroOneHypercubeLMO, direction, x; lazy=false, kwargs...)
     v = BitVector(signbit(di) for di in direction)
     for idx in eachindex(x)
         if x[idx] ≈ 1
@@ -396,7 +427,7 @@ function compute_inface_extreme_point(::ZeroOneHypercube, direction, x; lazy=fal
 end
 
 # Find the maximum step size γ such that `x - γ d` remains in the feasible set.
-function dicg_maximum_step(::ZeroOneHypercube, direction, x)
+function dicg_maximum_step(::ZeroOneHypercubeLMO, direction, x)
     T = promote_type(eltype(x), eltype(direction))
     gamma_max = one(T)
     for idx in eachindex(x)

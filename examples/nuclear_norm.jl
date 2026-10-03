@@ -40,7 +40,7 @@ function grad!(storage, X)
 end
 
 
-const lmo = FrankWolfe.NuclearNormLMO(275_000.0)
+const lmo = FrankWolfe.NuclearNormBallLMO(275_000.0)
 const x0 = FrankWolfe.compute_extreme_point(lmo, zero(Xreal))
 
 FrankWolfe.benchmark_oracles(f, grad!, () -> randn(size(Xreal)), lmo; k=100)
@@ -65,7 +65,7 @@ const k = 500
 
 x00 = copy(x0)
 
-xfin, vmin, _, _, traj_data = FrankWolfe.frank_wolfe(
+xfin, vmin, _, _, status, traj_data = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -80,7 +80,7 @@ xfin, vmin, _, _, traj_data = FrankWolfe.frank_wolfe(
     gradient=spzeros(size(x0)...),
 )
 
-xfinlcg, vmin, _, _, traj_data = FrankWolfe.lazified_conditional_gradient(
+xfin_lcg, _, _, _, _, _ = FrankWolfe.lazified_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -98,7 +98,7 @@ xfinlcg, vmin, _, _, traj_data = FrankWolfe.lazified_conditional_gradient(
 
 x00 = copy(x0)
 
-xfinAFW, vmin, _, _, traj_data = FrankWolfe.away_frank_wolfe(
+xfin_afw, _, _, _, _, _, _ = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
@@ -115,7 +115,7 @@ xfinAFW, vmin, _, _, traj_data = FrankWolfe.away_frank_wolfe(
 
 x00 = copy(x0)
 
-xfinBCG, vmin, _, _, traj_data, _ = FrankWolfe.blended_conditional_gradient(
+xfin_bcg, _, _, _, _, _ = FrankWolfe.blended_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -129,7 +129,7 @@ xfinBCG, vmin, _, _, traj_data, _ = FrankWolfe.blended_conditional_gradient(
     memory_mode=FrankWolfe.InplaceEmphasis(),
 )
 
-xfinBPCG, vmin, _, _, traj_data = FrankWolfe.blended_pairwise_conditional_gradient(
+xfin_bpcg, _, _, _, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -141,14 +141,13 @@ xfinBPCG, vmin, _, _, traj_data = FrankWolfe.blended_pairwise_conditional_gradie
     verbose=true,
     line_search=FrankWolfe.Adaptive(),
     memory_mode=FrankWolfe.InplaceEmphasis(),
-    #    lazy=true,
 )
 
 pit = plot(svdvals(xfin), label="FW", width=3, yaxis=:log)
-plot!(svdvals(xfinlcg), label="LCG", width=3, yaxis=:log)
-plot!(svdvals(xfinAFW), label="LAFW", width=3, yaxis=:log)
-plot!(svdvals(xfinBCG), label="BCG", width=3, yaxis=:log)
-plot!(svdvals(xfinBPCG), label="BPCG", width=3, yaxis=:log)
+plot!(svdvals(xfin_lcg), label="LCG", width=3, yaxis=:log)
+plot!(svdvals(xfin_afw), label="LAFW", width=3, yaxis=:log)
+plot!(svdvals(xfin_bcg), label="BCG", width=3, yaxis=:log)
+plot!(svdvals(xfin_bpcg), label="BPCG", width=3, yaxis=:log)
 plot!(svdvals(xgd), label="Gradient descent", width=3, yaxis=:log)
 plot!(svdvals(Xreal), label="Real matrix", linestyle=:dash, width=3, color=:black)
 title!("Singular values")

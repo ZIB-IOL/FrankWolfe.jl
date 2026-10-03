@@ -159,6 +159,8 @@ function stochastic_frank_wolfe(
     timeout=Inf,
     linesearch_workspace=nothing,
     use_one_sample_variant=false,
+    x_container=nothing,
+    d_container=nothing,
 )
 
     # format string for output of the algorithm
@@ -182,10 +184,24 @@ function stochastic_frank_wolfe(
     t = 0
     dual_gap = Inf
     primal = Inf
-    v = []
+    v = x0
     x = x0
-    d = similar(x)
+    if memory_mode isa InplaceEmphasis
+        if x_container !== nothing
+            x = x_container
+            copyto!(x, x0)
+        else
+            if eltype(x) <: Integer
+                x = copyto!(similar(x, float(eltype(x))), x)
+            else
+                x = copyto!(similar(x), x)
+            end
+        end
+    end
+
+    d = d_container !== nothing ? d_container : similar(x)
     step_type = ST_REGULAR
+    execution_status = STATUS_RUNNING
 
     if trajectory
         callback = make_trajectory_callback(callback, traj_data)
@@ -215,21 +231,11 @@ function stochastic_frank_wolfe(
             "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon max_iteration: $max_iteration TYPE: $NumType",
         )
         println(
-            "GRADIENTTYPE: $(typeof(f.storage)) MOMENTUM: $(momentum_iterator !== nothing) BATCH_POLICY: $(typeof(batch_iterator)) ",
+            "GRADIENT_TYPE: $(typeof(f.storage)) MOMENTUM: $(momentum_iterator !== nothing) BATCH_POLICY: $(typeof(batch_iterator)) ",
         )
         println("LMO: $(typeof(lmo))")
-        if memory_mode isa InplaceEmphasis
-            @info("In memory_mode memory iterates are written back into x0!")
-        end
     end
 
-    if memory_mode isa InplaceEmphasis && !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
-        if eltype(x) <: Integer
-            x = copyto!(similar(x, float(eltype(x))), x)
-        else
-            x = copyto!(similar(x), x)
-        end
-    end
     first_iter = true
     gradient = f.storage .* 0
     if use_one_sample_variant
@@ -242,7 +248,7 @@ function stochastic_frank_wolfe(
     while t <= max_iteration
 
         #####################
-        # managing time and Ctrl-C
+        # time management
         #####################
         time_at_loop = time_ns()
         if t == 0
@@ -256,6 +262,7 @@ function stochastic_frank_wolfe(
                 if verbose
                     @info "Time limit reached"
                 end
+                execution_status = STATUS_TIMEOUT
                 break
             end
         end
@@ -337,12 +344,23 @@ function stochastic_frank_wolfe(
                 step_type,
             )
             if callback(state, batch_size) === false
+                execution_status = STATUS_INTERRUPTED
                 break
             end
         end
 
         x = muladd_memory_mode(memory_mode, x, gamma, d)
     end
+    if dual_gap <= max(epsilon, eps(float(typeof(dual_gap))))
+        execution_status = STATUS_OPTIMAL
+    elseif t >= max_iteration
+        execution_status = STATUS_MAXITER
+    end
+    if execution_status === STATUS_RUNNING
+        @warn "Status not set"
+        execution_status = STATUS_OPTIMAL
+    end
+
     # recompute everything once for final verfication / no additional callback call
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
     # hence the final computation.
@@ -385,5 +403,12 @@ function stochastic_frank_wolfe(
         )
         callback(state, batch_size)
     end
-    return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data)
+    return (
+        x=x,
+        v=v,
+        primal=primal,
+        dual_gap=dual_gap,
+        status=execution_status,
+        traj_data=traj_data,
+    )
 end

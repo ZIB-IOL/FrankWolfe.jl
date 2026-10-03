@@ -1,10 +1,12 @@
+module Test_nonconvex_lasso
+
 using FrankWolfe
 using LinearAlgebra
 using Test
 
 using ReverseDiff
 
-n = Int(1e3);
+n = Int(1e3)
 k = 1e3
 
 const xp = [
@@ -1015,7 +1017,7 @@ const xp = [
 
     grad!(storage, x) = ReverseDiff.gradient!(storage, f, x)
 
-    lmo = FrankWolfe.ProbabilitySimplexOracle(1.0)
+    lmo = FrankWolfe.ProbabilitySimplexLMO(1.0)
 
     x0 = collect(FrankWolfe.compute_extreme_point(lmo, zeros(n)))
 
@@ -2039,3 +2041,5 @@ const xp = [
     @test res[3] ≈ primal_true
 
 end
+
+end  # module

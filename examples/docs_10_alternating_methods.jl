@@ -32,8 +32,8 @@ function grad!(storage, x)
 end
 
 
-lmo1 = FrankWolfe.ProbabilitySimplexOracle(1.0)
-lmo2 = FrankWolfe.ScaledBoundLInfNormBall(-ones(n), zeros(n))
+lmo1 = FrankWolfe.ProbabilitySimplexLMO(1.0)
+lmo2 = FrankWolfe.BoxLMO(-ones(n), zeros(n))
 lmos = (lmo1, lmo2)
 
 x0 = rand(n)
@@ -50,7 +50,7 @@ trajectories = [];
 
 for order in [FrankWolfe.FullUpdate(), FrankWolfe.CyclicUpdate(), FrankWolfe.StochasticUpdate()]
 
-    _, _, _, _, _, alm_trajectory = FrankWolfe.alternating_linear_minimization(
+    alm_res = FrankWolfe.alternating_linear_minimization(
         FrankWolfe.block_coordinate_frank_wolfe,
         f,
         grad!,
@@ -61,13 +61,13 @@ for order in [FrankWolfe.FullUpdate(), FrankWolfe.CyclicUpdate(), FrankWolfe.Sto
         trajectory=true,
         epsilon=target_tolerance,
     )
-    push!(trajectories, alm_trajectory)
+    push!(trajectories, alm_res.traj_data)
 end
 
 # As an alternative to Block-Coordiante Frank-Wolfe (BCFW), one can also run alternating linear minimization with standard Frank-Wolfe algorithm.
 # These methods perform then the full (simulatenous) update at each iteration. In this example we also use [`FrankWolfe.away_frank_wolfe`](@ref).
 
-_, _, _, _, _, afw_trajectory = FrankWolfe.alternating_linear_minimization(
+afw_res = FrankWolfe.alternating_linear_minimization(
     FrankWolfe.away_frank_wolfe,
     f,
     grad!,
@@ -77,11 +77,11 @@ _, _, _, _, _, afw_trajectory = FrankWolfe.alternating_linear_minimization(
     trajectory=true,
     epsilon=target_tolerance,
 )
-push!(trajectories, afw_trajectory);
+push!(trajectories, afw_res.traj_data);
 
 # ## Running Alternating Projections
 # Unlike ALM, Alternating Projections (AP) is only suitable for feasibility problems. One omits the objective and gradient as parameters.
-_, _, _, _, ap_trajectory = FrankWolfe.alternating_projections(
+ap_res = FrankWolfe.alternating_projections(
     lmos,
     x0,
     trajectory=true,
@@ -89,7 +89,7 @@ _, _, _, _, ap_trajectory = FrankWolfe.alternating_projections(
     print_iter=100,
     epsilon=target_tolerance,
 )
-push!(trajectories, ap_trajectory);
+push!(trajectories, ap_res.traj_data);
 
 # ## Plotting the resulting trajectories
 

@@ -206,18 +206,20 @@ end
 Base.print(io::IO, ::FixedStep) = print(io, "FixedStep")
 
 """
-    Goldenratio
+    UnsafeGoldenratio
 
-Simple golden-ratio based line search
+Simple golden-ratio based line search.
+
+This is the previous numerically unstable version. Use `Goldenration` instead.
 [Golden Section Search](https://en.wikipedia.org/wiki/Golden-section_search),
 based on [Combettes, Pokutta (2020)](http://proceedings.mlr.press/v119/combettes20a/combettes20a.pdf)
 code and adapted.
 """
-struct Goldenratio{T} <: LineSearchMethod
+struct UnsafeGoldenratio{T} <: LineSearchMethod
     tol::T
 end
 
-Goldenratio() = Goldenratio(1e-7)
+UnsafeGoldenratio() = UnsafeGoldenratio(1e-7)
 
 struct GoldenratioWorkspace{XT,GT}
     y::XT
@@ -228,7 +230,7 @@ struct GoldenratioWorkspace{XT,GT}
     gradient::GT
 end
 
-function build_linesearch_workspace(::Goldenratio, x::XT, gradient::GT) where {XT,GT}
+function build_linesearch_workspace(::UnsafeGoldenratio, x::XT, gradient::GT) where {XT,GT}
     return GoldenratioWorkspace{XT,GT}(
         similar(x),
         similar(x),
@@ -240,7 +242,7 @@ function build_linesearch_workspace(::Goldenratio, x::XT, gradient::GT) where {X
 end
 
 function perform_line_search(
-    line_search::Goldenratio,
+    line_search::UnsafeGoldenratio,
     _,
     f,
     grad!,
@@ -296,6 +298,108 @@ function perform_line_search(
     end
 
     return gamma
+end
+
+Base.print(io::IO, ::UnsafeGoldenratio) = print(io, "UnsafeGoldenratio")
+
+"""
+    Goldenratio(tol=1e-7)
+
+Like `UnsafeGoldenratio` but with numerically safer reconstruction of final step size `γ`.
+
+Why:
+- `UnsafeGoldenratio` computes bracket `[left, right]` in primal space, then reconstructs `γ` via a
+  single-coordinate division using *1st* nonzero entry of direction `d`.
+  When `d[i]` is tiny (structured atoms, sparse directions, etc.), division can be
+  ill-conditioned, producing inaccurate `γ` (negative in worst case) and nonmonotone primal gap.
+
+`Goldenratio` computes `γ` using all coordinates via a projection formula and clamps it to
+`[0, gamma_max]`.
+"""
+struct Goldenratio{T} <: LineSearchMethod
+    tol::T
+end
+
+Goldenratio() = Goldenratio(1e-7)
+
+function build_linesearch_workspace(::Goldenratio, x::XT, gradient::GT) where {XT,GT}
+    return GoldenratioWorkspace{XT,GT}(
+        similar(x),
+        similar(x),
+        similar(x),
+        similar(x),
+        similar(x),
+        similar(gradient),
+    )
+end
+
+function perform_line_search(
+    line_search::Goldenratio,
+    _,
+    f,
+    grad!,
+    gradient,
+    x,
+    d,
+    gamma_max,
+    workspace::GoldenratioWorkspace,
+    memory_mode,
+)
+
+    # Restrict segment of search to [x, y] where y = x - gamma_max*d
+    @. workspace.y = x - gamma_max * d
+    @. workspace.left = x
+    @. workspace.right = workspace.y
+
+    # Compute directional derivatives along search direction at endpoints.
+    # If they do not change sign, minimizer over segment is at an endpoint.
+    dgx = dot(d, gradient)
+    grad!(workspace.gradient, workspace.y)
+    dgy = dot(d, workspace.gradient)
+    # If minimum is at an endpoint
+    if dgx * dgy >= 0
+        return f(workspace.y) <= f(x) ? gamma_max : zero(eltype(d))
+    end
+
+    # Apply golden-section method to segment
+    gold = (1 + sqrt(5)) / 2
+    improv = Inf
+    while improv > line_search.tol
+        # Maintain a bracket [left, right], replace worse side based on two interior probes (classic GoldenRatio)
+        f_old_left = f(workspace.left)
+        f_old_right = f(workspace.right)
+        @. workspace.new_vec = workspace.left + (workspace.right - workspace.left) / (1 + gold)
+        @. workspace.probe = workspace.new_vec + (workspace.right - workspace.new_vec) / 2
+
+        if f(workspace.probe) <= f(workspace.new_vec)
+            workspace.left .= workspace.new_vec
+        else
+            workspace.right .= workspace.probe
+        end
+        # Compute stopping criterion quantity
+        improv = norm(f(workspace.right) - f_old_right) + norm(f(workspace.left) - f_old_left)
+    end
+
+    # Reconstruct gamma from final bracket using projection formula:
+    #   x_min = (left + right)/2, and we want gamma s.t. x_min ≈ x - gamma*d.
+    # More stable: error in UnsafeGoldenratio scales as 1/|dᵢ|, error in Goldenratio scales as 1/||d||₂, and
+    #   |dᵢ| = |<d, eᵢ>| ≤ ||d||₂⋅||eᵢ||₂ = ||d||₂
+    den = dot(d, d)
+    if den <= eps(float(den))
+        return zero(eltype(d))
+    end
+    num = zero(den)
+    @inbounds for i in eachindex(d)
+        x_min_i = (workspace.left[i] + workspace.right[i]) / 2
+        num += (x[i] - x_min_i) * d[i]
+    end
+    gamma = num / den
+    if !isfinite(gamma)
+        return zero(eltype(d))
+    end
+    # Final guard rail: clamp. Rounding can produce gamma that is tiny negative or
+    # slightly above `gamma_max` even if true minimizer is ∈ [0, gamma_max].
+    return clamp(gamma, zero(gamma), gamma_max)
 end
 
 Base.print(io::IO, ::Goldenratio) = print(io, "Goldenratio")
@@ -441,6 +545,9 @@ function perform_line_search(
     i = 1
     gamma_prev = zero(best_gamma)
     clamping = false
+    if dot_gdir <= line_search.tol
+        return zero(gamma)
+    end
     while abs(dot_gdir) > line_search.tol
         if i > line_search.limit_num_steps
             workspace.last_gamma = best_gamma  # Update last_gamma before returning
@@ -842,8 +949,6 @@ end
 MonotonicStepSize(f::F) where {F<:Function} = MonotonicStepSize{F}(f, 0)
 MonotonicStepSize() = MonotonicStepSize(x -> true, 0)
 
-@deprecate MonotonousStepSize(args...) MonotonicStepSize(args...) false
-
 Base.print(io::IO, ::MonotonicStepSize) = print(io, "MonotonicStepSize")
 
 function perform_line_search(
@@ -883,8 +988,6 @@ end
 
 MonotonicNonConvexStepSize(f::F) where {F<:Function} = MonotonicNonConvexStepSize{F}(f, 0)
 MonotonicNonConvexStepSize() = MonotonicNonConvexStepSize(x -> true, 0)
-
-@deprecate MonotonousNonConvexStepSize(args...) MonotonicNonConvexStepSize(args...) false
 
 Base.print(io::IO, ::MonotonicNonConvexStepSize) = print(io, "MonotonicNonConvexStepSize")
 
@@ -977,5 +1080,81 @@ function perform_line_search(
             break
         end
     end
+    return gamma
+end
+
+"""
+    BlockAdaptive(blocks, eta, tau, L_est, L_max)
+    A line search method that adapts the step size for each block.
+
+    # Arguments
+    - `blocks::Vector{Int}`: The blocks to update.
+    - `eta::T`: The eta parameter for the line search.
+    - `tau::T`: The tau parameter for the line search.
+    - `L_est::T`: The estimated value of the Lipschitz constant.
+    - `L_max::T`: The maximum value of the Lipschitz constant.
+"""
+
+
+mutable struct BlockAdaptive{T} <: FrankWolfe.LineSearchMethod
+    blocks::Vector{Int}
+    eta::T
+    tau::T
+    L_est::T
+    L_max::T
+end
+
+function FrankWolfe.perform_line_search(
+    ls::BlockAdaptive,
+    t,
+    f,
+    grad!,
+    gradient,
+    x,
+    d,
+    gamma_max,
+    storage,
+    memory_mode::FrankWolfe.MemoryEmphasis,
+)
+    # Initialize step sizes and temporary iterate
+    gamma = zeros(length(x.blocks))
+    x_tilde = similar(x)
+    g_tilde = similar(gradient)
+
+    # Update Lipschitz constant estimate
+    ls.L_est = ls.eta * ls.L_est
+
+    # Step at least once in the loop
+    first_iter = true
+
+    while ls.L_est < ls.L_max || first_iter
+
+        # Compute step sizes gamma
+        for i in ls.blocks
+            gamma[i] = min(
+                1,
+                dot(gradient.blocks[i], d.blocks[i]) /
+                (ls.L_est * dot(d.blocks[i], d.blocks[i]) + eps(ls.L_est)),
+            )
+        end
+
+        # Compute temporary iterate x_tilde and its gradient
+        copyto!(x_tilde, x)
+        FrankWolfe.muladd_memory_mode(memory_mode, x_tilde, gamma, d)
+        grad!(g_tilde, x_tilde)
+
+        if f(x) - f(x_tilde) - dot(g_tilde, x - x_tilde) >=
+           dot(gradient - g_tilde, gradient - g_tilde) / (2 * ls.L_est)
+            break
+        else
+            ls.L_est = ls.tau * ls.L_est
+        end
+        first_iter = false
+    end
+
+    if ls.L_est >= ls.L_max
+        @warn "Smoothness estimate run away -> hard clipping. Convergence might be not guaranteed."
+    end
+
     return gamma
 end

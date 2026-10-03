@@ -1,7 +1,14 @@
+module Test_tracking
+
 using Test
 using LinearAlgebra
 using SparseArrays
 using FrankWolfe
+using Random
+using StableRNGs
+
+rng = StableRNG(42)
+Random.seed!(rng, 42)
 
 @testset "Tracking Testset" begin
     f(x) = norm(x)^2
@@ -11,8 +18,8 @@ using FrankWolfe
 
     x = zeros(6)
     gradient = similar(x)
-    rhs = 10 * rand()
-    lmo = FrankWolfe.ProbabilitySimplexOracle(rhs)
+    rhs = 10 * rand(rng)
+    lmo = FrankWolfe.ProbabilitySimplexLMO(rhs)
     direction = zeros(6)
     direction[1] = -1
 
@@ -48,7 +55,7 @@ end
         @. storage = 2x
     end
 
-    lmo = FrankWolfe.ProbabilitySimplexOracle(1)
+    lmo = FrankWolfe.ProbabilitySimplexLMO(1)
 
     tf = FrankWolfe.TrackingObjective(f, 0)
     tgrad! = FrankWolfe.TrackingGradient(grad!, 0)
@@ -86,7 +93,7 @@ end
         @. storage = 2x
     end
 
-    lmo = FrankWolfe.ProbabilitySimplexOracle(1)
+    lmo = FrankWolfe.ProbabilitySimplexLMO(1)
 
     tf = FrankWolfe.TrackingObjective(f, 0)
     tgrad! = FrankWolfe.TrackingGradient(grad!, 0)
@@ -116,3 +123,5 @@ end
     # lazification
     @test tlmo.counter < niters
 end
+
+end # module

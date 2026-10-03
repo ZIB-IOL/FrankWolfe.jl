@@ -40,6 +40,7 @@ function away_frank_wolfe(
     use_extra_vertex_storage=false,
     linesearch_workspace=nothing,
     recompute_last_vertex=true,
+    d_container=nothing,
 )
     # add the first vertex to active set from initialization
     active_set = ActiveSet([(1.0, x0)])
@@ -72,6 +73,7 @@ function away_frank_wolfe(
         use_extra_vertex_storage=use_extra_vertex_storage,
         linesearch_workspace=linesearch_workspace,
         recompute_last_vertex=recompute_last_vertex,
+        d_container=d_container,
     )
 end
 
@@ -104,6 +106,7 @@ function away_frank_wolfe(
     use_extra_vertex_storage=false,
     linesearch_workspace=nothing,
     recompute_last_vertex=true,
+    d_container=nothing,
 ) where {AT,R}
     # format string for output of the algorithm
     format_string = "%6s %13s %14e %14e %14e %14e %14e %14i\n"
@@ -138,10 +141,11 @@ function away_frank_wolfe(
     primal = Inf
     x = get_active_set_iterate(active_set)
     step_type = ST_REGULAR
+    execution_status = STATUS_RUNNING
 
     time_start = time_ns()
 
-    d = similar(x)
+    d = d_container !== nothing ? d_container : similar(x)
 
     if gradient === nothing
         gradient = collect(x)
@@ -160,7 +164,7 @@ function away_frank_wolfe(
         )
         grad_type = typeof(gradient)
         println(
-            "GRADIENTTYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance MOMENTUM: $momentum AWAYSTEPS: $away_steps",
+            "GRADIENT_TYPE: $grad_type LAZY: $lazy lazy_tolerance: $lazy_tolerance MOMENTUM: $momentum AWAYSTEPS: $away_steps",
         )
         println("LMO: $(typeof(lmo))")
         if (use_extra_vertex_storage || add_dropped_vertices) && extra_vertex_storage === nothing
@@ -185,7 +189,7 @@ function away_frank_wolfe(
 
     while t <= max_iteration && phi_value >= max(eps(float(typeof(phi_value))), epsilon)
         #####################
-        # managing time and Ctrl-C
+        # time management
         #####################
         time_at_loop = time_ns()
         if t == 0
@@ -199,6 +203,7 @@ function away_frank_wolfe(
                 if verbose
                     @info "Time limit reached"
                 end
+                execution_status = STATUS_TIMEOUT
                 break
             end
         end
@@ -299,6 +304,7 @@ function away_frank_wolfe(
                 step_type,
             )
             if callback(state, active_set) === false
+                execution_status = STATUS_INTERRUPTED
                 break
             end
         end
@@ -316,6 +322,16 @@ function away_frank_wolfe(
             primal = f(x)
             dual_gap = phi_value
         end
+    end
+
+    if t >= max_iteration
+        execution_status = STATUS_MAXITER
+    elseif phi_value < max(eps(float(typeof(phi_value))), epsilon)
+        execution_status = STATUS_OPTIMAL
+    end
+    if execution_status === STATUS_RUNNING
+        @warn "Status not set"
+        execution_status = STATUS_OPTIMAL
     end
 
     # recompute everything once more for final verfication / do not record to trajectory though for now!
@@ -386,15 +402,23 @@ function away_frank_wolfe(
         callback(state, active_set)
     end
 
-    return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data, active_set=active_set)
+    return (
+        x=x,
+        v=v,
+        primal=primal,
+        dual_gap=dual_gap,
+        status=execution_status,
+        traj_data=traj_data,
+        active_set=active_set,
+    )
 end
 
-# JUSTIFICATION for using the standard FW-gap in the dual update `phi = min(dual_gap, phi / 2.0)` below.
-# Note: usually we would use the strong FW gap for phi to scale over, however it suffices to use _standard_ FW gap instead
+# JUSTIFICATION for using the standard FW-gap in the dual update `phi_value = min(dual_gap, phi_value / 2.0)` below.
+# Note: usually we would use the strong FW gap for phi_value to scale over, however it suffices to use _standard_ FW gap instead
 # To this end observe that we take a "lazy step", i.e., one using already stored vertices if in the below it holds:
-#  grad_dot_x - grad_dot_lazy_fw_vertex + grad_dot_a - grad_dot_x >= phi / lazy_tolerance
-# <=>  grad_dot_a - grad_dot_lazy_fw_vertex >= phi / lazy_tolerance
-# now phi is at least dual_gap / 2 where dual_gap = grad_dot_x - grad_dot_fw_vertex, until we cannot find a vertex from the "lazy" (already seen) set
+#  grad_dot_x - grad_dot_lazy_fw_vertex + grad_dot_a - grad_dot_x >= phi_value / lazy_tolerance
+# <=>  grad_dot_a - grad_dot_lazy_fw_vertex >= phi_value / lazy_tolerance
+# now phi_value is at least dual_gap / 2 where dual_gap = grad_dot_x - grad_dot_fw_vertex, until we cannot find a vertex from the "lazy" (already seen) set
 # => 2 * lazy_tolerance * grad_dot_a - grad_dot_lazy_fw_vertex >= (grad_dot_x - grad_dot_fw_vertex)
 # via https://hackmd.io/@spokutta/B14MTMsLF / see also https://arxiv.org/pdf/2110.12650.pdf Lemma 3.7 and (3.30)
 # we have that: 
@@ -411,7 +435,7 @@ function lazy_afw_step(
     gradient,
     lmo,
     active_set,
-    phi,
+    phi_value,
     epsilon,
     d;
     use_extra_vertex_storage=false,
@@ -425,7 +449,7 @@ function lazy_afw_step(
     grad_dot_x = dot(x, gradient)
     grad_dot_a = dot(a, gradient)
     if grad_dot_x - grad_dot_lazy_fw_vertex >= grad_dot_a - grad_dot_x &&
-       grad_dot_x - grad_dot_lazy_fw_vertex >= phi / lazy_tolerance &&
+       grad_dot_x - grad_dot_lazy_fw_vertex >= phi_value / lazy_tolerance &&
        grad_dot_x - grad_dot_lazy_fw_vertex >= epsilon
         step_type = ST_LAZY
         gamma_max = one(a_lambda)
@@ -437,7 +461,7 @@ function lazy_afw_step(
     else
         #Do away step, as it promises enough progress.
         if grad_dot_a - grad_dot_x > grad_dot_x - grad_dot_lazy_fw_vertex &&
-           grad_dot_a - grad_dot_x >= phi / lazy_tolerance
+           grad_dot_a - grad_dot_x >= phi_value / lazy_tolerance
             step_type = ST_AWAY
             gamma_max = a_lambda / (1 - a_lambda)
             d = muladd_memory_mode(memory_mode, d, a, x)
@@ -449,7 +473,7 @@ function lazy_afw_step(
         else
             # optionally: try vertex storage
             if use_extra_vertex_storage
-                lazy_threshold = dot(gradient, x) - phi / lazy_tolerance
+                lazy_threshold = dot(gradient, x) - phi_value / lazy_tolerance
                 (found_better_vertex, new_forward_vertex) =
                     storage_find_argmin_vertex(extra_vertex_storage, gradient, lazy_threshold)
                 if found_better_vertex
@@ -467,7 +491,7 @@ function lazy_afw_step(
             # Real dual gap promises enough progress.
             grad_dot_fw_vertex = dot(v, gradient)
             dual_gap = grad_dot_x - grad_dot_fw_vertex
-            if dual_gap >= phi / lazy_tolerance
+            if dual_gap >= phi_value / lazy_tolerance
                 gamma_max = one(a_lambda)
                 d = muladd_memory_mode(memory_mode, d, x, v)
                 vertex = v
@@ -476,7 +500,7 @@ function lazy_afw_step(
                 index = -1
             else # Lower our expectation for progress.
                 step_type = ST_DUALSTEP
-                phi = min(dual_gap, phi / 2.0)
+                phi_value = min(dual_gap, phi_value / 2.0)
                 gamma_max = zero(a_lambda)
                 vertex = v
                 away_step_taken = false
@@ -485,7 +509,7 @@ function lazy_afw_step(
             end
         end
     end
-    return d, vertex, index, gamma_max, phi, away_step_taken, fw_step_taken, step_type
+    return d, vertex, index, gamma_max, phi_value, away_step_taken, fw_step_taken, step_type
 end
 
 function afw_step(

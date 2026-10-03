@@ -39,9 +39,9 @@ const lmo = FrankWolfe.KSparseLMO(100, 1.0)
 
 ## other LMOs to try
 # lmo_big = FrankWolfe.KSparseLMO(100, big"1.0")
-# lmo = FrankWolfe.LpNormLMO{Float64,5}(1.0)
-# lmo = FrankWolfe.ProbabilitySimplexOracle(1.0);
-# lmo = FrankWolfe.UnitSimplexOracle(1.0);
+# lmo = FrankWolfe.LpNormBallLMO{Float64,5}(1.0)
+# lmo = FrankWolfe.ProbabilitySimplexLMO(1.0);
+# lmo = FrankWolfe.UnitSimplexLMO(1.0);
 
 const x00 = FrankWolfe.compute_extreme_point(lmo, rand(n))
 
@@ -63,7 +63,7 @@ end
 FrankWolfe.benchmark_oracles(f, grad!, () -> randn(n), lmo; k=100)
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, trajectory_shortstep = FrankWolfe.frank_wolfe(
+@time x, v, primal, dual_gap, status, trajectory_shortstep = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -81,7 +81,7 @@ trajectory_adaptive = []
 callback = build_callback(trajectory_adaptive)
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
+@time x, v, primal, dual_gap, status, _, _ = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
@@ -102,7 +102,7 @@ trajectory_adaptiveLoc15 = []
 callback = build_callback(trajectory_adaptiveLoc15)
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
+@time x, v, primal, dual_gap, status, _, _ = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
@@ -123,7 +123,7 @@ trajectory_adaptiveLoc2 = []
 callback = build_callback(trajectory_adaptiveLoc2)
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
+@time x, v, primal, dual_gap, status, _, _ = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
@@ -144,7 +144,7 @@ trajectory_adaptiveLoc4 = []
 callback = build_callback(trajectory_adaptiveLoc4)
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
+@time x, v, primal, dual_gap, status, _, _ = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
@@ -164,7 +164,7 @@ trajectory_adaptiveLoc10 = []
 callback = build_callback(trajectory_adaptiveLoc10)
 
 x0 = deepcopy(x00)
-@time x, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
+@time x, v, primal, dual_gap, status, _, _ = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,

@@ -1,7 +1,14 @@
+module Test_multi_precision_test
+
 using Test
 using FrankWolfe
 using LinearAlgebra
 using DoubleFloats
+using Random
+using StableRNGs
+
+rng = StableRNG(42)
+Random.seed!(rng, 42)
 
 @testset "Multi-precision tests" begin
     rhs = 1
@@ -20,11 +27,11 @@ using DoubleFloats
     test_types = (Float16, Float32, Float64, Double64, BigFloat, Rational{BigInt})
 
     @testset "Multi-precision test for $T" for T in test_types
-        lmo = FrankWolfe.ProbabilitySimplexOracle{T}(rhs)
-        direction = rand(n)
+        lmo = FrankWolfe.ProbabilitySimplexLMO{T}(rhs)
+        direction = rand(rng, n)
         x0 = FrankWolfe.compute_extreme_point(lmo, direction)
 
-        x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+        x, v, primal, dual_gap, status, trajectory = FrankWolfe.frank_wolfe(
             f,
             grad!,
             lmo,
@@ -39,7 +46,7 @@ using DoubleFloats
         @test eltype(x0) == T
         @test primal - 1 / n <= bound
 
-        x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+        x, v, primal, dual_gap, status, trajectory = FrankWolfe.frank_wolfe(
             f,
             grad!,
             lmo,
@@ -54,7 +61,7 @@ using DoubleFloats
         @test eltype(x0) == T
         @test primal - 1 // n <= bound
 
-        x, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
+        x, v, primal, dual_gap, status, trajectory = FrankWolfe.away_frank_wolfe(
             f,
             grad!,
             lmo,
@@ -69,7 +76,7 @@ using DoubleFloats
         @test eltype(x0) == T
         @test primal - 1 // n <= bound
 
-        x, v, primal, dual_gap, trajectory, _ = FrankWolfe.blended_conditional_gradient(
+        x, v, primal, dual_gap, status, trajectory, _ = FrankWolfe.blended_conditional_gradient(
             f,
             grad!,
             lmo,
@@ -86,3 +93,5 @@ using DoubleFloats
 
     end
 end
+
+end # module

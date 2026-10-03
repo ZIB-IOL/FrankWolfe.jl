@@ -41,8 +41,8 @@ function grad!(storage, x)
 end
 
 # lmo = FrankWolfe.KSparseLMO(40, 1.0);
-lmo = FrankWolfe.UnitSimplexOracle(1.0);
-# lmo = FrankWolfe.ScaledBoundLInfNormBall(zeros(n),ones(n))
+lmo = FrankWolfe.UnitSimplexLMO(1.0);
+# lmo = FrankWolfe.BoxLMO(zeros(n),ones(n))
 
 x00 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
 
@@ -52,7 +52,7 @@ println("\n==> Adaptive (1-order) if you do not know L.\n")
 
 x0 = deepcopy(x00)
 
-@time x, v, primal, dual_gap, trajectory_adaptive_fo = FrankWolfe.frank_wolfe(
+@time x, v, primal, dual_gap, status, trajectory_adaptive_fo = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -69,7 +69,7 @@ println("\n==> Adaptive (0-order) if you do not know L.\n")
 
 x0 = deepcopy(x00)
 
-@time x, v, primal, dual_gap, trajectory_adaptive_zo = FrankWolfe.frank_wolfe(
+@time x, v, primal, dual_gap, status, trajectory_adaptive_zo = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,

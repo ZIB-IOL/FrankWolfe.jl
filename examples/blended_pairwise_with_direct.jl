@@ -50,7 +50,7 @@ end
 
 
 trajectoryBPCG_standard = []
-@time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+@time x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -64,7 +64,7 @@ trajectoryBPCG_standard = []
 # Just projection quadratic
 trajectoryBPCG_quadratic = []
 as_quad = FrankWolfe.ActiveSetQuadraticProductCaching([(1.0, copy(x00))], 2 * LinearAlgebra.I, -2xp)
-@time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+@time x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -79,7 +79,7 @@ as_quad = FrankWolfe.ActiveSetQuadraticProductCaching([(1.0, copy(x00))], 2 * Li
 
 # with quadratic active set
 trajectoryBPCG_quadratic_as = []
-@time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+@time x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -99,7 +99,7 @@ as_quad_direct = FrankWolfe.ActiveSetQuadraticLinearSolve(
 
 # with LP acceleration
 trajectoryBPCG_quadratic_direct = []
-@time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+@time x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -119,7 +119,7 @@ as_quad_direct_generic = FrankWolfe.ActiveSetQuadraticLinearSolve(
 
 # with LP acceleration
 trajectoryBPCG_quadratic_direct_generic = []
-@time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+@time x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -140,7 +140,7 @@ as_quad_direct_basic_as = FrankWolfe.ActiveSetQuadraticLinearSolve(
 # with LP acceleration
 trajectoryBPCG_quadratic_noqas = []
 
-@time x, v, primal, dual_gap, _ = FrankWolfe.blended_pairwise_conditional_gradient(
+@time x, v, primal, dual_gap, status, _ = FrankWolfe.blended_pairwise_conditional_gradient(
     f,
     grad!,
     lmo,

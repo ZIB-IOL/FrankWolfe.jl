@@ -1,7 +1,9 @@
+module Test_generic_arrays
+
 using FrankWolfe
 using LinearAlgebra
+using SparseArrays
 using Test
-
 
 # necessary for away step
 function Base.convert(::Type{GenericArray{Float64,1}}, v::FrankWolfe.ScaledHotVector{Float64})
@@ -17,11 +19,11 @@ end
         @. storage = 2 * x
     end
 
-    lmo = FrankWolfe.ProbabilitySimplexOracle(1)
+    lmo = FrankWolfe.ProbabilitySimplexLMO(1)
 
     x0 = GenericArray(collect(FrankWolfe.compute_extreme_point(lmo, zeros(n))))
 
-    x, v, primal, dual_gap0, trajectory = FrankWolfe.frank_wolfe(
+    x, v, primal, dual_gap0, status, trajectory = FrankWolfe.frank_wolfe(
         f_generic,
         grad_generic!,
         lmo,
@@ -36,7 +38,7 @@ end
     @test f_generic(x) < f_generic(x0)
     @test x isa GenericArray
 
-    x, v, primal, dual_gap0, trajectory = FrankWolfe.lazified_conditional_gradient(
+    x, v, primal, dual_gap0, status, trajectory = FrankWolfe.lazified_conditional_gradient(
         f_generic,
         grad_generic!,
         lmo,
@@ -52,7 +54,7 @@ end
     @test f_generic(x) < f_generic(x0)
     @test x isa GenericArray
 
-    @test_broken x, v, primal, dual_gap0, trajectory = FrankWolfe.away_frank_wolfe(
+    @test_broken x, v, primal, dual_gap0, status, trajectory = FrankWolfe.away_frank_wolfe(
         f_generic,
         grad_generic!,
         lmo,
@@ -96,3 +98,5 @@ end
         @test !isequal(2a, FrankWolfe.RankOneMatrix(2 * ones(4), ones(3)))
     end
 end
+
+end # module

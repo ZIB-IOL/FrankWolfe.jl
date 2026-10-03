@@ -98,6 +98,7 @@ function blended_pairwise_conditional_gradient(
     add_dropped_vertices=false,
     use_extra_vertex_storage=false,
     recompute_last_vertex=true,
+    d_container=nothing,
 ) where {AT,R}
 
     # format string for output of the algorithm
@@ -134,8 +135,9 @@ function blended_pairwise_conditional_gradient(
     primal = convert(eltype(x), Inf)
     step_type = ST_REGULAR
     time_start = time_ns()
+    execution_status = STATUS_RUNNING
 
-    d = similar(x)
+    d = d_container !== nothing ? d_container : similar(x)
 
     if gradient === nothing
         gradient = collect(x)
@@ -148,7 +150,7 @@ function blended_pairwise_conditional_gradient(
             "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
         )
         grad_type = typeof(gradient)
-        println("GRADIENTTYPE: $grad_type LAZY: $lazy sparsity_control: $sparsity_control")
+        println("GRADIENT_TYPE: $grad_type LAZY: $lazy sparsity_control: $sparsity_control")
         println("LMO: $(typeof(lmo))")
         if use_extra_vertex_storage && !lazy
             @info("vertex storage only used in lazy mode")
@@ -162,11 +164,11 @@ function blended_pairwise_conditional_gradient(
 
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
-    # if !lazy, phi is maintained as the global dual gap
-    phi = max(0, dot(gradient, x) - dot(gradient, v))
-    local_gap = zero(phi)
-    dual_gap = phi
-    gamma = one(phi)
+    # if !lazy, phi_value is maintained as the global dual gap
+    phi_value = max(0, dot(gradient, x) - dot(gradient, v))
+    local_gap = zero(phi_value)
+    dual_gap = phi_value
+    gamma = one(phi_value)
 
     if linesearch_workspace === nothing
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
@@ -176,7 +178,7 @@ function blended_pairwise_conditional_gradient(
         use_extra_vertex_storage = add_dropped_vertices = false
     end
 
-    while t <= max_iteration && phi >= max(epsilon, eps(epsilon))
+    while t <= max_iteration && phi_value >= max(epsilon, eps(epsilon))
 
         # managing time limit
         time_at_loop = time_ns()
@@ -191,6 +193,7 @@ function blended_pairwise_conditional_gradient(
                 if verbose
                     @info "Time limit reached"
                 end
+                execution_status = STATUS_TIMEOUT
                 break
             end
         end
@@ -205,7 +208,7 @@ function blended_pairwise_conditional_gradient(
             grad!(gradient, x)
         end
 
-        _, v_local, v_local_loc, _, a_lambda, a, a_loc, _, _ =
+        _, v_local, v_local_loc, v_local_value, a_lambda, a, a_loc, _, _ =
             active_set_argminmax(active_set, gradient)
 
         dot_forward_vertex = dot(gradient, v_local)
@@ -215,12 +218,12 @@ function blended_pairwise_conditional_gradient(
             if t > 1
                 v = compute_extreme_point(lmo, gradient)
                 dual_gap = dot(gradient, x) - dot(gradient, v)
-                phi = dual_gap
+                phi_value = dual_gap
             end
         end
         # minor modification from original paper for improved sparsity
         # (proof follows with minor modification when estimating the step)
-        if local_gap ≥ phi / sparsity_control && local_gap ≥ epsilon
+        if local_gap ≥ phi_value / sparsity_control && local_gap ≥ epsilon
             d = muladd_memory_mode(memory_mode, d, a, v_local)
             vertex_taken = v_local
             gamma_max = a_lambda
@@ -242,8 +245,8 @@ function blended_pairwise_conditional_gradient(
                 state = CallbackState(
                     t,
                     primal,
-                    primal - phi,
-                    phi,
+                    primal - phi_value,
+                    phi_value,
                     tot_time,
                     x,
                     vertex_taken,
@@ -256,6 +259,7 @@ function blended_pairwise_conditional_gradient(
                     step_type,
                 )
                 if callback(state, active_set, a) === false
+                    execution_status = STATUS_INTERRUPTED
                     break
                 end
             end
@@ -274,7 +278,7 @@ function blended_pairwise_conditional_gradient(
             if lazy # otherwise, v computed above already
                 # optionally try to use the storage
                 if use_extra_vertex_storage
-                    lazy_threshold = dot(gradient, x) - max(epsilon, phi / sparsity_control)
+                    lazy_threshold = dot(gradient, x) - max(epsilon, phi_value / sparsity_control)
                     (found_better_vertex, new_forward_vertex) =
                         storage_find_argmin_vertex(extra_vertex_storage, gradient, lazy_threshold)
                     if found_better_vertex
@@ -307,17 +311,19 @@ function blended_pairwise_conditional_gradient(
                 x = get_active_set_iterate(active_set)
                 grad!(gradient, x)
                 dual_gap = dot(gradient, x) - dot(gradient, v)
+                # the cleanup and the recomputed gradient invalidate the minimum found above
+                v_local_loc, v_local_value = -1, typemin(typeof(v_local_value))
             end
             # Note: In the following, we differentiate between lazy and non-lazy updates.
-            # The reason is that the non-lazy version does not use phi but the lazy one heavily depends on it.
-            # It is important that the phi is only updated after dropping
-            # below phi / sparsity_control, as otherwise we simply have a "lagging" dual_gap estimate that just slows down convergence.
+            # The reason is that only the lazy version depends on the phi_value.
+            # It is important that the phi_value is only updated after dropping
+            # below phi_value / sparsity_control, as otherwise we simply have a "lagging" dual_gap estimate that just slows down convergence.
             # The logic is as follows:
             # - for non-lazy: we accept everything and there are no dual steps
-            # - for lazy: we also accept slightly weaker vertices, those satisfying phi / sparsity_control
+            # - for lazy: we also accept slightly weaker vertices, those satisfying phi_value / sparsity_control
             # this should simplify the criterion.
             # DO NOT CHANGE without good reason and talk to Sebastian first for the logic behind this.
-            if (dual_gap ≥ epsilon) && (!lazy || dual_gap ≥ phi / sparsity_control)
+            if (dual_gap ≥ epsilon) && (!lazy || dual_gap ≥ phi_value / sparsity_control)
                 d = muladd_memory_mode(memory_mode, d, x, v)
 
                 gamma = perform_line_search(
@@ -336,8 +342,8 @@ function blended_pairwise_conditional_gradient(
                     state = CallbackState(
                         t,
                         primal,
-                        primal - phi,
-                        phi,
+                        primal - phi_value,
+                        phi_value,
                         tot_time,
                         x,
                         vertex_taken,
@@ -350,6 +356,7 @@ function blended_pairwise_conditional_gradient(
                         step_type,
                     )
                     if callback(state, active_set) === false
+                        execution_status = STATUS_INTERRUPTED
                         break
                     end
                 end
@@ -366,14 +373,13 @@ function blended_pairwise_conditional_gradient(
                     active_set_initialize!(active_set, v)
                 else
                     renorm = mod(t, renorm_interval) == 0
-                    active_set_update!(active_set, gamma, v, renorm, nothing)
+                    v_index = find_atom(active_set, v, gradient, v_local_loc, v_local_value)
+                    active_set_update!(active_set, gamma, v, renorm, v_index)
                 end
             else # dual step
-                # set to computed dual_gap for consistency between the lazy and non-lazy run.
-                # that is ok as we scale with the K = 2.0 default anyways
                 # we only update the dual gap if the step was regular (not lazy from discarded set)
                 if step_type != ST_LAZYSTORAGE
-                    phi = dual_gap
+                    phi_value = phi_value / sparsity_control
                     @debug begin
                         @assert step_type == ST_REGULAR
                         v2 = compute_extreme_point(lmo, gradient)
@@ -390,8 +396,8 @@ function blended_pairwise_conditional_gradient(
                     state = CallbackState(
                         t,
                         primal,
-                        primal - phi,
-                        phi,
+                        primal - phi_value,
+                        phi_value,
                         tot_time,
                         x,
                         vertex_taken,
@@ -404,6 +410,7 @@ function blended_pairwise_conditional_gradient(
                         step_type,
                     )
                     if callback(state, active_set) === false
+                        execution_status = STATUS_INTERRUPTED
                         break
                     end
                 end
@@ -422,6 +429,16 @@ function blended_pairwise_conditional_gradient(
         end
     end
 
+    if t >= max_iteration
+        execution_status = STATUS_MAXITER
+    elseif phi_value < max(eps(float(typeof(phi_value))), epsilon)
+        execution_status = STATUS_OPTIMAL
+    end
+    if execution_status === STATUS_RUNNING
+        @warn "Status not set"
+        execution_status = STATUS_OPTIMAL
+    end
+
     # recompute everything once more for final verfication / do not record to trajectory though for now!
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
     # hence the final computation.
@@ -434,15 +451,15 @@ function blended_pairwise_conditional_gradient(
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
         phi_new = dot(gradient, x) - dot(gradient, v)
-        phi = phi_new < phi ? phi_new : phi
+        phi_value = min(phi_new, phi_value)
         step_type = ST_LAST
         tot_time = (time_ns() - time_start) / 1e9
         if callback !== nothing
             state = CallbackState(
                 t,
                 primal,
-                primal - phi,
-                phi,
+                primal - phi_value,
+                phi_value,
                 tot_time,
                 x,
                 v,
@@ -490,5 +507,13 @@ function blended_pairwise_conditional_gradient(
         callback(state, active_set)
     end
 
-    return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data, active_set=active_set)
+    return (
+        x=x,
+        v=v,
+        primal=primal,
+        dual_gap=dual_gap,
+        status=execution_status,
+        traj_data=traj_data,
+        active_set=active_set,
+    )
 end

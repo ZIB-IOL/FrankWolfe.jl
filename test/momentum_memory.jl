@@ -1,3 +1,5 @@
+module Test_momentum_memory
+
 import FrankWolfe
 import LinearAlgebra
 import Random
@@ -9,11 +11,12 @@ n = Int(1e3)
 k = 10000
 
 s = 50
-Random.seed!(StableRNG(s), s)
+rng = StableRNG(s)
+Random.seed!(rng, s)
 
-xpi = rand(n);
-total = sum(xpi);
-const xp = xpi ./ total;
+xpi = rand(rng, n)
+total = sum(xpi)
+const xp = xpi ./ total
 
 f(x) = LinearAlgebra.norm(x - xp)^2
 function grad!(storage, x)
@@ -21,8 +24,8 @@ function grad!(storage, x)
     return nothing
 end
 
-lmo = FrankWolfe.UnitSimplexOracle(1.0)
-x0 = FrankWolfe.compute_extreme_point(lmo, rand(n))
+lmo = FrankWolfe.UnitSimplexLMO(1.0)
+x0 = FrankWolfe.compute_extreme_point(lmo, rand(rng, n))
 
 xblas, _ = FrankWolfe.frank_wolfe(
     f,
@@ -52,3 +55,5 @@ xmem, _ = FrankWolfe.frank_wolfe(
 )
 
 @test f(xblas) ≈ f(xmem)
+
+end # module

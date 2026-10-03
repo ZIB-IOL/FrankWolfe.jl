@@ -1,7 +1,14 @@
+module Test_rational_test
+
 
 using FrankWolfe
 using LinearAlgebra
 using Test
+using Random
+using StableRNGs
+
+rng = StableRNG(42)
+Random.seed!(rng, 42)
 
 n = Int(1e3)
 k = n
@@ -12,12 +19,12 @@ function grad!(storage, x)
 end
 
 # pick feasible region
-lmo = FrankWolfe.ProbabilitySimplexOracle{Rational{BigInt}}(1); # radius needs to be integer or rational
+lmo = FrankWolfe.ProbabilitySimplexLMO{Rational{BigInt}}(1) # radius needs to be integer or rational
 
 # compute some initial vertex
-x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n));
+x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
 
-x, v, primal, dual_gap0, trajectory = FrankWolfe.frank_wolfe(
+x, v, primal, dual_gap0, status, trajectory = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -29,7 +36,7 @@ x, v, primal, dual_gap0, trajectory = FrankWolfe.frank_wolfe(
     memory_mode=FrankWolfe.OutplaceEmphasis(),
 )
 
-xmem, vmem, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+xmem, vmem, primal, dual_gap, status, trajectory = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -66,7 +73,7 @@ end
     n = 40
     k = 1000
 
-    xpi = rand(big(1):big(100), n)
+    xpi = rand(rng, big(1):big(100), n)
     total = sum(xpi)
     xp = xpi .// total
 
@@ -75,12 +82,12 @@ end
         @. storage = 2 * (x - xp)
     end
 
-    lmo = FrankWolfe.ProbabilitySimplexOracle{Rational{BigInt}}(rhs)
-    direction = rand(n)
+    lmo = FrankWolfe.ProbabilitySimplexLMO{Rational{BigInt}}(rhs)
+    direction = rand(rng, n)
     x0 = FrankWolfe.compute_extreme_point(lmo, direction)
     @test eltype(x0) == Rational{BigInt}
 
-    x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+    x, v, primal, dual_gap, status, trajectory = FrankWolfe.frank_wolfe(
         f,
         grad!,
         lmo,
@@ -94,7 +101,7 @@ end
 
     @test eltype(x0) == Rational{BigInt}
 
-    x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+    x, v, primal, dual_gap, status, trajectory = FrankWolfe.frank_wolfe(
         f,
         grad!,
         lmo,
@@ -110,7 +117,7 @@ end
 
     # very slow computation, explodes quickly
     x0 = collect(FrankWolfe.compute_extreme_point(lmo, direction))
-    x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+    x, v, primal, dual_gap, status, trajectory = FrankWolfe.frank_wolfe(
         f,
         grad!,
         lmo,
@@ -123,7 +130,7 @@ end
     )
 
     x0 = FrankWolfe.compute_extreme_point(lmo, direction)
-    x, v, primal, dual_gap, trajectory = FrankWolfe.frank_wolfe(
+    x, v, primal, dual_gap, status, trajectory = FrankWolfe.frank_wolfe(
         f,
         grad!,
         lmo,
@@ -136,3 +143,5 @@ end
     )
     @test eltype(x) == Rational{BigInt}
 end
+
+end # module

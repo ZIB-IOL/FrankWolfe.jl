@@ -40,6 +40,7 @@ Returns a tuple `(x, v, primal, dual_gap, dist2, traj_data)` with:
 - `v` cartesian product of last vertices of the LMOs
 - `primal` primal value `f(x)`
 - `dual_gap` final Frank-Wolfe gap
+- `status` is the termination status
 - `dist2` is 1/2 of the sum of squared, pairwise distances between iterates
 - `traj_data` vector of trajectory information.
 """
@@ -120,12 +121,8 @@ function alternating_linear_minimization(
         println(
             "MEMORY_MODE: $memory_mode STEPSIZE: $line_search_type EPSILON: $epsilon MAXITERATION: $max_iteration",
         )
-        println("TYPE: $num_type GRADIENTTYPE: $grad_type")
+        println("TYPE: $num_type GRADIENT_TYPE: $grad_type")
         println("LAMBDA: $lambda")
-
-        if memory_mode isa InplaceEmphasis
-            @info("In memory_mode memory iterates are written back into x0!")
-        end
 
         # header and format string for output of the algorithm
         headers = ["Type", "Iteration", "Primal", "Dual", "Dual Gap", "Time", "It/sec", "Dist2"]
@@ -191,7 +188,7 @@ function alternating_linear_minimization(
         callback = make_lambda_callback(callback, lambda)
     end
 
-    x, v, primal, dual_gap, traj_data = bc_method(
+    fw_res = bc_method(
         f_bc,
         grad_bc!,
         prod_lmo,
@@ -206,11 +203,24 @@ function alternating_linear_minimization(
         line_search=line_search,
         kwargs...,
     )
+    x = fw_res.x
+    v = fw_res.v
+    primal = fw_res.primal
+    dual_gap = fw_res.dual_gap
+    traj_data = fw_res.traj_data
 
     if trajectory
         traj_data = [(t..., dist2_data[i]) for (i, t) in enumerate(traj_data)]
     end
-    return x, v, primal, dual_gap, dist2(x), traj_data
+    return (
+        x=x,
+        v=v,
+        primal=primal,
+        dual_gap=dual_gap,
+        dist2=dist2(x),
+        status=fw_res.status,
+        traj_data=traj_data,
+    )
 end
 
 
@@ -218,11 +228,12 @@ end
     alternating_projections(lmos::NTuple{N,LinearMinimizationOracle}, x0; ...) where {N}
 
 Computes a point in the intersection of feasible domains specified by `lmos`.
-Returns a tuple `(x, v, dual_gap, dist2, traj_data)` with:
+Returns a named tuple `(; x, v, dual_gap, dist2, status, traj_data)` with:
 - `x` cartesian product of final iterates
 - `v` cartesian product of last vertices of the LMOs
 - `dual_gap` final Frank-Wolfe gap
 - `dist2` is 1/2 * sum of squared, pairwise distances between iterates
+- `status` the ExecutionStatus of the algorithm
 - `traj_data` vector of trajectory information.
 """
 function alternating_projections(
@@ -298,9 +309,10 @@ function alternating_projections(
     t = 0
     dual_gap = Inf
     dual_gaps = fill(Inf, N)
-    x = BlockVector(compute_extreme_point.(lmo.lmos, fill(x0, N)))
+    x = BlockVector([compute_extreme_point(lmo, x0) for lmo in lmo.lmos])
     step_type = ST_REGULAR
     gradient = similar(x)
+    execution_status = STATUS_RUNNING
 
     if reuse_active_set
         if proj_method ∉
@@ -371,10 +383,7 @@ function alternating_projections(
             "MEMORY_MODE: $memory_mode EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $num_type",
         )
         grad_type = typeof(gradient)
-        println("GRADIENTTYPE: $grad_type")
-        if memory_mode isa InplaceEmphasis
-            @info("In memory_mode memory iterates are written back into x0!")
-        end
+        println("GRADIENT_TYPE: $grad_type")
     end
 
     first_iter = true
@@ -382,7 +391,7 @@ function alternating_projections(
     while t <= max_iteration && dual_gap >= max(epsilon, eps(float(typeof(dual_gap))))
 
         #####################
-        # managing time and Ctrl-C
+        # time management
         #####################
         time_at_loop = time_ns()
         if t == 0
@@ -396,6 +405,7 @@ function alternating_projections(
                 if verbose
                     @info "Time limit reached"
                 end
+                execution_status = STATUS_TIMEOUT
                 break
             end
         end
@@ -419,7 +429,7 @@ function alternating_projections(
 
         first_iter = false
 
-        t = t + 1
+        t += 1
         if callback !== nothing
             state = CallbackState(
                 t,
@@ -437,14 +447,23 @@ function alternating_projections(
                 gradient,
                 step_type,
             )
-            # @show state
             if callback(state, primal) === false
+                execution_status = STATUS_INTERRUPTED
                 break
             end
         end
-
-
     end
+
+    if dual_gap <= max(epsilon, eps(float(typeof(dual_gap))))
+        execution_status = STATUS_OPTIMAL
+    elseif t >= max_iteration
+        execution_status = STATUS_MAXITER
+    end
+    if execution_status == STATUS_RUNNING
+        @warn "Status not set"
+        execution_status = STATUS_OPTIMAL
+    end
+
     # recompute everything once for final verfication / do not record to trajectory though for now!
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
     # hence the final computation.
@@ -476,6 +495,12 @@ function alternating_projections(
         callback(state, primal)
     end
 
-    return x, v, dual_gap, primal, traj_data
-
+    return (
+        x=x,
+        v=v,
+        primal=primal,
+        dual_gap=dual_gap,
+        status=execution_status,
+        traj_data=traj_data,
+    )
 end

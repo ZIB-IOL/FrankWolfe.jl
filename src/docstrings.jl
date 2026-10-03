@@ -3,11 +3,12 @@
 const RETURN = """
 # Return
 
-Returns a tuple `(x, v, primal, dual_gap, traj_data)` with:
+Returns a named tuple `(; x, v, primal, dual_gap, status, traj_data)` with:
 - `x`: the final iterate
 - `v`: the last vertex from the linear minimization oracle
 - `primal`: the final primal value `f(x)`
 - `dual_gap`: the final Frank-Wolfe gap
+- `status`: the `ExecutionStatus` with which the algorithm terminated
 - `traj_data`: a vector of trajectory information, each element being the output of [`callback_state`](@ref).
 """
 
@@ -48,5 +49,7 @@ These keyword arguments are common to most Frank-Wolfe variants.
 - `traj_data=[]`: pre-allocated storage for the trajectory of algorithm states
 - `timeout::Real=Inf`: maximum time after which the algorithm is interrupted (in nanoseconds)
 - `linesearch_workspace=nothing`: pre-allocated workspace for the line search 
-- `dual_gap_compute_frequency::Integer=1`: frequency of dual gap computation, 
+- `dual_gap_compute_frequency::Integer=1`: frequency of dual gap computation
+- `x_container=nothing`: pre-allocated container for the iterates of the algorithm
+- `d_container=nothing`: pre-allocated container for the update directions computed by the algorithm
 """

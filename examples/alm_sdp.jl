@@ -2,7 +2,7 @@ using FrankWolfe
 using LinearAlgebra
 using JuMP
 const MOI = JuMP.MOI
-import GLPK
+import HiGHS
 
 include("../examples/plot_utils.jl")
 
@@ -15,7 +15,7 @@ end
 
 dim = 10
 
-m = JuMP.Model(GLPK.Optimizer)
+m = JuMP.Model(HiGHS.Optimizer)
 @variable(m, x[1:dim, 1:dim])
 @constraint(m, sum(x * ones(dim, dim)) == 2)
 @constraint(m, sum(x * I(dim)) <= 2)
@@ -34,7 +34,7 @@ for order in [
     FrankWolfe.DualGapOrder(),
     FrankWolfe.DualProgressOrder(),
 ]
-    _, _, _, _, _, traj_data = FrankWolfe.alternating_linear_minimization(
+    alm_res = FrankWolfe.alternating_linear_minimization(
         FrankWolfe.block_coordinate_frank_wolfe,
         f,
         grad!,
@@ -45,7 +45,7 @@ for order in [
         trajectory=true,
         update_step=FrankWolfe.BPCGStep(),
     )
-    push!(trajectories, traj_data)
+    push!(trajectories, alm_res.traj_data)
 end
 
 labels = ["Full", "Cyclic", "Stochastic", "DualGapOrder", "DualProgressOrder"]

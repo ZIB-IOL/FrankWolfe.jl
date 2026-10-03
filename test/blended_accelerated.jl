@@ -1,3 +1,5 @@
+module Test_blended_accelerated
+
 using LinearAlgebra
 using Random
 using SparseArrays
@@ -11,11 +13,12 @@ n = 200
 k = 200
 
 s = 42
-Random.seed!(StableRNG(s), s)
+rng = StableRNG(s)
+Random.seed!(rng, s)
 
-const matrix = rand(n, n)
+const matrix = rand(rng, n, n)
 const hessian = transpose(matrix) * matrix
-const linear = rand(n)
+const linear = rand(rng, n)
 f(x) = dot(linear, x) + 0.5 * transpose(x) * hessian * x
 function grad!(storage, x)
     return storage .= linear + hessian * x
@@ -26,7 +29,7 @@ const L = eigmax(hessian)
 # only few iterations are run because linear algebra with BigFloat is intensive
 @testset "Type $T" for T in (Float64, Double64, BigFloat)
     @testset "LMO $(typeof(lmo)) Probability simplex" for lmo in (
-        FrankWolfe.ProbabilitySimplexOracle{T}(1.0),
+        FrankWolfe.ProbabilitySimplexLMO{T}(1.0),
         FrankWolfe.KSparseLMO{T}(100, 100.0),
     )
         x0 = FrankWolfe.compute_extreme_point(lmo, spzeros(T, n))
@@ -86,3 +89,5 @@ const L = eigmax(hessian)
         )
     end
 end
+
+end # module

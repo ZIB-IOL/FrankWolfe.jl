@@ -21,7 +21,7 @@ compute_extreme_point
 
 We also provide some meta-LMOs wrapping another one with extended behavior:
 ```@docs
-FrankWolfe.CachedLinearMinimizationOracle
+FrankWolfe.CachedLMO
 FrankWolfe.ProductLMO
 FrankWolfe.SingleLastCachedLMO
 FrankWolfe.MultiCacheLMO

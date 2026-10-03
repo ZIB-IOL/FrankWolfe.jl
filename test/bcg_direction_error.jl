@@ -1,3 +1,5 @@
+module Test_bcg_direction_error
+
 import FrankWolfe
 using LinearAlgebra
 using Random
@@ -9,10 +11,11 @@ n = Int(1e4)
 k = 1000
 
 s = 41
-Random.seed!(StableRNG(s), s)
+rng = StableRNG(s)
+Random.seed!(rng, s)
 
-xpi = rand(n);
-total = sum(xpi);
+xpi = rand(rng, n)
+total = sum(xpi)
 const xp = xpi # ./ total;
 
 f(x) = norm(x .- xp)^2
@@ -32,6 +35,7 @@ x, v, primal, dual_gap, _, _ = FrankWolfe.blended_conditional_gradient(
     x0,
     max_iteration=k,
     line_search=FrankWolfe.AdaptiveZerothOrder(L_est=2.0),
+    line_search_inner=FrankWolfe.Secant(tol=1e-10),
     print_iter=100,
     memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=false,
@@ -61,7 +65,60 @@ x, v, primal_cut, dual_gap, _, _ = FrankWolfe.blended_conditional_gradient(
     sparsity_control=1.0,
     weight_purge_threshold=1e-10,
     epsilon=1e-9,
-    timeout=3.0,
 )
 
-@test primal ≤ primal_cut
+@test primal ≤ primal_cut + sqrt(eps())
+
+# Same instance with the CFW implementation of BCG (lazy SiGD over the active set)
+x0 = FrankWolfe.compute_extreme_point(lmo, spzeros(size(xp)...))
+gradient = similar(xp)
+
+x, v, primal, dual_gap, _, _ = FrankWolfe.corrective_frank_wolfe(
+    f,
+    grad!,
+    lmo,
+    FrankWolfe.SimplexGradientDescentStep(
+        true;
+        lazy_tolerance=1.0,
+        line_search_inner=FrankWolfe.Secant(tol=1e-10),
+    ),
+    FrankWolfe.ActiveSet([(1.0, copy(x0))]),
+    max_iteration=k,
+    line_search=FrankWolfe.AdaptiveZerothOrder(L_est=2.0),
+    print_iter=100,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
+    verbose=false,
+    trajectory=false,
+    weight_purge_threshold=1e-9,
+    epsilon=1e-8,
+    gradient=gradient,
+)
+
+@test dual_gap ≤ 1e-3
+@test f(x0) - f(x) ≥ 180
+
+x0 = FrankWolfe.compute_extreme_point(lmo, spzeros(size(xp)...))
+
+x, v, primal_cut, dual_gap, _, _ = FrankWolfe.corrective_frank_wolfe(
+    f,
+    grad!,
+    lmo,
+    FrankWolfe.SimplexGradientDescentStep(
+        true;
+        lazy_tolerance=1.0,
+        line_search_inner=FrankWolfe.Secant(),
+    ),
+    FrankWolfe.ActiveSet([(1.0, copy(x0))]),
+    max_iteration=k,
+    line_search=FrankWolfe.AdaptiveZerothOrder(L_est=2.0),
+    print_iter=k / 10,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
+    verbose=false,
+    trajectory=false,
+    weight_purge_threshold=1e-10,
+    epsilon=1e-9,
+)
+
+@test primal ≤ primal_cut + sqrt(eps())
+
+end # module

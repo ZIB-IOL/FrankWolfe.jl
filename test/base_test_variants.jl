@@ -1,13 +1,20 @@
+module Test_base_test_variants
+
 using FrankWolfe
 using Test
 using LinearAlgebra
+using Random
+using StableRNGs
+
+rng = StableRNG(42)
+Random.seed!(rng, 42)
 
 @testset "Testing vanilla Frank-Wolfe" begin
     f(x) = norm(x)^2
     function grad!(storage, x)
         return storage .= 2x
     end
-    lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
+    lmo_prob = FrankWolfe.ProbabilitySimplexLMO(1)
     x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(5))
     @test abs(
         FrankWolfe.frank_wolfe(
@@ -153,7 +160,7 @@ end
         @. storage = 2x
         return nothing
     end
-    lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
+    lmo_prob = FrankWolfe.ProbabilitySimplexLMO(1)
     x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(5))
     @test abs(
         FrankWolfe.lazified_conditional_gradient(
@@ -212,10 +219,10 @@ end
         @. storage = 2 * x
         return nothing
     end
-    lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
+    lmo_prob = FrankWolfe.ProbabilitySimplexLMO(1)
     x0 = FrankWolfe.compute_extreme_point(lmo_prob, zeros(n))
 
-    x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
+    x, v, primal, dual_gap, status, trajectory = FrankWolfe.lazified_conditional_gradient(
         f,
         grad!,
         lmo_prob,
@@ -227,7 +234,7 @@ end
 
     @test primal - 1 / n <= bound
 
-    x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
+    x, v, primal, dual_gap, status, trajectory = FrankWolfe.lazified_conditional_gradient(
         f,
         grad!,
         lmo_prob,
@@ -240,7 +247,7 @@ end
 
     @test primal - 1 / n <= bound
 
-    x, v, primal, dual_gap, trajectory = FrankWolfe.lazified_conditional_gradient(
+    x, v, primal, dual_gap, status, trajectory = FrankWolfe.lazified_conditional_gradient(
         f,
         grad!,
         lmo_prob,
@@ -272,12 +279,12 @@ end
         return storage
     end
 
-    xs = [10 * randn(5) for i in 1:20000]
-    params = rand(6) .- 1 # start params in (-1,0)
+    xs = [10 * randn(rng, 5) for i in 1:20000]
+    params = rand(rng, 6) .- 1 # start params in (-1,0)
     bias = 2π
     params_perfect = [1:5; bias]
 
-    params = rand(6) .- 1 # start params in (-1,0)
+    params = rand(rng, 6) .- 1 # start params in (-1,0)
 
     data_perfect = [(x, x ⋅ (1:5) + bias) for x in xs]
     f_stoch = FrankWolfe.StochasticObjective(
@@ -286,7 +293,7 @@ end
         data_perfect,
         similar(params),
     )
-    lmo = FrankWolfe.LpNormLMO{2}(1.1 * norm(params_perfect))
+    lmo = FrankWolfe.LpNormBallLMO{2}(1.1 * norm(params_perfect))
 
     θ, _, _, _, _ = FrankWolfe.stochastic_frank_wolfe(
         f_stoch,
@@ -358,14 +365,14 @@ end
 
 @testset "Away-step FW" begin
     n = 50
-    lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1.0)
-    x0 = FrankWolfe.compute_extreme_point(lmo_prob, rand(n))
+    lmo_prob = FrankWolfe.ProbabilitySimplexLMO(1.0)
+    x0 = FrankWolfe.compute_extreme_point(lmo_prob, rand(rng, n))
     f(x) = norm(x)^2
     function grad!(storage, x)
         @. storage = 2x
     end
     k = 1000
-    active_set = ActiveSet([(1.0, x0)])
+    active_set = FrankWolfe.ActiveSet([(1.0, x0)])
 
     # compute reference from vanilla FW
     xref, _ = FrankWolfe.frank_wolfe(
@@ -379,7 +386,7 @@ end
         memory_mode=FrankWolfe.OutplaceEmphasis(),
     )
 
-    x, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
+    x, v, primal, dual_gap, status, trajectory = FrankWolfe.away_frank_wolfe(
         f,
         grad!,
         lmo_prob,
@@ -394,7 +401,7 @@ end
     @test x !== nothing
     @test xref ≈ x atol = (1e-3 / length(x))
 
-    xs, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
+    xs, v, primal, dual_gap, status, trajectory = FrankWolfe.away_frank_wolfe(
         f,
         grad!,
         lmo_prob,
@@ -409,7 +416,7 @@ end
     @test xs !== nothing
     @test xref ≈ xs atol = (1e-3 / length(x))
 
-    x, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
+    x, v, primal, dual_gap, status, trajectory = FrankWolfe.away_frank_wolfe(
         f,
         grad!,
         lmo_prob,
@@ -425,7 +432,7 @@ end
     @test x !== nothing
     @test xref ≈ x atol = (1e-3 / length(x))
 
-    xs, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
+    xs, v, primal, dual_gap, status, trajectory = FrankWolfe.away_frank_wolfe(
         f,
         grad!,
         lmo_prob,
@@ -440,7 +447,7 @@ end
     @test xs !== nothing
     @test xref ≈ xs atol = (1e-3 / length(x))
 
-    x, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
+    x, v, primal, dual_gap, status, trajectory = FrankWolfe.away_frank_wolfe(
         f,
         grad!,
         lmo_prob,
@@ -455,7 +462,7 @@ end
     @test x !== nothing
     @test xref ≈ x atol = (1e-3 / length(x))
 
-    x, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
+    x, v, primal, dual_gap, status, trajectory = FrankWolfe.away_frank_wolfe(
         f,
         grad!,
         lmo_prob,
@@ -471,7 +478,7 @@ end
     @test x !== nothing
     @test xref ≈ x atol = (1e-3 / length(x))
 
-    xs, v, primal, dual_gap, trajectory = FrankWolfe.away_frank_wolfe(
+    xs, v, primal, dual_gap, status, trajectory = FrankWolfe.away_frank_wolfe(
         f,
         grad!,
         lmo_prob,
@@ -502,8 +509,8 @@ end
 
 @testset "Testing Blended Conditional Gradient" begin
     n = 50
-    lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1.0)
-    x0 = FrankWolfe.compute_extreme_point(lmo_prob, randn(n))
+    lmo_prob = FrankWolfe.ProbabilitySimplexLMO(1.0)
+    x0 = FrankWolfe.compute_extreme_point(lmo_prob, randn(rng, n))
     f(x) = norm(x)^2
     function grad!(storage, x)
         @. storage = 2x
@@ -522,7 +529,7 @@ end
         memory_mode=FrankWolfe.OutplaceEmphasis(),
     )
 
-    x, v, primal, dual_gap, trajectory, _ = FrankWolfe.blended_conditional_gradient(
+    x, v, primal, dual_gap, status, trajectory, _ = FrankWolfe.blended_conditional_gradient(
         f,
         grad!,
         lmo_prob,
@@ -539,3 +546,5 @@ end
     @test f(x) ≈ f(xref)
 
 end
+
+end # module

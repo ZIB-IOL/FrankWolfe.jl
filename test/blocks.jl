@@ -1,8 +1,14 @@
+module Test_blocks
+
 using Test
 using Random
 using LinearAlgebra
 using FrankWolfe
 using SparseArrays
+using StableRNGs
+
+rng = StableRNG(42)
+Random.seed!(rng, 42)
 
 @testset "Block array behavior" begin
     arr = FrankWolfe.BlockVector([
@@ -67,12 +73,12 @@ end
                 1 3 5.0
             ],
         ],)
-        arr1 = rand() * arr0
+        arr1 = rand(rng) * arr0
         d = similar(arr1)
         FrankWolfe.muladd_memory_mode(mem, d, arr1, arr0)
         dref = arr1 - arr0
         @test d == dref
-        gamma = rand()
+        gamma = rand(rng)
         arr2 = zero(arr0)
         FrankWolfe.muladd_memory_mode(mem, arr2, gamma, arr0)
         @test arr2 == -gamma * arr0
@@ -120,3 +126,5 @@ end
         @test active_set.x ≈ active_set_dense.x
     end
 end
+
+end # module

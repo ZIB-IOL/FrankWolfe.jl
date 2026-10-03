@@ -8,7 +8,7 @@
 # ```math
 # \min_{||X||_*\le \tau} \sum_{(i,j)\in\mathcal{I}} (X_{i,j}-Y_{i,j})^2,
 # ```
-# where ``\tau>0``, ``||X||_*`` is the nuclear norm, and ``\mathcal{I}`` denotes the indices of the observed entries. We will use [`FrankWolfe.NuclearNormLMO`](@ref) and compare our
+# where ``\tau>0``, ``||X||_*`` is the nuclear norm, and ``\mathcal{I}`` denotes the indices of the observed entries. We will use [`FrankWolfe.NuclearNormBallLMO`](@ref) and compare our
 # Frank-Wolfe implementation with a Projected Gradient Descent (PGD) algorithm which, after each gradient descent step, projects the iterates back onto the nuclear
 # norm ball. We use a movielens dataset for comparison.
 
@@ -107,7 +107,7 @@ end
 
 norm_estimation = 10 * Arpack.svds(rating_matrix, nsv=1, ritzvec=false)[1].S[1]
 
-const lmo = FrankWolfe.NuclearNormLMO(norm_estimation)
+const lmo = FrankWolfe.NuclearNormBallLMO(norm_estimation)
 const x0 = FrankWolfe.compute_extreme_point(lmo, ones(size(rating_matrix)))
 const k = 10
 
@@ -181,7 +181,7 @@ end
 
 trajectory_arr_fw = Vector{Tuple{Int64,Float64,Float64,Float64,Float64,Float64}}()
 callback = build_callback(trajectory_arr_fw)
-xfin, _, _, _, traj_data = FrankWolfe.frank_wolfe(
+xfin, _, _, _, status, traj_data = FrankWolfe.frank_wolfe(
     f,
     grad!,
     lmo,
@@ -196,9 +196,14 @@ xfin, _, _, _, traj_data = FrankWolfe.frank_wolfe(
     callback=callback,
 )
 
+# We can check the final execution status
+status
+
+#
+
 trajectory_arr_lazy = Vector{Tuple{Int64,Float64,Float64,Float64,Float64,Float64}}()
 callback = build_callback(trajectory_arr_lazy)
-xlazy, _, _, _, _ = FrankWolfe.lazified_conditional_gradient(
+xlazy, _, _, _, _, _ = FrankWolfe.lazified_conditional_gradient(
     f,
     grad!,
     lmo,
@@ -216,7 +221,7 @@ xlazy, _, _, _, _ = FrankWolfe.lazified_conditional_gradient(
 
 trajectory_arr_lazy_ref = Vector{Tuple{Int64,Float64,Float64,Float64,Float64,Float64}}()
 callback = build_callback(trajectory_arr_lazy_ref)
-xlazy, _, _, _, _ = FrankWolfe.lazified_conditional_gradient(
+xlazy, _, _, _, _, _ = FrankWolfe.lazified_conditional_gradient(
     f,
     grad!,
     lmo,

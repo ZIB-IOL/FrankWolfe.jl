@@ -34,7 +34,7 @@ tgrad! = FrankWolfe.TrackingGradient(grad!)
 
 # The tracking LMO operates in a similar fashion and tracks the number of `compute_extreme_point` calls.
 
-lmo_prob = FrankWolfe.ProbabilitySimplexOracle(1)
+lmo_prob = FrankWolfe.ProbabilitySimplexLMO(1)
 tlmo_prob = FrankWolfe.TrackingLMO(lmo_prob)
 @show tlmo_prob.counter;
 
@@ -83,7 +83,7 @@ storage = []
 
 function push_tracking_state(state, storage)
     base_tuple = FrankWolfe.callback_state(state)
-    if state.lmo isa FrankWolfe.CachedLinearMinimizationOracle
+    if state.lmo isa FrankWolfe.CachedLMO
         complete_tuple = tuple(
             base_tuple...,
             state.gamma,

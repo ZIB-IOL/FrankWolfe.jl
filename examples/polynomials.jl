@@ -101,12 +101,12 @@ end
 #Check the gradient using finite differences just in case
 gradient = similar(all_coeffs)
 
-max_iter = 100_000
+max_iteration = 10_000
 random_initialization_vector = rand(length(all_coeffs))
 
-#lmo = FrankWolfe.LpNormLMO{1}(100 * maximum(all_coeffs))
+#lmo = FrankWolfe.LpNormBallLMO{1}(100 * maximum(all_coeffs))
 
-lmo = FrankWolfe.LpNormLMO{1}(0.95 * norm(all_coeffs, 1))
+lmo = FrankWolfe.LpNormBallLMO{1}(0.95 * norm(all_coeffs, 1))
 
 # L estimate
 num_pairs = 10000
@@ -164,7 +164,7 @@ test_gd = Float64[]
 coeff_error = Float64[]
 time_start = time_ns()
 gd_times = Float64[]
-for iter in 1:max_iter
+for iter in 1:max_iteration
     global xgd
     grad!(gradient, xgd)
     xgd = projnorm1(xgd - gradient / L_estimate, lmo.right_hand_side)
@@ -185,14 +185,14 @@ x0 = deepcopy(x00)
 # lazy AFW
 trajectory_lafw = []
 callback = build_callback(trajectory_lafw)
-@time x_lafw, v, primal, dual_gap, _ = FrankWolfe.away_frank_wolfe(
+@time x_lafw, v, primal, dual_gap, status, _, _ = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
     x0,
-    max_iteration=max_iter,
+    max_iteration=max_iteration,
     line_search=FrankWolfe.Adaptive(L_est=L_estimate),
-    print_iter=max_iter ÷ 10,
+    print_iter=max_iteration ÷ 10,
     memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     lazy=true,
@@ -213,9 +213,9 @@ x0 = deepcopy(x00)
     grad!,
     lmo,
     x0,
-    max_iteration=max_iter,
+    max_iteration=max_iteration,
     line_search=FrankWolfe.Adaptive(L_est=L_estimate),
-    print_iter=max_iter ÷ 10,
+    print_iter=max_iteration ÷ 10,
     memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     weight_purge_threshold=1e-10,
@@ -232,14 +232,14 @@ x0 = deepcopy(x00)
 #  compute reference solution using lazy AFW
 trajectory_lafw_ref = []
 callback = build_callback(trajectory_lafw_ref)
-@time _, _, primal_ref, _, _ = FrankWolfe.away_frank_wolfe(
+@time _, _, primal_ref, _, status, _, _ = FrankWolfe.away_frank_wolfe(
     f,
     grad!,
     lmo,
     x0,
-    max_iteration=2 * max_iter,
+    max_iteration=max_iteration,
     line_search=FrankWolfe.Adaptive(L_est=L_estimate),
-    print_iter=max_iter ÷ 10,
+    print_iter=max_iteration ÷ 10,
     memory_mode=FrankWolfe.InplaceEmphasis(),
     verbose=true,
     lazy=true,
@@ -249,8 +249,8 @@ callback = build_callback(trajectory_lafw_ref)
 
 open(joinpath(@__DIR__, "polynomial_result.json"), "w") do f
     data = JSON.json((
-        trajectory_arr_lafw=trajectory_lafw,
-        trajectory_arr_bcg=trajectory_bcg,
+        trajectory_arr_lafw=trajectory_lafw[3:end],
+        trajectory_arr_bcg=trajectory_bcg[3:end],
         function_values_gd=training_gd,
         function_values_test_gd=test_gd,
         coefficient_error_gd=coeff_error,

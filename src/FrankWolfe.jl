@@ -15,6 +15,10 @@ import MathOptInterface
 const MOI = MathOptInterface
 const MOIU = MOI.Utilities
 
+# to lift ambiguities
+import FillArrays
+import StaticArraysCore
+
 # for Birkhoff polytope LMO
 import Hungarian
 
@@ -32,6 +36,7 @@ include("types.jl")
 include("simplex_oracles.jl")
 include("norm_oracles.jl")
 include("polytope_oracles.jl")
+# include("linear_algebra_backends.jl")
 include("spectral_oracles.jl")
 include("moi_oracle.jl")
 include("function_gradient.jl")
@@ -49,19 +54,20 @@ include("block_coordinate_algorithms.jl")
 include("alternating_methods.jl")
 include("blended_pairwise.jl")
 include("pairwise.jl")
+include("dca.jl")
 include("dicg.jl")
 include("tracking.jl")
 include("callback.jl")
 
+module Experimental
 include("gradient_descent.jl")
+end
 
 include("corrective_step_interface.jl")
 include("corrective_frankwolfe.jl")
 
 # collecting most common data types etc and precompile
 # min version req set to 1.5 to prevent stalling of julia 1
-@static if VERSION >= v"1.5"
-    include("precompile.jl")
-end
+include("precompile.jl")
 
 end

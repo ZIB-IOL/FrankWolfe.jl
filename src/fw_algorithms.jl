@@ -29,6 +29,8 @@ function frank_wolfe(
     timeout=Inf,
     linesearch_workspace=nothing,
     dual_gap_compute_frequency=1,
+    x_container=nothing,
+    d_container=nothing,
 )
 
     # header and format string for output of the algorithm
@@ -52,7 +54,23 @@ function frank_wolfe(
     primal = Inf
     v = []
     x = x0
+    if memory_mode isa InplaceEmphasis
+        # we don't want to overwrite x0
+        if x_container !== nothing
+            x = x_container
+            copyto!(x, x0)
+        else
+            # if integer, convert element type to most appropriate float
+            if eltype(x) <: Integer
+                x = copyto!(similar(x, float(eltype(x))), x)
+            else
+                x = copyto!(similar(x), x)
+            end
+        end
+    end
+
     step_type = ST_REGULAR
+    execution_status = STATUS_RUNNING
 
     if trajectory
         callback = make_trajectory_callback(callback, traj_data)
@@ -68,6 +86,11 @@ function frank_wolfe(
         @warn("Momentum-averaged gradients should usually be used with agnostic stepsize rules.",)
     end
 
+    # instanciating container for gradient
+    if gradient === nothing
+        gradient = collect(x)
+    end
+
     if verbose
         println("\nVanilla Frank-Wolfe Algorithm.")
         NumType = eltype(x0)
@@ -75,24 +98,8 @@ function frank_wolfe(
             "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
         )
         grad_type = typeof(gradient)
-        println("MOMENTUM: $momentum GRADIENTTYPE: $grad_type")
+        println("MOMENTUM: $momentum GRADIENT_TYPE: $grad_type")
         println("LMO: $(typeof(lmo))")
-        if memory_mode isa InplaceEmphasis
-            @info("In memory_mode memory iterates are written back into x0!")
-        end
-    end
-    if memory_mode isa InplaceEmphasis && !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
-        # if integer, convert element type to most appropriate float
-        if eltype(x) <: Integer
-            x = copyto!(similar(x, float(eltype(x))), x)
-        else
-            x = copyto!(similar(x), x)
-        end
-    end
-
-    # instanciating container for gradient
-    if gradient === nothing
-        gradient = collect(x)
     end
 
     first_iter = true
@@ -101,13 +108,14 @@ function frank_wolfe(
     end
 
     # container for direction
-    d = similar(x)
+    d = d_container !== nothing ? d_container : similar(x)
+
     gtemp = momentum === nothing ? d : similar(x)
 
     while t <= max_iteration && dual_gap >= max(epsilon, eps(float(typeof(dual_gap))))
 
         #####################
-        # managing time and Ctrl-C
+        # time management
         #####################
         time_at_loop = time_ns()
         if t == 0
@@ -120,6 +128,7 @@ function frank_wolfe(
             if tot_time ≥ timeout
                 if verbose
                     @info "Time limit reached"
+                    execution_status = STATUS_TIMEOUT
                 end
                 break
             end
@@ -190,12 +199,24 @@ function frank_wolfe(
                 step_type,
             )
             if callback(state) === false
+                execution_status = STATUS_INTERRUPTED
                 break
             end
         end
 
         x = muladd_memory_mode(memory_mode, x, gamma, d)
     end
+
+    if dual_gap < max(epsilon, eps(float(typeof(dual_gap))))
+        execution_status = STATUS_OPTIMAL
+    elseif t >= max_iteration
+        execution_status = STATUS_MAXITER
+    end
+    if execution_status === STATUS_RUNNING
+        @warn "Status not set"
+        execution_status = STATUS_OPTIMAL
+    end
+
     # recompute everything once for final verfication / do not record to trajectory though for now!
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
     # hence the final computation.
@@ -237,7 +258,14 @@ function frank_wolfe(
         callback(state)
     end
 
-    return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data)
+    return (
+        x=x,
+        v=v,
+        primal=primal,
+        dual_gap=dual_gap,
+        status=execution_status,
+        traj_data=traj_data,
+    )
 end
 
 
@@ -276,6 +304,8 @@ function lazified_conditional_gradient(
     VType=typeof(x0),
     timeout=Inf,
     linesearch_workspace=nothing,
+    x_container=nothing,
+    d_container=nothing,
 )
 
     # format string for output of the algorithm
@@ -313,10 +343,11 @@ function lazified_conditional_gradient(
     t = 0
     dual_gap = Inf
     primal = Inf
-    v = []
+    v = x0
     x = x0
-    phi = Inf
+    phi_value = Inf
     step_type = ST_REGULAR
+    execution_status = STATUS_RUNNING
 
     time_start = time_ns()
 
@@ -328,6 +359,19 @@ function lazified_conditional_gradient(
         gradient = collect(x)
     end
 
+    if memory_mode isa InplaceEmphasis
+        if x_container !== nothing
+            x = x_container
+            copyto!(x, x0)
+        else
+            if eltype(x) <: Integer
+                x = copyto!(similar(x, float(eltype(x))), x)
+            else
+                x = copyto!(similar(x), x)
+            end
+        end
+    end
+
     if verbose
         println("\nLazified Conditional Gradient (Frank-Wolfe + Lazification).")
         NumType = eltype(x0)
@@ -335,31 +379,18 @@ function lazified_conditional_gradient(
             "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration sparsity_control: $sparsity_control TYPE: $NumType",
         )
         grad_type = typeof(gradient)
-        println("GRADIENTTYPE: $grad_type CACHESIZE $cache_size GREEDYCACHE: $greedy_lazy")
+        println("GRADIENT_TYPE: $grad_type CACHESIZE $cache_size GREEDYCACHE: $greedy_lazy")
         println("LMO: $(typeof(lmo))")
-        if memory_mode isa InplaceEmphasis
-            @info("In memory_mode memory iterates are written back into x0!")
-        end
-    end
-
-    if memory_mode isa InplaceEmphasis && !isa(x, Union{Array,SparseArrays.AbstractSparseArray})
-        if eltype(x) <: Integer
-            x = copyto!(similar(x, float(eltype(x))), x)
-        else
-            x = copyto!(similar(x), x)
-        end
     end
 
     # container for direction
-    d = similar(x)
+    d = d_container !== nothing ? d_container : similar(x)
     if linesearch_workspace === nothing
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
     end
-
-    while t <= max_iteration && dual_gap >= max(epsilon, eps(float(eltype(x))))
-
+    while t <= max_iteration && dual_gap >= max(epsilon, eps(float(typeof(dual_gap))))
         #####################
-        # managing time and Ctrl-C
+        # time management
         #####################
         time_at_loop = time_ns()
         if t == 0
@@ -373,6 +404,7 @@ function lazified_conditional_gradient(
                 if verbose
                     @info "Time limit reached"
                 end
+                execution_status = STATUS_TIMEOUT
                 break
             end
         end
@@ -381,7 +413,7 @@ function lazified_conditional_gradient(
 
         grad!(gradient, x)
 
-        threshold = dot(gradient, x) - phi / sparsity_control
+        threshold = dot(gradient, x) - phi_value / sparsity_control
 
         # go easy on the memory - only compute if really needed
         if ((mod(t, print_iter) == 0 && verbose) || callback !== nothing)
@@ -393,7 +425,7 @@ function lazified_conditional_gradient(
         if dot(gradient, v) > threshold
             step_type = ST_DUALSTEP
             dual_gap = dot(gradient, x) - dot(gradient, v)
-            phi = min(dual_gap, phi / 2)
+            phi_value = min(dual_gap, phi_value / 2)
         end
 
         d = muladd_memory_mode(memory_mode, d, x, v)
@@ -430,11 +462,21 @@ function lazified_conditional_gradient(
                 step_type,
             )
             if callback(state) === false
+                execution_status = STATUS_INTERRUPTED
                 break
             end
         end
 
         x = muladd_memory_mode(memory_mode, x, gamma, d)
+    end
+    if dual_gap <= max(epsilon, eps(float(typeof(dual_gap))))
+        execution_status = STATUS_OPTIMAL
+    elseif t >= max_iteration
+        execution_status = STATUS_MAXITER
+    end
+    if execution_status === STATUS_RUNNING
+        @warn "Status not set"
+        execution_status = STATUS_OPTIMAL
     end
 
     # recompute everything once for final verfication / do not record to trajectory though for now!
@@ -477,5 +519,12 @@ function lazified_conditional_gradient(
         )
         callback(state)
     end
-    return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data)
+    return (
+        x=x,
+        v=v,
+        primal=primal,
+        dual_gap=dual_gap,
+        status=execution_status,
+        traj_data=traj_data,
+    )
 end

@@ -20,7 +20,7 @@ function corrective_frank_wolfe(
     line_search::LineSearchMethod=Secant(),
     epsilon=1e-7,
     max_iteration=10000,
-    print_iter=1000,
+    print_iter=max_iteration ÷ 100,
     trajectory=false,
     verbose=false,
     memory_mode::MemoryEmphasis=InplaceEmphasis(),
@@ -35,6 +35,7 @@ function corrective_frank_wolfe(
     add_dropped_vertices=false,
     use_extra_vertex_storage=false,
     recompute_last_vertex=true,
+    d_container=nothing,
 ) where {AT,R}
 
     # format string for output of the algorithm
@@ -69,7 +70,7 @@ function corrective_frank_wolfe(
     step_type = ST_REGULAR
     time_start = time_ns()
 
-    d = similar(x)
+    d = d_container !== nothing ? d_container : similar(x)
 
     if gradient === nothing
         gradient = collect(x)
@@ -84,16 +85,17 @@ function corrective_frank_wolfe(
             "MEMORY_MODE: $memory_mode STEPSIZE: $line_search EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $NumType",
         )
         grad_type = typeof(gradient)
-        println("GRADIENTTYPE: $grad_type")
+        println("GRADIENT_TYPE: $grad_type")
         println("LMO: $(typeof(lmo))")
     end
 
     grad!(gradient, x)
     v = compute_extreme_point(lmo, gradient)
-    # if not a lazy corrector, phi is maintained as the global dual gap
-    phi = max(0, dot(gradient, x) - dot(gradient, v))
-    dual_gap = phi
-    gamma = one(phi)
+    # if not a lazy corrector, phi_value is maintained as the global dual gap
+    phi_value = max(0, dot(gradient, x) - dot(gradient, v))
+    dual_gap = phi_value
+    gamma = one(phi_value)
+    execution_status = STATUS_RUNNING
 
     if linesearch_workspace === nothing
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
@@ -103,7 +105,7 @@ function corrective_frank_wolfe(
         use_extra_vertex_storage = add_dropped_vertices = false
     end
 
-    while t <= max_iteration && phi >= max(epsilon, eps(epsilon))
+    while t <= max_iteration && phi_value >= max(epsilon, eps(epsilon))
 
         # managing time limit
         time_at_loop = time_ns()
@@ -118,6 +120,7 @@ function corrective_frank_wolfe(
                 if verbose
                     @info "Time limit reached"
                 end
+                execution_status = STATUS_TIMEOUT
                 break
             end
         end
@@ -141,16 +144,16 @@ function corrective_frank_wolfe(
             t,
             lmo,
             primal,
-            phi,
+            phi_value,
         )
 
         if should_compute_vertex && t > 1
             v = compute_extreme_point(lmo, gradient)
             dual_gap = dot(gradient, x) - dot(gradient, v)
-            phi = dual_gap
+            phi_value = dual_gap
         end
         # use the step defined by the corrective step type
-        x, v, phi, dual_gap, should_fw_step, should_continue = run_corrective_step(
+        x, v, phi_value, dual_gap, should_fw_step, should_continue = run_corrective_step(
             corrective_step,
             f,
             grad!,
@@ -164,7 +167,7 @@ function corrective_frank_wolfe(
             line_search,
             linesearch_workspace,
             primal,
-            phi,
+            phi_value,
             tot_time,
             callback,
             renorm_interval,
@@ -174,6 +177,7 @@ function corrective_frank_wolfe(
         )
         # interrupt from callback
         if should_continue === false
+            execution_status = STATUS_INTERRUPTED
             break
         end
         if should_fw_step
@@ -209,8 +213,8 @@ function corrective_frank_wolfe(
                     state = CallbackState(
                         t,
                         primal,
-                        primal - phi,
-                        phi,
+                        primal - phi_value,
+                        phi_value,
                         tot_time,
                         x,
                         v,
@@ -223,6 +227,7 @@ function corrective_frank_wolfe(
                         step_type,
                     )
                     if callback(state, active_set) === false
+                        execution_status = STATUS_INTERRUPTED
                         break
                     end
                 end
@@ -242,6 +247,16 @@ function corrective_frank_wolfe(
         end
     end
 
+    if phi_value < max(epsilon, eps(float(typeof(phi_value))))
+        execution_status = STATUS_OPTIMAL
+    elseif t >= max_iteration
+        execution_status = STATUS_MAXITER
+    end
+    if execution_status === STATUS_RUNNING
+        @warn "Status not set"
+        execution_status = STATUS_OPTIMAL
+    end
+
     # recompute everything once more for final verfication / do not record to trajectory though for now!
     # this is important as some variants do not recompute f(x) and the dual_gap regularly but only when reporting
     # hence the final computation.
@@ -254,15 +269,15 @@ function corrective_frank_wolfe(
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
         phi_new = dot(gradient, x) - dot(gradient, v)
-        phi = phi_new < phi ? phi_new : phi
+        phi_value = phi_new < phi_value ? phi_new : phi_value
         step_type = ST_LAST
         tot_time = (time_ns() - time_start) / 1e9
         if callback !== nothing
             state = CallbackState(
                 t,
                 primal,
-                primal - phi,
-                phi,
+                primal - phi_value,
+                phi_value,
                 tot_time,
                 x,
                 v,
@@ -310,5 +325,13 @@ function corrective_frank_wolfe(
         callback(state, active_set)
     end
 
-    return (x=x, v=v, primal=primal, dual_gap=dual_gap, traj_data=traj_data, active_set=active_set)
+    return (
+        x=x,
+        v=v,
+        primal=primal,
+        dual_gap=dual_gap,
+        status=execution_status,
+        traj_data=traj_data,
+        active_set=active_set,
+    )
 end
