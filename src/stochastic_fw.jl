@@ -240,6 +240,7 @@ function stochastic_frank_wolfe(
     gradient = f.storage .* 0
     if use_one_sample_variant
         previous_gradient = 0 .* gradient
+        x_prev = copy(x)
     end
     if linesearch_workspace === nothing
         linesearch_workspace = build_linesearch_workspace(line_search, x, gradient)
@@ -282,8 +283,15 @@ function stochastic_frank_wolfe(
                 # gradient = momentum * gradient + (1 - momentum) * f.storage
                 LinearAlgebra.mul!(gradient, LinearAlgebra.I, f.storage, 1 - momentum, momentum)
             else
-                copyto!(previous_gradient, f.storage)
-                compute_gradient(f, x, rng=rng, batch_size=batch_size, full_evaluation=false)
+                # gradients at x_t and x_{t-1} evaluated on the same sample
+                compute_gradient_pair!(
+                    previous_gradient,
+                    f,
+                    x,
+                    x_prev,
+                    rng=rng,
+                    batch_size=batch_size,
+                )
                 # gradient = momentum * (gradient - prev_gradient) + f.storage
                 LinearAlgebra.mul!(
                     gradient,
@@ -349,6 +357,9 @@ function stochastic_frank_wolfe(
             end
         end
 
+        if use_one_sample_variant
+            copyto!(x_prev, x)
+        end
         x = muladd_memory_mode(memory_mode, x, gamma, d)
     end
     if dual_gap <= max(epsilon, eps(float(typeof(dual_gap))))

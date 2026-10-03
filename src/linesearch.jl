@@ -1094,8 +1094,6 @@ end
     - `L_est::T`: The estimated value of the Lipschitz constant.
     - `L_max::T`: The maximum value of the Lipschitz constant.
 """
-
-
 mutable struct BlockAdaptive{T} <: FrankWolfe.LineSearchMethod
     blocks::Vector{Int}
     eta::T

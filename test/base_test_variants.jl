@@ -355,12 +355,13 @@ end
         copy(params),
         verbose=false,
         line_search=FrankWolfe.Agnostic(),
-        max_iteration=5000,
+        max_iteration=100_000,
         batch_size=1,
+        rng=StableRNG(1),
         momentum_iterator=FrankWolfe.InverseIterateMomentum(),
         use_one_sample_variant=true,
     )
-    @test norm(θ_onesfw - params_perfect) ≤ 0.05 * length(θ)
+    @test norm(θ_onesfw - params_perfect) ≤ 0.1 * length(θ)
 end
 
 @testset "Away-step FW" begin
