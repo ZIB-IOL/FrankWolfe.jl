@@ -129,3 +129,11 @@ It is implemented in the [`FrankWolfe.alternating_linear_minimization`](@ref) fu
 ### Difference of Convex Algorithm with Frank-Wolfe (DCA-FW)
 
 It is implemented in the [`FrankWolfe.dca_fw`](@ref) function.
+
+### Second-order Conditional Gradient Sliding (SOCGS)
+
+It is implemented in the [`FrankWolfe.second_order_conditional_gradient_sliding`](@ref) function.
+
+For smooth and strongly convex objectives with access to (approximate) Hessians, SOCGS approximately minimizes a quadratic model of the objective at every iteration with a corrective Frank-Wolfe algorithm, and keeps an independent conditional-gradient sequence to ensure global convergence.
+The quadratic subproblems are solved until their Frank-Wolfe gap is at most ``\tau \|z - x_k\|^4``, which yields local quadratic convergence.
+See [Carderera, Pokutta (2020)](https://arxiv.org/abs/2002.08907) for the original algorithm.

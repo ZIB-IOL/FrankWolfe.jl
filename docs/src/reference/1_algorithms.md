@@ -103,6 +103,18 @@ Modules = [FrankWolfe]
 Pages = ["dca.jl"]
 ```
 
+## Second-order Conditional Gradient Sliding
+
+[`FrankWolfe.second_order_conditional_gradient_sliding`](@ref) minimizes smooth and strongly convex functions
+using quadratic models built from (approximate) Hessians. The quadratic subproblems are solved
+inexactly with [`FrankWolfe.corrective_frank_wolfe`](@ref) until a step-calibrated accuracy criterion holds.
+Any corrective step can be used for the subproblems, including the quadratic correction steps above.
+
+```@autodocs
+Modules = [FrankWolfe]
+Pages = ["socgs.jl"]
+```
+
 ## Index
 
 ```@index

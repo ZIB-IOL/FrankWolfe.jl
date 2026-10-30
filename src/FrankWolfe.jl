@@ -66,6 +66,7 @@ end
 include("corrective_step_interface.jl")
 include("corrective_frankwolfe.jl")
 include("quadratic_corrections.jl")
+include("socgs.jl")
 
 # collecting most common data types etc and precompile
 # min version req set to 1.5 to prevent stalling of julia 1
