@@ -262,28 +262,6 @@ function away_frank_wolfe(
 
             gamma = min(gamma_max, gamma)
             step_type = gamma ≈ gamma_max ? ST_DROP : step_type
-            # cleanup and renormalize every x iterations. Only for the fw steps.
-            renorm = mod(t, renorm_interval) == 0
-            if away_step_taken
-                active_set_update!(
-                    active_set,
-                    -gamma,
-                    vertex,
-                    true,
-                    index,
-                    add_dropped_vertices=use_extra_vertex_storage,
-                    vertex_storage=extra_vertex_storage,
-                )
-            else
-                if add_dropped_vertices && gamma == gamma_max
-                    for vtx in active_set.atoms
-                        if vtx != v
-                            push!(extra_vertex_storage, vtx)
-                        end
-                    end
-                end
-                active_set_update!(active_set, gamma, vertex, renorm, index)
-            end
         end
 
         if callback !== nothing
@@ -309,6 +287,31 @@ function away_frank_wolfe(
             end
         end
 
+        if fw_step_taken || away_step_taken
+            # cleanup and renormalize every x iterations. Only for the fw steps.
+            renorm = mod(t, renorm_interval) == 0
+            if away_step_taken
+                active_set_update!(
+                    active_set,
+                    -gamma,
+                    vertex,
+                    true,
+                    index,
+                    add_dropped_vertices=use_extra_vertex_storage,
+                    vertex_storage=extra_vertex_storage,
+                )
+            else
+                if add_dropped_vertices && gamma == gamma_max
+                    for vtx in active_set.atoms
+                        if vtx != v
+                            push!(extra_vertex_storage, vtx)
+                        end
+                    end
+                end
+                active_set_update!(active_set, gamma, vertex, renorm, index)
+            end
+        end
+
         if mod(t, renorm_interval) == 0
             active_set_renormalize!(active_set)
             x = compute_active_set_iterate!(active_set)
@@ -324,10 +327,12 @@ function away_frank_wolfe(
         end
     end
 
-    if t >= max_iteration
-        execution_status = STATUS_MAXITER
-    elseif phi_value < max(eps(float(typeof(phi_value))), epsilon)
-        execution_status = STATUS_OPTIMAL
+    if execution_status === STATUS_RUNNING
+        if t >= max_iteration
+            execution_status = STATUS_MAXITER
+        elseif phi_value < max(eps(float(typeof(phi_value))), epsilon)
+            execution_status = STATUS_OPTIMAL
+        end
     end
     if execution_status === STATUS_RUNNING
         @warn "Status not set"

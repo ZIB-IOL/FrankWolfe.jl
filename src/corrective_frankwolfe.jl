@@ -247,10 +247,12 @@ function corrective_frank_wolfe(
         end
     end
 
-    if phi_value < max(epsilon, eps(float(typeof(phi_value))))
-        execution_status = STATUS_OPTIMAL
-    elseif t >= max_iteration
-        execution_status = STATUS_MAXITER
+    if execution_status === STATUS_RUNNING
+        if phi_value < max(epsilon, eps(float(typeof(phi_value))))
+            execution_status = STATUS_OPTIMAL
+        elseif t >= max_iteration
+            execution_status = STATUS_MAXITER
+        end
     end
     if execution_status === STATUS_RUNNING
         @warn "Status not set"

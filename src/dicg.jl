@@ -250,10 +250,12 @@ function decomposition_invariant_conditional_gradient(
         x = muladd_memory_mode(memory_mode, x, gamma, d)
     end
 
-    if phi_value <= max(epsilon, eps(epsilon))
-        execution_status = STATUS_OPTIMAL
-    elseif t >= max_iteration
-        execution_status = STATUS_MAXITER
+    if execution_status === STATUS_RUNNING
+        if phi_value <= max(epsilon, eps(epsilon))
+            execution_status = STATUS_OPTIMAL
+        elseif t >= max_iteration
+            execution_status = STATUS_MAXITER
+        end
     end
     if execution_status === STATUS_RUNNING
         @warn "Status not set"
@@ -524,10 +526,12 @@ function blended_decomposition_invariant_conditional_gradient(
         x = muladd_memory_mode(memory_mode, x, gamma, d)
     end
 
-    if phi_value <= max(epsilon, eps(epsilon))
-        execution_status = STATUS_OPTIMAL
-    elseif t >= max_iteration
-        execution_status = STATUS_MAXITER
+    if execution_status === STATUS_RUNNING
+        if phi_value <= max(epsilon, eps(epsilon))
+            execution_status = STATUS_OPTIMAL
+        elseif t >= max_iteration
+            execution_status = STATUS_MAXITER
+        end
     end
     if execution_status === STATUS_RUNNING
         @warn "Status not set"

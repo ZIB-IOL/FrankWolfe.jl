@@ -262,19 +262,6 @@ function pairwise_frank_wolfe(
             )
 
             gamma = min(gamma_max, gamma)
-
-            # pairwise update
-            active_set_update_pairwise!(
-                active_set,
-                gamma,
-                gamma_max,
-                fw_index,
-                away_index,
-                fw_vertex,
-                away_vertex,
-                use_extra_vertex_storage,
-                extra_vertex_storage,
-            )
         end
 
         if callback !== nothing
@@ -300,6 +287,21 @@ function pairwise_frank_wolfe(
             end
         end
 
+        if step_type != ST_DUALSTEP
+            # pairwise update
+            active_set_update_pairwise!(
+                active_set,
+                gamma,
+                gamma_max,
+                fw_index,
+                away_index,
+                fw_vertex,
+                away_vertex,
+                use_extra_vertex_storage,
+                extra_vertex_storage,
+            )
+        end
+
         if mod(t, renorm_interval) == 0
             active_set_renormalize!(active_set)
             x = compute_active_set_iterate!(active_set)
@@ -315,10 +317,12 @@ function pairwise_frank_wolfe(
         end
     end
 
-    if phi_value < max(epsilon, eps(float(typeof(phi_value))))
-        execution_status = STATUS_OPTIMAL
-    elseif t >= max_iteration
-        execution_status = STATUS_MAXITER
+    if execution_status === STATUS_RUNNING
+        if phi_value < max(epsilon, eps(float(typeof(phi_value))))
+            execution_status = STATUS_OPTIMAL
+        elseif t >= max_iteration
+            execution_status = STATUS_MAXITER
+        end
     end
     if execution_status === STATUS_RUNNING
         @warn "Status not set"

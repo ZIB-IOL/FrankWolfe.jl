@@ -61,6 +61,11 @@ const steptype_string = (
 
 Main structure created before and passed to the callback in first position.
 
+In the Frank-Wolfe variants, the callback is called before each step and the state describes that step:
+`x` is the current iterate, `gradient` the gradient at `x`, and `v`, `d`, `gamma`, `step_type`
+the vertex, direction, step size, and type of the step about to be taken.
+Returning `false` from the callback cancels the step and stops the algorithm.
+
 # Fields
 
 - `t`

@@ -45,7 +45,7 @@ These keyword arguments are common to most Frank-Wolfe variants.
 - `verbose::Bool`: whether to print periodic logs (through callbacks)
 - `memory_mode::MemoryEmphasis`: an object dictating whether the algorithm operates in-place or out-of-place (see [`MemoryEmphasis`](@ref))
 - `gradient=nothing`: pre-allocated container for the gradient
-- `callback=nothing`: function called on a [`CallbackState`](@ref) at each iteration
+- `callback=nothing`: function called on a [`CallbackState`](@ref) before each step; returning `false` cancels the step and stops the algorithm with status `STATUS_INTERRUPTED`
 - `traj_data=[]`: pre-allocated storage for the trajectory of algorithm states
 - `timeout::Real=Inf`: maximum time after which the algorithm is interrupted (in nanoseconds)
 - `linesearch_workspace=nothing`: pre-allocated workspace for the line search 
