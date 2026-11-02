@@ -472,6 +472,9 @@ This method is geared towards problems with self-concordant functions (but might
 and potentially faster than the backtracking line search.
 The order of convergence is superlinear with exponent 1.618 (Golden Ratio) but not quite quadratic.
 Convergence is not guaranteed in general.
+If the secant iteration converges, that is, the directional derivative drops below `tol`,
+its last iterate is returned. Otherwise, the iterate with the smallest value of `f` is returned.
+The secant iteration starts from the step size of the previous line search.
 
 
 # Arguments
@@ -531,7 +534,11 @@ function perform_line_search(
     memory_mode,
 )
     dot_gdir = dot(gradient, d)
-    gamma = min(workspace.last_gamma, gamma_max)  # Start from last gamma, but don't exceed gamma_max
+    # Start from last gamma, but don't exceed gamma_max. After a step size of zero, start from one
+    # as in a new workspace: the first secant step would compare the directional derivative at x
+    # with itself, stop, and return zero again
+    last_gamma = workspace.last_gamma > 0 ? workspace.last_gamma : one(workspace.last_gamma)
+    gamma = min(last_gamma, gamma_max)
     storage, grad_storage = workspace.x, workspace.gradient
     storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
     while !line_search.domain_oracle(storage)
@@ -577,6 +584,11 @@ function perform_line_search(
 
         dot_gdir = dot_gdir_new
         i += 1
+    end
+
+    # If converged, return the last iterate, since f may not resolve the decrease near a minimizer
+    if abs(dot_gdir) <= line_search.tol && line_search.domain_oracle(storage)
+        best_gamma = gamma
     end
 
     if line_search.safe && !clamping && abs(dot_gdir) > line_search.tol
