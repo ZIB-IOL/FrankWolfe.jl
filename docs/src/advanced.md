@@ -22,13 +22,14 @@ callback(state::FrankWolfe.CallbackState, args...)
 
 The callback can be used to log additional information or store some values of interest in an external array. If a callback is passed, the `trajectory` keyword is ignored since it is a special case of callback pushing the 5 first elements of the state to an array returned from the algorithm.
 
-The Frank-Wolfe variants call the callback *before* each step, whatever its type (Frank-Wolfe, away, pairwise, drop, simplex descent, or dual step).
+Most Frank-Wolfe variants call the callback *before* each step.
 The state then describes the step about to be taken: `state.x` is the current iterate, `state.gradient` the gradient at `state.x`, and `state.v`, `state.d`, `state.gamma`, and `state.step_type` the vertex, direction, step size, and type of the step.
 The additional arguments depend on the algorithm, e.g. the active set for active-set-based methods.
 Note that `state.x` may share memory with the algorithm's iterate, so it must be copied if it is stored.
 
-If the callback returns `false`, the step is cancelled and the algorithm stops with status `STATUS_INTERRUPTED`; the iterate returned is the `state.x` of that call.
-After the main loop, the callback is called once more with step type `ST_LAST`, and on active-set-based methods also with `ST_POSTPROCESS`; the return value of these final calls is ignored.
+If the callback returns `false`, the step is cancelled and the algorithm stops with status `STATUS_INTERRUPTED` returning the `state.x` of that call.
+After the main loop, the callback is called once more with step type `ST_LAST`, and on active-set-based methods also with `ST_POSTPROCESS`.
+The return value of these final calls is ignored.
 
 Block-coordinate Frank-Wolfe, the alternating methods, and DCA are exceptions: they call the callback *after* each (outer) iteration, and `false` stops the algorithm after that iteration.
 
