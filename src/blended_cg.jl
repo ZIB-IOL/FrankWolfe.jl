@@ -547,37 +547,34 @@ function minimize_over_convex_hull!(
         T = eltype(M)
         S = schur(M)
         L_reduced = maximum(real, S.values)::T
+        mu_reduced = max(minimum(real, S.values), zero(L_reduced))::T
         reduced_f(y) =
             f(x) - dot(gradient, x) + 0.5 * dot(x, hessian, x) + dot(b, y) + 0.5 * dot(y, M, y)
         function reduced_grad!(storage, x)
             return storage .= b + M * x
         end
-        #Solve using Nesterov's AGD
-        if accelerated
-            mu_reduced = minimum(real, S.values)::T
-            if L_reduced / mu_reduced > 1.0
-                new_weights, number_of_steps, should_continue =
-                    accelerated_simplex_gradient_descent_over_probability_simplex(
-                        active_set.weights,
-                        reduced_f,
-                        reduced_grad!,
-                        tolerance,
-                        t,
-                        time_start,
-                        active_set,
-                        verbose=verbose,
-                        L=L_reduced,
-                        mu=mu_reduced,
-                        max_iteration=max_iteration,
-                        callback=callback,
-                        timeout=timeout,
-                        memory_mode=memory_mode,
-                        non_simplex_iter=non_simplex_iter,
-                    )
-                @. active_set.weights = new_weights
-            end
-        end
-        if !accelerated || L_reduced / mu_reduced == 1.0
+        if accelerated && L_reduced / mu_reduced > one(L_reduced)
+            #Solve using Nesterov's AGD
+            new_weights, number_of_steps, should_continue =
+                accelerated_simplex_gradient_descent_over_probability_simplex(
+                    active_set.weights,
+                    reduced_f,
+                    reduced_grad!,
+                    tolerance,
+                    t,
+                    time_start,
+                    active_set,
+                    verbose=verbose,
+                    L=L_reduced,
+                    mu=mu_reduced,
+                    max_iteration=max_iteration,
+                    callback=callback,
+                    timeout=timeout,
+                    memory_mode=memory_mode,
+                    non_simplex_iter=non_simplex_iter,
+                )
+            @. active_set.weights = new_weights
+        else
             #Solve using gradient descent.
             new_weights, number_of_steps, should_continue =
                 simplex_gradient_descent_over_probability_simplex(
@@ -764,10 +761,9 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
     q = mu / L
     # If the problem is close to convex, simply use the accelerated algorithm for convex objective functions.
     if mu < 1.0e-3
-        alpha = 0.0
-        alpha_old = 0.0
+        alpha = 1.0
     else
-        gamma = (1 - sqrt(q)) / (1 + sqrt(q))
+        momentum_gamma = (1 - sqrt(q)) / (1 + sqrt(q))
     end
     should_continue = true
     while strong_wolfe_gap > tolerance && t + number_of_steps <= max_iteration
@@ -776,7 +772,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
         if mu < 1.0e-3
             alpha_old = alpha
             alpha = 0.5 * (1 + sqrt(1 + 4 * alpha^2))
-            gamma = (alpha_old - 1.0) / alpha
+            momentum_gamma = (alpha_old - 1.0) / alpha
         end
         if callback !== nothing
             primal = reduced_f(x)
@@ -787,9 +783,9 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
                 tolerance,
                 (time_ns() - time_start) / 1e9,
                 x,
-                y,
-                nothing,
-                gamma,
+                nothing, # not moving towards a single vertex
+                x - x_new,
+                1.0,
                 reduced_f,
                 reduced_grad!,
                 nothing,
@@ -805,7 +801,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
         x = x_new
         diff = similar(x)
         diff = muladd_memory_mode(memory_mode, diff, x, x_old)
-        y = muladd_memory_mode(memory_mode, y, x, -gamma, diff)
+        y = muladd_memory_mode(memory_mode, y, x, -momentum_gamma, diff)
         number_of_steps += 1
         reduced_grad!(gradient_x, x)
         strong_wolfe_gap = strong_frankwolfe_gap_probability_simplex(gradient_x, x)
@@ -862,9 +858,9 @@ function simplex_gradient_descent_over_probability_simplex(
                 tolerance,
                 (time_ns() - time_start) / 1e9,
                 x,
-                nothing,
-                nothing,
-                inv(L),
+                nothing, # not moving towards a single vertex
+                x - x_new,
+                1.0,
                 reduced_f,
                 reduced_grad!,
                 nothing,
@@ -1103,7 +1099,7 @@ function simplex_gradient_descent_over_convex_hull(
                 tolerance,
                 (time_ns() - time_start) / 1e9,
                 x_prev,
-                y,
+                nothing, # not moving towards a single vertex
                 direction,
                 gamma,
                 f,

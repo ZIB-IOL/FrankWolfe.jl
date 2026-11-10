@@ -1072,7 +1072,7 @@ function run_corrective_step(
             phi_value,
             tot_time,
             x_prev,
-            y,
+            nothing, # not moving towards a single vertex
             d,
             gamma,
             f,
@@ -1130,8 +1130,8 @@ function ProjectedGradientDescentStep(; hessian, lazy=false, lazy_tolerance=2.0,
         lazy_tolerance,
         hessian,
         accelerated,
-        [0.0],
-        Ref(0.0),
+        Float64[],
+        Ref(1.0),
         Float64[],
         Float64[],
     )
@@ -1197,6 +1197,9 @@ function run_corrective_step(
             grad!,
             active_set,
         )
+        if corrective_step.accelerated && should_fw_step
+            empty!(corrective_step.y)  # invalidate active set momentum
+        end
         return x, v, phi_value, dual_gap, should_fw_step, should_continue
     end
 
@@ -1228,6 +1231,9 @@ function run_corrective_step(
             grad!,
             active_set,
         )
+        if corrective_step.accelerated && should_fw_step
+            empty!(corrective_step.y)  # invalidate active set momentum
+        end
         return x, v, phi_value, dual_gap, should_fw_step, should_continue
     end
 
@@ -1237,14 +1243,13 @@ function run_corrective_step(
     k = length(active_set.weights)
     λ = copy(active_set.weights)
     x_prev = copy(x)
-    gamma = inv(L_reduced)
 
     use_accelerated = corrective_step.accelerated && L_reduced / mu_reduced > one(L_reduced)
     # the momentum state of the step is only committed once the callback accepted the step
     if use_accelerated
         reset_momentum = length(corrective_step.y) != k
         y = reset_momentum ? copy(λ) : corrective_step.y
-        alpha_old = reset_momentum ? 0.0 : corrective_step.alpha[]
+        alpha_old = reset_momentum ? 1.0 : corrective_step.alpha[]
         alpha_new = alpha_old
         grad_y = resize!(corrective_step.gradient_buffer, k)
         copy!(grad_y, b)
@@ -1254,10 +1259,10 @@ function run_corrective_step(
         λ_new, drop_indices = _simplex_projection_with_drops(projection_argument)
         if mu_reduced < 1e-3
             alpha_new = 0.5 * (1 + sqrt(1 + 4 * alpha_old^2))
-            gamma = (alpha_old - 1) / alpha_new
+            momentum_gamma = (alpha_old - 1) / alpha_new
         else
             sq = sqrt(mu_reduced / L_reduced)
-            gamma = (1 - sq) / (1 + sq)
+            momentum_gamma = (1 - sq) / (1 + sq)
         end
     else
         grad_λ = resize!(corrective_step.gradient_buffer, k)
@@ -1266,7 +1271,6 @@ function run_corrective_step(
         projection_argument = resize!(corrective_step.projection_buffer, k)
         @. projection_argument = λ - grad_λ / L_reduced
         λ_new, drop_indices = _simplex_projection_with_drops(projection_argument)
-        gamma = inv(L_reduced)
     end
 
     if callback !== nothing
@@ -1284,9 +1288,9 @@ function run_corrective_step(
             phi_value,
             tot_time,
             x_prev,
-            x_new,
+            nothing, # not moving towards a single vertex
             d,
-            gamma,
+            1.0,
             f,
             grad!,
             lmo,
@@ -1299,18 +1303,16 @@ function run_corrective_step(
         end
     end
 
-    if use_accelerated
-        copy!(corrective_step.y, λ_new .+ gamma .* (λ_new .- λ))
+    if use_accelerated && isempty(drop_indices)
+        copy!(corrective_step.y, λ_new .+ momentum_gamma .* (λ_new .- λ))
         corrective_step.alpha[] = alpha_new
     else
+        # dropped atoms change the reduced problem, so the next step restarts the momentum
         empty!(corrective_step.y)
-        corrective_step.alpha[] = 0.0
+        corrective_step.alpha[] = 1.0
     end
     update_weights!(active_set, λ_new)
     deleteat!(active_set, drop_indices)
-    if length(corrective_step.y) == length(active_set) && !isempty(drop_indices)
-        deleteat!(corrective_step.y, drop_indices)
-    end
     compute_active_set_iterate!(active_set)
     x = get_active_set_iterate(active_set)
     if mod(t, renorm_interval) == 0
