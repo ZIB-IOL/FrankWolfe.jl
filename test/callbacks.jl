@@ -1,11 +1,5 @@
 module Test_callbacks
 
-# Callback contract shared by all single-iterate Frank-Wolfe variants:
-# - the callback is called *before* every step (of any step type), with `state.x`
-#   the current iterate and `state.gradient` the gradient at that iterate;
-# - returning `false` cancels the step about to be taken and stops the algorithm
-#   with `STATUS_INTERRUPTED`.
-
 using FrankWolfe
 using LinearAlgebra
 using Test
@@ -81,6 +75,8 @@ function recording_callback(records, objective; stop_at=0)
     end
 end
 
+# `step` is a factory: every run must start from a fresh step object so that the interrupted
+# reruns replay the reference run, and some steps keep state across solver calls.
 corrective(step) =
     cb -> FrankWolfe.corrective_frank_wolfe(
         f,
