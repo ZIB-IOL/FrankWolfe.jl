@@ -402,7 +402,7 @@ function blended_pairwise_conditional_gradient(
                         x,
                         vertex_taken,
                         nothing,
-                        gamma,
+                        zero(gamma),
                         f,
                         grad!,
                         lmo,
@@ -446,7 +446,8 @@ function blended_pairwise_conditional_gradient(
     # hence the final computation.
     # do also cleanup of active_set due to many operations on the same set
 
-    if verbose
+    # the extra LMO call is only needed for the final callback
+    if callback !== nothing
         compute_active_set_iterate!(active_set)
         x = get_active_set_iterate(active_set)
         grad!(gradient, x)
@@ -456,25 +457,23 @@ function blended_pairwise_conditional_gradient(
         phi_value = min(phi_new, phi_value)
         step_type = ST_LAST
         tot_time = (time_ns() - time_start) / 1e9
-        if callback !== nothing
-            state = CallbackState(
-                t,
-                primal,
-                primal - phi_value,
-                phi_value,
-                tot_time,
-                x,
-                v,
-                nothing,
-                gamma,
-                f,
-                grad!,
-                lmo,
-                gradient,
-                step_type,
-            )
-            callback(state, active_set)
-        end
+        state = CallbackState(
+            t,
+            primal,
+            primal - phi_value,
+            phi_value,
+            tot_time,
+            x,
+            v,
+            nothing,
+            zero(gamma),
+            f,
+            grad!,
+            lmo,
+            gradient,
+            step_type,
+        )
+        callback(state, active_set)
     end
     active_set_renormalize!(active_set)
     active_set_cleanup!(active_set; weight_purge_threshold=weight_purge_threshold)
@@ -499,7 +498,7 @@ function blended_pairwise_conditional_gradient(
             x,
             v,
             nothing,
-            gamma,
+            zero(gamma),
             f,
             grad!,
             lmo,

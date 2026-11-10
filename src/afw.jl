@@ -263,6 +263,7 @@ function away_frank_wolfe(
             gamma = min(gamma_max, gamma)
             step_type = gamma ≈ gamma_max ? ST_DROP : step_type
         end
+        dual_gap = phi_value
 
         if callback !== nothing
             state = CallbackState(
@@ -273,7 +274,7 @@ function away_frank_wolfe(
                 tot_time,
                 x,
                 vertex,
-                d,
+                fw_step_taken || away_step_taken ? d : nothing,
                 gamma,
                 f,
                 grad!,
@@ -323,7 +324,6 @@ function away_frank_wolfe(
             !(line_search isa Agnostic || line_search isa Nonconvex || line_search isa FixedStep)
         )
             primal = f(x)
-            dual_gap = phi_value
         end
     end
 
@@ -361,7 +361,7 @@ function away_frank_wolfe(
             x,
             v,
             nothing,
-            gamma,
+            zero(gamma),
             f,
             grad!,
             lmo,
@@ -397,7 +397,7 @@ function away_frank_wolfe(
             x,
             v,
             nothing,
-            gamma,
+            zero(gamma),
             f,
             grad!,
             lmo,
@@ -548,12 +548,13 @@ function afw_step(
         fw_step_taken = false
         index = a_loc
     else
-        step_type = ST_AWAY
+        # neither gap promises progress, no step is taken
+        step_type = ST_DUALSTEP
         gamma_max = zero(a_lambda)
-        vertex = a
+        vertex = v
         away_step_taken = false
         fw_step_taken = false
-        index = a_loc
+        index = -1
     end
     return d, vertex, index, gamma_max, dual_gap, away_step_taken, fw_step_taken, step_type
 end

@@ -39,28 +39,39 @@ const f_stoch = FrankWolfe.StochasticObjective(
 struct CallRecord
     step_type::FrankWolfe.StepType
     x::Vector{Float64}
+    v::Union{Nothing,Vector{Float64}}
+    d::Union{Nothing,Vector{Float64}}
+    gamma::Float64
+    dual_gap::Float64
+    # Frank-Wolfe gap of `state.gradient` at `state.x`, NaN if not computed
+    fw_gap::Float64
     grad_ok::Bool
+    has_active_set::Bool
 end
 
+is_final(r::CallRecord) = r.step_type in (ST_LAST, ST_POSTPROCESS)
+
+# extreme points of the probability and unit simplices
+is_vertex(y) =
+    all(yi -> isapprox(yi, 0, atol=1e-12) || isapprox(yi, 1, atol=1e-12), y) && sum(y) <= 1 + 1e-12
+
 """
-Callback recording every in-loop call and returning `false` at the `stop_at`-th one.
+Callback recording every call and returning `false` at the `stop_at`-th in-loop call.
 `objective` is the objective passed to the algorithm. It identifies the states of the
-BCG inner solvers over the reduced problem, whose `x` are the active set weights.
+BCG inner solvers over the reduced problem, whose `x` and `d` are in the space of the
+active set weights and are mapped back to the original space.
+The Frank-Wolfe gap is computed with an extra LMO call if `compute_fw_gap` is set.
 """
-function recording_callback(records, objective; stop_at=0)
+function recording_callback(records, objective; stop_at=0, compute_fw_gap=false)
+    steps = 0
     return function callback(state, args...)
-        if state.step_type in (ST_LAST, ST_POSTPROCESS)
-            return true
-        end
-        x = if state.f === objective
-            collect(state.x)
-        else
-            active_set = args[1]
-            y = zeros(n)
-            for (λ, atom) in zip(state.x, active_set.atoms)
-                @. y += λ * atom
+        function to_original(y)
+            state.f === objective && return collect(y)
+            z = zeros(n)
+            for (λ, atom) in zip(y, args[1].atoms)
+                @. z += λ * atom
             end
-            y
+            return z
         end
         # the gradient was computed at the reported iterate, i.e., before the step
         grad_ok = if state.grad! === nothing
@@ -70,10 +81,47 @@ function recording_callback(records, objective; stop_at=0)
             state.grad!(g, state.x)
             isapprox(g, state.gradient, rtol=1e-6, atol=1e-10)
         end
-        push!(records, CallRecord(state.step_type, x, grad_ok))
-        return length(records) != stop_at
+        fw_gap = if compute_fw_gap
+            v_fw = FrankWolfe.compute_extreme_point(state.lmo, state.gradient)
+            dot(state.gradient, state.x) - dot(state.gradient, v_fw)
+        else
+            NaN
+        end
+        record = CallRecord(
+            state.step_type,
+            to_original(state.x),
+            state.v === nothing ? nothing : collect(state.v),
+            state.d === nothing ? nothing : to_original(state.d),
+            state.gamma,
+            state.dual_gap,
+            fw_gap,
+            grad_ok,
+            !isempty(args) && args[1] isa FrankWolfe.AbstractActiveSet,
+        )
+        push!(records, record)
+        if is_final(record)
+            return true
+        end
+        steps += 1
+        return steps != stop_at
     end
 end
+
+"""
+Tests that the final calls happen once after the main loop, with `ST_POSTPROCESS` only on
+active-set-based methods, that they describe no step, and that the last one reports the result.
+"""
+function test_final_calls(records, result)
+    final_types = [r.step_type for r in records if is_final(r)]
+    @test final_types == (records[1].has_active_set ? [ST_LAST, ST_POSTPROCESS] : [ST_LAST])
+    @test all(is_final, records[(end-length(final_types)+1):end])
+    @test all(r.d === nothing && r.gamma == 0 for r in records if is_final(r))
+    @test records[end].x ≈ result.x
+end
+
+# solvers whose `state.dual_gap` is the Frank-Wolfe gap at `state.x` and not a lazy estimate
+exact_dual_gap(name) =
+    !any(s -> occursin(s, name), ("lazy", "lazified", "blended_conditional_gradient"))
 
 # `step` is a factory: every run must start from a fresh step object so that the interrupted
 # reruns replay the reference run, and some steps keep state across solver calls.
@@ -221,6 +269,34 @@ const SOLVERS = [
         [ST_REGULAR, ST_PAIRWISE],
     ),
     (
+        "decomposition_invariant_conditional_gradient lazy",
+        f,
+        cb -> FrankWolfe.decomposition_invariant_conditional_gradient(
+            f,
+            grad!,
+            FrankWolfe.UnitSimplexLMO(1.0),
+            collect(x0);
+            lazy=true,
+            callback=cb,
+            KW...,
+        ),
+        [ST_PAIRWISE, ST_LAZY, ST_DUALSTEP],
+    ),
+    (
+        "blended_decomposition_invariant_conditional_gradient lazy",
+        f,
+        cb -> FrankWolfe.blended_decomposition_invariant_conditional_gradient(
+            f,
+            grad!,
+            FrankWolfe.UnitSimplexLMO(1.0),
+            collect(x0);
+            lazy=true,
+            callback=cb,
+            KW...,
+        ),
+        [ST_REGULAR, ST_PAIRWISE, ST_DUALSTEP],
+    ),
+    (
         "stochastic_frank_wolfe",
         f_stoch,
         cb -> FrankWolfe.stochastic_frank_wolfe(
@@ -319,26 +395,57 @@ const SOLVERS = [
 @testset "Callbacks are called before the step, false cancels it" begin
     @testset "$name" for (name, objective, run, expected_step_types) in SOLVERS
         reference = CallRecord[]
-        run(recording_callback(reference, objective))
-        step_types = unique(r.step_type for r in reference)
+        result = run(recording_callback(reference, objective; compute_fw_gap=exact_dual_gap(name)))
+        test_final_calls(reference, result)
+        steps = filter(!is_final, reference)
+        step_types = unique(r.step_type for r in steps)
         # the interruptions below cover all interesting step types
         @test expected_step_types ⊆ step_types
         # the first call happens before anything moved away from the starting point
-        @test reference[1].x ≈ x0
+        @test steps[1].x ≈ x0
         # in each state, the gradient was computed at the reported (pre-step) iterate
         @test all(r.grad_ok for r in reference)
+        # the dual gap is computed at the reported iterate
+        if exact_dual_gap(name)
+            @test all(isapprox(r.dual_gap, r.fw_gap, rtol=1e-6, atol=1e-8) for r in steps)
+        end
+        # the vertex is an extreme point and defines the direction: d = x - v (FW step),
+        # d = v - x (away step), or d = a - v with an extreme point a (pairwise step)
+        @test all(r.v === nothing || is_vertex(r.v) for r in reference)
+        @test all(steps) do r
+            return r.v === nothing ||
+                   r.d === nothing ||
+                   isapprox(r.d, r.x - r.v, atol=1e-10) ||
+                   isapprox(r.d, r.v - r.x, atol=1e-10) ||
+                   is_vertex(r.d + r.v)
+        end
+        # each step moves from x to x - gamma * d, the following call reports that iterate
+        @test all(eachindex(steps)) do i
+            r = steps[i]
+            x_next = r.d === nothing ? r.x : r.x - r.gamma * r.d
+            return isapprox(reference[i+1].x, x_next, rtol=1e-6, atol=1e-8)
+        end
+        # steps that do not move the iterate have no direction and a zero step size
+        @test all(r.gamma == 0 for r in steps if r.d === nothing)
+        # dual steps only update the gap estimate, except in the lazified CG where they are
+        # Frank-Wolfe steps towards the vertex computed by the LMO
+        if name != "lazified_conditional_gradient"
+            @test all(r.d === nothing for r in steps if r.step_type == ST_DUALSTEP)
+        end
 
         # interrupt at the first call and at the first step of every type
-        stops = unique([1; [findfirst(r -> r.step_type == st, reference) for st in step_types]])
-        @testset "interrupt at call $k ($(reference[k].step_type))" for k in stops
+        stops = unique([1; [findfirst(r -> r.step_type == st, steps) for st in step_types]])
+        @testset "interrupt at call $k ($(steps[k].step_type))" for k in stops
             records = CallRecord[]
             result = run(recording_callback(records, objective; stop_at=k))
             @test result.status == FrankWolfe.STATUS_INTERRUPTED
             # no step after the interruption
-            @test length(records) == k
-            @test records[k].step_type == reference[k].step_type
+            interrupted_steps = filter(!is_final, records)
+            @test length(interrupted_steps) == k
+            @test interrupted_steps[k].step_type == steps[k].step_type
             # the cancelled step was not applied
-            @test result.x ≈ records[k].x
+            @test result.x ≈ interrupted_steps[k].x
+            test_final_calls(records, result)
         end
     end
 end

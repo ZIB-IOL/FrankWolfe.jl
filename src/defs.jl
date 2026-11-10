@@ -63,7 +63,10 @@ Main structure created before and passed to the callback in first position.
 
 In the Frank-Wolfe variants, the callback is called before each step and the state describes that step:
 `x` is the current iterate, `gradient` the gradient at `x`, and `v`, `d`, `gamma`, `step_type`
-the vertex, direction, step size, and type of the step about to be taken.
+the vertex, direction, step size, and type of the step about to be taken, which moves to `x - gamma * d`.
+`v` is `nothing` if the step does not move towards (or, in away steps, away from) a single vertex.
+Steps that do not move the iterate and the final states (`ST_LAST`, `ST_POSTPROCESS`) have
+`d === nothing` and `gamma == 0`.
 
 # Fields
 

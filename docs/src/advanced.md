@@ -24,12 +24,15 @@ The callback can be used to log additional information or store some values of i
 
 Most Frank-Wolfe variants call the callback *before* each step.
 The state then describes the step about to be taken: `state.x` is the current iterate, `state.gradient` the gradient at `state.x`, and `state.v`, `state.d`, `state.gamma`, and `state.step_type` the vertex, direction, step size, and type of the step.
+The step moves from `state.x` to `state.x - state.gamma * state.d`.
+The vertex `state.v` is the one the step is built from: the vertex moved towards in Frank-Wolfe and pairwise steps, the away vertex in away steps, and `nothing` if the step does not move towards a single vertex, e.g., in simplex descent steps.
+Steps that do not move the iterate, such as dual steps, have `state.d === nothing` and `state.gamma == 0`; their `state.v` is the vertex computed by the LMO.
 The additional arguments depend on the algorithm, e.g. the active set for active-set-based methods.
 Note that `state.x` may share memory with the algorithm's iterate, so it must be copied if it is stored.
 
-If the callback returns `false`, the step is cancelled and the algorithm stops with status `STATUS_INTERRUPTED` returning the `state.x` of that call.
+If the callback returns `false`, the step is cancelled and the algorithm stops with status `STATUS_INTERRUPTED`, returning the `state.x` of that call.
 After the main loop, the callback is called once more with step type `ST_LAST`, and on active-set-based methods also with `ST_POSTPROCESS`.
-The return value of these final calls is ignored.
+These final states have `state.d === nothing` and `state.gamma == 0`, and the return value of these calls is ignored.
 
 Block-coordinate Frank-Wolfe, the alternating methods, and DCA are exceptions: they call the callback *after* each (outer) iteration, and `false` stops the algorithm after that iteration.
 

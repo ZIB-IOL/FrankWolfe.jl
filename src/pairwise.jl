@@ -263,6 +263,7 @@ function pairwise_frank_wolfe(
 
             gamma = min(gamma_max, gamma)
         end
+        dual_gap = phi_value
 
         if callback !== nothing
             state = CallbackState(
@@ -273,7 +274,7 @@ function pairwise_frank_wolfe(
                 tot_time,
                 x,
                 fw_vertex,
-                d,
+                step_type == ST_DUALSTEP ? nothing : d,
                 gamma,
                 f,
                 grad!,
@@ -313,7 +314,6 @@ function pairwise_frank_wolfe(
             !(line_search isa Agnostic || line_search isa Nonconvex || line_search isa FixedStep)
         )
             primal = f(x)
-            dual_gap = phi_value
         end
     end
 
@@ -352,7 +352,7 @@ function pairwise_frank_wolfe(
             x,
             v,
             nothing,
-            gamma,
+            zero(gamma),
             f,
             grad!,
             lmo,
@@ -388,7 +388,7 @@ function pairwise_frank_wolfe(
             x,
             v,
             nothing,
-            gamma,
+            zero(gamma),
             f,
             grad!,
             lmo,

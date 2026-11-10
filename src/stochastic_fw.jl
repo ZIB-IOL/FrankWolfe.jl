@@ -343,19 +343,6 @@ function stochastic_frank_wolfe(
     v = compute_extreme_point(lmo, gradient)
     dual_gap = dot(gradient, x) - dot(gradient, v)
     step_type = ST_LAST
-    d = muladd_memory_mode(memory_mode, d, x, v)
-    gamma = perform_line_search(
-        line_search,
-        t,
-        nothing,
-        nothing,
-        gradient,
-        x,
-        d,
-        1.0,
-        linesearch_workspace,
-        memory_mode,
-    )
     tot_time = (time_ns() - time_start) / 1e9
     if callback !== nothing
         state = CallbackState(
@@ -363,11 +350,11 @@ function stochastic_frank_wolfe(
             primal,
             primal - dual_gap,
             dual_gap,
-            (time_ns() - time_start) / 1e9,
+            tot_time,
             x,
             v,
-            d,
-            gamma,
+            nothing,
+            zero(dual_gap),
             f,
             nothing,
             lmo,
