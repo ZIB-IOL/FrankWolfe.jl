@@ -670,7 +670,8 @@ function run_corrective_step(
     epsilon,
     d,
 )
-    _, v_local, v_loc, _, a_lambda, a, a_loc, _, _ = active_set_argminmax(active_set, gradient)
+    _, v_local, v_loc, v_local_value, a_lambda, a, a_loc, _, _ =
+        active_set_argminmax(active_set, gradient)
     grad_dot_x = dot(gradient, x)
     grad_dot_a = dot(gradient, a)
     grad_dot_local_fw_vertex = dot(gradient, v_local)
@@ -679,7 +680,6 @@ function run_corrective_step(
     should_continue = true
     should_fw_step = false
     take_local = false
-    fw_index = v_loc
     if corrective_step.lazy &&
        local_pairwise_gap >= max(phi_value / corrective_step.lazy_tolerance, epsilon)
         fw_vertex = v_local
@@ -735,11 +735,22 @@ function run_corrective_step(
     if callback !== nothing
         should_continue = callback(state, active_set)
     end
-    # away update
-    active_set_update!(active_set, -gamma, a, false, a_loc)
-    # fw update
-    fw_index = take_local ? v_loc : nothing
-    active_set_update!(active_set, gamma, fw_vertex, true, fw_index)
+    fw_index = take_local ? v_loc : find_atom(active_set, fw_vertex, gradient, v_loc, v_local_value)
+    active_set_update_pairwise!(
+        active_set,
+        gamma,
+        gamma_max,
+        fw_index,
+        a_loc,
+        fw_vertex,
+        a,
+        false,
+        nothing,
+    )
+    if mod(t, renorm_interval) == 0
+        active_set_renormalize!(active_set)
+        x = compute_active_set_iterate!(active_set)
+    end
     return x, v, phi_value, dual_gap, should_fw_step, should_continue
 end
 
