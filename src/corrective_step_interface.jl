@@ -64,7 +64,7 @@ function run_corrective_step(
     epsilon,
     d,
 )
-    _, v_lazy, v_loc, _, a_lambda, a, a_loc, _, _ = active_set_argminmax(active_set, gradient)
+    _, v_local, v_loc, _, a_lambda, a, a_loc, _, _ = active_set_argminmax(active_set, gradient)
     grad_dot_x = dot(gradient, x)
     grad_dot_a = dot(gradient, a)
     away_gap = grad_dot_a - grad_dot_x
@@ -119,13 +119,13 @@ function run_corrective_step(
         # compute the local FW gap over the active set 
         away_step_taken = false
         lazy_fw_step_taken = false
-        grad_dot_lazy_fw_vertex = dot(gradient, v_lazy)
-        lazy_gap = grad_dot_x - grad_dot_lazy_fw_vertex
+        grad_dot_local_fw_vertex = dot(gradient, v_local)
+        lazy_gap = grad_dot_x - grad_dot_local_fw_vertex
         if lazy_gap >= max(away_gap, phi_value / corrective_step.lazy_tolerance, epsilon)
             step_type = ST_LAZY
             gamma_max = one(a_lambda)
-            d = muladd_memory_mode(memory_mode, d, x, v_lazy)
-            vertex = v_lazy
+            d = muladd_memory_mode(memory_mode, d, x, v_local)
+            vertex = v_local
             lazy_fw_step_taken = true
             index = v_loc
             should_fw_step = false
