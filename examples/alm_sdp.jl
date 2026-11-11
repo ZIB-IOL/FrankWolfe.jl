@@ -23,7 +23,8 @@ m = JuMP.Model(HiGHS.Optimizer)
 
 
 lmos = (FrankWolfe.SpectraplexLMO(1.0, dim), FrankWolfe.MathOptLMO(m.moi_backend))
-x0 = (zeros(dim, dim), Matrix(I(dim) ./ dim))
+# the zero matrix as a RankOneMatrix, the type of the spectraplex vertices
+x0 = (FrankWolfe.RankOneMatrix(zeros(dim), zeros(dim)), Matrix(I(dim) ./ dim))
 
 trajectories = []
 
