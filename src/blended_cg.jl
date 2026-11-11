@@ -539,7 +539,7 @@ function minimize_over_convex_hull!(
         end
         T = eltype(M)
         S = schur(M)
-        L_reduced = maximum(S.values)::T
+        L_reduced = maximum(real, S.values)::T
         reduced_f(y) =
             f(x) - dot(gradient, x) + 0.5 * dot(x, hessian, x) + dot(b, y) + 0.5 * dot(y, M, y)
         function reduced_grad!(storage, x)
@@ -547,7 +547,7 @@ function minimize_over_convex_hull!(
         end
         #Solve using Nesterov's AGD
         if accelerated
-            mu_reduced = minimum(S.values)::T
+            mu_reduced = minimum(real, S.values)::T
             if L_reduced / mu_reduced > 1.0
                 new_weights, number_of_steps =
                     accelerated_simplex_gradient_descent_over_probability_simplex(
