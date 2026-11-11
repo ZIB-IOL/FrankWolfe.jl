@@ -53,7 +53,7 @@ end
 function Base.copyto!(dest::BlockVector, src::BlockVector)
     dest.tot_size = src.tot_size
     for midx in eachindex(dest.blocks)
-        dest.blocks[midx] = copy(src.blocks[midx])
+        dest.blocks[midx] = copyto!(similar(src.blocks[midx]), src.blocks[midx])
     end
     dest.block_sizes = copy(src.block_sizes)
     return dest

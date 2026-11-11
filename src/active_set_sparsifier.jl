@@ -39,7 +39,7 @@ Base.empty!(as::ActiveSetSparsifier) = empty!(as.active_set)
 function active_set_update!(
     as::ActiveSetSparsifier{AT,R,IT,AS},
     lambda,
-    atom,
+    atom::AT,
     renorm=true,
     idx=nothing;
     kwargs...,

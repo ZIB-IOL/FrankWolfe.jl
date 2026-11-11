@@ -481,7 +481,7 @@ function dca_fw(
             # if active set not created already, or if we don't warm-start
             # create an active set from scratch
             if active_set === nothing
-                active_set = ActiveSet([1.0], [x0], copy(x0))
+                active_set = ActiveSet([1.0], [x0], copyto!(similar(x0), x0))
             end
             fw_result = corrective_frank_wolfe(
                 linearized_objective,

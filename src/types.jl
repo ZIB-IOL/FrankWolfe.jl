@@ -102,6 +102,10 @@ end
 
 Base.:-(x::ScaledHotVector, y::ScaledHotVector) = +(x, -y)
 
+# ScaledHotVector is immutable, so a copy can be the vector itself, as for ranges;
+# use `copyto!(similar(v), v)` for a mutable copy
+Base.copy(v::ScaledHotVector) = v
+
 Base.similar(v::ScaledHotVector{T}) where {T} = spzeros(T, length(v))
 Base.similar(::ScaledHotVector, ::Type{T}, dims::NTuple{N,Int}) where {T,N} = spzeros(T, dims)
 

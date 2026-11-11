@@ -135,7 +135,7 @@ using SparseArrays
         f,
         grad!,
         lmo,
-        FrankWolfe.HybridPairAwayStep(lazy, copy(x0)),
+        FrankWolfe.HybridPairAwayStep(lazy, similar(x0)),
         FrankWolfe.ActiveSet([(1.0, x0)]),
         max_iteration=k,
         verbose=false,
