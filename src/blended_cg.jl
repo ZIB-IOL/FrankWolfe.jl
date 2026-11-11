@@ -294,7 +294,7 @@ function blended_conditional_gradient(
                     primal,
                     primal - dual_gap,
                     dual_gap,
-                    tot_time,
+                    (time_ns() - time_start) / 1e9,
                     x,
                     v,
                     nothing,
@@ -332,7 +332,7 @@ function blended_conditional_gradient(
                     primal,
                     primal - dual_gap,
                     dual_gap,
-                    tot_time,
+                    (time_ns() - time_start) / 1e9,
                     x,
                     v,
                     d,
@@ -396,14 +396,13 @@ function blended_conditional_gradient(
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
         dual_gap = dot(gradient, x) - dot(gradient, v)
-        tot_time = (time_ns() - time_start) / 1e9
         step_type = ST_LAST
         state = CallbackState(
             t,
             primal,
             primal - dual_gap,
             dual_gap,
-            tot_time,
+            (time_ns() - time_start) / 1e9,
             x,
             v,
             nothing,
@@ -434,13 +433,12 @@ function blended_conditional_gradient(
     # report post-processed iteration
     if callback !== nothing
         step_type = ST_POSTPROCESS
-        tot_time = (time_ns() - time_start) / 1e9
         state = CallbackState(
             t,
             primal,
             primal - dual_gap,
             dual_gap,
-            tot_time,
+            (time_ns() - time_start) / 1e9,
             x,
             v,
             nothing,
