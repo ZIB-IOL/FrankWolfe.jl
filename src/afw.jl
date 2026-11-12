@@ -310,6 +310,8 @@ function away_frank_wolfe(
                     end
                 end
                 active_set_update!(active_set, gamma, vertex, renorm, index)
+                # returned if recompute_last_vertex = false
+                v = vertex
             end
         end
 
@@ -344,31 +346,33 @@ function away_frank_wolfe(
     # hence the final computation.
     # do also cleanup of active_set due to many operations on the same set
 
-    x = get_active_set_iterate(active_set)
-    grad!(gradient, x)
-    v = compute_extreme_point(lmo, gradient)
-    primal = f(x)
-    dual_gap = dot(x, gradient) - dot(v, gradient)
-    step_type = ST_LAST
-    tot_time = (time_ns() - time_start) / 1e9
-    if callback !== nothing
-        state = CallbackState(
-            t,
-            primal,
-            primal - dual_gap,
-            dual_gap,
-            tot_time,
-            x,
-            v,
-            nothing,
-            zero(gamma),
-            f,
-            grad!,
-            lmo,
-            gradient,
-            step_type,
-        )
-        callback(state, active_set)
+    if recompute_last_vertex
+        x = get_active_set_iterate(active_set)
+        grad!(gradient, x)
+        v = compute_extreme_point(lmo, gradient)
+        primal = f(x)
+        dual_gap = dot(x, gradient) - dot(v, gradient)
+        step_type = ST_LAST
+        tot_time = (time_ns() - time_start) / 1e9
+        if callback !== nothing
+            state = CallbackState(
+                t,
+                primal,
+                primal - dual_gap,
+                dual_gap,
+                tot_time,
+                x,
+                v,
+                nothing,
+                zero(gamma),
+                f,
+                grad!,
+                lmo,
+                gradient,
+                step_type,
+            )
+            callback(state, active_set)
+        end
     end
 
     active_set_renormalize!(active_set)
@@ -379,32 +383,32 @@ function away_frank_wolfe(
         vertex_storage=extra_vertex_storage,
     )
     x = get_active_set_iterate(active_set)
-    grad!(gradient, x)
     if recompute_last_vertex
+        grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
         dual_gap = dot(x, gradient) - dot(v, gradient)
-    end
-    step_type = ST_POSTPROCESS
-    tot_time = (time_ns() - time_start) / 1e9
-    if callback !== nothing
-        state = CallbackState(
-            t,
-            primal,
-            primal - dual_gap,
-            dual_gap,
-            tot_time,
-            x,
-            v,
-            nothing,
-            zero(gamma),
-            f,
-            grad!,
-            lmo,
-            gradient,
-            step_type,
-        )
-        callback(state, active_set)
+        step_type = ST_POSTPROCESS
+        tot_time = (time_ns() - time_start) / 1e9
+        if callback !== nothing
+            state = CallbackState(
+                t,
+                primal,
+                primal - dual_gap,
+                dual_gap,
+                tot_time,
+                x,
+                v,
+                nothing,
+                zero(gamma),
+                f,
+                grad!,
+                lmo,
+                gradient,
+                step_type,
+            )
+            callback(state, active_set)
+        end
     end
 
     return (

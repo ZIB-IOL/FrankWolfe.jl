@@ -15,12 +15,16 @@ const xp = rand(StableRNG(1234), n) .- 0.4
 # non-uniform curvature, so that the accelerated BCG inner solver is used
 const D = 1 .+ 2 .* rand(StableRNG(5678), n)
 f(x) = sum(D .* (x .- xp) .^ 2)
+# the gradient and the LMO count their calls
+const GRAD_CALLS = Ref(0)
 function grad!(storage, x)
+    GRAD_CALLS[] += 1
     @. storage = 2 * D * (x - xp)
     return nothing
 end
 const hessian = Matrix(Diagonal(2 .* D))
-const lmo = FrankWolfe.ProbabilitySimplexLMO(1.0)
+const lmo = FrankWolfe.TrackingLMO(FrankWolfe.ProbabilitySimplexLMO(1.0))
+oracle_calls() = (GRAD_CALLS[], lmo.counter)
 const x0 = FrankWolfe.compute_extreme_point(lmo, zeros(n))
 # kwargs common to all deterministic algorithms
 const KW = (max_iteration=2000, epsilon=1e-9)
@@ -126,7 +130,7 @@ exact_dual_gap(name) =
 # `step` is a factory: every run must start from a fresh step object so that the interrupted
 # reruns replay the reference run, and some steps keep state across solver calls.
 corrective(step) =
-    cb -> FrankWolfe.corrective_frank_wolfe(
+    (cb; kwargs...) -> FrankWolfe.corrective_frank_wolfe(
         f,
         grad!,
         lmo,
@@ -134,6 +138,7 @@ corrective(step) =
         FrankWolfe.ActiveSet([(1.0, x0)]);
         callback=cb,
         KW...,
+        kwargs...,
     )
 
 # (name, objective, run(callback), step types occurring in an uninterrupted run)
@@ -153,50 +158,14 @@ const SOLVERS = [
     (
         "away_frank_wolfe",
         f,
-        cb -> FrankWolfe.away_frank_wolfe(f, grad!, lmo, x0; callback=cb, KW...),
+        (cb; kwargs...) ->
+            FrankWolfe.away_frank_wolfe(f, grad!, lmo, x0; callback=cb, KW..., kwargs...),
         [ST_REGULAR, ST_AWAY, ST_DROP],
     ),
     (
         "away_frank_wolfe lazy",
         f,
-        cb -> FrankWolfe.away_frank_wolfe(f, grad!, lmo, x0; lazy=true, callback=cb, KW...),
-        [ST_REGULAR, ST_LAZY, ST_AWAY, ST_DROP, ST_DUALSTEP],
-    ),
-    (
-        "away_frank_wolfe without away steps",
-        f,
-        cb -> FrankWolfe.away_frank_wolfe(f, grad!, lmo, x0; away_steps=false, callback=cb, KW...),
-        [ST_REGULAR],
-    ),
-    (
-        "pairwise_frank_wolfe",
-        f,
-        cb -> FrankWolfe.pairwise_frank_wolfe(f, grad!, lmo, x0; callback=cb, KW...),
-        [ST_PAIRWISE, ST_DUALSTEP],
-    ),
-    (
-        "pairwise_frank_wolfe lazy",
-        f,
-        cb -> FrankWolfe.pairwise_frank_wolfe(f, grad!, lmo, x0; lazy=true, callback=cb, KW...),
-        [ST_PAIRWISE, ST_LAZY, ST_DUALSTEP],
-    ),
-    (
-        "blended_pairwise_conditional_gradient",
-        f,
-        cb -> FrankWolfe.blended_pairwise_conditional_gradient(
-            f,
-            grad!,
-            lmo,
-            x0;
-            callback=cb,
-            KW...,
-        ),
-        [ST_REGULAR, ST_PAIRWISE, ST_DROP],
-    ),
-    (
-        "blended_pairwise_conditional_gradient lazy",
-        f,
-        cb -> FrankWolfe.blended_pairwise_conditional_gradient(
+        (cb; kwargs...) -> FrankWolfe.away_frank_wolfe(
             f,
             grad!,
             lmo,
@@ -204,6 +173,73 @@ const SOLVERS = [
             lazy=true,
             callback=cb,
             KW...,
+            kwargs...,
+        ),
+        [ST_REGULAR, ST_LAZY, ST_AWAY, ST_DROP, ST_DUALSTEP],
+    ),
+    (
+        "away_frank_wolfe without away steps",
+        f,
+        (cb; kwargs...) -> FrankWolfe.away_frank_wolfe(
+            f,
+            grad!,
+            lmo,
+            x0;
+            away_steps=false,
+            callback=cb,
+            KW...,
+            kwargs...,
+        ),
+        [ST_REGULAR],
+    ),
+    (
+        "pairwise_frank_wolfe",
+        f,
+        (cb; kwargs...) ->
+            FrankWolfe.pairwise_frank_wolfe(f, grad!, lmo, x0; callback=cb, KW..., kwargs...),
+        [ST_PAIRWISE, ST_DUALSTEP],
+    ),
+    (
+        "pairwise_frank_wolfe lazy",
+        f,
+        (cb; kwargs...) -> FrankWolfe.pairwise_frank_wolfe(
+            f,
+            grad!,
+            lmo,
+            x0;
+            lazy=true,
+            callback=cb,
+            KW...,
+            kwargs...,
+        ),
+        [ST_PAIRWISE, ST_LAZY, ST_DUALSTEP],
+    ),
+    (
+        "blended_pairwise_conditional_gradient",
+        f,
+        (cb; kwargs...) -> FrankWolfe.blended_pairwise_conditional_gradient(
+            f,
+            grad!,
+            lmo,
+            x0;
+            callback=cb,
+            KW...,
+            kwargs...,
+        ),
+        [ST_REGULAR, ST_PAIRWISE, ST_DROP],
+    ),
+    (
+        "blended_pairwise_conditional_gradient lazy",
+        f,
+        (cb; kwargs...) -> FrankWolfe.blended_pairwise_conditional_gradient(
+            f,
+            grad!,
+            lmo,
+            x0;
+            lazy=true,
+            callback=cb,
+            KW...,
+            kwargs...,
         ),
         [ST_REGULAR, ST_PAIRWISE, ST_DROP, ST_DUALSTEP],
     ),
@@ -447,6 +483,48 @@ const SOLVERS = [
             @test result.x ≈ interrupted_steps[k].x
             test_final_calls(records, result)
         end
+    end
+end
+
+# the variants with the `recompute_last_vertex` keyword argument
+has_recompute_last_vertex(name) = any(
+    prefix -> startswith(name, prefix),
+    (
+        "away_frank_wolfe",
+        "pairwise_frank_wolfe",
+        "blended_pairwise_conditional_gradient",
+        "corrective",
+    ),
+)
+
+"""
+Runs the solver and returns the result, the step types passed to the callback, and the
+numbers of gradient and LMO calls.
+"""
+function run_counting(run; with_callback=true, kwargs...)
+    step_types = FrankWolfe.StepType[]
+    callback = (state, args...) -> (push!(step_types, state.step_type); true)
+    calls_before = oracle_calls()
+    result = run(with_callback ? callback : nothing; kwargs...)
+    return result, step_types, oracle_calls() .- calls_before
+end
+
+@testset "recompute_last_vertex = false skips everything after the main loop" begin
+    @testset "$name" for (name, _, run, _) in filter(s -> has_recompute_last_vertex(s[1]), SOLVERS)
+        reference, reference_step_types, reference_calls = run_counting(run)
+        @test reference_step_types[(end-1):end] == [ST_LAST, ST_POSTPROCESS]
+
+        result, step_types, calls = run_counting(run; recompute_last_vertex=false)
+        # no final callbacks, the calls in the main loop are the same
+        @test step_types == reference_step_types[1:(end-2)]
+        # no gradient and LMO calls for ST_LAST and ST_POSTPROCESS
+        @test reference_calls == calls .+ (2, 2)
+        # the returned values are the ones of the main loop
+        @test result.status == reference.status
+        @test result.x ≈ reference.x
+        @test result.primal ≈ reference.primal
+        @test is_vertex(result.v)
+        @test result.dual_gap >= 0
     end
 end
 

@@ -36,6 +36,14 @@ These final states have `state.d === nothing` and `state.gamma == 0`, and the re
 
 Block-coordinate Frank-Wolfe, the alternating methods, and DCA are exceptions: they call the callback *after* each (outer) iteration, and `false` stops the algorithm after that iteration.
 
+## Skipping the final computations
+
+After the main loop, the active-set-based variants clean up the active set and compute the gradient, the Frank-Wolfe vertex, and the objective value once more, so that the returned `v`, `primal`, and `dual_gap` are the ones at the returned `x`.
+Away-step, pairwise, blended pairwise, and corrective Frank-Wolfe accept the keyword argument `recompute_last_vertex` to skip this.
+With `recompute_last_vertex = false`, they only clean up the active set after the main loop, without calling the gradient, the LMO, or the objective.
+The returned `v`, `primal`, and `dual_gap` are then the last values of the main loop, which only approximate the ones at the returned `x`, and the final callbacks with `ST_LAST` and `ST_POSTPROCESS` are skipped.
+This is useful if the oracles are expensive and the algorithm is called repeatedly, e.g., as a subroutine.
+
 ## Custom extreme point types
 
 For some feasible sets, the extreme points of the feasible set returned by

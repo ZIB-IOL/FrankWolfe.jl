@@ -447,7 +447,7 @@ function blended_pairwise_conditional_gradient(
     # do also cleanup of active_set due to many operations on the same set
 
     # the extra LMO call is only needed for the final callback
-    if callback !== nothing
+    if recompute_last_vertex && callback !== nothing
         compute_active_set_iterate!(active_set)
         x = get_active_set_iterate(active_set)
         grad!(gradient, x)
@@ -479,33 +479,33 @@ function blended_pairwise_conditional_gradient(
     active_set_cleanup!(active_set; weight_purge_threshold=weight_purge_threshold)
     compute_active_set_iterate!(active_set)
     x = get_active_set_iterate(active_set)
-    grad!(gradient, x)
     # otherwise values are maintained to last iteration
     if recompute_last_vertex
+        grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
         dual_gap = dot(gradient, x) - dot(gradient, v)
-    end
-    step_type = ST_POSTPROCESS
-    tot_time = (time_ns() - time_start) / 1e9
-    if callback !== nothing
-        state = CallbackState(
-            t,
-            primal,
-            primal - dual_gap,
-            dual_gap,
-            tot_time,
-            x,
-            v,
-            nothing,
-            zero(gamma),
-            f,
-            grad!,
-            lmo,
-            gradient,
-            step_type,
-        )
-        callback(state, active_set)
+        step_type = ST_POSTPROCESS
+        tot_time = (time_ns() - time_start) / 1e9
+        if callback !== nothing
+            state = CallbackState(
+                t,
+                primal,
+                primal - dual_gap,
+                dual_gap,
+                tot_time,
+                x,
+                v,
+                nothing,
+                zero(gamma),
+                f,
+                grad!,
+                lmo,
+                gradient,
+                step_type,
+            )
+            callback(state, active_set)
+        end
     end
 
     return (
