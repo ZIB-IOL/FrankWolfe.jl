@@ -360,4 +360,30 @@ end
     end
 end
 
+@testset "Atoms have the atom type of the active set" begin
+    hot = FrankWolfe.ScaledHotVector(1.0, 2, 3)
+    # the copy of a one-hot vector keeps the type of the atoms
+    @test copy(hot) isa FrankWolfe.ScaledHotVector{Float64}
+    @test copy(hot) == hot
+    hot_set = ActiveSet([(1.0, copy(hot))])
+    FrankWolfe.active_set_update!(hot_set, 0.5, FrankWolfe.ScaledHotVector(1.0, 1, 3))
+    @test hot_set.atoms isa Vector{FrankWolfe.ScaledHotVector{Float64}}
+    @test hot_set.x ≈ [0.5, 0.5, 0.0]
+
+    # vertices of another type than the atoms are not converted
+    dense_set = ActiveSet([(1.0, collect(hot))])
+    @test_throws MethodError FrankWolfe.active_set_update!(dense_set, 0.5, hot)
+    @test_throws MethodError FrankWolfe.active_set_update_pairwise!(
+        dense_set,
+        0.5,
+        1.0,
+        -1,
+        1,
+        FrankWolfe.ScaledHotVector(1.0, 1, 3),
+        dense_set.atoms[1],
+        false,
+    )
+    @test length(dense_set) == 1
+end
+
 end # module

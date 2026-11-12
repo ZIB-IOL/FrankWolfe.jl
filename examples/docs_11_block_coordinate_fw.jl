@@ -28,7 +28,9 @@ prod_lmo = FrankWolfe.ProductLMO((lmo1, lmo2))
 
 # We initialize the starting point `x0` as a [`FrankWolfe.BlockVector`](@ref) with two blocks.
 # The two other arguments are the block sizes and the overall number of entries.
-x0 = FrankWolfe.BlockVector([-ones(n), [i == 1 ? 1 : 0 for i in 1:n]], [(n,), (n,)], 2 * n);
+# Each block is a vertex of the corresponding LMO and has the type of its vertices, since it is
+# used as the first atom of the active set of a [`FrankWolfe.BPCGStep`](@ref).
+x0 = FrankWolfe.BlockVector([-ones(n), FrankWolfe.ScaledHotVector(1.0, 1, n)], [(n,), (n,)], 2 * n);
 
 
 # ## Running block-coordinate Frank-Wolfe with different update-orders

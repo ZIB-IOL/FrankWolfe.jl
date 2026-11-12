@@ -42,7 +42,7 @@ function adaptive_gradient_descent(
     print_iter=100,
     memory_mode=InplaceEmphasis(),
 )
-    x_prev = copy(x0)
+    x_prev = copyto!(similar(x0), x0)
     grad_prev = similar(x0)
     grad_curr = similar(x0)
 
@@ -199,7 +199,7 @@ function adaptive_gradient_descent2(
     print_iter=100,
     memory_mode=InplaceEmphasis(),
 )
-    x_prev = copy(x0)
+    x_prev = copyto!(similar(x0), x0)
     grad_prev = similar(x0)
     grad_curr = similar(x0)
 
@@ -363,7 +363,7 @@ function proximal_adaptive_gradient_descent(
     print_iter=100,
     memory_mode=InplaceEmphasis(),
 )
-    x_prev = copy(x0)
+    x_prev = copyto!(similar(x0), x0)
     grad_prev = similar(x0)
     grad_curr = similar(x0)
 
