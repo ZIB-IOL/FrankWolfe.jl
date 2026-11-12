@@ -528,4 +528,22 @@ end
     end
 end
 
+@testset "Without a callback, the oracles are called once after the main loop" begin
+    @testset "$name" for (name, _, run, _) in SOLVERS
+        reference, step_types, reference_calls = run_counting(run)
+        result, _, calls = run_counting(run; with_callback=false)
+        # With a post-processing step, the gradient and LMO calls for ST_LAST are only needed
+        # for the callback. Without one, they give the returned values.
+        calls_for_callback = ST_POSTPROCESS in step_types ? (1, 1) : (0, 0)
+        @test reference_calls == calls .+ calls_for_callback
+        @test result.status == reference.status
+        @test result.x ≈ reference.x
+        # the values of the stochastic Frank-Wolfe are estimates over random batches
+        if name != "stochastic_frank_wolfe"
+            @test result.primal ≈ reference.primal
+            @test result.dual_gap ≈ reference.dual_gap
+        end
+    end
+end
+
 end # module

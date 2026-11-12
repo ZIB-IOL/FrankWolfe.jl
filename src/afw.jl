@@ -346,7 +346,7 @@ function away_frank_wolfe(
     # hence the final computation.
     # do also cleanup of active_set due to many operations on the same set
 
-    if recompute_last_vertex
+    if recompute_last_vertex && callback !== nothing
         x = get_active_set_iterate(active_set)
         grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
@@ -354,25 +354,23 @@ function away_frank_wolfe(
         dual_gap = dot(x, gradient) - dot(v, gradient)
         step_type = ST_LAST
         tot_time = (time_ns() - time_start) / 1e9
-        if callback !== nothing
-            state = CallbackState(
-                t,
-                primal,
-                primal - dual_gap,
-                dual_gap,
-                tot_time,
-                x,
-                v,
-                nothing,
-                zero(gamma),
-                f,
-                grad!,
-                lmo,
-                gradient,
-                step_type,
-            )
-            callback(state, active_set)
-        end
+        state = CallbackState(
+            t,
+            primal,
+            primal - dual_gap,
+            dual_gap,
+            tot_time,
+            x,
+            v,
+            nothing,
+            zero(gamma),
+            f,
+            grad!,
+            lmo,
+            gradient,
+            step_type,
+        )
+        callback(state, active_set)
     end
 
     active_set_renormalize!(active_set)
