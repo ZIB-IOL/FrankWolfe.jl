@@ -262,6 +262,33 @@ function away_frank_wolfe(
 
             gamma = min(gamma_max, gamma)
             step_type = gamma ≈ gamma_max ? ST_DROP : step_type
+        end
+        dual_gap = phi_value
+
+        if callback !== nothing
+            state = CallbackState(
+                t,
+                primal,
+                primal - dual_gap,
+                dual_gap,
+                tot_time,
+                x,
+                vertex,
+                fw_step_taken || away_step_taken ? d : nothing,
+                gamma,
+                f,
+                grad!,
+                lmo,
+                gradient,
+                step_type,
+            )
+            if callback(state, active_set) === false
+                execution_status = STATUS_INTERRUPTED
+                break
+            end
+        end
+
+        if fw_step_taken || away_step_taken
             # cleanup and renormalize every x iterations. Only for the fw steps.
             renorm = mod(t, renorm_interval) == 0
             if away_step_taken
@@ -283,29 +310,8 @@ function away_frank_wolfe(
                     end
                 end
                 active_set_update!(active_set, gamma, vertex, renorm, index)
-            end
-        end
-
-        if callback !== nothing
-            state = CallbackState(
-                t,
-                primal,
-                primal - dual_gap,
-                dual_gap,
-                tot_time,
-                x,
-                vertex,
-                d,
-                gamma,
-                f,
-                grad!,
-                lmo,
-                gradient,
-                step_type,
-            )
-            if callback(state, active_set) === false
-                execution_status = STATUS_INTERRUPTED
-                break
+                # returned if recompute_last_vertex = false
+                v = vertex
             end
         end
 
@@ -320,14 +326,15 @@ function away_frank_wolfe(
             !(line_search isa Agnostic || line_search isa Nonconvex || line_search isa FixedStep)
         )
             primal = f(x)
-            dual_gap = phi_value
         end
     end
 
-    if t >= max_iteration
-        execution_status = STATUS_MAXITER
-    elseif phi_value < max(eps(float(typeof(phi_value))), epsilon)
-        execution_status = STATUS_OPTIMAL
+    if execution_status === STATUS_RUNNING
+        if t >= max_iteration
+            execution_status = STATUS_MAXITER
+        elseif phi_value < max(eps(float(typeof(phi_value))), epsilon)
+            execution_status = STATUS_OPTIMAL
+        end
     end
     if execution_status === STATUS_RUNNING
         @warn "Status not set"
@@ -339,14 +346,14 @@ function away_frank_wolfe(
     # hence the final computation.
     # do also cleanup of active_set due to many operations on the same set
 
-    x = get_active_set_iterate(active_set)
-    grad!(gradient, x)
-    v = compute_extreme_point(lmo, gradient)
-    primal = f(x)
-    dual_gap = dot(x, gradient) - dot(v, gradient)
-    step_type = ST_LAST
-    tot_time = (time_ns() - time_start) / 1e9
-    if callback !== nothing
+    if recompute_last_vertex && callback !== nothing
+        x = get_active_set_iterate(active_set)
+        grad!(gradient, x)
+        v = compute_extreme_point(lmo, gradient)
+        primal = f(x)
+        dual_gap = dot(x, gradient) - dot(v, gradient)
+        step_type = ST_LAST
+        tot_time = (time_ns() - time_start) / 1e9
         state = CallbackState(
             t,
             primal,
@@ -356,7 +363,7 @@ function away_frank_wolfe(
             x,
             v,
             nothing,
-            gamma,
+            zero(gamma),
             f,
             grad!,
             lmo,
@@ -374,32 +381,32 @@ function away_frank_wolfe(
         vertex_storage=extra_vertex_storage,
     )
     x = get_active_set_iterate(active_set)
-    grad!(gradient, x)
     if recompute_last_vertex
+        grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
         dual_gap = dot(x, gradient) - dot(v, gradient)
-    end
-    step_type = ST_POSTPROCESS
-    tot_time = (time_ns() - time_start) / 1e9
-    if callback !== nothing
-        state = CallbackState(
-            t,
-            primal,
-            primal - dual_gap,
-            dual_gap,
-            tot_time,
-            x,
-            v,
-            nothing,
-            gamma,
-            f,
-            grad!,
-            lmo,
-            gradient,
-            step_type,
-        )
-        callback(state, active_set)
+        step_type = ST_POSTPROCESS
+        tot_time = (time_ns() - time_start) / 1e9
+        if callback !== nothing
+            state = CallbackState(
+                t,
+                primal,
+                primal - dual_gap,
+                dual_gap,
+                tot_time,
+                x,
+                v,
+                nothing,
+                zero(gamma),
+                f,
+                grad!,
+                lmo,
+                gradient,
+                step_type,
+            )
+            callback(state, active_set)
+        end
     end
 
     return (
@@ -543,12 +550,13 @@ function afw_step(
         fw_step_taken = false
         index = a_loc
     else
-        step_type = ST_AWAY
+        # neither gap promises progress, no step is taken
+        step_type = ST_DUALSTEP
         gamma_max = zero(a_lambda)
-        vertex = a
+        vertex = v
         away_step_taken = false
         fw_step_taken = false
-        index = a_loc
+        index = -1
     end
     return d, vertex, index, gamma_max, dual_gap, away_step_taken, fw_step_taken, step_type
 end

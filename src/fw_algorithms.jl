@@ -207,10 +207,12 @@ function frank_wolfe(
         x = muladd_memory_mode(memory_mode, x, gamma, d)
     end
 
-    if dual_gap < max(epsilon, eps(float(typeof(dual_gap))))
-        execution_status = STATUS_OPTIMAL
-    elseif t >= max_iteration
-        execution_status = STATUS_MAXITER
+    if execution_status === STATUS_RUNNING
+        if dual_gap < max(epsilon, eps(float(typeof(dual_gap))))
+            execution_status = STATUS_OPTIMAL
+        elseif t >= max_iteration
+            execution_status = STATUS_MAXITER
+        end
     end
     if execution_status === STATUS_RUNNING
         @warn "Status not set"
@@ -226,18 +228,6 @@ function frank_wolfe(
     primal = f(x)
     dual_gap = dot(gradient, x) - dot(gradient, v)
     tot_time = (time_ns() - time_start) / 1.0e9
-    gamma = perform_line_search(
-        line_search,
-        t,
-        f,
-        grad!,
-        gradient,
-        x,
-        d,
-        1.0,
-        linesearch_workspace,
-        memory_mode,
-    )
     if callback !== nothing
         state = CallbackState(
             t,
@@ -247,8 +237,8 @@ function frank_wolfe(
             tot_time,
             x,
             v,
-            d,
-            gamma,
+            nothing,
+            zero(dual_gap),
             f,
             grad!,
             lmo,
@@ -469,10 +459,12 @@ function lazified_conditional_gradient(
 
         x = muladd_memory_mode(memory_mode, x, gamma, d)
     end
-    if dual_gap <= max(epsilon, eps(float(typeof(dual_gap))))
-        execution_status = STATUS_OPTIMAL
-    elseif t >= max_iteration
-        execution_status = STATUS_MAXITER
+    if execution_status === STATUS_RUNNING
+        if dual_gap <= max(epsilon, eps(float(typeof(dual_gap))))
+            execution_status = STATUS_OPTIMAL
+        elseif t >= max_iteration
+            execution_status = STATUS_MAXITER
+        end
     end
     if execution_status === STATUS_RUNNING
         @warn "Status not set"
@@ -488,18 +480,6 @@ function lazified_conditional_gradient(
     primal = f(x)
     dual_gap = dot(gradient, x) - dot(gradient, v)
     tot_time = (time_ns() - time_start) / 1.0e9
-    gamma = perform_line_search(
-        line_search,
-        t,
-        f,
-        grad!,
-        gradient,
-        x,
-        d,
-        1.0,
-        linesearch_workspace,
-        memory_mode,
-    )
     if callback !== nothing
         state = CallbackState(
             t,
@@ -509,8 +489,8 @@ function lazified_conditional_gradient(
             tot_time,
             x,
             v,
-            d,
-            gamma,
+            nothing,
+            zero(dual_gap),
             f,
             grad!,
             lmo,

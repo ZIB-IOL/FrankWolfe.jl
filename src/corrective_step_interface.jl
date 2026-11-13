@@ -64,7 +64,7 @@ function run_corrective_step(
     epsilon,
     d,
 )
-    _, v_lazy, v_loc, _, a_lambda, a, a_loc, _, _ = active_set_argminmax(active_set, gradient)
+    _, v_local, v_loc, _, a_lambda, a, a_loc, _, _ = active_set_argminmax(active_set, gradient)
     grad_dot_x = dot(gradient, x)
     grad_dot_a = dot(gradient, a)
     away_gap = grad_dot_a - grad_dot_x
@@ -97,7 +97,7 @@ function run_corrective_step(
                     phi_value,
                     tot_time,
                     x,
-                    v,
+                    a,
                     d,
                     gamma,
                     f,
@@ -107,6 +107,9 @@ function run_corrective_step(
                     step_type,
                 )
                 should_continue = callback(state, active_set)
+                if should_continue === false
+                    return x, v, phi_value, dual_gap, should_fw_step, should_continue
+                end
             end
             active_set_update!(active_set, -gamma, a, true, a_loc)
         else
@@ -116,13 +119,13 @@ function run_corrective_step(
         # compute the local FW gap over the active set 
         away_step_taken = false
         lazy_fw_step_taken = false
-        grad_dot_lazy_fw_vertex = dot(gradient, v_lazy)
-        lazy_gap = grad_dot_x - grad_dot_lazy_fw_vertex
+        grad_dot_local_fw_vertex = dot(gradient, v_local)
+        lazy_gap = grad_dot_x - grad_dot_local_fw_vertex
         if lazy_gap >= max(away_gap, phi_value / corrective_step.lazy_tolerance, epsilon)
             step_type = ST_LAZY
             gamma_max = one(a_lambda)
-            d = muladd_memory_mode(memory_mode, d, x, v_lazy)
-            vertex = v_lazy
+            d = muladd_memory_mode(memory_mode, d, x, v_local)
+            vertex = v_local
             lazy_fw_step_taken = true
             index = v_loc
             should_fw_step = false
@@ -154,7 +157,7 @@ function run_corrective_step(
                     tot_time,
                     x,
                     v,
-                    d,
+                    nothing,
                     zero(a_lambda),
                     f,
                     grad!,
@@ -200,6 +203,9 @@ function run_corrective_step(
             )
             if callback !== nothing
                 should_continue = callback(state, active_set)
+                if should_continue === false
+                    return x, v, phi_value, dual_gap, should_fw_step, should_continue
+                end
             end
             # cleanup and renormalize every x iterations. Only for the fw steps.
             renorm = mod(t, renorm_interval) == 0
@@ -296,7 +302,7 @@ function run_corrective_step(
             phi_value,
             tot_time,
             x,
-            v,
+            vertex_taken,
             d,
             gamma,
             f,
@@ -307,6 +313,9 @@ function run_corrective_step(
         )
         if callback !== nothing
             should_continue = callback(state, active_set)
+            if should_continue === false
+                return x, v, phi_value, dual_gap, should_fw_step, should_continue
+            end
         end
         active_set_update_pairwise!(
             active_set,
@@ -523,7 +532,7 @@ function run_corrective_step(
             phi_value,
             tot_time,
             x,
-            v_local,
+            select_away ? a : v_local,
             d,
             gamma,
             f,
@@ -534,6 +543,9 @@ function run_corrective_step(
         )
         if callback !== nothing
             should_continue = callback(state, active_set)
+            if should_continue === false
+                return x, v, phi_value, dual_gap, should_fw_step, should_continue
+            end
         end
         # cleanup and renormalize every x iterations. Only for the fw steps.
         renorm = mod(t, renorm_interval) == 0
@@ -552,34 +564,16 @@ function run_corrective_step(
                 nothing,
             )
         end
-        state = CallbackState(
-            t,
-            primal,
-            primal - phi_value,
-            phi_value,
-            tot_time,
-            x,
-            v,
-            d,
-            gamma,
-            f,
-            grad!,
-            lmo,
-            gradient,
-            step_type,
-        )
-        if callback !== nothing
-            should_continue = callback(state, active_set)
-        end
         if mod(t, renorm_interval) == 0
             active_set_renormalize!(active_set)
             x = compute_active_set_iterate!(active_set)
         end
     else # perform local step if one of the local gaps promises enough progress
+        should_fw_step = false
         step_type = ST_LAZY
         gamma_max = one(a_lambda)
-        d = muladd_memory_mode(memory_mode, d, x, v_lazy)
-        vertex = v_lazy
+        d = muladd_memory_mode(memory_mode, d, x, v_local)
+        vertex = v_local
 
         gamma = perform_line_search(
             line_search,
@@ -613,6 +607,9 @@ function run_corrective_step(
         )
         if callback !== nothing
             should_continue = callback(state, active_set)
+            if should_continue === false
+                return x, v, phi_value, dual_gap, should_fw_step, should_continue
+            end
         end
         renorm = mod(t, renorm_interval) == 0
         active_set_update!(active_set, gamma, vertex, renorm, v_loc)
@@ -734,6 +731,9 @@ function run_corrective_step(
     )
     if callback !== nothing
         should_continue = callback(state, active_set)
+        if should_continue === false
+            return x, v, phi_value, dual_gap, should_fw_step, should_continue
+        end
     end
     fw_index = take_local ? v_loc : find_atom(active_set, fw_vertex, gradient, v_loc, v_local_value)
     active_set_update_pairwise!(
@@ -987,17 +987,15 @@ function run_corrective_step(
         @. y += λi * ai
     end
     gamma = one(η)
+    # the step goes from x_prev to x_prev - gamma * d
+    d = muladd_memory_mode(memory_mode, d, x_prev, y)
 
     # If the drop is non-increasing, perform a drop step
     if f(x_prev) ≥ f(y)
         step_type = ST_DROP
-        update_weights!(active_set, λ_boundary)
-        deleteat!(active_set, drop_indices)
-        compute_active_set_iterate!(active_set)
 
         # Otherwise, perform a simplex descent step with line search
     else
-        d = muladd_memory_mode(memory_mode, d, x_prev, y)
         if line_search_inner isa Adaptive
             gamma = perform_line_search(
                 line_search_inner,
@@ -1027,7 +1025,7 @@ function run_corrective_step(
                 )
             end
         else
-            if dot(gradient, x_prev - y) < ls_tol
+            if dot(gradient, d) < ls_tol
                 v, dual_gap, phi_value, should_fw_step, should_continue =
                     _corrective_fw_or_dual_step(
                         corrective_step.lazy,
@@ -1063,20 +1061,9 @@ function run_corrective_step(
             )
         end
         gamma = min(one(gamma), gamma)
-        if gamma == one(gamma)
-            step_type = ST_DROP
-            update_weights!(active_set, λ_boundary)
-            deleteat!(active_set, drop_indices)
-            compute_active_set_iterate!(active_set)
-        else
-            step_type = ST_SIMPLEXDESCENT
-            update_weights!(active_set, active_set.weights .- gamma * η .* dir)
-            compute_active_set_iterate!(active_set)
-        end
+        step_type = gamma == one(gamma) ? ST_DROP : ST_SIMPLEXDESCENT
     end
 
-    x = get_active_set_iterate(active_set)
-    d = muladd_memory_mode(memory_mode, d, x_prev, y)
     if callback !== nothing
         state = CallbackState(
             t,
@@ -1085,7 +1072,7 @@ function run_corrective_step(
             phi_value,
             tot_time,
             x_prev,
-            y,
+            nothing, # not moving towards a single vertex
             d,
             gamma,
             f,
@@ -1095,7 +1082,19 @@ function run_corrective_step(
             step_type,
         )
         should_continue = callback(state, active_set)
+        if should_continue === false
+            return x, v, phi_value, dual_gap, false, should_continue
+        end
     end
+
+    if step_type == ST_DROP
+        update_weights!(active_set, λ_boundary)
+        deleteat!(active_set, drop_indices)
+    else
+        update_weights!(active_set, active_set.weights .- gamma * η .* dir)
+    end
+    compute_active_set_iterate!(active_set)
+    x = get_active_set_iterate(active_set)
     if mod(t, renorm_interval) == 0
         active_set_renormalize!(active_set)
         x = compute_active_set_iterate!(active_set)
@@ -1131,8 +1130,8 @@ function ProjectedGradientDescentStep(; hessian, lazy=false, lazy_tolerance=2.0,
         lazy_tolerance,
         hessian,
         accelerated,
-        [0.0],
-        Ref(0.0),
+        Float64[],
+        Ref(1.0),
         Float64[],
         Float64[],
     )
@@ -1198,6 +1197,9 @@ function run_corrective_step(
             grad!,
             active_set,
         )
+        if corrective_step.accelerated && should_fw_step
+            empty!(corrective_step.y)  # invalidate active set momentum
+        end
         return x, v, phi_value, dual_gap, should_fw_step, should_continue
     end
 
@@ -1229,6 +1231,9 @@ function run_corrective_step(
             grad!,
             active_set,
         )
+        if corrective_step.accelerated && should_fw_step
+            empty!(corrective_step.y)  # invalidate active set momentum
+        end
         return x, v, phi_value, dual_gap, should_fw_step, should_continue
     end
 
@@ -1238,15 +1243,14 @@ function run_corrective_step(
     k = length(active_set.weights)
     λ = copy(active_set.weights)
     x_prev = copy(x)
-    gamma = inv(L_reduced)
 
     use_accelerated = corrective_step.accelerated && L_reduced / mu_reduced > one(L_reduced)
+    # the momentum state of the step is only committed once the callback accepted the step
     if use_accelerated
-        if length(corrective_step.y) != k
-            copy!(corrective_step.y, λ)
-            corrective_step.alpha[] = 0.0
-        end
-        y = corrective_step.y
+        reset_momentum = length(corrective_step.y) != k
+        y = reset_momentum ? copy(λ) : corrective_step.y
+        alpha_old = reset_momentum ? 1.0 : corrective_step.alpha[]
+        alpha_new = alpha_old
         grad_y = resize!(corrective_step.gradient_buffer, k)
         copy!(grad_y, b)
         mul!(grad_y, M, y, true, true)
@@ -1254,37 +1258,29 @@ function run_corrective_step(
         @. projection_argument = y - grad_y / L_reduced
         λ_new, drop_indices = _simplex_projection_with_drops(projection_argument)
         if mu_reduced < 1e-3
-            alpha_old = corrective_step.alpha[]
-            corrective_step.alpha[] = 0.5 * (1 + sqrt(1 + 4 * alpha_old^2))
-            gamma = (alpha_old - 1) / corrective_step.alpha[]
+            alpha_new = 0.5 * (1 + sqrt(1 + 4 * alpha_old^2))
+            momentum_gamma = (alpha_old - 1) / alpha_new
         else
             sq = sqrt(mu_reduced / L_reduced)
-            gamma = (1 - sq) / (1 + sq)
+            momentum_gamma = (1 - sq) / (1 + sq)
         end
-        diff = λ_new - λ
-        @. y = λ_new + gamma * diff
-        λ = λ_new
     else
-        empty!(corrective_step.y)
-        corrective_step.alpha[] = 0.0
         grad_λ = resize!(corrective_step.gradient_buffer, k)
         copy!(grad_λ, b)
         mul!(grad_λ, M, λ, true, true)
         projection_argument = resize!(corrective_step.projection_buffer, k)
         @. projection_argument = λ - grad_λ / L_reduced
-        λ, drop_indices = _simplex_projection_with_drops(projection_argument)
-        gamma = inv(L_reduced)
+        λ_new, drop_indices = _simplex_projection_with_drops(projection_argument)
     end
 
-    update_weights!(active_set, λ)
-    deleteat!(active_set, drop_indices)
-    if length(corrective_step.y) == length(active_set) && !isempty(drop_indices)
-        deleteat!(corrective_step.y, drop_indices)
-    end
-    compute_active_set_iterate!(active_set)
-    x = get_active_set_iterate(active_set)
-    d = muladd_memory_mode(memory_mode, d, x_prev, x)
     if callback !== nothing
+        # candidate iterate, the step goes from x_prev to x_new = x_prev - d
+        x_new = similar(x_prev)
+        x_new .= 0
+        for (λi, ai) in zip(λ_new, active_set.atoms)
+            @. x_new += λi * ai
+        end
+        d = muladd_memory_mode(memory_mode, d, x_prev, x_new)
         state = CallbackState(
             t,
             primal,
@@ -1292,9 +1288,9 @@ function run_corrective_step(
             phi_value,
             tot_time,
             x_prev,
-            x,
+            nothing, # not moving towards a single vertex
             d,
-            gamma,
+            1.0,
             f,
             grad!,
             lmo,
@@ -1302,7 +1298,23 @@ function run_corrective_step(
             ST_SIMPLEXDESCENT,
         )
         should_continue = callback(state, active_set)
+        if should_continue === false
+            return x, v, phi_value, dual_gap, false, should_continue
+        end
     end
+
+    if use_accelerated && isempty(drop_indices)
+        copy!(corrective_step.y, λ_new .+ momentum_gamma .* (λ_new .- λ))
+        corrective_step.alpha[] = alpha_new
+    else
+        # dropped atoms change the reduced problem, so the next step restarts the momentum
+        empty!(corrective_step.y)
+        corrective_step.alpha[] = 1.0
+    end
+    update_weights!(active_set, λ_new)
+    deleteat!(active_set, drop_indices)
+    compute_active_set_iterate!(active_set)
+    x = get_active_set_iterate(active_set)
     if mod(t, renorm_interval) == 0
         active_set_renormalize!(active_set)
         x = compute_active_set_iterate!(active_set)

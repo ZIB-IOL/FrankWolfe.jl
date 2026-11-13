@@ -167,7 +167,7 @@ end
     # updating again (at optimum) triggers the active set emptying
     for as in (active_set, active_set2)
         x = FrankWolfe.get_active_set_iterate(as)
-        number_of_steps = FrankWolfe.simplex_gradient_descent_over_convex_hull(
+        number_of_steps, should_continue = FrankWolfe.simplex_gradient_descent_over_convex_hull(
             f,
             grad!,
             gradient,
@@ -180,6 +180,7 @@ end
             callback=nothing,
         )
         @test number_of_steps == 0
+        @test should_continue
     end
 end
 

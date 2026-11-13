@@ -22,6 +22,28 @@ callback(state::FrankWolfe.CallbackState, args...)
 
 The callback can be used to log additional information or store some values of interest in an external array. If a callback is passed, the `trajectory` keyword is ignored since it is a special case of callback pushing the 5 first elements of the state to an array returned from the algorithm.
 
+Most Frank-Wolfe variants call the callback *before* each step.
+The state then describes the step about to be taken: `state.x` is the current iterate, `state.gradient` the gradient at `state.x`, and `state.v`, `state.d`, `state.gamma`, and `state.step_type` the vertex, direction, step size, and type of the step.
+The step moves from `state.x` to `state.x - state.gamma * state.d`.
+The vertex `state.v` is the one the step is built from: the vertex moved towards in Frank-Wolfe and pairwise steps, the away vertex in away steps, and `nothing` if the step does not move towards a single vertex, e.g., in simplex descent steps.
+Steps that do not move the iterate, such as dual steps, have `state.d === nothing` and `state.gamma == 0`; their `state.v` is the vertex computed by the LMO.
+The additional arguments depend on the algorithm, e.g. the active set for active-set-based methods.
+Note that `state.x` may share memory with the algorithm's iterate, so it must be copied if it is stored.
+
+If the callback returns `false`, the step is cancelled and the algorithm stops with status `STATUS_INTERRUPTED`, returning the `state.x` of that call.
+After the main loop, the callback is called once more with step type `ST_LAST`, and on active-set-based methods also with `ST_POSTPROCESS`.
+These final states have `state.d === nothing` and `state.gamma == 0`, and the return value of these calls is ignored.
+
+Block-coordinate Frank-Wolfe, the alternating methods, and DCA are exceptions: they call the callback *after* each (outer) iteration, and `false` stops the algorithm after that iteration.
+
+## Skipping the final computations
+
+After the main loop, the active-set-based variants clean up the active set and compute the gradient, the Frank-Wolfe vertex, and the objective value once more, so that the returned `v`, `primal`, and `dual_gap` are the ones at the returned `x`.
+Away-step, pairwise, blended pairwise, and corrective Frank-Wolfe accept the keyword argument `recompute_last_vertex` to skip this.
+With `recompute_last_vertex = false`, they only clean up the active set after the main loop, without calling the gradient, the LMO, or the objective.
+The returned `v`, `primal`, and `dual_gap` are then the last values of the main loop, which only approximate the ones at the returned `x`, and the final callbacks with `ST_LAST` and `ST_POSTPROCESS` are skipped.
+This is useful if the oracles are expensive and the algorithm is called repeatedly, e.g., as a subroutine.
+
 ## Custom extreme point types
 
 For some feasible sets, the extreme points of the feasible set returned by

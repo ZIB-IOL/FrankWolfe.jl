@@ -241,6 +241,8 @@ function pairwise_frank_wolfe(
         if fw_index === nothing
             fw_index = find_atom(active_set, fw_vertex)
         end
+        # returned if recompute_last_vertex = false
+        v = fw_vertex
 
         if gamma ≈ gamma_max && fw_index === -1
             step_type = ST_DUALSTEP
@@ -262,7 +264,33 @@ function pairwise_frank_wolfe(
             )
 
             gamma = min(gamma_max, gamma)
+        end
+        dual_gap = phi_value
 
+        if callback !== nothing
+            state = CallbackState(
+                t,
+                primal,
+                primal - dual_gap,
+                dual_gap,
+                tot_time,
+                x,
+                fw_vertex,
+                step_type == ST_DUALSTEP ? nothing : d,
+                gamma,
+                f,
+                grad!,
+                lmo,
+                gradient,
+                step_type,
+            )
+            if callback(state, active_set) === false
+                execution_status = STATUS_INTERRUPTED
+                break
+            end
+        end
+
+        if step_type != ST_DUALSTEP
             # pairwise update
             active_set_update_pairwise!(
                 active_set,
@@ -277,29 +305,6 @@ function pairwise_frank_wolfe(
             )
         end
 
-        if callback !== nothing
-            state = CallbackState(
-                t,
-                primal,
-                primal - dual_gap,
-                dual_gap,
-                tot_time,
-                x,
-                fw_vertex,
-                d,
-                gamma,
-                f,
-                grad!,
-                lmo,
-                gradient,
-                step_type,
-            )
-            if callback(state, active_set) === false
-                execution_status = STATUS_INTERRUPTED
-                break
-            end
-        end
-
         if mod(t, renorm_interval) == 0
             active_set_renormalize!(active_set)
             x = compute_active_set_iterate!(active_set)
@@ -311,14 +316,15 @@ function pairwise_frank_wolfe(
             !(line_search isa Agnostic || line_search isa Nonconvex || line_search isa FixedStep)
         )
             primal = f(x)
-            dual_gap = phi_value
         end
     end
 
-    if phi_value < max(epsilon, eps(float(typeof(phi_value))))
-        execution_status = STATUS_OPTIMAL
-    elseif t >= max_iteration
-        execution_status = STATUS_MAXITER
+    if execution_status === STATUS_RUNNING
+        if phi_value < max(epsilon, eps(float(typeof(phi_value))))
+            execution_status = STATUS_OPTIMAL
+        elseif t >= max_iteration
+            execution_status = STATUS_MAXITER
+        end
     end
     if execution_status === STATUS_RUNNING
         @warn "Status not set"
@@ -330,15 +336,15 @@ function pairwise_frank_wolfe(
     # hence the final computation.
     # do also cleanup of active_set due to many operations on the same set
 
-    x = get_active_set_iterate(active_set)
-    grad!(gradient, x)
-    v = compute_extreme_point(lmo, gradient)
-    primal = f(x)
-    dual_gap = dot(gradient, x) - dot(gradient, v)
-    dual_gap = min(phi_value, dual_gap)
-    step_type = ST_LAST
-    tot_time = (time_ns() - time_start) / 1e9
-    if callback !== nothing
+    if recompute_last_vertex && callback !== nothing
+        x = get_active_set_iterate(active_set)
+        grad!(gradient, x)
+        v = compute_extreme_point(lmo, gradient)
+        primal = f(x)
+        dual_gap = dot(gradient, x) - dot(gradient, v)
+        dual_gap = min(phi_value, dual_gap)
+        step_type = ST_LAST
+        tot_time = (time_ns() - time_start) / 1e9
         state = CallbackState(
             t,
             primal,
@@ -348,7 +354,7 @@ function pairwise_frank_wolfe(
             x,
             v,
             nothing,
-            gamma,
+            zero(gamma),
             f,
             grad!,
             lmo,
@@ -366,32 +372,32 @@ function pairwise_frank_wolfe(
         vertex_storage=extra_vertex_storage,
     )
     x = get_active_set_iterate(active_set)
-    grad!(gradient, x)
     if recompute_last_vertex
+        grad!(gradient, x)
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
         dual_gap = dot(gradient, x) - dot(gradient, v)
-    end
-    step_type = ST_POSTPROCESS
-    tot_time = (time_ns() - time_start) / 1e9
-    if callback !== nothing
-        state = CallbackState(
-            t,
-            primal,
-            primal - dual_gap,
-            dual_gap,
-            tot_time,
-            x,
-            v,
-            nothing,
-            gamma,
-            f,
-            grad!,
-            lmo,
-            gradient,
-            step_type,
-        )
-        callback(state, active_set)
+        step_type = ST_POSTPROCESS
+        tot_time = (time_ns() - time_start) / 1e9
+        if callback !== nothing
+            state = CallbackState(
+                t,
+                primal,
+                primal - dual_gap,
+                dual_gap,
+                tot_time,
+                x,
+                v,
+                nothing,
+                zero(gamma),
+                f,
+                grad!,
+                lmo,
+                gradient,
+                step_type,
+            )
+            callback(state, active_set)
+        end
     end
 
     return (

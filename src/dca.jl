@@ -182,14 +182,11 @@ This checks if the current point satisfies the DCA stationarity condition.
 """
 function make_dca_early_stopping_callback(wrapped_callback, linearized_obj, _, phi_value_at_xt)
     return function dca_early_stopping_callback(state, args...)
-        # Extract Frank-Wolfe subproblem state
-        x_current = state.x      # Current iterate in Frank-Wolfe
-        vertex = state.v         # Current Frank-Wolfe extreme point
-
         # Compute early stopping criterion: m(x) + ⟨∇m(x), x - v⟩ ≤ φ(x_t)
-        m_value = linearized_obj(x_current)
-        gradient_dot_difference = dot(state.gradient, x_current - vertex)
-        criterion_lhs = m_value + gradient_dot_difference
+        # `state.v` is the vertex of the step, which need not be the Frank-Wolfe vertex, but
+        # `state.dual_gap` is the Frank-Wolfe gap ⟨∇m(x), x - v⟩ (an estimate for lazy subsolvers)
+        m_value = linearized_obj(state.x)
+        criterion_lhs = m_value + state.dual_gap
 
         # Check DCA optimality condition
         if criterion_lhs ≤ phi_value_at_xt

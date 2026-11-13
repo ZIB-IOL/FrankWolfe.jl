@@ -235,7 +235,7 @@ function blended_conditional_gradient(
 
         # TODO replace with single call interface from function_gradient.jl
         #Mininize over the convex hull until strong Wolfe gap is below a given tolerance.
-        num_simplex_descent_steps = minimize_over_convex_hull!(
+        num_simplex_descent_steps, should_continue = minimize_over_convex_hull!(
             f,
             grad!,
             gradient,
@@ -260,6 +260,10 @@ function blended_conditional_gradient(
             extra_vertex_storage=extra_vertex_storage,
         )
         t += num_simplex_descent_steps
+        if should_continue === false
+            execution_status = STATUS_INTERRUPTED
+            break
+        end
         #Take a FW step.
         x = get_active_set_iterate(active_set)
         primal = f(x)
@@ -290,11 +294,11 @@ function blended_conditional_gradient(
                     primal,
                     primal - dual_gap,
                     dual_gap,
-                    tot_time,
+                    (time_ns() - time_start) / 1e9,
                     x,
                     v,
                     nothing,
-                    gamma,
+                    zero(gamma),
                     f,
                     grad!,
                     lmo,
@@ -328,7 +332,7 @@ function blended_conditional_gradient(
                     primal,
                     primal - dual_gap,
                     dual_gap,
-                    tot_time,
+                    (time_ns() - time_start) / 1e9,
                     x,
                     v,
                     d,
@@ -373,10 +377,12 @@ function blended_conditional_gradient(
     end
 
     ## post-processing and cleanup after loop
-    if t >= max_iteration
-        execution_status = STATUS_MAXITER
-    elseif phi_value < max(eps(float(typeof(phi_value))), epsilon)
-        execution_status = STATUS_OPTIMAL
+    if execution_status === STATUS_RUNNING
+        if t >= max_iteration
+            execution_status = STATUS_MAXITER
+        elseif phi_value < max(eps(float(typeof(phi_value))), epsilon)
+            execution_status = STATUS_OPTIMAL
+        end
     end
     if execution_status === STATUS_RUNNING
         @warn "Status not set"
@@ -390,18 +396,17 @@ function blended_conditional_gradient(
         v = compute_extreme_point(lmo, gradient)
         primal = f(x)
         dual_gap = dot(gradient, x) - dot(gradient, v)
-        tot_time = (time_ns() - time_start) / 1e9
         step_type = ST_LAST
         state = CallbackState(
             t,
             primal,
             primal - dual_gap,
             dual_gap,
-            tot_time,
+            (time_ns() - time_start) / 1e9,
             x,
             v,
             nothing,
-            gamma,
+            zero(gamma),
             f,
             grad!,
             lmo,
@@ -428,17 +433,16 @@ function blended_conditional_gradient(
     # report post-processed iteration
     if callback !== nothing
         step_type = ST_POSTPROCESS
-        tot_time = (time_ns() - time_start) / 1e9
         state = CallbackState(
             t,
             primal,
             primal - dual_gap,
             dual_gap,
-            tot_time,
+            (time_ns() - time_start) / 1e9,
             x,
             v,
             nothing,
-            gamma,
+            zero(gamma),
             f,
             grad!,
             lmo,
@@ -498,9 +502,10 @@ function minimize_over_convex_hull!(
     use_extra_vertex_storage=false,
     extra_vertex_storage=nothing,
 ) where {AT,R}
+    should_continue = true
     #No hessian is known, use simplex gradient descent.
     if hessian === nothing
-        number_of_steps = simplex_gradient_descent_over_convex_hull(
+        number_of_steps, should_continue = simplex_gradient_descent_over_convex_hull(
             f,
             grad!,
             gradient,
@@ -535,59 +540,57 @@ function minimize_over_convex_hull!(
         )
         #Early exit if we have detected that the strong-Wolfe gap is below the desired tolerance while building the reduced problem.
         if M === nothing
-            return 0
+            return 0, true
         end
         T = eltype(M)
         S = schur(M)
         L_reduced = maximum(real, S.values)::T
+        mu_reduced = max(minimum(real, S.values), zero(L_reduced))::T
         reduced_f(y) =
             f(x) - dot(gradient, x) + 0.5 * dot(x, hessian, x) + dot(b, y) + 0.5 * dot(y, M, y)
         function reduced_grad!(storage, x)
             return storage .= b + M * x
         end
-        #Solve using Nesterov's AGD
-        if accelerated
-            mu_reduced = minimum(real, S.values)::T
-            if L_reduced / mu_reduced > 1.0
-                new_weights, number_of_steps =
-                    accelerated_simplex_gradient_descent_over_probability_simplex(
-                        active_set.weights,
-                        reduced_f,
-                        reduced_grad!,
-                        tolerance,
-                        t,
-                        time_start,
-                        active_set,
-                        verbose=verbose,
-                        L=L_reduced,
-                        mu=mu_reduced,
-                        max_iteration=max_iteration,
-                        callback=callback,
-                        timeout=timeout,
-                        memory_mode=memory_mode,
-                        non_simplex_iter=non_simplex_iter,
-                    )
-                @. active_set.weights = new_weights
-            end
-        end
-        if !accelerated || L_reduced / mu_reduced == 1.0
+        if accelerated && L_reduced / mu_reduced > one(L_reduced)
+            #Solve using Nesterov's AGD
+            new_weights, number_of_steps, should_continue =
+                accelerated_simplex_gradient_descent_over_probability_simplex(
+                    active_set.weights,
+                    reduced_f,
+                    reduced_grad!,
+                    tolerance,
+                    t,
+                    time_start,
+                    active_set,
+                    verbose=verbose,
+                    L=L_reduced,
+                    mu=mu_reduced,
+                    max_iteration=max_iteration,
+                    callback=callback,
+                    timeout=timeout,
+                    memory_mode=memory_mode,
+                    non_simplex_iter=non_simplex_iter,
+                )
+            @. active_set.weights = new_weights
+        else
             #Solve using gradient descent.
-            new_weights, number_of_steps = simplex_gradient_descent_over_probability_simplex(
-                active_set.weights,
-                reduced_f,
-                reduced_grad!,
-                tolerance,
-                t,
-                time_start,
-                non_simplex_iter,
-                active_set,
-                verbose=verbose,
-                print_iter=print_iter,
-                L=L_reduced,
-                max_iteration=max_iteration,
-                callback=callback,
-                timeout=timeout,
-            )
+            new_weights, number_of_steps, should_continue =
+                simplex_gradient_descent_over_probability_simplex(
+                    active_set.weights,
+                    reduced_f,
+                    reduced_grad!,
+                    tolerance,
+                    t,
+                    time_start,
+                    non_simplex_iter,
+                    active_set,
+                    verbose=verbose,
+                    print_iter=print_iter,
+                    L=L_reduced,
+                    max_iteration=max_iteration,
+                    callback=callback,
+                    timeout=timeout,
+                )
             @. active_set.weights = new_weights
         end
     end
@@ -602,7 +605,7 @@ function minimize_over_convex_hull!(
         active_set_renormalize!(active_set)
         compute_active_set_iterate!(active_set)
     end
-    return number_of_steps
+    return number_of_steps, should_continue
 end
 
 """
@@ -756,49 +759,50 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
     q = mu / L
     # If the problem is close to convex, simply use the accelerated algorithm for convex objective functions.
     if mu < 1.0e-3
-        alpha = 0.0
-        alpha_old = 0.0
+        alpha = 1.0
     else
-        gamma = (1 - sqrt(q)) / (1 + sqrt(q))
+        momentum_gamma = (1 - sqrt(q)) / (1 + sqrt(q))
     end
+    should_continue = true
     while strong_wolfe_gap > tolerance && t + number_of_steps <= max_iteration
-        @. x_old = x
         reduced_grad!(gradient_y, y)
-        x = projection_simplex_sort(y .- gradient_y / L)
+        x_new = projection_simplex_sort(y .- gradient_y / L)
         if mu < 1.0e-3
             alpha_old = alpha
             alpha = 0.5 * (1 + sqrt(1 + 4 * alpha^2))
-            gamma = (alpha_old - 1.0) / alpha
+            momentum_gamma = (alpha_old - 1.0) / alpha
         end
-        diff = similar(x)
-        diff = muladd_memory_mode(memory_mode, diff, x, x_old)
-        y = muladd_memory_mode(memory_mode, y, x, -gamma, diff)
-        number_of_steps += 1
-        primal = reduced_f(x)
-        reduced_grad!(gradient_x, x)
-        strong_wolfe_gap = strong_frankwolfe_gap_probability_simplex(gradient_x, x)
-        step_type = ST_SIMPLEXDESCENT
         if callback !== nothing
+            primal = reduced_f(x)
             state = CallbackState(
-                t + number_of_steps,
+                t + number_of_steps + 1,
                 primal,
                 primal - tolerance,
                 tolerance,
                 (time_ns() - time_start) / 1e9,
                 x,
-                y,
-                nothing,
-                gamma,
+                nothing, # not moving towards a single vertex
+                x - x_new,
+                1.0,
                 reduced_f,
                 reduced_grad!,
                 nothing,
                 gradient_x,
-                step_type,
+                ST_SIMPLEXDESCENT,
             )
             if callback(state, active_set, non_simplex_iter) === false
+                should_continue = false
                 break
             end
         end
+        @. x_old = x
+        x = x_new
+        diff = similar(x)
+        diff = muladd_memory_mode(memory_mode, diff, x, x_old)
+        y = muladd_memory_mode(memory_mode, y, x, -momentum_gamma, diff)
+        number_of_steps += 1
+        reduced_grad!(gradient_x, x)
+        strong_wolfe_gap = strong_frankwolfe_gap_probability_simplex(gradient_x, x)
 
         if timeout < Inf
             tot_time = (time_ns() - time_start) / 1e9
@@ -810,7 +814,7 @@ function accelerated_simplex_gradient_descent_over_probability_simplex(
             end
         end
     end
-    return x, number_of_steps
+    return x, number_of_steps, should_continue
 end
 
 """
@@ -840,35 +844,36 @@ function simplex_gradient_descent_over_probability_simplex(
     gradient = collect(x)
     reduced_grad!(gradient, x)
     strong_wolfe_gap = strong_frankwolfe_gap_probability_simplex(gradient, x)
+    should_continue = true
     while strong_wolfe_gap > tolerance && t + number_of_steps <= max_iteration
-        x = projection_simplex_sort(x .- gradient / L)
-        number_of_steps = number_of_steps + 1
-        primal = reduced_f(x)
-        reduced_grad!(gradient, x)
-        strong_wolfe_gap = strong_frankwolfe_gap_probability_simplex(gradient, x)
-        tot_time = (time_ns() - time_start) / 1e9
-        step_type = ST_SIMPLEXDESCENT
+        x_new = projection_simplex_sort(x .- gradient / L)
         if callback !== nothing
+            primal = reduced_f(x)
             state = CallbackState(
-                t + number_of_steps,
+                t + number_of_steps + 1,
                 primal,
                 primal - tolerance,
                 tolerance,
-                tot_time,
+                (time_ns() - time_start) / 1e9,
                 x,
-                nothing,
-                nothing,
-                inv(L),
+                nothing, # not moving towards a single vertex
+                x - x_new,
+                1.0,
                 reduced_f,
                 reduced_grad!,
                 nothing,
                 gradient,
-                step_type,
+                ST_SIMPLEXDESCENT,
             )
             if callback(state, active_set, non_simplex_iter) === false
+                should_continue = false
                 break
             end
         end
+        x = x_new
+        number_of_steps = number_of_steps + 1
+        reduced_grad!(gradient, x)
+        strong_wolfe_gap = strong_frankwolfe_gap_probability_simplex(gradient, x)
 
         if timeout < Inf
             tot_time = (time_ns() - time_start) / 1e9
@@ -880,7 +885,7 @@ function simplex_gradient_descent_over_probability_simplex(
             end
         end
     end
-    return x, number_of_steps
+    return x, number_of_steps, should_continue
 end
 
 
@@ -935,6 +940,9 @@ end
 Minimizes an objective function over the convex hull of the active set
 until the Strong-Wolfe gap is below tolerance using simplex gradient
 descent.
+
+Returns `(number_of_steps, should_continue)`, where `should_continue` is `false`
+if the callback interrupted the solving process.
 """
 function simplex_gradient_descent_over_convex_hull(
     f,
@@ -973,7 +981,7 @@ function simplex_gradient_descent_over_convex_hull(
         #Check if strong Wolfe gap over the convex hull is small enough.
         c = [dot(gradient, a) for a in active_set.atoms]
         if maximum(c) - minimum(c) <= tolerance || t + number_of_steps ≥ max_iteration
-            return number_of_steps
+            return number_of_steps, true
         end
         #Otherwise perform simplex steps until we get there.
         k = length(active_set)
@@ -1001,7 +1009,7 @@ function simplex_gradient_descent_over_convex_hull(
             descent_direction_product_inner = dot(d, d) + (csum / k) * sum(d)
             if descent_direction_product_inner < line_search_inner.tol
                 @debug "d non-improving in large precision, forcing FW. Dot value: $descent_direction_product_inner, iteration $current_iteration"
-                return number_of_steps
+                return number_of_steps, true
             end
         end
 
@@ -1016,20 +1024,20 @@ function simplex_gradient_descent_over_convex_hull(
                 end
             end
         end
-        # TODO at some point avoid materializing both x and y
-        x = copy(active_set.x)
         η = isfinite(η) ? max(0, η) : 0
+        # candidate point y (weights moved by -η d); the active set is restored right away
+        # and only updated once the callback accepted the step
+        x_prev = copy(active_set.x)
+        weights_prev = copy(active_set.weights)
         @. active_set.weights -= η * d
         y = copy(compute_active_set_iterate!(active_set))
-        number_of_steps += 1
-        gamma = NaN
-        if f(x) ≥ f(y)
-            active_set_cleanup!(
-                active_set,
-                weight_purge_threshold=weight_purge_threshold,
-                add_dropped_vertices=use_extra_vertex_storage,
-                vertex_storage=extra_vertex_storage,
-            )
+        active_set.weights .= weights_prev
+        active_set.x .= x_prev
+        # the step goes from x_prev to x_prev - gamma * direction
+        direction = x_prev - y
+        primal = f(x_prev)
+        if primal ≥ f(y)
+            gamma = 1.0
         else
             if line_search_inner isa Adaptive
                 gamma = perform_line_search(
@@ -1038,8 +1046,8 @@ function simplex_gradient_descent_over_convex_hull(
                     f,
                     grad!,
                     gradient,
-                    x,
-                    x - y,
+                    x_prev,
+                    direction,
                     1.0,
                     linesearch_inner_workspace,
                     memory_mode,
@@ -1054,8 +1062,8 @@ function simplex_gradient_descent_over_convex_hull(
                         f,
                         grad!,
                         gradient,
-                        x,
-                        x - y,
+                        x_prev,
+                        direction,
                         1.0,
                         linesearch_inner_workspace,
                         memory_mode,
@@ -1063,8 +1071,8 @@ function simplex_gradient_descent_over_convex_hull(
                     )
                 end
             else
-                if dot(gradient, x - y) < line_search_inner.tol
-                    return number_of_steps
+                if dot(gradient, direction) < line_search_inner.tol
+                    return number_of_steps, true
                 end
                 gamma = perform_line_search(
                     line_search_inner,
@@ -1072,51 +1080,50 @@ function simplex_gradient_descent_over_convex_hull(
                     f,
                     grad!,
                     gradient,
-                    x,
-                    x - y,
+                    x_prev,
+                    direction,
                     1.0,
                     linesearch_inner_workspace,
                     memory_mode,
                 )
             end
             gamma = min(1, gamma)
-            # step back from y to x by (1 - γ) η d
-            # new point is x - γ η d
-            if gamma == 1.0
-                active_set_cleanup!(
-                    active_set,
-                    weight_purge_threshold=weight_purge_threshold,
-                    add_dropped_vertices=use_extra_vertex_storage,
-                    vertex_storage=extra_vertex_storage,
-                )
-            else
-                @. active_set.weights += η * (1 - gamma) * d
-                @. active_set.x = x + gamma * (y - x)
-            end
         end
-        x = get_active_set_iterate(active_set)
-        primal = f(x)
-        dual_gap = tolerance
-        step_type = ST_SIMPLEXDESCENT
         if callback !== nothing
             state = CallbackState(
                 t,
                 primal,
-                primal - dual_gap,
-                dual_gap,
+                primal - tolerance,
+                tolerance,
                 (time_ns() - time_start) / 1e9,
-                x,
-                y,
-                nothing,
-                η * (1 - gamma),
+                x_prev,
+                nothing, # not moving towards a single vertex
+                direction,
+                gamma,
                 f,
                 grad!,
                 nothing,
                 gradient,
-                step_type,
+                ST_SIMPLEXDESCENT,
             )
-            callback(state, active_set, non_simplex_iter)
+            if callback(state, active_set, non_simplex_iter) === false
+                return number_of_steps, false
+            end
         end
+        # new point has weights λ - γ η d
+        number_of_steps += 1
+        @. active_set.weights -= gamma * η * d
+        if gamma == 1
+            active_set_cleanup!(
+                active_set,
+                weight_purge_threshold=weight_purge_threshold,
+                add_dropped_vertices=use_extra_vertex_storage,
+                vertex_storage=extra_vertex_storage,
+            )
+        else
+            @. active_set.x = x_prev - gamma * direction
+        end
+        x = get_active_set_iterate(active_set)
         if timeout < Inf
             tot_time = (time_ns() - time_start) / 1e9
             if tot_time ≥ timeout
@@ -1128,7 +1135,7 @@ function simplex_gradient_descent_over_convex_hull(
         end
 
     end
-    return number_of_steps
+    return number_of_steps, true
 end
 
 """
