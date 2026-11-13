@@ -237,6 +237,45 @@ end
     @test ls1.tau == ls2.tau
 end
 
+@testset "Secant line search below the resolution of f" begin
+    # the constant hides the decrease of f along the line in rounding errors
+    c = 1e-7
+    f(x) = 1e6 + ((x[1] - c)^2 + x[2]^2) / 2
+    function grad!(storage, x)
+        storage[1] = x[1] - c
+        storage[2] = x[2]
+        return storage
+    end
+    x = [0.0, 0.0]
+    # Frank-Wolfe direction towards the vertex (1, 0), the exact step size is c
+    d = x - [1.0, 0.0]
+    gradient = grad!(similar(x), x)
+    ls = FrankWolfe.Secant()
+    workspace = FrankWolfe.build_linesearch_workspace(ls, x, gradient)
+    search() = FrankWolfe.perform_line_search(
+        ls,
+        1,
+        f,
+        grad!,
+        gradient,
+        x,
+        d,
+        1.0,
+        workspace,
+        FrankWolfe.InplaceEmphasis(),
+    )
+
+    # the previous step size was twice the exact one, and f takes the same value at both
+    workspace.last_gamma = 2c
+    @test f(x - c * d) == f(x - 2c * d)
+    @test search() ≈ c
+    @test workspace.last_gamma ≈ c
+
+    # a previous step size of zero does not keep the step size at zero
+    workspace.last_gamma = 0.0
+    @test search() ≈ c
+end
+
 @testset "Momentum tests" begin
     it = FrankWolfe.ExpMomentumIterator()
     it.num = 0
