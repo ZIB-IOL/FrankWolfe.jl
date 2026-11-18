@@ -242,7 +242,7 @@ function away_frank_wolfe(
             end
         else
             d, vertex, index, gamma_max, phi_value, away_step_taken, fw_step_taken, step_type =
-                fw_step(x, gradient, lmo, d, memory_mode=memory_mode)
+                fw_step(x, gradient, lmo, epsilon, d, memory_mode=memory_mode)
         end
 
         gamma = 0.0
@@ -541,7 +541,7 @@ function afw_step(
         away_step_taken = false
         fw_step_taken = true
         index = -1
-    elseif away_gap >= epsilon
+    elseif dual_gap >= epsilon # and away_gap > dual_gap
         step_type = ST_AWAY
         gamma_max = a_lambda / (1 - a_lambda)
         d = muladd_memory_mode(memory_mode, d, a, x)
@@ -550,7 +550,7 @@ function afw_step(
         fw_step_taken = false
         index = a_loc
     else
-        # neither gap promises progress, no step is taken
+        # x is epsilon-optimal, no step is taken
         step_type = ST_DUALSTEP
         gamma_max = zero(a_lambda)
         vertex = v
@@ -561,8 +561,13 @@ function afw_step(
     return d, vertex, index, gamma_max, dual_gap, away_step_taken, fw_step_taken, step_type
 end
 
-function fw_step(x, gradient, lmo, d; memory_mode::MemoryEmphasis=InplaceEmphasis())
+function fw_step(x, gradient, lmo, epsilon, d; memory_mode::MemoryEmphasis=InplaceEmphasis())
     v = compute_extreme_point(lmo, gradient)
+    dual_gap = dot(x, gradient) - dot(v, gradient)
+    if dual_gap < epsilon
+        # x is epsilon-optimal, no step is taken
+        return (d, v, nothing, 0, dual_gap, false, false, ST_DUALSTEP)
+    end
     d = muladd_memory_mode(memory_mode, d, x, v)
-    return (d, v, nothing, 1, dot(x, gradient) - dot(v, gradient), false, true, ST_REGULAR)
+    return (d, v, nothing, 1, dual_gap, false, true, ST_REGULAR)
 end

@@ -219,6 +219,10 @@ function blended_pairwise_conditional_gradient(
                 v = compute_extreme_point(lmo, gradient)
                 dual_gap = dot(gradient, x) - dot(gradient, v)
                 phi_value = dual_gap
+                # x is epsilon-optimal, stop before a local step moves away from it
+                if phi_value < max(epsilon, eps(epsilon))
+                    break
+                end
             end
         end
         # minor modification from original paper for improved sparsity

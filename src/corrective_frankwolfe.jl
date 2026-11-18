@@ -151,6 +151,10 @@ function corrective_frank_wolfe(
             v = compute_extreme_point(lmo, gradient)
             dual_gap = dot(gradient, x) - dot(gradient, v)
             phi_value = dual_gap
+            # x is epsilon-optimal, stop before a corrective step moves away from it
+            if phi_value < max(epsilon, eps(epsilon))
+                break
+            end
         end
         # use the step defined by the corrective step type
         x, v, phi_value, dual_gap, should_fw_step, should_continue = run_corrective_step(
@@ -243,6 +247,9 @@ function corrective_frank_wolfe(
                         x = compute_active_set_iterate!(active_set)
                     end
                 end
+            else
+                # the cleaned-up x is epsilon-optimal, stop without a FW step
+                phi_value = dual_gap
             end
         end
     end

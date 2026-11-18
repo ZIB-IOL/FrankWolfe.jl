@@ -201,7 +201,8 @@ function decomposition_invariant_conditional_gradient(
             phi_value = dual_gap
             a = compute_inface_extreme_point(lmo, NegatingArray(gradient), x; lazy=lazy)
             d = muladd_memory_mode(memory_mode, d, a, v)
-            step_type = ST_PAIRWISE
+            # if x is epsilon-optimal, no step is taken
+            step_type = phi_value < max(epsilon, eps(epsilon)) ? ST_DUALSTEP : ST_PAIRWISE
         end
 
         if step_type == ST_DUALSTEP
@@ -477,8 +478,10 @@ function blended_decomposition_invariant_conditional_gradient(
             inface_gap = dot(gradient, a) - dot(gradient, v_inface)
             dual_gap = dot(gradient, x) - dot(gradient, v)
             phi_value = dual_gap
-            # in-face step
-            if inface_gap >= phi_value / sparsity_control
+            if phi_value < max(epsilon, eps(epsilon))
+                # x is epsilon-optimal, no step is taken
+                step_type = ST_DUALSTEP
+            elseif inface_gap >= phi_value / sparsity_control # in-face step
                 step_type = ST_PAIRWISE
                 d = muladd_memory_mode(memory_mode, d, a, v)
                 gamma_max = dicg_maximum_step(lmo, d, x)
