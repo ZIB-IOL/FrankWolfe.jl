@@ -6,6 +6,8 @@ abstract type CorrectiveStep end
 
 Corrective step method specific to the `CS` corrective_step type.
 The corrective step can perform whatever update over the current active set, the function should return the new iterate  a FW step should be run next with the boolean `should_fw_step` and compute a new dual gap estimate `phi_value`.
+The `callback` is called before the active set is updated. If it returns `false`, the active set must not be updated,
+so that the solver stops at the iterate passed to the callback, and `should_continue` must be returned as `false`.
 """
 function run_corrective_step end
 
