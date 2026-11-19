@@ -44,6 +44,9 @@ jobs:
       - uses: codecov/codecov-action@v7
         with:
           files: lcov.info
+          # only upload lcov.info; skip searching for and generating other coverage formats
+          disable_search: true
+          plugins: noop
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
   examples:
