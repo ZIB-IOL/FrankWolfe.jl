@@ -24,6 +24,7 @@ f(x) = 0.5 * norm(x .- center0)^2
 function grad!(storage, x)
     return storage .= x .- center0
 end
+nothing #hide
 
 # The `TrackingLMO` will let us count how many real calls to the LMO are performed
 # by a single run of the algorithm.
@@ -55,7 +56,7 @@ results = FrankWolfe.blended_pairwise_conditional_gradient(
     epsilon=1e-5,
     add_dropped_vertices=true,
     extra_vertex_storage=vertex_storage,
-)
+);
 
 # The counter indicates the number of initial calls to the LMO.
 # We will now construct different objective functions based on new centers,

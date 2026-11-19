@@ -119,8 +119,7 @@ function alternating_linear_minimization(
 
         num_type = eltype(x0[1])
         grad_type = eltype(gradf.blocks[1])
-        line_search_type =
-            line_search isa Tuple ? [typeof(a) for a in line_search] : typeof(line_search)
+        line_search_type = line_search isa Tuple ? join(line_search, ", ") : line_search
         println(
             "MEMORY_MODE: $memory_mode STEPSIZE: $line_search_type EPSILON: $epsilon MAXITERATION: $max_iteration",
         )

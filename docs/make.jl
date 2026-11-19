@@ -15,7 +15,7 @@ end
 # includes plot_utils to the example file before running it
 function include_utils(content)
     return """
-    import FrankWolfe; include(joinpath(dirname(pathof(FrankWolfe)), "../examples/plot_utils.jl")) # hide
+    import FrankWolfe; include(joinpath(dirname(pathof(FrankWolfe)), "../examples/plot_utils.jl")); nothing # hide
     """ * content
 end
 

@@ -30,6 +30,7 @@ end
 function grad!(storage, x)
     @. storage = x - y
 end
+nothing #hide
 
 # ## Custom callback
 #
@@ -46,7 +47,7 @@ function build_callback(trajectory_arr)
 end
 
 iterates_information_vector = []
-callback = build_callback(iterates_information_vector)
+callback = build_callback(iterates_information_vector);
 
 # ## Creating the Linear Minimization Oracle
 # The LMO is defined as a call to a linear optimization solver, each iteration resets the objective and calls the solver.
@@ -69,11 +70,11 @@ c3 = MOI.add_constraint(o, -2.0x[1] - x[2], MOI.LessThan(1.0))
 c4 = MOI.add_constraint(o, x[1] - 2.0x[2], MOI.LessThan(2.0))
 
 ## x ≤ 2
-c5 = MOI.add_constraint(o, x[1] + 0.0x[2], MOI.LessThan(2.0))
+c5 = MOI.add_constraint(o, x[1] + 0.0x[2], MOI.LessThan(2.0));
 
 # The LMO is then built by wrapping the current MOI optimizer
 
-lmo_moi = FrankWolfe.MathOptLMO(o)
+lmo_moi = FrankWolfe.MathOptLMO(o);
 
 # ## Calling Frank-Wolfe
 # We can now compute an initial starting point from any direction
@@ -93,7 +94,7 @@ xfinal, vfinal, primal_value, dual_gap, status, traj_data = FrankWolfe.frank_wol
     callback=callback,
     verbose=true,
     print_iter=1,
-)
+);
 
 # We now collect the iterates and vertices across iterations.
 
@@ -118,7 +119,7 @@ xlist = collect(range(-1, 3, step=0.2))
 ylist = collect(range(-1, 3, step=0.2))
 
 X = repeat(reshape(xlist, 1, :), length(ylist), 1)
-Y = repeat(ylist, 1, length(xlist))
+Y = repeat(ylist, 1, length(xlist));
 
 # The feasible space is represented using Polyhedra.
 

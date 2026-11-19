@@ -296,6 +296,11 @@ function plot_grid(
 
             x = [trajectory[j][idx_x] for j in eachindex(trajectory)]
             y = [trajectory[j][idx_y] + y_offset for j in eachindex(trajectory)]
+            if yscalelog
+                # non-positive values (e.g. a FW gap of exactly zero) cannot be shown on a log scale
+                # and break the axis limits, so leave them out
+                y = [yi > 0 ? yi : NaN for yi in y]
+            end
 
             if marker_shapes !== nothing && n_markers >= 2
                 marker_args = Dict(
