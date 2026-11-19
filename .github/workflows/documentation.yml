@@ -9,10 +9,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: julia-actions/setup-julia@latest
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
         with:
-          # Build documentation on Julia 1.6
+          # Build documentation on the Julia LTS
           version: '1.10'
       - name: Install dependencies
         shell: julia --project=docs {0}
