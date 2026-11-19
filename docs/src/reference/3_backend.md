@@ -42,15 +42,9 @@ For some feasible sets, the extreme points of the feasible set returned by
 the LMO possess a specific structure that can be represented in an efficient
 manner both for storage and for common operations like scaling and addition with an iterate. They are presented below:
 
-```@docs
-FrankWolfe.ScaledHotVector
-FrankWolfe.RankOneMatrix
-```
-
 ```@autodocs
 Modules = [FrankWolfe]
 Pages = ["types.jl"]
-Filter = t -> t ∉ (FrankWolfe.ScaledHotVector, FrankWolfe.RankOneMatrix)
 ```
 
 ## Utils
