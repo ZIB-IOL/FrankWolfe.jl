@@ -36,8 +36,8 @@ x0 = FrankWolfe.BlockVector([-ones(n), FrankWolfe.ScaledHotVector(1.0, 1, n)], [
 # ## Running block-coordinate Frank-Wolfe with different update-orders
 
 # In a first step, we compare different update orders. There are three different update orders implemented, 
-# [`FrankWolfe.FullUpdate`](@ref), [`CyclicUpdate`](@ref) and [`Stochasticupdate`](@ref).
-# For creating a custome [`FrankWolfe.BlockCoordinateUpdateOrder`](@ref), one needs to implement the function `select_update_indices`.
+# [`FrankWolfe.FullUpdate`](@ref), [`FrankWolfe.CyclicUpdate`](@ref) and [`FrankWolfe.StochasticUpdate`](@ref).
+# For creating a custom [`FrankWolfe.BlockCoordinateUpdateOrder`](@ref), one needs to implement the function `select_update_indices`.
 struct CustomOrder <: FrankWolfe.BlockCoordinateUpdateOrder end
 
 function FrankWolfe.select_update_indices(::CustomOrder, state::FrankWolfe.CallbackState, dual_gaps)

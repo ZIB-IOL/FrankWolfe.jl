@@ -39,7 +39,7 @@ x0 = FrankWolfe.compute_extreme_point(lmo, randn(n));
 # `return_kth` larger than the number of vertices means that the best-aligned vertex will be found.
 # `return_kth = 1` means the first acceptable vertex (with the specified threhsold) is returned.
 #
-# See [FrankWolfe.DeletedVertexStorage](@ref)
+# See [`FrankWolfe.DeletedVertexStorage`](@ref)
 
 vertex_storage = FrankWolfe.DeletedVertexStorage(typeof(x0)[], 5)
 tlmo.counter = 0

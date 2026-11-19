@@ -18,6 +18,20 @@ Pages = ["function_gradient.jl"]
 
 ```@docs
 FrankWolfe.CallbackState
+FrankWolfe.callback_state
+```
+
+```@autodocs
+Modules = [FrankWolfe]
+Pages = ["callback.jl"]
+```
+
+## Memory emphasis
+
+```@docs
+FrankWolfe.MemoryEmphasis
+FrankWolfe.InplaceEmphasis
+FrankWolfe.OutplaceEmphasis
 ```
 
 ## Custom vertex storage
@@ -36,6 +50,7 @@ FrankWolfe.RankOneMatrix
 ```@autodocs
 Modules = [FrankWolfe]
 Pages = ["types.jl"]
+Filter = t -> t ∉ (FrankWolfe.ScaledHotVector, FrankWolfe.RankOneMatrix)
 ```
 
 ## Utils
@@ -67,6 +82,8 @@ FrankWolfe.select_update_indices
 FrankWolfe.FullUpdate
 FrankWolfe.CyclicUpdate
 FrankWolfe.StochasticUpdate
+FrankWolfe.DualGapOrder
+FrankWolfe.DualProgressOrder
 FrankWolfe.LazyUpdate
 ```
 
@@ -84,6 +101,7 @@ FrankWolfe.BPCGStep
 ## Block vector
 ```@docs
 FrankWolfe.BlockVector
+FrankWolfe.muladd_memory_mode(::FrankWolfe.MemoryEmphasis, ::FrankWolfe.BlockVector, ::Vector{T}, ::FrankWolfe.BlockVector) where {T<:Real}
 ```
 
 ## Index

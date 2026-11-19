@@ -85,7 +85,12 @@ end
 makedocs(;
     modules=[FrankWolfe],
     sitename="FrankWolfe.jl",
-    format=Documenter.HTML(; prettyurls=get(ENV, "CI", nothing) == "true", collapselevel=1),
+    format=Documenter.HTML(;
+        prettyurls=get(ENV, "CI", nothing) == "true",
+        collapselevel=1,
+        # the algorithm reference page is slightly above the default warning threshold of 100 KiB
+        size_threshold_warn=150 * 2^10,
+    ),
     pages=[
         "Home" => "index.md",
         "How does it work?" => "basics.md",

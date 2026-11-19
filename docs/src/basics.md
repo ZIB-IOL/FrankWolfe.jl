@@ -84,7 +84,7 @@ See [Braun, Pokutta, Tu, Wright (2018)](https://arxiv.org/abs/1805.07311).
 
 ### Pairwise Frank-Wolfe (PFW)
 
-It is implemented in the [`pairwise_frank_wolfe`](@ref) function.
+It is implemented in the [`FrankWolfe.pairwise_frank_wolfe`](@ref) function.
 See [Lacoste-Julien, Jaggi (2015)](https://arxiv.org/abs/1511.05932) for an overview.
 
 ### Blended Pairwise Conditional Gradients (BPCG)

@@ -30,6 +30,7 @@ FrankWolfe.perform_line_search
 ```@autodocs
 Modules = [FrankWolfe]
 Pages = ["linesearch.jl"]
+Filter = t -> t ∉ (FrankWolfe.LineSearchMethod, FrankWolfe.perform_line_search)
 ```
 
 See [Pedregosa, Negiar, Askari, Jaggi (2020)](https://arxiv.org/abs/1806.05123)

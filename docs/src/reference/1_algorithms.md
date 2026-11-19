@@ -16,6 +16,14 @@ Pages = ["fw_algorithms.jl"]
 
 ```@docs
 FrankWolfe.block_coordinate_frank_wolfe
+FrankWolfe.adaptive_block_coordinate_frank_wolfe
+```
+
+## Stochastic Frank-Wolfe
+
+```@autodocs
+Modules = [FrankWolfe]
+Pages = ["stochastic_fw.jl"]
 ```
 
 ## Active-set based methods
@@ -34,7 +42,7 @@ Pages = ["afw.jl"]
 
 ```@autodocs
 Modules = [FrankWolfe]
-Pages = ["pairwise.jl"]
+Pages = ["src/pairwise.jl"]
 ```
 
 ### Blended Conditional Gradient
@@ -93,5 +101,5 @@ Pages = ["dca.jl"]
 ## Index
 
 ```@index
-Pages = ["2_algorithms.md"]
+Pages = ["1_algorithms.md"]
 ```

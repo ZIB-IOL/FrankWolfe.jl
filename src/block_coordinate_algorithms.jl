@@ -215,7 +215,7 @@ end
 """
 Update step for block-coordinate Frank-Wolfe.
 These are implementations of different FW-algorithms to be used in a blockwise manner.
-Each update step must implement [`FrankWolfe.update_iterate`](@ref).
+Each update step must implement [`FrankWolfe.update_block_iterate`](@ref).
 """
 abstract type UpdateStep end
 

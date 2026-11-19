@@ -26,6 +26,8 @@ FrankWolfe.ProductLMO
 FrankWolfe.SingleLastCachedLMO
 FrankWolfe.MultiCacheLMO
 FrankWolfe.VectorCacheLMO
+FrankWolfe.SubspaceLMO
+FrankWolfe.BlockSelectionLMO
 ```
 
 ## Norm balls
@@ -66,5 +68,5 @@ Pages = ["moi_oracle.jl"]
 ## Index
 
 ```@index
-Pages = ["1_lmo.md"]
+Pages = ["2_lmo.md"]
 ```
