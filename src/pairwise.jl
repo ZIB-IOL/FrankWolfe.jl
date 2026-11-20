@@ -499,6 +499,10 @@ function pfw_step(
     fw_index = find_atom(active_set, v, gradient, v_local_loc, v_local_value)
     grad_dot_x = dot(gradient, x)
     dual_gap = grad_dot_x - dot(gradient, v)
+    if dual_gap < epsilon
+        # x is epsilon-optimal, no step is taken
+        step_type = ST_DUALSTEP
+    end
     d = muladd_memory_mode(memory_mode, d, a_local, v)
     return d, fw_vertex, fw_index, away_vertex, away_index, gamma_max, dual_gap, step_type
 end

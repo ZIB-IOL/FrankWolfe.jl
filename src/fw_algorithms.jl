@@ -165,6 +165,12 @@ function frank_wolfe(
         end
         if t % dual_gap_compute_frequency == 0 || compute_iter
             dual_gap = dot(gradient, x) - dot(gradient, v)
+            # x is epsilon-optimal, stop before stepping away from it
+            if dual_gap < max(epsilon, eps(float(typeof(dual_gap))))
+                # this iteration still counts, as in the variants that increment t first
+                t += 1
+                break
+            end
         end
         d = muladd_memory_mode(memory_mode, d, x, v)
 
@@ -416,6 +422,12 @@ function lazified_conditional_gradient(
             step_type = ST_DUALSTEP
             dual_gap = dot(gradient, x) - dot(gradient, v)
             phi_value = min(dual_gap, phi_value / 2)
+            # x is epsilon-optimal, stop before stepping away from it
+            if dual_gap < max(epsilon, eps(float(typeof(dual_gap))))
+                # this iteration still counts, as in the variants that increment t first
+                t += 1
+                break
+            end
         end
 
         d = muladd_memory_mode(memory_mode, d, x, v)
