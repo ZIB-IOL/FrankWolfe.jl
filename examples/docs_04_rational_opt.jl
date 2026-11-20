@@ -26,6 +26,7 @@ f(x) = dot(x, x)
 function grad!(storage, x)
     @. storage = 2 * x
 end
+nothing #hide
 
 # pick feasible region
 # radius needs to be integer or rational

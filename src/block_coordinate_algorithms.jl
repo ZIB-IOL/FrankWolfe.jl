@@ -215,7 +215,7 @@ end
 """
 Update step for block-coordinate Frank-Wolfe.
 These are implementations of different FW-algorithms to be used in a blockwise manner.
-Each update step must implement [`FrankWolfe.update_iterate`](@ref).
+Each update step must implement [`FrankWolfe.update_block_iterate`](@ref).
 """
 abstract type UpdateStep end
 
@@ -552,7 +552,7 @@ function block_coordinate_frank_wolfe(
     end
 
     gamma = nothing
-    v = x0
+    v = copy(x0)
 
     time_start = time_ns()
 
@@ -568,12 +568,12 @@ function block_coordinate_frank_wolfe(
     if verbose
         println("\nBlock coordinate Frank-Wolfe (BCFW).")
         num_type = eltype(x0[1])
-        line_search_type = [typeof(a) for a in line_search]
+        line_search_type = join(line_search, ", ")
         println(
             "MEMORY_MODE: $memory_mode STEPSIZE: $line_search_type EPSILON: $epsilon MAXITERATION: $max_iteration TYPE: $num_type",
         )
         grad_type = typeof(gradient)
-        update_step_type = [typeof(s) for s in update_step]
+        update_step_type = join((nameof(typeof(s)) for s in update_step), ", ")
         println(
             "MOMENTUM: $momentum GRADIENT_TYPE: $grad_type UPDATE_ORDER: $update_order UPDATE_STEP: $update_step_type",
         )

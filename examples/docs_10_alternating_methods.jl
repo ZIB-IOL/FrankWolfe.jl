@@ -17,7 +17,6 @@
 # ```
 
 using FrankWolfe
-include("../examples/plot_utils.jl")
 
 # ## Setting up objective, gradient and linear minimization oracles
 # Alternating Linear Minimization (ALM) allows for an additional objective such that one can optimize over an intersection of sets instead of finding only feasible points.

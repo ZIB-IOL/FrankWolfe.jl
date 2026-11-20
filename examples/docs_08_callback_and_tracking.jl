@@ -76,7 +76,7 @@ tlmo_prob.counter = 0;
 # The `storage` variable stores in the trajectory array the
 # number of calls to each oracle at each iteration.
 
-storage = []
+storage = [];
 
 # Now define our own trajectory logging function that extends
 # the five default logged elements `(iterations, primal, dual, dual_gap, time)` with ".counter" field arguments present in the tracking functions.
@@ -102,6 +102,7 @@ function push_tracking_state(state, storage)
     end
     return push!(storage, complete_tuple)
 end
+nothing #hide
 
 # In case we want to stop the frank_wolfe algorithm prematurely after a certain condition is met,
 # we can return a boolean stop criterion `false`.
@@ -113,7 +114,7 @@ function make_callback(storage)
     end
 end
 
-callback = make_callback(storage)
+callback = make_callback(storage);
 
 # We can show the difference between this standard run and the
 # lazified conditional gradient algorithm which does not call the LMO at each iteration.

@@ -119,6 +119,7 @@ function build_callback(trajectory_arr)
         return push!(trajectory_arr, (FrankWolfe.callback_state(state)..., test_loss(state.x)))
     end
 end
+nothing #hide
 
 # The smoothness constant is estimated:
 
@@ -161,7 +162,6 @@ for _ in 1:k
     push!(function_values, f_val)
     push!(function_test_values, test_loss(xgd))
     push!(timing_values, (time_ns() - time_start) / 1e9)
-    @info f_val
     grad!(gradient, xgd)
     xgd_new, vertex = project_nuclear_norm_ball(xgd - gradient / L_estimate, radius=norm_estimation)
     gamma = FrankWolfe.perform_line_search(
@@ -194,7 +194,7 @@ xfin, _, _, _, status, traj_data = FrankWolfe.frank_wolfe(
     memory_mode=FrankWolfe.InplaceEmphasis(),
     gradient=gradient,
     callback=callback,
-)
+);
 
 # We can check the final execution status
 status

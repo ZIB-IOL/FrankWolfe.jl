@@ -5,11 +5,9 @@
 # We compare different update orders and different update steps.
 
 # ## Import and setup
-# We first import the necessary packages and include the code for plotting the results.
+# We first import the necessary packages.
 using FrankWolfe
 using LinearAlgebra
-
-include("plot_utils.jl")
 
 # Next, we define the objective function and its gradient. The iterates `x` are instances of the [`FrankWolfe.BlockVector`](@ref) type.
 # The different blocks of the vector can be accessed via the `blocks` field.
@@ -17,14 +15,15 @@ include("plot_utils.jl")
 f(x) = dot(x.blocks[1] - x.blocks[2], x.blocks[1] - x.blocks[2])
 
 function grad!(storage, x)
-    @. storage.blocks = [x.blocks[1] - x.blocks[2], x.blocks[2] - x.blocks[1]]
+    @. storage.blocks = [2 * (x.blocks[1] - x.blocks[2]), 2 * (x.blocks[2] - x.blocks[1])]
 end
+nothing #hide
 
 # In our example we consider the probability simplex and an L-infinity norm ball as the feasible sets.
 n = 100
 lmo1 = FrankWolfe.BoxLMO(-ones(n), zeros(n))
 lmo2 = FrankWolfe.ProbabilitySimplexLMO(1.0)
-prod_lmo = FrankWolfe.ProductLMO((lmo1, lmo2))
+prod_lmo = FrankWolfe.ProductLMO((lmo1, lmo2));
 
 # We initialize the starting point `x0` as a [`FrankWolfe.BlockVector`](@ref) with two blocks.
 # The two other arguments are the block sizes and the overall number of entries.
@@ -36,15 +35,16 @@ x0 = FrankWolfe.BlockVector([-ones(n), FrankWolfe.ScaledHotVector(1.0, 1, n)], [
 # ## Running block-coordinate Frank-Wolfe with different update-orders
 
 # In a first step, we compare different update orders. There are three different update orders implemented, 
-# [`FrankWolfe.FullUpdate`](@ref), [`CyclicUpdate`](@ref) and [`Stochasticupdate`](@ref).
-# For creating a custome [`FrankWolfe.BlockCoordinateUpdateOrder`](@ref), one needs to implement the function `select_update_indices`.
+# [`FrankWolfe.FullUpdate`](@ref), [`FrankWolfe.CyclicUpdate`](@ref) and [`FrankWolfe.StochasticUpdate`](@ref).
+# For creating a custom [`FrankWolfe.BlockCoordinateUpdateOrder`](@ref), one needs to implement the function `select_update_indices`.
 struct CustomOrder <: FrankWolfe.BlockCoordinateUpdateOrder end
 
 function FrankWolfe.select_update_indices(::CustomOrder, state::FrankWolfe.CallbackState, dual_gaps)
-    return [rand() < 1 / n ? 1 : 2 for _ in 1:length(state.lmo.lmos)]
+    return [[rand() < 1 / n ? 1 : 2] for _ in 1:length(state.lmo.lmos)]
 end
 
 # We run the block-coordinate Frank-Wolfe method with the different update orders and store the trajectories.
+# Each configuration is run once beforehand so that the timings do not include compilation.
 
 trajectories = []
 
@@ -55,19 +55,19 @@ for order in [
     CustomOrder(),
 ]
 
+    FrankWolfe.block_coordinate_frank_wolfe(f, grad!, prod_lmo, x0; trajectory=true, update_order=order, max_iteration=2) #hide
     res = FrankWolfe.block_coordinate_frank_wolfe(
         f,
         grad!,
         prod_lmo,
         x0;
-        verbose=true,
         trajectory=true,
         update_order=order,
     )
     push!(trajectories, res.traj_data)
 end
 # ### Plotting the results
-labels = ["Full update", "Cyclic order", "Stochstic order", "Custom order"]
+labels = ["Full update", "Cyclic order", "Stochastic order", "Custom order"]
 plot_trajectories(trajectories, labels, xscalelog=true)
 
 # ## Running BCFW with different update methods
@@ -83,12 +83,12 @@ for us in [
     FrankWolfe.FrankWolfeStep(),
 ]
 
+    FrankWolfe.block_coordinate_frank_wolfe(f, grad!, prod_lmo, x0; trajectory=true, update_step=us isa Tuple ? copy.(us) : copy(us), max_iteration=2) #hide
     res = FrankWolfe.block_coordinate_frank_wolfe(
         f,
         grad!,
         prod_lmo,
         x0;
-        verbose=true,
         trajectory=true,
         update_step=us,
     )
