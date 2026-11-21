@@ -18,6 +18,20 @@ Pages = ["function_gradient.jl"]
 
 ```@docs
 FrankWolfe.CallbackState
+FrankWolfe.callback_state
+```
+
+```@autodocs
+Modules = [FrankWolfe]
+Pages = ["callback.jl"]
+```
+
+## Memory emphasis
+
+```@docs
+FrankWolfe.MemoryEmphasis
+FrankWolfe.InplaceEmphasis
+FrankWolfe.OutplaceEmphasis
 ```
 
 ## Custom vertex storage
@@ -27,11 +41,6 @@ FrankWolfe.CallbackState
 For some feasible sets, the extreme points of the feasible set returned by
 the LMO possess a specific structure that can be represented in an efficient
 manner both for storage and for common operations like scaling and addition with an iterate. They are presented below:
-
-```@docs
-FrankWolfe.ScaledHotVector
-FrankWolfe.RankOneMatrix
-```
 
 ```@autodocs
 Modules = [FrankWolfe]
@@ -67,6 +76,8 @@ FrankWolfe.select_update_indices
 FrankWolfe.FullUpdate
 FrankWolfe.CyclicUpdate
 FrankWolfe.StochasticUpdate
+FrankWolfe.DualGapOrder
+FrankWolfe.DualProgressOrder
 FrankWolfe.LazyUpdate
 ```
 
@@ -84,6 +95,7 @@ FrankWolfe.BPCGStep
 ## Block vector
 ```@docs
 FrankWolfe.BlockVector
+FrankWolfe.muladd_memory_mode(::FrankWolfe.MemoryEmphasis, ::FrankWolfe.BlockVector, ::Vector{T}, ::FrankWolfe.BlockVector) where {T<:Real}
 ```
 
 ## Index

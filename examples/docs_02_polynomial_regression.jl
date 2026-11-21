@@ -30,7 +30,7 @@ using LaTeXStrings
 
 const N = 10
 
-DynamicPolynomials.@polyvar X[1:15]
+DynamicPolynomials.@polyvar X[1:N]
 
 const max_degree = 4
 coefficient_magnitude = 10
@@ -48,25 +48,23 @@ const true_poly = dot(all_coeffs, var_monomials)
 
 const training_data = map(1:500) do _
     x = 0.1 * randn(N)
-    y = MultivariatePolynomials.subs(true_poly, Pair(X, x)) + noise_magnitude * randn()
-    return (x, y.a[1])
+    y = true_poly(X => x) + noise_magnitude * randn()
+    return (x, y)
 end
 
 const extended_training_data = map(training_data) do (x, y)
-    x_ext =
-        MultivariatePolynomials.coefficient.(MultivariatePolynomials.subs.(var_monomials, X => x))
+    x_ext = [m(X => x) for m in var_monomials]
     return (x_ext, y)
 end
 
 const test_data = map(1:1000) do _
     x = 0.4 * randn(N)
-    y = MultivariatePolynomials.subs(true_poly, Pair(X, x)) + noise_magnitude * randn()
-    return (x, y.a[1])
+    y = true_poly(X => x) + noise_magnitude * randn()
+    return (x, y)
 end
 
 const extended_test_data = map(test_data) do (x, y)
-    x_ext =
-        MultivariatePolynomials.coefficient.(MultivariatePolynomials.subs.(var_monomials, X => x))
+    x_ext = [m(X => x) for m in var_monomials]
     return (x_ext, y)
 end
 

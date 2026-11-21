@@ -24,6 +24,7 @@ f(x) = 0.5 * norm(x .- center0)^2
 function grad!(storage, x)
     return storage .= x .- center0
 end
+nothing #hide
 
 # The `TrackingLMO` will let us count how many real calls to the LMO are performed
 # by a single run of the algorithm.
@@ -39,7 +40,7 @@ x0 = FrankWolfe.compute_extreme_point(lmo, randn(n));
 # `return_kth` larger than the number of vertices means that the best-aligned vertex will be found.
 # `return_kth = 1` means the first acceptable vertex (with the specified threhsold) is returned.
 #
-# See [FrankWolfe.DeletedVertexStorage](@ref)
+# See [`FrankWolfe.DeletedVertexStorage`](@ref)
 
 vertex_storage = FrankWolfe.DeletedVertexStorage(typeof(x0)[], 5)
 tlmo.counter = 0
@@ -55,7 +56,7 @@ results = FrankWolfe.blended_pairwise_conditional_gradient(
     epsilon=1e-5,
     add_dropped_vertices=true,
     extra_vertex_storage=vertex_storage,
-)
+);
 
 # The counter indicates the number of initial calls to the LMO.
 # We will now construct different objective functions based on new centers,

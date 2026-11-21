@@ -50,20 +50,20 @@ function benchmark_oracles(f, grad!, x_gen, lmo; k=100, nocache=true)
     sv = sizeof(x) / 1024^2
     println("\nSize of single atom ($(eltype(x))): $sv MB\n")
     to = TimerOutput()
-    @showprogress 1 "Testing f... " for i in 1:k
+    @showprogress dt = 1 desc = "Testing f... " for i in 1:k
         x = x_gen()
         @timeit to "f" temp = f(x)
     end
-    @showprogress 1 "Testing grad... " for i in 1:k
+    @showprogress dt = 1 desc = "Testing grad... " for i in 1:k
         x = x_gen()
         temp = similar(x)
         @timeit to "grad" grad!(temp, x)
     end
-    @showprogress 1 "Testing lmo... " for i in 1:k
+    @showprogress dt = 1 desc = "Testing lmo... " for i in 1:k
         x = x_gen()
         @timeit to "lmo" temp = compute_extreme_point(lmo, x)
     end
-    @showprogress 1 "Testing dual gap... " for i in 1:k
+    @showprogress dt = 1 desc = "Testing dual gap... " for i in 1:k
         x = x_gen()
         gradient = collect(x)
         grad!(gradient, x)
@@ -72,7 +72,7 @@ function benchmark_oracles(f, grad!, x_gen, lmo; k=100, nocache=true)
             dual_gap = dot(gradient, x) - dot(gradient, v)
         end
     end
-    @showprogress 1 "Testing update... (Emphasis: OutplaceEmphasis) " for i in 1:k
+    @showprogress dt = 1 desc = "Testing update... (Emphasis: OutplaceEmphasis) " for i in 1:k
         x = x_gen()
         gradient = collect(x)
         grad!(gradient, x)
@@ -83,7 +83,7 @@ function benchmark_oracles(f, grad!, x_gen, lmo; k=100, nocache=true)
             x = (1 - gamma) * x + gamma * v
         )
     end
-    @showprogress 1 "Testing update... (Emphasis: InplaceEmphasis) " for i in 1:k
+    @showprogress dt = 1 desc = "Testing update... (Emphasis: InplaceEmphasis) " for i in 1:k
         x = x_gen()
         gradient = collect(x)
         grad!(gradient, x)
@@ -96,7 +96,7 @@ function benchmark_oracles(f, grad!, x_gen, lmo; k=100, nocache=true)
         )
     end
     if !nocache
-        @showprogress 1 "Testing caching 100 points... " for i in 1:k
+        @showprogress dt = 1 desc = "Testing caching 100 points... " for i in 1:k
             @timeit to "caching 100 points" begin
                 cache = [gen_x() for _ in 1:100]
                 x = gen_x()

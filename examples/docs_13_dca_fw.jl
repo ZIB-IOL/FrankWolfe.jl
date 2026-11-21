@@ -48,7 +48,7 @@ function generate_problem_data(rng)
 end
 
 const rng = StableRNGs.StableRNG(1)
-const A, B, a, b, c, d = generate_problem_data(rng)
+const A, B, a, b, c, d = generate_problem_data(rng);
 
 # We can now define the two functions
 
@@ -121,7 +121,7 @@ res_dca = FrankWolfe.dca_fw(
     use_dca_early_stopping=true,
     grad_f_workspace=collect(x0),
     grad_g_workspace=collect(x0),
-)
+);
 
 FrankWolfe.dca_fw( # hide
     f, # hide
@@ -165,7 +165,7 @@ res_boost = FrankWolfe.dca_fw(
     use_dca_early_stopping=true,
     grad_f_workspace=collect(x0),
     grad_g_workspace=collect(x0),
-)
+);
 
 
 # ## Plotting the resulting trajectory

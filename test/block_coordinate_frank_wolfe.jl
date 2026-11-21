@@ -34,6 +34,12 @@ Random.seed!(rng, 100)
 
     x0 = FrankWolfe.compute_extreme_point(prod_lmo, FrankWolfe.BlockVector([randn(n), randn(n)]))
 
+    @testset "x0 is not modified" begin
+        x0_before = copy(x0)
+        FrankWolfe.block_coordinate_frank_wolfe(f, grad!, prod_lmo, x0; max_iteration=10)
+        @test x0 == x0_before
+    end
+
     for order in orders
 
         x, _, primal, fw_gap, _ = FrankWolfe.block_coordinate_frank_wolfe(

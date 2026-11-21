@@ -7,8 +7,8 @@ Emphasis given to the algorithm for memory-saving or not.
 
 Concrete subtypes:
 
-- [`InplaceMemoryEmphasis`](@ref) (the default, meant to save memory)
-- [`OutplaceMemoryEmphasis`](@ref) (may be faster for small dimensions)
+- [`InplaceEmphasis`](@ref) (the default, meant to save memory)
+- [`OutplaceEmphasis`](@ref) (may be faster for small dimensions)
 """
 abstract type MemoryEmphasis end
 

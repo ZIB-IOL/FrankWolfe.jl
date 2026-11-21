@@ -52,6 +52,7 @@ function grad!(storage, X)
     end
     return storage ./= length(entry_values)
 end
+nothing #hide
 
 # Note that the `ensure_symmetry = false` argument to `SpectraplexLMO`.
 # It skips an additional step making the used direction symmetric.
