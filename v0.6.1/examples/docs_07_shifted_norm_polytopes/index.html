@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>FrankWolfe for scaled, shifted ell^1 and ell^infty norm balls · FrankWolfe.jl</title><meta name="title" content="FrankWolfe for scaled, shifted ell^1 and ell^infty norm balls · FrankWolfe.jl"/><meta property="og:title" content="FrankWolfe for scaled, shifted ell^1 and ell^infty norm balls · FrankWolfe.jl"/><meta property="twitter:title" content="FrankWolfe for scaled, shifted ell^1 and ell^infty norm balls · FrankWolfe.jl"/><meta name="description" content="Documentation for FrankWolfe.jl."/><meta property="og:description" content="Documentation for FrankWolfe.jl."/><meta property="twitter:description" content="Documentation for FrankWolfe.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">FrankWolfe.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../basics/">How does it work?</a></li><li><a class="tocitem" href="../../advanced/">Advanced features</a></li><li><input class="collapse-toggle" id="menuitem-4" type="checkbox" checked/><label class="tocitem" for="menuitem-4"><span class="docs-label">Examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../docs_00_fw_visualized/">Visualization of Frank-Wolfe running on a 2-dimensional polytope</a></li><li><a class="tocitem" href="../docs_01_mathopt_lmo/">Comparison with MathOptInterface on a Probability Simplex</a></li><li><a class="tocitem" href="../docs_02_polynomial_regression/">Polynomial Regression</a></li><li><a class="tocitem" href="../docs_03_matrix_completion/">Matrix Completion</a></li><li><a class="tocitem" href="../docs_04_rational_opt/">Exact Optimization with Rational Arithmetic</a></li><li><a class="tocitem" href="../docs_05_blended_cg/">Blended Conditional Gradients</a></li><li><a class="tocitem" href="../docs_06_spectrahedron/">Spectrahedron</a></li><li class="is-active"><a class="tocitem" href>FrankWolfe for scaled, shifted <span>$\ell^1$</span> and <span>$\ell^{\infty}$</span> norm balls</a></li><li><a class="tocitem" href="../docs_08_callback_and_tracking/">Tracking, counters and custom callbacks for Frank Wolfe</a></li><li><a class="tocitem" href="../docs_09_extra_vertex_storage/">Extra-lazification</a></li><li><a class="tocitem" href="../docs_10_alternating_methods/">Alternating methods</a></li><li><a class="tocitem" href="../docs_11_block_coordinate_fw/">Block-Coordinate Frank-Wolfe and Block-Vectors</a></li><li><a class="tocitem" href="../docs_12_quadratic_symmetric/">Accelerations for quadratic functions and symmetric problems</a></li><li><a class="tocitem" href="../docs_13_dca_fw/">Difference-of-Convex Algorithm with Frank-Wolfe</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-5" type="checkbox"/><label class="tocitem" for="menuitem-5"><span class="docs-label">API reference</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../reference/0_reference/">API Reference</a></li><li><a class="tocitem" href="../../reference/1_algorithms/">Algorithms</a></li><li><a class="tocitem" href="../../reference/2_lmo/">Linear Minimization Oracles</a></li><li><a class="tocitem" href="../../reference/3_backend/">Utilities and data structures</a></li><li><a class="tocitem" href="../../reference/4_linesearch/">Line search and step size settings</a></li><li><a class="tocitem" href="../../reference/5_gradient_descent/">Adaptive Proximal Gradient Descent Methods</a></li></ul></li><li><a class="tocitem" href="../../contributing/">Contributing</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>FrankWolfe for scaled, shifted <span>$\ell^1$</span> and <span>$\ell^{\infty}$</span> norm balls</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>FrankWolfe for scaled, shifted <span>$\ell^1$</span> and <span>$\ell^{\infty}$</span> norm balls</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/ZIB-IOL/FrankWolfe.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/ZIB-IOL/FrankWolfe.jl/blob/master/examples/docs_07_shifted_norm_polytopes.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><pre><code class="language-julia hljs">using FrankWolfe
+using LinearAlgebra
+using LaTeXStrings
+using Plots</code></pre><h1 id="FrankWolfe-for-scaled,-shifted-\\ell1-and-\\ell{\\infty}-norm-balls"><a class="docs-heading-anchor" href="#FrankWolfe-for-scaled,-shifted-\\ell1-and-\\ell{\\infty}-norm-balls">FrankWolfe for scaled, shifted <span>$\ell^1$</span> and <span>$\ell^{\infty}$</span> norm balls</a><a id="FrankWolfe-for-scaled,-shifted-\\ell1-and-\\ell{\\infty}-norm-balls-1"></a><a class="docs-heading-anchor-permalink" href="#FrankWolfe-for-scaled,-shifted-\\ell1-and-\\ell{\\infty}-norm-balls" title="Permalink"></a></h1><p>In this example, we run the vanilla FrankWolfe algorithm on a scaled and shifted <span>$\ell^1$</span> and <span>$\ell^{\infty}$</span> norm ball, using the <code>DiamondLMO</code> and <code>BoxLMO</code> LMOs. We shift both onto the point <span>$(1,0)$</span> and then scale them by a factor of <span>$2$</span> along the x-axis. We project the point <span>$(2,1)$</span> onto the polytopes.</p><pre><code class="language-julia hljs">n = 2
+
+k = 1000
+
+xp = [2.0, 1.0]
+
+f(x) = norm(x - xp)^2
+
+function grad!(storage, x)
+    @. storage = 2 * (x - xp)
+    return nothing
+end
+
+lower = [-1.0, -1.0]
+upper = [3.0, 1.0]
+
+l1 = FrankWolfe.DiamondLMO(lower, upper)
+
+linf = FrankWolfe.BoxLMO(lower, upper)
+
+x1 = FrankWolfe.compute_extreme_point(l1, zeros(n))
+gradient = collect(x1)
+
+x_l1, v_1, primal_1, dual_gap_1, status_1, trajectory_1 = FrankWolfe.frank_wolfe(
+    f,
+    grad!,
+    l1,
+    collect(copy(x1)),
+    max_iteration=k,
+    line_search=FrankWolfe.Shortstep(2.0),
+    print_iter=50,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
+    verbose=true,
+    trajectory=true,
+);
+
+println(&quot;\nFinal solution: &quot;, x_l1)
+
+x2 = FrankWolfe.compute_extreme_point(linf, zeros(n))
+gradient = collect(x2)
+
+x_linf, v_2, primal_2, dual_gap_2, status_2, trajectory_2 = FrankWolfe.frank_wolfe(
+    f,
+    grad!,
+    linf,
+    collect(copy(x2)),
+    max_iteration=k,
+    line_search=FrankWolfe.Shortstep(2.0),
+    print_iter=50,
+    memory_mode=FrankWolfe.InplaceEmphasis(),
+    verbose=true,
+    trajectory=true,
+);
+
+println(&quot;\nFinal solution: &quot;, x_linf)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">
+Vanilla Frank-Wolfe Algorithm.
+MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: Shortstep EPSILON: 1.0e-7 MAXITERATION: 1000 TYPE: Float64
+MOMENTUM: nothing GRADIENT_TYPE: Vector{Float64}
+LMO: FrankWolfe.DiamondLMO{Float64, 1, Vector{Float64}, Vector{Float64}}
+
+-------------------------------------------------------------------------------------------------
+  Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec
+-------------------------------------------------------------------------------------------------
+     I             1   2.000000e+00  -6.000000e+00   8.000000e+00   0.000000e+00            Inf
+    FW            50   2.198243e-01   1.859119e-01   3.391239e-02   9.577700e-02   5.220460e+02
+    FW           100   2.104540e-01   1.927834e-01   1.767061e-02   9.602726e-02   1.041371e+03
+    FW           150   2.071345e-01   1.951277e-01   1.200679e-02   9.625191e-02   1.558411e+03
+    FW           200   2.054240e-01   1.963167e-01   9.107240e-03   9.647699e-02   2.073033e+03
+    FW           250   2.043783e-01   1.970372e-01   7.341168e-03   9.669701e-02   2.585395e+03
+    FW           300   2.036722e-01   1.975209e-01   6.151268e-03   9.693486e-02   3.094862e+03
+    FW           350   2.031630e-01   1.978684e-01   5.294582e-03   9.715918e-02   3.602336e+03
+    FW           400   2.027782e-01   1.981301e-01   4.648079e-03   9.739473e-02   4.106998e+03
+    FW           450   2.024772e-01   1.983344e-01   4.142727e-03   9.763797e-02   4.608863e+03
+    FW           500   2.022352e-01   1.984984e-01   3.736776e-03   9.787155e-02   5.108737e+03
+    FW           550   2.020364e-01   1.986329e-01   3.403479e-03   9.809784e-02   5.606647e+03
+    FW           600   2.018701e-01   1.987452e-01   3.124906e-03   9.831847e-02   6.102617e+03
+    FW           650   2.017290e-01   1.988404e-01   2.888583e-03   9.853825e-02   6.596423e+03
+    FW           700   2.016078e-01   1.989222e-01   2.685564e-03   9.876468e-02   7.087554e+03
+    FW           750   2.015024e-01   1.989932e-01   2.509264e-03   9.901042e-02   7.574960e+03
+    FW           800   2.014101e-01   1.990554e-01   2.354727e-03   9.923732e-02   8.061483e+03
+    FW           850   2.013284e-01   1.991103e-01   2.218154e-03   9.945715e-02   8.546394e+03
+    FW           900   2.012558e-01   1.991592e-01   2.096580e-03   9.968299e-02   9.028622e+03
+    FW           950   2.011906e-01   1.992030e-01   1.987662e-03   9.991353e-02   9.508222e+03
+    FW          1000   2.011319e-01   1.992424e-01   1.889519e-03   1.001408e-01   9.985943e+03
+  Last          1001   2.011297e-01   1.992439e-01   1.885794e-03   1.002605e-01   9.983991e+03
+-------------------------------------------------------------------------------------------------
+
+Final solution: [1.799813188674937, 0.5986834801090863]
+
+Vanilla Frank-Wolfe Algorithm.
+MEMORY_MODE: FrankWolfe.InplaceEmphasis() STEPSIZE: Shortstep EPSILON: 1.0e-7 MAXITERATION: 1000 TYPE: Float64
+MOMENTUM: nothing GRADIENT_TYPE: Vector{Float64}
+LMO: FrankWolfe.BoxLMO{Float64, 1, Vector{Float64}, Vector{Float64}}
+
+-------------------------------------------------------------------------------------------------
+  Type     Iteration         Primal           Dual       Dual Gap           Time         It/sec
+-------------------------------------------------------------------------------------------------
+     I             1   1.300000e+01  -1.900000e+01   3.200000e+01   0.000000e+00            Inf
+    FW            50   1.084340e-02  -7.590380e-02   8.674720e-02   5.316234e-02   9.405155e+02
+    FW           100   5.509857e-03  -3.856900e-02   4.407886e-02   5.339908e-02   1.872692e+03
+    FW           150   3.695414e-03  -2.586790e-02   2.956331e-02   5.363497e-02   2.796683e+03
+    FW           200   2.780453e-03  -1.946317e-02   2.224362e-02   5.387570e-02   3.712249e+03
+    FW           250   2.228830e-03  -1.560181e-02   1.783064e-02   5.410952e-02   4.620259e+03
+    FW           300   1.859926e-03  -1.301948e-02   1.487941e-02   5.433807e-02   5.520991e+03
+    FW           350   1.595838e-03  -1.117087e-02   1.276670e-02   5.456979e-02   6.413805e+03
+    FW           400   1.397443e-03  -9.782098e-03   1.117954e-02   5.480257e-02   7.298928e+03
+    FW           450   1.242935e-03  -8.700548e-03   9.943483e-03   5.502800e-02   8.177656e+03
+    FW           500   1.119201e-03  -7.834409e-03   8.953610e-03   5.525124e-02   9.049570e+03
+    FW           550   1.017878e-03  -7.125146e-03   8.143024e-03   5.548351e-02   9.912855e+03
+    FW           600   9.333816e-04  -6.533671e-03   7.467053e-03   5.571246e-02   1.076958e+04
+    FW           650   8.618413e-04  -6.032889e-03   6.894730e-03   5.594888e-02   1.161775e+04
+    FW           700   8.004890e-04  -5.603423e-03   6.403912e-03   5.617294e-02   1.246152e+04
+    FW           750   7.472928e-04  -5.231050e-03   5.978342e-03   5.639791e-02   1.329837e+04
+    FW           800   7.007275e-04  -4.905093e-03   5.605820e-03   5.661863e-02   1.412962e+04
+    FW           850   6.596259e-04  -4.617381e-03   5.277007e-03   5.685189e-02   1.495113e+04
+    FW           900   6.230796e-04  -4.361557e-03   4.984637e-03   5.707875e-02   1.576769e+04
+    FW           950   5.903710e-04  -4.132597e-03   4.722968e-03   5.730263e-02   1.657865e+04
+    FW          1000   5.609256e-04  -3.926479e-03   4.487405e-03   5.752565e-02   1.738355e+04
+  Last          1001   5.598088e-04  -3.918661e-03   4.478470e-03   5.764537e-02   1.736479e+04
+-------------------------------------------------------------------------------------------------
+
+Final solution: [2.0005598087769556, 0.9763463450796975]</code></pre><p>We plot the polytopes alongside the solutions from above:</p><pre><code class="language-julia hljs">xcoord1 = [1, 3, 1, -1, 1]
+ycoord1 = [-1, 0, 1, 0, -1]
+
+xcoord2 = [3, 3, -1, -1, 3]
+ycoord2 = [-1, 1, 1, -1, -1]
+
+plot(
+    xcoord1,
+    ycoord1,
+    title=&quot;Visualization of scaled shifted norm balls&quot;,
+    lw=2,
+    label=L&quot;\ell^1 \textrm{ norm}&quot;,
+)
+plot!(xcoord2, ycoord2, lw=2, label=L&quot;\ell^{\infty} \textrm{ norm}&quot;)
+plot!(
+    [x_l1[1]],
+    [x_l1[2]],
+    seriestype=:scatter,
+    lw=5,
+    color=&quot;blue&quot;,
+    label=L&quot;\ell^1 \textrm{ solution}&quot;,
+)
+plot!(
+    [x_linf[1]],
+    [x_linf[2]],
+    seriestype=:scatter,
+    lw=5,
+    color=&quot;orange&quot;,
+    label=L&quot;\ell^{\infty} \textrm{ solution}&quot;,
+    legend=:bottomleft,
+)</code></pre><img src="103b09c8.svg" alt="Example block output"/><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../docs_06_spectrahedron/">« Spectrahedron</a><a class="docs-footer-nextpage" href="../docs_08_callback_and_tracking/">Tracking, counters and custom callbacks for Frank Wolfe »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.14.1 on <span class="colophon-date" title="Tuesday 21 October 2025 09:40">Tuesday 21 October 2025</span>. Using Julia version 1.6.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
