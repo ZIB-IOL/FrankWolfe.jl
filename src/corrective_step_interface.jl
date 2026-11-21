@@ -688,6 +688,10 @@ function run_corrective_step(
             v = compute_extreme_point(lmo, gradient)
             dual_gap = grad_dot_x - dot(gradient, v)
             phi_value = min(phi_value, dual_gap)
+            # x is epsilon-optimal, stop without moving away from it
+            if phi_value < max(epsilon, eps(epsilon))
+                return x, v, phi_value, dual_gap, should_fw_step, should_continue
+            end
         end
         d = muladd_memory_mode(memory_mode, d, a, v)
         fw_vertex = v
