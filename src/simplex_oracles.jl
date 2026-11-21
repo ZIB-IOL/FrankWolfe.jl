@@ -275,55 +275,6 @@ UnitHyperSimplexLMO(K::Int, radius::Integer) =
 
 is_decomposition_invariant_oracle(::UnitHyperSimplexLMO) = true
 
-function compute_inface_extreme_point(lmo::UnitHyperSimplexLMO, direction, x; kwargs...)
-    # faces for the hypersimplex are:
-    # bounds x_i ∈ {0, τ}
-    # the simplex face ∑ x_i == K * τ
-    v = spzeros(eltype(x), size(direction)...)
-
-    # zero-vector x means fixing to all coordinate faces, return zero-vector
-    # is_fixed_to_simplex_face = sum(x) ≥ lmo.K * lmo.radius
-    sx = sum(x)
-    if sx <= 0
-        return v
-    end
-
-    K = min(lmo.K, length(x))
-    K_free = K
-    # remove the K components already fixed to their bounds
-    @inbounds for idx in eachindex(x)
-        if x[idx] >= lmo.radius
-            K_free -= 1
-            v[idx] = lmo.radius
-        end
-    end
-    @assert K_free >= 0
-    # already K elements fixed to their bound -> the face is a single vertex
-    if K_free == 0
-        copyto!(v, x)
-        return v
-    end
-    K_indices = sortperm(direction)
-    for idx in K_indices
-        # fixed to a bound face, skip
-        xi = x[idx]
-        if xi ≈ 0 || xi ≈ lmo.radius
-            continue
-        end
-        # positive direction reached, no improving coordinate anymore
-        if direction[idx] >= 0
-            break
-        end
-        v[idx] = lmo.radius
-        K_free -= 1
-        # we fixed K elements already
-        if K_free == 0
-            break
-        end
-    end
-    return v
-end
-
 function dicg_maximum_step(lmo::UnitHyperSimplexLMO, direction, x)
     T = promote_type(eltype(x), eltype(direction))
     gamma_max = one(T)
@@ -336,7 +287,7 @@ function dicg_maximum_step(lmo::UnitHyperSimplexLMO, direction, x)
         if di != 0.0
             dsum += di
             # iterate already on the boundary
-            if (direction[idx] < 0 && xi ≈ lmo.radius) || (di > 0 && xi ≈ 0)
+            if (di < 0 && xi >= lmo.radius) || (di > 0 && xi <= 0)
                 return zero(gamma_max)
             end
             # clipping with the zero boundary
@@ -420,12 +371,14 @@ _compute_k_hypersimplex(lmo::UnitHyperSimplexLMO, direction) =
 
 is_decomposition_invariant_oracle(::HyperSimplexLMO) = true
 
-function compute_inface_extreme_point(lmo::HyperSimplexLMO, direction, x; kwargs...)
-    # faces for the hypersimplex are bounds x_i ∈ {0, τ}
-    v = spzeros(eltype(x), size(direction)...)
-    K = min(lmo.K, length(x))
-    K_free = K
-    # remove the K components already fixed to their bounds
+function compute_inface_extreme_point(
+    lmo::Union{HyperSimplexLMO,UnitHyperSimplexLMO},
+    direction,
+    x;
+    kwargs...,
+)
+    v = spzeros(typeof(lmo.radius), size(direction)...)
+    K_free = min(lmo.K, length(x))
     @inbounds for idx in eachindex(x)
         if x[idx] >= lmo.radius
             K_free -= 1
@@ -433,23 +386,26 @@ function compute_inface_extreme_point(lmo::HyperSimplexLMO, direction, x; kwargs
         end
     end
     @assert K_free >= 0
-    # already K elements fixed to their bound -> the face is a single vertex
-    if K_free == 0
-        copyto!(v, x)
-        return v
+    K_free == 0 && return v
+
+    # On the cardinality face every vertex must have K nonzero entries.
+    fill_cardinality = lmo isa HyperSimplexLMO
+    if lmo isa UnitHyperSimplexLMO
+        mass = sum(x)
+        budget = lmo.K * lmo.radius
+        fill_cardinality =
+            mass >= budget ||
+            (mass isa AbstractFloat && isapprox(mass, budget; rtol=8 * eps(one(mass))))
     end
-    K_indices = sortperm(direction)
-    for idx in K_indices
-        # fixed to a bound face, skip
-        xi = x[idx]
-        if xi ≈ 0 || xi ≈ lmo.radius
-            continue
-        end
-        v[idx] = lmo.radius
-        K_free -= 1
-        # we fixed K elements already
-        if K_free == 0
+
+    for idx in sortperm(direction)
+        if !fill_cardinality && direction[idx] >= 0
             break
+        end
+        if 0 < x[idx] < lmo.radius
+            v[idx] = lmo.radius
+            K_free -= 1
+            K_free == 0 && break
         end
     end
     return v
@@ -461,7 +417,7 @@ function dicg_maximum_step(lmo::HyperSimplexLMO, direction, x)
     for idx in eachindex(x)
         if direction[idx] != 0.0
             # iterate already on the boundary
-            if (direction[idx] < 0 && x[idx] ≈ lmo.radius) || (direction[idx] > 0 && x[idx] ≈ 0)
+            if (direction[idx] < 0 && x[idx] >= lmo.radius) || (direction[idx] > 0 && x[idx] <= 0)
                 return zero(gamma_max)
             end
             # clipping with the zero boundary
