@@ -96,7 +96,7 @@ Adds the atom to the active set with weight lambda or adds lambda to existing at
 function active_set_update!(
     active_set::AbstractActiveSet{AT,R},
     lambda,
-    atom,
+    atom::AT,
     renorm=true,
     idx=nothing;
     weight_purge_threshold=weight_purge_threshold_default(R),

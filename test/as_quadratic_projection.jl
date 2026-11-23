@@ -117,7 +117,7 @@ end
 lmo = FrankWolfe.LpNormBallLMO{Float64,5}(100.0)
 
 active_set_quadratic_manual_wolfe = FrankWolfe.ActiveSetQuadraticLinearSolve(
-    FrankWolfe.ActiveSet([(1.0, copy(x000))]),
+    FrankWolfe.ActiveSet([(1.0, collect(x000))]),
     2.0 * I,
     -2xp,
     MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),
@@ -148,7 +148,7 @@ x, v, primal_manual_wolfe, dual_gap, status, _ = FrankWolfe.blended_pairwise_con
 @test length(trajectoryBPCG_quadratic_manual_wolfe) < 450
 
 active_set_quadratic_partial_caching = FrankWolfe.ActiveSetQuadraticLinearSolve(
-    FrankWolfe.ActiveSetQuadraticPartialCaching([(1.0, copy(x000))], I, 2.0),
+    FrankWolfe.ActiveSetQuadraticPartialCaching([(1.0, collect(x000))], I, 2.0),
     2.0 * I,
     -2xp,
     MOI.instantiate(MOI.OptimizerWithAttributes(HiGHS.Optimizer, MOI.Silent() => true)),

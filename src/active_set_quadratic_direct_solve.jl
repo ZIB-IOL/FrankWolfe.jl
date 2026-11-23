@@ -213,7 +213,7 @@ Base.empty!(as::ActiveSetQuadraticLinearSolve) = empty!(as.active_set)
 function active_set_update!(
     as::ActiveSetQuadraticLinearSolve{AT,R},
     lambda,
-    atom,
+    atom::AT,
     renorm=true,
     idx=nothing;
     weight_purge_threshold=weight_purge_threshold_default(R),

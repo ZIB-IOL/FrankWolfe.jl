@@ -115,7 +115,7 @@ function build_start_point(A)
     m, n = size(A)
     S = linearly_independent_rows(A)
     @assert length(S) == n
-    V = Vector{Float64}[]
+    V = FrankWolfe.ScaledHotVector{Float64}[]
 
     for i in S
         v = FrankWolfe.ScaledHotVector(1.0, i, m)
@@ -299,7 +299,7 @@ m = 300
                 f,
                 grad!,
                 lmo,
-                x0,
+                active_set,
                 verbose=true,
                 trajectory=true,
                 line_search=FrankWolfe.Secant(domain_oracle=domain_oracle),
@@ -375,7 +375,7 @@ m = 300
                 f,
                 grad!,
                 lmo,
-                x0,
+                active_set,
                 verbose=true,
                 trajectory=true,
                 line_search=FrankWolfe.Secant(domain_oracle=domain_oracle),

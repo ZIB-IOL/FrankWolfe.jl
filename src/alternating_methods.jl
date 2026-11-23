@@ -71,12 +71,15 @@ function alternating_linear_minimization(
     function build_gradient()
         λ = Ref(λ0)
 
+        # write into the blocks of `storage`, so that the gradient keeps its block types
+        # (vertices of LMOs that return `similar(direction)` have the type of the gradient)
         return (storage, x) -> begin
+            s = sum(x.blocks)
             for i in 1:N
                 grad!(gradf.blocks[i], x.blocks[i])
+                storage.blocks[i] .= λ[] .* gradf.blocks[i] .+ N .* x.blocks[i] .- s
             end
-            t = [N * b - sum(x.blocks) for b in x.blocks]
-            return storage.blocks = λ[] * gradf.blocks + t
+            return storage
         end
     end
 

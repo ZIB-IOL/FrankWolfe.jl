@@ -167,7 +167,7 @@ end
     # updating again (at optimum) triggers the active set emptying
     for as in (active_set, active_set2)
         x = FrankWolfe.get_active_set_iterate(as)
-        number_of_steps = FrankWolfe.simplex_gradient_descent_over_convex_hull(
+        number_of_steps, should_continue = FrankWolfe.simplex_gradient_descent_over_convex_hull(
             f,
             grad!,
             gradient,
@@ -180,6 +180,7 @@ end
             callback=nothing,
         )
         @test number_of_steps == 0
+        @test should_continue
     end
 end
 
@@ -358,6 +359,32 @@ end
         _, _, loc, val, _, _, _, _, _ = FrankWolfe.active_set_argminmax(dense_set, dir)
         @test FrankWolfe.find_atom(dense_set, vertices[loc], dir, loc, val) == loc
     end
+end
+
+@testset "Atoms have the atom type of the active set" begin
+    hot = FrankWolfe.ScaledHotVector(1.0, 2, 3)
+    # the copy of a one-hot vector keeps the type of the atoms
+    @test copy(hot) isa FrankWolfe.ScaledHotVector{Float64}
+    @test copy(hot) == hot
+    hot_set = ActiveSet([(1.0, copy(hot))])
+    FrankWolfe.active_set_update!(hot_set, 0.5, FrankWolfe.ScaledHotVector(1.0, 1, 3))
+    @test hot_set.atoms isa Vector{FrankWolfe.ScaledHotVector{Float64}}
+    @test hot_set.x ≈ [0.5, 0.5, 0.0]
+
+    # vertices of another type than the atoms are not converted
+    dense_set = ActiveSet([(1.0, collect(hot))])
+    @test_throws MethodError FrankWolfe.active_set_update!(dense_set, 0.5, hot)
+    @test_throws MethodError FrankWolfe.active_set_update_pairwise!(
+        dense_set,
+        0.5,
+        1.0,
+        -1,
+        1,
+        FrankWolfe.ScaledHotVector(1.0, 1, 3),
+        dense_set.atoms[1],
+        false,
+    )
+    @test length(dense_set) == 1
 end
 
 end # module

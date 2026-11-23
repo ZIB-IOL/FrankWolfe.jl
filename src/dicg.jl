@@ -201,22 +201,27 @@ function decomposition_invariant_conditional_gradient(
             phi_value = dual_gap
             a = compute_inface_extreme_point(lmo, NegatingArray(gradient), x; lazy=lazy)
             d = muladd_memory_mode(memory_mode, d, a, v)
-            step_type = ST_PAIRWISE
+            # if x is epsilon-optimal, no step is taken
+            step_type = phi_value < max(epsilon, eps(epsilon)) ? ST_DUALSTEP : ST_PAIRWISE
         end
 
-        gamma_max = dicg_maximum_step(lmo, d, x)
-        gamma = perform_line_search(
-            line_search,
-            t,
-            f,
-            grad!,
-            gradient,
-            x,
-            d,
-            gamma_max,
-            linesearch_workspace,
-            memory_mode,
-        )
+        if step_type == ST_DUALSTEP
+            gamma = zero(gamma)
+        else
+            gamma_max = dicg_maximum_step(lmo, d, x)
+            gamma = perform_line_search(
+                line_search,
+                t,
+                f,
+                grad!,
+                gradient,
+                x,
+                d,
+                gamma_max,
+                linesearch_workspace,
+                memory_mode,
+            )
+        end
 
         if lazy
             idx = findfirst(x -> x == v, pre_computed_set)
@@ -234,7 +239,7 @@ function decomposition_invariant_conditional_gradient(
                 tot_time,
                 x,
                 v,
-                d,
+                step_type == ST_DUALSTEP ? nothing : d,
                 gamma,
                 f,
                 grad!,
@@ -247,13 +252,17 @@ function decomposition_invariant_conditional_gradient(
                 break
             end
         end
-        x = muladd_memory_mode(memory_mode, x, gamma, d)
+        if step_type != ST_DUALSTEP
+            x = muladd_memory_mode(memory_mode, x, gamma, d)
+        end
     end
 
-    if phi_value <= max(epsilon, eps(epsilon))
-        execution_status = STATUS_OPTIMAL
-    elseif t >= max_iteration
-        execution_status = STATUS_MAXITER
+    if execution_status === STATUS_RUNNING
+        if phi_value <= max(epsilon, eps(epsilon))
+            execution_status = STATUS_OPTIMAL
+        elseif t >= max_iteration
+            execution_status = STATUS_MAXITER
+        end
     end
     if execution_status === STATUS_RUNNING
         @warn "Status not set"
@@ -269,28 +278,26 @@ function decomposition_invariant_conditional_gradient(
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
     dual_gap = dot(gradient, x) - dot(gradient, v)
-    if verbose
-        step_type = ST_LAST
-        tot_time = (time_ns() - time_start) / 1e9
-        if callback !== nothing
-            state = CallbackState(
-                t,
-                primal,
-                primal - dual_gap,
-                dual_gap,
-                tot_time,
-                x,
-                v,
-                nothing,
-                gamma,
-                f,
-                grad!,
-                lmo,
-                gradient,
-                step_type,
-            )
-            callback(state, nothing, v)
-        end
+    step_type = ST_LAST
+    tot_time = (time_ns() - time_start) / 1e9
+    if callback !== nothing
+        state = CallbackState(
+            t,
+            primal,
+            primal - dual_gap,
+            dual_gap,
+            tot_time,
+            x,
+            v,
+            nothing,
+            zero(gamma),
+            f,
+            grad!,
+            lmo,
+            gradient,
+            step_type,
+        )
+        callback(state, nothing, v)
     end
     return (
         x=x,
@@ -471,8 +478,10 @@ function blended_decomposition_invariant_conditional_gradient(
             inface_gap = dot(gradient, a) - dot(gradient, v_inface)
             dual_gap = dot(gradient, x) - dot(gradient, v)
             phi_value = dual_gap
-            # in-face step
-            if inface_gap >= phi_value / sparsity_control
+            if phi_value < max(epsilon, eps(epsilon))
+                # x is epsilon-optimal, no step is taken
+                step_type = ST_DUALSTEP
+            elseif inface_gap >= phi_value / sparsity_control # in-face step
                 step_type = ST_PAIRWISE
                 d = muladd_memory_mode(memory_mode, d, a, v)
                 gamma_max = dicg_maximum_step(lmo, d, x)
@@ -482,23 +491,27 @@ function blended_decomposition_invariant_conditional_gradient(
                 gamma_max = one(phi_value)
             end
         end
-        if step_type == ST_REGULAR
-            gamma_max = one(phi_value)
+        if step_type == ST_DUALSTEP
+            gamma = zero(gamma)
         else
-            gamma_max = dicg_maximum_step(lmo, d, x)
+            if step_type == ST_REGULAR
+                gamma_max = one(phi_value)
+            else
+                gamma_max = dicg_maximum_step(lmo, d, x)
+            end
+            gamma = perform_line_search(
+                line_search,
+                t,
+                f,
+                grad!,
+                gradient,
+                x,
+                d,
+                gamma_max,
+                linesearch_workspace,
+                memory_mode,
+            )
         end
-        gamma = perform_line_search(
-            line_search,
-            t,
-            f,
-            grad!,
-            gradient,
-            x,
-            d,
-            gamma_max,
-            linesearch_workspace,
-            memory_mode,
-        )
         if callback !== nothing
             state = CallbackState(
                 t,
@@ -508,7 +521,7 @@ function blended_decomposition_invariant_conditional_gradient(
                 tot_time,
                 x,
                 v,
-                d,
+                step_type == ST_DUALSTEP ? nothing : d,
                 gamma,
                 f,
                 grad!,
@@ -521,13 +534,17 @@ function blended_decomposition_invariant_conditional_gradient(
                 break
             end
         end
-        x = muladd_memory_mode(memory_mode, x, gamma, d)
+        if step_type != ST_DUALSTEP
+            x = muladd_memory_mode(memory_mode, x, gamma, d)
+        end
     end
 
-    if phi_value <= max(epsilon, eps(epsilon))
-        execution_status = STATUS_OPTIMAL
-    elseif t >= max_iteration
-        execution_status = STATUS_MAXITER
+    if execution_status === STATUS_RUNNING
+        if phi_value <= max(epsilon, eps(epsilon))
+            execution_status = STATUS_OPTIMAL
+        elseif t >= max_iteration
+            execution_status = STATUS_MAXITER
+        end
     end
     if execution_status === STATUS_RUNNING
         @warn "Status not set"
@@ -543,28 +560,26 @@ function blended_decomposition_invariant_conditional_gradient(
     v = compute_extreme_point(lmo, gradient)
     primal = f(x)
     dual_gap = dot(gradient, x) - dot(gradient, v)
-    if verbose
-        step_type = ST_LAST
-        tot_time = (time_ns() - time_start) / 1e9
-        if callback !== nothing
-            state = CallbackState(
-                t,
-                primal,
-                primal - dual_gap,
-                dual_gap,
-                tot_time,
-                x,
-                v,
-                nothing,
-                gamma,
-                f,
-                grad!,
-                lmo,
-                gradient,
-                step_type,
-            )
-            callback(state, nothing, v)
-        end
+    step_type = ST_LAST
+    tot_time = (time_ns() - time_start) / 1e9
+    if callback !== nothing
+        state = CallbackState(
+            t,
+            primal,
+            primal - dual_gap,
+            dual_gap,
+            tot_time,
+            x,
+            v,
+            nothing,
+            zero(gamma),
+            f,
+            grad!,
+            lmo,
+            gradient,
+            step_type,
+        )
+        callback(state, nothing, v)
     end
     return (
         x=x,
@@ -646,7 +661,6 @@ function lazy_standard_dicg_step(
             step_type = ST_DUALSTEP
             phi_value = min(dual_gap, phi_value / 2.0)
             a = a_taken
-            d = zeros(length(x))
         end
     end
 
@@ -737,7 +751,8 @@ function lazy_blended_dicg_step(
                    grad_dot_x - grad_dot_v / sparsity_control
                     step_type = ST_PAIRWISE
                     a = a_taken
-                    d = muladd_memory_mode(memory_mode, d, a, v_inface)
+                    v = v_inface
+                    d = muladd_memory_mode(memory_mode, d, a, v)
                 else
                     step_type = ST_REGULAR
                     a = x
@@ -747,7 +762,6 @@ function lazy_blended_dicg_step(
                 step_type = ST_DUALSTEP
                 phi_value = min(dual_gap, phi_value / 2.0)
                 a = a_taken
-                d = zeros(length(x))
             end
         end
     end

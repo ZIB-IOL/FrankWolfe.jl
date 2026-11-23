@@ -4,7 +4,6 @@ using LinearAlgebra
 using Random
 using SparseArrays
 using Test
-using Test
 using FrankWolfe
 using DoubleFloats
 using StableRNGs
@@ -19,74 +18,63 @@ Random.seed!(rng, s)
 const matrix = rand(rng, n, n)
 const hessian = transpose(matrix) * matrix
 const linear = rand(rng, n)
-f(x) = dot(linear, x) + 0.5 * transpose(x) * hessian * x
-function grad!(storage, x)
-    return storage .= linear + hessian * x
-end
 const L = eigmax(hessian)
 
-# This test covers the generic types with accelerated BCG
-# only few iterations are run because linear algebra with BigFloat is intensive
+function quadratic(linear_term, hessian_term)
+    f(x) = dot(linear_term, x) + 0.5 * transpose(x) * hessian_term * x
+    grad!(storage, x) = (storage .= linear_term + hessian_term * x)
+    return f, grad!
+end
+
+# The degenerate objective appends a coordinate without curvature. Its cost is below the
+# optimal gradient level (≈ 43) over the probability simplex, so its vertex enters the active
+# set, and from then on every reduced Hessian is singular (mu = 0).
+const objectives = (
+    "nondegenerate" => (linear, hessian),
+    "degenerate" => ([linear; 30.0], [hessian zeros(n); zeros(1, n + 1)]),
+)
+
+# This test covers the generic types with (accelerated) BCG.
+# Over the K-sparse polytope, BCG converges slowly, and only a few iterations are run
+# because linear algebra with BigFloat is intensive.
 @testset "Type $T" for T in (Float64, Double64, BigFloat)
-    @testset "LMO $(typeof(lmo)) Probability simplex" for lmo in (
-        FrankWolfe.ProbabilitySimplexLMO{T}(1.0),
-        FrankWolfe.KSparseLMO{T}(100, 100.0),
-    )
-        x0 = FrankWolfe.compute_extreme_point(lmo, spzeros(T, n))
-
-        target_tolerance = 1e-5
-
-        x, v, primal_accel, dual_gap_accel, _, _ = FrankWolfe.blended_conditional_gradient(
-            f,
-            grad!,
-            lmo,
-            copy(x0),
-            epsilon=target_tolerance,
-            max_iteration=k,
-            line_search=FrankWolfe.AdaptiveZerothOrder(L_est=L),
-            print_iter=k / 10,
-            hessian=hessian,
-            memory_mode=FrankWolfe.InplaceEmphasis(),
-            accelerated=true,
-            verbose=false,
-            trajectory=false,
-            sparsity_control=1.0,
-            weight_purge_threshold=1e-10,
+    @testset "$name objective" for (name, (linear_term, hessian_term)) in objectives
+        f, grad! = quadratic(linear_term, hessian_term)
+        dim = length(linear_term)
+        @testset "LMO $(typeof(lmo))" for (lmo, max_iteration, converges) in (
+            (FrankWolfe.ProbabilitySimplexLMO{T}(1.0), 2000, true),
+            (FrankWolfe.KSparseLMO{T}(100, 100.0), k, false),
         )
-
-        x, v, primal_hessian, dual_gap_hessian, _, _ = FrankWolfe.blended_conditional_gradient(
-            f,
-            grad!,
-            lmo,
-            copy(x0),
-            epsilon=target_tolerance,
-            max_iteration=k,
-            line_search=FrankWolfe.AdaptiveZerothOrder(L_est=L),
-            print_iter=k / 10,
-            hessian=hessian,
-            memory_mode=FrankWolfe.InplaceEmphasis(),
-            accelerated=false,
-            verbose=false,
-            trajectory=false,
-            sparsity_control=1.0,
-            weight_purge_threshold=1e-10,
-        )
-
-        x, v, primal_bcg, dual_gap_bcg, _, _ = FrankWolfe.blended_conditional_gradient(
-            f,
-            grad!,
-            lmo,
-            copy(x0),
-            epsilon=target_tolerance,
-            max_iteration=k,
-            line_search=FrankWolfe.AdaptiveZerothOrder(L_est=L),
-            print_iter=k / 10,
-            memory_mode=FrankWolfe.InplaceEmphasis(),
-            verbose=false,
-            trajectory=false,
-            sparsity_control=1.0,
-            weight_purge_threshold=1e-10,
-        )
+            x0 = FrankWolfe.compute_extreme_point(lmo, spzeros(T, dim))
+            target_tolerance = 1e-5
+            # accelerated, with Hessian, without Hessian
+            variants = ((hessian_term, true), (hessian_term, false), (nothing, false))
+            results = map(variants) do (hessian_bcg, accelerated)
+                return FrankWolfe.blended_conditional_gradient(
+                    f,
+                    grad!,
+                    lmo,
+                    copy(x0),
+                    epsilon=target_tolerance,
+                    max_iteration=max_iteration,
+                    line_search=FrankWolfe.AdaptiveZerothOrder(L_est=L),
+                    print_iter=max_iteration / 10,
+                    hessian=hessian_bcg,
+                    accelerated=accelerated,
+                    memory_mode=FrankWolfe.InplaceEmphasis(),
+                    verbose=false,
+                    trajectory=false,
+                    sparsity_control=1.0,
+                    weight_purge_threshold=1e-10,
+                )
+            end
+            if converges
+                for result in results
+                    @test result.status == FrankWolfe.STATUS_OPTIMAL
+                    @test result.primal ≈ results[end].primal atol = target_tolerance
+                end
+            end
+        end
     end
 end
 
