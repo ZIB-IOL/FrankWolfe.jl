@@ -405,6 +405,7 @@ function compute_inface_extreme_point(
         if 0 < x[idx] < lmo.radius
             v[idx] = lmo.radius
             K_free -= 1
+            # K elements fixed already
             K_free == 0 && break
         end
     end
