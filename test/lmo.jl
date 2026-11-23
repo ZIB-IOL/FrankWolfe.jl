@@ -192,6 +192,23 @@ end
     end
 end
 
+@testset "Hypersimplex away oracle on active faces" begin
+    unit_lmo = FrankWolfe.UnitHyperSimplexLMO(2, 3.0)
+    # All available costs are positive. The active sum constraint still requires
+    # one free coordinate in addition to the coordinate at the upper bound.
+    direction = [9.0, 2.0, 1.0, -10.0]
+    x = [3.0, 1.0, 2.0, 0.0]
+    @test FrankWolfe.compute_inface_extreme_point(unit_lmo, direction, x) == [3.0, 0.0, 3.0, 0.0]
+    @test FrankWolfe.compute_inface_extreme_point(unit_lmo, direction, [3.0, 1.0, 1.0, 0.0]) ==
+          [3.0, 0.0, 0.0, 0.0]
+
+    lmo = FrankWolfe.HyperSimplexLMO(2, 3.0)
+    x = [3.0, 1e-9, 3.0 - 1e-9, 0.0]
+    v = FrankWolfe.compute_inface_extreme_point(lmo, direction, x)
+    @test v == [3.0, 0.0, 3.0, 0.0]
+    @test FrankWolfe.dicg_maximum_step(lmo, x - v, x) ≈ 1
+end
+
 @testset "Lp-norm epigraph LMO" begin
     for n in (1, 2, 5, 10)
         τ = 5 + 3 * rand(rng)
