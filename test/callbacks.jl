@@ -7,6 +7,7 @@ using StableRNGs
 
 using FrankWolfe: ST_REGULAR, ST_LAZY, ST_DUALSTEP, ST_AWAY, ST_PAIRWISE, ST_DROP
 using FrankWolfe: ST_SIMPLEXDESCENT, ST_LAST, ST_POSTPROCESS
+using FrankWolfe: ST_SOCGS_PVM, ST_SOCGS_CG, ST_SOCGS_KEEP
 
 const n = 20
 # the minimizer of f over the probability simplex lies on a low-dimensional face,
@@ -426,6 +427,38 @@ const SOLVERS = [
         ),
         [ST_REGULAR, ST_SIMPLEXDESCENT],
     ),
+    (
+        "second_order_conditional_gradient_sliding",
+        f,
+        cb -> FrankWolfe.second_order_conditional_gradient_sliding(
+            f,
+            grad!,
+            (H, x) -> H .= hessian,
+            lmo,
+            x0;
+            callback=cb,
+            KW...,
+        ),
+        [ST_SOCGS_PVM],
+    ),
+    (
+        # z_k overshoots with the underestimated Hessian, and the open-loop step size slows down
+        # the independent sequence, so that SOCGS also selects a_{k+1} and keeps x_k
+        "second_order_conditional_gradient_sliding with underestimated Hessian",
+        f,
+        cb -> FrankWolfe.second_order_conditional_gradient_sliding(
+            f,
+            grad!,
+            (H, x) -> H .= 0.45 .* hessian,
+            lmo,
+            x0;
+            line_search=FrankWolfe.Agnostic(),
+            callback=cb,
+            epsilon=KW.epsilon,
+            max_iteration=50,
+        ),
+        [ST_SOCGS_PVM, ST_SOCGS_CG, ST_SOCGS_KEEP],
+    ),
 ]
 
 @testset "Callbacks are called before the step, false cancels it" begin
@@ -533,8 +566,10 @@ end
         reference, step_types, reference_calls = run_counting(run)
         result, _, calls = run_counting(run; with_callback=false)
         # With a post-processing step, the gradient and LMO calls for ST_LAST are only needed
-        # for the callback. Without one, they give the returned values.
-        calls_for_callback = ST_POSTPROCESS in step_types ? (1, 1) : (0, 0)
+        # for the callback. Without one, they give the returned values. SOCGS does not
+        # postprocess its iterate and reports its last values in both final calls.
+        is_socgs = startswith(name, "second_order_conditional_gradient_sliding")
+        calls_for_callback = ST_POSTPROCESS in step_types && !is_socgs ? (1, 1) : (0, 0)
         @test reference_calls == calls .+ calls_for_callback
         @test result.status == reference.status
         @test result.x ≈ reference.x
