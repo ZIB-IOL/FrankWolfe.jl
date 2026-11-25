@@ -242,7 +242,6 @@ function adaptive_gradient_descent2(
     start_time = time()
 
     for k in 1:max_iteration
-        iter_start = time()
         # Compute current gradient
         grad!(grad_curr, x_curr)
 
@@ -427,7 +426,6 @@ function proximal_adaptive_gradient_descent(
     start_time = time()
 
     for k in 1:max_iteration
-        iter_start = time()
         # Compute current gradient
         grad!(grad_curr, x_curr)
 
