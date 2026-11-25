@@ -319,7 +319,7 @@ function stochastic_frank_wolfe(
 
         d = muladd_memory_mode(memory_mode, d, x, v)
 
-        # note: only agnostic line-search methods are supported
+        # note: only agnostic step-size methods are supported
         # so nothing is passed as function and gradient
         gamma = perform_line_search(
             line_search,
