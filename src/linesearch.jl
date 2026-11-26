@@ -484,8 +484,9 @@ The secant iteration starts from the step size of the previous line search.
 - `tol::Float64`: Tolerance for convergence. (default 1e-8)
 - `domain_oracle::Function`, returns true if the argument x is in the domain of the objective function f.
 
-# References
-- [Secant Method](https://en.wikipedia.org/wiki/Secant_method)
+# Reference
+> Hendrych, D., Pokutta, S., Besançon, M., and Martínez-Rubio, D. (2025). "Secant line search for Frank-Wolfe algorithms", Proceedings of the 42nd International Conference on Machine Learning.
+
 """
 struct Secant{F,LSM<:LineSearchMethod} <: LineSearchMethod
     inner_ls::LSM
@@ -504,7 +505,7 @@ function Secant(;
     safe=false,
     limit_num_steps=40,
     tol=1e-8,
-    domain_oracle=(x -> true),
+    domain_oracle=nothing,
 )
     return Secant(inner_ls, safe, limit_num_steps, tol, domain_oracle)
 end
@@ -523,7 +524,7 @@ end
 
 function perform_line_search(
     line_search::Secant,
-    _,
+    t,
     f,
     grad!,
     gradient,
@@ -533,68 +534,70 @@ function perform_line_search(
     workspace::SecantWorkspace,
     memory_mode,
 )
-    dot_gdir = dot(gradient, d)
-    # Start from last gamma, but don't exceed gamma_max. After a step size of zero, start from one
-    # as in a new workspace: the first secant step would compare the directional derivative at x
-    # with itself, stop, and return zero again
-    last_gamma = workspace.last_gamma > 0 ? workspace.last_gamma : one(workspace.last_gamma)
-    gamma = min(last_gamma, gamma_max)
-    storage, grad_storage = workspace.x, workspace.gradient
-    storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
-    while !line_search.domain_oracle(storage)
-        gamma_max /= 2
-        gamma = min(gamma, gamma_max)
-        storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
+    # Let phi(gamma) = < nabla f(x - gamma * d), d > then given the value of phi at two points
+    # one can construct the linear interpolation of phi at these two points and find its root. The
+    # secant method then uses this point as one of the new interpolation points and repeats until
+    # it visits a gamma with |phi(gamma)| < tol.
+
+    # In our setting, phi(0) is known and positive. If phi(gamma_max) is also positive, the root
+    # lies outside the relevant interval [0, gamma_max] and we should return gamma_max.
+
+    x_base = x
+
+    gamma_old = zero(gamma_max)
+    phi_old = dot(gradient, d)
+    @assert phi_old > 0 "The search direction -d is not a descent direction"
+
+    x, gradient = workspace.x, workspace.gradient
+    
+    if line_search.domain_oracle !== nothing
+        x = muladd_memory_mode(memory_mode, x, x_base, gamma_max, d)
+        while !line_search.domain_oracle(x)
+           gamma_max /= 2 
+           x = muladd_memory_mode(memory_mode, x, x_base, gamma_max, d)
+        end
     end
-    new_val = f(storage)
-    best_gamma = gamma
-    best_val = new_val
-    i = 1
-    gamma_prev = zero(best_gamma)
-    clamping = false
-    if dot_gdir <= line_search.tol
-        return zero(gamma)
+
+    gamma = min(workspace.last_gamma, gamma_max)
+    x = muladd_memory_mode(memory_mode, x, x_base, gamma, d)
+    grad!(gradient, x)
+    phi = dot(gradient, d)
+
+    if phi ≈ phi_old
+        gamma = gamma_max
+        x = muladd_memory_mode(memory_mode, x, x_base, gamma, d)
+        grad!(gradient, x)
+        phi = dot(gradient, d)
     end
-    while abs(dot_gdir) > line_search.tol
-        if i > line_search.limit_num_steps
-            workspace.last_gamma = best_gamma  # Update last_gamma before returning
-            break
+
+    if gamma == gamma_max && phi >= 0
+        workspace.last_gamma == gamma_max
+        return gamma_max
+    end
+
+    i = 0
+    while abs(phi) > line_search.tol && i < line_search.limit_num_steps
+        gamma_new = clamp(gamma - phi * (gamma - gamma_old) / (phi - phi_old), 0, gamma_max)
+        gamma_old, phi_old = gamma, phi
+        gamma = gamma_new
+
+        x = muladd_memory_mode(memory_mode, x, x_base, gamma, d)
+        grad!(gradient, x)
+        phi = dot(gradient, d)
+
+        if gamma == gamma_max && phi >= 0
+            workspace.last_gamma = gamma_max
+            return gamma_max
         end
-
-        grad!(grad_storage, storage)
-        dot_gdir_new = dot(grad_storage, d)
-
-        if dot_gdir_new ≈ dot_gdir
-            clamping = true
-            workspace.last_gamma = best_gamma  # Update last_gamma before returning
-            break
-        end
-
-        gamma_new = gamma - dot_gdir_new * (gamma - gamma_prev) / (dot_gdir_new - dot_gdir)
-        gamma_prev = gamma
-        gamma = clamp(gamma_new, 0, gamma_max) # Ensure gamma stays in [0, gamma_max]
-
-        storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
-        new_val = f(storage)
-
-        if new_val < best_val
-            best_val = new_val
-            best_gamma = gamma
-        end
-
-        dot_gdir = dot_gdir_new
+        
         i += 1
     end
+    @assert abs(phi) <= line_search.tol
 
-    # If converged, return the last iterate, since f may not resolve the decrease near a minimizer
-    if abs(dot_gdir) <= line_search.tol && line_search.domain_oracle(storage)
-        best_gamma = gamma
-    end
-
-    if line_search.safe && !clamping && abs(dot_gdir) > line_search.tol
+    if line_search.safe && abs(phi) > line_search.tol
         gamma = perform_line_search(
             line_search.inner_ls,
-            0,
+            t,
             f,
             grad!,
             gradient,
@@ -604,16 +607,10 @@ function perform_line_search(
             workspace.inner_ws,
             memory_mode,
         )
-
-        storage = muladd_memory_mode(memory_mode, storage, x, gamma, d)
-        new_val = f(storage)
-
-        if new_val <= best_val
-            best_gamma = gamma
-        end
     end
-    workspace.last_gamma = best_gamma  # Update last_gamma before returning
-    return best_gamma
+
+    workspace.last_gamma = gamma
+    return gamma
 end
 
 Base.print(io::IO, ::Secant) = print(io, "Secant")
