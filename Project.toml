@@ -66,7 +66,7 @@ StaticArraysCore = "1.4.4"
 Test = "1"
 TimerOutputs = "0.5, 1"
 Tullio = "0.3"
-ZipFile = "0.9.4"
+ZipFile = "0.10"
 julia = "1.10"
 
 [extras]
