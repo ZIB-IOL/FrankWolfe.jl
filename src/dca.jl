@@ -230,7 +230,7 @@ written as the difference of two convex functions. At each iteration, it:
 - `epsilon`: Convergence tolerance for DCA gap (default: 1e-7)
 - `max_iteration`: Maximum outer DCA iterations (default: 10000)
 - `max_inner_iteration`: Maximum inner Frank-Wolfe iterations (default: 1000)
-- `line_search`: Line search method for inner Frank-Wolfe (default: Agnostic())
+- `line_search`: Line search method for inner Frank-Wolfe (default: `Secant(tol=epsilon / 10)`)
 
 # Algorithm Variants
 - `use_corrective_fw`: Use corrective FW based on an active set instead of standard Frank-Wolfe (default: true)
@@ -290,8 +290,8 @@ function dca_fw(
     lmo,
     x0;
     # Core algorithm parameters
-    line_search::LineSearchMethod=Secant(),
     epsilon::Float64=1e-7,
+    line_search::LineSearchMethod=Secant(tol=epsilon / 10),
     max_iteration::Int=10000,
     max_inner_iteration::Int=1000,
 

@@ -832,7 +832,7 @@ end
 _linesearch_tol(ls) = hasproperty(ls, :tol) ? ls.tol : 1e-8
 
 """
-    SimplexGradientDescentStep(lazy=false; lazy_tolerance=2.0, line_search_inner=Secant())
+    SimplexGradientDescentStep(lazy=false; lazy_tolerance=2.0, line_search_inner=nothing)
 
 One simplex gradient descent (SiGD) step over the active set, as in
 Braun et al., "Blended Conditional Gradients", Algorithm 2.
@@ -840,6 +840,11 @@ Braun et al., "Blended Conditional Gradients", Algorithm 2.
 If the local strong-Wolfe gap over the active set is large enough compared to
 `phi_value / lazy_tolerance`, a single SiGD step is taken. Otherwise a Frank-Wolfe
 step is requested from [`corrective_frank_wolfe`](@ref).
+
+`line_search_inner` is the line search of the SiGD step. If it is `nothing`, the step uses
+`Secant(tol=min(epsilon / 10, 1e-8))` with the `epsilon` of [`corrective_frank_wolfe`](@ref).
+The tolerance of `line_search_inner` is also the threshold on the descent direction below which
+a Frank-Wolfe step is taken instead.
 """
 mutable struct SimplexGradientDescentStep{T,LS} <: CorrectiveStep
     lazy::Bool
@@ -848,7 +853,7 @@ mutable struct SimplexGradientDescentStep{T,LS} <: CorrectiveStep
     linesearch_inner_workspace::Any
 end
 
-function SimplexGradientDescentStep(lazy=false; lazy_tolerance=2.0, line_search_inner=Secant())
+function SimplexGradientDescentStep(lazy=false; lazy_tolerance=2.0, line_search_inner=nothing)
     return SimplexGradientDescentStep(lazy, lazy_tolerance, line_search_inner, nothing)
 end
 
@@ -914,11 +919,15 @@ function run_corrective_step(
         return x, v, phi_value, dual_gap, should_fw_step, should_continue
     end
 
+    line_search_inner = corrective_step.line_search_inner
+    if line_search_inner === nothing
+        # its tolerance is also the threshold below which the step falls back to a FW step
+        line_search_inner = Secant(tol=min(epsilon / 10, 1e-8))
+    end
     if corrective_step.linesearch_inner_workspace === nothing
         corrective_step.linesearch_inner_workspace =
-            build_linesearch_workspace(corrective_step.line_search_inner, x, gradient)
+            build_linesearch_workspace(line_search_inner, x, gradient)
     end
-    line_search_inner = corrective_step.line_search_inner
     if line_search_inner isa Adaptive
         line_search_inner.L_est = Inf
     end

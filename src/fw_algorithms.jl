@@ -15,9 +15,9 @@ function frank_wolfe(
     grad!,
     lmo,
     x0;
-    line_search::LineSearchMethod=Secant(),
     momentum=nothing,
     epsilon=1e-7,
+    line_search::LineSearchMethod=Secant(tol=epsilon / 10),
     max_iteration=10000,
     print_iter=1000,
     trajectory=false,
@@ -284,11 +284,11 @@ function lazified_conditional_gradient(
     grad!,
     lmo_base,
     x0;
-    line_search::LineSearchMethod=Secant(),
     sparsity_control=2.0,
     cache_size=Inf,
     greedy_lazy=false,
     epsilon=1e-7,
+    line_search::LineSearchMethod=Secant(tol=epsilon / 10),
     max_iteration=10000,
     print_iter=1000,
     trajectory=false,

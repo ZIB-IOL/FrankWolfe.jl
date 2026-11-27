@@ -17,8 +17,8 @@ function corrective_frank_wolfe(
     lmo,
     corrective_step::CorrectiveStep,
     active_set::AbstractActiveSet{AT,R};
-    line_search::LineSearchMethod=Secant(),
     epsilon=1e-7,
+    line_search::LineSearchMethod=Secant(tol=epsilon / 10),
     max_iteration=10000,
     print_iter=max_iteration ÷ 100,
     trajectory=false,

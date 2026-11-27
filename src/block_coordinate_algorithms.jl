@@ -483,10 +483,10 @@ function block_coordinate_frank_wolfe(
     lmo::ProductLMO{N},
     x0::BlockVector;
     update_order::BlockCoordinateUpdateOrder=CyclicUpdate(),
-    line_search::LS=Secant(),
     update_step::US=FrankWolfeStep(),
     momentum=nothing,
     epsilon=1e-7,
+    line_search::LS=Secant(tol=epsilon / 10),
     max_iteration=10000,
     print_iter=1000,
     trajectory=false,
