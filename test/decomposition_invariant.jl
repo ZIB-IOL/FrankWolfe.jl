@@ -409,6 +409,7 @@ end
         x0_bk = FrankWolfe.compute_extreme_point(lmo, randn(rng, n, n))
         f0(X) = 1 / 2 * sum(abs2, X)
         grad0!(storage, X) = storage .= X
+        # Use epsilon=1e-7 because GLPKs default tolerance is 1e-7
         res_di = FrankWolfe.decomposition_invariant_conditional_gradient(
             f0,
             grad0!,
@@ -416,7 +417,7 @@ end
             x0_bk,
             verbose=false,
             trajectory=true,
-            epsilon=1e-10,
+            epsilon=1e-7,
         )
         res_di_MOI = FrankWolfe.decomposition_invariant_conditional_gradient(
             f0,
@@ -425,7 +426,7 @@ end
             x0_bk,
             verbose=false,
             trajectory=true,
-            epsilon=1e-10,
+            epsilon=1e-7,
         )
         res_fw = FrankWolfe.frank_wolfe(
             f0,
@@ -434,7 +435,7 @@ end
             x0_bk,
             verbose=false,
             trajectory=true,
-            epsilon=1e-10,
+            epsilon=1e-7,
         )
         @test norm(res_di[1] - res_fw[1]) <= 1e-6
         @test norm(res_di_MOI[1] - res_fw[1]) <= 1e-6
