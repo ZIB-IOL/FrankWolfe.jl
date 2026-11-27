@@ -36,7 +36,7 @@ build_linesearch_workspace(::LineSearchMethod, x, gradient) = nothing
 Computes step size: `l/(l + t)` at iteration `t`, given `l > 0`.
 
 Using `l > 2` leads to faster convergence rates than l = 2 over strongly and some uniformly convex set.
-> Accelerated Affine-Invariant Convergence Rates of the Frank-Wolfe Algorithm with Open-Loop Step-Sizes, Wirth, Peña, Pokutta (2023), https://arxiv.org/abs/2310.04096 
+> Accelerated Affine-Invariant Convergence Rates of the Frank-Wolfe Algorithm with Open-Loop Step-Sizes, Wirth, Peña, Pokutta (2023), https://arxiv.org/abs/2310.04096
 See also the paper that introduced the study of open-loop step-sizes with l > 2:
 > Acceleration of Frank-Wolfe Algorithms with Open-Loop Step-Sizes, Wirth, Kerdreux, Pokutta, (2023), https://arxiv.org/abs/2205.12838
 
@@ -465,24 +465,30 @@ end
 Base.print(io::IO, ::Backtracking) = print(io, "Backtracking")
 
 """
-    Secant(limit_num_steps, tol, domain_oracle)
+    Secant(; inner_ls=Adaptive(), safe=false, limit_num_steps=40, tol=1e-8, domain_oracle=nothing)
+    Secant(limit_num_steps, tol)
 
-Secant line search strategy, which iteratively refines the step size using the secant method.
-This method is geared towards problems with self-concordant functions (but might require extra structure) 
-and potentially faster than the backtracking line search.
+Secant line search strategy, which iteratively refines the step size using the secant method
+on the directional derivative `phi(gamma) = ⟨∇f(x - gamma * d), d⟩`.
+This method is geared towards problems with self-concordant functions (but might require extra structure)
+and is potentially faster than the backtracking line search.
 The order of convergence is superlinear with exponent 1.618 (Golden Ratio) but not quite quadratic.
 Convergence is not guaranteed in general.
-If the secant iteration converges, that is, the directional derivative drops below `tol`,
-its last iterate is returned. Otherwise, the iterate with the smallest value of `f` is returned.
-The secant iteration starts from the step size of the previous line search.
 
+The secant iteration starts from the step size of the previous line search. It keeps a bracket
+around the root of `phi` and takes a bisection step whenever a secant step would leave it.
+It stops once `|phi(gamma)| ≤ tol` and returns `gamma_max` if `phi(gamma_max) ≥ 0`.
+If it stops without converging, after `limit_num_steps` steps or because rounding errors stall
+it, the fallback line search `inner_ls` is used if `safe == true`. Otherwise, the last iterate is
+returned.
 
 # Arguments
-- `inner_ls::LSM`: A fallback line search in case the last gamma in Secant does not satisfy the tolerance. Is only used if `safe==true`. (default `Backtracking`)
-- `safe::Bool`: Flag indicating whether the fallback line search should be used. If false, the best gamma from Secant is used. (default `true`)  
+- `inner_ls::LSM`: Fallback line search, used only if `safe == true` and the secant iteration does not converge. (default `Adaptive()`)
+- `safe::Bool`: Whether to use the fallback line search. If `false`, the last iterate of a secant iteration that does not converge is returned. (default `false`)
 - `limit_num_steps::Int`: Maximum number of iterations for the secant method. (default 40)
-- `tol::Float64`: Tolerance for convergence. (default 1e-8)
-- `domain_oracle::Function`, returns true if the argument x is in the domain of the objective function f.
+- `tol::Float64`: Absolute tolerance on `|phi(gamma)|`. For a Frank-Wolfe step, `phi(0)` is the
+  Frank-Wolfe gap, so `tol` should be smaller than the `epsilon` of the algorithm. (default 1e-8)
+- `domain_oracle`: `nothing` or a function that returns true if its argument is in the domain of `f`. (default `nothing`)
 
 # Reference
 > Hendrych, D., Pokutta, S., Besançon, M., and Martínez-Rubio, D. (2025). "Secant line search for Frank-Wolfe algorithms", Proceedings of the 42nd International Conference on Machine Learning.
@@ -497,7 +503,7 @@ struct Secant{F,LSM<:LineSearchMethod} <: LineSearchMethod
 end
 
 function Secant(limit_num_steps, tol)
-    return Secant(Adaptive(), false, limit_num_steps, tol, x -> true)
+    return Secant(Adaptive(), false, limit_num_steps, tol, nothing)
 end
 
 function Secant(;
@@ -536,63 +542,107 @@ function perform_line_search(
 )
     # Let phi(gamma) = < nabla f(x - gamma * d), d > then given the value of phi at two points
     # one can construct the linear interpolation of phi at these two points and find its root. The
-    # secant method then uses this point as one of the new interpolation points and repeats until
-    # it visits a gamma with |phi(gamma)| < tol.
+    # secant method then uses this root as one of the new interpolation points and repeats until
+    # it visits a gamma with |phi(gamma)| < tol. The current implementation also adds a bracketing
+    # approach not described in the paper to avoid certain failure cases.
 
     # In our setting, phi(0) is known and positive. If phi(gamma_max) is also positive, the root
     # lies outside the relevant interval [0, gamma_max] and we should return gamma_max.
+    x_base, gradient_base = x, gradient
+    phi_zero = dot(gradient, d)
 
-    x_base = x
-
-    gamma_old = zero(gamma_max)
-    phi_old = dot(gradient, d)
-    @assert phi_old > 0 "The search direction -d is not a descent direction"
+    if phi_zero == 0
+        # Could be a block of block-coordinate Frank-Wolfe that is already optimal (d = 0)
+        return zero(gamma_max)
+    end
+    if phi_zero < 0 || gamma_max == 0
+        @warn "Non-improving"
+        return zero(gamma_max)
+    end
 
     x, gradient = workspace.x, workspace.gradient
-    
+
     if line_search.domain_oracle !== nothing
         x = muladd_memory_mode(memory_mode, x, x_base, gamma_max, d)
         while !line_search.domain_oracle(x)
-           gamma_max /= 2 
-           x = muladd_memory_mode(memory_mode, x, x_base, gamma_max, d)
+            gamma_max /= 2
+            x = muladd_memory_mode(memory_mode, x, x_base, gamma_max, d)
         end
     end
+
+    # Bracket: a root lies somewhere between gamma_left and gamma_right
+    gamma_left = zero(gamma_max)
+    gamma_right = Inf
+
+    gamma_last, phi_last = zero(gamma_max), phi_zero
 
     gamma = min(workspace.last_gamma, gamma_max)
     x = muladd_memory_mode(memory_mode, x, x_base, gamma, d)
     grad!(gradient, x)
     phi = dot(gradient, d)
 
-    if phi ≈ phi_old
+    if phi > 0
+        gamma_left = gamma
+    else
+        gamma_right = gamma
+    end
+
+    if phi ≈ phi_last && gamma ≠ gamma_max
+        # last_gamma is too close to zero or the function is almost linear on line segment.
+        # In both cases, evaluate phi at gamma_max instead
         gamma = gamma_max
         x = muladd_memory_mode(memory_mode, x, x_base, gamma, d)
         grad!(gradient, x)
         phi = dot(gradient, d)
+
+        if phi > 0
+            gamma_left = gamma
+        else
+            gamma_right = gamma
+        end
     end
 
-    if gamma == gamma_max && phi >= 0
-        workspace.last_gamma == gamma_max
+    if gamma == gamma_max && phi ≥ 0
+        # Return the constrained minimizer in [0, gamma_max]
+        workspace.last_gamma = gamma_max
         return gamma_max
     end
 
     i = 0
     while abs(phi) > line_search.tol && i < line_search.limit_num_steps
-        gamma_new = clamp(gamma - phi * (gamma - gamma_old) / (phi - phi_old), 0, gamma_max)
-        gamma_old, phi_old = gamma, phi
-        gamma = gamma_new
+        if phi ≈ phi_last
+            # Numerical errors prevent further progress
+            break
+        end
+
+        gamma_secant = gamma - phi * (gamma - gamma_last) / (phi - phi_last)
+        gamma_last, phi_last = gamma, phi
+        if gamma_left < gamma_secant < gamma_right
+            # Clamp is necessary, since gamma_right can be Inf
+            gamma = clamp(gamma_secant, 0, gamma_max)
+        else
+            # Secant jumped outside the known bracket, fall back to bisection
+            gamma = clamp((gamma_left + gamma_right) / 2, 0, gamma_max)
+        end
 
         x = muladd_memory_mode(memory_mode, x, x_base, gamma, d)
         grad!(gradient, x)
         phi = dot(gradient, d)
 
+        if phi > 0
+            gamma_left = gamma
+        else
+            gamma_right = gamma
+        end
+
         if gamma == gamma_max && phi >= 0
+            # Return the constrained minimizer in [0, gamma_max]
             workspace.last_gamma = gamma_max
             return gamma_max
         end
-        
+
         i += 1
     end
-    @assert abs(phi) <= line_search.tol
 
     if line_search.safe && abs(phi) > line_search.tol
         gamma = perform_line_search(
@@ -600,8 +650,8 @@ function perform_line_search(
             t,
             f,
             grad!,
-            gradient,
-            x,
+            gradient_base,
+            x_base,
             d,
             gamma_max,
             workspace.inner_ws,
