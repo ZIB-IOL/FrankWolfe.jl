@@ -45,8 +45,8 @@ function decomposition_invariant_conditional_gradient(
     grad!,
     lmo,
     x0;
-    line_search::LineSearchMethod=Secant(),
     epsilon=1e-7,
+    line_search::LineSearchMethod=Secant(tol=epsilon / 10),
     max_iteration=10000,
     print_iter=1000,
     trajectory=false,
@@ -326,8 +326,8 @@ function blended_decomposition_invariant_conditional_gradient(
     grad!,
     lmo,
     x0;
-    line_search::LineSearchMethod=Secant(),
     epsilon=1e-7,
+    line_search::LineSearchMethod=Secant(tol=epsilon / 10),
     max_iteration=10000,
     print_iter=1000,
     trajectory=false,

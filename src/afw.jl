@@ -18,9 +18,9 @@ function away_frank_wolfe(
     grad!,
     lmo,
     x0;
-    line_search::LineSearchMethod=Secant(),
     lazy_tolerance=2.0,
     epsilon=1e-7,
+    line_search::LineSearchMethod=Secant(tol=epsilon / 10),
     away_steps=true,
     lazy=false,
     momentum=nothing,
@@ -84,9 +84,9 @@ function away_frank_wolfe(
     grad!,
     lmo,
     active_set::AbstractActiveSet{AT,R};
-    line_search::LineSearchMethod=Secant(),
     lazy_tolerance=2.0,
     epsilon=1e-7,
+    line_search::LineSearchMethod=Secant(tol=epsilon / 10),
     away_steps=true,
     lazy=false,
     momentum=nothing,

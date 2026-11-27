@@ -19,9 +19,9 @@ function pairwise_frank_wolfe(
     grad!,
     lmo,
     x0;
-    line_search::LineSearchMethod=Secant(),
     sparsity_control=2.0,
     epsilon=1e-7,
+    line_search::LineSearchMethod=Secant(tol=epsilon / 10),
     lazy=false,
     momentum=nothing,
     max_iteration=10000,
@@ -83,9 +83,9 @@ function pairwise_frank_wolfe(
     grad!,
     lmo,
     active_set::AbstractActiveSet{AT,R};
-    line_search::LineSearchMethod=Secant(),
     sparsity_control=2.0,
     epsilon=1e-7,
+    line_search::LineSearchMethod=Secant(tol=epsilon / 10),
     lazy=false,
     momentum=nothing,
     max_iteration=10000,

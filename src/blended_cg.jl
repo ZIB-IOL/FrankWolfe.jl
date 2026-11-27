@@ -20,10 +20,11 @@ function blended_conditional_gradient(
     grad!,
     lmo,
     x0;
-    line_search::LineSearchMethod=Secant(),
-    line_search_inner::LineSearchMethod=Secant(),
     hessian=nothing,
     epsilon=1e-7,
+    line_search::LineSearchMethod=Secant(tol=epsilon / 10),
+    # the tolerance of the inner line search is also the threshold below which simplex descent stops
+    line_search_inner::LineSearchMethod=Secant(tol=min(epsilon / 10, 1e-8)),
     max_iteration=10000,
     print_iter=1000,
     trajectory=false,
@@ -85,10 +86,11 @@ function blended_conditional_gradient(
     grad!,
     lmo,
     active_set::AbstractActiveSet{AT,R};
-    line_search::LineSearchMethod=Secant(),
-    line_search_inner::LineSearchMethod=Secant(),
     hessian=nothing,
     epsilon=1e-7,
+    line_search::LineSearchMethod=Secant(tol=epsilon / 10),
+    # the tolerance of the inner line search is also the threshold below which simplex descent stops
+    line_search_inner::LineSearchMethod=Secant(tol=min(epsilon / 10, 1e-8)),
     max_iteration=10000,
     print_iter=1000,
     trajectory=false,
